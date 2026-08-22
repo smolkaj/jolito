@@ -1314,9 +1314,9 @@ kbd {
 /* Background text highlighting segments */
 .diff-seg {
   display: inline;
-  border-radius: 4px;
-  padding: 1px 3px;
-  margin: 0 0.5px;
+  border-radius: 3px;
+  padding: 1px 1px;
+  margin: 0;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
@@ -1325,12 +1325,6 @@ kbd {
 .diff-seg-match {
   background: #dcfce7;
   color: #14532d;
-}
-
-/* Case nuance: soft sky highlight */
-.diff-seg-case {
-  background: #e0f2fe;
-  color: #0369a1;
 }
 
 /* Accent nuance (diacritics / inverted marks): gentle warm amber */
@@ -1358,6 +1352,8 @@ kbd {
   color: #dc2626;
   font-weight: 700;
   padding: 1px 5px;
+  margin: 0 2px;
+  border-radius: 4px;
 }
 
 .context-panel {

@@ -46,16 +46,16 @@ describe('compareAnswer (character-level LCS diff)', () => {
     ])
   })
 
-  it('marks capitalization nuances gently with case status', () => {
-    const result = compareAnswer('donde', 'Donde')
+  it('tolerates capitalization nuances without fragmenting words', () => {
+    const result = compareAnswer('may be', 'Maybe')
     expect(result.isExact).toBe(false)
     expect(result.typedSegments).toEqual([
-      { value: 'd', status: 'case' },
-      { value: 'onde', status: 'match' },
+      { value: 'may', status: 'match' },
+      { value: ' ', status: 'extra' },
+      { value: 'be', status: 'match' },
     ])
     expect(result.expectedSegments).toEqual([
-      { value: 'D', status: 'case' },
-      { value: 'onde', status: 'match' },
+      { value: 'Maybe', status: 'match' },
     ])
   })
 

@@ -1,4 +1,4 @@
-export type DiffStatus = 'match' | 'case' | 'extra' | 'missing' | 'accent'
+export type DiffStatus = 'match' | 'extra' | 'missing' | 'accent'
 
 export type DiffSegment = {
   value: string
@@ -108,12 +108,9 @@ export function compareAnswer(
     const score = matchScore(tc, ec)
 
     if (score > 0 && dp[ti]![ej] === dp[ti + 1]![ej + 1]! + score) {
-      if (tc === ec) {
+      if (tc === ec || tc.toLowerCase() === ec.toLowerCase()) {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'match' })
-      } else if (tc.toLowerCase() === ec.toLowerCase()) {
-        typedRaw.push({ value: tc, status: 'case' })
-        expectedRaw.push({ value: ec, status: 'case' })
       } else {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'accent' })
