@@ -413,7 +413,12 @@ export function App({
                 <span className="sample-badge">MEXICAN SPANISH</span>
               </div>
               <div className="sample-card-body">
-                <div className="mini-sun" aria-hidden="true" />
+                <div className="sample-illustration" aria-hidden="true">
+                  <div className="mini-sun" />
+                  <svg className="thumbs-up-icon" viewBox="0 0 24 24">
+                    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m0 11V11m0 11h9.3a2 2 0 0 0 2-1.6l1.4-7.5a2 2 0 0 0-2-2.4h-4.7V4a2 2 0 0 0-2-2l-4 7v13Z" />
+                  </svg>
+                </div>
                 <p className="sample-phrase">¡Sale!</p>
               </div>
               <div className="sample-card-footer">
