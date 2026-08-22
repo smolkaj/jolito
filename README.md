@@ -33,6 +33,14 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). To try the offline-capable production build instead, run `npm run build && npm run preview`, then open [http://localhost:4173](http://localhost:4173) once before going offline.
 
+Working over mosh? Run this from your local terminal:
+
+```sh
+ssh -L 5173:127.0.0.1:5173 -t <host> 'cd ~/src/ritmo && npm run dev -- --host 127.0.0.1'
+```
+
+Mosh cannot carry the TCP port, so SSH provides the tunnel. Substitute a task worktree path for `~/src/ritmo` when reviewing unmerged work.
+
 ## License
 
 Ritmo is licensed under the [Apache License 2.0](LICENSE).
