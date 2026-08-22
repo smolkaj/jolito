@@ -70,7 +70,7 @@ nav {
   z-index: 1;
 }
 .eyebrow {
-  color: #c4543d;
+  color: #a33f2d;
   font: 500 11px 'DM Mono';
   letter-spacing: 1.4px;
   margin: 0 0 16px;
@@ -108,7 +108,7 @@ nav {
 }
 .hint {
   font-size: 12px;
-  color: #899188;
+  color: #657168;
   margin: 20px 0;
 }
 .hero-art {
@@ -263,7 +263,7 @@ details p {
   color: #dc6048;
 }
 .progress span {
-  color: #899188;
+  color: #657168;
 }
 .study {
   width: min(620px, 100%);
