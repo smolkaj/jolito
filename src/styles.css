@@ -1255,74 +1255,21 @@ kbd {
   gap: 16px;
   padding: 14px 18px;
   border-radius: 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-}
-
-.diff-exact-main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  background: var(--paper-deep);
+  border: 1px solid var(--line-subtle);
 }
 
 .diff-card {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 14px;
   background: var(--paper-deep);
   border: 1px solid var(--line-subtle);
 }
 
-.diff-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line-subtle);
-}
-
-.diff-card-title {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.diff-badge {
-  padding: 3px 8px;
-  border-radius: 99px;
-  font-size: 10px;
-  font-weight: 700;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-  letter-spacing: 0.4px;
-}
-
-.diff-badge.exact {
-  color: #166534;
-  background: #dcfce7;
-}
-
-.diff-badge.accents {
-  color: #854d0e;
-  background: #fef9c3;
-}
-
-.diff-badge.close {
-  color: #9a3412;
-  background: #ffedd5;
-}
-
-.diff-badge.different {
-  color: var(--ink-muted);
-  background: #e5e0d8;
-}
-
 .diff-rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .diff-row {
@@ -1361,54 +1308,25 @@ kbd {
   color: #166534;
 }
 
-.diff-token {
-  display: inline;
-}
-
-.diff-token.match {
+/* Character / segment diff styling */
+.diff-seg-match {
   color: #166534;
 }
 
-.diff-token.accent {
-  color: var(--ink);
-}
-
-.diff-token.typo {
-  color: #991b1b;
-}
-
-.diff-token.missing {
-  color: #991b1b;
-  font-weight: 500;
-  border-bottom: 2px solid #f87171;
-}
-
-.diff-token.extra {
-  color: #6b7280;
-  text-decoration: line-through;
-  text-decoration-color: #9ca3af;
-}
-
 .diff-seg-accent {
-  color: #854d0e;
-  border-bottom: 2px solid #eab308;
-  font-weight: 600;
+  color: #b45309;
+  border-bottom: 2px solid #f59e0b;
 }
 
 .diff-seg-missing {
-  color: #991b1b;
-  border-bottom: 2px solid #f87171;
-  font-weight: 600;
+  color: #b45309;
+  border-bottom: 2px solid #f59e0b;
 }
 
 .diff-seg-extra {
-  color: #6b7280;
+  color: #dc2626;
   text-decoration: line-through;
-  text-decoration-color: #9ca3af;
-}
-
-.diff-seg-punctuation {
-  color: var(--ink-muted);
+  text-decoration-color: #ef4444;
 }
 
 .context-panel {
