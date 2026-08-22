@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/ritmo-logo-concept.png" alt="Ritmo logo concept: a coral R with a flowing leg" width="180">
+  <img src="assets/ritmo-logo-concept-cropped.png" alt="Ritmo logo concept: a coral R with a flowing leg" width="180">
   <br><br>
   <strong>Find your rhythm in a new language.</strong>
   <br><br>
