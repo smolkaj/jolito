@@ -11,6 +11,10 @@
 
 <!-- How does this change fit into the broader product trajectory or north star? What comes next? -->
 
+## Live preview
+
+- **Branch preview URL:** `https://<branch-name>-ritmo.smolkaj.workers.dev`
+
 ## Acceptance criteria & invariants
 
 - [ ] The requested behavior and important failure cases are covered by tests.
