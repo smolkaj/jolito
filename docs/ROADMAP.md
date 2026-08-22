@@ -2,7 +2,7 @@
 
 Ritmo aims to combine Anki's proven spaced-repetition efficiency with the beauty, warmth, and effortless daily flow that makes language practice an addictive pleasure.
 
-Our hexagonal architecture decouples core domain logic from UI and infrastructure, allowing development across **five parallel capability tracks** without waterfall bottlenecks.
+Our hexagonal architecture decouples core domain logic from UI and infrastructure, allowing development across **six parallel capability tracks** without waterfall bottlenecks.
 
 ```mermaid
 flowchart TD
@@ -13,6 +13,7 @@ flowchart TD
     Foundation --> Track3["🧠 Track 3: Study Habits & Spaced Repetition<br/>(Daily caps, overdue priority, answer-reveal audio, retention stats)"]
     Foundation --> Track4["📚 Track 4: Library Management & Interop<br/>(Card browser, search/edit, tags, Anki .apkg import/export)"]
     Foundation --> Track5["☁️ Track 5: Accounts & Cloud Sync<br/>(Passwordless auth, local-first PowerSync/Postgres replication)"]
+    Foundation --> Track6["📱 Track 6: Native iOS & Mobile Ecosystem<br/>(Native widgets, Apple Sign-In, CoreHaptics, offline AVFoundation audio)"]
 ```
 
 ---
@@ -86,6 +87,22 @@ _Goal: Ensure cards and progress are safely backed up and synced without sacrifi
 - **Local-First Cloud Synchronization:**
   - Background database replication (PowerSync / Postgres) as evaluated in [ADR 0003](adr/0003-offline-sync-evaluation.md).
   - Offline-first durability: local reads and writes remain immediate; sync happens quietly in the background when connected.
+
+---
+
+### Track 6: 📱 Native iOS Client & Mobile Ecosystem
+
+_Goal: Bring Ritmo's calm, rhythmic study flow to iOS with native tactile polish and instant widget access._
+
+- **Native iOS Experience (SwiftUI / Shared Core):**
+  - High-performance, offline-first client sharing the synchronized collection.
+  - Native AVFoundation audio playback with background session handling and offline caching.
+- **System Integrations:**
+  - Interactive Home Screen & Lock Screen widgets for quick review reminders and daily streaks.
+  - Apple Sign-In authentication.
+  - CoreHaptics tactile feedback on grading gestures (`1`–`4`) and card reveals.
+- **Local-First Native Sync:**
+  - Embedded local SQLite database replicated in the background via PowerSync/Postgres.
 
 ---
 
