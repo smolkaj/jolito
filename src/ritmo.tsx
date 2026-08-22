@@ -219,6 +219,31 @@ export function App({
     services.speaker.speak(currentCard.prompt, localeForPrompt(currentCard))
   }, [currentCard, services.speaker, view])
 
+  const grade = useCallback(
+    (gradeValue: Grade) => {
+      if (!currentCard) return
+      services.sounds.play(gradeValue)
+      const reviewed = scheduleReview(
+        currentCard,
+        gradeValue,
+        services.clock.now(),
+      )
+      setCards((current) =>
+        current.map((card) => (card.id === reviewed.id ? reviewed : card)),
+      )
+      const remaining = queue.slice(1)
+      setQueue(remaining)
+      setReviewedCount((count) => count + 1)
+      setAnswer('')
+      setRevealed(false)
+      if (remaining.length === 0) {
+        services.sounds.play('complete')
+        setView('complete')
+      }
+    },
+    [currentCard, queue, services.clock, services.sounds],
+  )
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (view !== 'review' || !currentCard) return
@@ -230,21 +255,24 @@ export function App({
           event.metaKey)
       ) {
         event.preventDefault()
-        document
-          .querySelector<HTMLButtonElement>('[data-prompt-audio]')
-          ?.click()
+        playAudio(currentCard.prompt, localeForPrompt(currentCard))
       }
 
       if (revealed && ['1', '2', '3', '4'].includes(event.key)) {
         event.preventDefault()
-        document
-          .querySelector<HTMLButtonElement>(`[data-grade="${event.key}"]`)
-          ?.click()
+        const gradeMap: Record<string, Grade> = {
+          '1': 'again',
+          '2': 'hard',
+          '3': 'good',
+          '4': 'easy',
+        }
+        const gradeValue = gradeMap[event.key]
+        if (gradeValue) grade(gradeValue)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [currentCard, revealed, view])
+  }, [currentCard, grade, playAudio, revealed, view])
 
   function goHome() {
     setReferenceTime(services.clock.now())
@@ -277,28 +305,6 @@ export function App({
     setRevealed(true)
     services.sounds.play('reveal')
     playAudio(currentCard.answer, localeForAnswer(currentCard))
-  }
-
-  function grade(gradeValue: Grade) {
-    if (!currentCard) return
-    services.sounds.play(gradeValue)
-    const reviewed = scheduleReview(
-      currentCard,
-      gradeValue,
-      services.clock.now(),
-    )
-    setCards((current) =>
-      current.map((card) => (card.id === reviewed.id ? reviewed : card)),
-    )
-    const remaining = queue.slice(1)
-    setQueue(remaining)
-    setReviewedCount((count) => count + 1)
-    setAnswer('')
-    setRevealed(false)
-    if (remaining.length === 0) {
-      services.sounds.play('complete')
-      setView('complete')
-    }
   }
 
   function createCard(event: FormEvent<HTMLFormElement>) {
