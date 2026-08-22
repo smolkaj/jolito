@@ -15,9 +15,3 @@ We are initially building it for learning Mexican Spanish in Mexico City. The fi
 ## Status
 
 Ritmo is an early prototype. Its direction is captured in [the product vision](docs/PRODUCT_VISION.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
-
-The included logo is an early concept. It is intentionally treated as a starting point, not a final brand asset.
-
-## Guiding idea
-
-> Make the language you meet every day stick.
