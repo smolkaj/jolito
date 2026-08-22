@@ -59,11 +59,13 @@ The independent reviewer evaluates:
 - **Tests as specification:** Do unit, property (`fast-check`), and browser
   tests thoroughly exercise the new behavior and protect against regressions?
 - **Quality gates:** Does the change meet all standards in `docs/QUALITY.md`
-  and pass `npm run check`?
+  and pass the relevant automated gates (`npm run check`, `npm run audit:prod`,
+  and `npm run test:e2e` when a user workflow changes)?
 
 ## Review loop to fixpoint
 
-1. Author passes all automated quality checks (`npm run check`).
+1. Author passes all relevant automated quality checks (`npm run check`,
+   `npm run audit:prod`, and `npm run test:e2e` when a user workflow changes).
 2. Author prepares the draft PR description and invokes an independent reviewer
    with only the PR description, the diff, and repo docs.
 3. If the reviewer reports any issues or questions about intent, the author
