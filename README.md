@@ -12,7 +12,7 @@ We are initially building it for learning Mexican Spanish in Mexico City. The fi
 
 ## Status
 
-Ritmo is in its product-definition phase. The product vision is captured in [docs/PRODUCT_VISION.md](docs/PRODUCT_VISION.md); implementation will follow in later commits.
+Ritmo is an early prototype. Its direction is captured in [the product vision](docs/PRODUCT_VISION.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
 
 The included logo is an early concept. It is intentionally treated as a starting point, not a final brand asset.
 
