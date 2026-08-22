@@ -84,15 +84,33 @@ describe('Ritmo', () => {
 
     await user.type(screen.getByLabelText('Your answer'), 'No recuerdo')
     await user.keyboard('{Enter}')
-    await user.keyboard('1')
+    await user.keyboard('1') // Again -> requeues card 2
+
+    expect(
+      screen.getByRole('heading', { name: 'Where can I find the metro?' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: '¡Hecho!' }),
+    ).not.toBeInTheDocument()
+
+    // Pass the requeued card on next attempt
+    await user.type(
+      screen.getByLabelText('Your answer'),
+      '¿Por dónde queda el metro?',
+    )
+    await user.keyboard('{Enter}')
+    await user.keyboard('3') // Good -> graduates
+
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
+    expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
 
     expect(services.mockSounds.played).toEqual([
       'reveal',
       'good',
       'reveal',
       'again',
+      'reveal',
+      'good',
       'complete',
     ])
     expect(services.memoryCards.saved).toHaveLength(6)
@@ -126,6 +144,45 @@ describe('Ritmo', () => {
     expect(screen.getByText('Exact match')).toBeInTheDocument()
     await user.keyboard('4')
     expect(screen.getByText(/1 card practiced/i)).toBeInTheDocument()
+  })
+
+  it('circulates failed cards to the end of the session queue until all cards are graduated', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+
+    // Card 1: fail with Again
+    await user.keyboard('{Enter}')
+    await user.keyboard('1')
+
+    // Advances to Card 2: pass with Good
+    await user.keyboard('{Enter}')
+    await user.keyboard('3')
+
+    // Advances to Card 3: pass with Good
+    await user.keyboard('{Enter}')
+    await user.keyboard('3')
+
+    // Advances to Card 4: pass with Good
+    await user.keyboard('{Enter}')
+    await user.keyboard('3')
+
+    // Session is NOT complete yet — Card 1 was re-queued and appears now!
+    expect(
+      screen.queryByRole('heading', { name: '¡Hecho!' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: '¿Me lo puede poner para llevar?' }),
+    ).toBeInTheDocument()
+
+    // Finally pass Card 1 with Good
+    await user.keyboard('{Enter}')
+    await user.keyboard('3')
+
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+    expect(screen.getByText(/5 cards practiced/i)).toBeInTheDocument()
   })
 
   it('works with default browser services without explicitly passing props', async () => {

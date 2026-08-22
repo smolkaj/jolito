@@ -16,6 +16,7 @@ import {
   intervalLabel,
   isDue,
   scheduleReview,
+  shouldRequeueInSession,
   type Grade,
   type Scene,
   type StudyCard,
@@ -231,12 +232,16 @@ export function App({
       setCards((current) =>
         current.map((card) => (card.id === reviewed.id ? reviewed : card)),
       )
-      const remaining = queue.slice(1)
-      setQueue(remaining)
+      const requeue = shouldRequeueInSession(reviewed.schedule, gradeValue)
+      const nextQueue = requeue
+        ? [...queue.slice(1), currentCard.id]
+        : queue.slice(1)
+
+      setQueue(nextQueue)
       setReviewedCount((count) => count + 1)
       setAnswer('')
       setRevealed(false)
-      if (remaining.length === 0) {
+      if (nextQueue.length === 0) {
         services.sounds.play('complete')
         setView('complete')
       }
