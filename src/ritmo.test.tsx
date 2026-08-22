@@ -173,9 +173,7 @@ describe('Ritmo', () => {
     expect(
       screen.queryByRole('heading', { name: '¡Hecho!' }),
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: '¿Me lo puede poner para llevar?' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
 
     // Finally pass Card 1 with Good
     await user.keyboard('{Enter}')
