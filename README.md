@@ -20,7 +20,7 @@ We are initially building it for learning Mexican Spanish in Mexico City. The fi
 
 Ritmo has a functional, local-first MVP: create one- or two-way Spanish ↔ English cards, customize the reverse direction, add context, and move through a typed, spoken review session entirely by keyboard. Cards and review schedules persist on the device, and the production build reopens offline after its initial load.
 
-Account sync, generated audio and visuals, and AI-assisted authoring are still ahead. The product direction is captured in [the product vision](docs/PRODUCT_VISION.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
+Account sync, generated audio and visuals, and AI-assisted authoring are still ahead. The product direction is captured in [the product vision](docs/PRODUCT_VISION.md), its development tracks in [the roadmap](docs/ROADMAP.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
 
 ## Run it locally
 
