@@ -367,9 +367,6 @@ export function App({
             <span className="connection">
               <i /> On-device · works offline
             </span>
-            <button className="text-button" onClick={() => beginReview()}>
-              Review <b>{dueCount}</b>
-            </button>
           </div>
         </nav>
         <section className="welcome-hero">
