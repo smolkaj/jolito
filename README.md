@@ -3,6 +3,10 @@
   <br><br>
   <strong>Find your rhythm in a new language.</strong>
   <br><br>
+  <a href="https://ritmo.smolkaj.workers.dev"><strong>Try the live app →</strong></a>
+  <br>
+  <sub>Production deployment of <code>main</code></sub>
+  <br><br>
   <a href="https://github.com/smolkaj/ritmo/actions/workflows/quality.yml"><img src="https://github.com/smolkaj/ritmo/actions/workflows/quality.yml/badge.svg" alt="Quality checks"></a>
 </p>
 
