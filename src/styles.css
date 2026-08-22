@@ -587,12 +587,6 @@ summary:focus-visible {
   fill: currentColor;
 }
 
-.sample-card-front:hover .sample-listen-hint,
-.sample-card-front.is-playing .sample-listen-hint {
-  background: var(--coral-soft);
-  color: var(--coral-dark);
-}
-
 /* Card creation */
 .create-page {
   background:
