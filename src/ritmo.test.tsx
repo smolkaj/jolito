@@ -228,27 +228,27 @@ describe('Ritmo', () => {
 
     // Spanish card is foreground initially
     const spanishCard = screen.getByRole('button', {
-      name: /play pronunciation for mexican spanish card: ¡sale!/i,
+      name: /play pronunciation for mexican spanish card: tal vez/i,
     })
     expect(spanishCard).toBeInTheDocument()
-    expect(spanishCard).toHaveTextContent('¡Sale!')
+    expect(spanishCard).toHaveTextContent('Tal vez')
     await user.click(spanishCard)
 
     expect(services.mockSpeaker.spoken).toContainEqual({
-      text: '¡Sale!',
+      text: 'Tal vez',
       locale: 'es-MX',
     })
 
     // English card in background
     const englishCard = screen.getByRole('button', {
-      name: /show english card: sounds good!/i,
+      name: /show english card: maybe/i,
     })
     expect(englishCard).toBeInTheDocument()
-    expect(englishCard).toHaveTextContent('Sounds good!')
+    expect(englishCard).toHaveTextContent('Maybe')
     await user.click(englishCard)
 
     expect(services.mockSpeaker.spoken).toContainEqual({
-      text: 'Sounds good!',
+      text: 'Maybe',
       locale: 'en-US',
     })
   })

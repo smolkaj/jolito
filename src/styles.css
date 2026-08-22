@@ -408,7 +408,7 @@ summary:focus-visible {
   opacity: 0.85;
 }
 
-.sample-card-es .thumbs-up-icon {
+.sample-card-es .sample-art-icon {
   stroke: var(--coral-dark);
 }
 
@@ -457,7 +457,7 @@ summary:focus-visible {
   opacity: 0.9;
 }
 
-.sample-card-en .thumbs-up-icon {
+.sample-card-en .sample-art-icon {
   stroke: #ffffff;
 }
 
@@ -536,13 +536,13 @@ summary:focus-visible {
   pointer-events: none;
 }
 
-.thumbs-up-icon {
+.sample-art-icon {
   position: relative;
   z-index: 2;
   width: 36px;
   height: 36px;
   fill: none;
-  stroke-width: 2;
+  stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
