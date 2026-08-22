@@ -39,7 +39,7 @@ Documentation is part of the deliverable:
 - `README.md` explains what Ritmo is and its current user-facing status.
 - `docs/PRODUCT_VISION.md` records product direction and scope.
 - `docs/` holds developer documentation for architecture, testing, and consequential decisions.
-- An architecture decision record is required when a decision is costly to reverse: storage and sync, scheduling, authentication, provider boundaries, privacy, or data migrations.
+- Decisions that are costly to reverse require an [Architecture Decision Record](adr/README.md).
 
 ## Quality commands
 
