@@ -7,12 +7,13 @@ control checkout; use an isolated Git worktree for implementation work.
 git switch main
 git pull --ff-only origin main
 git worktree list
-git worktree add -b agent/<task> ../ritmo-<task> origin/main
+git worktree add -b <agent>/<task> ../ritmo-<task> origin/main
 git worktree remove ../ritmo-<task>   # clean up after merging
 git worktree prune                    # gc dangling refs
 ```
 
-Choose a unique, short task name. Do all editing, dependency installation,
+Use a short identifier for `<agent>` (e.g. `agy`, `codex`, `claude`, or username)
+and a unique, short `<task>` name. Do all editing, dependency installation,
 formatting, testing, staging, and committing in that worktree. If the work
 builds on an unmerged branch, use that branch instead of `origin/main`.
 If already launched from a task worktree, stay there; do not create another.
