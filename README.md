@@ -1,6 +1,8 @@
-# Ritmo
+<p align="center">
+  <img src="assets/ritmo-logo-concept.png" alt="Ritmo logo concept: a coral R with a flowing leg" width="150">
+</p>
 
-<img src="assets/ritmo-logo-concept.png" alt="Ritmo logo concept: a coral R with a flowing leg" width="150">
+# Ritmo
 
 **Find your rhythm in a new language.**
 
