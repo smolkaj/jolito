@@ -9,12 +9,17 @@ flowchart TD
     Foundation["Hexagonal Foundation & Core Loop (Complete ✅)"]
 
     Foundation --> Track1["✨ Track 1: Simplicity, Delight & Sensory Flow<br/>(Calm visual hierarchy, zero clutter, tactile micro-interactions, earcons)"]
-    Foundation --> Track2["🎨 Track 2: Multimodal AI Authoring<br/>(1-prompt card creation, CDMX nuance notes, scene visuals, audio cache)"]
-    Foundation --> Track3["🧠 Track 3: Study Habits & Spaced Repetition<br/>(Daily caps, overdue priority, answer-reveal audio, retention stats)"]
+    Foundation --> Track2["🎨 Track 2: Multimodal AI Authoring<br/>(1-action card creation, CDMX nuance notes, scene visuals, audio cache)"]
+    Foundation --> Track3["🧠 Track 3: Study Habits & Spaced Repetition<br/>(Daily caps, queue prioritization, answer-reveal audio, retention stats)"]
     Foundation --> Track4["📚 Track 4: Library Management & Interop<br/>(Card browser, search/edit, tags, Anki .apkg import/export)"]
-    Foundation --> Track5["☁️ Track 5: Accounts & Cloud Sync<br/>(Passwordless auth, local-first PowerSync/Postgres replication)"]
-    Foundation --> Track6["📱 Track 6: Native iOS & Mobile Ecosystem<br/>(Native widgets, Apple Sign-In, CoreHaptics, offline AVFoundation audio)"]
+    Foundation --> Track5["☁️ Track 5: Accounts & Cloud Sync<br/>(Passwordless auth, local-first background replication)"]
+    Foundation --> Track6["📱 Track 6: Native iOS & Mobile Ecosystem<br/>(Native widgets, Apple Sign-In, haptics, offline audio)"]
 ```
+
+---
+
+> [!NOTE]
+> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Ritmo's north star. The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
 
 ---
 
@@ -24,18 +29,11 @@ flowchart TD
 
 _Goal: Create a calm, distraction-free study environment that feels tactile, rhythmic, and deeply enjoyable._
 
-- **Calm, Distraction-Free Simplicity:**
-  - Zen-like study focus with zero visual noise, clutter, or gamified busywork.
-  - Deep visual coherence: refined typography, intentional whitespace, warm CDMX-inspired palette, and clear visual hierarchy.
-- **Rhythmic Micro-Interactions:**
-  - Tactile keystroke responses, springy card transitions, smooth token diff reveals with zero layout jank.
-  - Frictionless keyboard navigation (`Enter`, `1`–`4`, `Space`) with seamless focus management.
-- **Audio Feedback (Earcons):**
-  - Subtle, high-production sound cues for grading and reveals to reinforce flow without breaking concentration.
-- **Earned Celebration:**
-  - Tasteful, motivating session completion (`¡Hecho!`) celebrating genuine daily momentum.
-- **Mobile Touch Polish:**
-  - Ergonomic thumb-zone touch targets, swipe gestures, and responsive layouts.
+- **Calm, Clutter-Free Focus:** Minimalist visual hierarchy, generous whitespace, warm palette, and zero distracting busywork or visual noise during study.
+- **Rhythmic Responsiveness:** Physical, springy micro-interactions, smooth keystroke responses, and fluid token diff reveals with zero layout jank.
+- **Auditory Flow (Earcons):** Subtle, pleasant sound cues for reveals and grading that reinforce momentum without breaking concentration.
+- **Tasteful Celebration:** Motivating, clean session completion (`¡Hecho!`) celebrating genuine daily practice consistency.
+- **Mobile Ergonomics:** Thumb-friendly touch targets, natural gestures, and fluid responsive layouts.
 
 ---
 
@@ -43,38 +41,29 @@ _Goal: Create a calm, distraction-free study environment that feels tactile, rhy
 
 _Goal: Turn any real-world phrase heard on the street into a rich, multimodal card in seconds._
 
-- **Single-Prompt Card Generation:**
-  - Learner types a single Spanish phrase → AI generates idiomatic English translation, CDMX cultural/regional nuance notes, and linked asymmetric reverse cards.
-- **Contextual Visuals:**
-  - Curated and generated contextually accurate scene illustrations that anchor memories.
-- **Offline Audio Synthesis:**
-  - High-fidelity natural Mexican Spanish speech generation with client caching (IndexedDB/Cache API) for 100% offline playback.
+- **One-Action Card Creation:** Enter a single Spanish phrase or chunk → automatically suggest natural translations, cultural context, and reverse cards while leaving full authoring control to the learner.
+- **Contextual Visuals:** Clean, culturally grounded scene illustrations that anchor phrase meaning and context.
+- **Offline Natural Audio:** High-quality natural pronunciation audio cached locally for immediate, 100% offline study.
 
 ---
 
 ### Track 3: 🧠 Study Habits & Spaced Repetition Mechanics
 
-_Goal: Keep daily practice sessions concise, predictable, and educationally sound._
+_Goal: Keep daily practice sessions concise, predictable, and educationally effective._
 
-- **Daily Queue Scheduling:**
-  - Configurable daily new-card limit (default 20/day) with prioritized overdue cards.
-- **Answer Audio on Reveal:**
-  - Automatic audio playback of the target phrase upon reveal to reinforce auditory memory.
-- **Learning Retention & Streaks:**
-  - Clean retention curves, review count milestones, and habit tracking.
+- **Predictable Daily Load:** Configurable daily new-card intake with smart queue prioritization (overdue reviews first).
+- **Auditory Reinforcement on Recall:** Automatic pronunciation playback upon answer reveal to reinforce auditory memory.
+- **Retention & Habit Insights:** Clear, encouraging visibility into retention rates and daily review consistency.
 
 ---
 
 ### Track 4: 📚 Library Management & Interoperability
 
-_Goal: Provide complete learner control over cards and collections._
+_Goal: Provide complete learner autonomy over cards, tags, and collections._
 
-- **Searchable Card Browser:**
-  - Fast filterable card list with instant search and inline editing.
-- **Contextual Tagging:**
-  - Lightweight categories (`restaurante`, `transporte`, `mercado`, `calle`, `argot`).
-- **Anki Interoperability:**
-  - Full `.apkg` deck import and export.
+- **Card Browser & Fast Editing:** Searchable, filterable library view with instant editing and card state management.
+- **Contextual Organization:** Lightweight tagging by topic, situation, or register.
+- **Anki Interoperability:** Import and export capabilities for Anki collections (`.apkg`) and media.
 
 ---
 
@@ -82,11 +71,8 @@ _Goal: Provide complete learner control over cards and collections._
 
 _Goal: Ensure cards and progress are safely backed up and synced without sacrificing offline capability._
 
-- **Seamless Authentication:**
-  - Passwordless magic links and Google OAuth.
-- **Local-First Cloud Synchronization:**
-  - Background database replication (PowerSync / Postgres) as evaluated in [ADR 0003](adr/0003-offline-sync-evaluation.md).
-  - Offline-first durability: local reads and writes remain immediate; sync happens quietly in the background when connected.
+- **Frictionless Accounts:** Simple passwordless email and OAuth paths.
+- **Local-First Cloud Synchronization:** Seamless background multi-device replication (e.g. via PowerSync/Postgres as evaluated in [ADR 0003](adr/0003-offline-sync-evaluation.md)) where local reads and writes remain instant and offline by default.
 
 ---
 
@@ -94,15 +80,9 @@ _Goal: Ensure cards and progress are safely backed up and synced without sacrifi
 
 _Goal: Bring Ritmo's calm, rhythmic study flow to iOS with native tactile polish and instant widget access._
 
-- **Native iOS Experience (SwiftUI / Shared Core):**
-  - High-performance, offline-first client sharing the synchronized collection.
-  - Native AVFoundation audio playback with background session handling and offline caching.
-- **System Integrations:**
-  - Interactive Home Screen & Lock Screen widgets for quick review reminders and daily streaks.
-  - Apple Sign-In authentication.
-  - CoreHaptics tactile feedback on grading gestures (`1`–`4`) and card reveals.
-- **Local-First Native Sync:**
-  - Embedded local SQLite database replicated in the background via PowerSync/Postgres.
+- **Native Mobile Experience:** High-performance native or hybrid client sharing the synchronized collection with background-resilient audio playback.
+- **System Integrations:** Quick-review Home/Lock Screen widgets, Apple Sign-In, and tactile haptic feedback.
+- **Offline Native Storage:** Local embedded database with background cloud synchronization.
 
 ---
 
