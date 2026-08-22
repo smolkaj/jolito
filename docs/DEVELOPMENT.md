@@ -8,9 +8,11 @@
 ## Start the app
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173).
 
 The development server does not register the offline service worker, avoiding stale assets while iterating. To exercise the installable, offline-capable production shell locally:
 
@@ -19,7 +21,7 @@ npm run build
 npm run preview
 ```
 
-Open the app once while online before testing an offline reload. Browser-provided speech synthesis is used for MVP audio; available voices vary by operating system and may require downloading a Mexican Spanish voice for offline playback.
+Open [http://localhost:4173](http://localhost:4173) once while online before testing an offline reload. Browser-provided speech synthesis is used for MVP audio; available voices vary by operating system and may require downloading a Mexican Spanish voice for offline playback.
 
 ## Before opening a PR
 

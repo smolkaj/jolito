@@ -18,6 +18,17 @@ Ritmo has a functional, local-first MVP: create one- or two-way Spanish ↔ Engl
 
 Account sync, generated audio and visuals, and AI-assisted authoring are still ahead. The product direction is captured in [the product vision](docs/PRODUCT_VISION.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
 
+## Run it locally
+
+Requires Node.js 24 (Krypton LTS) and npm.
+
+```sh
+npm ci
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). To try the offline-capable production build instead, run `npm run build && npm run preview`, then open [http://localhost:4173](http://localhost:4173) once before going offline.
+
 ## License
 
 Ritmo is licensed under the [Apache License 2.0](LICENSE).
