@@ -3,17 +3,41 @@ import { z } from 'zod'
 export const grades = ['again', 'hard', 'good', 'easy'] as const
 export const directions = ['es-en', 'en-es'] as const
 export const scenes = ['conversation', 'metro', 'takeaway'] as const
+export const cardStates = ['new', 'learning', 'review', 'relearning'] as const
 
 export const gradeSchema = z.enum(grades)
 export const directionSchema = z.enum(directions)
 export const sceneSchema = z.enum(scenes)
+export const cardStateSchema = z.enum(cardStates)
 
-export const reviewScheduleSchema = z.object({
-  dueAt: z.number(),
-  intervalDays: z.number(),
-  reviews: z.number(),
-  lapses: z.number(),
-})
+export const reviewScheduleSchema = z.preprocess(
+  (val) => {
+    if (typeof val === 'object' && val !== null) {
+      const raw = val as Record<string, unknown>
+      const intervalDays =
+        typeof raw.intervalDays === 'number' ? raw.intervalDays : 0
+      const reviews = typeof raw.reviews === 'number' ? raw.reviews : 0
+      const state =
+        raw.state ?? (reviews > 0 && intervalDays > 0 ? 'review' : 'new')
+      const easeFactor =
+        typeof raw.easeFactor === 'number' ? raw.easeFactor : 2.5
+      return {
+        ...raw,
+        state,
+        easeFactor,
+      }
+    }
+    return val
+  },
+  z.object({
+    state: cardStateSchema.default('new'),
+    dueAt: z.number(),
+    intervalDays: z.number(),
+    easeFactor: z.number().default(2.5),
+    reviews: z.number(),
+    lapses: z.number(),
+  }),
+)
 
 export const studyCardSchema = z.object({
   id: z.string().min(1),
@@ -43,12 +67,16 @@ export const newNoteSchema = z.object({
 export type Grade = z.infer<typeof gradeSchema>
 export type Direction = z.infer<typeof directionSchema>
 export type Scene = z.infer<typeof sceneSchema>
+export type CardState = z.infer<typeof cardStateSchema>
 export type ReviewSchedule = z.infer<typeof reviewScheduleSchema>
 export type StudyCard = z.infer<typeof studyCardSchema>
 export type StudyCardCollection = z.infer<typeof studyCardCollectionSchema>
 export type NewNote = z.infer<typeof newNoteSchema>
 
 const DAY = 24 * 60 * 60 * 1000
+const MINUTE = 60 * 1000
+const MIN_EASE_FACTOR = 1.3
+const INITIAL_EASE_FACTOR = 2.5
 
 const sceneMatchers: ReadonlyArray<[Scene, RegExp]> = [
   [
@@ -81,8 +109,10 @@ export function createStudyCards(
   const context = note.context.trim()
   const scene = chooseScene(spanish, english, context)
   const newSchedule = (): ReviewSchedule => ({
+    state: 'new',
     dueAt: now,
     intervalDays: 0,
+    easeFactor: INITIAL_EASE_FACTOR,
     reviews: 0,
     lapses: 0,
   })
@@ -119,16 +149,51 @@ export function nextIntervalDays(
   schedule: ReviewSchedule,
   grade: Grade,
 ): number {
-  switch (grade) {
-    case 'again':
-      return 0
-    case 'hard':
-      return Math.max(1, Math.round(schedule.intervalDays * 1.2))
-    case 'good':
-      return Math.max(3, Math.round(schedule.intervalDays * 2.3))
-    case 'easy':
-      return Math.max(7, Math.round(schedule.intervalDays * 3.2))
+  if (grade === 'again') return 0
+
+  if (schedule.state === 'new' || schedule.state === 'learning') {
+    switch (grade) {
+      case 'hard':
+        return 1
+      case 'good':
+        return 1
+      case 'easy':
+        return 4
+    }
   }
+
+  if (schedule.state === 'relearning') {
+    switch (grade) {
+      case 'hard':
+        return 1
+      case 'good':
+        return 1
+      case 'easy':
+        return Math.max(2, Math.round(schedule.intervalDays * 1.5))
+    }
+  }
+
+  // Graduated review state (Anki SM-2)
+  const interval = schedule.intervalDays
+  const ease = schedule.easeFactor
+  switch (grade) {
+    case 'hard':
+      return Math.max(interval + 1, Math.round(interval * 1.2))
+    case 'good':
+      return Math.max(interval + 1, Math.round(interval * ease))
+    case 'easy':
+      return Math.max(interval + 2, Math.round(interval * ease * 1.3))
+  }
+}
+
+export function shouldRequeueInSession(
+  schedule: ReviewSchedule,
+  grade: Grade,
+): boolean {
+  return (
+    grade === 'again' ||
+    (schedule.state === 'learning' && nextIntervalDays(schedule, grade) === 0)
+  )
 }
 
 export function scheduleReview(
@@ -136,16 +201,70 @@ export function scheduleReview(
   grade: Grade,
   now: number,
 ): StudyCard {
-  const intervalDays = nextIntervalDays(card.schedule, grade)
-  const dueAt = grade === 'again' ? now + 60_000 : now + intervalDays * DAY
+  const current = card.schedule
+  const reviews = current.reviews + 1
 
+  if (grade === 'again') {
+    const isLapse = current.state === 'review'
+    const lapses = current.lapses + (isLapse ? 1 : 0)
+    const easeFactor = isLapse
+      ? Math.max(MIN_EASE_FACTOR, +(current.easeFactor - 0.2).toFixed(2))
+      : current.easeFactor
+
+    return {
+      ...card,
+      schedule: {
+        state:
+          isLapse || current.state === 'relearning' ? 'relearning' : 'learning',
+        dueAt: now + MINUTE,
+        intervalDays: 0,
+        easeFactor,
+        reviews,
+        lapses,
+      },
+    }
+  }
+
+  if (
+    current.state === 'new' ||
+    current.state === 'learning' ||
+    current.state === 'relearning'
+  ) {
+    const intervalDays = nextIntervalDays(current, grade)
+    return {
+      ...card,
+      schedule: {
+        state: 'review',
+        dueAt: now + intervalDays * DAY,
+        intervalDays,
+        easeFactor: current.easeFactor,
+        reviews,
+        lapses: current.lapses,
+      },
+    }
+  }
+
+  // Graduated review card updates
+  let easeFactor = current.easeFactor
+  if (grade === 'hard') {
+    easeFactor = Math.max(
+      MIN_EASE_FACTOR,
+      +(current.easeFactor - 0.15).toFixed(2),
+    )
+  } else if (grade === 'easy') {
+    easeFactor = +(current.easeFactor + 0.15).toFixed(2)
+  }
+
+  const intervalDays = nextIntervalDays(current, grade)
   return {
     ...card,
     schedule: {
-      dueAt,
+      state: 'review',
+      dueAt: now + intervalDays * DAY,
       intervalDays,
-      reviews: card.schedule.reviews + 1,
-      lapses: card.schedule.lapses + (grade === 'again' ? 1 : 0),
+      easeFactor,
+      reviews,
+      lapses: current.lapses,
     },
   }
 }

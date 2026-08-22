@@ -54,7 +54,14 @@ const restoreLegacy = (raw: unknown): StudyCard[] | null => {
       direction,
       context: '',
       scene: 'conversation',
-      schedule: { dueAt: 0, intervalDays: 0, reviews: 0, lapses: 0 },
+      schedule: {
+        state: 'new',
+        dueAt: 0,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
     })
   }
   return cards
