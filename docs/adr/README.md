@@ -37,8 +37,8 @@ What are we choosing?
 What becomes easier, harder, or newly required?
 ```
 
-## Index
-
-| ADR                                                                          | Status   | Decision                                      |
-| ---------------------------------------------------------------------------- | -------- | --------------------------------------------- |
-| [0001: Versioned local storage for the MVP](0001-local-first-mvp-storage.md) | Accepted | Use versioned local storage for the MVP loop. |
+| ADR                                                                          | Status   | Decision                                         |
+| ---------------------------------------------------------------------------- | -------- | ------------------------------------------------ |
+| [0001: Versioned local storage for the MVP](0001-local-first-mvp-storage.md) | Accepted | Use versioned local storage for the MVP loop.    |
+| [0002: Application stack](0002-application-stack.md)                         | Accepted | TypeScript, React SPA, Postgres target, and Zod. |
+| [0003: Offline sync evaluation](0003-offline-sync-evaluation.md)             | Proposed | Evaluate PowerSync with Supabase before custom.  |

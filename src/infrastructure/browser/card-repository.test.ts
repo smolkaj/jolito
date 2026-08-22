@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createStudyCards } from './domain/card'
-import { loadCards, saveCards } from './cardStore'
+import { createStudyCards } from '../../domain/card'
+import { LocalStorageCardRepository } from './card-repository'
 
 const fallback = createStudyCards(
   {
@@ -13,15 +13,17 @@ const fallback = createStudyCards(
   0,
 )
 
-describe('card storage', () => {
+describe('LocalStorageCardRepository', () => {
   beforeEach(() => localStorage.clear())
 
-  it('round-trips the versioned collection', () => {
-    saveCards(localStorage, fallback)
-    expect(loadCards(localStorage, [])).toEqual(fallback)
+  it('round-trips the versioned collection with Zod schema validation', () => {
+    const repo = new LocalStorageCardRepository(localStorage)
+    repo.save(fallback)
+    expect(repo.load([])).toEqual(fallback)
   })
 
   it('migrates cards from the first prototype', () => {
+    const repo = new LocalStorageCardRepository(localStorage)
     localStorage.setItem(
       'ritmo-cards',
       JSON.stringify([
@@ -33,7 +35,7 @@ describe('card storage', () => {
         },
       ]),
     )
-    expect(loadCards(localStorage, fallback)[0]).toMatchObject({
+    expect(repo.load(fallback)[0]).toMatchObject({
       id: 'legacy-42:es-en',
       prompt: '¿Qué onda?',
       context: '',
@@ -41,9 +43,10 @@ describe('card storage', () => {
     })
   })
 
-  it('falls back safely when stored data is malformed', () => {
+  it('falls back safely when stored data is malformed or invalid according to schema', () => {
+    const repo = new LocalStorageCardRepository(localStorage)
     localStorage.setItem('ritmo-library-v1', '{nope')
     localStorage.setItem('ritmo-cards', JSON.stringify([{ prompt: 3 }]))
-    expect(loadCards(localStorage, fallback)).toBe(fallback)
+    expect(repo.load(fallback)).toBe(fallback)
   })
 })

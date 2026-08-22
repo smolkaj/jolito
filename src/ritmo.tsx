@@ -1,9 +1,17 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
-import { loadCards, saveCards } from './cardStore'
+import { createCards } from './application/create-cards'
+import type { AppServices } from './application/ports'
+import { starterCards } from './application/starter-cards'
 import { compareAnswer } from './domain/answer'
 import {
-  createStudyCards,
   grades,
   intervalLabel,
   isDue,
@@ -12,32 +20,9 @@ import {
   type Scene,
   type StudyCard,
 } from './domain/card'
+import { createBrowserServices } from './infrastructure/browser/services'
 
 type View = 'welcome' | 'create' | 'review' | 'complete'
-
-const starterCards: StudyCard[] = [
-  ...createStudyCards(
-    {
-      spanish: '¿Me lo puede poner para llevar?',
-      english: 'Could you make it to go?',
-      context:
-        'A polite, natural way to ask for food or drinks to go in Mexico.',
-      bidirectional: true,
-    },
-    'starter-takeaway',
-    0,
-  ),
-  ...createStudyCards(
-    {
-      spanish: '¿Dónde está la estación de metro más cercana?',
-      english: 'Where is the nearest metro station?',
-      context: '“Más cercana” means “nearest” when the noun is feminine.',
-      bidirectional: true,
-    },
-    'starter-metro',
-    0,
-  ),
-]
 
 const sceneLabels: Record<Scene, string> = {
   takeaway: 'A takeaway bag and warm drink',
@@ -52,36 +37,11 @@ const gradeLabels: Record<Grade, string> = {
   easy: 'Easy',
 }
 
-const currentTime = (): number => Date.now()
-
-const supportsAudio = (): boolean =>
-  'speechSynthesis' in window &&
-  typeof window.SpeechSynthesisUtterance === 'function'
-
 const localeForPrompt = (card: StudyCard) =>
   card.direction === 'es-en' ? 'es-MX' : 'en-US'
 
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
-
-const speak = (text: string, locale: string): boolean => {
-  if (
-    !('speechSynthesis' in window) ||
-    typeof window.SpeechSynthesisUtterance !== 'function'
-  )
-    return false
-
-  try {
-    window.speechSynthesis.cancel()
-    const utterance = new window.SpeechSynthesisUtterance(text)
-    utterance.lang = locale
-    utterance.rate = locale === 'es-MX' ? 0.86 : 0.9
-    window.speechSynthesis.speak(utterance)
-    return true
-  } catch {
-    return false
-  }
-}
 
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
@@ -214,13 +174,17 @@ function AnswerComparison({
   )
 }
 
-function newNoteId(): string {
-  return window.crypto.randomUUID?.() ?? `note-${Date.now().toString(36)}`
-}
-
-export function App() {
+export function App({
+  services: customServices,
+}: {
+  services?: AppServices
+} = {}) {
+  const services = useMemo(
+    () => customServices ?? createBrowserServices(),
+    [customServices],
+  )
   const [cards, setCards] = useState<StudyCard[]>(() =>
-    loadCards(localStorage, starterCards),
+    services.cards.load(starterCards),
   )
   const [view, setView] = useState<View>('welcome')
   const [queue, setQueue] = useState<string[]>([])
@@ -230,25 +194,30 @@ export function App() {
   const [revealed, setRevealed] = useState(false)
   const [bidirectional, setBidirectional] = useState(true)
   const [audioUnavailable, setAudioUnavailable] = useState(
-    () => !supportsAudio(),
+    () => !services.speaker.supported(),
   )
-  const [referenceTime, setReferenceTime] = useState(currentTime)
+  const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const responseInput = useRef<HTMLInputElement>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
-  const playAudio = useCallback((text: string, locale: string) => {
-    const played = speak(text, locale)
-    setAudioUnavailable(!played)
-  }, [])
+  const playAudio = useCallback(
+    (text: string, locale: string) => {
+      const played = services.speaker.speak(text, locale)
+      setAudioUnavailable(!played)
+    },
+    [services.speaker],
+  )
 
-  useEffect(() => saveCards(localStorage, cards), [cards])
+  useEffect(() => {
+    services.cards.save(cards)
+  }, [cards, services.cards])
 
   useEffect(() => {
     if (view !== 'review' || !currentCard) return
     responseInput.current?.focus()
-    speak(currentCard.prompt, localeForPrompt(currentCard))
-  }, [currentCard, view])
+    services.speaker.speak(currentCard.prompt, localeForPrompt(currentCard))
+  }, [currentCard, services.speaker, view])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -278,7 +247,7 @@ export function App() {
   }, [currentCard, revealed, view])
 
   function goHome() {
-    setReferenceTime(currentTime())
+    setReferenceTime(services.clock.now())
     setView('welcome')
     setQueue([])
     setAnswer('')
@@ -286,7 +255,7 @@ export function App() {
   }
 
   function beginReview(cardIds?: string[]) {
-    const now = currentTime()
+    const now = services.clock.now()
     const nextQueue =
       cardIds ??
       cards
@@ -311,7 +280,11 @@ export function App() {
 
   function grade(gradeValue: Grade) {
     if (!currentCard) return
-    const reviewed = scheduleReview(currentCard, gradeValue, currentTime())
+    const reviewed = scheduleReview(
+      currentCard,
+      gradeValue,
+      services.clock.now(),
+    )
     setCards((current) =>
       current.map((card) => (card.id === reviewed.id ? reviewed : card)),
     )
@@ -330,7 +303,7 @@ export function App() {
       const value = form.get(name)
       return typeof value === 'string' ? value : ''
     }
-    const created = createStudyCards(
+    const created = createCards(
       {
         spanish: field('spanish'),
         english: field('english'),
@@ -339,8 +312,7 @@ export function App() {
         reversePrompt: field('reversePrompt'),
         reverseAnswer: field('reverseAnswer'),
       },
-      newNoteId(),
-      currentTime(),
+      { clock: services.clock, ids: services.ids },
     )
     if (created.length === 0) return
 

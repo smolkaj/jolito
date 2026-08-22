@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './ritmo'
+import { createTestServices } from './test/services'
 
 class SpeechSynthesisUtteranceMock {
   lang = ''
@@ -26,9 +27,10 @@ beforeEach(() => {
 })
 
 describe('Ritmo', () => {
-  it('creates asymmetric bidirectional cards and supports a keyboard review flow', async () => {
+  it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    const services = createTestServices()
+    render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
     await user.type(
@@ -86,20 +88,16 @@ describe('Ritmo', () => {
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
 
-    await waitFor(() => {
-      expect(localStorage.getItem('ritmo-library-v1')).toContain(
-        'Where can I find the metro?',
-      )
-    })
+    expect(services.memoryCards.saved).toHaveLength(6)
+    expect(services.memoryCards.saved?.[0]?.prompt).toBe(
+      '¿Dónde está el metro?',
+    )
   })
 
   it('supports a one-way card and keeps review usable without speech synthesis', async () => {
-    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
-      configurable: true,
-      value: undefined,
-    })
     const user = userEvent.setup()
-    render(<App />)
+    const services = createTestServices({ speakerSupported: false })
+    render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
     await user.type(
@@ -121,5 +119,13 @@ describe('Ritmo', () => {
     expect(screen.getByText('Exact match')).toBeInTheDocument()
     await user.keyboard('4')
     expect(screen.getByText(/1 card practiced/i)).toBeInTheDocument()
+  })
+
+  it('works with default browser services without explicitly passing props', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    expect(screen.getByLabelText('Your answer')).toBeInTheDocument()
   })
 })
