@@ -31,7 +31,13 @@ If already launched from a task worktree, stay there; do not create another.
 # Independent review loop
 
 Every PR must be reviewed by an independent agent instance in a fresh session
-before handoff, and iterated to a fixpoint (zero remaining issues).
+before handoff, and iterated to a fixpoint (zero remaining blocking issues).
+
+## Separation of roles
+
+The independent reviewer operates strictly read-only. It must inspect the
+change without modifying files, staging changes, pushing commits, approving, or
+merging the PR.
 
 ## Self-documenting PRs
 
@@ -64,14 +70,30 @@ The independent reviewer evaluates:
   and pass the relevant automated gates (`npm run check`, `npm run audit:prod`,
   and `npm run test:e2e` when a user workflow changes)?
 
-## Review loop to fixpoint
+## Findings and fixpoint
+
+Findings are categorized as:
+
+- **Blocking:** Correctness bugs, invariant violations, missing or failing
+  tests, missing documentation for behavioral/API changes, or quality gate
+  failures. All blocking findings must be resolved before merge.
+- **Advisory:** Optional simplifications, non-critical style or naming
+  refinements. The author may address these or note why they are deferred.
+
+A review is valid only for the exact base and head commits evaluated. Any new
+push or base-branch update invalidates prior reviews and requires re-review of
+the updated diff.
+
+## Review loop
 
 1. Author passes all relevant automated quality checks (`npm run check`,
    `npm run audit:prod`, and `npm run test:e2e` when a user workflow changes).
-2. Author prepares the draft PR description and invokes an independent reviewer
-   with only the PR description, the diff against the base branch, and repo
-   docs.
-3. If the reviewer reports any issues or questions about intent, the author
-   addresses them in code, tests, or documentation, reruns checks, and requests
-   re-review.
-4. Repeat until the independent reviewer gives an unambiguous sign-off (LGTM).
+2. Author prepares the draft PR description and invokes an independent read-only
+   reviewer with only the PR description, the diff against the base branch, and
+   repo docs.
+3. Reviewer records the reviewed base and head commit SHAs, lists any blocking
+   or advisory findings, or confirms no blocking issues remain.
+4. If blocking issues or ambiguities exist, the author addresses them, reruns
+   checks, and requests re-review against the new head commit.
+5. Record the reviewer session ID / model and outcome in the PR so the review
+   history and role separation remain auditable.
