@@ -379,7 +379,9 @@ export function App({
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards. Practice them at your rhythm.
+              Create beautiful, spoken cards.
+              <br />
+              Practice them at your rhythm.
             </p>
             <div className="hero-actions">
               <button
@@ -398,8 +400,8 @@ export function App({
           </div>
           <div className="hero-visual">
             <div className="sample-card sample-card-back" aria-hidden="true">
-              <span>ENGLISH → SPANISH</span>
-              <p>Sounds good!</p>
+              <span className="sample-badge">ENGLISH</span>
+              <p className="sample-phrase">Sounds good!</p>
             </div>
             <button
               type="button"
@@ -407,15 +409,21 @@ export function App({
               onClick={playSampleAudio}
               aria-label="Play pronunciation for sample card: ¡Sale!"
             >
-              <div className="mini-sun" aria-hidden="true" />
-              <span className="sample-badge">MEXICAN SPANISH</span>
-              <p>¡Sale!</p>
-              <span className="sample-listen-hint" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                </svg>
-                {samplePlaying ? 'Playing…' : 'Tap to hear'}
-              </span>
+              <div className="sample-card-header">
+                <span className="sample-badge">MEXICAN SPANISH</span>
+              </div>
+              <div className="sample-card-body">
+                <div className="mini-sun" aria-hidden="true" />
+                <p className="sample-phrase">¡Sale!</p>
+              </div>
+              <div className="sample-card-footer">
+                <span className="sample-listen-hint" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                  </svg>
+                  {samplePlaying ? 'Playing…' : 'Tap to hear'}
+                </span>
+              </div>
             </button>
           </div>
         </section>

@@ -194,15 +194,18 @@ describe('Ritmo', () => {
       screen.getByRole('heading', { name: /make the words you meet stick/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Create beautiful, spoken cards. Practice them at your rhythm.',
-      ),
+      screen.getByText('Create beautiful, spoken cards.', { exact: false }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText('Practice them at your rhythm.', { exact: false }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Sounds good!')).toBeInTheDocument()
 
     const sampleCard = screen.getByRole('button', {
       name: /play pronunciation for sample card: ¡sale!/i,
     })
     expect(sampleCard).toBeInTheDocument()
+    expect(sampleCard).toHaveTextContent('¡Sale!')
     await user.click(sampleCard)
 
     expect(services.mockSpeaker.spoken).toContainEqual({

@@ -311,66 +311,84 @@ summary:focus-visible {
 
 .hero-visual {
   position: relative;
-  min-height: 520px;
+  min-height: 480px;
 }
 
 .sample-card {
   position: absolute;
-  width: min(320px, 72vw);
-  height: 380px;
-  padding: 28px;
-  border-radius: 26px;
+  width: min(310px, 74vw);
+  height: 350px;
+  padding: 24px;
+  border-radius: 24px;
   box-shadow: var(--shadow-elevated);
-  transition: transform 200ms ease;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
+  box-sizing: border-box;
 }
 
-.sample-card > span {
+.sample-badge {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.2px;
 }
 
-.sample-card p {
+.sample-phrase {
   margin: 0;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 40px;
   letter-spacing: -1.5px;
 }
 
+/* Back (English) card */
 .sample-card-back {
-  top: 60px;
-  right: 0px;
+  top: 15px;
+  right: 15px;
   color: #fff9ee;
   background: var(--green);
-  transform: rotate(9deg);
+  transform: rotate(6deg);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.sample-card-back p {
-  margin-top: 120px;
+.sample-card-back .sample-badge {
+  color: #d6e8d9;
 }
 
+.sample-card-back .sample-phrase {
+  margin-top: 18px;
+  font-size: 34px;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+/* Front (Mexican Spanish) card */
 .sample-card-front {
-  top: 115px;
+  top: 105px;
   left: 15px;
   color: var(--ink);
   background: var(--card);
-  transform: rotate(-5deg);
+  transform: rotate(-4deg);
   border: 1px solid var(--line-subtle);
   text-align: left;
   cursor: pointer;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 2;
+  overflow: hidden;
 }
 
 .sample-card-front:hover {
-  transform: rotate(-5deg) translateY(-4px);
+  transform: rotate(-4deg) translateY(-4px);
   box-shadow:
     0 28px 64px -12px rgba(44, 38, 28, 0.16),
     0 4px 12px rgba(44, 38, 28, 0.05);
 }
 
 .sample-card-front:active {
-  transform: rotate(-5deg) scale(0.98);
+  transform: rotate(-4deg) scale(0.98);
 }
 
 .sample-card-front:focus-visible {
@@ -400,25 +418,57 @@ summary:focus-visible {
   }
 }
 
-.sample-card-front > span {
-  position: relative;
-  display: inline-block;
+.sample-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sample-card-header .sample-badge {
   color: var(--coral-dark);
 }
 
-.sample-card-front p {
+.sample-card-body {
   position: relative;
-  margin-top: 155px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  margin: 8px 0;
+}
+
+.sample-card-body .sample-phrase {
+  position: relative;
+  z-index: 2;
+  font-size: 44px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--ink);
+}
+
+.mini-sun {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fde8b8 0%, #f7cf78 100%);
+  opacity: 0.65;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sample-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .sample-listen-hint {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
   background: var(--paper-deep);
   color: var(--ink-muted);
@@ -443,17 +493,6 @@ summary:focus-visible {
 .sample-card-front.is-playing .sample-listen-hint {
   background: var(--coral-soft);
   color: var(--coral-dark);
-}
-
-.mini-sun {
-  position: absolute;
-  top: 55px;
-  left: 65px;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fde8b8 0%, #f7cf78 100%);
-  opacity: 0.85;
 }
 
 /* Card creation */
