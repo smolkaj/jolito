@@ -149,63 +149,77 @@ function renderTokenSegments(
 function AnswerComparison({
   typed,
   expected,
+  onPlayAudio,
 }: {
   typed: string
   expected: string
+  onPlayAudio: () => void
 }) {
   const comparison = compareAnswer(typed, expected)
   const isExact = comparison.quality === 'exact'
   const isAccents = comparison.quality === 'accents-only'
   const isClose = comparison.quality === 'close'
+  const hasTyped = typed.trim().length > 0
 
   return (
     <div className="answer-comparison" aria-label="Answer comparison">
-      <div className="comparison-title">
-        <span>Compare your answer</span>
-        <strong
-          className={
-            isExact
-              ? 'exact'
-              : isAccents
-                ? 'accents'
-                : isClose
-                  ? 'close'
-                  : undefined
-          }
-        >
-          {comparison.qualityLabel}
-        </strong>
-      </div>
-      <div className="comparison-row">
-        <span>You wrote</span>
-        <p>
-          {comparison.typed.length === 0 ? (
-            <em>No answer</em>
-          ) : (
-            comparison.typed.map((token, index) => (
-              <span
-                className={`diff-token ${token.status}`}
-                key={`${token.value}-${index}`}
-              >
-                {renderTokenSegments(token.value, token.segments)}{' '}
-              </span>
-            ))
-          )}
-        </p>
-      </div>
-      <div className="comparison-row expected-row">
-        <span>Expected</span>
-        <p>
-          {comparison.expected.map((token, index) => (
+      {isExact ? (
+        <div className="diff-exact-card">
+          <div className="diff-exact-main">
+            <p className="diff-text diff-match">{expected}</p>
+            <AudioButton label="Play answer audio" onClick={onPlayAudio} />
+          </div>
+          <span className="diff-badge exact">✓ Exact match</span>
+        </div>
+      ) : (
+        <div className="diff-card">
+          <div className="diff-card-header">
+            <span className="diff-card-title">Answer comparison</span>
             <span
-              className={`diff-token ${token.status}`}
-              key={`${token.value}-${index}`}
+              className={`diff-badge ${
+                isAccents ? 'accents' : isClose ? 'close' : 'different'
+              }`}
             >
-              {renderTokenSegments(token.value, token.segments)}{' '}
+              {comparison.qualityLabel}
             </span>
-          ))}
-        </p>
-      </div>
+          </div>
+
+          <div className="diff-rows">
+            {hasTyped && (
+              <div className="diff-row">
+                <span className="diff-label">You wrote</span>
+                <p className="diff-text">
+                  {comparison.typed.map((token, index) => (
+                    <span
+                      className={`diff-token ${token.status}`}
+                      key={`${token.value}-${index}`}
+                    >
+                      {renderTokenSegments(token.value, token.segments)}{' '}
+                    </span>
+                  ))}
+                </p>
+              </div>
+            )}
+
+            <div className="diff-row expected-row">
+              <span className="diff-label">Expected</span>
+              <div className="diff-row-main">
+                <p className="diff-text">
+                  {comparison.expected.map((token, index) => (
+                    <span
+                      className={`diff-token ${token.status}`}
+                      key={`${token.value}-${index}`}
+                    >
+                      {renderTokenSegments(token.value, token.segments)}{' '}
+                    </span>
+                  ))}
+                </p>
+                <AudioButton label="Play answer audio" onClick={onPlayAudio} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -705,43 +719,38 @@ export function App({
           />
         </div>
         <h1 className="study-prompt">{currentCard.prompt}</h1>
-        <form className="answer-form" onSubmit={reveal}>
-          <label className="sr-only" htmlFor="answer">
-            Your answer
-          </label>
-          <input
-            ref={responseInput}
-            id="answer"
-            className="answer-input"
-            value={answer}
-            onChange={(event) => setAnswer(event.target.value)}
-            placeholder="Type your answer…"
-            autoComplete="off"
-            readOnly={revealed}
-          />
-          {!revealed && (
-            <button className="reveal-button" type="submit">
-              Reveal answer <kbd>Enter</kbd>
-            </button>
-          )}
-        </form>
         {audioUnavailable && (
           <p className="audio-unavailable" role="status">
             Audio isn’t available in this browser. You can keep reviewing.
           </p>
         )}
-        {revealed && (
+        {!revealed ? (
+          <form className="answer-form" onSubmit={reveal}>
+            <label className="sr-only" htmlFor="answer">
+              Your answer
+            </label>
+            <input
+              ref={responseInput}
+              id="answer"
+              className="answer-input"
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              placeholder="Type your answer…"
+              autoComplete="off"
+            />
+            <button className="reveal-button" type="submit">
+              Reveal answer <kbd>Enter</kbd>
+            </button>
+          </form>
+        ) : (
           <div className="reveal-panel">
-            <div className="expected-heading">
-              <span>Answer</span>
-              <AudioButton
-                label="Play answer audio"
-                onClick={() =>
-                  playAudio(currentCard.answer, localeForAnswer(currentCard))
-                }
-              />
-            </div>
-            <AnswerComparison typed={answer} expected={currentCard.answer} />
+            <AnswerComparison
+              typed={answer}
+              expected={currentCard.answer}
+              onPlayAudio={() =>
+                playAudio(currentCard.answer, localeForAnswer(currentCard))
+              }
+            />
             {currentCard.context && (
               <details className="context-panel">
                 <summary>Meaning & context</summary>

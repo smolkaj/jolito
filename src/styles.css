@@ -1244,95 +1244,140 @@ kbd {
   animation: slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.expected-heading,
-.comparison-title {
+.reveal-panel {
+  margin-top: 20px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow-soft);
+  text-align: left;
+  animation: slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.answer-comparison {
+  margin: 0;
+}
+
+.diff-exact-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
 }
 
-.expected-heading > span,
-.comparison-title > span {
-  color: var(--ink-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-}
-
-.answer-comparison {
-  margin-top: -12px;
-}
-
-.comparison-title {
-  padding-right: 42px;
-}
-
-.comparison-title strong {
-  padding: 3px 8px;
-  border-radius: 99px;
-  color: #786438;
-  background: #fbf0d3;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.comparison-title strong.exact {
-  color: #24683c;
-  background: #dff0e2;
-}
-
-.comparison-title strong.accents {
-  color: #785a28;
-  background: #fdf3dc;
-}
-
-.comparison-title strong.close {
-  color: #8c5b20;
-  background: #faecd6;
-}
-
-.comparison-row {
-  display: grid;
-  grid-template-columns: 80px 1fr;
+.diff-exact-main {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  align-items: baseline;
-  padding: 12px 0;
+}
+
+.diff-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--paper-deep);
+  border: 1px solid var(--line-subtle);
+}
+
+.diff-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--line-subtle);
 }
 
-.comparison-row > span {
+.diff-card-title {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--ink-muted);
-  font-size: 11px;
-  font-weight: 600;
 }
 
-.comparison-row p {
+.diff-badge {
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  letter-spacing: 0.4px;
+}
+
+.diff-badge.exact {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.diff-badge.accents {
+  color: #854d0e;
+  background: #fef9c3;
+}
+
+.diff-badge.close {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.diff-badge.different {
+  color: var(--ink-muted);
+  background: #e5e0d8;
+}
+
+.diff-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.diff-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.diff-row-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Identical 24px serif typography for both rows */
+.diff-text {
   margin: 0;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1.4;
   color: var(--ink);
 }
 
-.comparison-row em {
-  color: var(--ink-muted);
-  font-style: italic;
-}
-
-.expected-row p {
-  font-size: 24px;
+.diff-match {
+  color: #166534;
 }
 
 .diff-token {
-  display: inline-block;
-  margin-right: 0.22em;
+  display: inline;
 }
 
 .diff-token.match {
-  color: #24683c;
+  color: #166534;
 }
 
 .diff-token.accent {
@@ -1340,49 +1385,37 @@ kbd {
 }
 
 .diff-token.typo {
-  color: #842e20;
+  color: #991b1b;
 }
 
 .diff-token.missing {
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: #842e20;
-  background: #fcd9ce;
+  color: #991b1b;
   font-weight: 500;
+  border-bottom: 2px solid #f87171;
 }
 
 .diff-token.extra {
-  padding: 1px 5px;
-  border-radius: 4px;
-  color: #6a6a6a;
-  background: #ebe6df;
+  color: #6b7280;
   text-decoration: line-through;
-  text-decoration-color: #a09990;
+  text-decoration-color: #9ca3af;
 }
 
-/* Sub-token character segment highlights */
 .diff-seg-accent {
-  padding: 0 1px;
-  border-radius: 3px;
-  color: #925c12;
-  background: #fdedc9;
+  color: #854d0e;
+  border-bottom: 2px solid #eab308;
   font-weight: 600;
 }
 
 .diff-seg-missing {
-  padding: 0 2px;
-  border-radius: 3px;
-  color: #842e20;
-  background: #fcd9ce;
+  color: #991b1b;
+  border-bottom: 2px solid #f87171;
   font-weight: 600;
 }
 
 .diff-seg-extra {
-  padding: 0 2px;
-  border-radius: 3px;
-  color: #7a3528;
-  background: #fcd9ce;
+  color: #6b7280;
   text-decoration: line-through;
+  text-decoration-color: #9ca3af;
 }
 
 .diff-seg-punctuation {

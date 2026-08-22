@@ -72,8 +72,7 @@ describe('Ritmo', () => {
     await user.type(response, 'Where is metro')
     await user.keyboard('{Enter}')
 
-    expect(response).toHaveValue('Where is metro')
-    expect(response).toHaveAttribute('readonly')
+    expect(screen.getByText('You wrote')).toBeInTheDocument()
     expect(screen.getByText('the')).toHaveClass('missing')
     expect(screen.getByText('Meaning & context')).toBeInTheDocument()
 
@@ -141,7 +140,7 @@ describe('Ritmo', () => {
     )
     await user.type(screen.getByLabelText('Your answer'), 'How cool')
     await user.keyboard('{Enter}')
-    expect(screen.getByText('Exact match')).toBeInTheDocument()
+    expect(screen.getByText(/Exact match/i)).toBeInTheDocument()
     await user.keyboard('4')
     expect(screen.getByText(/1 card practiced/i)).toBeInTheDocument()
   })
