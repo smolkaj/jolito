@@ -374,15 +374,12 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
-            <p className="eyebrow">SPACED REPETITION · ACTIVE RECALL</p>
             <h1>
-              Make the words
-              <br />
+              Make the words <br />
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards from the phrases you meet every
-              day—and practice them at your rhythm.
+              Create beautiful, spoken cards. Practice them at your rhythm.
             </p>
             <div className="hero-actions">
               <button
@@ -398,16 +395,8 @@ export function App({
                 Practice {dueCount} due
               </button>
             </div>
-            <p className="offline-note">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m8.5 12.5 2.2 2.2 4.8-5M12 3l7 3v5c0 4.6-2.9 8-7 10-4.1-2-7-5.4-7-10V6l7-3Z" />
-              </svg>
-              Cards and reviews work without an internet connection.
-            </p>
           </div>
           <div className="hero-visual">
-            <div className="hero-orbit orbit-one" aria-hidden="true" />
-            <div className="hero-orbit orbit-two" aria-hidden="true" />
             <div className="sample-card sample-card-back" aria-hidden="true">
               <span>ENGLISH → SPANISH</span>
               <p>Sounds good!</p>

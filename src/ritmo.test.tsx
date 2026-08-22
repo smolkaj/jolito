@@ -191,11 +191,11 @@ describe('Ritmo', () => {
     render(<App services={services} />)
 
     expect(
-      screen.getByText('SPACED REPETITION · ACTIVE RECALL'),
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        /create beautiful, spoken cards from the phrases you meet every day/i,
+        'Create beautiful, spoken cards. Practice them at your rhythm.',
       ),
     ).toBeInTheDocument()
 

@@ -309,52 +309,9 @@ summary:focus-visible {
   transform: scale(0.98);
 }
 
-.offline-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 24px 0 0;
-  color: var(--ink-soft);
-  font-size: 13px;
-}
-
-.offline-note svg {
-  width: 17px;
-  height: 17px;
-  flex-shrink: 0;
-  fill: none;
-  stroke: var(--green);
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .hero-visual {
   position: relative;
   min-height: 520px;
-}
-
-.hero-orbit {
-  position: absolute;
-  border: 1px solid rgba(201, 156, 116, 0.25);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.orbit-one {
-  width: 480px;
-  height: 320px;
-  top: 100px;
-  left: -20px;
-  transform: rotate(-16deg);
-}
-
-.orbit-two {
-  width: 400px;
-  height: 480px;
-  top: 20px;
-  left: 40px;
-  transform: rotate(24deg);
 }
 
 .sample-card {
@@ -490,33 +447,13 @@ summary:focus-visible {
 
 .mini-sun {
   position: absolute;
-  top: 65px;
-  left: 75px;
-  width: 150px;
-  height: 150px;
+  top: 55px;
+  left: 65px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  background: var(--gold);
-}
-
-.mini-sun::before,
-.mini-sun::after {
-  content: '';
-  position: absolute;
-  bottom: 20px;
-  width: 80px;
-  height: 100px;
-  border-radius: 70% 12% 70% 12%;
-  background: #3e5e46;
-}
-
-.mini-sun::before {
-  left: -35px;
-  transform: rotate(-30deg);
-}
-
-.mini-sun::after {
-  right: -32px;
-  transform: rotate(40deg);
+  background: radial-gradient(circle, #fde8b8 0%, #f7cf78 100%);
+  opacity: 0.85;
 }
 
 /* Card creation */
@@ -1527,10 +1464,6 @@ kbd {
 
   .hero-actions button {
     width: 100%;
-  }
-
-  .offline-note {
-    align-items: flex-start;
   }
 
   .hero-visual {
