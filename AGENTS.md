@@ -1,11 +1,11 @@
 # Working concurrently
 
-One agent may write to a checkout at a time. The checkout where a coding agent
-is launched is a read-only control checkout; use an isolated Git worktree for
-implementation work.
+One agent may write to a checkout at a time. The repository root is a read-only
+control checkout; use an isolated Git worktree for implementation work.
 
 ```sh
-git fetch origin
+git switch main
+git pull --ff-only origin main
 git worktree list
 git worktree add -b agent/<task> ../ritmo-<task> origin/main
 ```
@@ -13,6 +13,7 @@ git worktree add -b agent/<task> ../ritmo-<task> origin/main
 Choose a unique, short task name. Do all editing, dependency installation,
 formatting, testing, staging, and committing in that worktree. If the work
 builds on an unmerged branch, use that branch instead of `origin/main`.
+If already launched from a task worktree, stay there; do not create another.
 
 - Never edit, stage, or run generators in another agent's worktree.
 - Do not remove worktrees, force-push, reset, or discard work you did not
