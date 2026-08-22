@@ -2,7 +2,9 @@ import type {
   AppServices,
   CardRepository,
   Clock,
+  Earcon,
   IdGenerator,
+  SoundPlayer,
   Speaker,
 } from '../application/ports'
 import type { StudyCard } from '../domain/card'
@@ -53,6 +55,14 @@ export class MockSpeaker implements Speaker {
   }
 }
 
+export class MockSoundPlayer implements SoundPlayer {
+  public played: Earcon[] = []
+
+  play(earcon: Earcon): void {
+    this.played.push(earcon)
+  }
+}
+
 export function createTestServices(options?: {
   cards?: StudyCard[] | null
   clockTime?: number
@@ -60,6 +70,7 @@ export function createTestServices(options?: {
 }): AppServices & {
   memoryCards: MemoryCardRepository
   mockSpeaker: MockSpeaker
+  mockSounds: MockSoundPlayer
   fixedClock: FixedClock
   sequentialIds: SequentialIds
 } {
@@ -68,16 +79,19 @@ export function createTestServices(options?: {
   if (options?.speakerSupported !== undefined) {
     mockSpeaker.isSupported = options.speakerSupported
   }
+  const mockSounds = new MockSoundPlayer()
   const fixedClock = new FixedClock(options?.clockTime)
   const sequentialIds = new SequentialIds()
 
   return {
     cards: memoryCards,
     speaker: mockSpeaker,
+    sounds: mockSounds,
     clock: fixedClock,
     ids: sequentialIds,
     memoryCards,
     mockSpeaker,
+    mockSounds,
     fixedClock,
     sequentialIds,
   }

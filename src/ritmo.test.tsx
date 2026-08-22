@@ -88,6 +88,13 @@ describe('Ritmo', () => {
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
 
+    expect(services.mockSounds.played).toEqual([
+      'reveal',
+      'good',
+      'reveal',
+      'again',
+      'complete',
+    ])
     expect(services.memoryCards.saved).toHaveLength(6)
     expect(services.memoryCards.saved?.[0]?.prompt).toBe(
       '¿Dónde está el metro?',

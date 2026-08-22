@@ -275,11 +275,13 @@ export function App({
     event.preventDefault()
     if (revealed || !currentCard) return
     setRevealed(true)
+    services.sounds.play('reveal')
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 
   function grade(gradeValue: Grade) {
     if (!currentCard) return
+    services.sounds.play(gradeValue)
     const reviewed = scheduleReview(
       currentCard,
       gradeValue,
@@ -293,7 +295,10 @@ export function App({
     setReviewedCount((count) => count + 1)
     setAnswer('')
     setRevealed(false)
-    if (remaining.length === 0) setView('complete')
+    if (remaining.length === 0) {
+      services.sounds.play('complete')
+      setView('complete')
+    }
   }
 
   function createCard(event: FormEvent<HTMLFormElement>) {

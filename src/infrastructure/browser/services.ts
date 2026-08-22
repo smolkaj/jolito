@@ -5,6 +5,7 @@ import type {
   Speaker,
 } from '../../application/ports'
 import { LocalStorageCardRepository } from './card-repository'
+import { WebAudioSoundPlayer } from './sound'
 
 export class SystemClock implements Clock {
   now(): number {
@@ -52,5 +53,6 @@ export function createBrowserServices(): AppServices {
     ids: new RandomIdGenerator(),
     cards: new LocalStorageCardRepository(),
     speaker: new BrowserSpeaker(),
+    sounds: new WebAudioSoundPlayer(),
   }
 }

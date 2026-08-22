@@ -18,9 +18,16 @@ export type Speaker = {
   supported(): boolean
 }
 
+export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'
+
+export type SoundPlayer = {
+  play(earcon: Earcon): void
+}
+
 export type AppServices = {
   clock: Clock
   ids: IdGenerator
   cards: CardRepository
   speaker: Speaker
+  sounds: SoundPlayer
 }
