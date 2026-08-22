@@ -47,6 +47,11 @@ export default tseslint.config(
                 'react/*',
                 '**/application/**',
                 '**/infrastructure/**',
+                '**/ui/**',
+                '**/ritmo',
+                '**/ritmo.tsx',
+                '**/main',
+                '**/main.tsx',
               ],
               message:
                 'Domain code must remain independent of UI, application orchestration, and infrastructure.',
@@ -64,7 +69,16 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['react', 'react/*', '**/infrastructure/**'],
+              group: [
+                'react',
+                'react/*',
+                '**/infrastructure/**',
+                '**/ui/**',
+                '**/ritmo',
+                '**/ritmo.tsx',
+                '**/main',
+                '**/main.tsx',
+              ],
               message:
                 'Application code may depend on domain types and declared ports, not UI or concrete infrastructure.',
             },
