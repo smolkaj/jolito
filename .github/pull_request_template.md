@@ -1,6 +1,15 @@
-## Outcome
+## Big picture & wins
 
-<!-- Describe observable behavior, user impact, and intent—not just implementation activity. -->
+<!-- Lead with the wins. Why is this PR important? What does it unlock for learners, developers, or system reliability? -->
+
+## The world before vs. after
+
+- **Before:** <!-- Describe the previous state, limitation, bug, or missing capability. -->
+- **After:** <!-- Describe the new reality, capability unlocked, or invariant established. -->
+
+## Where are we going?
+
+<!-- How does this change fit into the broader product trajectory or north star? What comes next? -->
 
 ## Acceptance criteria & invariants
 
