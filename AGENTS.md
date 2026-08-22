@@ -41,7 +41,9 @@ only:
 
 1. The proposed PR title and description (explaining intent, rationale, and
    verification performed).
-2. The Git diff against `origin/main` (`git diff origin/main...HEAD`).
+2. The Git diff against the PR's base branch (e.g.
+   `git diff origin/main...HEAD`, or against the base branch if building on an
+   unmerged branch).
 3. Repository context and documentation (`docs/QUALITY.md`,
    `docs/PRODUCT_VISION.md`, codebase).
 
@@ -67,7 +69,8 @@ The independent reviewer evaluates:
 1. Author passes all relevant automated quality checks (`npm run check`,
    `npm run audit:prod`, and `npm run test:e2e` when a user workflow changes).
 2. Author prepares the draft PR description and invokes an independent reviewer
-   with only the PR description, the diff, and repo docs.
+   with only the PR description, the diff against the base branch, and repo
+   docs.
 3. If the reviewer reports any issues or questions about intent, the author
    addresses them in code, tests, or documentation, reruns checks, and requests
    re-review.
