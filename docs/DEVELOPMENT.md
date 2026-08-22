@@ -14,6 +14,8 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
+For remote development over mosh, follow the README's [Run it locally](../README.md#run-it-locally) section. It is the source of truth for the SSH tunnel command and task-worktree substitution.
+
 The development server does not register the offline service worker, avoiding stale assets while iterating. To exercise the installable, offline-capable production shell locally:
 
 ```sh
