@@ -43,7 +43,7 @@ _Goal: Create a calm, distraction-free study environment that feels tactile, rhy
 _Goal: Turn any real-world phrase heard on the street into a rich, multimodal card in seconds._
 
 - **Single-Prompt Card Generation:**
-  - Learner types a single Spanish phrase $\to$ AI generates idiomatic English translation, CDMX cultural/regional nuance notes, and linked asymmetric reverse cards.
+  - Learner types a single Spanish phrase → AI generates idiomatic English translation, CDMX cultural/regional nuance notes, and linked asymmetric reverse cards.
 - **Contextual Visuals:**
   - Curated and generated contextually accurate scene illustrations that anchor memories.
 - **Offline Audio Synthesis:**
