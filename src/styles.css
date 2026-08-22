@@ -322,9 +322,18 @@ summary:focus-visible {
   border-radius: 24px;
   box-shadow: var(--shadow-elevated);
   transition:
-    transform 200ms ease,
-    box-shadow 200ms ease;
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    top 220ms ease,
+    left 220ms ease,
+    right 220ms ease;
   box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
 }
 
 .sample-badge {
@@ -340,69 +349,141 @@ summary:focus-visible {
   letter-spacing: -1.5px;
 }
 
-/* Back (English) card */
-.sample-card-back {
-  top: 15px;
-  right: 15px;
-  color: #fff9ee;
-  background: var(--green);
-  transform: rotate(6deg);
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.sample-card-back .sample-badge {
-  color: #d6e8d9;
-}
-
-.sample-card-back .sample-phrase {
-  margin-top: 18px;
-  font-size: 34px;
-  line-height: 1.15;
-  color: #ffffff;
-}
-
-/* Front (Mexican Spanish) card */
-.sample-card-front {
+.sample-card.is-foreground {
   top: 105px;
   left: 15px;
-  color: var(--ink);
-  background: var(--card);
+  right: auto;
   transform: rotate(-4deg);
-  border: 1px solid var(--line-subtle);
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   z-index: 2;
-  overflow: hidden;
 }
 
-.sample-card-front:hover {
+.sample-card.is-foreground:hover {
   transform: rotate(-4deg) translateY(-4px);
   box-shadow:
     0 28px 64px -12px rgba(44, 38, 28, 0.16),
     0 4px 12px rgba(44, 38, 28, 0.05);
 }
 
-.sample-card-front:active {
+.sample-card.is-foreground:active {
   transform: rotate(-4deg) scale(0.98);
 }
 
-.sample-card-front:focus-visible {
+.sample-card.is-background {
+  top: 15px;
+  right: 15px;
+  left: auto;
+  transform: rotate(6deg);
+  z-index: 1;
+}
+
+.sample-card.is-background:hover {
+  transform: rotate(6deg) translateY(-4px);
+  box-shadow:
+    0 28px 64px -12px rgba(44, 38, 28, 0.18),
+    0 4px 12px rgba(44, 38, 28, 0.06);
+}
+
+.sample-card.is-background:active {
+  transform: rotate(6deg) scale(0.98);
+}
+
+.sample-card:focus-visible {
   outline: 3px solid var(--coral);
   outline-offset: 3px;
 }
 
-.sample-card-front.is-playing {
+/* Spanish card theme */
+.sample-card-es {
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line-subtle);
+}
+
+.sample-card-es .sample-card-header .sample-badge {
+  color: var(--coral-dark);
+}
+
+.sample-card-es .mini-sun {
+  background: radial-gradient(circle, #fde8b8 0%, #f7cf78 100%);
+  opacity: 0.85;
+}
+
+.sample-card-es .thumbs-up-icon {
+  stroke: var(--coral-dark);
+}
+
+.sample-card-es .sample-card-body .sample-phrase {
+  color: var(--ink);
+}
+
+.sample-card-es .sample-listen-hint {
+  background: var(--paper-deep);
+  color: var(--ink-muted);
+}
+
+.sample-card-es:hover .sample-listen-hint,
+.sample-card-es.is-playing .sample-listen-hint {
+  background: var(--coral-soft);
+  color: var(--coral-dark);
+}
+
+.sample-card-es.is-playing {
   box-shadow:
     0 28px 64px -12px rgba(232, 90, 60, 0.22),
     0 0 0 2px var(--coral);
 }
 
-.sample-card-front.is-playing .sample-illustration {
+/* English card theme */
+.sample-card-en {
+  color: #ffffff;
+  background: var(--green);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sample-card-en:focus-visible {
+  outline-color: #8ed69d;
+}
+
+.sample-card-en .sample-card-header .sample-badge {
+  color: #d6e8d9;
+}
+
+.sample-card-en .mini-sun {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  opacity: 0.9;
+}
+
+.sample-card-en .thumbs-up-icon {
+  stroke: #ffffff;
+}
+
+.sample-card-en .sample-card-body .sample-phrase {
+  color: #ffffff;
+  font-size: 36px;
+}
+
+.sample-card-en .sample-listen-hint {
+  background: rgba(0, 0, 0, 0.28);
+  color: #ffffff;
+}
+
+.sample-card-en:hover .sample-listen-hint,
+.sample-card-en.is-playing .sample-listen-hint {
+  background: #ffffff;
+  color: var(--green);
+}
+
+.sample-card-en.is-playing {
+  box-shadow:
+    0 28px 64px -12px rgba(61, 96, 68, 0.35),
+    0 0 0 2px #8ed69d;
+}
+
+.sample-card.is-playing .sample-illustration {
   animation: sample-bounce 1.2s ease-in-out;
 }
 
@@ -425,10 +506,6 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.sample-card-header .sample-badge {
-  color: var(--coral-dark);
 }
 
 .sample-card-body {
@@ -455,8 +532,6 @@ summary:focus-visible {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, #fde8b8 0%, #f7cf78 100%);
-  opacity: 0.85;
   z-index: 1;
   pointer-events: none;
 }
@@ -467,7 +542,6 @@ summary:focus-visible {
   width: 36px;
   height: 36px;
   fill: none;
-  stroke: var(--coral-dark);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -480,7 +554,6 @@ summary:focus-visible {
   font-weight: 500;
   line-height: 1.1;
   text-align: center;
-  color: var(--ink);
 }
 
 .sample-card-footer {

@@ -185,7 +185,7 @@ describe('Ritmo', () => {
     expect(screen.getByText(/5 cards practiced/i)).toBeInTheDocument()
   })
 
-  it('renders refined landing page copy and plays audio when clicking the sample card', async () => {
+  it('renders refined landing page copy and plays audio when clicking the sample cards', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -199,18 +199,31 @@ describe('Ritmo', () => {
     expect(
       screen.getByText('Practice them at your rhythm.', { exact: false }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Sounds good!')).toBeInTheDocument()
 
-    const sampleCard = screen.getByRole('button', {
-      name: /play pronunciation for sample card: ¡sale!/i,
+    // Spanish card is foreground initially
+    const spanishCard = screen.getByRole('button', {
+      name: /play pronunciation for mexican spanish card: ¡sale!/i,
     })
-    expect(sampleCard).toBeInTheDocument()
-    expect(sampleCard).toHaveTextContent('¡Sale!')
-    await user.click(sampleCard)
+    expect(spanishCard).toBeInTheDocument()
+    expect(spanishCard).toHaveTextContent('¡Sale!')
+    await user.click(spanishCard)
 
     expect(services.mockSpeaker.spoken).toContainEqual({
       text: '¡Sale!',
       locale: 'es-MX',
+    })
+
+    // English card in background
+    const englishCard = screen.getByRole('button', {
+      name: /show english card: sounds good!/i,
+    })
+    expect(englishCard).toBeInTheDocument()
+    expect(englishCard).toHaveTextContent('Sounds good!')
+    await user.click(englishCard)
+
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'Sounds good!',
+      locale: 'en-US',
     })
   })
 

@@ -198,6 +198,9 @@ export function App({
     () => !services.speaker.supported(),
   )
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
+  const [activeSampleSide, setActiveSampleSide] = useState<
+    'spanish' | 'english'
+  >('spanish')
   const [samplePlaying, setSamplePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
@@ -212,17 +215,34 @@ export function App({
     [services.speaker],
   )
 
-  const playSampleAudio = useCallback(() => {
-    if (sampleTimerRef.current !== null) {
-      window.clearTimeout(sampleTimerRef.current)
-    }
-    setSamplePlaying(true)
-    playAudio('¡Sale!', 'es-MX')
-    sampleTimerRef.current = window.setTimeout(() => {
-      setSamplePlaying(false)
-      sampleTimerRef.current = null
-    }, 1200)
-  }, [playAudio])
+  const playSampleAudio = useCallback(
+    (side: 'spanish' | 'english') => {
+      if (sampleTimerRef.current !== null) {
+        window.clearTimeout(sampleTimerRef.current)
+      }
+      setSamplePlaying(true)
+      if (side === 'spanish') {
+        playAudio('¡Sale!', 'es-MX')
+      } else {
+        playAudio('Sounds good!', 'en-US')
+      }
+      sampleTimerRef.current = window.setTimeout(() => {
+        setSamplePlaying(false)
+        sampleTimerRef.current = null
+      }, 1200)
+    },
+    [playAudio],
+  )
+
+  const onSampleCardClick = useCallback(
+    (side: 'spanish' | 'english') => {
+      if (activeSampleSide !== side) {
+        setActiveSampleSide(side)
+      }
+      playSampleAudio(side)
+    },
+    [activeSampleSide, playSampleAudio],
+  )
 
   useEffect(() => {
     return () => {
@@ -396,15 +416,48 @@ export function App({
             </div>
           </div>
           <div className="hero-visual">
-            <div className="sample-card sample-card-back" aria-hidden="true">
-              <span className="sample-badge">ENGLISH</span>
-              <p className="sample-phrase">Sounds good!</p>
-            </div>
             <button
               type="button"
-              className={`sample-card sample-card-front ${samplePlaying ? 'is-playing' : ''}`}
-              onClick={playSampleAudio}
-              aria-label="Play pronunciation for sample card: ¡Sale!"
+              className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+              onClick={() => onSampleCardClick('english')}
+              aria-label={
+                activeSampleSide === 'english'
+                  ? 'Play pronunciation for English card: Sounds good!'
+                  : 'Show English card: Sounds good!'
+              }
+            >
+              <div className="sample-card-header">
+                <span className="sample-badge">ENGLISH</span>
+              </div>
+              <div className="sample-card-body">
+                <div className="sample-illustration" aria-hidden="true">
+                  <div className="mini-sun" />
+                  <svg className="thumbs-up-icon" viewBox="0 0 24 24">
+                    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m0 11V11m0 11h9.3a2 2 0 0 0 2-1.6l1.4-7.5a2 2 0 0 0-2-2.4h-4.7V4a2 2 0 0 0-2-2l-4 7v13Z" />
+                  </svg>
+                </div>
+                <p className="sample-phrase">Sounds good!</p>
+              </div>
+              <div className="sample-card-footer">
+                <span className="sample-listen-hint" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                  </svg>
+                  {samplePlaying && activeSampleSide === 'english'
+                    ? 'Playing…'
+                    : 'Tap to hear'}
+                </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+              onClick={() => onSampleCardClick('spanish')}
+              aria-label={
+                activeSampleSide === 'spanish'
+                  ? 'Play pronunciation for Mexican Spanish card: ¡Sale!'
+                  : 'Show Mexican Spanish card: ¡Sale!'
+              }
             >
               <div className="sample-card-header">
                 <span className="sample-badge">MEXICAN SPANISH</span>
@@ -423,7 +476,9 @@ export function App({
                   <svg viewBox="0 0 24 24">
                     <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
                   </svg>
-                  {samplePlaying ? 'Playing…' : 'Tap to hear'}
+                  {samplePlaying && activeSampleSide === 'spanish'
+                    ? 'Playing…'
+                    : 'Tap to hear'}
                 </span>
               </div>
             </button>
