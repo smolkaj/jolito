@@ -8,6 +8,8 @@ git switch main
 git pull --ff-only origin main
 git worktree list
 git worktree add -b agent/<task> ../ritmo-<task> origin/main
+git worktree remove ../ritmo-<task>   # clean up after merging
+git worktree prune                    # gc dangling refs
 ```
 
 Choose a unique, short task name. Do all editing, dependency installation,
@@ -17,7 +19,7 @@ If already launched from a task worktree, stay there; do not create another.
 
 - Never edit, stage, or run generators in another agent's worktree.
 - Do not remove worktrees, force-push, reset, or discard work you did not
-  create.
+  create. Clean up only your own worktrees after merging.
 - Use one branch and PR per task. Inspect `git status` and the diff; stage
   explicit paths, never `git add -A`.
 - Submit every change through a pull request to the upstream repository. Do
@@ -27,6 +29,57 @@ If already launched from a task worktree, stay there; do not create another.
   configuration, and app entry points.
 - Run the relevant checks before handoff, and update docs when behavior, setup,
   or architecture changes.
+
+# Philosophy
+
+- **We strive for simplicity.** Complex is easy; simple is extremely hard.
+  Simple code, simple designs, simple interfaces — earned through the effort of
+  deeply understanding the problem. Every layer of indirection, every
+  abstraction, every "just in case" parameter must justify its existence.
+  When in doubt, leave it out.
+- **Build the ideal, not "good enough."** Before committing to a design, define
+  what the ideal solution looks like — unconstrained by schedule, legacy, or
+  expedience. Then build it. A pragmatic shortcut is legitimate when you've
+  considered the ideal and have a concrete reason to defer it — but the default
+  should be to do the right thing, not to stop early. Name the north star, name
+  what you're trading away, and name why.
+- **Write the test first.** The test is the spec — it defines the behavior you
+  want before you write the code. If you can't write a clear test, you don't
+  understand the problem yet. A failing test is the starting point for every
+  change, not an afterthought.
+- **Write DAMP tests, not DRY tests.** Each test should be readable top-to-bottom
+  without chasing helpers. When a test fails, you want the full context right
+  there. Three similar test bodies are better than one parameterized helper that
+  obscures the scenario.
+- **Walking skeleton first.** Build a minimal end-to-end slice before filling in
+  any one layer. Get an ugly-but-working pipeline — compiling, wiring, passing
+  one trivial test — before polishing internals. Integration problems are cheap
+  to fix now, expensive later.
+- **Churn is free.** Don't leave behind dead code, redundant helpers, or stale
+  call sites because updating them would "touch too many files." You are an AI
+  coding agent — mechanical refactoring across dozens of files is exactly what
+  you're good at.
+
+# Design invariants
+
+1. **Local-first & offline by default.** The primary learning loop (reviewing
+   cards, self-grading, typed recall, audio playback, card creation) must work
+   completely without network connectivity. Network sync and cloud features are
+   enhancers, never hard prerequisites.
+2. **Keyboard-first & accessible.** Every user interaction must be fully
+   operable with keyboard shortcuts (`Enter` to reveal, `1`–`4` to grade,
+   `Space` for audio) and pass automated accessibility checks (WCAG 2.1 A/AA)
+   with zero violations.
+3. **Never fail silently.** Prefer compile-time type constraints over runtime
+   checks. When runtime checks are needed, fail loudly with structured errors.
+   Never allow unexpected inputs or corrupted data to fall through to silent
+   defaults.
+4. **Validate boundaries with Zod.** Untrusted input from local storage, network
+   payloads, or AI services must be runtime-validated with Zod schemas.
+   TypeScript types alone are not boundary validation.
+5. **Data migrations are mandatory.** When changing storage representations,
+   always provide an explicit, tested migration for existing cards. Never
+   silently drop user data or historical review schedules.
 
 # Independent review loop
 
