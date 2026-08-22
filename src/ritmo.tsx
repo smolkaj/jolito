@@ -38,6 +38,18 @@ const isCard = (value: unknown): value is Card => {
 const isCardCollection = (value: unknown): value is Card[] =>
   Array.isArray(value) && value.every(isCard)
 
+const loadCards = (): Card[] => {
+  const saved = localStorage.getItem('ritmo-cards')
+  if (!saved) return starterCards
+
+  try {
+    const savedCards: unknown = JSON.parse(saved)
+    return isCardCollection(savedCards) ? savedCards : starterCards
+  } catch {
+    return starterCards
+  }
+}
+
 const speak = (text: string, locale: string) => {
   if (!('speechSynthesis' in window)) return
   window.speechSynthesis.cancel()
@@ -67,7 +79,7 @@ function Diff({ typed, expected }: { typed: string; expected: string }) {
 }
 
 export function App() {
-  const [cards, setCards] = useState<Card[]>(starterCards)
+  const [cards, setCards] = useState<Card[]>(loadCards)
   const [view, setView] = useState<'welcome' | 'create' | 'review'>('welcome')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
@@ -76,12 +88,6 @@ export function App() {
   const reviewCards = cards.length > 0 ? cards : starterCards
   const card = reviewCards[index % reviewCards.length]!
 
-  useEffect(() => {
-    const saved = localStorage.getItem('ritmo-cards')
-    if (!saved) return
-    const savedCards: unknown = JSON.parse(saved)
-    if (isCardCollection(savedCards)) setCards(savedCards)
-  }, [])
   useEffect(() => {
     localStorage.setItem('ritmo-cards', JSON.stringify(cards))
   }, [cards])

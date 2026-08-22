@@ -53,10 +53,12 @@ describe('compareAnswer', () => {
     fc.assert(
       fc.property(
         fc.array(
-          fc.stringOf(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'), {
-            minLength: 1,
-            maxLength: 12,
-          }),
+          fc
+            .array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'), {
+              minLength: 1,
+              maxLength: 12,
+            })
+            .map((characters) => characters.join('')),
           {
             minLength: 1,
             maxLength: 12,
