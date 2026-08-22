@@ -36,6 +36,14 @@ No model should implement and certify the same change.
 The PR records changed behavior, verification, risk, rollback, and independent
 review. A material visual change includes reviewed screenshot updates.
 
+Independent review is enforced by the app-owned `Independent AI Review` check,
+not by a PR checkbox or an agent's GitHub identity. A trusted base-branch
+workflow gives a fresh reviewer invocation the pull-request evidence, validates
+its structured output, and publishes a check for the exact head commit through
+a dedicated GitHub App. Missing output, stale commit SHAs, invalid output,
+execution errors, and blocking findings all fail closed. See
+[`docs/AI_REVIEW.md`](AI_REVIEW.md) for the trust boundary and bootstrap steps.
+
 ## Testing strategy
 
 | Layer       | Purpose                             | Ritmo examples                                                            |

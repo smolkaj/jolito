@@ -21,7 +21,7 @@
 
 ## Independent review
 
-<!-- Link or summarize review by an agent that did not implement the change. -->
+<!-- The app-owned Independent AI Review check is authoritative. -->
 
-- [ ] Reviewer checked the requirement, diff, architecture boundaries, and tests.
-- [ ] Reviewer attempted counterexamples rather than relying on author claims.
+- [ ] The `Independent AI Review` check passed for the current head commit.
+- [ ] Blocking findings were fixed rather than dismissed by the builder.

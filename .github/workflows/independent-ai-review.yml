@@ -1,0 +1,217 @@
+name: Independent AI Review
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: independent-ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  review:
+    name: Independent AI review runner
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    environment: independent-ai-review
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      CODEX_REVIEW_MODEL: ${{ vars.CODEX_REVIEW_MODEL || 'gpt-5.5' }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      # pull_request_target deliberately runs the workflow and policy from the
+      # protected base branch. Never check out or execute the proposed change.
+      - name: Check out trusted base revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0
+        with:
+          fetch-depth: 0
+          ref: ${{ env.BASE_SHA }}
+
+      - name: Fetch proposed revision without checking it out
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
+          test "$(git rev-parse "refs/remotes/pull/${PR_NUMBER}/head")" = "$HEAD_SHA"
+
+      - name: Build immutable review input
+        id: review-input
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          prompt_path=/tmp/codex-review-prompt.md
+          metadata_path=/tmp/pull-request.json
+          diff_path=/tmp/pull-request.diff
+
+          gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
+            --jq '{title, body, base: .base.ref, head: .head.ref}' \
+            > "$metadata_path"
+          git --no-pager diff --no-color --unified=5 \
+            "$BASE_SHA" "$HEAD_SHA" > "$diff_path"
+
+          cp .github/ai-review/prompt.md "$prompt_path"
+          {
+            printf '\n## Review identity\n\n'
+            printf 'Repository: `%s`\n' "$REPOSITORY"
+            printf 'Pull request: `%s`\n' "$PR_NUMBER"
+            printf 'Base SHA: `%s`\n' "$BASE_SHA"
+            printf 'Head SHA: `%s`\n' "$HEAD_SHA"
+            printf 'Model: `%s`\n' "$CODEX_REVIEW_MODEL"
+            printf '\n## Untrusted pull-request metadata\n\n```json\n'
+            cat "$metadata_path"
+            printf '\n```\n\n## Changed files\n\n```text\n'
+            git --no-pager diff --name-status "$BASE_SHA" "$HEAD_SHA"
+            printf '```\n\n## Untrusted unified diff\n\n```diff\n'
+            cat "$diff_path"
+            printf '\n```\n'
+          } >> "$prompt_path"
+
+          policy_hash=$(
+            sha256sum \
+              .github/ai-review/prompt.md \
+              .github/ai-review/output-schema.json \
+              scripts/ai-review-policy.mjs \
+              | sha256sum \
+              | cut -d ' ' -f 1
+          )
+          echo "REVIEW_POLICY_HASH=$policy_hash" >> "$GITHUB_ENV"
+
+      - name: Run isolated Codex review
+        id: codex-review
+        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e # pinned main, 2026-08-21
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: /tmp/codex-review-prompt.md
+          output-schema-file: .github/ai-review/output-schema.json
+          output-file: /tmp/codex-review.json
+          permission-profile: ':read-only'
+          safety-strategy: drop-sudo
+          codex-version: 0.149.0
+          model: ${{ env.CODEX_REVIEW_MODEL }}
+          effort: high
+          allow-bot-users: dependabot
+
+      - name: Apply deterministic review policy
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          node scripts/ai-review-policy.mjs \
+            "$BASE_SHA" \
+            "$HEAD_SHA" \
+            /tmp/codex-review.json \
+            /tmp/ai-review-policy.json
+          jq '.' /tmp/ai-review-policy.json
+
+      # Mint the reviewer credential only after Codex and the trusted policy
+      # have finished. No model or proposed code runs after this point.
+      - name: Mint reviewer app token
+        if: ${{ always() }}
+        id: reviewer-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.0.0
+        with:
+          app-id: ${{ vars.REVIEWER_APP_ID }}
+          private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Publish app-owned required check
+        if: ${{ always() && steps.reviewer-token.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.reviewer-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s /tmp/ai-review-policy.json
+
+          status=$(jq -r '.status' /tmp/ai-review-policy.json)
+          if [ "$status" = pass ]; then
+            conclusion=success
+            title='Independent AI review passed'
+          else
+            conclusion=failure
+            title='Independent AI review found blockers'
+          fi
+
+          jq -r \
+            --arg model "$CODEX_REVIEW_MODEL" \
+            --arg policy "$REVIEW_POLICY_HASH" \
+            --arg run "$RUN_URL" \
+            '(
+              "**Verdict:** " + (.status | ascii_upcase) + "\n\n" +
+              "**Reviewed base:** `" + .reviewed_base_sha + "`\n\n" +
+              "**Reviewed head:** `" + .reviewed_head_sha + "`\n\n" +
+              "**Blocking findings:** " + (.blocking_count | tostring) + "  \n" +
+              "**Advisory findings:** " + (.advisory_count | tostring) + "\n\n" +
+              "**Model:** `" + $model + "`  \n" +
+              "**Policy:** `" + $policy + "`  \n" +
+              "**Run:** " + $run + "\n\n" +
+              .summary +
+              (if (.findings | length) > 0 then
+                "\n\n## Findings\n" +
+                ([.findings[] |
+                  "\n- **[" + (.severity | ascii_upcase) + "] " + .title +
+                  "** — `" + .path + ":" + (.start_line | tostring) +
+                  "`\n  " + .explanation + "\n  Evidence: " + .evidence
+                ] | join("\n"))
+              else "" end)
+            )' /tmp/ai-review-policy.json > /tmp/check-summary.md
+
+          jq -n \
+            --arg name 'Independent AI Review' \
+            --arg head_sha "$HEAD_SHA" \
+            --arg conclusion "$conclusion" \
+            --arg details_url "$RUN_URL" \
+            --arg external_id "ritmo-ai-review:${PR_NUMBER}:${HEAD_SHA}" \
+            --arg title "$title" \
+            --rawfile summary /tmp/check-summary.md \
+            --slurpfile policy /tmp/ai-review-policy.json \
+            '{
+              name: $name,
+              head_sha: $head_sha,
+              status: "completed",
+              conclusion: $conclusion,
+              details_url: $details_url,
+              external_id: $external_id,
+              output: {
+                title: $title,
+                summary: $summary,
+                annotations: [
+                  $policy[0].findings[] | {
+                    path,
+                    start_line,
+                    end_line,
+                    annotation_level: (
+                      if .severity == "blocking" then "failure" else "warning" end
+                    ),
+                    title,
+                    message: .explanation,
+                    raw_details: .evidence
+                  }
+                ]
+              }
+            }' > /tmp/check-run.json
+
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${REPOSITORY}/check-runs" \
+            --input /tmp/check-run.json \
+            --jq '.html_url'
+
+      - name: Enforce review verdict
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          test "${{ steps.reviewer-token.outcome }}" = success
+          test -s /tmp/ai-review-policy.json
+          jq -e '.status == "pass"' /tmp/ai-review-policy.json

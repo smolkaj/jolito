@@ -33,3 +33,7 @@ browser, storage, network, and provider SDKs.
   or architecture changes.
 - Run `npm run verify` before requesting merge. An agent must not certify or
   bypass protection for its own change; record independent review in the PR.
+- Do not treat an AI review comment, checkbox, or builder-authored attestation
+  as approval. The app-owned `Independent AI Review` check for the current head
+  commit is the merge signal. Never edit reviewer credentials or weaken the
+  review workflow from a task branch.
