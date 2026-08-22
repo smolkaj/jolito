@@ -15,6 +15,7 @@ git worktree remove ../ritmo-<task> && git worktree prune
 - One branch and PR per task.
 - Never push directly to `main`; always open an upstream PR.
 - Open PRs proactively and early; share them with the user for review.
+- Always proactively provide the live branch preview URL (`https://<branch-name>-ritmo.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
 - Never merge PRs without explicit user approval.
 
 # Independent review loop

@@ -29,7 +29,7 @@ test('reopens the installed app shell and saved cards while offline', async ({
   await page.getByRole('button', { name: /practice \d+ due/i }).click()
   await expect(
     page.getByRole('heading', {
-      name: '¿Me lo puede poner para llevar?',
+      name: 'Tal vez',
     }),
   ).toBeVisible()
 })
