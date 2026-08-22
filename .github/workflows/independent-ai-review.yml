@@ -2,7 +2,7 @@ name: Independent AI Review
 
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
 
 concurrency:
   group: independent-ai-review-${{ github.event.pull_request.number }}
@@ -165,6 +165,24 @@ jobs:
                 ] | join("\n"))
               else "" end)
             )' /tmp/ai-review-policy.json > /tmp/check-summary.md
+
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises'
+
+          const path = '/tmp/check-summary.md'
+          const maxBytes = 60000
+          const suffix = '\n\n[Summary truncated to fit the GitHub Checks API limit.]\n'
+          const summary = await readFile(path, 'utf8')
+          if (Buffer.byteLength(summary, 'utf8') > maxBytes) {
+            let truncated = summary
+            while (
+              Buffer.byteLength(`${truncated}${suffix}`, 'utf8') > maxBytes
+            ) {
+              truncated = truncated.slice(0, -1)
+            }
+            await writeFile(path, `${truncated}${suffix}`)
+          }
+          NODE
 
           jq -n \
             --arg name 'Independent AI Review' \
