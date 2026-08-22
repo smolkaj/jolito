@@ -1,35 +1,52 @@
+import { z } from 'zod'
+
 export const grades = ['again', 'hard', 'good', 'easy'] as const
+export const directions = ['es-en', 'en-es'] as const
+export const scenes = ['conversation', 'metro', 'takeaway'] as const
 
-export type Grade = (typeof grades)[number]
-export type Direction = 'es-en' | 'en-es'
-export type Scene = 'conversation' | 'metro' | 'takeaway'
+export const gradeSchema = z.enum(grades)
+export const directionSchema = z.enum(directions)
+export const sceneSchema = z.enum(scenes)
 
-export type ReviewSchedule = {
-  dueAt: number
-  intervalDays: number
-  reviews: number
-  lapses: number
-}
+export const reviewScheduleSchema = z.object({
+  dueAt: z.number(),
+  intervalDays: z.number(),
+  reviews: z.number(),
+  lapses: z.number(),
+})
 
-export type StudyCard = {
-  id: string
-  noteId: string
-  prompt: string
-  answer: string
-  direction: Direction
-  context: string
-  scene: Scene
-  schedule: ReviewSchedule
-}
+export const studyCardSchema = z.object({
+  id: z.string().min(1),
+  noteId: z.string().min(1),
+  prompt: z.string().trim().min(1),
+  answer: z.string().trim().min(1),
+  direction: directionSchema,
+  context: z.string(),
+  scene: sceneSchema,
+  schedule: reviewScheduleSchema,
+})
 
-export type NewNote = {
-  spanish: string
-  english: string
-  context: string
-  bidirectional: boolean
-  reversePrompt?: string
-  reverseAnswer?: string
-}
+export const studyCardCollectionSchema = z.object({
+  version: z.literal(1),
+  cards: z.array(studyCardSchema),
+})
+
+export const newNoteSchema = z.object({
+  spanish: z.string().trim().min(1),
+  english: z.string().trim().min(1),
+  context: z.string(),
+  bidirectional: z.boolean(),
+  reversePrompt: z.string().optional(),
+  reverseAnswer: z.string().optional(),
+})
+
+export type Grade = z.infer<typeof gradeSchema>
+export type Direction = z.infer<typeof directionSchema>
+export type Scene = z.infer<typeof sceneSchema>
+export type ReviewSchedule = z.infer<typeof reviewScheduleSchema>
+export type StudyCard = z.infer<typeof studyCardSchema>
+export type StudyCardCollection = z.infer<typeof studyCardCollectionSchema>
+export type NewNote = z.infer<typeof newNoteSchema>
 
 const DAY = 24 * 60 * 60 * 1000
 

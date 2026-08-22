@@ -26,7 +26,7 @@ The PR author briefly describes behavior changed and verification performed. Scr
 | Browser     | Critical behavior in a real browser | keyboard review loop, offline creation, reconnect/sync                    |
 | Visual      | Guard the designed experience       | welcome, create, prompt, revealed answer, mobile breakpoints              |
 
-Coverage is a guardrail, not a score. The `src/domain` core must maintain at least 95% statement, branch, function, and line coverage. UI coverage is judged by behavior-focused integration and browser tests rather than a blanket percentage.
+Coverage is a guardrail, not a score. The `src/domain` and `src/application` core must maintain at least 95% statement, branch, function, and line coverage. UI coverage is judged by behavior-focused integration and browser tests rather than a blanket percentage.
 
 ## Accessibility and performance
 

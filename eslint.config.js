@@ -34,4 +34,43 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'react',
+                'react/*',
+                '**/application/**',
+                '**/infrastructure/**',
+              ],
+              message:
+                'Domain code must remain independent of UI, application orchestration, and infrastructure.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/application/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react/*', '**/infrastructure/**'],
+              message:
+                'Application code may depend on domain types and declared ports, not UI or concrete infrastructure.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 )
