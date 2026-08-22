@@ -98,8 +98,9 @@ The reviewer must **not** receive the original user prompt or issue
 description. The PR must be completely self-documenting. The reviewer receives
 only:
 
-1. The proposed PR title and description (explaining intent, rationale, and
-   verification performed).
+1. The proposed PR title and description (leading with big-picture wins and why
+   the change matters, contrasting the world before vs. after, articulating where
+   we are going toward the north star, and detailing verification performed).
 2. The Git diff against the PR's base branch (e.g.
    `git diff origin/main...HEAD`, or against the base branch if building on an
    unmerged branch).
@@ -110,9 +111,10 @@ only:
 
 The independent reviewer evaluates:
 
-- **Self-documentation & intent:** Is the PR description clear about what
-  changed and why? Can the change be understood solely from the PR artifact,
-  commit message, and code?
+- **Self-documentation & narrative intent:** Does the PR lead with wins and
+  explain why it matters? Is the world before vs. after clearly contrasted? Is
+  the trajectory toward the north star articulated? Can the change be understood
+  solely from the PR artifact, commit message, and code?
 - **Documentation:** Are documentation and docstrings updated to reflect all
   behavioral, setup, API, or architectural changes?
 - **Correctness & edge cases:** Are there logic errors, invariant violations,
