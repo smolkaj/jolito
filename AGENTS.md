@@ -15,6 +15,10 @@ formatting, testing, staging, and committing in that worktree. If the work
 builds on an unmerged branch, use that branch instead of `origin/main`.
 If already launched from a task worktree, stay there; do not create another.
 
+Before implementation, read `docs/ARCHITECTURE.md` and the relevant product,
+quality, and ADR documents. Keep domain and application code independent of UI,
+browser, storage, network, and provider SDKs.
+
 - Never edit, stage, or run generators in another agent's worktree.
 - Do not remove worktrees, force-push, reset, or discard work you did not
   create.
@@ -27,3 +31,5 @@ If already launched from a task worktree, stay there; do not create another.
   configuration, and app entry points.
 - Run the relevant checks before handoff, and update docs when behavior, setup,
   or architecture changes.
+- Run `npm run verify` before requesting merge. An agent must not certify or
+  bypass protection for its own change; record independent review in the PR.

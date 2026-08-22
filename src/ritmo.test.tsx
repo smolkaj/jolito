@@ -1,27 +1,18 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestServices, MemoryCardRepository } from './test/services'
 import { App } from './ritmo'
-
-class SpeechSynthesisUtteranceMock {
-  lang = ''
-  rate = 1
-
-  constructor(public text: string) {}
-}
 
 beforeEach(() => {
   localStorage.clear()
-  Object.assign(window, {
-    speechSynthesis: { cancel: vi.fn(), speak: vi.fn() },
-    SpeechSynthesisUtterance: SpeechSynthesisUtteranceMock,
-  })
 })
 
 describe('Ritmo', () => {
   it('creates a bidirectional card and supports typed self-evaluation', async () => {
     const user = userEvent.setup()
-    render(<App />)
+    const cards = new MemoryCardRepository()
+    render(<App services={createTestServices(cards)} />)
 
     await user.click(
       screen.getByRole('button', { name: /create your first card/i }),
@@ -40,5 +31,10 @@ describe('Ritmo', () => {
     expect(screen.getByText('the')).toHaveClass('missing')
     await user.keyboard('3')
     expect(screen.getByText('Where is the metro?')).toBeInTheDocument()
+    expect(cards.saved?.[0]).toMatchObject({
+      id: 'test-card-1',
+      prompt: '¿Dónde está el metro?',
+      createdAt: '2026-08-21T12:00:00.000Z',
+    })
   })
 })

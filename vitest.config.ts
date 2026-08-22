@@ -9,7 +9,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/domain/**/*.ts'],
+      include: ['src/{application,domain}/**/*.ts'],
       reporter: ['text', 'html', 'json-summary'],
       thresholds: {
         branches: 95,

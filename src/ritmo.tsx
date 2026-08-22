@@ -1,63 +1,11 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
+import { createCards } from './application/create-cards'
+import type { AppServices } from './application/ports'
+import { starterCards } from './application/starter-cards'
+import type { Card } from './domain/card'
 import { compareAnswer } from './domain/answer'
 
-type Card = {
-  id: number
-  prompt: string
-  answer: string
-  direction: 'es-en' | 'en-es'
-}
 type Grade = 'Again' | 'Hard' | 'Good' | 'Easy'
-
-const starterCards: Card[] = [
-  {
-    id: 1,
-    prompt: '¿Me lo puede poner para llevar?',
-    answer: 'Could you make it to go?',
-    direction: 'es-en',
-  },
-  {
-    id: 2,
-    prompt: 'Could you make this to go?',
-    answer: '¿Me lo puede poner para llevar?',
-    direction: 'en-es',
-  },
-]
-
-const isCard = (value: unknown): value is Card => {
-  if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.id === 'number' &&
-    typeof candidate.prompt === 'string' &&
-    typeof candidate.answer === 'string' &&
-    (candidate.direction === 'es-en' || candidate.direction === 'en-es')
-  )
-}
-
-const isCardCollection = (value: unknown): value is Card[] =>
-  Array.isArray(value) && value.every(isCard)
-
-const loadCards = (): Card[] => {
-  const saved = localStorage.getItem('ritmo-cards')
-  if (!saved) return starterCards
-
-  try {
-    const savedCards: unknown = JSON.parse(saved)
-    return isCardCollection(savedCards) ? savedCards : starterCards
-  } catch {
-    return starterCards
-  }
-}
-
-const speak = (text: string, locale: string) => {
-  if (!('speechSynthesis' in window)) return
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = locale
-  utterance.rate = 0.88
-  window.speechSynthesis.speak(utterance)
-}
 
 function Diff({ typed, expected }: { typed: string; expected: string }) {
   const comparison = compareAnswer(typed, expected)
@@ -78,8 +26,10 @@ function Diff({ typed, expected }: { typed: string; expected: string }) {
   )
 }
 
-export function App() {
-  const [cards, setCards] = useState<Card[]>(loadCards)
+export function App({ services }: { services: AppServices }) {
+  const [cards, setCards] = useState<Card[]>(() => [
+    ...(services.cards.load() ?? starterCards),
+  ])
   const [view, setView] = useState<'welcome' | 'create' | 'review'>('welcome')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
@@ -89,19 +39,25 @@ export function App() {
   const card = reviewCards[index % reviewCards.length]!
 
   useEffect(() => {
-    localStorage.setItem('ritmo-cards', JSON.stringify(cards))
-  }, [cards])
+    services.cards.save(cards)
+  }, [cards, services.cards])
   useEffect(() => {
     if (view !== 'review') return
     input.current?.focus()
-    speak(card.prompt, card.direction === 'es-en' ? 'es-MX' : 'en-US')
-  }, [view, card])
+    services.speaker.speak(
+      card.prompt,
+      card.direction === 'es-en' ? 'es-MX' : 'en-US',
+    )
+  }, [view, card, services.speaker])
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (view !== 'review') return
       if (event.code === 'Space' && document.activeElement !== input.current) {
         event.preventDefault()
-        speak(card.prompt, card.direction === 'es-en' ? 'es-MX' : 'en-US')
+        services.speaker.speak(
+          card.prompt,
+          card.direction === 'es-en' ? 'es-MX' : 'en-US',
+        )
       }
       const grades: Grade[] = ['Again', 'Hard', 'Good', 'Easy']
       const gradeForKey = grades[Number(event.key) - 1]
@@ -115,7 +71,10 @@ export function App() {
     event?.preventDefault()
     if (!revealed) {
       setRevealed(true)
-      speak(card.answer, card.direction === 'es-en' ? 'en-US' : 'es-MX')
+      services.speaker.speak(
+        card.answer,
+        card.direction === 'es-en' ? 'en-US' : 'es-MX',
+      )
     }
   }
   function grade(grade: Grade) {
@@ -135,16 +94,11 @@ export function App() {
     const english = field('english')
     const bidirectional = form.get('bidirectional') === 'on'
     if (!spanish || !english) return
-    const next: Card[] = [
-      { id: Date.now(), prompt: spanish, answer: english, direction: 'es-en' },
-    ]
-    if (bidirectional)
-      next.push({
-        id: Date.now() + 1,
-        prompt: english,
-        answer: spanish,
-        direction: 'en-es' as const,
-      })
+    const next = createCards(
+      { spanish, english, bidirectional },
+      { clock: services.clock, ids: services.ids },
+    )
+    if (next.length === 0) return
     setCards((old) => [...next, ...old])
     setIndex(0)
     setView('review')
@@ -275,9 +229,13 @@ export function App() {
           </p>
           <button
             className="audio"
+            aria-label="Play prompt audio"
             title="Play prompt audio"
             onClick={() =>
-              speak(card.prompt, card.direction === 'es-en' ? 'es-MX' : 'en-US')
+              services.speaker.speak(
+                card.prompt,
+                card.direction === 'es-en' ? 'es-MX' : 'en-US',
+              )
             }
           >
             ⌁
@@ -303,8 +261,9 @@ export function App() {
               <p>Expected answer</p>
               <button
                 className="audio"
+                aria-label="Play answer audio"
                 onClick={() =>
-                  speak(
+                  services.speaker.speak(
                     card.answer,
                     card.direction === 'es-en' ? 'en-US' : 'es-MX',
                   )
@@ -326,9 +285,7 @@ export function App() {
                 >
                   <kbd>{i + 1}</kbd>
                   {item}
-                  <small>
-                    {['&lt; 1 min', '2 days', '5 days', '10 days'][i]}
-                  </small>
+                  <small>{['< 1 min', '2 days', '5 days', '10 days'][i]}</small>
                 </button>
               ))}
             </div>
