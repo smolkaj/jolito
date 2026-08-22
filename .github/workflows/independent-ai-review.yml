@@ -189,7 +189,7 @@ jobs:
             --arg head_sha "$HEAD_SHA" \
             --arg conclusion "$conclusion" \
             --arg details_url "$RUN_URL" \
-            --arg external_id "ritmo-ai-review:${PR_NUMBER}:${HEAD_SHA}" \
+            --arg external_id "$HEAD_SHA" \
             --arg title "$title" \
             --rawfile summary /tmp/check-summary.md \
             --slurpfile policy /tmp/ai-review-policy.json \
