@@ -36,7 +36,7 @@ Open [http://localhost:5173](http://localhost:5173). To try the offline-capable 
 Working over mosh? Run this from your local terminal:
 
 ```sh
-ssh -L 5173:127.0.0.1:5173 -t <host> 'cd ~/src/ritmo && npm run dev -- --host 127.0.0.1'
+ssh -L 5173:127.0.0.1:5173 -t <host> 'cd ~/src/ritmo && npm ci && npm run dev -- --host 127.0.0.1'
 ```
 
 Mosh cannot carry the TCP port, so SSH provides the tunnel. Substitute a task worktree path for `~/src/ritmo` when reviewing unmerged work.
