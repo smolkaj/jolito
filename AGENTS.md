@@ -27,3 +27,25 @@ If already launched from a task worktree, stay there; do not create another.
   configuration, and app entry points.
 - Run the relevant checks before handoff, and update docs when behavior, setup,
   or architecture changes.
+
+## Independent review
+
+No agent may implement and certify the same change. Every non-trivial change
+must receive an independent review before merge:
+
+- The builder must request a separate agent session or Codex review with fresh
+  context. Do not pass the builder's conclusions as review evidence.
+- The reviewer must inspect the current diff, acceptance criteria, relevant
+  tests, and repository guidance directly. It runs read-only and must not edit,
+  commit, approve, or merge the change.
+- The reviewer reports concrete blocking findings with file and line evidence,
+  plus advisory findings separately. A clean review is not a substitute for
+  deterministic CI.
+- The builder addresses every blocking finding, reruns affected checks, and
+  requests a new review after material changes. Stale reviews do not count.
+- Record the review request and result in the pull request. The standard Codex
+  GitHub integration may be used with `@codex review` or automatic reviews;
+  subagents may be used when a separate context is preferable.
+- A builder must never approve its own pull request or claim that its own test
+  results constitute independent review. Merge only after CI passes and the
+  independent review is recorded.
