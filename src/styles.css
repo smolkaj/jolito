@@ -1750,12 +1750,8 @@ kbd {
     border-radius: 16px;
   }
 
-  .comparison-row {
+  .diff-row {
     grid-template-columns: 68px 1fr;
-  }
-
-  .extra-note {
-    margin-left: 80px;
   }
 
   .grade-buttons {
