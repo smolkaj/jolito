@@ -212,6 +212,48 @@ describe('Ritmo', () => {
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('u')
   })
 
+  it('renders refined landing page copy and plays audio when clicking the sample cards', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Create beautiful, spoken cards.', { exact: false }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Practice them at your rhythm.', { exact: false }),
+    ).toBeInTheDocument()
+
+    // Spanish card is foreground initially
+    const spanishCard = screen.getByRole('button', {
+      name: /play pronunciation for mexican spanish card: ¡sale!/i,
+    })
+    expect(spanishCard).toBeInTheDocument()
+    expect(spanishCard).toHaveTextContent('¡Sale!')
+    await user.click(spanishCard)
+
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: '¡Sale!',
+      locale: 'es-MX',
+    })
+
+    // English card in background
+    const englishCard = screen.getByRole('button', {
+      name: /show english card: sounds good!/i,
+    })
+    expect(englishCard).toBeInTheDocument()
+    expect(englishCard).toHaveTextContent('Sounds good!')
+    await user.click(englishCard)
+
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'Sounds good!',
+      locale: 'en-US',
+    })
+  })
+
   it('works with default browser services without explicitly passing props', async () => {
     const user = userEvent.setup()
     render(<App />)

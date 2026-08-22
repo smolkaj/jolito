@@ -233,7 +233,12 @@ export function App({
     () => !services.speaker.supported(),
   )
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
+  const [activeSampleSide, setActiveSampleSide] = useState<
+    'spanish' | 'english'
+  >('spanish')
+  const [samplePlaying, setSamplePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
+  const sampleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -244,6 +249,43 @@ export function App({
     },
     [services.speaker],
   )
+
+  const playSampleAudio = useCallback(
+    (side: 'spanish' | 'english') => {
+      if (sampleTimerRef.current !== null) {
+        window.clearTimeout(sampleTimerRef.current)
+      }
+      setSamplePlaying(true)
+      if (side === 'spanish') {
+        playAudio('¡Sale!', 'es-MX')
+      } else {
+        playAudio('Sounds good!', 'en-US')
+      }
+      sampleTimerRef.current = window.setTimeout(() => {
+        setSamplePlaying(false)
+        sampleTimerRef.current = null
+      }, 1200)
+    },
+    [playAudio],
+  )
+
+  const onSampleCardClick = useCallback(
+    (side: 'spanish' | 'english') => {
+      if (activeSampleSide !== side) {
+        setActiveSampleSide(side)
+      }
+      playSampleAudio(side)
+    },
+    [activeSampleSide, playSampleAudio],
+  )
+
+  useEffect(() => {
+    return () => {
+      if (sampleTimerRef.current !== null) {
+        window.clearTimeout(sampleTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     services.cards.save(cards)
@@ -380,22 +422,18 @@ export function App({
             <span className="connection">
               <i /> On-device · works offline
             </span>
-            <button className="text-button" onClick={() => beginReview()}>
-              Review <b>{dueCount}</b>
-            </button>
           </div>
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
-            <p className="eyebrow">MEXICAN SPANISH · MADE PERSONAL</p>
             <h1>
-              Make the words
-              <br />
+              Make the words <br />
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards from the Spanish you actually want
-              to use—and practice them at your rhythm.
+              Create beautiful, spoken cards.
+              <br />
+              Practice them at your rhythm.
             </p>
             <div className="hero-actions">
               <button
@@ -411,26 +449,74 @@ export function App({
                 Practice {dueCount} due
               </button>
             </div>
-            <p className="offline-note">
-              <svg aria-hidden="true" viewBox="0 0 24 24">
-                <path d="m8.5 12.5 2.2 2.2 4.8-5M12 3l7 3v5c0 4.6-2.9 8-7 10-4.1-2-7-5.4-7-10V6l7-3Z" />
-              </svg>
-              Cards and reviews work without an internet connection.
-            </p>
           </div>
-          <div className="hero-visual" aria-hidden="true">
-            <div className="hero-orbit orbit-one" />
-            <div className="hero-orbit orbit-two" />
-            <div className="sample-card sample-card-back">
-              <span>ENGLISH → SPANISH</span>
-              <p>Sounds good!</p>
-            </div>
-            <div className="sample-card sample-card-front">
-              <div className="mini-sun" />
-              <span>MEXICAN SPANISH</span>
-              <p>¡Sale!</p>
-              <i>tap to hear</i>
-            </div>
+          <div className="hero-visual">
+            <button
+              type="button"
+              className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+              onClick={() => onSampleCardClick('english')}
+              aria-label={
+                activeSampleSide === 'english'
+                  ? 'Play pronunciation for English card: Sounds good!'
+                  : 'Show English card: Sounds good!'
+              }
+            >
+              <div className="sample-card-header">
+                <span className="sample-badge">ENGLISH</span>
+              </div>
+              <div className="sample-card-body">
+                <div className="sample-illustration" aria-hidden="true">
+                  <div className="mini-sun" />
+                  <svg className="thumbs-up-icon" viewBox="0 0 24 24">
+                    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m0 11V11m0 11h9.3a2 2 0 0 0 2-1.6l1.4-7.5a2 2 0 0 0-2-2.4h-4.7V4a2 2 0 0 0-2-2l-4 7v13Z" />
+                  </svg>
+                </div>
+                <p className="sample-phrase">Sounds good!</p>
+              </div>
+              <div className="sample-card-footer">
+                <span className="sample-listen-hint" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                  </svg>
+                  {samplePlaying && activeSampleSide === 'english'
+                    ? 'Playing…'
+                    : 'Tap to hear'}
+                </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+              onClick={() => onSampleCardClick('spanish')}
+              aria-label={
+                activeSampleSide === 'spanish'
+                  ? 'Play pronunciation for Mexican Spanish card: ¡Sale!'
+                  : 'Show Mexican Spanish card: ¡Sale!'
+              }
+            >
+              <div className="sample-card-header">
+                <span className="sample-badge">MEXICAN SPANISH</span>
+              </div>
+              <div className="sample-card-body">
+                <div className="sample-illustration" aria-hidden="true">
+                  <div className="mini-sun" />
+                  <svg className="thumbs-up-icon" viewBox="0 0 24 24">
+                    <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3m0 11V11m0 11h9.3a2 2 0 0 0 2-1.6l1.4-7.5a2 2 0 0 0-2-2.4h-4.7V4a2 2 0 0 0-2-2l-4 7v13Z" />
+                  </svg>
+                </div>
+                <p className="sample-phrase">¡Sale!</p>
+              </div>
+              <div className="sample-card-footer">
+                <span className="sample-listen-hint" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                  </svg>
+                  {samplePlaying && activeSampleSide === 'spanish'
+                    ? 'Playing…'
+                    : 'Tap to hear'}
+                </span>
+              </div>
+            </button>
           </div>
         </section>
       </main>

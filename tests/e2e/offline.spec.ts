@@ -26,7 +26,7 @@ test('reopens the installed app shell and saved cards while offline', async ({
     await page.evaluate(() => localStorage.getItem('ritmo-library-v1')),
   ).toContain('Nos vemos al rato')
 
-  await page.getByRole('button', { name: /review/i }).click()
+  await page.getByRole('button', { name: /practice \d+ due/i }).click()
   await expect(
     page.getByRole('heading', {
       name: 'Tal vez',
