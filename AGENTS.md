@@ -14,8 +14,6 @@ git worktree remove ../ritmo-<task> && git worktree prune
 - Never touch another agent's worktree. Clean up only your own worktrees after merging.
 - One branch and PR per task.
 - Never push directly to `main`; always open an upstream PR.
-- Open PRs proactively and early; share them with the user for review.
-- Never merge PRs without explicit user approval.
 
 # Independent review loop
 
