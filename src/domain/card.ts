@@ -34,10 +34,13 @@ export type NewNote = {
 const DAY = 24 * 60 * 60 * 1000
 
 const sceneMatchers: ReadonlyArray<[Scene, RegExp]> = [
-  ['metro', /\b(metro|metrob[uú]s|tren|bus|station|estaci[oó]n)\b/iu],
+  [
+    'metro',
+    /(?:^|\P{L})(metro|metrob[uú]s|tren|bus|station|estaci[oó]n)(?:\P{L}|$)/iu,
+  ],
   [
     'takeaway',
-    /\b(caf[eé]|coffee|comida|food|restaurante|restaurant|llevar|takeaway|to go)\b/iu,
+    /(?:^|\P{L})(caf[eé]|coffee|comida|food|restaurante|restaurant|llevar|takeaway|to go)(?:\P{L}|$)/iu,
   ],
 ]
 

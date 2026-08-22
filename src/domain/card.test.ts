@@ -90,7 +90,9 @@ describe('createStudyCards', () => {
 describe('illustration selection', () => {
   it('selects a useful scene from either language', () => {
     expect(chooseScene('¿Dónde está el metro?')).toBe('metro')
+    expect(chooseScene('¿Dónde está la estación?')).toBe('metro')
     expect(chooseScene('A coffee, please')).toBe('takeaway')
+    expect(chooseScene('Un café con leche, por favor')).toBe('takeaway')
     expect(chooseScene('Mucho gusto')).toBe('conversation')
   })
 })
