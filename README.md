@@ -3,6 +3,10 @@
   <br><br>
   <strong>Find your rhythm in a new language.</strong>
   <br><br>
+  <a href="https://ritmo.smolkaj.workers.dev"><strong>Try the live app →</strong></a>
+  <br>
+  <sub>Production deployment of <code>main</code></sub>
+  <br><br>
   <a href="https://github.com/smolkaj/ritmo/actions/workflows/quality.yml"><img src="https://github.com/smolkaj/ritmo/actions/workflows/quality.yml/badge.svg" alt="Quality checks"></a>
 </p>
 
@@ -14,7 +18,28 @@ We are initially building it for learning Mexican Spanish in Mexico City. The fi
 
 ## Status
 
-Ritmo is an early prototype. Its direction is captured in [the product vision](docs/PRODUCT_VISION.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
+Ritmo has a functional, local-first MVP: create one- or two-way Spanish ↔ English cards, customize the reverse direction, add context, and move through a typed, spoken review session entirely by keyboard. Cards and review schedules persist on the device, and the production build reopens offline after its initial load.
+
+Account sync, generated audio and visuals, and AI-assisted authoring are still ahead. The product direction is captured in [the product vision](docs/PRODUCT_VISION.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
+
+## Run it locally
+
+Requires Node.js 24 (Krypton LTS) and npm.
+
+```sh
+npm ci
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). To try the offline-capable production build instead, run `npm run build && npm run preview`, then open [http://localhost:4173](http://localhost:4173) once before going offline.
+
+Working over mosh? Run this from your local terminal:
+
+```sh
+ssh -L 5173:127.0.0.1:5173 -t <host> 'cd ~/src/ritmo && npm ci && npm run dev -- --host 127.0.0.1'
+```
+
+Mosh cannot carry the TCP port, so SSH provides the tunnel. Substitute a task worktree path for `~/src/ritmo` when reviewing unmerged work.
 
 ## License
 

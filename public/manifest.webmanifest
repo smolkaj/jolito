@@ -1,0 +1,9 @@
+{
+  "name": "Ritmo",
+  "short_name": "Ritmo",
+  "description": "Find your rhythm in a new language.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fbf7ef",
+  "theme_color": "#fbf7ef"
+}
