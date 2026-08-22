@@ -1145,8 +1145,18 @@ kbd {
 }
 
 .comparison-title strong.exact {
-  color: #2e683b;
+  color: #24683c;
   background: #dff0e2;
+}
+
+.comparison-title strong.accents {
+  color: #785a28;
+  background: #fdf3dc;
+}
+
+.comparison-title strong.close {
+  color: #8c5b20;
+  background: #faecd6;
 }
 
 .comparison-row {
@@ -1181,27 +1191,67 @@ kbd {
   font-size: 24px;
 }
 
-.match {
+.diff-token {
+  display: inline-block;
+  margin-right: 0.22em;
+}
+
+.diff-token.match {
   color: #24683c;
+}
+
+.diff-token.accent {
+  color: var(--ink);
+}
+
+.diff-token.typo {
+  color: #842e20;
+}
+
+.diff-token.missing {
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #842e20;
+  background: #fcd9ce;
   font-weight: 500;
 }
 
-.missing {
-  padding: 2px 4px;
+.diff-token.extra {
+  padding: 1px 5px;
   border-radius: 4px;
-  color: #7c2e20;
-  background: #fcd9ce;
-}
-
-.extra-note {
-  margin: 10px 0 0 92px;
-  color: var(--ink-muted);
-  font-size: 11px;
-}
-
-.extra {
-  color: #a83620;
+  color: #6a6a6a;
+  background: #ebe6df;
   text-decoration: line-through;
+  text-decoration-color: #a09990;
+}
+
+/* Sub-token character segment highlights */
+.diff-seg-accent {
+  padding: 0 1px;
+  border-radius: 3px;
+  color: #925c12;
+  background: #fdedc9;
+  font-weight: 600;
+}
+
+.diff-seg-missing {
+  padding: 0 2px;
+  border-radius: 3px;
+  color: #842e20;
+  background: #fcd9ce;
+  font-weight: 600;
+}
+
+.diff-seg-extra {
+  padding: 0 2px;
+  border-radius: 3px;
+  color: #7a3528;
+  background: #fcd9ce;
+  text-decoration: line-through;
+}
+
+.diff-seg-punctuation {
+  color: var(--ink-muted);
 }
 
 .context-panel {

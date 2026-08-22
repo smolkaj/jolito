@@ -127,6 +127,25 @@ function AudioButton({
   )
 }
 
+function renderTokenSegments(
+  value: string,
+  segments?: import('./domain/answer').TokenSegment[],
+) {
+  if (!segments || segments.length === 0) {
+    return value
+  }
+  return segments.map((seg, i) => {
+    if (seg.status === 'match') {
+      return <span key={i}>{seg.value}</span>
+    }
+    return (
+      <span className={`diff-seg diff-seg-${seg.status}`} key={i}>
+        {seg.value}
+      </span>
+    )
+  })
+}
+
 function AnswerComparison({
   typed,
   expected,
@@ -135,42 +154,58 @@ function AnswerComparison({
   expected: string
 }) {
   const comparison = compareAnswer(typed, expected)
-  const exact =
-    comparison.extra.length === 0 &&
-    comparison.expected.every((token) => token.status === 'match')
+  const isExact = comparison.quality === 'exact'
+  const isAccents = comparison.quality === 'accents-only'
+  const isClose = comparison.quality === 'close'
 
   return (
     <div className="answer-comparison" aria-label="Answer comparison">
       <div className="comparison-title">
         <span>Compare your answer</span>
-        <strong className={exact ? 'exact' : undefined}>
-          {exact ? 'Exact match' : 'You decide'}
+        <strong
+          className={
+            isExact
+              ? 'exact'
+              : isAccents
+                ? 'accents'
+                : isClose
+                  ? 'close'
+                  : undefined
+          }
+        >
+          {comparison.qualityLabel}
         </strong>
       </div>
       <div className="comparison-row">
         <span>You wrote</span>
-        <p>{typed || <em>No answer</em>}</p>
+        <p>
+          {comparison.typed.length === 0 ? (
+            <em>No answer</em>
+          ) : (
+            comparison.typed.map((token, index) => (
+              <span
+                className={`diff-token ${token.status}`}
+                key={`${token.value}-${index}`}
+              >
+                {renderTokenSegments(token.value, token.segments)}{' '}
+              </span>
+            ))
+          )}
+        </p>
       </div>
       <div className="comparison-row expected-row">
         <span>Expected</span>
         <p>
           {comparison.expected.map((token, index) => (
-            <span className={token.status} key={`${token.value}-${index}`}>
-              {token.value}{' '}
+            <span
+              className={`diff-token ${token.status}`}
+              key={`${token.value}-${index}`}
+            >
+              {renderTokenSegments(token.value, token.segments)}{' '}
             </span>
           ))}
         </p>
       </div>
-      {comparison.extra.length > 0 && (
-        <p className="extra-note">
-          Extra in your answer:{' '}
-          {comparison.extra.map((token, index) => (
-            <span className="extra" key={`${token}-${index}`}>
-              {token}{' '}
-            </span>
-          ))}
-        </p>
-      )}
     </div>
   )
 }

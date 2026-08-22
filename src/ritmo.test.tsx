@@ -185,6 +185,35 @@ describe('Ritmo', () => {
     expect(screen.getByText(/5 cards practiced/i)).toBeInTheDocument()
   })
 
+  it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    await user.type(
+      screen.getByLabelText(/^Spanish Mexican Spanish$/),
+      '¿Dónde está el restaurante?',
+    )
+    await user.type(
+      screen.getByLabelText(/^English Concise meaning$/),
+      'Where is the restaurant?',
+    )
+    await user.click(screen.getByLabelText(/practice both directions/i))
+    await user.click(screen.getByRole('button', { name: /^save & practice$/i }))
+
+    // Type with missing inverted question mark, missing accents, and typo in restaurante
+    await user.type(
+      screen.getByLabelText('Your answer'),
+      'Where is the restuarant?',
+    )
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByText('Close')).toBeInTheDocument()
+    expect(document.querySelector('.diff-token.typo')).toBeInTheDocument()
+    expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('u')
+  })
+
   it('works with default browser services without explicitly passing props', async () => {
     const user = userEvent.setup()
     render(<App />)
