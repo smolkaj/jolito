@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 20 or later (CI uses Node.js 20)
+- Node.js 24 (Krypton LTS)
 - npm
 
 ## Start the app
