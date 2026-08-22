@@ -198,6 +198,7 @@ export function App({
     () => !services.speaker.supported(),
   )
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
+  const [samplePlaying, setSamplePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
@@ -209,6 +210,12 @@ export function App({
     },
     [services.speaker],
   )
+
+  const playSampleAudio = useCallback(() => {
+    setSamplePlaying(true)
+    playAudio('¡Sale!', 'es-MX')
+    window.setTimeout(() => setSamplePlaying(false), 1200)
+  }, [playAudio])
 
   useEffect(() => {
     services.cards.save(cards)
@@ -352,15 +359,15 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
-            <p className="eyebrow">MEXICAN SPANISH · MADE PERSONAL</p>
+            <p className="eyebrow">SPACED REPETITION · ACTIVE RECALL</p>
             <h1>
               Make the words
               <br />
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards from the Spanish you actually want
-              to use—and practice them at your rhythm.
+              Create beautiful, spoken cards from the phrases you meet every
+              day—and practice them at your rhythm.
             </p>
             <div className="hero-actions">
               <button
@@ -383,19 +390,29 @@ export function App({
               Cards and reviews work without an internet connection.
             </p>
           </div>
-          <div className="hero-visual" aria-hidden="true">
-            <div className="hero-orbit orbit-one" />
-            <div className="hero-orbit orbit-two" />
-            <div className="sample-card sample-card-back">
+          <div className="hero-visual">
+            <div className="hero-orbit orbit-one" aria-hidden="true" />
+            <div className="hero-orbit orbit-two" aria-hidden="true" />
+            <div className="sample-card sample-card-back" aria-hidden="true">
               <span>ENGLISH → SPANISH</span>
               <p>Sounds good!</p>
             </div>
-            <div className="sample-card sample-card-front">
-              <div className="mini-sun" />
-              <span>MEXICAN SPANISH</span>
+            <button
+              type="button"
+              className={`sample-card sample-card-front ${samplePlaying ? 'is-playing' : ''}`}
+              onClick={playSampleAudio}
+              aria-label="Play pronunciation for sample card: ¡Sale!"
+            >
+              <div className="mini-sun" aria-hidden="true" />
+              <span className="sample-badge">MEXICAN SPANISH</span>
               <p>¡Sale!</p>
-              <i>tap to hear</i>
-            </div>
+              <span className="sample-listen-hint" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                </svg>
+                {samplePlaying ? 'Playing…' : 'Tap to hear'}
+              </span>
+            </button>
           </div>
         </section>
       </main>

@@ -185,6 +185,32 @@ describe('Ritmo', () => {
     expect(screen.getByText(/5 cards practiced/i)).toBeInTheDocument()
   })
 
+  it('renders refined landing page copy and plays audio when clicking the sample card', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    expect(
+      screen.getByText('SPACED REPETITION · ACTIVE RECALL'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /create beautiful, spoken cards from the phrases you meet every day/i,
+      ),
+    ).toBeInTheDocument()
+
+    const sampleCard = screen.getByRole('button', {
+      name: /play pronunciation for sample card: ¡sale!/i,
+    })
+    expect(sampleCard).toBeInTheDocument()
+    await user.click(sampleCard)
+
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: '¡Sale!',
+      locale: 'es-MX',
+    })
+  })
+
   it('works with default browser services without explicitly passing props', async () => {
     const user = userEvent.setup()
     render(<App />)
