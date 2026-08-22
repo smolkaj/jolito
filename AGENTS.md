@@ -20,6 +20,9 @@ If already launched from a task worktree, stay there; do not create another.
   create.
 - Use one branch and PR per task. Inspect `git status` and the diff; stage
   explicit paths, never `git add -A`.
+- Submit every change through a pull request to the upstream repository. Do
+  not push or merge changes directly to `main`; push only the task branch and
+  open an upstream PR for review.
 - Serialize changes to shared hotspots such as dependency manifests, global
   configuration, and app entry points.
 - Run the relevant checks before handoff, and update docs when behavior, setup,
