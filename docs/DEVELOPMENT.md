@@ -12,6 +12,15 @@ npm install
 npm run dev
 ```
 
+The development server does not register the offline service worker, avoiding stale assets while iterating. To exercise the installable, offline-capable production shell locally:
+
+```sh
+npm run build
+npm run preview
+```
+
+Open the app once while online before testing an offline reload. Browser-provided speech synthesis is used for MVP audio; available voices vary by operating system and may require downloading a Mexican Spanish voice for offline playback.
+
 ## Before opening a PR
 
 ```sh
