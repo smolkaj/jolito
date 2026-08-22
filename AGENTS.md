@@ -1,155 +1,53 @@
 # Working concurrently
 
-One agent may write to a checkout at a time. The repository root is a read-only
-control checkout; use an isolated Git worktree for implementation work.
+The repository root is a read-only control checkout. Work exclusively in isolated Git worktrees:
 
 ```sh
-git switch main
-git pull --ff-only origin main
-git worktree list
+git switch main && git pull --ff-only origin main
 git worktree add -b <agent>/<task> ../ritmo-<task> origin/main
-git worktree remove ../ritmo-<task>   # clean up after merging
-git worktree prune                    # gc dangling refs
+git worktree remove ../ritmo-<task> && git worktree prune  # clean up after merging
 ```
 
-Use a short identifier for `<agent>` (e.g. `agy`, `codex`, `claude`, or username)
-and a unique, short `<task>` name. Do all editing, dependency installation,
-formatting, testing, staging, and committing in that worktree. If the work
-builds on an unmerged branch, use that branch instead of `origin/main`.
-If already launched from a task worktree, stay there; do not create another.
-
-- Never edit, stage, or run generators in another agent's worktree.
-- Do not remove worktrees, force-push, reset, or discard work you did not
-  create. Clean up only your own worktrees after merging.
-- Use one branch and PR per task. Inspect `git status` and the diff; stage
-  explicit paths, never `git add -A`.
-- Submit every change through a pull request to the upstream repository. Do
-  not push or merge changes directly to `main`; push only the task branch and
-  open an upstream PR for review.
-- Serialize changes to shared hotspots such as dependency manifests, global
-  configuration, and app entry points.
-- Run the relevant checks before handoff, and update docs when behavior, setup,
-  or architecture changes.
+- `<agent>` is your short ID (`agy`, `codex`, `claude`, or username); `<task>` is unique and descriptive.
+- Never touch another agent's worktree. Clean up only your own worktrees after merging.
+- One branch and PR per task. Stage explicit paths (`git add <file>`), never `git add -A`.
+- Never push directly to `main`; always open an upstream PR.
 
 # Philosophy
 
-- **We strive for simplicity.** Complex is easy; simple is extremely hard.
-  Simple code, simple designs, simple interfaces — earned through the effort of
-  deeply understanding the problem. Every layer of indirection, every
-  abstraction, every "just in case" parameter must justify its existence.
-  When in doubt, leave it out.
-- **Build the ideal, not "good enough."** Before committing to a design, define
-  what the ideal solution looks like — unconstrained by schedule, legacy, or
-  expedience. Then build it. A pragmatic shortcut is legitimate when you've
-  considered the ideal and have a concrete reason to defer it — but the default
-  should be to do the right thing, not to stop early. Name the north star, name
-  what you're trading away, and name why.
-- **Write the test first.** The test is the spec — it defines the behavior you
-  want before you write the code. If you can't write a clear test, you don't
-  understand the problem yet. A failing test is the starting point for every
-  change, not an afterthought.
-- **Write DAMP tests, not DRY tests.** Each test should be readable top-to-bottom
-  without chasing helpers. When a test fails, you want the full context right
-  there. Three similar test bodies are better than one parameterized helper that
-  obscures the scenario.
-- **Walking skeleton first.** Build a minimal end-to-end slice before filling in
-  any one layer. Get an ugly-but-working pipeline — compiling, wiring, passing
-  one trivial test — before polishing internals. Integration problems are cheap
-  to fix now, expensive later.
-- **Churn is free.** Don't leave behind dead code, redundant helpers, or stale
-  call sites because updating them would "touch too many files." You are an AI
-  coding agent — mechanical refactoring across dozens of files is exactly what
-  you're good at.
+- **Simplicity above all.** Every layer of indirection, abstraction, or "just in case" parameter must justify its existence. When in doubt, leave it out.
+- **Build the ideal north star.** Design the unconstrained ideal first, then build it. If taking a pragmatic shortcut, explicitly name what was traded away and why.
+- **Test-first & DAMP.** Write the test before the code. Three clear, readable test bodies beat one clever parameterized helper.
+- **Walking skeleton first.** Get a minimal end-to-end slice compiling and passing one test before polishing internals.
+- **Churn is free.** Never leave dead code, redundant helpers, or stale call sites behind to avoid touching files. Mechanical refactoring is cheap.
 
 # Design invariants
 
-1. **Local-first & offline by default.** The primary learning loop (reviewing
-   cards, self-grading, typed recall, audio playback, card creation) must work
-   completely without network connectivity. Network sync and cloud features are
-   enhancers, never hard prerequisites.
-2. **Keyboard-first & accessible.** Every user interaction must be fully
-   operable with keyboard shortcuts (`Enter` to reveal, `1`–`4` to grade,
-   `Space` for audio) and pass automated accessibility checks (WCAG 2.1 A/AA)
-   with zero violations.
-3. **Never fail silently.** Prefer compile-time type constraints over runtime
-   checks. When runtime checks are needed, fail loudly with structured errors.
-   Never allow unexpected inputs or corrupted data to fall through to silent
-   defaults.
-4. **Validate boundaries with Zod.** Untrusted input from local storage, network
-   payloads, or AI services must be runtime-validated with Zod schemas.
-   TypeScript types alone are not boundary validation.
-5. **Data migrations are mandatory.** When changing storage representations,
-   always provide an explicit, tested migration for existing cards. Never
-   silently drop user data or historical review schedules.
+1. **Local-first & offline by default.** Card review, creation, and audio playback must work completely without network connectivity. Sync is an enhancer, never a prerequisite.
+2. **Keyboard-first & accessible.** All interactions (`Enter` to reveal, `1`–`4` to grade, `Space` for audio) must be 100% keyboard-operable with zero WCAG 2.1 A/AA violations.
+3. **Never fail silently.** Prefer compile-time constraints. Fail loudly with structured errors rather than fallback defaults.
+4. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads) must be validated with runtime Zod schemas.
+5. **Data migrations are mandatory.** When changing storage representations, provide an explicit, tested migration for existing cards.
 
 # Independent review loop
 
-Every PR must be reviewed by an independent agent instance in a fresh session
-before handoff, and iterated to a fixpoint (zero remaining blocking issues).
+Every PR must be reviewed by a fresh, independent read-only agent instance and iterated to fixpoint (zero blocking issues) before merge.
 
-## Separation of roles
+## Review rules
 
-The independent reviewer operates strictly read-only. It must inspect the
-change without modifying files, staging changes, pushing commits, approving, or
-merging the PR.
+1. **Strict separation:** The reviewer is read-only. It must not edit files, stage changes, push commits, or merge.
+2. **Self-documenting PRs:** The reviewer receives **only** the PR title/description, the git diff (`git diff origin/main...HEAD`), and repo docs—**no** prompt/issue context.
+3. **PR narrative structure:** PRs must lead with big-picture wins, clearly contrast the world before vs. after, and name the next steps toward the north star.
 
-## Self-documenting PRs
+## Findings taxonomy
 
-The reviewer must **not** receive the original user prompt or issue
-description. The PR must be completely self-documenting. The reviewer receives
-only:
+- **Blocking:** Correctness bugs, invariant violations, missing/failing tests, missing docs for behavioral changes, or quality gate failures. Must be resolved before merge.
+- **Advisory:** Optional style or non-critical cleanups.
 
-1. The proposed PR title and description (leading with big-picture wins and why
-   the change matters, contrasting the world before vs. after, articulating where
-   we are going toward the north star, and detailing verification performed).
-2. The Git diff against the PR's base branch (e.g.
-   `git diff origin/main...HEAD`, or against the base branch if building on an
-   unmerged branch).
-3. Repository context and documentation (`docs/QUALITY.md`,
-   `docs/PRODUCT_VISION.md`, codebase).
+## Review loop to fixpoint
 
-## Review checklist
-
-The independent reviewer evaluates:
-
-- **Self-documentation & narrative intent:** Does the PR lead with wins and
-  explain why it matters? Is the world before vs. after clearly contrasted? Is
-  the trajectory toward the north star articulated? Can the change be understood
-  solely from the PR artifact, commit message, and code?
-- **Documentation:** Are documentation and docstrings updated to reflect all
-  behavioral, setup, API, or architectural changes?
-- **Correctness & edge cases:** Are there logic errors, invariant violations,
-  unhandled failure modes, or regressions?
-- **Tests as specification:** Do unit, property (`fast-check`), and browser
-  tests thoroughly exercise the new behavior and protect against regressions?
-- **Quality gates:** Does the change meet all standards in `docs/QUALITY.md`
-  and pass the relevant automated gates (`npm run check`, `npm run audit:prod`,
-  and `npm run test:e2e` when a user workflow changes)?
-
-## Findings and fixpoint
-
-Findings are categorized as:
-
-- **Blocking:** Correctness bugs, invariant violations, missing or failing
-  tests, missing documentation for behavioral/API changes, or quality gate
-  failures. All blocking findings must be resolved before merge.
-- **Advisory:** Optional simplifications, non-critical style or naming
-  refinements. The author may address these or note why they are deferred.
-
-A review is valid only for the exact base and head commits evaluated. Any new
-push or base-branch update invalidates prior reviews and requires re-review of
-the updated diff.
-
-## Review loop
-
-1. Author passes all relevant automated quality checks (`npm run check`,
-   `npm run audit:prod`, and `npm run test:e2e` when a user workflow changes).
-2. Author prepares the draft PR description and invokes an independent read-only
-   reviewer with only the PR description, the diff against the base branch, and
-   repo docs.
-3. Reviewer records the reviewed base and head commit SHAs, lists any blocking
-   or advisory findings, or confirms no blocking issues remain.
-4. If blocking issues or ambiguities exist, the author addresses them, reruns
-   checks, and requests re-review against the new head commit.
-5. Record the reviewer session ID / model and outcome in the PR so the review
-   history and role separation remain auditable.
+1. Author passes all gates (`npm run check`, `npm run audit:prod`, and `npm run test:e2e` for workflow changes).
+2. Author opens PR and invokes read-only reviewer with only PR description, diff, and docs.
+3. Reviewer records base/head commit SHAs and reports findings.
+4. If blocking issues exist, author resolves them, reruns checks, pushes, and requests re-review on the new head SHA.
+5. Record reviewer session ID, commit SHAs, and outcome in the PR comment/description before merge.
