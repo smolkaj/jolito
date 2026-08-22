@@ -1,5 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const SEVERITIES = new Set(['blocking', 'advisory'])
@@ -114,6 +118,52 @@ function rejectedResult(baseSha, headSha, problems) {
   }
 }
 
+async function validateFindingLocations(findings, headSha) {
+  const problems = []
+  const fileCache = new Map()
+
+  for (const [index, finding] of findings.entries()) {
+    let lineCount = fileCache.get(finding.path)
+    if (lineCount === undefined) {
+      try {
+        const typeResult = await execFileAsync(
+          'git',
+          ['cat-file', '-t', `${headSha}:${finding.path}`],
+          { encoding: 'utf8' },
+        )
+        if (typeResult.stdout.trim() !== 'blob') {
+          problems.push(`findings[${index}].path is not a file at the head SHA`)
+          continue
+        }
+        const contentResult = await execFileAsync(
+          'git',
+          ['show', `${headSha}:${finding.path}`],
+          { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+        )
+        if (contentResult.stdout.includes('\0')) {
+          problems.push(`findings[${index}].path is not a text file`)
+          continue
+        }
+        const content = contentResult.stdout
+        lineCount = content
+          ? content.split('\n').length - (content.endsWith('\n') ? 1 : 0)
+          : 0
+        fileCache.set(finding.path, lineCount)
+      } catch {
+        problems.push(`findings[${index}].path does not exist at the head SHA`)
+        continue
+      }
+    }
+    if (finding.start_line > lineCount || finding.end_line > lineCount) {
+      problems.push(
+        `findings[${index}] line range exceeds ${finding.path} (${lineCount} lines)`,
+      )
+    }
+  }
+
+  return problems
+}
+
 export function evaluateReview(review, expected) {
   const problems = []
 
@@ -201,7 +251,16 @@ async function runCli() {
     return
   }
 
-  const result = evaluateReview(review, { baseSha, headSha })
+  let result = evaluateReview(review, { baseSha, headSha })
+  if (result.findings.length > 0) {
+    const locationProblems = await validateFindingLocations(
+      result.findings,
+      headSha,
+    )
+    if (locationProblems.length > 0) {
+      result = rejectedResult(baseSha, headSha, locationProblems)
+    }
+  }
   await writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`)
 }
 

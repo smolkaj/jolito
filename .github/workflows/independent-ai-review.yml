@@ -40,6 +40,8 @@ jobs:
           git fetch --no-tags origin \
             "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
           test "$(git rev-parse "refs/remotes/pull/${PR_NUMBER}/head")" = "$HEAD_SHA"
+          DIFF_BASE_SHA=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          echo "DIFF_BASE_SHA=$DIFF_BASE_SHA" >> "$GITHUB_ENV"
 
       - name: Build immutable review input
         id: review-input
@@ -50,28 +52,26 @@ jobs:
           set -euo pipefail
           prompt_path=/tmp/codex-review-prompt.md
           metadata_path=/tmp/pull-request.json
-          diff_path=/tmp/pull-request.diff
 
           gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
             --jq '{title, body, base: .base.ref, head: .head.ref}' \
             > "$metadata_path"
-          git --no-pager diff --no-color --unified=5 \
-            "$BASE_SHA" "$HEAD_SHA" > "$diff_path"
-
           cp .github/ai-review/prompt.md "$prompt_path"
           {
             printf '\n## Review identity\n\n'
             printf 'Repository: `%s`\n' "$REPOSITORY"
             printf 'Pull request: `%s`\n' "$PR_NUMBER"
             printf 'Base SHA: `%s`\n' "$BASE_SHA"
+            printf 'Diff merge base: `%s`\n' "$DIFF_BASE_SHA"
             printf 'Head SHA: `%s`\n' "$HEAD_SHA"
             printf 'Model: `%s`\n' "$CODEX_REVIEW_MODEL"
             printf '\n## Untrusted pull-request metadata\n\n```json\n'
             cat "$metadata_path"
             printf '\n```\n\n## Changed files\n\n```text\n'
-            git --no-pager diff --name-status "$BASE_SHA" "$HEAD_SHA"
+            git --no-pager diff --name-status "$DIFF_BASE_SHA" "$HEAD_SHA"
             printf '```\n\n## Untrusted unified diff\n\n```diff\n'
-            cat "$diff_path"
+            git --no-pager diff --no-color --unified=5 \
+              "$DIFF_BASE_SHA" "$HEAD_SHA"
             printf '\n```\n'
           } >> "$prompt_path"
 
