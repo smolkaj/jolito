@@ -10,7 +10,7 @@ import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
-import { compareAnswer } from './domain/answer'
+import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   grades,
   intervalLabel,
@@ -127,7 +127,7 @@ function AudioButton({
   )
 }
 
-function renderDiffSegments(segments: import('./domain/answer').DiffSegment[]) {
+function renderDiffSegments(segments: DiffSegment[]) {
   return segments.map((seg, i) => (
     <span className={`diff-seg diff-seg-${seg.status}`} key={i}>
       {seg.value}

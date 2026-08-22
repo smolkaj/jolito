@@ -85,7 +85,11 @@ export function compareAnswer(
     for (let j = eChars.length - 1; j >= 0; j--) {
       const score = matchScore(tChars[i]!, eChars[j]!)
       if (score > 0) {
-        dp[i]![j] = dp[i + 1]![j + 1]! + score
+        dp[i]![j] = Math.max(
+          dp[i + 1]![j + 1]! + score,
+          dp[i + 1]![j]!,
+          dp[i]![j + 1]!,
+        )
       } else {
         dp[i]![j] = Math.max(dp[i + 1]![j]!, dp[i]![j + 1]!)
       }
