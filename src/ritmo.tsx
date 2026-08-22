@@ -200,6 +200,7 @@ export function App({
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const [samplePlaying, setSamplePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
+  const sampleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -212,10 +213,24 @@ export function App({
   )
 
   const playSampleAudio = useCallback(() => {
+    if (sampleTimerRef.current !== null) {
+      window.clearTimeout(sampleTimerRef.current)
+    }
     setSamplePlaying(true)
     playAudio('¡Sale!', 'es-MX')
-    window.setTimeout(() => setSamplePlaying(false), 1200)
+    sampleTimerRef.current = window.setTimeout(() => {
+      setSamplePlaying(false)
+      sampleTimerRef.current = null
+    }, 1200)
   }, [playAudio])
+
+  useEffect(() => {
+    return () => {
+      if (sampleTimerRef.current !== null) {
+        window.clearTimeout(sampleTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     services.cards.save(cards)
