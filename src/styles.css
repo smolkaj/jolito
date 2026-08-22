@@ -1327,11 +1327,19 @@ kbd {
   color: #14532d;
 }
 
-/* Accent nuance (diacritics / inverted marks): gentle warm amber */
+/* Capitalization nuance in expected: matching green with subtle dotted baseline */
+.diff-seg-case {
+  background: #dcfce7;
+  color: #14532d;
+  border-bottom: 2px dotted #16a34a;
+}
+
+/* Accent nuance (diacritics / inverted marks): matching green with warm amber tone & dotted baseline */
 .diff-seg-accent {
-  background: #fef3c7;
+  background: #dcfce7;
   color: #92400e;
-  border-bottom: 2px dotted #f59e0b;
+  border-bottom: 2px dotted #d97706;
+  font-weight: 600;
 }
 
 /* Missing characters in expected: warm soft terracotta highlight */

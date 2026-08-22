@@ -55,7 +55,8 @@ describe('compareAnswer (character-level LCS diff)', () => {
       { value: 'be', status: 'match' },
     ])
     expect(result.expectedSegments).toEqual([
-      { value: 'Maybe', status: 'match' },
+      { value: 'M', status: 'case' },
+      { value: 'aybe', status: 'match' },
     ])
   })
 
