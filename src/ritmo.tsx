@@ -128,11 +128,19 @@ function AudioButton({
 }
 
 function renderDiffSegments(segments: DiffSegment[]) {
-  return segments.map((seg, i) => (
-    <span className={`diff-seg diff-seg-${seg.status}`} key={i}>
-      {seg.value}
-    </span>
-  ))
+  return segments.map((seg, i) => {
+    const isSpaceOnly = /^ +$/.test(seg.value)
+    return (
+      <span
+        className={`diff-seg diff-seg-${seg.status}${
+          isSpaceOnly ? ' diff-seg-space' : ''
+        }`}
+        key={i}
+      >
+        {isSpaceOnly && seg.status === 'extra' ? '␣' : seg.value}
+      </span>
+    )
+  })
 }
 
 function AnswerComparison({

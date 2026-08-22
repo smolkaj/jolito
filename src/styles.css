@@ -1295,38 +1295,69 @@ kbd {
   gap: 12px;
 }
 
-/* Identical 24px serif typography for both rows */
+/* Identical 22px serif typography for both rows with comfortable line-height for highlights */
 .diff-text {
   margin: 0;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 24px;
-  line-height: 1.4;
+  font-size: 22px;
+  line-height: 1.6;
   color: var(--ink);
 }
 
 .diff-match {
-  color: #166534;
+  color: #14532d;
+  background: #dcfce7;
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 
-/* Character / segment diff styling */
+/* Background text highlighting segments */
+.diff-seg {
+  display: inline;
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin: 0 0.5px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Matching characters: soft calm green highlight */
 .diff-seg-match {
-  color: #166534;
+  background: #dcfce7;
+  color: #14532d;
 }
 
+/* Case nuance: soft sky highlight */
+.diff-seg-case {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Accent nuance (diacritics / inverted marks): gentle warm amber */
 .diff-seg-accent {
-  color: #b45309;
-  border-bottom: 2px solid #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+  border-bottom: 2px dotted #f59e0b;
 }
 
+/* Missing characters in expected: warm soft terracotta highlight */
 .diff-seg-missing {
-  color: #b45309;
-  border-bottom: 2px solid #f59e0b;
+  background: #ffedd5;
+  color: #9a3412;
 }
 
+/* Extra / incorrect characters in what you wrote: soft pastel red */
 .diff-seg-extra {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Extra space: distinct soft red space badge */
+.diff-seg-extra.diff-seg-space {
+  background: #fecaca;
   color: #dc2626;
-  text-decoration: line-through;
-  text-decoration-color: #ef4444;
+  font-weight: 700;
+  padding: 1px 5px;
 }
 
 .context-panel {

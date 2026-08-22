@@ -46,6 +46,19 @@ describe('compareAnswer (character-level LCS diff)', () => {
     ])
   })
 
+  it('marks capitalization nuances gently with case status', () => {
+    const result = compareAnswer('donde', 'Donde')
+    expect(result.isExact).toBe(false)
+    expect(result.typedSegments).toEqual([
+      { value: 'd', status: 'case' },
+      { value: 'onde', status: 'match' },
+    ])
+    expect(result.expectedSegments).toEqual([
+      { value: 'D', status: 'case' },
+      { value: 'onde', status: 'match' },
+    ])
+  })
+
   it('detects character typos within words', () => {
     const result = compareAnswer('restuarante', 'restaurante')
     expect(result.isExact).toBe(false)
