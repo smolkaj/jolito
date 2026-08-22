@@ -6,6 +6,8 @@ Ritmo is a beautiful, fast language-learning practice app. It retains the proven
 
 Our initial use case is learning Spanish while living in Mexico City. It should be possible to grow into other languages without changing the product's core idea.
 
+Ritmo is deliberately **multimodal**: cards combine written language, meaningful visuals, and natural audio. This is not decoration. Each mode should reinforce the same useful meaning, pronunciation, and context, giving the learner more than one path back to a memory.
+
 > **Ritmo — find your rhythm in a new language.**
 
 ## The problem
@@ -30,6 +32,7 @@ The goal is not to copy either product. Ritmo should offer roughly Anki's core f
 5. **Two-way by default, independently editable.** Most cards should create linked Spanish → English and English → Spanish practice cards. These directions can be mirrored, custom prompts/answers, or one-way when appropriate.
 6. **Offline is a first-class requirement.** After sign-in and initial sync, review and manual card creation work without an internet connection. Changes sync unobtrusively later.
 7. **Context is available, never in the way.** A concise answer is the card's expected response; an optional panel provides richer explanation, grammar, literal translation, register, variants, and regional notes.
+8. **Use modes in concert.** Text, visuals, and audio should clarify and reinforce one another. A visual must be contextually meaningful and audio must model the language being learned; avoid adding media that merely competes for attention.
 
 ## Initial experience
 
