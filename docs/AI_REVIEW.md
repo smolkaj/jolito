@@ -49,6 +49,8 @@ perform this once after the workflow is merged:
    `REVIEWER_APP_PRIVATE_KEY` and `OPENAI_API_KEY`.
 5. Optionally set `CODEX_REVIEW_MODEL`; the workflow's reviewed default is
    `gpt-5.6-terra`.
+   The current protected environment uses `gpt-5.6-terra` with high reasoning
+   effort.
 6. Open a canary pull request with both a known blocking defect and a subsequent
    fix. Confirm that the app-owned check fails and then passes on the respective
    head commits.
