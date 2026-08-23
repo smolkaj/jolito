@@ -1224,8 +1224,11 @@ export function App({
             </div>
           </nav>
           <section className="complete-card">
-            <div className="complete-sun" aria-hidden="true">
-              <span>✓</span>
+            <div className="complete-mascot-frame" aria-hidden="true">
+              <div className="complete-mascot-halo">
+                <img src={logoUrl} alt="" className="complete-mascot-img" />
+              </div>
+              <span className="complete-check-badge">✓</span>
             </div>
             <p className="eyebrow">SESSION COMPLETE</p>
             <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>

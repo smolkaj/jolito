@@ -42,10 +42,21 @@ test('creates and reviews both directions with the keyboard', async ({
   ).toBeVisible()
   await expect(page.getByText('You wrote')).toBeVisible()
 
-  await page.keyboard.press('3')
+  await page.keyboard.press('4')
   await expect(
     page.getByRole('heading', { name: 'Where is the metro?' }),
   ).toBeVisible()
+
+  // Complete second card to reach celebratory ¡Hecho! completion screen
+  await page.getByLabel('Your answer').fill('¿Dónde está el metro?')
+  await page.getByLabel('Your answer').press('Enter')
+  await page.keyboard.press('4')
+
+  await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
+  await expect(page.getByText(/2 cards practiced/i)).toBeVisible()
+  await expect(page.locator('.complete-mascot-frame')).toBeVisible()
+  await expect(page.locator('.complete-mascot-img')).toBeVisible()
+  await expect(page.locator('.complete-check-badge')).toHaveText('✓')
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
