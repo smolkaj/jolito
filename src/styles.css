@@ -1690,49 +1690,74 @@ kbd {
   font-weight: 600;
 }
 
-/* Tactile Chroma-Brutalist Colored Chiclets for 1–4 */
+/* Tactile Chroma-Brutalist Solid Colored Chiclets for 1–4 */
 .grade-buttons .grade-again {
-  background: var(--tezontle-soft);
-  box-shadow: 2px 2px 0 var(--tezontle);
+  background: var(--tezontle);
+  color: #ffffff;
+  box-shadow: 2px 2px 0 var(--tezontle-dark);
+}
+
+.grade-buttons .grade-again small {
+  color: #fecaca;
 }
 
 .grade-buttons .grade-again:hover {
-  background: #fee2e2;
+  background: var(--tezontle-dark);
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--tezontle);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .grade-buttons .grade-hard {
-  background: var(--cempasuchil-soft);
-  box-shadow: 2px 2px 0 var(--cempasuchil);
+  background: var(--cempasuchil);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--cempasuchil-dark);
+}
+
+.grade-buttons .grade-hard small {
+  color: #4a2800;
 }
 
 .grade-buttons .grade-hard:hover {
-  background: #fef3c7;
+  background: #d97706;
+  color: #ffffff;
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--cempasuchil-dark);
 }
 
+.grade-buttons .grade-hard:hover small {
+  color: #fef3c7;
+}
+
 .grade-buttons .grade-good {
-  background: var(--turquesa-soft);
-  box-shadow: 2px 2px 0 var(--turquesa-deep);
+  background: var(--turquesa);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--turquesa-dark);
+}
+
+.grade-buttons .grade-good small {
+  color: var(--turquesa-dark);
 }
 
 .grade-buttons .grade-good:hover {
-  background: #d1fae5;
+  background: #739885;
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--turquesa-dark);
 }
 
 .grade-buttons .grade-easy {
-  background: var(--maya-soft);
-  box-shadow: 2px 2px 0 var(--maya);
+  background: var(--maya);
+  color: #ffffff;
+  box-shadow: 2px 2px 0 var(--maya-dark);
+}
+
+.grade-buttons .grade-easy small {
+  color: #e0f2fe;
 }
 
 .grade-buttons .grade-easy:hover {
-  background: #e0f2fe;
+  background: var(--maya-dark);
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--maya-dark);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .keyboard-hint {
