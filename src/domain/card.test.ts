@@ -94,6 +94,20 @@ describe('createStudyCards', () => {
         now,
       ),
     ).toEqual([])
+
+    const overridden = createStudyCards(
+      {
+        spanish: 'Mucho gusto',
+        english: 'Nice to meet you',
+        context: '',
+        bidirectional: true,
+        scene: 'takeaway',
+      },
+      'note-override',
+      now,
+    )
+    expect(overridden[0]?.scene).toBe('takeaway')
+    expect(overridden[1]?.scene).toBe('takeaway')
   })
 })
 

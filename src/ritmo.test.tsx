@@ -134,7 +134,7 @@ describe('Ritmo', () => {
       'How cool',
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
-    await user.click(screen.getByRole('button', { name: /^save & practice$/i }))
+    await user.click(screen.getByRole('button', { name: /save & practice/i }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
@@ -199,7 +199,7 @@ describe('Ritmo', () => {
       'Where is the restaurant?',
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
-    await user.click(screen.getByRole('button', { name: /^save & practice$/i }))
+    await user.click(screen.getByRole('button', { name: /save & practice/i }))
 
     // Type with missing inverted question mark, missing accents, and typo in restaurante
     await user.type(
@@ -359,5 +359,104 @@ describe('Ritmo', () => {
     })
     expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
     expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
+  })
+
+  it('supports rapid card creation with "Save & add another" and diacritics insertion', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+
+    // Test diacritics bar insertion
+    await user.click(screen.getByRole('button', { name: 'Insert ¿' }))
+    const spanishInput = screen.getByLabelText(/^Spanish Mexican Spanish$/)
+    expect(spanishInput).toHaveValue('¿')
+
+    await user.clear(spanishInput)
+    await user.type(spanishInput, '¿Qué tal?')
+    await user.type(
+      screen.getByLabelText(/^English Concise meaning$/),
+      'How are you?',
+    )
+
+    // Verify live preview shows updated phrase and audio trigger
+    const preview = screen.getByLabelText('Live card preview')
+    expect(preview).toHaveTextContent('¿Qué tal?')
+    const liveListenBtn = screen.getByRole('button', {
+      name: 'Listen to live preview phrase',
+    })
+    await user.click(liveListenBtn)
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: '¿Qué tal?',
+      locale: 'es-MX',
+    })
+
+    // Click "Save & add another"
+    await user.click(
+      screen.getByRole('button', { name: /save & add another/i }),
+    )
+
+    // Verifies positive audio feedback and toast confirmation
+    expect(services.mockSounds.played).toContain('good')
+    expect(screen.getByRole('status')).toHaveTextContent(/2 cards saved/i)
+
+    // Verifies inputs are cleared for the next phrase and stay on create page
+    expect(screen.getByLabelText(/^Spanish Mexican Spanish$/)).toHaveValue('')
+    expect(screen.getByLabelText(/^English Concise meaning$/)).toHaveValue('')
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+    ).toBeInTheDocument()
+
+    // Verifies topbar due count increased from 4 to 6
+    expect(
+      screen.getByRole('button', { name: /review 6/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('swaps languages and overrides illustration scenes in card authoring', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+
+    await user.type(
+      screen.getByLabelText(/^Spanish Mexican Spanish$/),
+      'Good morning',
+    )
+    await user.type(
+      screen.getByLabelText(/^English Concise meaning$/),
+      'Buenos días',
+    )
+
+    // Click swap button
+    await user.click(
+      screen.getByRole('button', { name: 'Swap Spanish and English fields' }),
+    )
+    expect(screen.getByLabelText(/^Spanish Mexican Spanish$/)).toHaveValue(
+      'Buenos días',
+    )
+    expect(screen.getByLabelText(/^English Concise meaning$/)).toHaveValue(
+      'Good morning',
+    )
+
+    // Listen to pronunciation in field header
+    await user.click(
+      screen.getByRole('button', { name: 'Listen to Spanish pronunciation' }),
+    )
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'Buenos días',
+      locale: 'es-MX',
+    })
+
+    // Select manual scene override
+    await user.click(screen.getByRole('radio', { name: /☕ Takeaway/i }))
+
+    // Save with Cmd+Enter keyboard shortcut
+    await user.keyboard('{Meta>}{Enter}{/Meta}')
+
+    expect(services.mockSounds.played).toContain('good')
+    expect(services.memoryCards.saved?.[0]?.scene).toBe('takeaway')
   })
 })

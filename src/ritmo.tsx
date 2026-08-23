@@ -12,6 +12,7 @@ import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
+  chooseScene,
   grades,
   intervalLabel,
   isDue,
@@ -236,7 +237,21 @@ export function App({
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
-  const [bidirectional, setBidirectional] = useState(true)
+  const [createSpanish, setCreateSpanish] = useState('')
+  const [createEnglish, setCreateEnglish] = useState('')
+  const [createContext, setCreateContext] = useState('')
+  const [createReversePrompt, setCreateReversePrompt] = useState('')
+  const [createReverseAnswer, setCreateReverseAnswer] = useState('')
+  const [createBidirectional, setCreateBidirectional] = useState(true)
+  const [createSelectedScene, setCreateSelectedScene] = useState<
+    Scene | 'auto'
+  >('auto')
+  const [createFeedback, setCreateFeedback] = useState<string | null>(null)
+  const [previewSide, setPreviewSide] = useState<'spanish' | 'english'>(
+    'spanish',
+  )
+  const spanishTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const feedbackTimerRef = useRef<number | null>(null)
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
@@ -441,28 +456,93 @@ export function App({
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 
-  function createCard(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const field = (name: string): string => {
-      const value = form.get(name)
-      return typeof value === 'string' ? value : ''
+  const autoDetectedScene = useMemo(
+    () => chooseScene(createSpanish, createEnglish, createContext),
+    [createSpanish, createEnglish, createContext],
+  )
+  const liveScene =
+    createSelectedScene === 'auto' ? autoDetectedScene : createSelectedScene
+
+  function insertDiacritic(char: string) {
+    const textarea = spanishTextareaRef.current
+    if (!textarea) {
+      setCreateSpanish((prev) => prev + char)
+      return
     }
+    const start = textarea.selectionStart ?? textarea.value.length
+    const end = textarea.selectionEnd ?? textarea.value.length
+    const text = textarea.value
+    const next = text.slice(0, start) + char + text.slice(end)
+    textarea.value = next
+    setCreateSpanish(next)
+    textarea.focus()
+    textarea.setSelectionRange(start + char.length, start + char.length)
+  }
+
+  function swapLanguages() {
+    setCreateSpanish(createEnglish)
+    setCreateEnglish(createSpanish)
+    setCreateReversePrompt(createReverseAnswer)
+    setCreateReverseAnswer(createReversePrompt)
+    services.sounds.play('reveal')
+    requestAnimationFrame(() => {
+      spanishTextareaRef.current?.focus()
+    })
+  }
+
+  function handleSaveCard(andPractice: boolean) {
+    const spanish = createSpanish.trim()
+    const english = createEnglish.trim()
+    if (!spanish || !english) return
+
+    const now = services.clock.now()
     const created = createCards(
       {
-        spanish: field('spanish'),
-        english: field('english'),
-        context: field('context'),
-        bidirectional: form.get('bidirectional') === 'on',
-        reversePrompt: field('reversePrompt'),
-        reverseAnswer: field('reverseAnswer'),
+        spanish,
+        english,
+        context: createContext.trim(),
+        bidirectional: createBidirectional,
+        scene: createSelectedScene === 'auto' ? undefined : createSelectedScene,
+        reversePrompt: createReversePrompt.trim() || undefined,
+        reverseAnswer: createReverseAnswer.trim() || undefined,
       },
       { clock: services.clock, ids: services.ids },
     )
     if (created.length === 0) return
 
     setCards((current) => [...created, ...current])
-    beginReview(created.map(({ id }) => id))
+    setReferenceTime(now)
+
+    if (andPractice) {
+      beginReview(created.map(({ id }) => id))
+    } else {
+      services.sounds.play('good')
+      setCreateSpanish('')
+      setCreateEnglish('')
+      setCreateContext('')
+      setCreateReversePrompt('')
+      setCreateReverseAnswer('')
+      setCreateSelectedScene('auto')
+      setCreateFeedback(
+        created.length === 2
+          ? '2 cards saved (bidirectional)! Ready for next phrase.'
+          : 'Card saved! Ready for next phrase.',
+      )
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current)
+      feedbackTimerRef.current = window.setTimeout(() => {
+        setCreateFeedback(null)
+      }, 3500)
+      requestAnimationFrame(() => {
+        spanishTextareaRef.current?.focus()
+      })
+    }
+  }
+
+  function handleCreateKeyDown(event: React.KeyboardEvent<HTMLFormElement>) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault()
+      handleSaveCard(event.shiftKey)
+    }
   }
 
   if (view === 'welcome')
@@ -584,31 +664,186 @@ export function App({
           </button>
         </nav>
         <section className="create-layout">
-          <header>
-            <p className="eyebrow">ADD TO YOUR COLLECTION</p>
-            <h1>What do you want to remember?</h1>
-            <p>Words and whole phrases are equally welcome.</p>
-          </header>
-          <form className="create-form" onSubmit={createCard}>
+          <div className="create-sidebar">
+            <header>
+              <p className="eyebrow">ADD TO YOUR COLLECTION</p>
+              <h1>What do you want to remember?</h1>
+              <p>Words and whole phrases are equally welcome.</p>
+            </header>
+
+            <div className="create-preview-wrapper">
+              <div className="preview-header-bar">
+                <span className="preview-label">LIVE PREVIEW</span>
+                {createBidirectional && (
+                  <button
+                    type="button"
+                    className="preview-toggle-btn"
+                    onClick={() =>
+                      setPreviewSide((side) =>
+                        side === 'spanish' ? 'english' : 'spanish',
+                      )
+                    }
+                    aria-label="Toggle preview direction"
+                  >
+                    <span>
+                      {previewSide === 'spanish' ? 'ES → EN' : 'EN → ES'}
+                    </span>
+                    <span className="flip-icon" aria-hidden="true">
+                      ⇄
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              <div
+                className={`sample-card create-card-mockup ${
+                  previewSide === 'spanish'
+                    ? 'sample-card-es'
+                    : 'sample-card-en'
+                }`}
+                aria-label="Live card preview"
+              >
+                <div className="sample-card-header">
+                  <span className="sample-badge">
+                    {previewSide === 'spanish' ? 'MEXICAN SPANISH' : 'ENGLISH'}
+                  </span>
+                  <span className="sample-scene-badge">
+                    {liveScene === 'metro'
+                      ? '🚇 Metro'
+                      : liveScene === 'takeaway'
+                        ? '☕ Takeaway'
+                        : '💬 Chat'}
+                  </span>
+                </div>
+                <div className="sample-card-body">
+                  <SceneIllustration scene={liveScene} />
+                  <p className="sample-phrase">
+                    {previewSide === 'spanish'
+                      ? createSpanish.trim() || '¿Qué tal?'
+                      : createReversePrompt.trim() ||
+                        createEnglish.trim() ||
+                        'How’s it going?'}
+                  </p>
+                  {createContext.trim() && (
+                    <p className="sample-card-context">
+                      {createContext.trim()}
+                    </p>
+                  )}
+                </div>
+                <div className="sample-card-footer">
+                  <button
+                    type="button"
+                    className="sample-listen-hint"
+                    disabled={
+                      previewSide === 'spanish'
+                        ? !createSpanish.trim()
+                        : !(createReversePrompt.trim() || createEnglish.trim())
+                    }
+                    onClick={() => {
+                      if (previewSide === 'spanish' && createSpanish.trim()) {
+                        playAudio(createSpanish.trim(), 'es-MX')
+                      } else if (
+                        previewSide === 'english' &&
+                        (createReversePrompt.trim() || createEnglish.trim())
+                      ) {
+                        playAudio(
+                          createReversePrompt.trim() || createEnglish.trim(),
+                          'en-US',
+                        )
+                      }
+                    }}
+                    aria-label="Listen to live preview phrase"
+                  >
+                    <svg viewBox="0 0 24 24">
+                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                    </svg>
+                    <span>Tap to hear</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <form
+            className="create-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleSaveCard(false)
+            }}
+            onKeyDown={handleCreateKeyDown}
+          >
             <div className="field-group spanish-field">
-              <label htmlFor="spanish">
-                Spanish <span>Mexican Spanish</span>
-              </label>
+              <div className="field-label-row">
+                <label htmlFor="spanish">
+                  Spanish <span>Mexican Spanish</span>
+                </label>
+                <button
+                  type="button"
+                  className="quick-listen-btn"
+                  disabled={!createSpanish.trim()}
+                  onClick={() => playAudio(createSpanish.trim(), 'es-MX')}
+                  aria-label="Listen to Spanish pronunciation"
+                  title="Listen to Spanish pronunciation"
+                >
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                  </svg>
+                  <span>Listen</span>
+                </button>
+              </div>
+
+              <div
+                className="diacritics-toolbar"
+                role="toolbar"
+                aria-label="Insert Spanish accent marks"
+              >
+                <span className="diacritics-label">Accents:</span>
+                {(['á', 'é', 'í', 'ó', 'ú', 'ñ', '¿', '¡'] as const).map(
+                  (char) => (
+                    <button
+                      key={char}
+                      type="button"
+                      className="diacritic-chip"
+                      onClick={() => insertDiacritic(char)}
+                      aria-label={`Insert ${char}`}
+                    >
+                      {char}
+                    </button>
+                  ),
+                )}
+              </div>
+
               <textarea
+                ref={spanishTextareaRef}
                 id="spanish"
                 name="spanish"
                 rows={2}
                 autoFocus
                 required
+                value={createSpanish}
+                onChange={(e) => setCreateSpanish(e.target.value)}
                 placeholder="¿Qué escuchaste o quisiste decir hoy?"
               />
               <small>
                 This side will be read aloud with a Mexican Spanish voice.
               </small>
             </div>
-            <div className="direction-connector" aria-hidden="true">
-              <span>↕</span>
+
+            <div className="swap-row">
+              <button
+                type="button"
+                className="swap-btn"
+                onClick={swapLanguages}
+                aria-label="Swap Spanish and English fields"
+                title="Swap Spanish and English"
+              >
+                <span className="swap-icon" aria-hidden="true">
+                  ⇅
+                </span>
+                <span>Swap languages</span>
+              </button>
             </div>
+
             <div className="field-group english-field">
               <label htmlFor="english">
                 English <span>Concise meaning</span>
@@ -618,15 +853,20 @@ export function App({
                 name="english"
                 rows={2}
                 required
+                value={createEnglish}
+                onChange={(e) => setCreateEnglish(e.target.value)}
                 placeholder="What should you recall?"
               />
             </div>
+
             <label className="toggle-row">
               <input
                 name="bidirectional"
                 type="checkbox"
-                checked={bidirectional}
-                onChange={(event) => setBidirectional(event.target.checked)}
+                checked={createBidirectional}
+                onChange={(event) =>
+                  setCreateBidirectional(event.target.checked)
+                }
               />
               <span className="toggle" aria-hidden="true" />
               <span>
@@ -634,7 +874,39 @@ export function App({
                 <small>Spanish ↔ English</small>
               </span>
             </label>
-            {bidirectional && (
+
+            <div className="scene-picker-section">
+              <span className="scene-picker-title">Illustration scene</span>
+              <div
+                className="scene-pill-group"
+                role="radiogroup"
+                aria-label="Card illustration scene"
+              >
+                {(
+                  [
+                    ['auto', `✨ Auto (${sceneLabels[autoDetectedScene]})`],
+                    ['conversation', '💬 Conversation'],
+                    ['takeaway', '☕ Takeaway'],
+                    ['metro', '🚇 Metro'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`scene-pill ${
+                      createSelectedScene === key ? 'is-selected' : ''
+                    }`}
+                    onClick={() => setCreateSelectedScene(key)}
+                    role="radio"
+                    aria-checked={createSelectedScene === key}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {createBidirectional && (
               <details className="form-details">
                 <summary>Customize the reverse card</summary>
                 <p>
@@ -646,6 +918,8 @@ export function App({
                     English prompt
                     <input
                       name="reversePrompt"
+                      value={createReversePrompt}
+                      onChange={(e) => setCreateReversePrompt(e.target.value)}
                       placeholder="Uses English above"
                     />
                   </label>
@@ -653,12 +927,15 @@ export function App({
                     Spanish answer
                     <input
                       name="reverseAnswer"
+                      value={createReverseAnswer}
+                      onChange={(e) => setCreateReverseAnswer(e.target.value)}
                       placeholder="Uses Spanish above"
                     />
                   </label>
                 </div>
               </details>
             )}
+
             <details className="form-details">
               <summary>
                 Add context <small>Optional</small>
@@ -668,14 +945,47 @@ export function App({
                 <textarea
                   name="context"
                   rows={3}
+                  value={createContext}
+                  onChange={(e) => setCreateContext(e.target.value)}
                   placeholder="When would you say this? Is it formal, casual, or especially Mexican?"
                 />
               </label>
             </details>
-            <button className="primary-button save-button" type="submit">
-              {bidirectional ? 'Save & practice both' : 'Save & practice'}
-              <span aria-hidden="true">→</span>
-            </button>
+
+            <div className="create-actions-group">
+              <button
+                className="primary-button save-add-btn"
+                type="button"
+                onClick={() => handleSaveCard(false)}
+              >
+                <span>Save & add another</span>
+                <kbd className="action-kbd">⌘Enter</kbd>
+              </button>
+              <button
+                className="secondary-button save-practice-btn"
+                type="button"
+                onClick={() => handleSaveCard(true)}
+              >
+                <span>
+                  {createBidirectional
+                    ? 'Save & practice both'
+                    : 'Save & practice'}
+                </span>
+                <kbd className="action-kbd">⇧⌘Enter</kbd>
+              </button>
+            </div>
+
+            {createFeedback && (
+              <div
+                className="create-feedback-banner"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="feedback-check">✓</span>
+                <span>{createFeedback}</span>
+              </div>
+            )}
+
             <p className="save-note">Saved immediately to this device.</p>
           </form>
         </section>

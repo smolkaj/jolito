@@ -134,3 +134,44 @@ test('transitions sample card from background to foreground smoothly and remains
     .analyze()
   expect(results.violations).toEqual([])
 })
+
+test('delights learners during card creation with live preview, diacritics, and rapid batch saving', async ({
+  page,
+}) => {
+  await page.goto('/#/create')
+
+  await expect(
+    page.getByRole('heading', { name: 'What do you want to remember?' }),
+  ).toBeVisible()
+
+  // Test diacritics chip click
+  await page.getByRole('button', { name: 'Insert ¿' }).click()
+  const spanishTextarea = page.getByLabel(/^Spanish Mexican Spanish$/)
+  await expect(spanishTextarea).toHaveValue('¿')
+
+  await spanishTextarea.fill('¿Qué tal?')
+  await page.getByLabel(/^English Concise meaning$/).fill('How’s it going?')
+
+  // Verify live preview shows updated phrase
+  const preview = page.getByLabel('Live card preview')
+  await expect(preview).toContainText('¿Qué tal?')
+
+  // Test scene override
+  await page.getByRole('radio', { name: /☕ Takeaway/i }).click()
+  await expect(preview).toContainText('Takeaway')
+
+  // Verify zero WCAG A/AA accessibility violations on create screen
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+
+  // Test Save & Add Another
+  await page.getByRole('button', { name: /save & add another/i }).click()
+  await expect(page.getByRole('status')).toBeVisible()
+  await expect(page.getByRole('status')).toContainText(/2 cards saved/i)
+
+  // Fields are reset for rapid creation
+  await expect(spanishTextarea).toHaveValue('')
+  await expect(page.getByLabel(/^English Concise meaning$/)).toHaveValue('')
+})

@@ -60,6 +60,7 @@ export const newNoteSchema = z.object({
   english: z.string().trim().min(1),
   context: z.string(),
   bidirectional: z.boolean(),
+  scene: sceneSchema.optional(),
   reversePrompt: z.string().optional(),
   reverseAnswer: z.string().optional(),
 })
@@ -107,7 +108,7 @@ export function createStudyCards(
   if (!spanish || !english) return []
 
   const context = note.context.trim()
-  const scene = chooseScene(spanish, english, context)
+  const scene = note.scene ?? chooseScene(spanish, english, context)
   const newSchedule = (): ReviewSchedule => ({
     state: 'new',
     dueAt: now,
