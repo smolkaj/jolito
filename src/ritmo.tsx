@@ -510,6 +510,7 @@ export function App({
             </div>
           </div>
           <div className="hero-visual">
+            {/* English Card (concise meaning) */}
             <button
               type="button"
               className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
@@ -542,6 +543,7 @@ export function App({
                 <p className="sample-phrase">avocado</p>
               </div>
             </button>
+            {/* Mexican Spanish Card */}
             <button
               type="button"
               className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
