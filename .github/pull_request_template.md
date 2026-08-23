@@ -13,7 +13,7 @@
 
 ## Live preview
 
-- **Branch preview URL:** `https://<branch-name>-ritmo.smolkaj.workers.dev`
+- **Branch preview URL:** `https://<branch-name>-jolito.smolkaj.workers.dev`
 
 ## Acceptance criteria & invariants
 

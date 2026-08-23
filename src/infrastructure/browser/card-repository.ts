@@ -5,7 +5,8 @@ import {
   type StudyCard,
 } from '../../domain/card'
 
-const STORAGE_KEY = 'ritmo-library-v1'
+const STORAGE_KEY = 'jolito-library-v1'
+const LEGACY_STORAGE_KEY = 'ritmo-library-v1'
 const LEGACY_KEY = 'ritmo-cards'
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem'>
@@ -75,9 +76,21 @@ export class LocalStorageCardRepository implements CardRepository {
     const current = restoreCurrent(parsedCurrent)
     if (current) return current
 
+    const parsedLegacyStorage = parseJson(
+      this.storage.getItem(LEGACY_STORAGE_KEY),
+    )
+    const legacyCurrent = restoreCurrent(parsedLegacyStorage)
+    if (legacyCurrent) {
+      this.save(legacyCurrent)
+      return legacyCurrent
+    }
+
     const parsedLegacy = parseJson(this.storage.getItem(LEGACY_KEY))
     const legacy = restoreLegacy(parsedLegacy)
-    if (legacy) return legacy
+    if (legacy) {
+      this.save(legacy)
+      return legacy
+    }
 
     return fallback
   }

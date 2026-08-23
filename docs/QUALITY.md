@@ -1,6 +1,6 @@
-# Quality at Ritmo
+# Quality at Jolito
 
-Ritmo optimizes for fast, safe iteration. We use automation and small, readable changes to move quickly; we do not add process merely to look rigorous.
+Jolito optimizes for fast, safe iteration. We use automation and small, readable changes to move quickly; we do not add process merely to look rigorous.
 
 ## The quality contract
 
@@ -18,7 +18,7 @@ The PR author briefly describes behavior changed and verification performed. Scr
 
 ## Testing strategy
 
-| Layer       | Purpose                             | Ritmo examples                                                            |
+| Layer       | Purpose                             | Jolito examples                                                           |
 | ----------- | ----------------------------------- | ------------------------------------------------------------------------- |
 | Unit        | Fast, deterministic domain behavior | scheduling, answer comparison, card-direction creation, serialization     |
 | Property    | Invariants across many inputs       | no invalid review state, stable serialization, valid due-date transitions |
@@ -30,13 +30,13 @@ Coverage is a guardrail, not a score. The `src/domain` and `src/application` cor
 
 ## Accessibility and performance
 
-Keyboard operation is a core Ritmo feature. Every primary workflow must work without a mouse, retain obvious focus, and expose semantic labels. Browser tests run automated accessibility scans for key screens. We will add visual-regression and performance budgets when the first stable product surfaces exist, so the baselines represent intentional design rather than a prototype.
+Keyboard operation is a core Jolito feature. Every primary workflow must work without a mouse, retain obvious focus, and expose semantic labels. Browser tests run automated accessibility scans for key screens. We will add visual-regression and performance budgets when the first stable product surfaces exist, so the baselines represent intentional design rather than a prototype.
 
 ## Documentation
 
 Documentation is part of the deliverable:
 
-- `README.md` explains what Ritmo is and its current user-facing status.
+- `README.md` explains what Jolito is and its current user-facing status.
 - `docs/PRODUCT_VISION.md` records product direction and scope.
 - `docs/` holds developer documentation for architecture, testing, and consequential decisions.
 - Decisions that are costly to reverse require an [Architecture Decision Record](adr/README.md).

@@ -1,6 +1,6 @@
-# Ritmo architecture
+# Jolito architecture
 
-Ritmo uses a small, dependency-directed architecture so behavior stays easy to
+Jolito uses a small, dependency-directed architecture so behavior stays easy to
 test and difficult to couple accidentally.
 
 ```text

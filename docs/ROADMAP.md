@@ -1,6 +1,6 @@
-# Ritmo Product Roadmap
+# Jolito Product Roadmap
 
-Ritmo aims to combine Anki's proven spaced-repetition efficiency with the beauty, warmth, and effortless daily flow that makes language practice an addictive pleasure.
+Jolito aims to combine Anki's proven spaced-repetition efficiency with the beauty, warmth, and effortless daily flow that makes language practice an addictive pleasure.
 
 Our hexagonal architecture decouples core domain logic from UI and infrastructure, allowing development across **six parallel capability tracks** without waterfall bottlenecks.
 
@@ -19,7 +19,7 @@ flowchart TD
 ---
 
 > [!NOTE]
-> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Ritmo's north star. The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
+> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Jolito's north star. The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
 
 ---
 
@@ -78,7 +78,7 @@ _Goal: Ensure cards and progress are safely backed up and synced without sacrifi
 
 ### Track 6: 📱 Native iOS Client & Mobile Ecosystem
 
-_Goal: Bring Ritmo's calm, rhythmic study flow to iOS with native tactile polish and instant widget access._
+_Goal: Bring Jolito's calm, rhythmic study flow to iOS with native tactile polish and instant widget access._
 
 - **Native Mobile Experience:** High-performance native or hybrid client sharing the synchronized collection with background-resilient audio playback.
 - **System Integrations:** Quick-review Home/Lock Screen widgets, Apple Sign-In, and tactile haptic feedback.

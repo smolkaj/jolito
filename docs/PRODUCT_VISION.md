@@ -1,14 +1,14 @@
-# Ritmo product vision
+# Jolito product vision
 
 ## The idea
 
-Ritmo is a beautiful, fast language-learning practice app. It retains the proven benefits of spaced-repetition flashcards while making high-quality language cards effortless and enjoyable to create.
+Jolito is a beautiful, fast language-learning practice app. It retains the proven benefits of spaced-repetition flashcards while making high-quality language cards effortless and enjoyable to create.
 
 Our initial use case is learning Spanish while living in Mexico City. It should be possible to grow into other languages without changing the product's core idea.
 
-Ritmo is deliberately **multimodal**: cards combine written language, meaningful visuals, and natural audio. This is not decoration. Each mode should reinforce the same useful meaning, pronunciation, and context, giving the learner more than one path back to a memory.
+Jolito is deliberately **multimodal**: cards combine written language, meaningful visuals, and natural audio. This is not decoration. Each mode should reinforce the same useful meaning, pronunciation, and context, giving the learner more than one path back to a memory.
 
-> **Ritmo — find your rhythm in a new language.**
+> **Jolito — spoken Mexican Spanish at your rhythm.**
 
 ## The problem
 
@@ -16,16 +16,16 @@ Anki is powerful and trusted, but its experience is dated and creating effective
 
 ## Product inspiration
 
-Ritmo combines two complementary reference points:
+Jolito combines two complementary reference points:
 
 - **Anki:** the proven spaced-repetition model, learner control, fast self-evaluation, and the flexibility to learn words or useful language chunks.
 - **Duolingo:** the beauty, warmth, visual engagement, audio-rich interactions, frictionlessness, and motivating sense of momentum that make a daily language habit feel inviting.
 
-The goal is not to copy either product. Ritmo should offer roughly Anki's core flashcard capability, specialized for language learning, through an experience that feels as polished, approachable, and habit-forming as Duolingo. Its motivation should support genuine learning—not obscure it with artificial busywork or a rigid course.
+The goal is not to copy either product. Jolito should offer roughly Anki's core flashcard capability, specialized for language learning, through an experience that feels as polished, approachable, and habit-forming as Duolingo. Its motivation should support genuine learning—not obscure it with artificial busywork or a rigid course.
 
 ## Product principles
 
-1. **AI proposes; the learner authors.** Creating cards manually is an important learning step. Ritmo removes repetitive work by suggesting translations, images, audio, and context, while the learner stays in control.
+1. **AI proposes; the learner authors.** Creating cards manually is an important learning step. Jolito removes repetitive work by suggesting translations, images, audio, and context, while the learner stays in control.
 2. **Production, not recognition.** Learners type answers before revealing the expected answer. Self-evaluation remains authoritative because natural language has valid alternatives.
 3. **Make it flow.** New cards focus the answer field automatically; prompt audio plays automatically; keyboard shortcuts carry the learner through review with almost no friction.
 4. **Words and chunks are equally valid.** A card may be a single word, a phrase, or any useful language unit. The learner decides.
@@ -110,4 +110,4 @@ The app still keeps a durable local collection for immediate, offline interactio
 
 ## Working definition of success
 
-Ritmo succeeds when creating a card from a real moment in Mexico City takes seconds and feels rewarding, and when the daily review session feels like a calm, quick production practice—not like clearing an inbox or maintaining a database.
+Jolito succeeds when creating a card from a real moment in Mexico City takes seconds and feels rewarding, and when the daily review session feels like a calm, quick production practice—not like clearing an inbox or maintaining a database.

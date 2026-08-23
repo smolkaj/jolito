@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { App } from './ritmo'
+import { App } from './jolito'
 import { createTestServices } from './test/services'
 
 class SpeechSynthesisUtteranceMock {
@@ -27,7 +27,7 @@ beforeEach(() => {
   })
 })
 
-describe('Ritmo', () => {
+describe('Jolito', () => {
   it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
     const user = userEvent.setup()
     const services = createTestServices()

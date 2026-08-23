@@ -20,6 +20,17 @@ describe('LocalStorageCardRepository', () => {
     const repo = new LocalStorageCardRepository(localStorage)
     repo.save(fallback)
     expect(repo.load([])).toEqual(fallback)
+    expect(localStorage.getItem('jolito-library-v1')).toContain('Hola')
+  })
+
+  it('migrates cards from ritmo-library-v1 seamlessly', () => {
+    const repo = new LocalStorageCardRepository(localStorage)
+    localStorage.setItem(
+      'ritmo-library-v1',
+      JSON.stringify({ version: 1, cards: fallback }),
+    )
+    expect(repo.load([])).toEqual(fallback)
+    expect(localStorage.getItem('jolito-library-v1')).toContain('Hola')
   })
 
   it('migrates cards from the first prototype', () => {
@@ -41,10 +52,12 @@ describe('LocalStorageCardRepository', () => {
       context: '',
       schedule: { dueAt: 0 },
     })
+    expect(localStorage.getItem('jolito-library-v1')).toContain('¿Qué onda?')
   })
 
   it('falls back safely when stored data is malformed or invalid according to schema', () => {
     const repo = new LocalStorageCardRepository(localStorage)
+    localStorage.setItem('jolito-library-v1', '{nope')
     localStorage.setItem('ritmo-library-v1', '{nope')
     localStorage.setItem('ritmo-cards', JSON.stringify([{ prompt: 3 }]))
     expect(repo.load(fallback)).toBe(fallback)

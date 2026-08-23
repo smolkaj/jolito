@@ -4,10 +4,10 @@ The repository root is a read-only checkout. Work exclusively in isolated Git wo
 
 ```sh
 git switch main && git pull --ff-only origin main
-git worktree add -b <agent>/<task> ../ritmo-<task> origin/main
+git worktree add -b <agent>/<task> ../jolito-<task> origin/main
 
 # Clean up after merging.
-git worktree remove ../ritmo-<task> && git worktree prune
+git worktree remove ../jolito-<task> && git worktree prune
 ```
 
 - `<agent>` is your short ID (e.g. `agy`, `codex`, `claude`); `<task>` is short yet descriptive.
@@ -15,7 +15,7 @@ git worktree remove ../ritmo-<task> && git worktree prune
 - One branch and PR per task.
 - Never push directly to `main`; always open an upstream PR.
 - Open PRs proactively and early; share them with the user for review.
-- Always proactively provide the live branch preview URL (`https://<branch-name>-ritmo.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
+- Always proactively provide the live branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
 - Never merge PRs without explicit user approval.
 
 # Independent review loop
