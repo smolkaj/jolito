@@ -2197,6 +2197,99 @@ kbd {
   font-family: var(--font-mono);
 }
 
+/* Sync Modal & Account Styles */
+.sync-modal {
+  max-width: 500px;
+}
+
+.sync-account-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.account-info-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 2px solid var(--line-subtle);
+  border-radius: 16px;
+  background: var(--paper-subtle);
+}
+
+.account-avatar {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  font-size: 20px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-badge {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--turquesa-dark);
+}
+
+.account-email {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sync-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sync-auth-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sync-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sync-explanation {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.sync-auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sync-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

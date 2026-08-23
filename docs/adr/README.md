@@ -37,9 +37,10 @@ What are we choosing?
 What becomes easier, harder, or newly required?
 ```
 
-| ADR                                                                            | Status   | Decision                                              |
-| ------------------------------------------------------------------------------ | -------- | ----------------------------------------------------- |
-| [0001: Versioned local storage for the MVP](0001-local-first-mvp-storage.md)   | Accepted | Use versioned local storage for the MVP loop.         |
-| [0002: Application stack](0002-application-stack.md)                           | Accepted | TypeScript, React SPA, Postgres target, and Zod.      |
-| [0003: Offline sync evaluation](0003-offline-sync-evaluation.md)               | Proposed | Evaluate PowerSync with Supabase before custom.       |
-| [0004: Offline deck backup and export](0004-offline-deck-backup-and-export.md) | Accepted | Offline JSON deck backup, export, restore, and merge. |
+| ADR                                                                             | Status   | Decision                                              |
+| ------------------------------------------------------------------------------- | -------- | ----------------------------------------------------- |
+| [0001: Versioned local storage for the MVP](0001-local-first-mvp-storage.md)    | Accepted | Use versioned local storage for the MVP loop.         |
+| [0002: Application stack](0002-application-stack.md)                            | Accepted | TypeScript, React SPA, Postgres target, and Zod.      |
+| [0003: Offline sync evaluation](0003-offline-sync-evaluation.md)                | Proposed | Evaluate PowerSync with Supabase before custom.       |
+| [0004: Offline deck backup and export](0004-offline-deck-backup-and-export.md)  | Accepted | Offline JSON deck backup, export, restore, and merge. |
+| [0005: Cloud snapshot sync with Supabase](0005-cloud-snapshot-sync-supabase.md) | Accepted | Zero-cost cloud snapshot sync with Supabase and RLS.  |

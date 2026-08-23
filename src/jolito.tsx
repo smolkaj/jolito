@@ -17,7 +17,13 @@ import {
   restoreDeckFromBackup,
   type RestoreMode,
 } from './application/deck-backup'
-import type { AppServices } from './application/ports'
+import { syncDeckWithCloud } from './application/deck-sync'
+import type {
+  AppServices,
+  AuthService,
+  AuthUser,
+  SyncService,
+} from './application/ports'
 import { starterCards } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
@@ -31,6 +37,7 @@ import {
 } from './domain/card'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseDeckBackup } from './domain/deck-backup'
+import type { SyncStatus } from './domain/sync'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -453,6 +460,299 @@ function BackupModal({
   )
 }
 
+function SyncModal({
+  isOpen,
+  onClose,
+  cards,
+  onUpdateCards,
+  auth,
+  sync,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  cards: StudyCard[]
+  onUpdateCards: (newCards: StudyCard[]) => void
+  auth: AuthService
+  sync: SyncService
+}) {
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState('')
+  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error' | 'info'
+    message: string
+  } | null>(null)
+
+  useEffect(() => {
+    return auth.onAuthStateChange((currentUser) => {
+      setUser(currentUser)
+    })
+  }, [auth])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleSendLink = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setLoading(true)
+    setStatus(null)
+    const res = await auth.sendMagicLink(email.trim())
+    setLoading(false)
+    if (res.success) {
+      setIsOtpSent(true)
+      setStatus({
+        type: 'info',
+        message: 'Sign-in code sent to your email. Enter it below to sync.',
+      })
+    } else {
+      setStatus({
+        type: 'error',
+        message: res.error || 'Failed to send sign-in link.',
+      })
+    }
+  }
+
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!token.trim()) return
+    setLoading(true)
+    setStatus(null)
+    const res = await auth.verifyOtp(email.trim(), token.trim())
+    if (res.success) {
+      const loggedUser = await auth.getUser()
+      if (loggedUser) {
+        setStatus({
+          type: 'info',
+          message: 'Signed in! Syncing deck with cloud...',
+        })
+        const syncRes = await syncDeckWithCloud({
+          localCards: cards,
+          user: loggedUser,
+          syncService: sync,
+          onCardsUpdated: onUpdateCards,
+        })
+        setLoading(false)
+        if (syncRes.success) {
+          setStatus({
+            type: 'success',
+            message: `Deck synchronized (${cards.length} cards up to date).`,
+          })
+        } else {
+          setStatus({
+            type: 'error',
+            message: syncRes.error || 'Sync completed with errors.',
+          })
+        }
+      } else {
+        setLoading(false)
+      }
+    } else {
+      setLoading(false)
+      setStatus({
+        type: 'error',
+        message: res.error || 'Invalid code.',
+      })
+    }
+  }
+
+  const handleSyncNow = async () => {
+    if (!user) return
+    setLoading(true)
+    setStatus(null)
+    const res = await syncDeckWithCloud({
+      localCards: cards,
+      user,
+      syncService: sync,
+      onCardsUpdated: onUpdateCards,
+    })
+    setLoading(false)
+    if (res.success) {
+      setStatus({
+        type: 'success',
+        message: `Deck successfully synchronized with cloud.`,
+      })
+    } else {
+      setStatus({
+        type: 'error',
+        message: res.error || 'Failed to sync with cloud.',
+      })
+    }
+  }
+
+  const handleSignOut = async () => {
+    await auth.signOut()
+    setIsOtpSent(false)
+    setToken('')
+    setStatus({
+      type: 'info',
+      message: 'Signed out. Cards remain safely stored on this device.',
+    })
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content sync-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sync-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="sync-modal-title">Cloud sync & multi-device backup</h2>
+            <p className="modal-subtitle">
+              Replicate your cards and spaced repetition schedules across
+              devices 100% free.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {status && (
+          <div
+            className={`status-banner status-${status.type}`}
+            role={status.type === 'error' ? 'alert' : 'status'}
+          >
+            <p>{status.message}</p>
+          </div>
+        )}
+
+        {user ? (
+          <div className="sync-account-pane">
+            <div className="account-info-card">
+              <div className="account-avatar" aria-hidden="true">
+                ☁️
+              </div>
+              <div className="account-details">
+                <span className="account-badge">Signed in</span>
+                <p className="account-email">{user.email}</p>
+              </div>
+            </div>
+
+            <div className="sync-actions-row">
+              <button
+                type="button"
+                className="primary-button sync-now-button"
+                onClick={() => {
+                  void handleSyncNow()
+                }}
+                disabled={loading}
+              >
+                {loading ? 'Syncing…' : 'Sync now ⟳'}
+              </button>
+              <button
+                type="button"
+                className="text-button sign-out-button"
+                onClick={() => {
+                  void handleSignOut()
+                }}
+                disabled={loading}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="sync-auth-pane">
+            {!isOtpSent ? (
+              <form
+                onSubmit={(e) => {
+                  void handleSendLink(e)
+                }}
+                className="sync-auth-form"
+              >
+                <p className="sync-explanation">
+                  Enter your email to receive a passwordless sign-in code.
+                </p>
+                <div className="field-group">
+                  <label htmlFor="sync-email">Email address</label>
+                  <input
+                    id="sync-email"
+                    type="email"
+                    required
+                    autoFocus
+                    placeholder="learner@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Sending code…' : 'Send sign-in code →'}
+                </button>
+              </form>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  void handleVerifyOtp(e)
+                }}
+                className="sync-auth-form"
+              >
+                <p className="sync-explanation">
+                  Enter the verification code sent to <strong>{email}</strong>:
+                </p>
+                <div className="field-group">
+                  <label htmlFor="sync-otp">Verification code</label>
+                  <input
+                    id="sync-otp"
+                    type="text"
+                    required
+                    autoFocus
+                    placeholder="e.g. 123456"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                  />
+                </div>
+                <div className="sync-auth-buttons">
+                  <button
+                    type="submit"
+                    className="primary-button"
+                    disabled={loading}
+                  >
+                    {loading ? 'Verifying…' : 'Verify & sync →'}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setIsOtpSent(false)}
+                  >
+                    Use different email
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function App({
   services: customServices,
 }: {
@@ -509,6 +809,9 @@ export function App({
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
@@ -536,9 +839,32 @@ export function App({
           .map(({ id }) => id)
         return due
       })
+      if (authUser) {
+        setSyncStatus('syncing')
+        void services.sync.syncDeck(newCards, authUser).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
+      }
     },
-    [services.cards, services.clock, view],
+    [authUser, services.cards, services.clock, services.sync, view],
   )
+
+  useEffect(() => {
+    return services.auth.onAuthStateChange((user) => {
+      setAuthUser(user)
+      if (user) {
+        void syncDeckWithCloud({
+          localCards: cards,
+          user,
+          syncService: services.sync,
+          onCardsUpdated: onUpdateCards,
+        }).then((res) => {
+          if (res.success) setSyncStatus('synced')
+        })
+      }
+    })
+  }, [cards, onUpdateCards, services.auth, services.sync])
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
     setView(nextView)
@@ -850,6 +1176,18 @@ export function App({
             <div className="nav-actions">
               <button
                 type="button"
+                className="text-button sync-button"
+                onClick={() => setIsSyncOpen(true)}
+                aria-label="Cloud sync and account"
+              >
+                {authUser
+                  ? syncStatus === 'syncing'
+                    ? 'Syncing…'
+                    : 'Synced ✓'
+                  : 'Sync'}
+              </button>
+              <button
+                type="button"
                 className="text-button backup-button"
                 onClick={() => setIsBackupOpen(true)}
                 aria-label="Deck backup and restore"
@@ -968,6 +1306,14 @@ export function App({
           onUpdateCards={onUpdateCards}
           clock={services.clock}
         />
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={() => setIsSyncOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
+        />
       </>
     )
 
@@ -978,6 +1324,18 @@ export function App({
           <nav className="topbar" aria-label="Card creation navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
+              <button
+                type="button"
+                className="text-button sync-button"
+                onClick={() => setIsSyncOpen(true)}
+                aria-label="Cloud sync and account"
+              >
+                {authUser
+                  ? syncStatus === 'syncing'
+                    ? 'Syncing…'
+                    : 'Synced ✓'
+                  : 'Sync'}
+              </button>
               <button
                 type="button"
                 className="text-button backup-button"
@@ -1154,6 +1512,14 @@ export function App({
           onUpdateCards={onUpdateCards}
           clock={services.clock}
         />
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={() => setIsSyncOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
+        />
       </>
     )
 
@@ -1164,6 +1530,18 @@ export function App({
           <nav className="topbar" aria-label="Session navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
+              <button
+                type="button"
+                className="text-button sync-button"
+                onClick={() => setIsSyncOpen(true)}
+                aria-label="Cloud sync and account"
+              >
+                {authUser
+                  ? syncStatus === 'syncing'
+                    ? 'Syncing…'
+                    : 'Synced ✓'
+                  : 'Sync'}
+              </button>
               <button
                 type="button"
                 className="text-button backup-button"
@@ -1211,6 +1589,14 @@ export function App({
           onUpdateCards={onUpdateCards}
           clock={services.clock}
         />
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={() => setIsSyncOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
+        />
       </>
     )
 
@@ -1236,6 +1622,18 @@ export function App({
             </div>
           </div>
           <div className="nav-actions">
+            <button
+              type="button"
+              className="text-button sync-button"
+              onClick={() => setIsSyncOpen(true)}
+              aria-label="Cloud sync and account"
+            >
+              {authUser
+                ? syncStatus === 'syncing'
+                  ? 'Syncing…'
+                  : 'Synced ✓'
+                : 'Sync'}
+            </button>
             <button
               type="button"
               className="text-button backup-button"
@@ -1353,6 +1751,14 @@ export function App({
         cards={cards}
         onUpdateCards={onUpdateCards}
         clock={services.clock}
+      />
+      <SyncModal
+        isOpen={isSyncOpen}
+        onClose={() => setIsSyncOpen(false)}
+        cards={cards}
+        onUpdateCards={onUpdateCards}
+        auth={services.auth}
+        sync={services.sync}
       />
     </>
   )
