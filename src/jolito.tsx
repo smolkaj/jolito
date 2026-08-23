@@ -22,18 +22,11 @@ import {
   scheduleReview,
   shouldRequeueInSession,
   type Grade,
-  type Scene,
   type StudyCard,
 } from './domain/card'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { type View, hashForView, viewFromHash } from './navigation'
-
-const sceneLabels: Record<Scene, string> = {
-  takeaway: 'A takeaway bag and warm drink',
-  metro: 'A Mexico City metro train',
-  conversation: 'Two people having a friendly conversation',
-}
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -126,84 +119,6 @@ function findCardArt(
     return sampleQuePadreUrl
   }
   return null
-}
-
-function SceneIllustration({
-  scene,
-  card,
-  revealed = false,
-}: {
-  scene: Scene
-  card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>
-  revealed?: boolean
-}) {
-  if (!revealed) {
-    return (
-      <div
-        className="study-card-placeholder"
-        role="img"
-        aria-label="Hidden card illustration"
-      >
-        <div className="placeholder-bubble">
-          <span className="placeholder-mark" aria-hidden="true">
-            ?
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  const customArt = findCardArt(card)
-  if (customArt) {
-    return (
-      <div
-        className="study-card-illustration is-revealed"
-        role="img"
-        aria-label="Card illustration"
-      >
-        <img src={customArt} alt="" className="study-card-art-image" />
-      </div>
-    )
-  }
-
-  return (
-    <div
-      className={`scene scene-${scene} is-revealed`}
-      role="img"
-      aria-label={sceneLabels[scene]}
-    >
-      <div className="scene-sun" />
-      {scene === 'takeaway' && (
-        <div className="takeaway-art">
-          <div className="takeaway-bag">
-            <span>para llevar</span>
-          </div>
-          <div className="takeaway-cup" />
-          <i className="steam-one" />
-          <i className="steam-two" />
-        </div>
-      )}
-      {scene === 'metro' && (
-        <div className="metro-art">
-          <span className="metro-sign">M</span>
-          <div className="metro-train">
-            <i />
-            <i />
-            <b />
-          </div>
-          <div className="metro-track" />
-        </div>
-      )}
-      {scene === 'conversation' && (
-        <div className="conversation-art">
-          <div className="person person-one" />
-          <div className="person person-two" />
-          <span className="speech-one">¡Hola!</span>
-          <span className="speech-two">¿Qué tal?</span>
-        </div>
-      )}
-    </div>
-  )
 }
 
 function AudioButton({
@@ -999,11 +914,6 @@ export function App({
         </button>
       </nav>
       <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-        <SceneIllustration
-          scene={currentCard.scene}
-          card={currentCard}
-          revealed={revealed}
-        />
         <div className="prompt-meta">
           <p className="eyebrow direction-eyebrow">
             {currentCard.direction === 'es-en' ? (
@@ -1050,6 +960,19 @@ export function App({
           </form>
         ) : (
           <div className="reveal-panel">
+            {findCardArt(currentCard) && (
+              <div
+                className="reveal-art-wrap"
+                role="img"
+                aria-label="Card illustration"
+              >
+                <img
+                  src={findCardArt(currentCard)!}
+                  alt=""
+                  className="reveal-art-image"
+                />
+              </div>
+            )}
             <AnswerComparison
               typed={answer}
               expected={currentCard.answer}
