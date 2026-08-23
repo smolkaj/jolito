@@ -109,42 +109,68 @@ function Brand({ onClick }: { onClick?: () => void }) {
   )
 }
 
-function SceneIllustration({ scene }: { scene: Scene }) {
+function findCardArt(
+  card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>,
+): string | null {
+  if (!card) return null
+  const combined = `${card.prompt} ${card.answer} ${card.id}`.toLowerCase()
+  if (combined.includes('aguacate') || combined.includes('avocado')) {
+    return sampleAguacateUrl
+  }
+  return null
+}
+
+function SceneIllustration({
+  scene,
+  card,
+}: {
+  scene: Scene
+  card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>
+}) {
+  const customArt = findCardArt(card)
   return (
     <div
-      className={`scene scene-${scene}`}
+      className={`scene scene-${scene} ${customArt ? 'has-custom-art' : ''}`}
       role="img"
-      aria-label={sceneLabels[scene]}
+      aria-label={customArt ? 'Card illustration' : sceneLabels[scene]}
     >
       <div className="scene-sun" />
-      {scene === 'takeaway' && (
-        <div className="takeaway-art">
-          <div className="takeaway-bag">
-            <span>para llevar</span>
-          </div>
-          <div className="takeaway-cup" />
-          <i className="steam-one" />
-          <i className="steam-two" />
+      {customArt ? (
+        <div className="scene-art-container">
+          <img src={customArt} alt="" className="scene-art-image" />
         </div>
-      )}
-      {scene === 'metro' && (
-        <div className="metro-art">
-          <span className="metro-sign">M</span>
-          <div className="metro-train">
-            <i />
-            <i />
-            <b />
-          </div>
-          <div className="metro-track" />
-        </div>
-      )}
-      {scene === 'conversation' && (
-        <div className="conversation-art">
-          <div className="person person-one" />
-          <div className="person person-two" />
-          <span className="speech-one">¡Hola!</span>
-          <span className="speech-two">¿Qué tal?</span>
-        </div>
+      ) : (
+        <>
+          {scene === 'takeaway' && (
+            <div className="takeaway-art">
+              <div className="takeaway-bag">
+                <span>para llevar</span>
+              </div>
+              <div className="takeaway-cup" />
+              <i className="steam-one" />
+              <i className="steam-two" />
+            </div>
+          )}
+          {scene === 'metro' && (
+            <div className="metro-art">
+              <span className="metro-sign">M</span>
+              <div className="metro-train">
+                <i />
+                <i />
+                <b />
+              </div>
+              <div className="metro-track" />
+            </div>
+          )}
+          {scene === 'conversation' && (
+            <div className="conversation-art">
+              <div className="person person-one" />
+              <div className="person person-two" />
+              <span className="speech-one">¡Hola!</span>
+              <span className="speech-two">¿Qué tal?</span>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -943,7 +969,7 @@ export function App({
         </button>
       </nav>
       <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-        <SceneIllustration scene={currentCard.scene} />
+        <SceneIllustration scene={currentCard.scene} card={currentCard} />
         <div className="prompt-meta">
           <p className="eyebrow direction-eyebrow">
             {currentCard.direction === 'es-en' ? (

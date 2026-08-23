@@ -426,4 +426,40 @@ describe('Jolito', () => {
       'How cool / fantastic',
     )
   })
+
+  it('renders custom card illustration art when studying cards like aguacate', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    // Card 1: aguacate (ES -> EN)
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'Card illustration' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Card illustration' })).toHaveClass(
+      'has-custom-art',
+    )
+
+    // Advance to Card 2: avocado (EN -> ES)
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: 'Card illustration' }),
+    ).toBeInTheDocument()
+
+    // Advance to Card 3: Qué padre (ES -> EN) -> uses generic conversation scene
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(
+      screen.getByRole('heading', { name: 'Qué padre' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: /friendly conversation/i }),
+    ).toBeInTheDocument()
+  })
 })
