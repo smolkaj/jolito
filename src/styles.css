@@ -1297,9 +1297,9 @@ summary:focus-visible {
   margin: 16px auto 26px;
   font-family: var(--font-serif);
   font-size: clamp(36px, 4.8vw, 50px);
-  font-weight: 600;
+  font-weight: var(--display-weight, 700);
   line-height: 1.12;
-  letter-spacing: -1.5px;
+  letter-spacing: var(--display-letter-spacing, -1.2px);
   color: var(--ink);
 }
 
@@ -1516,7 +1516,8 @@ kbd {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 23px;
-  font-weight: 600;
+  font-weight: var(--display-weight, 700);
+  letter-spacing: var(--phrase-letter-spacing, -0.8px);
   line-height: 1.35;
   color: var(--ink);
 }
