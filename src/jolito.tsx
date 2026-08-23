@@ -10,6 +10,7 @@ import {
 } from 'react'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
+import sampleQuePadreUrl from '../assets/sample-que-padre.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
@@ -116,6 +117,13 @@ function findCardArt(
   const combined = `${card.prompt} ${card.answer} ${card.id}`.toLowerCase()
   if (combined.includes('aguacate') || combined.includes('avocado')) {
     return sampleAguacateUrl
+  }
+  if (
+    combined.includes('padre') ||
+    combined.includes('how cool') ||
+    combined.includes('que-padre')
+  ) {
+    return sampleQuePadreUrl
   }
   return null
 }
