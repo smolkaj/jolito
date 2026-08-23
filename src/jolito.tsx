@@ -1157,14 +1157,14 @@ export function App({
                   <summary>Customize reverse card</summary>
                   <div className="compact-fields">
                     <label>
-                      <UsFlag /> Prompt
+                      <UsFlag /> Reverse Prompt
                       <input
                         name="reversePrompt"
                         placeholder="Optional (defaults to English)"
                       />
                     </label>
                     <label>
-                      <MexicoFlag /> Answer
+                      <MexicoFlag /> Reverse Answer
                       <input
                         name="reverseAnswer"
                         placeholder="Optional (defaults to Spanish)"
@@ -1173,19 +1173,17 @@ export function App({
                   </div>
                 </details>
               )}
-              <details className="form-details" open={Boolean(contextInput)}>
-                <summary>Add note</summary>
-                <div className="context-field">
-                  <textarea
-                    name="context"
-                    rows={2}
-                    value={contextInput}
-                    onChange={(e) => setContextInput(e.target.value)}
-                    placeholder="Optional context or note"
-                    aria-label="Note"
-                  />
-                </div>
-              </details>
+              <div className="field-group">
+                <label htmlFor="context">Additional Context</label>
+                <textarea
+                  id="context"
+                  name="context"
+                  rows={2}
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
+                  placeholder="Optional context, regional nuance, or memory hook"
+                />
+              </div>
               <button className="primary-button save-button" type="submit">
                 Save card <span aria-hidden="true">→</span>
               </button>
@@ -1353,10 +1351,12 @@ export function App({
                 }
               />
               {currentCard.context && (
-                <details className="context-panel">
-                  <summary>Meaning & context</summary>
+                <div className="context-panel">
+                  <span className="context-panel-title">
+                    Additional Context
+                  </span>
                   <p>{currentCard.context}</p>
-                </details>
+                </div>
               )}
               <fieldset className="grade-fieldset">
                 <legend>How did that feel?</legend>

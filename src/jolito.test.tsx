@@ -47,9 +47,8 @@ describe('Jolito', () => {
       screen.getByLabelText(/answer/i),
       '¿Por dónde queda el metro?',
     )
-    await user.click(screen.getByText('Add note', { selector: 'summary' }))
     await user.type(
-      screen.getByLabelText('Note'),
+      screen.getByLabelText(/context/i),
       'Useful when getting around CDMX.',
     )
     await user.click(screen.getByRole('button', { name: /save card/i }))
@@ -67,7 +66,7 @@ describe('Jolito', () => {
 
     expect(screen.getByText('You wrote')).toBeInTheDocument()
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
-    expect(screen.getByText('Meaning & context')).toBeInTheDocument()
+    expect(screen.getByText('Additional Context')).toBeInTheDocument()
 
     await user.keyboard('4')
     expect(
@@ -378,7 +377,7 @@ describe('Jolito', () => {
     expect(screen.getByLabelText(/english/i)).toHaveValue(
       'right now / in a bit',
     )
-    expect(screen.getByLabelText('Note')).toHaveValue(
+    expect(screen.getByLabelText(/context/i)).toHaveValue(
       'Iconic Mexican time nuance: right now, soon, or never.',
     )
   })
