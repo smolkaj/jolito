@@ -28,11 +28,9 @@ test('creates and reviews both directions with the keyboard', async ({
 }) => {
   await page.goto('/')
   await page.getByRole('button', { name: /^create a card$/i }).click()
-  await page
-    .getByLabel(/Spanish.*Mexican Spanish/i)
-    .fill('¿Dónde está el metro?')
-  await page.getByLabel(/English.*Concise meaning/i).fill('Where is the metro?')
-  await page.getByRole('button', { name: /save & practice both/i }).click()
+  await page.getByLabel(/spanish/i).fill('¿Dónde está el metro?')
+  await page.getByLabel(/english/i).fill('Where is the metro?')
+  await page.getByRole('button', { name: /save card/i }).click()
 
   await expect(
     page.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -66,7 +64,7 @@ test('supports browser back and forward navigation across views', async ({
   // Navigate to Create Card
   await page.getByRole('button', { name: /^create a card$/i }).click()
   await expect(
-    page.getByRole('heading', { name: 'What do you want to remember?' }),
+    page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
   expect(page.url()).toContain('#/create')
 
@@ -79,7 +77,7 @@ test('supports browser back and forward navigation across views', async ({
   // Browser Forward button -> returns to Create Card
   await page.goForward()
   await expect(
-    page.getByRole('heading', { name: 'What do you want to remember?' }),
+    page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
 
   // Navigate to Study from Welcome
