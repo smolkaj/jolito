@@ -34,7 +34,8 @@ export class NeuralVoiceEngine {
   }
 
   private getCacheKey(text: string, locale: string): string {
-    return `${locale.toLowerCase()}:${text.trim().toLowerCase()}`
+    const normalizedLocale = locale.toLowerCase().replace(/_/g, '-')
+    return `${normalizedLocale}:${text.trim().toLowerCase()}`
   }
 
   hasAudio(text: string, locale: string): boolean {
@@ -72,7 +73,7 @@ export class NeuralVoiceEngine {
     ) {
       try {
         const audio = new window.Audio(cachedUrl)
-        void audio.play()
+        audio.play().catch(() => {})
         return true
       } catch {
         return false
@@ -90,7 +91,7 @@ export class NeuralVoiceEngine {
       if (!this.audioContext) return false
 
       if (this.audioContext.state === 'suspended') {
-        void this.audioContext.resume()
+        this.audioContext.resume().catch(() => {})
       }
 
       const source = this.audioContext.createBufferSource()
