@@ -379,7 +379,7 @@ describe('Jolito', () => {
       'right now / in a bit',
     )
     expect(screen.getByLabelText('Note')).toHaveValue(
-      'Iconic Mexican concept of time: can mean immediately, in 10 minutes, or never.',
+      'Iconic Mexican time nuance: right now, soon, or never.',
     )
   })
 
@@ -423,7 +423,7 @@ describe('Jolito', () => {
 
     expect(spanishInput).toHaveValue('Qué padre')
     expect(screen.getByLabelText(/english/i)).toHaveValue(
-      'How cool / wonderful',
+      'How cool / fantastic',
     )
   })
 })

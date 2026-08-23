@@ -30,4 +30,26 @@ describe('createCardAssistant', () => {
     expect(entry).not.toBeNull()
     expect(entry?.spanish).toBe('chela')
   })
+
+  it('recognizes essential everyday vocabulary like madre, chica, and qué chido', () => {
+    const madre = assistant.translate('madre', 'es')
+    expect(madre).not.toBeNull()
+    expect(madre?.english).toBe('mother')
+
+    const chica = assistant.translate('chica', 'es')
+    expect(chica).not.toBeNull()
+    expect(chica?.english).toContain('girl')
+
+    const queChido = assistant.translate('que chido', 'es')
+    expect(queChido).not.toBeNull()
+    expect(queChido?.english).toContain('cool')
+
+    const desmadre = assistant.translate('desmadre', 'es')
+    expect(desmadre).not.toBeNull()
+    expect(desmadre?.english).toContain('chaos')
+
+    const aTodaMadre = assistant.translate('a toda madre', 'es')
+    expect(aTodaMadre).not.toBeNull()
+    expect(aTodaMadre?.english).toContain('awesome')
+  })
 })
