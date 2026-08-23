@@ -94,6 +94,8 @@ describe('Jolito', () => {
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
+    expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
+    expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
 
     expect(services.mockSounds.played).toEqual([
       'reveal',
@@ -320,6 +322,8 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'You’re caught up.' }),
     ).toBeInTheDocument()
+    expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
+    expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 

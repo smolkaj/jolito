@@ -1873,14 +1873,15 @@ kbd {
 .complete-page {
   background:
     radial-gradient(circle at 50% 45%, #fef0f7 0%, rgba(254, 240, 247, 0) 40%),
+    radial-gradient(circle at 50% 20%, #fef9ee 0%, rgba(254, 249, 238, 0) 50%),
     var(--paper);
 }
 
 .complete-card {
   width: min(580px, 100%);
-  margin: clamp(60px, 10vh, 120px) auto 30px;
+  margin: clamp(40px, 6vh, 80px) auto 30px;
   text-align: center;
-  padding: 44px 36px;
+  padding: 40px 36px 44px;
   border: 2.5px solid var(--line);
   border-radius: 28px;
   background: var(--card);
@@ -1888,48 +1889,52 @@ kbd {
   animation: slideUp 240ms var(--ease-spring);
 }
 
-.complete-sun {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 24px;
-  display: grid;
-  place-items: center;
-  border: 2.5px solid var(--line);
-  border-radius: 50%;
-  color: white;
-  background: radial-gradient(circle, #f8ca68 0%, #f3ab3b 100%);
-  box-shadow:
-    4px 4px 0 var(--ink),
-    0 0 0 10px rgba(243, 171, 59, 0.18);
-  animation: pulse-celebrate 2.4s infinite ease-in-out;
+.complete-mascot-frame {
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@keyframes pulse-celebrate {
-  0%,
+.complete-mascot-img {
+  width: clamp(150px, 22vw, 190px);
+  height: clamp(150px, 22vw, 190px);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(18, 24, 21, 0.08));
+  transform-origin: center bottom;
+  animation:
+    complete-mascot-pop 400ms var(--ease-spring) both,
+    complete-mascot-bob 3.5s ease-in-out infinite 400ms alternate;
+}
+
+@keyframes complete-mascot-pop {
+  0% {
+    transform: scale(0.85) translateY(10px);
+    opacity: 0;
+  }
   100% {
-    transform: scale(1);
-    box-shadow:
-      4px 4px 0 var(--ink),
-      0 0 0 10px rgba(243, 171, 59, 0.18);
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes complete-mascot-bob {
+  0% {
+    transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: scale(1.05);
-    box-shadow:
-      5px 5px 0 var(--ink),
-      0 0 0 16px rgba(243, 171, 59, 0.1);
+    transform: translateY(-5px) rotate(1.5deg);
+  }
+  100% {
+    transform: translateY(2px) rotate(-1.5deg);
   }
 }
 
-.complete-sun span {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--line);
-  border-radius: 50%;
-  background: var(--turquesa-dark);
-  font-size: 22px;
-  font-weight: 800;
+@media (prefers-reduced-motion: reduce) {
+  .complete-mascot-img {
+    animation: none;
+    transition: none;
+  }
 }
 
 .complete-card h1 {
@@ -2118,8 +2123,17 @@ kbd {
   }
 
   .complete-card {
-    margin-top: 8vh;
-    padding: 32px 22px;
+    margin-top: 4vh;
+    padding: 28px 20px 36px;
+  }
+
+  .complete-mascot-frame {
+    margin-bottom: 12px;
+  }
+
+  .complete-mascot-img {
+    width: 140px;
+    height: 140px;
   }
 }
 
