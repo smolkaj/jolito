@@ -426,4 +426,180 @@ describe('Jolito', () => {
       'How cool / fantastic',
     )
   })
+
+  it('opens deck backup modal, exports backup JSON, and downloads file', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /backup/i }))
+    expect(
+      screen.getByRole('heading', { name: /deck backup & safety/i }),
+    ).toBeInTheDocument()
+
+    const exportBtn = screen.getByRole('button', {
+      name: /export backup \(json\)/i,
+    })
+    await user.click(exportBtn)
+
+    expect(screen.getByRole('status')).toHaveTextContent(/deck exported/i)
+  })
+
+  it('imports backup JSON in replace mode and updates cards and storage', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /backup/i }))
+
+    const backupFile = new File(
+      [
+        JSON.stringify({
+          version: 1,
+          cards: [
+            {
+              id: 'restored-card-1',
+              noteId: 'note-1',
+              prompt: 'Buenos días',
+              answer: 'Good morning',
+              direction: 'es-en',
+              context: 'Morning greeting',
+              scene: 'conversation',
+              schedule: {
+                state: 'new',
+                dueAt: 0,
+                intervalDays: 0,
+                easeFactor: 2.5,
+                reviews: 0,
+                lapses: 0,
+              },
+            },
+          ],
+        }),
+      ],
+      'my-backup.json',
+      { type: 'application/json' },
+    )
+
+    const fileInput = screen.getByLabelText(/choose backup json file/i)
+    await user.upload(fileInput, backupFile)
+
+    expect(
+      await screen.findByText(/found 1 cards ready to import/i),
+    ).toBeInTheDocument()
+
+    const restoreBtn = screen.getByRole('button', { name: /restore backup/i })
+    await user.click(restoreBtn)
+
+    expect(
+      await screen.findByText(/successfully imported 1 cards/i),
+    ).toBeInTheDocument()
+    expect(services.memoryCards.saved).toHaveLength(1)
+    expect(services.memoryCards.saved?.[0]?.prompt).toBe('Buenos días')
+  })
+
+  it('imports backup JSON in merge mode and preserves existing cards', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /backup/i }))
+
+    const mergeRadio = screen.getByLabelText(/merge/i)
+    await user.click(mergeRadio)
+
+    const backupFile = new File(
+      [
+        JSON.stringify({
+          version: 1,
+          cards: [
+            {
+              id: 'merged-card-1',
+              noteId: 'note-m',
+              prompt: 'Buenas noches',
+              answer: 'Good night',
+              direction: 'es-en',
+              context: 'Evening greeting',
+              scene: 'conversation',
+              schedule: {
+                state: 'new',
+                dueAt: 0,
+                intervalDays: 0,
+                easeFactor: 2.5,
+                reviews: 0,
+                lapses: 0,
+              },
+            },
+          ],
+        }),
+      ],
+      'merge-backup.json',
+      { type: 'application/json' },
+    )
+
+    const fileInput = screen.getByLabelText(/choose backup json file/i)
+    await user.upload(fileInput, backupFile)
+
+    expect(
+      await screen.findByText(/found 1 cards ready to import/i),
+    ).toBeInTheDocument()
+
+    const mergeBtn = screen.getByRole('button', { name: /merge backup/i })
+    await user.click(mergeBtn)
+
+    expect(
+      await screen.findByText(/successfully imported 1 cards/i),
+    ).toBeInTheDocument()
+    expect(services.memoryCards.saved?.length).toBeGreaterThan(1)
+    expect(
+      services.memoryCards.saved?.some((c) => c.prompt === 'Buenas noches'),
+    ).toBe(true)
+  })
+
+  it('displays error message when importing invalid file', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /backup/i }))
+
+    const corruptFile = new File(['{ invalid json'], 'bad.json', {
+      type: 'application/json',
+    })
+
+    const fileInput = screen.getByLabelText(/choose backup json file/i)
+    await user.upload(fileInput, corruptFile)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /invalid json format/i,
+    )
+  })
+
+  it('closes backup modal via close button and Escape key', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /backup/i }))
+    expect(
+      screen.getByRole('heading', { name: /deck backup & safety/i }),
+    ).toBeInTheDocument()
+
+    // Close via close button
+    await user.click(screen.getByRole('button', { name: /close dialog/i }))
+    expect(
+      screen.queryByRole('heading', { name: /deck backup & safety/i }),
+    ).not.toBeInTheDocument()
+
+    // Open again and close via Escape
+    await user.click(screen.getByRole('button', { name: /backup/i }))
+    expect(
+      screen.getByRole('heading', { name: /deck backup & safety/i }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(
+      screen.queryByRole('heading', { name: /deck backup & safety/i }),
+    ).not.toBeInTheDocument()
+  })
 })

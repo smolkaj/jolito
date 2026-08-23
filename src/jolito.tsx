@@ -11,6 +11,11 @@ import {
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
+import {
+  createDeckBackup,
+  restoreDeckFromBackup,
+  type RestoreMode,
+} from './application/deck-backup'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
@@ -25,7 +30,10 @@ import {
   type StudyCard,
 } from './domain/card'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
+import { parseDeckBackup } from './domain/deck-backup'
+import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
+import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
 import { type View, hashForView, viewFromHash } from './navigation'
 
 const sceneLabels: Record<Scene, string> = {
@@ -238,6 +246,260 @@ function AnswerComparison({
   )
 }
 
+function BackupModal({
+  isOpen,
+  onClose,
+  cards,
+  onUpdateCards,
+  clock,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  cards: StudyCard[]
+  onUpdateCards: (newCards: StudyCard[]) => void
+  clock: { now(): number }
+}) {
+  const [mode, setMode] = useState<RestoreMode>('replace')
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error' | 'info'
+    message: string
+    details?: string[] | undefined
+  } | null>(null)
+  const [selectedFileText, setSelectedFileText] = useState<string | null>(null)
+  const [isStorageProtected, setIsStorageProtected] = useState<boolean | null>(
+    null,
+  )
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      void checkOrRequestStoragePersistence().then((persisted) => {
+        setIsStorageProtected(persisted)
+      })
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleExport = () => {
+    const backup = createDeckBackup(cards, clock)
+    downloadJsonFile(backup.filename, backup.json)
+    setStatus({
+      type: 'success',
+      message: `Deck exported: ${cards.length} cards saved to ${backup.filename}.`,
+    })
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result
+      if (typeof text !== 'string') return
+      const parsed = parseDeckBackup(text)
+      if (parsed.success) {
+        setSelectedFileText(text)
+        setStatus({
+          type: 'info',
+          message: `Found ${parsed.count} cards ready to import.`,
+        })
+      } else {
+        setSelectedFileText(null)
+        setStatus({
+          type: 'error',
+          message: parsed.error,
+          details: parsed.details,
+        })
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleRestore = () => {
+    if (!selectedFileText) return
+    const result = restoreDeckFromBackup(cards, selectedFileText, mode)
+    if (result.success) {
+      onUpdateCards(result.cards)
+      setStatus({
+        type: 'success',
+        message: `Successfully imported ${result.importedCount} cards (${result.count} total cards in library).`,
+      })
+      setSelectedFileText(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } else {
+      setStatus({
+        type: 'error',
+        message: result.error,
+        details: result.details,
+      })
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content backup-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="backup-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="backup-modal-title">Deck backup & safety</h2>
+            <p className="modal-subtitle">
+              Export your cards and spaced-repetition schedules or restore a
+              backup.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="deck-stats-bar">
+          <div className="stat-pill">
+            <strong>{cards.length}</strong> cards in collection
+          </div>
+          {isStorageProtected && (
+            <div className="stat-pill storage-pill">
+              <i className="status-dot-active" aria-hidden="true" />
+              Storage protected
+            </div>
+          )}
+        </div>
+
+        <div className="backup-sections">
+          <section className="backup-section export-section">
+            <div className="backup-section-header">
+              <h3>Export backup</h3>
+              <p>
+                Save all cards, schedules, notes, and study history to a
+                portable JSON file.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="primary-button export-button"
+              onClick={handleExport}
+            >
+              Export backup (JSON) <span aria-hidden="true">↓</span>
+            </button>
+          </section>
+
+          <section className="backup-section import-section">
+            <div className="backup-section-header">
+              <h3>Restore or merge backup</h3>
+              <p>
+                Load cards and schedules from a previously exported Jolito JSON
+                file.
+              </p>
+            </div>
+
+            <div
+              className="import-mode-selector"
+              role="radiogroup"
+              aria-label="Import mode"
+            >
+              <label
+                className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="restoreMode"
+                  value="replace"
+                  checked={mode === 'replace'}
+                  onChange={() => setMode('replace')}
+                />
+                <span className="mode-label">
+                  <strong>Restore</strong>
+                  <small>Replace current deck completely</small>
+                </span>
+              </label>
+              <label
+                className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="restoreMode"
+                  value="merge"
+                  checked={mode === 'merge'}
+                  onChange={() => setMode('merge')}
+                />
+                <span className="mode-label">
+                  <strong>Merge</strong>
+                  <small>Combine with current cards</small>
+                </span>
+              </label>
+            </div>
+
+            <div className="file-input-wrapper">
+              <label htmlFor="backup-file-input" className="file-input-label">
+                Choose backup JSON file
+              </label>
+              <input
+                id="backup-file-input"
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                className="backup-file-input"
+                onChange={handleFileChange}
+                aria-label="Choose backup JSON file"
+              />
+            </div>
+
+            {selectedFileText && (
+              <button
+                type="button"
+                className="secondary-button restore-confirm-button"
+                onClick={handleRestore}
+              >
+                {mode === 'replace' ? 'Restore backup' : 'Merge backup'}
+              </button>
+            )}
+          </section>
+        </div>
+
+        {status && (
+          <div
+            className={`status-banner status-${status.type}`}
+            role={status.type === 'error' ? 'alert' : 'status'}
+          >
+            <p>{status.message}</p>
+            {status.details && (
+              <ul className="status-details">
+                {status.details.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function App({
   services: customServices,
 }: {
@@ -293,6 +555,7 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
@@ -305,6 +568,24 @@ export function App({
   const sampleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
+
+  const onUpdateCards = useCallback(
+    (newCards: StudyCard[]) => {
+      setCards(newCards)
+      services.cards.save(newCards)
+      const now = services.clock.now()
+      setReferenceTime(now)
+      setQueue((currentQueue) => {
+        if (view !== 'review') return currentQueue
+        const due = newCards
+          .filter((card) => isDue(card, now))
+          .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
+          .map(({ id }) => id)
+        return due
+      })
+    },
+    [services.cards, services.clock, view],
+  )
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
     setView(nextView)
@@ -605,317 +886,377 @@ export function App({
 
   if (view === 'welcome')
     return (
-      <main className="app-shell welcome-page">
-        <nav className="topbar" aria-label="Main navigation">
-          <Brand />
-          <div className="nav-actions">
-            <span className="connection">
-              <i /> On-device · works offline
-            </span>
-          </div>
-        </nav>
-        <section className="welcome-hero">
-          <div className="hero-copy">
-            <h1>
-              Make the words <br />
-              you meet <em>stick.</em>
-            </h1>
-            <p className="lede">
-              Create beautiful, spoken flashcards.
-              <br />
-              Practice them at your rhythm.
+      <>
+        <main className="app-shell welcome-page">
+          <nav className="topbar" aria-label="Main navigation">
+            <Brand />
+            <div className="nav-actions">
+              <button
+                type="button"
+                className="text-button backup-button"
+                onClick={() => setIsBackupOpen(true)}
+                aria-label="Deck backup and restore"
+              >
+                Backup
+              </button>
+              <span className="connection">
+                <i /> On-device · works offline
+              </span>
+            </div>
+          </nav>
+          <section className="welcome-hero">
+            <div className="hero-copy">
+              <h1>
+                Make the words <br />
+                you meet <em>stick.</em>
+              </h1>
+              <p className="lede">
+                Create beautiful, spoken flashcards.
+                <br />
+                Practice them at your rhythm.
+              </p>
+              <div className="hero-actions">
+                <button
+                  className="primary-button"
+                  onClick={() => navigateTo('create')}
+                >
+                  Create a card <span aria-hidden="true">→</span>
+                </button>
+                <button
+                  className="secondary-button"
+                  onClick={() => beginReview()}
+                >
+                  Practice {dueCount} due
+                </button>
+              </div>
+            </div>
+            <div className="hero-visual">
+              {/* English Card (concise meaning) */}
+              <button
+                type="button"
+                className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+                onClick={() => onSampleCardClick('english')}
+                aria-label={
+                  activeSampleSide === 'english'
+                    ? 'Play pronunciation for English card: avocado'
+                    : 'Show English card: avocado'
+                }
+              >
+                <div className="sample-card-header">
+                  <span className="sample-badge">
+                    <UsFlag /> ENGLISH
+                  </span>
+                  <span className="sample-listen-hint" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                    </svg>
+                    {samplePlaying && activeSampleSide === 'english'
+                      ? 'Playing…'
+                      : 'Tap to hear'}
+                  </span>
+                </div>
+                <div className="sample-card-body">
+                  <div className="sample-illustration" aria-hidden="true">
+                    <img
+                      src={sampleAguacateUrl}
+                      alt=""
+                      className="sample-art-image"
+                    />
+                  </div>
+                  <p className="sample-phrase">avocado</p>
+                </div>
+              </button>
+              {/* Mexican Spanish Card */}
+              <button
+                type="button"
+                className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+                onClick={() => onSampleCardClick('spanish')}
+                aria-label={
+                  activeSampleSide === 'spanish'
+                    ? 'Play pronunciation for Mexican Spanish card: aguacate'
+                    : 'Show Mexican Spanish card: aguacate'
+                }
+              >
+                <div className="sample-card-header">
+                  <span className="sample-badge">
+                    <MexicoFlag /> MEXICAN SPANISH
+                  </span>
+                  <span className="sample-listen-hint" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                    </svg>
+                    {samplePlaying && activeSampleSide === 'spanish'
+                      ? 'Playing…'
+                      : 'Tap to hear'}
+                  </span>
+                </div>
+                <div className="sample-card-body">
+                  <div className="sample-illustration" aria-hidden="true">
+                    <img
+                      src={sampleAguacateUrl}
+                      alt=""
+                      className="sample-art-image"
+                    />
+                  </div>
+                  <p className="sample-phrase">aguacate</p>
+                </div>
+              </button>
+            </div>
+          </section>
+        </main>
+        <BackupModal
+          isOpen={isBackupOpen}
+          onClose={() => setIsBackupOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          clock={services.clock}
+        />
+      </>
+    )
+
+  if (view === 'create')
+    return (
+      <>
+        <main className="app-shell create-page">
+          <nav className="topbar" aria-label="Card creation navigation">
+            <Brand onClick={goHome} />
+            <div className="nav-actions">
+              <button
+                type="button"
+                className="text-button backup-button"
+                onClick={() => setIsBackupOpen(true)}
+                aria-label="Deck backup and restore"
+              >
+                Backup
+              </button>
+              <button className="text-button" onClick={() => beginReview()}>
+                Review {dueCount}
+              </button>
+            </div>
+          </nav>
+          <section className="create-layout">
+            <header>
+              <h1>New flashcard</h1>
+            </header>
+            <form className="create-form" onSubmit={createCard}>
+              <div className="field-group field-group-relative">
+                <label htmlFor="spanish">
+                  <MexicoFlag /> Spanish
+                </label>
+                <textarea
+                  id="spanish"
+                  name="spanish"
+                  role="combobox"
+                  rows={2}
+                  autoFocus
+                  required
+                  value={spanishInput}
+                  onChange={onSpanishChange}
+                  onKeyDown={onSpanishKeyDown}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setShowSuggestions(true)
+                  }}
+                  placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
+                  aria-autocomplete="list"
+                  aria-controls="spanish-suggestions"
+                  aria-expanded={showSuggestions && suggestions.length > 0}
+                  aria-activedescendant={
+                    activeSuggestionIndex >= 0
+                      ? `suggestion-${activeSuggestionIndex}`
+                      : undefined
+                  }
+                />
+                {didYouMean && (
+                  <div className="typo-suggestion" role="status">
+                    <span className="typo-label">Did you mean</span>
+                    <button
+                      type="button"
+                      className="typo-chip"
+                      onClick={() => applySuggestion(didYouMean)}
+                    >
+                      <strong>{didYouMean.spanish}</strong>
+                      <span className="typo-translation">
+                        {' '}
+                        ({didYouMean.english})
+                      </span>
+                      <span className="typo-arrow" aria-hidden="true">
+                        {' '}
+                        ↵
+                      </span>
+                    </button>
+                  </div>
+                )}
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul
+                    className="suggestions-listbox"
+                    role="listbox"
+                    id="spanish-suggestions"
+                    aria-label="Spanish suggestions"
+                  >
+                    {suggestions.map((item, index) => (
+                      <li
+                        key={item.spanish}
+                        id={`suggestion-${index}`}
+                        role="option"
+                        aria-selected={activeSuggestionIndex === index}
+                        className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          applySuggestion(item)
+                        }}
+                      >
+                        <div className="suggestion-head">
+                          <span className="suggestion-spanish">
+                            {item.spanish}
+                          </span>
+                          {item.tag && (
+                            <span className={`suggestion-tag tag-${item.tag}`}>
+                              {item.tag}
+                            </span>
+                          )}
+                        </div>
+                        <span className="suggestion-english">
+                          {item.english}
+                        </span>
+                        {item.context && (
+                          <span className="suggestion-context">
+                            {item.context}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="field-group">
+                <label htmlFor="english">
+                  <UsFlag /> English
+                </label>
+                <textarea
+                  id="english"
+                  name="english"
+                  rows={2}
+                  required
+                  value={englishInput}
+                  onChange={onEnglishChange}
+                  placeholder="English translation"
+                />
+              </div>
+              <label className="toggle-row">
+                <input
+                  name="bidirectional"
+                  type="checkbox"
+                  checked={bidirectional}
+                  onChange={(event) => setBidirectional(event.target.checked)}
+                />
+                <span className="toggle" aria-hidden="true" />
+                <span>Practice both directions</span>
+              </label>
+              {bidirectional && (
+                <details className="form-details">
+                  <summary>Customize reverse card</summary>
+                  <div className="compact-fields">
+                    <label>
+                      <UsFlag /> Prompt
+                      <input
+                        name="reversePrompt"
+                        placeholder="Optional (defaults to English)"
+                      />
+                    </label>
+                    <label>
+                      <MexicoFlag /> Answer
+                      <input
+                        name="reverseAnswer"
+                        placeholder="Optional (defaults to Spanish)"
+                      />
+                    </label>
+                  </div>
+                </details>
+              )}
+              <details className="form-details" open={Boolean(contextInput)}>
+                <summary>Add note</summary>
+                <div className="context-field">
+                  <textarea
+                    name="context"
+                    rows={2}
+                    value={contextInput}
+                    onChange={(e) => setContextInput(e.target.value)}
+                    placeholder="Optional context or note"
+                    aria-label="Note"
+                  />
+                </div>
+              </details>
+              <button className="primary-button save-button" type="submit">
+                Save card <span aria-hidden="true">→</span>
+              </button>
+            </form>
+          </section>
+        </main>
+        <BackupModal
+          isOpen={isBackupOpen}
+          onClose={() => setIsBackupOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          clock={services.clock}
+        />
+      </>
+    )
+
+  if (view === 'complete' || (view === 'review' && !currentCard))
+    return (
+      <>
+        <main className="app-shell complete-page">
+          <nav className="topbar" aria-label="Session navigation">
+            <Brand onClick={goHome} />
+            <div className="nav-actions">
+              <button
+                type="button"
+                className="text-button backup-button"
+                onClick={() => setIsBackupOpen(true)}
+                aria-label="Deck backup and restore"
+              >
+                Backup
+              </button>
+              <button
+                className="text-button"
+                onClick={() => navigateTo('create')}
+              >
+                + New card
+              </button>
+            </div>
+          </nav>
+          <section className="complete-card">
+            <div className="complete-sun" aria-hidden="true">
+              <span>✓</span>
+            </div>
+            <p className="eyebrow">SESSION COMPLETE</p>
+            <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
+            <p>
+              {reviewedCount > 0
+                ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
+                : 'Nothing is due right now. Add something from your day in CDMX?'}
             </p>
-            <div className="hero-actions">
+            <div className="complete-actions">
               <button
                 className="primary-button"
                 onClick={() => navigateTo('create')}
               >
                 Create a card <span aria-hidden="true">→</span>
               </button>
-              <button
-                className="secondary-button"
-                onClick={() => beginReview()}
-              >
-                Practice {dueCount} due
+              <button className="secondary-button" onClick={goHome}>
+                Back home
               </button>
             </div>
-          </div>
-          <div className="hero-visual">
-            {/* English Card (concise meaning) */}
-            <button
-              type="button"
-              className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
-              onClick={() => onSampleCardClick('english')}
-              aria-label={
-                activeSampleSide === 'english'
-                  ? 'Play pronunciation for English card: avocado'
-                  : 'Show English card: avocado'
-              }
-            >
-              <div className="sample-card-header">
-                <span className="sample-badge">
-                  <UsFlag /> ENGLISH
-                </span>
-                <span className="sample-listen-hint" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                  </svg>
-                  {samplePlaying && activeSampleSide === 'english'
-                    ? 'Playing…'
-                    : 'Tap to hear'}
-                </span>
-              </div>
-              <div className="sample-card-body">
-                <div className="sample-illustration" aria-hidden="true">
-                  <img
-                    src={sampleAguacateUrl}
-                    alt=""
-                    className="sample-art-image"
-                  />
-                </div>
-                <p className="sample-phrase">avocado</p>
-              </div>
-            </button>
-            {/* Mexican Spanish Card */}
-            <button
-              type="button"
-              className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
-              onClick={() => onSampleCardClick('spanish')}
-              aria-label={
-                activeSampleSide === 'spanish'
-                  ? 'Play pronunciation for Mexican Spanish card: aguacate'
-                  : 'Show Mexican Spanish card: aguacate'
-              }
-            >
-              <div className="sample-card-header">
-                <span className="sample-badge">
-                  <MexicoFlag /> MEXICAN SPANISH
-                </span>
-                <span className="sample-listen-hint" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                  </svg>
-                  {samplePlaying && activeSampleSide === 'spanish'
-                    ? 'Playing…'
-                    : 'Tap to hear'}
-                </span>
-              </div>
-              <div className="sample-card-body">
-                <div className="sample-illustration" aria-hidden="true">
-                  <img
-                    src={sampleAguacateUrl}
-                    alt=""
-                    className="sample-art-image"
-                  />
-                </div>
-                <p className="sample-phrase">aguacate</p>
-              </div>
-            </button>
-          </div>
-        </section>
-      </main>
-    )
-
-  if (view === 'create')
-    return (
-      <main className="app-shell create-page">
-        <nav className="topbar" aria-label="Card creation navigation">
-          <Brand onClick={goHome} />
-          <button className="text-button" onClick={() => beginReview()}>
-            Review {dueCount}
-          </button>
-        </nav>
-        <section className="create-layout">
-          <header>
-            <h1>New flashcard</h1>
-          </header>
-          <form className="create-form" onSubmit={createCard}>
-            <div className="field-group field-group-relative">
-              <label htmlFor="spanish">
-                <MexicoFlag /> Spanish
-              </label>
-              <textarea
-                id="spanish"
-                name="spanish"
-                role="combobox"
-                rows={2}
-                autoFocus
-                required
-                value={spanishInput}
-                onChange={onSpanishChange}
-                onKeyDown={onSpanishKeyDown}
-                onFocus={() => {
-                  if (suggestions.length > 0) setShowSuggestions(true)
-                }}
-                placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
-                aria-autocomplete="list"
-                aria-controls="spanish-suggestions"
-                aria-expanded={showSuggestions && suggestions.length > 0}
-                aria-activedescendant={
-                  activeSuggestionIndex >= 0
-                    ? `suggestion-${activeSuggestionIndex}`
-                    : undefined
-                }
-              />
-              {didYouMean && (
-                <div className="typo-suggestion" role="status">
-                  <span className="typo-label">Did you mean</span>
-                  <button
-                    type="button"
-                    className="typo-chip"
-                    onClick={() => applySuggestion(didYouMean)}
-                  >
-                    <strong>{didYouMean.spanish}</strong>
-                    <span className="typo-translation">
-                      {' '}
-                      ({didYouMean.english})
-                    </span>
-                    <span className="typo-arrow" aria-hidden="true">
-                      {' '}
-                      ↵
-                    </span>
-                  </button>
-                </div>
-              )}
-              {showSuggestions && suggestions.length > 0 && (
-                <ul
-                  className="suggestions-listbox"
-                  role="listbox"
-                  id="spanish-suggestions"
-                  aria-label="Spanish suggestions"
-                >
-                  {suggestions.map((item, index) => (
-                    <li
-                      key={item.spanish}
-                      id={`suggestion-${index}`}
-                      role="option"
-                      aria-selected={activeSuggestionIndex === index}
-                      className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        applySuggestion(item)
-                      }}
-                    >
-                      <div className="suggestion-head">
-                        <span className="suggestion-spanish">
-                          {item.spanish}
-                        </span>
-                        {item.tag && (
-                          <span className={`suggestion-tag tag-${item.tag}`}>
-                            {item.tag}
-                          </span>
-                        )}
-                      </div>
-                      <span className="suggestion-english">{item.english}</span>
-                      {item.context && (
-                        <span className="suggestion-context">
-                          {item.context}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="field-group">
-              <label htmlFor="english">
-                <UsFlag /> English
-              </label>
-              <textarea
-                id="english"
-                name="english"
-                rows={2}
-                required
-                value={englishInput}
-                onChange={onEnglishChange}
-                placeholder="English translation"
-              />
-            </div>
-            <label className="toggle-row">
-              <input
-                name="bidirectional"
-                type="checkbox"
-                checked={bidirectional}
-                onChange={(event) => setBidirectional(event.target.checked)}
-              />
-              <span className="toggle" aria-hidden="true" />
-              <span>Practice both directions</span>
-            </label>
-            {bidirectional && (
-              <details className="form-details">
-                <summary>Customize reverse card</summary>
-                <div className="compact-fields">
-                  <label>
-                    <UsFlag /> Prompt
-                    <input
-                      name="reversePrompt"
-                      placeholder="Optional (defaults to English)"
-                    />
-                  </label>
-                  <label>
-                    <MexicoFlag /> Answer
-                    <input
-                      name="reverseAnswer"
-                      placeholder="Optional (defaults to Spanish)"
-                    />
-                  </label>
-                </div>
-              </details>
-            )}
-            <details className="form-details" open={Boolean(contextInput)}>
-              <summary>Add note</summary>
-              <div className="context-field">
-                <textarea
-                  name="context"
-                  rows={2}
-                  value={contextInput}
-                  onChange={(e) => setContextInput(e.target.value)}
-                  placeholder="Optional context or note"
-                  aria-label="Note"
-                />
-              </div>
-            </details>
-            <button className="primary-button save-button" type="submit">
-              Save card <span aria-hidden="true">→</span>
-            </button>
-          </form>
-        </section>
-      </main>
-    )
-
-  if (view === 'complete' || (view === 'review' && !currentCard))
-    return (
-      <main className="app-shell complete-page">
-        <nav className="topbar" aria-label="Session navigation">
-          <Brand onClick={goHome} />
-          <button className="text-button" onClick={() => navigateTo('create')}>
-            + New card
-          </button>
-        </nav>
-        <section className="complete-card">
-          <div className="complete-sun" aria-hidden="true">
-            <span>✓</span>
-          </div>
-          <p className="eyebrow">SESSION COMPLETE</p>
-          <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
-          <p>
-            {reviewedCount > 0
-              ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
-              : 'Nothing is due right now. Add something from your day in CDMX?'}
-          </p>
-          <div className="complete-actions">
-            <button
-              className="primary-button"
-              onClick={() => navigateTo('create')}
-            >
-              Create a card <span aria-hidden="true">→</span>
-            </button>
-            <button className="secondary-button" onClick={goHome}>
-              Back home
-            </button>
-          </div>
-        </section>
-      </main>
+          </section>
+        </main>
+        <BackupModal
+          isOpen={isBackupOpen}
+          onClose={() => setIsBackupOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          clock={services.clock}
+        />
+      </>
     )
 
   if (!currentCard) return null
@@ -927,107 +1268,129 @@ export function App({
     : 0
 
   return (
-    <main className="app-shell review-page">
-      <nav className="topbar" aria-label="Review navigation">
-        <Brand onClick={goHome} />
-        <div className="review-progress" aria-label="Session progress">
-          <span>
-            {completedInSession + 1} <i>/ {total}</i>
-          </span>
-          <div>
-            <b style={{ width: `${Math.min(progress, 100)}%` }} />
+    <>
+      <main className="app-shell review-page">
+        <nav className="topbar" aria-label="Review navigation">
+          <Brand onClick={goHome} />
+          <div className="review-progress" aria-label="Session progress">
+            <span>
+              {completedInSession + 1} <i>/ {total}</i>
+            </span>
+            <div>
+              <b style={{ width: `${Math.min(progress, 100)}%` }} />
+            </div>
           </div>
-        </div>
-        <button className="text-button" onClick={() => navigateTo('create')}>
-          + New card
-        </button>
-      </nav>
-      <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-        <SceneIllustration scene={currentCard.scene} />
-        <div className="prompt-meta">
-          <p className="eyebrow direction-eyebrow">
-            {currentCard.direction === 'es-en' ? (
-              <>
-                <MexicoFlag /> SPANISH → <UsFlag /> ENGLISH
-              </>
-            ) : (
-              <>
-                <UsFlag /> ENGLISH → <MexicoFlag /> SPANISH
-              </>
-            )}
-          </p>
-          <AudioButton
-            prompt
-            label="Play prompt audio"
-            onClick={() =>
-              playAudio(currentCard.prompt, localeForPrompt(currentCard))
-            }
-          />
-        </div>
-        <h1 className="study-prompt">{currentCard.prompt}</h1>
-        {audioUnavailable && (
-          <p className="audio-unavailable" role="status">
-            Audio isn’t available in this browser. You can keep reviewing.
-          </p>
-        )}
-        {!revealed ? (
-          <form className="answer-form" onSubmit={reveal}>
-            <label className="sr-only" htmlFor="answer">
-              Your answer
-            </label>
-            <input
-              ref={responseInput}
-              id="answer"
-              className="answer-input"
-              value={answer}
-              onChange={(event) => setAnswer(event.target.value)}
-              placeholder="Type your answer…"
-              autoComplete="off"
-            />
-            <button className="reveal-button" type="submit">
-              Reveal answer <kbd>Enter</kbd>
+          <div className="nav-actions">
+            <button
+              type="button"
+              className="text-button backup-button"
+              onClick={() => setIsBackupOpen(true)}
+              aria-label="Deck backup and restore"
+            >
+              Backup
             </button>
-          </form>
-        ) : (
-          <div className="reveal-panel">
-            <AnswerComparison
-              typed={answer}
-              expected={currentCard.answer}
-              onPlayAudio={() =>
-                playAudio(currentCard.answer, localeForAnswer(currentCard))
+            <button
+              className="text-button"
+              onClick={() => navigateTo('create')}
+            >
+              + New card
+            </button>
+          </div>
+        </nav>
+        <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
+          <SceneIllustration scene={currentCard.scene} />
+          <div className="prompt-meta">
+            <p className="eyebrow direction-eyebrow">
+              {currentCard.direction === 'es-en' ? (
+                <>
+                  <MexicoFlag /> SPANISH → <UsFlag /> ENGLISH
+                </>
+              ) : (
+                <>
+                  <UsFlag /> ENGLISH → <MexicoFlag /> SPANISH
+                </>
+              )}
+            </p>
+            <AudioButton
+              prompt
+              label="Play prompt audio"
+              onClick={() =>
+                playAudio(currentCard.prompt, localeForPrompt(currentCard))
               }
             />
-            {currentCard.context && (
-              <details className="context-panel">
-                <summary>Meaning & context</summary>
-                <p>{currentCard.context}</p>
-              </details>
-            )}
-            <fieldset className="grade-fieldset">
-              <legend>How did that feel?</legend>
-              <div className="grade-buttons">
-                {grades.map((gradeValue, index) => (
-                  <button
-                    type="button"
-                    className={`grade-${gradeValue}`}
-                    data-grade={index + 1}
-                    onClick={() => grade(gradeValue)}
-                    key={gradeValue}
-                  >
-                    <kbd>{index + 1}</kbd>
-                    <strong>{gradeLabels[gradeValue]}</strong>
-                    <small>{intervalLabel(currentCard, gradeValue)}</small>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
           </div>
-        )}
-        <p className="keyboard-hint">
-          <kbd>Enter</kbd> reveal · <kbd>1–4</kbd> rate · <kbd>⌃ Space</kbd>{' '}
-          replay audio
-        </p>
-      </section>
-    </main>
+          <h1 className="study-prompt">{currentCard.prompt}</h1>
+          {audioUnavailable && (
+            <p className="audio-unavailable" role="status">
+              Audio isn’t available in this browser. You can keep reviewing.
+            </p>
+          )}
+          {!revealed ? (
+            <form className="answer-form" onSubmit={reveal}>
+              <label className="sr-only" htmlFor="answer">
+                Your answer
+              </label>
+              <input
+                ref={responseInput}
+                id="answer"
+                className="answer-input"
+                value={answer}
+                onChange={(event) => setAnswer(event.target.value)}
+                placeholder="Type your answer…"
+                autoComplete="off"
+              />
+              <button className="reveal-button" type="submit">
+                Reveal answer <kbd>Enter</kbd>
+              </button>
+            </form>
+          ) : (
+            <div className="reveal-panel">
+              <AnswerComparison
+                typed={answer}
+                expected={currentCard.answer}
+                onPlayAudio={() =>
+                  playAudio(currentCard.answer, localeForAnswer(currentCard))
+                }
+              />
+              {currentCard.context && (
+                <details className="context-panel">
+                  <summary>Meaning & context</summary>
+                  <p>{currentCard.context}</p>
+                </details>
+              )}
+              <fieldset className="grade-fieldset">
+                <legend>How did that feel?</legend>
+                <div className="grade-buttons">
+                  {grades.map((gradeValue, index) => (
+                    <button
+                      type="button"
+                      className={`grade-${gradeValue}`}
+                      data-grade={index + 1}
+                      onClick={() => grade(gradeValue)}
+                      key={gradeValue}
+                    >
+                      <kbd>{index + 1}</kbd>
+                      <strong>{gradeLabels[gradeValue]}</strong>
+                      <small>{intervalLabel(currentCard, gradeValue)}</small>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+          )}
+          <p className="keyboard-hint">
+            <kbd>Enter</kbd> reveal · <kbd>1–4</kbd> rate · <kbd>⌃ Space</kbd>{' '}
+            replay audio
+          </p>
+        </section>
+      </main>
+      <BackupModal
+        isOpen={isBackupOpen}
+        onClose={() => setIsBackupOpen(false)}
+        cards={cards}
+        onUpdateCards={onUpdateCards}
+        clock={services.clock}
+      />
+    </>
   )
 }
