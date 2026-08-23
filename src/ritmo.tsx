@@ -22,8 +22,7 @@ import {
   type StudyCard,
 } from './domain/card'
 import { createBrowserServices } from './infrastructure/browser/services'
-
-type View = 'welcome' | 'create' | 'review' | 'complete'
+import { type View, hashForView, viewFromHash } from './navigation'
 
 const sceneLabels: Record<Scene, string> = {
   takeaway: 'A takeaway bag and warm drink',
@@ -199,12 +198,41 @@ export function App({
     () => customServices ?? createBrowserServices(),
     [customServices],
   )
-  const [cards, setCards] = useState<StudyCard[]>(() =>
-    services.cards.load(starterCards),
+  const initialCards = useMemo(
+    () => services.cards.load(starterCards),
+    [services.cards],
   )
-  const [view, setView] = useState<View>('welcome')
-  const [queue, setQueue] = useState<string[]>([])
-  const [sessionTotal, setSessionTotal] = useState(0)
+  const initialResolved = useMemo<{
+    view: View
+    queue: string[]
+    total: number
+  }>(() => {
+    if (typeof window === 'undefined') {
+      return { view: 'welcome', queue: [], total: 0 }
+    }
+    const hash = window.location.hash
+    if (hash === '') {
+      window.history.replaceState({ view: 'welcome' }, '', '#/')
+    }
+    const requested = viewFromHash(hash)
+    if (requested === 'review') {
+      const now = services.clock.now()
+      const due = initialCards
+        .filter((card) => isDue(card, now))
+        .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
+        .map(({ id }) => id)
+      if (due.length === 0) {
+        return { view: 'complete', queue: [], total: 0 }
+      }
+      return { view: 'review', queue: due, total: due.length }
+    }
+    return { view: requested, queue: [], total: 0 }
+  }, [initialCards, services.clock])
+
+  const [cards, setCards] = useState<StudyCard[]>(initialCards)
+  const [view, setView] = useState<View>(initialResolved.view)
+  const [queue, setQueue] = useState<string[]>(initialResolved.queue)
+  const [sessionTotal, setSessionTotal] = useState(initialResolved.total)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
@@ -221,6 +249,50 @@ export function App({
   const sampleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
+
+  const navigateTo = useCallback((nextView: View, replace = false) => {
+    setView(nextView)
+    if (typeof window === 'undefined') return
+    const targetHash = hashForView(nextView)
+    if (window.location.hash !== targetHash) {
+      if (replace) {
+        window.history.replaceState({ view: nextView }, '', targetHash)
+      } else {
+        window.history.pushState({ view: nextView }, '', targetHash)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const onPopState = () => {
+      const nextView = viewFromHash(window.location.hash)
+      setView(nextView)
+      if (nextView === 'welcome') {
+        setAnswer('')
+        setRevealed(false)
+      } else if (nextView === 'review') {
+        setQueue((currentQueue) => {
+          if (currentQueue.length > 0) return currentQueue
+          const now = services.clock.now()
+          return cards
+            .filter((card) => isDue(card, now))
+            .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
+            .map(({ id }) => id)
+        })
+        setSessionTotal((currentTotal) => {
+          if (currentTotal > 0) return currentTotal
+          const now = services.clock.now()
+          return cards.filter((card) => isDue(card, now)).length
+        })
+      }
+    }
+    window.addEventListener('popstate', onPopState)
+    window.addEventListener('hashchange', onPopState)
+    return () => {
+      window.removeEventListener('popstate', onPopState)
+      window.removeEventListener('hashchange', onPopState)
+    }
+  }, [cards, services.clock])
 
   const playAudio = useCallback(
     (text: string, locale: string) => {
@@ -300,10 +372,10 @@ export function App({
       setRevealed(false)
       if (nextQueue.length === 0) {
         services.sounds.play('complete')
-        setView('complete')
+        navigateTo('complete')
       }
     },
-    [currentCard, queue, services.clock, services.sounds],
+    [currentCard, navigateTo, queue, services.clock, services.sounds],
   )
 
   useEffect(() => {
@@ -338,7 +410,7 @@ export function App({
 
   function goHome() {
     setReferenceTime(services.clock.now())
-    setView('welcome')
+    navigateTo('welcome')
     setQueue([])
     setAnswer('')
     setRevealed(false)
@@ -358,7 +430,7 @@ export function App({
     setReferenceTime(now)
     setAnswer('')
     setRevealed(false)
-    setView(nextQueue.length > 0 ? 'review' : 'complete')
+    navigateTo(nextQueue.length > 0 ? 'review' : 'complete')
   }
 
   function reveal(event: FormEvent) {
@@ -418,7 +490,7 @@ export function App({
             <div className="hero-actions">
               <button
                 className="primary-button"
-                onClick={() => setView('create')}
+                onClick={() => navigateTo('create')}
               >
                 Create a card <span aria-hidden="true">→</span>
               </button>
@@ -610,12 +682,12 @@ export function App({
       </main>
     )
 
-  if (view === 'complete')
+  if (view === 'complete' || (view === 'review' && !currentCard))
     return (
       <main className="app-shell complete-page">
         <nav className="topbar" aria-label="Session navigation">
           <Brand onClick={goHome} />
-          <button className="text-button" onClick={() => setView('create')}>
+          <button className="text-button" onClick={() => navigateTo('create')}>
             + New card
           </button>
         </nav>
@@ -633,7 +705,7 @@ export function App({
           <div className="complete-actions">
             <button
               className="primary-button"
-              onClick={() => setView('create')}
+              onClick={() => navigateTo('create')}
             >
               Create a card <span aria-hidden="true">→</span>
             </button>
@@ -647,9 +719,10 @@ export function App({
 
   if (!currentCard) return null
 
-  const completedInSession = sessionTotal - queue.length
-  const progress = sessionTotal
-    ? ((completedInSession + (revealed ? 0.7 : 0.2)) / sessionTotal) * 100
+  const total = Math.max(sessionTotal, queue.length, 1)
+  const completedInSession = Math.max(0, sessionTotal - queue.length)
+  const progress = total
+    ? ((completedInSession + (revealed ? 0.7 : 0.2)) / total) * 100
     : 0
 
   return (
@@ -658,13 +731,13 @@ export function App({
         <Brand onClick={goHome} />
         <div className="review-progress" aria-label="Session progress">
           <span>
-            {completedInSession + 1} <i>/ {sessionTotal}</i>
+            {completedInSession + 1} <i>/ {total}</i>
           </span>
           <div>
             <b style={{ width: `${Math.min(progress, 100)}%` }} />
           </div>
         </div>
-        <button className="text-button" onClick={() => setView('create')}>
+        <button className="text-button" onClick={() => navigateTo('create')}>
           + New card
         </button>
       </nav>

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './ritmo'
@@ -14,6 +14,7 @@ class SpeechSynthesisUtteranceMock {
 const speech = { cancel: vi.fn(), speak: vi.fn() }
 
 beforeEach(() => {
+  window.location.hash = ''
   localStorage.clear()
   vi.clearAllMocks()
   Object.defineProperty(window, 'speechSynthesis', {
@@ -260,5 +261,103 @@ describe('Ritmo', () => {
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
     expect(screen.getByLabelText('Your answer')).toBeInTheDocument()
+  })
+
+  it('navigates backwards and forwards with browser history and popstate events', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    window.location.hash = ''
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Navigate to create card
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+    ).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/create')
+
+    // Simulate browser Back button
+    act(() => {
+      window.location.hash = '#/'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Simulate browser Forward button
+    act(() => {
+      window.location.hash = '#/create'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
+    const services = createTestServices({
+      cards: [
+        {
+          id: 'card-1',
+          noteId: 'note-1',
+          prompt: 'Tal vez',
+          answer: 'Maybe',
+          direction: 'es-en',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            dueAt: 100000,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            state: 'review',
+            reviews: 1,
+            lapses: 0,
+          },
+        },
+      ],
+      clockTime: 0,
+    })
+    window.location.hash = '#/study'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'You’re caught up.' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('resumes an in-progress review queue when navigating back and forward', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    window.location.hash = ''
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
+
+    // Navigate back to welcome
+    act(() => {
+      window.location.hash = '#/'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Navigate forward to study -> resumes active session!
+    act(() => {
+      window.location.hash = '#/study'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
   })
 })

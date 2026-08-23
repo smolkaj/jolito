@@ -50,3 +50,47 @@ test('creates and reviews both directions with the keyboard', async ({
     .analyze()
   expect(results.violations).toEqual([])
 })
+
+test('supports browser back and forward navigation across views', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(
+    page.getByRole('heading', { name: /make the words you meet stick/i }),
+  ).toBeVisible()
+
+  // Navigate to Create Card
+  await page.getByRole('button', { name: /^create a card$/i }).click()
+  await expect(
+    page.getByRole('heading', { name: 'What do you want to remember?' }),
+  ).toBeVisible()
+  expect(page.url()).toContain('#/create')
+
+  // Browser Back button -> returns to Welcome
+  await page.goBack()
+  await expect(
+    page.getByRole('heading', { name: /make the words you meet stick/i }),
+  ).toBeVisible()
+
+  // Browser Forward button -> returns to Create Card
+  await page.goForward()
+  await expect(
+    page.getByRole('heading', { name: 'What do you want to remember?' }),
+  ).toBeVisible()
+
+  // Navigate to Study from Welcome
+  await page.goBack()
+  await page.getByRole('button', { name: /practice 4 due/i }).click()
+  await expect(page.getByLabel('Your answer')).toBeVisible()
+  expect(page.url()).toContain('#/study')
+
+  // Browser Back button -> returns to Welcome
+  await page.goBack()
+  await expect(
+    page.getByRole('heading', { name: /make the words you meet stick/i }),
+  ).toBeVisible()
+
+  // Browser Forward button -> resumes Study
+  await page.goForward()
+  await expect(page.getByLabel('Your answer')).toBeVisible()
+})
