@@ -148,7 +148,7 @@ summary:focus-visible {
 /* Topbar Navigation */
 .topbar {
   width: min(1080px, 100%);
-  min-height: 84px;
+  min-height: 120px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -156,23 +156,23 @@ summary:focus-visible {
   gap: 20px;
   position: relative;
   z-index: 10;
-  padding: 8px 0;
+  padding: 16px 0;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
-  padding: 8px 18px;
-  margin-left: -14px;
-  border: 2px solid transparent;
-  border-radius: 20px;
+  gap: 20px;
+  padding: 8px 20px;
+  margin-left: -16px;
+  border: 2.5px solid transparent;
+  border-radius: 24px;
   color: var(--ink);
   background: transparent;
   font-family: var(--font-serif);
-  font-size: 34px;
+  font-size: 42px;
   font-weight: 800;
-  letter-spacing: -1.2px;
+  letter-spacing: -1.5px;
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -190,15 +190,36 @@ summary:focus-visible {
 }
 
 .brand img {
-  width: 82px;
-  height: 82px;
+  width: 118px;
+  height: 118px;
   object-fit: contain;
-  filter: drop-shadow(3.5px 3.5px 0 var(--rosa));
+  filter: drop-shadow(4px 4px 0 var(--rosa));
+  animation: jolito-sway 4.5s ease-in-out infinite alternate;
   transition: transform 320ms var(--ease-spring);
 }
 
 .brand:hover img {
-  transform: rotate(-12deg) scale(1.15);
+  animation-play-state: paused;
+  transform: rotate(-14deg) scale(1.18);
+}
+
+@keyframes jolito-sway {
+  0% {
+    transform: rotate(0deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(2.5deg) translateY(-4px);
+  }
+  100% {
+    transform: rotate(-2.5deg) translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand img {
+    animation: none;
+    transition: none;
+  }
 }
 
 .nav-actions {
@@ -1872,16 +1893,21 @@ kbd {
     display: none;
   }
 
+  .topbar {
+    min-height: 90px;
+    padding: 8px 0;
+  }
+
   .brand {
-    font-size: 26px;
-    gap: 12px;
-    padding: 4px 10px;
-    margin-left: -8px;
+    font-size: 32px;
+    gap: 14px;
+    padding: 6px 12px;
+    margin-left: -10px;
   }
 
   .brand img {
-    width: 62px;
-    height: 62px;
+    width: 82px;
+    height: 82px;
   }
 
   .welcome-page {
