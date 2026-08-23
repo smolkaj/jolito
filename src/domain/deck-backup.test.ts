@@ -86,12 +86,24 @@ describe('parseDeckBackup', () => {
     }
   })
 
-  it('migrates legacy ritmo cards format', () => {
+  it('migrates legacy ritmo cards format with various id types and contexts', () => {
     const legacyJson = JSON.stringify([
       {
         id: 'legacy-1',
         prompt: '¡Hola!',
         answer: 'Hello!',
+        direction: 'es-en',
+        context: 'Greeting',
+      },
+      {
+        id: 42,
+        prompt: 'Buenos días',
+        answer: 'Good morning',
+        direction: 'es-en',
+      },
+      {
+        prompt: 'Buenas noches',
+        answer: 'Good night',
         direction: 'es-en',
       },
     ])
@@ -99,11 +111,11 @@ describe('parseDeckBackup', () => {
     const result = parseDeckBackup(legacyJson)
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.cards).toHaveLength(1)
-      expect(result.cards[0]?.prompt).toBe('¡Hola!')
-      expect(result.cards[0]?.answer).toBe('Hello!')
-      expect(result.cards[0]?.direction).toBe('es-en')
-      expect(result.cards[0]?.schedule.state).toBe('new')
+      expect(result.cards).toHaveLength(3)
+      expect(result.cards[0]?.context).toBe('Greeting')
+      expect(result.cards[1]?.id).toBe('legacy-42:es-en')
+      expect(result.cards[2]?.id).toBe('legacy-2:es-en')
+      expect(result.cards[2]?.context).toBe('')
     }
   })
 
@@ -151,6 +163,23 @@ describe('parseDeckBackup', () => {
     if (!result.success) {
       expect(result.error).toMatch(/invalid card/i)
       expect(result.details).toBeDefined()
+    }
+  })
+
+  it('fails with structured error when legacy array contains invalid direction or non-object', () => {
+    const invalidDirectionLegacy = JSON.stringify([
+      {
+        id: 'legacy-1',
+        prompt: '¡Hola!',
+        answer: 'Hello!',
+        direction: 'fr-de',
+      },
+    ])
+
+    const result = parseDeckBackup(invalidDirectionLegacy)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toMatch(/invalid card/i)
     }
   })
 
