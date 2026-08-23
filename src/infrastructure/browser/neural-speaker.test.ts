@@ -26,10 +26,10 @@ describe('LayeredNeuralSpeaker', () => {
       fallbackSpeaker,
     })
 
-    const played = speaker.speak('¿Dónde está el metro?', 'es-MX')
+    const played = speaker.speak('frase no empaquetada', 'es-MX')
     expect(played).toBe(true)
     expect(fallbackSpeakSpy).toHaveBeenCalledWith(
-      '¿Dónde está el metro?',
+      'frase no empaquetada',
       'es-MX',
     )
   })
