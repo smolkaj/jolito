@@ -44,6 +44,8 @@ const localeForPrompt = (card: StudyCard) =>
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
 
+export type TypographyTheme = 'playful' | 'cdmx' | 'warm'
+
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
@@ -58,6 +60,67 @@ function Brand({ onClick }: { onClick?: () => void }) {
     </button>
   ) : (
     <div className="brand">{content}</div>
+  )
+}
+
+function TypographyDock({
+  current,
+  onChange,
+}: {
+  current: TypographyTheme
+  onChange: (theme: TypographyTheme) => void
+}) {
+  return (
+    <aside
+      className="typography-dock-container"
+      aria-label="Typography direction switcher"
+    >
+      <div
+        className="typography-dock"
+        role="toolbar"
+        aria-label="Choose a typography direction"
+      >
+        <div className="typography-dock-label">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9.93 13.5h4.14L12 7.98zM20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-4.05 16.5-1.14-3H9.17l-1.12 3H5.96l5.11-13h1.86l5.11 13h-2.09z" />
+          </svg>
+          <span>Typography</span>
+        </div>
+        <div
+          className="typography-dock-options"
+          role="group"
+          aria-label="Directions"
+        >
+          <button
+            type="button"
+            className={`typography-pill ${current === 'playful' ? 'is-active' : ''}`}
+            aria-pressed={current === 'playful'}
+            onClick={() => onChange('playful')}
+          >
+            <span className="typography-pill-name">1. Playful Tactile</span>
+            <span className="typography-pill-sub">Outfit (Duolingo Vibe)</span>
+          </button>
+          <button
+            type="button"
+            className={`typography-pill ${current === 'cdmx' ? 'is-active' : ''}`}
+            aria-pressed={current === 'cdmx'}
+            onClick={() => onChange('cdmx')}
+          >
+            <span className="typography-pill-name">2. CDMX Rhythm</span>
+            <span className="typography-pill-sub">Bricolage Grotesque</span>
+          </button>
+          <button
+            type="button"
+            className={`typography-pill ${current === 'warm' ? 'is-active' : ''}`}
+            aria-pressed={current === 'warm'}
+            onClick={() => onChange('warm')}
+          >
+            <span className="typography-pill-name">3. Warm Editorial</span>
+            <span className="typography-pill-sub">Fraunces + Clean Sans</span>
+          </button>
+        </div>
+      </div>
+    </aside>
   )
 }
 
@@ -246,6 +309,24 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [samplePlaying, setSamplePlaying] = useState(false)
+  const [typographyTheme, setTypographyTheme] = useState<TypographyTheme>(
+    () => {
+      if (typeof window === 'undefined') return 'playful'
+      const saved = window.localStorage.getItem('ritmo_typography_theme')
+      if (saved === 'playful' || saved === 'cdmx' || saved === 'warm') {
+        return saved
+      }
+      return 'playful'
+    },
+  )
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('ritmo_typography_theme', typographyTheme)
+      document.documentElement.setAttribute('data-typography', typographyTheme)
+    }
+  }, [typographyTheme])
+
   const responseInput = useRef<HTMLInputElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
@@ -468,7 +549,10 @@ export function App({
 
   if (view === 'welcome')
     return (
-      <main className="app-shell welcome-page">
+      <main
+        className="app-shell welcome-page"
+        data-typography={typographyTheme}
+      >
         <nav className="topbar" aria-label="Main navigation">
           <Brand />
           <div className="nav-actions">
@@ -570,6 +654,10 @@ export function App({
             </button>
           </div>
         </section>
+        <TypographyDock
+          current={typographyTheme}
+          onChange={setTypographyTheme}
+        />
       </main>
     )
 
