@@ -375,7 +375,9 @@ describe('Jolito', () => {
 
     // Verifies auto-fill of Spanish, English, and context!
     expect(spanishInput).toHaveValue('ahorita')
-    expect(screen.getByLabelText(/english/i)).toHaveValue('right now / in a bit')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'right now / in a bit',
+    )
     expect(screen.getByLabelText('Note')).toHaveValue(
       'Iconic Mexican time nuance: right now, soon, or never.',
     )
@@ -391,7 +393,9 @@ describe('Jolito', () => {
     await user.type(spanishInput, 'aguacatte')
 
     expect(screen.getByText(/did you mean/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /aguacate/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /aguacate/i }),
+    ).toBeInTheDocument()
 
     // Click typo chip
     await user.click(screen.getByRole('button', { name: /aguacate/i }))
@@ -418,7 +422,9 @@ describe('Jolito', () => {
     await user.keyboard('{Enter}')
 
     expect(spanishInput).toHaveValue('Qué padre')
-    expect(screen.getByLabelText(/english/i)).toHaveValue('How cool / fantastic')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'How cool / fantastic',
+    )
   })
 
   it('opens deck backup modal, exports backup JSON, and downloads file', async () => {
