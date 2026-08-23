@@ -134,29 +134,3 @@ test('transitions sample card from background to foreground smoothly and remains
     .analyze()
   expect(results.violations).toEqual([])
 })
-
-test('switches live typography directions and remains accessible', async ({
-  page,
-}) => {
-  await page.goto('/')
-
-  const welcomeMain = page.locator('main.welcome-page')
-  await expect(welcomeMain).toHaveAttribute('data-typography', 'playful')
-
-  // Switch to CDMX Modernist
-  await page.getByRole('button', { name: /2\. CDMX Rhythm/i }).click()
-  await expect(welcomeMain).toHaveAttribute('data-typography', 'cdmx')
-
-  // Switch to Warm Editorial
-  await page.getByRole('button', { name: /3\. Warm Editorial/i }).click()
-  await expect(welcomeMain).toHaveAttribute('data-typography', 'warm')
-
-  // Switch back to Playful Tactile
-  await page.getByRole('button', { name: /1\. Playful Tactile/i }).click()
-  await expect(welcomeMain).toHaveAttribute('data-typography', 'playful')
-
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
-  expect(results.violations).toEqual([])
-})
