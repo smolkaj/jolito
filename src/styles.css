@@ -58,6 +58,11 @@
   --verde-soft: #f0fdf4;
   --verde-glow: rgba(21, 128, 61, 0.2);
 
+  /* Verde Menta Coyoacán / Condesa Art Deco Mint */
+  --menta: #9fd3b6;
+  --menta-dark: #23523a;
+  --menta-soft: #eaf6ef;
+
   /* Tactile Hard Offset Neo-Brutalist Shadows (Refined & Balanced) */
   --shadow-sm: 2px 2px 0 rgba(18, 24, 21, 0.18);
   --shadow-md: 3px 3px 0 rgba(18, 24, 21, 0.18);
@@ -387,24 +392,24 @@ summary:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Welcome Page — Courageous Solid Mexican Turquoise Green Canvas */
+/* Welcome Page — Courageous Verde Menta Coyoacán Canvas */
 .welcome-page {
-  background-color: var(--turquesa);
+  background-color: var(--menta);
   background-image:
     radial-gradient(
-      ellipse at 88% 28%,
-      rgba(228, 0, 124, 0.14) 0%,
-      transparent 48%
+      ellipse at 88% 25%,
+      rgba(228, 0, 124, 0.12) 0%,
+      transparent 45%
     ),
     radial-gradient(
-      ellipse at 15% 82%,
-      rgba(245, 158, 11, 0.16) 0%,
+      ellipse at 15% 80%,
+      rgba(245, 158, 11, 0.14) 0%,
       transparent 45%
     );
 }
 
 .welcome-page .lede {
-  color: #1a3328;
+  color: var(--menta-dark);
 }
 
 .welcome-hero {
