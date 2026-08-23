@@ -228,7 +228,7 @@ describe('Ritmo', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('img', {
-        name: /jolito the axolotl, ritmo's practice companion, greeting you/i,
+        name: /jolito the axolotl/i,
       }),
     ).toBeInTheDocument()
     expect(

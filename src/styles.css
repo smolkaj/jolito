@@ -189,10 +189,15 @@ summary:focus-visible {
 }
 
 .brand img {
-  width: 28px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+  filter: drop-shadow(2px 2px 0 var(--rosa));
+  transition: transform 300ms var(--ease-spring);
+}
+
+.brand:hover img {
+  transform: rotate(-8deg) scale(1.1);
 }
 
 .nav-actions {
@@ -376,80 +381,6 @@ summary:focus-visible {
 .hero-copy {
   position: relative;
   z-index: 2;
-}
-
-.hero-mascot-spotlight {
-  position: absolute;
-  top: -65px;
-  right: -10px;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  animation: jolito-float 4.8s ease-in-out infinite alternate;
-  filter: drop-shadow(6px 6px 0 rgba(18, 24, 21, 0.1));
-}
-
-.mascot-spotlight-image {
-  width: clamp(190px, 21vw, 250px);
-  height: auto;
-  display: block;
-  user-select: none;
-  transform-origin: center center;
-}
-
-.mascot-speech-bubble {
-  margin-top: -16px;
-  padding: 6px 14px;
-  background: var(--paper);
-  border: 2px solid var(--line);
-  border-radius: 999px;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink);
-  box-shadow: 3px 3px 0 var(--rosa);
-  white-space: nowrap;
-}
-
-.mascot-speech-bubble strong {
-  color: var(--rosa-dark);
-  font-weight: 700;
-}
-
-.hero-mascot-spotlight.is-dancing {
-  animation: jolito-dance 1.2s var(--ease-spring) infinite;
-}
-
-@keyframes jolito-float {
-  0% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-10px) rotate(-2deg);
-  }
-  100% {
-    transform: translateY(-18px) rotate(1.5deg);
-  }
-}
-
-@keyframes jolito-dance {
-  0% {
-    transform: scale(1) translateY(0px) rotate(0deg);
-  }
-  25% {
-    transform: scale(1.06) translateY(-14px) rotate(-4deg);
-  }
-  50% {
-    transform: scale(1.03) translateY(-6px) rotate(3deg);
-  }
-  75% {
-    transform: scale(1.08) translateY(-16px) rotate(-3deg);
-  }
-  100% {
-    transform: scale(1) translateY(0px) rotate(0deg);
-  }
 }
 
 .hero-copy h1,

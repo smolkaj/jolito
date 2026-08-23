@@ -6,9 +6,8 @@ import {
   useRef,
   useState,
 } from 'react'
-import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
+import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
-import jolitoWelcomeUrl from '../assets/jolito-welcome.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
@@ -48,7 +47,7 @@ const localeForAnswer = (card: StudyCard) =>
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
-      <img src={logoUrl} alt="" />
+      <img src={logoUrl} alt="Jolito the Axolotl" className="brand-logo" />
       <span>Ritmo</span>
     </>
   )
@@ -506,22 +505,6 @@ export function App({
             </div>
           </div>
           <div className="hero-visual">
-            <div
-              className={`hero-mascot-spotlight ${samplePlaying ? 'is-dancing' : ''}`}
-              role="img"
-              aria-label="Jolito the Axolotl, Ritmo's practice companion, greeting you"
-            >
-              <img
-                src={jolitoWelcomeUrl}
-                alt=""
-                className="mascot-spotlight-image"
-              />
-              <div className="mascot-speech-bubble" aria-hidden="true">
-                <span>
-                  ¡Hola! Soy <strong>Jolito</strong>
-                </span>
-              </div>
-            </div>
             <button
               type="button"
               className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
