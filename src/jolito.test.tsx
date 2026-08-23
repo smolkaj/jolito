@@ -223,17 +223,11 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /make the words you meet stick/i }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(/mexican spanish · local-first/i),
-    ).toBeInTheDocument()
     expect(screen.getByText('Jolito')).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Create beautiful, spoken cards for the Spanish you live every day.',
-        {
-          exact: false,
-        },
-      ),
+      screen.getByText('Create beautiful, spoken flashcards.', {
+        exact: false,
+      }),
     ).toBeInTheDocument()
     expect(
       screen.getByText('Practice them at your rhythm.', { exact: false }),

@@ -484,13 +484,12 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
-            <p className="eyebrow">MEXICAN SPANISH · LOCAL-FIRST</p>
             <h1>
               Make the words <br />
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards for the Spanish you live every day.
+              Create beautiful, spoken flashcards.
               <br />
               Practice them at your rhythm.
             </p>
