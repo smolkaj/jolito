@@ -48,7 +48,7 @@ function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
       <img src={logoUrl} alt="" aria-hidden="true" />
-      <span>Ritmo</span>
+      <span>Jolito</span>
     </>
   )
 
@@ -57,7 +57,7 @@ function Brand({ onClick }: { onClick?: () => void }) {
       className="brand"
       type="button"
       onClick={onClick}
-      aria-label="Ritmo home"
+      aria-label="Jolito home"
     >
       {content}
     </button>
@@ -484,13 +484,13 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
-            <p className="eyebrow">MEXICAN SPANISH · LOCAL-FIRST</p>
+            <p className="eyebrow">SPOKEN FLASHCARDS · LOCAL-FIRST</p>
             <h1>
               Make the words <br />
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards.
+              Create beautiful, spoken cards for any language.
               <br />
               Practice them at your rhythm.
             </p>

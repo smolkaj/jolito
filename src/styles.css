@@ -161,27 +161,27 @@ summary:focus-visible {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 14px;
-  margin-left: -10px;
+  gap: 14px;
+  padding: 6px 16px;
+  margin-left: -12px;
   border: 2px solid transparent;
-  border-radius: 12px;
+  border-radius: 16px;
   color: var(--ink);
   background: transparent;
   font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.6px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
   transition:
-    background 150ms ease,
-    border-color 150ms ease,
-    transform 150ms var(--ease-spring);
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms var(--ease-spring);
 }
 
 .brand:hover {
   background: var(--paper-subtle);
   border-color: var(--line);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .brand:active {
@@ -189,15 +189,15 @@ summary:focus-visible {
 }
 
 .brand img {
-  width: 36px;
-  height: 36px;
+  width: 54px;
+  height: 54px;
   object-fit: contain;
-  filter: drop-shadow(2px 2px 0 var(--rosa));
-  transition: transform 300ms var(--ease-spring);
+  filter: drop-shadow(2.5px 2.5px 0 var(--rosa));
+  transition: transform 320ms var(--ease-spring);
 }
 
 .brand:hover img {
-  transform: rotate(-8deg) scale(1.1);
+  transform: rotate(-10deg) scale(1.14);
 }
 
 .nav-actions {

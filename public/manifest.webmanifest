@@ -1,7 +1,7 @@
 {
-  "name": "Ritmo",
-  "short_name": "Ritmo",
-  "description": "Find your rhythm in a new language.",
+  "name": "Jolito",
+  "short_name": "Jolito",
+  "description": "Make the words you meet stick in any language.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#fbf7ef",
