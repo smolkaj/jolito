@@ -361,7 +361,7 @@ export function App({
       setCards((current) =>
         current.map((card) => (card.id === reviewed.id ? reviewed : card)),
       )
-      const requeue = shouldRequeueInSession(reviewed.schedule, gradeValue)
+      const requeue = shouldRequeueInSession(reviewed.schedule)
       const nextQueue = requeue
         ? [...queue.slice(1), currentCard.id]
         : queue.slice(1)

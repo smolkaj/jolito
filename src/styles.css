@@ -50,6 +50,12 @@
   --maya-soft: #f0f9ff;
   --maya-glow: rgba(2, 132, 199, 0.2);
 
+  /* Verde Mexicano / Jade Green (Reserved for 4 Easy) */
+  --verde: #15803d;
+  --verde-dark: #14532d;
+  --verde-soft: #f0fdf4;
+  --verde-glow: rgba(21, 128, 61, 0.2);
+
   /* Tactile Hard Offset Neo-Brutalist Shadows (Refined & Balanced) */
   --shadow-sm: 2px 2px 0 rgba(18, 24, 21, 0.18);
   --shadow-md: 3px 3px 0 rgba(18, 24, 21, 0.18);
@@ -1690,49 +1696,79 @@ kbd {
   font-weight: 600;
 }
 
-/* Tactile Chroma-Brutalist Colored Chiclets for 1–4 */
+/* Tactile Chroma-Brutalist Solid Colored Chiclets for 1–4 */
 .grade-buttons .grade-again {
-  background: var(--tezontle-soft);
-  box-shadow: 2px 2px 0 var(--tezontle);
+  background: var(--tezontle);
+  color: #ffffff;
+  box-shadow: 2px 2px 0 var(--tezontle-dark);
+}
+
+.grade-buttons .grade-again small {
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 .grade-buttons .grade-again:hover {
-  background: #fee2e2;
+  background: var(--tezontle-dark);
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--tezontle);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .grade-buttons .grade-hard {
-  background: var(--cempasuchil-soft);
-  box-shadow: 2px 2px 0 var(--cempasuchil);
+  background: var(--cempasuchil);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--cempasuchil-dark);
+}
+
+.grade-buttons .grade-hard small {
+  color: var(--ink);
+  opacity: 0.85;
 }
 
 .grade-buttons .grade-hard:hover {
-  background: #fef3c7;
+  background: #e69500;
+  color: var(--ink);
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--cempasuchil-dark);
 }
 
+.grade-buttons .grade-hard:hover small {
+  color: var(--ink);
+  opacity: 0.9;
+}
+
 .grade-buttons .grade-good {
-  background: var(--turquesa-soft);
-  box-shadow: 2px 2px 0 var(--turquesa-deep);
+  background: var(--maya-dark);
+  color: #ffffff;
+  box-shadow: 2px 2px 0 #075985;
+}
+
+.grade-buttons .grade-good small {
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 .grade-buttons .grade-good:hover {
-  background: #d1fae5;
+  background: #075985;
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--turquesa-dark);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .grade-buttons .grade-easy {
-  background: var(--maya-soft);
-  box-shadow: 2px 2px 0 var(--maya);
+  background: var(--verde);
+  color: #ffffff;
+  box-shadow: 2px 2px 0 var(--verde-dark);
+}
+
+.grade-buttons .grade-easy small {
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 .grade-buttons .grade-easy:hover {
-  background: #e0f2fe;
+  background: var(--verde-dark);
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--maya-dark);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .keyboard-hint {

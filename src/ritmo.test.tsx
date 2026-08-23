@@ -77,7 +77,7 @@ describe('Ritmo', () => {
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
     expect(screen.getByText('Meaning & context')).toBeInTheDocument()
 
-    await user.keyboard('3')
+    await user.keyboard('4')
     expect(
       screen.getByRole('heading', { name: 'Where can I find the metro?' }),
     ).toBeInTheDocument()
@@ -99,18 +99,18 @@ describe('Ritmo', () => {
       '¿Por dónde queda el metro?',
     )
     await user.keyboard('{Enter}')
-    await user.keyboard('3') // Good -> graduates
+    await user.keyboard('4') // Easy -> graduates
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
 
     expect(services.mockSounds.played).toEqual([
       'reveal',
-      'good',
+      'easy',
       'reveal',
       'again',
       'reveal',
-      'good',
+      'easy',
       'complete',
     ])
     expect(services.memoryCards.saved).toHaveLength(6)
@@ -158,17 +158,17 @@ describe('Ritmo', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('1')
 
-    // Advances to Card 2: pass with Good
+    // Advances to Card 2: pass with Easy
     await user.keyboard('{Enter}')
-    await user.keyboard('3')
+    await user.keyboard('4')
 
-    // Advances to Card 3: pass with Good
+    // Advances to Card 3: pass with Easy
     await user.keyboard('{Enter}')
-    await user.keyboard('3')
+    await user.keyboard('4')
 
-    // Advances to Card 4: pass with Good
+    // Advances to Card 4: pass with Easy
     await user.keyboard('{Enter}')
-    await user.keyboard('3')
+    await user.keyboard('4')
 
     // Session is NOT complete yet — Card 1 was re-queued and appears now!
     expect(
@@ -176,9 +176,9 @@ describe('Ritmo', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
 
-    // Finally pass Card 1 with Good
+    // Finally pass Card 1 with Easy
     await user.keyboard('{Enter}')
-    await user.keyboard('3')
+    await user.keyboard('4')
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText(/5 cards practiced/i)).toBeInTheDocument()
