@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
+import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
@@ -47,13 +47,18 @@ const localeForAnswer = (card: StudyCard) =>
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
-      <img src={logoUrl} alt="" />
-      <span>Ritmo</span>
+      <img src={logoUrl} alt="" aria-hidden="true" />
+      <span>Jolito</span>
     </>
   )
 
   return onClick ? (
-    <button className="brand" type="button" onClick={onClick}>
+    <button
+      className="brand"
+      type="button"
+      onClick={onClick}
+      aria-label="Jolito home"
+    >
       {content}
     </button>
   ) : (
@@ -479,12 +484,13 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
+            <p className="eyebrow">MEXICAN SPANISH · LOCAL-FIRST</p>
             <h1>
               Make the words <br />
               you meet <em>stick.</em>
             </h1>
             <p className="lede">
-              Create beautiful, spoken cards.
+              Create beautiful, spoken cards for the Spanish you live every day.
               <br />
               Practice them at your rhythm.
             </p>

@@ -9,6 +9,8 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
   await expect(
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
+  await expect(page.getByText(/mexican spanish · local-first/i)).toBeVisible()
+  await expect(page.getByText('Jolito')).toBeVisible()
   await expect(
     page.getByRole('button', { name: /^create a card$/i }),
   ).toBeVisible()

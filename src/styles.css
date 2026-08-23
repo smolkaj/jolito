@@ -139,7 +139,7 @@ summary:focus-visible {
 /* Base App Shell Layout */
 .app-shell {
   min-height: 100vh;
-  padding: 24px clamp(20px, 5vw, 80px) 48px;
+  padding: 16px clamp(20px, 5vw, 80px) 40px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -148,7 +148,6 @@ summary:focus-visible {
 /* Topbar Navigation */
 .topbar {
   width: min(1080px, 100%);
-  min-height: 52px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -156,32 +155,33 @@ summary:focus-visible {
   gap: 20px;
   position: relative;
   z-index: 10;
+  padding: 0;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 14px;
-  margin-left: -10px;
-  border: 2px solid transparent;
-  border-radius: 12px;
+  gap: 18px;
+  padding: 4px 16px;
+  margin-left: -16px;
+  border: 2.5px solid transparent;
+  border-radius: 24px;
   color: var(--ink);
   background: transparent;
   font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.6px;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
   transition:
-    background 150ms ease,
-    border-color 150ms ease,
-    transform 150ms var(--ease-spring);
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms var(--ease-spring);
 }
 
 .brand:hover {
   background: var(--paper-subtle);
   border-color: var(--line);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .brand:active {
@@ -189,10 +189,36 @@ summary:focus-visible {
 }
 
 .brand img {
-  width: 28px;
-  height: 32px;
+  width: 118px;
+  height: 118px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+  filter: drop-shadow(4px 4px 0 var(--rosa));
+  animation: jolito-sway 4.5s ease-in-out infinite alternate;
+  transition: transform 320ms var(--ease-spring);
+}
+
+.brand:hover img {
+  animation-play-state: paused;
+  transform: rotate(-14deg) scale(1.18);
+}
+
+@keyframes jolito-sway {
+  0% {
+    transform: rotate(0deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(2.5deg) translateY(-4px);
+  }
+  100% {
+    transform: rotate(-2.5deg) translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand img {
+    animation: none;
+    transition: none;
+  }
 }
 
 .nav-actions {
@@ -364,13 +390,13 @@ summary:focus-visible {
 
 .welcome-hero {
   width: min(1080px, 100%);
-  min-height: calc(100vh - 120px);
+  flex: 1;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
-  gap: clamp(40px, 6vw, 72px);
-  padding: 40px 0 60px;
+  gap: clamp(32px, 5vw, 64px);
+  padding: 8px 0 32px;
 }
 
 .hero-copy {
@@ -551,7 +577,7 @@ summary:focus-visible {
 }
 
 .sample-card-en .sample-card-header .sample-badge {
-  color: var(--turquesa-dark);
+  color: var(--ink);
 }
 
 .sample-card-en .sample-card-body .sample-phrase {
@@ -671,7 +697,7 @@ summary:focus-visible {
 
 .create-layout {
   width: min(980px, 100%);
-  margin: clamp(36px, 6vh, 72px) auto 40px;
+  margin: clamp(18px, 3vh, 36px) auto 40px;
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
   align-items: start;
@@ -1859,11 +1885,27 @@ kbd {
 
 @media (max-width: 680px) {
   .app-shell {
-    padding: 18px 16px 32px;
+    padding: 12px 16px 28px;
   }
 
   .connection {
     display: none;
+  }
+
+  .topbar {
+    padding: 0;
+  }
+
+  .brand {
+    font-size: 30px;
+    gap: 12px;
+    padding: 4px 10px;
+    margin-left: -8px;
+  }
+
+  .brand img {
+    width: 76px;
+    height: 76px;
   }
 
   .welcome-page {
@@ -1871,10 +1913,11 @@ kbd {
   }
 
   .welcome-hero {
-    min-height: calc(100svh - 70px);
+    min-height: auto;
     grid-template-columns: 1fr;
     align-items: start;
-    padding-top: 6vh;
+    padding-top: 12px;
+    padding-bottom: 24px;
   }
 
   .hero-copy h1 {
