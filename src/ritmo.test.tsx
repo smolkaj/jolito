@@ -226,11 +226,7 @@ describe('Ritmo', () => {
     expect(
       screen.getByText(/mexican spanish · local-first/i),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('img', {
-        name: /jolito the axolotl/i,
-      }),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Ritmo')).toBeInTheDocument()
     expect(
       screen.getByText('Create beautiful, spoken cards.', { exact: false }),
     ).toBeInTheDocument()

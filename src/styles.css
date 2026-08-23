@@ -556,7 +556,7 @@ summary:focus-visible {
 }
 
 .sample-card-en .sample-card-header .sample-badge {
-  color: var(--turquesa-dark);
+  color: var(--ink);
 }
 
 .sample-card-en .sample-card-body .sample-phrase {

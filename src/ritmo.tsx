@@ -47,13 +47,18 @@ const localeForAnswer = (card: StudyCard) =>
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
-      <img src={logoUrl} alt="Jolito the Axolotl" className="brand-logo" />
+      <img src={logoUrl} alt="" aria-hidden="true" />
       <span>Ritmo</span>
     </>
   )
 
   return onClick ? (
-    <button className="brand" type="button" onClick={onClick}>
+    <button
+      className="brand"
+      type="button"
+      onClick={onClick}
+      aria-label="Ritmo home"
+    >
       {content}
     </button>
   ) : (
