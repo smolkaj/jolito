@@ -753,6 +753,56 @@ function SyncModal({
   )
 }
 
+interface ConnectionPillProps {
+  authUser: AuthUser | null
+  syncStatus: SyncStatus
+  isOnline: boolean
+  onClick: () => void
+}
+
+function ConnectionPill({
+  authUser,
+  syncStatus,
+  isOnline,
+  onClick,
+}: ConnectionPillProps) {
+  let stateClass = 'is-local'
+  let label = 'Local only · Tap to sync'
+  let ariaLabel = 'Local deck only. Tap to sync with cloud'
+
+  if (!isOnline) {
+    stateClass = 'is-offline'
+    label = 'Offline · Saved locally'
+    ariaLabel = 'Offline. Changes saved locally'
+  } else if (authUser) {
+    if (syncStatus === 'syncing') {
+      stateClass = 'is-syncing'
+      label = 'Syncing…'
+      ariaLabel = 'Synchronizing deck with cloud'
+    } else if (syncStatus === 'error') {
+      stateClass = 'is-offline'
+      label = 'Sync issue · Tap to retry'
+      ariaLabel = 'Sync issue. Tap to view status and retry'
+    } else {
+      stateClass = 'is-synced'
+      label = 'Cloud synced ✓'
+      ariaLabel = 'Cloud synced with account'
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={`connection-pill ${stateClass}`}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
+      <i className="pill-dot" aria-hidden="true" />
+      <span>{label}</span>
+    </button>
+  )
+}
+
 export function App({
   services: customServices,
 }: {
@@ -812,6 +862,9 @@ export function App({
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  )
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
@@ -865,6 +918,27 @@ export function App({
       }
     })
   }, [cards, onUpdateCards, services.auth, services.sync])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onOnline = () => {
+      setIsOnline(true)
+      if (authUser) {
+        setSyncStatus('syncing')
+        void services.sync.syncDeck(cards, authUser).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
+      }
+    }
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [authUser, cards, services.sync])
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
     setView(nextView)
@@ -1176,27 +1250,18 @@ export function App({
             <div className="nav-actions">
               <button
                 type="button"
-                className="text-button sync-button"
-                onClick={() => setIsSyncOpen(true)}
-                aria-label="Cloud sync and account"
-              >
-                {authUser
-                  ? syncStatus === 'syncing'
-                    ? 'Syncing…'
-                    : 'Synced ✓'
-                  : 'Sync'}
-              </button>
-              <button
-                type="button"
                 className="text-button backup-button"
                 onClick={() => setIsBackupOpen(true)}
                 aria-label="Deck backup and restore"
               >
                 Backup
               </button>
-              <span className="connection">
-                <i /> On-device · works offline
-              </span>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => setIsSyncOpen(true)}
+              />
             </div>
           </nav>
           <section className="welcome-hero">
@@ -1326,18 +1391,6 @@ export function App({
             <div className="nav-actions">
               <button
                 type="button"
-                className="text-button sync-button"
-                onClick={() => setIsSyncOpen(true)}
-                aria-label="Cloud sync and account"
-              >
-                {authUser
-                  ? syncStatus === 'syncing'
-                    ? 'Syncing…'
-                    : 'Synced ✓'
-                  : 'Sync'}
-              </button>
-              <button
-                type="button"
                 className="text-button backup-button"
                 onClick={() => setIsBackupOpen(true)}
                 aria-label="Deck backup and restore"
@@ -1347,6 +1400,12 @@ export function App({
               <button className="text-button" onClick={() => beginReview()}>
                 Review {dueCount}
               </button>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => setIsSyncOpen(true)}
+              />
             </div>
           </nav>
           <section className="create-layout">
@@ -1532,18 +1591,6 @@ export function App({
             <div className="nav-actions">
               <button
                 type="button"
-                className="text-button sync-button"
-                onClick={() => setIsSyncOpen(true)}
-                aria-label="Cloud sync and account"
-              >
-                {authUser
-                  ? syncStatus === 'syncing'
-                    ? 'Syncing…'
-                    : 'Synced ✓'
-                  : 'Sync'}
-              </button>
-              <button
-                type="button"
                 className="text-button backup-button"
                 onClick={() => setIsBackupOpen(true)}
                 aria-label="Deck backup and restore"
@@ -1556,6 +1603,12 @@ export function App({
               >
                 + New card
               </button>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => setIsSyncOpen(true)}
+              />
             </div>
           </nav>
           <section className="complete-card">
@@ -1624,18 +1677,6 @@ export function App({
           <div className="nav-actions">
             <button
               type="button"
-              className="text-button sync-button"
-              onClick={() => setIsSyncOpen(true)}
-              aria-label="Cloud sync and account"
-            >
-              {authUser
-                ? syncStatus === 'syncing'
-                  ? 'Syncing…'
-                  : 'Synced ✓'
-                : 'Sync'}
-            </button>
-            <button
-              type="button"
               className="text-button backup-button"
               onClick={() => setIsBackupOpen(true)}
               aria-label="Deck backup and restore"
@@ -1648,6 +1689,12 @@ export function App({
             >
               + New card
             </button>
+            <ConnectionPill
+              authUser={authUser}
+              syncStatus={syncStatus}
+              isOnline={isOnline}
+              onClick={() => setIsSyncOpen(true)}
+            />
           </div>
         </nav>
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>

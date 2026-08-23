@@ -27,5 +27,7 @@ test('reopens the installed app shell and saved cards while offline', async ({
   await expect(
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
-  await expect(page.getByText(/on-device · works offline/i)).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /local deck only/i }),
+  ).toBeVisible()
 })

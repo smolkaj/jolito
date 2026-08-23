@@ -660,7 +660,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /sync/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
         name: /cloud sync & multi-device backup/i,
@@ -692,9 +692,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(
-      screen.getByRole('button', { name: /cloud sync and account/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
@@ -713,9 +711,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(
-      screen.getByRole('button', { name: /cloud sync and account/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
@@ -728,9 +724,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(
-      screen.getByRole('button', { name: /cloud sync and account/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
         name: /cloud sync & multi-device backup/i,
@@ -746,9 +740,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // Open again and close via Escape
-    await user.click(
-      screen.getByRole('button', { name: /cloud sync and account/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
         name: /cloud sync & multi-device backup/i,
@@ -761,5 +753,28 @@ describe('Jolito', () => {
         name: /cloud sync & multi-device backup/i,
       }),
     ).not.toBeInTheDocument()
+  })
+
+  it('updates connection pill when network goes offline and recovers online', async () => {
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('button', { name: /local deck only/i }),
+    ).toBeInTheDocument()
+
+    // Trigger offline event
+    window.dispatchEvent(new Event('offline'))
+    expect(
+      await screen.findByRole('button', {
+        name: /offline\. changes saved locally/i,
+      }),
+    ).toBeInTheDocument()
+
+    // Trigger online event
+    window.dispatchEvent(new Event('online'))
+    expect(
+      await screen.findByRole('button', { name: /local deck only/i }),
+    ).toBeInTheDocument()
   })
 })

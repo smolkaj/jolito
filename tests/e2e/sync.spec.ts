@@ -6,7 +6,7 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /cloud sync/i }).click()
+  await page.getByRole('button', { name: /tap to sync/i }).click()
   await expect(
     page.getByRole('heading', { name: /cloud sync & multi-device backup/i }),
   ).toBeVisible()
