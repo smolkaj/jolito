@@ -421,18 +421,17 @@ summary:focus-visible {
 /* Sample Interactive Bilingual Cards (Chroma-Brutalist Mexican Personality) */
 .sample-card {
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: min(310px, 76vw);
   height: 360px;
   padding: 26px;
   border: 2.5px solid var(--line);
   border-radius: 24px;
   transition:
-    transform 260ms var(--ease-spring),
-    box-shadow 260ms var(--ease-spring),
-    top 260ms var(--ease-spring),
-    left 260ms var(--ease-spring),
-    right 260ms var(--ease-spring),
-    z-index 0s 130ms;
+    transform 320ms var(--ease-spring),
+    box-shadow 320ms var(--ease-spring),
+    opacity 320ms var(--ease-spring);
   box-sizing: border-box;
   text-align: left;
   cursor: pointer;
@@ -440,6 +439,7 @@ summary:focus-visible {
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
+  will-change: transform;
 }
 
 .sample-badge {
@@ -455,46 +455,40 @@ summary:focus-visible {
   letter-spacing: -1.2px;
 }
 
-/* Foreground Card (Spanish - Rosa Mexicano with Rosa Colored Drop Shadow) */
+/* Foreground Card */
 .sample-card.is-foreground {
-  top: 90px;
-  left: 15px;
-  right: auto;
-  transform: rotate(-3deg);
-  box-shadow: 6px 6px 0 var(--rosa);
+  transform: translate(calc(-50% - 48px), calc(-50% + 40px)) rotate(-3deg);
+  box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 2;
 }
 
 .sample-card.is-foreground:hover {
-  transform: rotate(-3deg) translate(-3px, -4px);
-  box-shadow: 8px 8px 0 var(--rosa-dark);
+  transform: translate(calc(-50% - 51px), calc(-50% + 36px)) rotate(-3deg);
+  box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-foreground:active {
-  transform: rotate(-3deg) translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--rosa-dark);
+  transform: translate(calc(-50% - 46px), calc(-50% + 42px)) rotate(-3deg);
+  box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
-/* Background Card (English - Mexican Turquoise Green with Turquoise Shadow) */
+/* Background Card */
 .sample-card.is-background {
-  top: 10px;
-  right: 15px;
-  left: auto;
-  transform: rotate(5deg);
-  box-shadow: 6px 6px 0 var(--turquesa-dark);
+  transform: translate(calc(-50% + 48px), calc(-50% - 40px)) rotate(5deg);
+  box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 1;
   opacity: 0.98;
 }
 
 .sample-card.is-background:hover {
-  transform: rotate(5deg) translate(-3px, -4px);
+  transform: translate(calc(-50% + 45px), calc(-50% - 44px)) rotate(5deg);
   opacity: 1;
-  box-shadow: 8px 8px 0 var(--turquesa-dark);
+  box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-background:active {
-  transform: rotate(5deg) translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--turquesa-dark);
+  transform: translate(calc(-50% + 50px), calc(-50% - 38px)) rotate(5deg);
+  box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
 .sample-card:focus-visible {
@@ -504,6 +498,8 @@ summary:focus-visible {
 
 /* Spanish Card Theme (Rosa Mexicano & Marigold Sun) */
 .sample-card-es {
+  --card-shadow-color: var(--rosa);
+  --card-shadow-hover: var(--rosa-dark);
   color: var(--ink);
   background: var(--card);
 }
@@ -535,7 +531,7 @@ summary:focus-visible {
 
 .sample-card-es:hover .sample-listen-hint,
 .sample-card-es.is-playing .sample-listen-hint {
-  background: var(--rosa);
+  background: var(--rosa-dark);
   color: #ffffff;
   border-color: var(--line);
 }
@@ -548,6 +544,8 @@ summary:focus-visible {
 
 /* English Card Theme (Mexican Turquoise Green #87a997 / (135, 169, 151)) */
 .sample-card-en {
+  --card-shadow-color: var(--turquesa-dark);
+  --card-shadow-hover: var(--turquesa-dark);
   color: var(--ink);
   background: var(--turquesa);
 }
