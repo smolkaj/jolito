@@ -70,13 +70,13 @@ export class EnhancedBrowserSpeaker implements Speaker {
   private selectBestVoice(locale: string): SpeechSynthesisVoice | null {
     if (this.voices.length === 0) return null
 
-    const normalizedTarget = locale.toLowerCase().replace('_', '-')
+    const normalizedTarget = locale.toLowerCase().replace(/_/g, '-')
     const isSpanish = normalizedTarget.startsWith('es')
 
     if (isSpanish) {
       // 1. Preferred Mexican Spanish neural / natural voices
       const mxNatural = this.voices.find((v) => {
-        const lang = v.lang.toLowerCase().replace('_', '-')
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
           lang === 'es-mx' &&
@@ -94,13 +94,13 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
       // 2. Any exact Mexican Spanish voice
       const mxAny = this.voices.find(
-        (v) => v.lang.toLowerCase().replace('_', '-') === 'es-mx',
+        (v) => v.lang.toLowerCase().replace(/_/g, '-') === 'es-mx',
       )
       if (mxAny) return mxAny
 
       // 3. Latin American Spanish variants (es-419, es-us, es-la)
       const latamAny = this.voices.find((v) => {
-        const lang = v.lang.toLowerCase().replace('_', '-')
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
         return (
           lang === 'es-419' ||
           lang === 'es-us' ||
@@ -118,7 +118,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
     } else {
       // US English selection
       const enNatural = this.voices.find((v) => {
-        const lang = v.lang.toLowerCase().replace('_', '-')
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
           lang === 'en-us' &&
@@ -132,7 +132,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       if (enNatural) return enNatural
 
       const enUs = this.voices.find(
-        (v) => v.lang.toLowerCase().replace('_', '-') === 'en-us',
+        (v) => v.lang.toLowerCase().replace(/_/g, '-') === 'en-us',
       )
       if (enUs) return enUs
 
