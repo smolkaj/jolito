@@ -1,7 +1,11 @@
 export type View = 'welcome' | 'create' | 'review' | 'complete'
 
 export function viewFromHash(hash: string): View {
-  const clean = hash.replace(/^#\/?/, '').trim().toLowerCase()
+  const clean = hash
+    .replace(/^#\/?/, '')
+    .replace(/\/+$/, '')
+    .trim()
+    .toLowerCase()
   if (clean === 'create') return 'create'
   if (clean === 'study' || clean === 'review') return 'review'
   if (clean === 'complete') return 'complete'

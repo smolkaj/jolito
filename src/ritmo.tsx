@@ -274,12 +274,15 @@ export function App({
         setQueue((currentQueue) => {
           if (currentQueue.length > 0) return currentQueue
           const now = services.clock.now()
-          const due = cards
+          return cards
             .filter((card) => isDue(card, now))
             .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
             .map(({ id }) => id)
-          setSessionTotal(due.length)
-          return due
+        })
+        setSessionTotal((currentTotal) => {
+          if (currentTotal > 0) return currentTotal
+          const now = services.clock.now()
+          return cards.filter((card) => isDue(card, now)).length
         })
       }
     }
