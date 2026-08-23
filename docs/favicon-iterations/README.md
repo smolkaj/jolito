@@ -1,26 +1,26 @@
-# 🎨 Jolito Favicon (Option 1: Bold Outlined Free-Floating Mascot)
+# 🎨 Jolito Favicon: 4 Options (Updated with 100% Transparent Gaps & Thicker Lines)
 
-Updated with:
-
-- **Bug fix**: Transparent negative space between the left arm, legs, and torso.
-- **Line weight upgrade**: Increased black ink stroke thickness across all body and limb contours for sharp readability at 16×16 px.
+All 4 options have been regenerated directly from our fixed transparent brand mascot with **100% transparent negative space between all limbs & body** and **upgraded black line weight**:
 
 ---
 
-## 🖥 Real-Scale Browser Tab Simulations
+## 🖥 Browser Tab Simulations (Real Scale)
 
-### ☀️ Light Mode Browser Tab
+### ☀️ Light Mode Browser Tabs
 
-![Light Mode Browser Tab](./tab-option1-light.png)
+![Light Mode Browser Tabs](./tab-preview-light.png)
 
-### 🌙 Dark Mode Browser Tab
+### 🌙 Dark Mode Browser Tabs
 
-![Dark Mode Browser Tab](./tab-option1-dark.png)
+![Dark Mode Browser Tabs](./tab-preview-dark.png)
 
 ---
 
-## 🔍 Size Breakdown
+## 🔍 Side-by-Side Size Comparison
 
-|                  512×512 Master                  |                 64×64 Preview                  |                 32×32 Favicon                  |                 16×16 Favicon                  |
-| :----------------------------------------------: | :--------------------------------------------: | :--------------------------------------------: | :--------------------------------------------: |
-| <img src="./option1-as-is-512.png" width="180"/> | <img src="./option1-as-is-64.png" width="64"/> | <img src="./option1-as-is-32.png" width="32"/> | <img src="./option1-as-is-16.png" width="16"/> |
+| Option                                                                                                   |                     512×512 Master                      |                     64×64 Preview                     |                     32×32 Favicon                     |                     16×16 Favicon                     |
+| :------------------------------------------------------------------------------------------------------- | :-----------------------------------------------------: | :---------------------------------------------------: | :---------------------------------------------------: | :---------------------------------------------------: |
+| **Option 1: As-Is (Full Mascot)**<br>• 100% parity with brand logo<br>• Clean transparent limb gaps      |    <img src="./option1-as-is-512.png" width="130"/>     |    <img src="./option1-as-is-64.png" width="64"/>     |    <img src="./option1-as-is-32.png" width="32"/>     |    <img src="./option1-as-is-16.png" width="16"/>     |
+| **Option 2: Head & Crown Crop**<br>• **2.5× larger face & smile**<br>• High-expression micro readability |  <img src="./option2-head-crop-512.png" width="130"/>   |  <img src="./option2-head-crop-64.png" width="64"/>   |  <img src="./option2-head-crop-32.png" width="32"/>   |  <img src="./option2-head-crop-16.png" width="16"/>   |
+| **Option 3: Chunky Micro Mascot**<br>• Full swimming pose<br>• Thickened contours for 16px weight        | <img src="./option3-chunky-micro-512.png" width="130"/> | <img src="./option3-chunky-micro-64.png" width="64"/> | <img src="./option3-chunky-micro-32.png" width="32"/> | <img src="./option3-chunky-micro-16.png" width="16"/> |
+| **Option 4: Mexican Jade Badge**<br>• Solid `#2E5C46` squircle container<br>• Classic app-icon framing   |  <img src="./option4-jade-badge-512.png" width="130"/>  |  <img src="./option4-jade-badge-64.png" width="64"/>  |  <img src="./option4-jade-badge-32.png" width="32"/>  |  <img src="./option4-jade-badge-16.png" width="16"/>  |
