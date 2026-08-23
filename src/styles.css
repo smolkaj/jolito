@@ -1517,34 +1517,51 @@ kbd {
   border-radius: 4px;
 }
 
-.context-panel {
-  margin-top: 16px;
-  padding: 0 2px;
-  color: var(--ink-soft);
-}
-
-.context-panel summary {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--ink);
-  transition: color 120ms ease;
-}
-
-.context-panel summary:hover {
-  color: var(--rosa-dark);
-}
-
-.context-panel p {
-  margin: 8px 0 0;
-  padding: 12px 16px;
-  border: 1.5px solid var(--line);
-  border-left: 5px solid var(--cempasuchil);
+/* Subtle Always-Visible Meaning & Context Block (Pronounced on Hover) */
+.reveal-context-block {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--line-subtle);
+  border-left: 3.5px solid var(--line-subtle);
   border-radius: 0 12px 12px 0;
+  background: var(--paper-subtle);
   color: var(--ink-soft);
+  transition: all 180ms var(--ease-spring);
+}
+
+.reveal-context-block:hover {
+  border-color: var(--line);
+  border-left-color: var(--cempasuchil);
   background: var(--cempasuchil-soft);
-  font-size: 13px;
-  line-height: 1.55;
   box-shadow: 2px 2px 0 var(--ink);
+  transform: translateY(-1px);
+}
+
+.context-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--ink-faint);
+  transition: color 180ms ease;
+}
+
+.reveal-context-block:hover .context-label {
+  color: var(--cempasuchil-dark);
+}
+
+.context-text {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+  transition: color 180ms ease;
+}
+
+.reveal-context-block:hover .context-text {
+  color: var(--ink);
 }
 
 /* Grade Fieldset & Chiclet Buttons */

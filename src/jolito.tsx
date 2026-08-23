@@ -972,10 +972,10 @@ export function App({
                   }
                 />
                 {currentCard.context && (
-                  <details className="context-panel">
-                    <summary>Meaning & context</summary>
-                    <p>{currentCard.context}</p>
-                  </details>
+                  <div className="reveal-context-block">
+                    <span className="context-label">Meaning & context</span>
+                    <p className="context-text">{currentCard.context}</p>
+                  </div>
                 )}
               </div>
               {findCardArt(currentCard) && (
