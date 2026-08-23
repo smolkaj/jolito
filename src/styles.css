@@ -764,7 +764,6 @@ summary:focus-visible {
 }
 
 .field-group textarea,
-.form-details textarea,
 .compact-fields input {
   width: 100%;
   border: 2px solid var(--line);
@@ -779,7 +778,6 @@ summary:focus-visible {
 }
 
 .field-group textarea:focus,
-.form-details textarea:focus,
 .compact-fields input:focus {
   border-color: var(--rosa);
   box-shadow: 3px 3px 0 var(--ink);
@@ -796,7 +794,6 @@ summary:focus-visible {
 }
 
 .field-group textarea::placeholder,
-.form-details textarea::placeholder,
 .compact-fields input::placeholder {
   color: var(--ink-faint);
 }
@@ -1026,12 +1023,14 @@ summary:focus-visible {
 }
 
 .form-details {
+  margin-top: 4px;
+  margin-bottom: 8px;
   border-top: 1.5px solid var(--line-subtle);
   color: var(--ink-soft);
 }
 
 .form-details summary {
-  padding: 12px 2px;
+  padding: 10px 2px;
   font-size: 13px;
   font-weight: 700;
   color: var(--ink-soft);
@@ -1047,22 +1046,13 @@ summary:focus-visible {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
 }
 
-.compact-fields input,
-.form-details textarea {
+.compact-fields input {
   margin-top: 6px;
   padding: 10px 14px;
   font-size: 13px;
-}
-
-.context-field {
-  padding-bottom: 12px;
-}
-
-.context-field textarea {
-  display: block;
 }
 
 .save-button {
@@ -1712,29 +1702,28 @@ kbd {
 .context-panel {
   margin-top: 16px;
   padding: 0 2px;
-  color: var(--ink-soft);
 }
 
-.context-panel summary {
-  font-size: 12px;
+.context-panel-title {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
   font-weight: 800;
-  color: var(--ink);
-  transition: color 120ms ease;
-}
-
-.context-panel summary:hover {
-  color: var(--rosa-dark);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
 }
 
 .context-panel p {
-  margin: 8px 0 0;
+  margin: 0;
   padding: 12px 16px;
   border: 1.5px solid var(--line);
   border-left: 5px solid var(--cempasuchil);
   border-radius: 0 12px 12px 0;
-  color: var(--ink-soft);
+  color: var(--ink);
   background: var(--cempasuchil-soft);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.55;
   box-shadow: 2px 2px 0 var(--ink);
 }
