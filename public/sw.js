@@ -33,7 +33,7 @@ self.addEventListener('message', (event) => {
   if (event.data?.type !== 'CACHE_URLS' || !Array.isArray(event.data.urls))
     return
 
-  const urls = event.data.urls.filter(
+  const uniqueUrls = Array.from(new Set(event.data.urls)).filter(
     (url) =>
       typeof url === 'string' &&
       new URL(url, self.location.origin).origin === self.location.origin,
@@ -41,8 +41,9 @@ self.addEventListener('message', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(urls))
-      .then(() => event.ports[0]?.postMessage('cached')),
+      .then((cache) => cache.addAll(uniqueUrls))
+      .then(() => event.ports[0]?.postMessage('cached'))
+      .catch(() => event.ports[0]?.postMessage('cached')),
   )
 })
 

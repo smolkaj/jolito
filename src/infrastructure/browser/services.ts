@@ -1,5 +1,6 @@
 import type { AppServices, Clock, IdGenerator } from '../../application/ports'
 import { LocalStorageCardRepository } from './card-repository'
+import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
 import { EnhancedBrowserSpeaker } from './speech'
 
@@ -18,14 +19,18 @@ export class RandomIdGenerator implements IdGenerator {
   }
 }
 
-export { EnhancedBrowserSpeaker, EnhancedBrowserSpeaker as BrowserSpeaker }
+export {
+  EnhancedBrowserSpeaker,
+  EnhancedBrowserSpeaker as BrowserSpeaker,
+  LayeredNeuralSpeaker,
+}
 
 export function createBrowserServices(): AppServices {
   return {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
     cards: new LocalStorageCardRepository(),
-    speaker: new EnhancedBrowserSpeaker(),
+    speaker: new LayeredNeuralSpeaker(),
     sounds: new WebAudioSoundPlayer(),
   }
 }

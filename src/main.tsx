@@ -14,12 +14,14 @@ async function prepareOfflineShell() {
   const activeWorker = (await navigator.serviceWorker.ready).active
   if (!activeWorker) return
 
-  const urls = [
-    window.location.href,
-    ...performance
-      .getEntriesByType('resource')
-      .map((resource) => resource.name),
-  ]
+  const urls = Array.from(
+    new Set([
+      window.location.href,
+      ...performance
+        .getEntriesByType('resource')
+        .map((resource) => resource.name),
+    ]),
+  )
   const channel = new MessageChannel()
   const cached = new Promise<void>((resolve) => {
     channel.port1.onmessage = () => resolve()
