@@ -151,14 +151,19 @@ export function nextIntervalDays(
 ): number {
   if (grade === 'again') return 0
 
-  if (schedule.state === 'new' || schedule.state === 'learning') {
+  if (schedule.state === 'new') {
+    if (grade === 'easy') return 4
+    return 0 // Learning steps (<1m, <6m, <10m) are in-session
+  }
+
+  if (schedule.state === 'learning') {
     switch (grade) {
       case 'hard':
-        return 1
+        return 0 // Repeats 10m learning step in-session
       case 'good':
-        return 2
+        return 1 // Graduates with 1-day interval
       case 'easy':
-        return 4
+        return 4 // Graduates with 4-day easy interval
     }
   }
 
@@ -167,7 +172,7 @@ export function nextIntervalDays(
       case 'hard':
         return 1
       case 'good':
-        return 2
+        return 1
       case 'easy':
         return Math.max(4, Math.round(schedule.intervalDays * 1.5))
     }
@@ -186,14 +191,8 @@ export function nextIntervalDays(
   }
 }
 
-export function shouldRequeueInSession(
-  schedule: ReviewSchedule,
-  grade: Grade,
-): boolean {
-  return (
-    grade === 'again' ||
-    (schedule.state === 'learning' && nextIntervalDays(schedule, grade) === 0)
-  )
+export function shouldRequeueInSession(schedule: ReviewSchedule): boolean {
+  return schedule.state === 'learning' || schedule.state === 'relearning'
 }
 
 export function scheduleReview(
@@ -216,7 +215,7 @@ export function scheduleReview(
       schedule: {
         state:
           isLapse || current.state === 'relearning' ? 'relearning' : 'learning',
-        dueAt: now + 10 * MINUTE,
+        dueAt: now + (isLapse ? 10 * MINUTE : 1 * MINUTE),
         intervalDays: 0,
         easeFactor,
         reviews,
@@ -225,11 +224,61 @@ export function scheduleReview(
     }
   }
 
-  if (
-    current.state === 'new' ||
-    current.state === 'learning' ||
-    current.state === 'relearning'
-  ) {
+  if (current.state === 'new') {
+    if (grade === 'hard') {
+      return {
+        ...card,
+        schedule: {
+          state: 'learning',
+          dueAt: now + 6 * MINUTE,
+          intervalDays: 0,
+          easeFactor: current.easeFactor,
+          reviews,
+          lapses: current.lapses,
+        },
+      }
+    }
+    if (grade === 'good') {
+      return {
+        ...card,
+        schedule: {
+          state: 'learning',
+          dueAt: now + 10 * MINUTE,
+          intervalDays: 0,
+          easeFactor: current.easeFactor,
+          reviews,
+          lapses: current.lapses,
+        },
+      }
+    }
+    // grade === 'easy'
+    return {
+      ...card,
+      schedule: {
+        state: 'review',
+        dueAt: now + 4 * DAY,
+        intervalDays: 4,
+        easeFactor: current.easeFactor,
+        reviews,
+        lapses: current.lapses,
+      },
+    }
+  }
+
+  if (current.state === 'learning') {
+    if (grade === 'hard') {
+      return {
+        ...card,
+        schedule: {
+          state: 'learning',
+          dueAt: now + 10 * MINUTE,
+          intervalDays: 0,
+          easeFactor: current.easeFactor,
+          reviews,
+          lapses: current.lapses,
+        },
+      }
+    }
     const intervalDays = nextIntervalDays(current, grade)
     return {
       ...card,
@@ -244,7 +293,22 @@ export function scheduleReview(
     }
   }
 
-  // Graduated review card updates
+  if (current.state === 'relearning') {
+    const intervalDays = nextIntervalDays(current, grade)
+    return {
+      ...card,
+      schedule: {
+        state: 'review',
+        dueAt: now + intervalDays * DAY,
+        intervalDays,
+        easeFactor: current.easeFactor,
+        reviews,
+        lapses: current.lapses,
+      },
+    }
+  }
+
+  // Graduated review card updates (SM-2)
   let easeFactor = current.easeFactor
   if (grade === 'hard') {
     easeFactor = Math.max(
@@ -274,7 +338,49 @@ export function isDue(card: StudyCard, now: number): boolean {
 }
 
 export function intervalLabel(card: StudyCard, grade: Grade): string {
+  const schedule = card.schedule
+  if (schedule.state === 'new') {
+    switch (grade) {
+      case 'again':
+        return '< 1 min'
+      case 'hard':
+        return '< 6 min'
+      case 'good':
+        return '< 10 min'
+      case 'easy':
+        return '4 days'
+    }
+  }
+
+  if (schedule.state === 'learning') {
+    switch (grade) {
+      case 'again':
+        return '< 1 min'
+      case 'hard':
+        return '< 10 min'
+      case 'good':
+        return '1 day'
+      case 'easy':
+        return '4 days'
+    }
+  }
+
+  if (schedule.state === 'relearning') {
+    switch (grade) {
+      case 'again':
+        return '< 10 min'
+      case 'hard':
+        return '1 day'
+      case 'good':
+        return '1 day'
+      case 'easy': {
+        const days = nextIntervalDays(schedule, 'easy')
+        return days === 1 ? '1 day' : `${days} days`
+      }
+    }
+  }
+
   if (grade === 'again') return '< 10 min'
-  const days = nextIntervalDays(card.schedule, grade)
+  const days = nextIntervalDays(schedule, grade)
   return days === 1 ? '1 day' : `${days} days`
 }
