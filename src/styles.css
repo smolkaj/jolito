@@ -58,10 +58,10 @@
   --verde-soft: #f0fdf4;
   --verde-glow: rgba(21, 128, 61, 0.2);
 
-  /* Verde Menta Coyoacán / Condesa Art Deco Mint */
-  --menta: #9fd3b6;
-  --menta-dark: #23523a;
-  --menta-soft: #eaf6ef;
+  /* Verde Cantera de Oaxaca / Mineral Mint Canvas */
+  --cantera: #b7d3c2;
+  --cantera-dark: #234734;
+  --cantera-soft: #eaf3ed;
 
   /* Tactile Hard Offset Neo-Brutalist Shadows (Refined & Balanced) */
   --shadow-sm: 2px 2px 0 rgba(18, 24, 21, 0.18);
@@ -392,9 +392,9 @@ summary:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Welcome Page — Courageous Verde Menta Coyoacán Canvas */
+/* Welcome Page — Verde Cantera de Oaxaca Mineral Mint Canvas */
 .welcome-page {
-  background-color: var(--menta);
+  background-color: var(--cantera);
   background-image:
     radial-gradient(
       ellipse at 88% 25%,
@@ -409,7 +409,7 @@ summary:focus-visible {
 }
 
 .welcome-page .lede {
-  color: var(--menta-dark);
+  color: var(--cantera-dark);
 }
 
 .welcome-hero {
