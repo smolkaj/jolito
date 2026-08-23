@@ -480,19 +480,7 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
-            <div
-              className="hero-companion-badge"
-              aria-label="Meet Jolito, your practice companion"
-            >
-              <img
-                src={jolitoWelcomeUrl}
-                alt=""
-                className="companion-badge-avatar"
-              />
-              <span>
-                Meet <strong>Jolito</strong> · your CDMX rhythm companion
-              </span>
-            </div>
+            <p className="eyebrow">MEXICAN SPANISH · LOCAL-FIRST</p>
             <h1>
               Make the words <br />
               you meet <em>stick.</em>
@@ -519,18 +507,20 @@ export function App({
           </div>
           <div className="hero-visual">
             <div
-              className={`hero-mascot ${samplePlaying ? 'is-dancing' : ''}`}
+              className={`hero-mascot-spotlight ${samplePlaying ? 'is-dancing' : ''}`}
               role="img"
               aria-label="Jolito the Axolotl, Ritmo's practice companion, greeting you"
             >
               <img
                 src={jolitoWelcomeUrl}
                 alt=""
-                className="hero-mascot-image"
+                className="mascot-spotlight-image"
               />
-              <span className="mascot-badge" aria-hidden="true">
-                ¡Hola! Soy Jolito
-              </span>
+              <div className="mascot-speech-bubble" aria-hidden="true">
+                <span>
+                  ¡Hola! Soy <strong>Jolito</strong>
+                </span>
+              </div>
             </div>
             <button
               type="button"

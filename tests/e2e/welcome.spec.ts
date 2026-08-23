@@ -9,9 +9,7 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
   await expect(
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
-  await expect(
-    page.getByLabel(/meet jolito, your practice companion/i),
-  ).toBeVisible()
+  await expect(page.getByText(/mexican spanish · local-first/i)).toBeVisible()
   await expect(
     page.getByRole('img', {
       name: /jolito the axolotl, ritmo's practice companion, greeting you/i,

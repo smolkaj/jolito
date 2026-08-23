@@ -224,7 +224,7 @@ describe('Ritmo', () => {
       screen.getByRole('heading', { name: /make the words you meet stick/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByLabelText(/meet jolito, your practice companion/i),
+      screen.getByText(/mexican spanish · local-first/i),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('img', {
