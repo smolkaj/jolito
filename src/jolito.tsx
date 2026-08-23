@@ -128,49 +128,53 @@ function SceneIllustration({
   card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>
 }) {
   const customArt = findCardArt(card)
+  if (customArt) {
+    return (
+      <div
+        className="study-card-illustration"
+        role="img"
+        aria-label="Card illustration"
+      >
+        <img src={customArt} alt="" className="study-card-art-image" />
+      </div>
+    )
+  }
+
   return (
     <div
-      className={`scene scene-${scene} ${customArt ? 'has-custom-art' : ''}`}
+      className={`scene scene-${scene}`}
       role="img"
-      aria-label={customArt ? 'Card illustration' : sceneLabels[scene]}
+      aria-label={sceneLabels[scene]}
     >
       <div className="scene-sun" />
-      {customArt ? (
-        <div className="scene-art-container">
-          <img src={customArt} alt="" className="scene-art-image" />
+      {scene === 'takeaway' && (
+        <div className="takeaway-art">
+          <div className="takeaway-bag">
+            <span>para llevar</span>
+          </div>
+          <div className="takeaway-cup" />
+          <i className="steam-one" />
+          <i className="steam-two" />
         </div>
-      ) : (
-        <>
-          {scene === 'takeaway' && (
-            <div className="takeaway-art">
-              <div className="takeaway-bag">
-                <span>para llevar</span>
-              </div>
-              <div className="takeaway-cup" />
-              <i className="steam-one" />
-              <i className="steam-two" />
-            </div>
-          )}
-          {scene === 'metro' && (
-            <div className="metro-art">
-              <span className="metro-sign">M</span>
-              <div className="metro-train">
-                <i />
-                <i />
-                <b />
-              </div>
-              <div className="metro-track" />
-            </div>
-          )}
-          {scene === 'conversation' && (
-            <div className="conversation-art">
-              <div className="person person-one" />
-              <div className="person person-two" />
-              <span className="speech-one">¡Hola!</span>
-              <span className="speech-two">¿Qué tal?</span>
-            </div>
-          )}
-        </>
+      )}
+      {scene === 'metro' && (
+        <div className="metro-art">
+          <span className="metro-sign">M</span>
+          <div className="metro-train">
+            <i />
+            <i />
+            <b />
+          </div>
+          <div className="metro-track" />
+        </div>
+      )}
+      {scene === 'conversation' && (
+        <div className="conversation-art">
+          <div className="person person-one" />
+          <div className="person person-two" />
+          <span className="speech-one">¡Hola!</span>
+          <span className="speech-two">¿Qué tal?</span>
+        </div>
       )}
     </div>
   )

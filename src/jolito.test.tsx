@@ -441,7 +441,7 @@ describe('Jolito', () => {
       screen.getByRole('img', { name: 'Card illustration' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Card illustration' })).toHaveClass(
-      'has-custom-art',
+      'study-card-illustration',
     )
 
     // Advance to Card 2: avocado (EN -> ES)
