@@ -1327,22 +1327,18 @@ kbd {
   color: #14532d;
 }
 
-/* Capitalization nuance in expected: uniform green with delicate dotted underline */
+/* Capitalization nuance in expected: uniform green with subtle 1.5px dashed underline */
 .diff-seg-case {
   background: #dcfce7;
   color: #14532d;
-  text-decoration: underline dotted #16a34a;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
+  border-bottom: 1.5px dashed #16a34a;
 }
 
-/* Accent nuance (diacritics / inverted marks): uniform green with warm amber tone & delicate dotted underline */
+/* Accent nuance (diacritics / inverted marks): uniform green with warm amber tone & subtle 1.5px dashed underline */
 .diff-seg-accent {
   background: #dcfce7;
   color: #92400e;
-  text-decoration: underline dotted #d97706;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 2px;
+  border-bottom: 1.5px dashed #d97706;
 }
 
 /* Missing characters in expected: warm soft terracotta highlight */
