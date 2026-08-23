@@ -505,7 +505,7 @@ export function App({
                 className="secondary-button"
                 onClick={() => beginReview()}
               >
-                Practice <b>{dueCount}</b> due
+                Practice {dueCount} due
               </button>
             </div>
           </div>
