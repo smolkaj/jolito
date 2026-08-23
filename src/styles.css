@@ -1,3 +1,5 @@
+@import './fonts.css';
+
 :root {
   /* Canvas & Surface Palette */
   --paper: #fcfbfa;
@@ -67,14 +69,19 @@
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-snap: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Typography */
+  /* Typography (Bricolage Grotesque: CDMX Modernist & Rhythm) */
   --font-serif:
-    'Newsreader', 'Iowan Old Style', 'Charter', Georgia, 'Times New Roman',
-    serif;
+    'Bricolage Grotesque', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
   --font-sans:
-    Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', sans-serif;
+    'Bricolage Grotesque', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --display-weight: 700;
+  --display-letter-spacing: -1.2px;
+  --brand-weight: 800;
+  --brand-letter-spacing: -0.6px;
+  --phrase-letter-spacing: -0.8px;
 
   font-family: var(--font-sans);
   color: var(--ink);
@@ -170,7 +177,7 @@ summary:focus-visible {
   background: transparent;
   font-family: var(--font-serif);
   font-size: 40px;
-  font-weight: 800;
+  font-weight: var(--brand-weight, 800);
   letter-spacing: -1.5px;
   transition:
     background 180ms ease,
@@ -410,9 +417,9 @@ summary:focus-visible {
   margin: 0;
   font-family: var(--font-serif);
   font-size: clamp(46px, 5.4vw, 70px);
-  font-weight: 600;
+  font-weight: var(--display-weight, 600);
   line-height: 1.06;
-  letter-spacing: -2px;
+  letter-spacing: var(--display-letter-spacing, -2px);
   color: var(--ink);
 }
 
@@ -484,7 +491,7 @@ summary:focus-visible {
 .sample-phrase {
   margin: 0;
   font-family: var(--font-serif);
-  letter-spacing: -1.2px;
+  letter-spacing: var(--phrase-letter-spacing, -1.2px);
 }
 
 /* Foreground Card */
@@ -664,7 +671,8 @@ summary:focus-visible {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 40px;
-  font-weight: 600;
+  font-weight: var(--display-weight, 600);
+  letter-spacing: var(--phrase-letter-spacing, -1.2px);
   line-height: 1.1;
   text-align: center;
 }
@@ -1315,9 +1323,9 @@ summary:focus-visible {
   margin: 16px auto 26px;
   font-family: var(--font-serif);
   font-size: clamp(36px, 4.8vw, 50px);
-  font-weight: 600;
+  font-weight: var(--display-weight, 700);
   line-height: 1.12;
-  letter-spacing: -1.5px;
+  letter-spacing: var(--display-letter-spacing, -1.2px);
   color: var(--ink);
 }
 
@@ -1534,7 +1542,8 @@ kbd {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 23px;
-  font-weight: 600;
+  font-weight: var(--display-weight, 700);
+  letter-spacing: var(--phrase-letter-spacing, -0.8px);
   line-height: 1.35;
   color: var(--ink);
 }
