@@ -94,3 +94,43 @@ test('supports browser back and forward navigation across views', async ({
   await page.goForward()
   await expect(page.getByLabel('Your answer')).toBeVisible()
 })
+
+test('transitions sample card from background to foreground smoothly and remains accessible', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const spanishCard = page.getByRole('button', {
+    name: /play pronunciation for mexican spanish card: tal vez/i,
+  })
+  const englishCard = page.getByRole('button', {
+    name: /show english card: maybe/i,
+  })
+
+  await expect(spanishCard).toHaveClass(/is-foreground/)
+  await expect(englishCard).toHaveClass(/is-background/)
+
+  // Click exposed badge on background English card to bring to foreground
+  await englishCard.getByText('ENGLISH').click()
+
+  const foregroundEnglish = page.getByRole('button', {
+    name: /play pronunciation for english card: maybe/i,
+  })
+  const backgroundSpanish = page.getByRole('button', {
+    name: /show mexican spanish card: tal vez/i,
+  })
+
+  await expect(foregroundEnglish).toHaveClass(/is-foreground/)
+  await expect(backgroundSpanish).toHaveClass(/is-background/)
+
+  // Click exposed badge on background Spanish card to return it to foreground
+  await backgroundSpanish.getByText('MEXICAN SPANISH').click()
+
+  await expect(spanishCard).toHaveClass(/is-foreground/)
+  await expect(englishCard).toHaveClass(/is-background/)
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
