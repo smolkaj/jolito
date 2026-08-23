@@ -1,4 +1,4 @@
-# Developing Ritmo
+# Developing Jolito
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ Open [http://localhost:4173](http://localhost:4173) once while online before tes
 
 ## Cloudflare deployment
 
-The [production app](https://ritmo.smolkaj.workers.dev) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
+The [production app](https://jolito.smolkaj.workers.dev) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
 
 - `npx wrangler deploy` for `main`;
 - `npx wrangler versions upload` for every non-production branch.

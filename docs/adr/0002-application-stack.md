@@ -5,7 +5,7 @@
 
 ## Context
 
-Ritmo is an offline-first language-learning product expected to be developed
+Jolito is an offline-first language-learning product expected to be developed
 primarily by AI agents. A small, familiar stack reduces ambiguous patterns and
 lets contracts and tests be shared across clients and services.
 

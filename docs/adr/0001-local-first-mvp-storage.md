@@ -5,7 +5,7 @@
 
 ## Context
 
-Ritmo must support manual card creation and review without an active internet connection. Account-backed synchronization is part of the product direction, but choosing an authentication, database, and conflict-resolution strategy before validating the core learning loop would add substantial scope.
+Jolito must support manual card creation and review without an active internet connection. Account-backed synchronization is part of the product direction, but choosing an authentication, database, and conflict-resolution strategy before validating the core learning loop would add substantial scope.
 
 ## Decision
 

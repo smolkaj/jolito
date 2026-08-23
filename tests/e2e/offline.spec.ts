@@ -20,7 +20,7 @@ test('reopens the installed app shell and saved cards while offline', async ({
   await page.reload()
   await expect(page.getByLabel('Your answer')).toBeVisible()
   expect(
-    await page.evaluate(() => localStorage.getItem('ritmo-library-v1')),
+    await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
   ).toContain('Nos vemos al rato')
 
   await page.getByRole('button', { name: /jolito/i }).click()
