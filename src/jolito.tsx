@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import celebrateUrl from '../assets/jolito-celebrate.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
@@ -1225,10 +1226,7 @@ export function App({
           </nav>
           <section className="complete-card">
             <div className="complete-mascot-frame" aria-hidden="true">
-              <div className="complete-mascot-halo">
-                <img src={logoUrl} alt="" className="complete-mascot-img" />
-              </div>
-              <span className="complete-check-badge">✓</span>
+              <img src={celebrateUrl} alt="" className="complete-mascot-img" />
             </div>
             <p className="eyebrow">SESSION COMPLETE</p>
             <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>

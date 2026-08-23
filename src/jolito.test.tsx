@@ -96,9 +96,6 @@ describe('Jolito', () => {
     expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
-    expect(document.querySelector('.complete-check-badge')).toHaveTextContent(
-      '✓',
-    )
 
     expect(services.mockSounds.played).toEqual([
       'reveal',

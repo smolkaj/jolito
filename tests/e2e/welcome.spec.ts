@@ -56,7 +56,6 @@ test('creates and reviews both directions with the keyboard', async ({
   await expect(page.getByText(/2 cards practiced/i)).toBeVisible()
   await expect(page.locator('.complete-mascot-frame')).toBeVisible()
   await expect(page.locator('.complete-mascot-img')).toBeVisible()
-  await expect(page.locator('.complete-check-badge')).toHaveText('✓')
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

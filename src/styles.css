@@ -1873,15 +1873,15 @@ kbd {
 .complete-page {
   background:
     radial-gradient(circle at 50% 45%, #fef0f7 0%, rgba(254, 240, 247, 0) 40%),
-    radial-gradient(circle at 50% 25%, #fdf8ee 0%, rgba(253, 248, 238, 0) 60%),
+    radial-gradient(circle at 50% 20%, #fef9ee 0%, rgba(254, 249, 238, 0) 50%),
     var(--paper);
 }
 
 .complete-card {
   width: min(580px, 100%);
-  margin: clamp(48px, 8vh, 96px) auto 30px;
+  margin: clamp(40px, 6vh, 80px) auto 30px;
   text-align: center;
-  padding: 44px 36px;
+  padding: 40px 36px 44px;
   border: 2.5px solid var(--line);
   border-radius: 28px;
   background: var(--card);
@@ -1890,117 +1890,48 @@ kbd {
 }
 
 .complete-mascot-frame {
-  position: relative;
-  width: 140px;
-  height: 140px;
-  margin: 0 auto 24px;
+  margin: 0 auto 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.complete-mascot-halo {
-  width: 128px;
-  height: 128px;
-  border: 2.5px solid var(--line);
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 38%,
-    #fef9c3 0%,
-    #fde047 35%,
-    #f59e0b 75%,
-    #ea580c 100%
-  );
-  box-shadow:
-    4px 4px 0 var(--ink),
-    0 0 0 8px rgba(245, 158, 11, 0.15),
-    0 0 0 16px rgba(228, 0, 124, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: visible;
-  animation: complete-halo-pulse 3s infinite ease-in-out;
 }
 
 .complete-mascot-img {
-  width: 110px;
-  height: 110px;
+  width: clamp(150px, 22vw, 190px);
+  height: clamp(150px, 22vw, 190px);
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(18, 24, 21, 0.12));
+  filter: drop-shadow(0 6px 16px rgba(18, 24, 21, 0.08));
   transform-origin: center bottom;
-  animation: complete-mascot-bob 3.2s ease-in-out infinite alternate;
-  z-index: 1;
+  animation:
+    complete-mascot-pop 400ms var(--ease-spring) both,
+    complete-mascot-bob 3.5s ease-in-out infinite 400ms alternate;
 }
 
-.complete-check-badge {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 38px;
-  height: 38px;
-  border: 2px solid var(--line);
-  border-radius: 50%;
-  background: var(--verde);
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  font-size: 19px;
-  font-weight: 800;
-  box-shadow: 2px 2px 0 var(--ink);
-  z-index: 2;
-  animation: complete-badge-pop 400ms var(--ease-spring) 150ms both;
-}
-
-@keyframes complete-halo-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow:
-      4px 4px 0 var(--ink),
-      0 0 0 8px rgba(245, 158, 11, 0.15),
-      0 0 0 16px rgba(228, 0, 124, 0.08);
+@keyframes complete-mascot-pop {
+  0% {
+    transform: scale(0.85) translateY(10px);
+    opacity: 0;
   }
-  50% {
-    transform: scale(1.03);
-    box-shadow:
-      5px 5px 0 var(--ink),
-      0 0 0 12px rgba(245, 158, 11, 0.2),
-      0 0 0 20px rgba(228, 0, 124, 0.12);
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
   }
 }
 
 @keyframes complete-mascot-bob {
   0% {
-    transform: translateY(0) rotate(0deg) scale(1);
+    transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: translateY(-4px) rotate(2deg) scale(1.03);
+    transform: translateY(-5px) rotate(1.5deg);
   }
   100% {
-    transform: translateY(2px) rotate(-2deg) scale(0.99);
-  }
-}
-
-@keyframes complete-badge-pop {
-  0% {
-    transform: scale(0) rotate(-30deg);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.2) rotate(10deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
+    transform: translateY(2px) rotate(-1.5deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .complete-mascot-halo,
-  .complete-mascot-img,
-  .complete-check-badge {
+  .complete-mascot-img {
     animation: none;
     transition: none;
   }
@@ -2192,30 +2123,17 @@ kbd {
   }
 
   .complete-card {
-    margin-top: 6vh;
-    padding: 32px 22px;
+    margin-top: 4vh;
+    padding: 28px 20px 36px;
   }
 
   .complete-mascot-frame {
-    width: 120px;
-    height: 120px;
-    margin-bottom: 20px;
-  }
-
-  .complete-mascot-halo {
-    width: 110px;
-    height: 110px;
+    margin-bottom: 12px;
   }
 
   .complete-mascot-img {
-    width: 95px;
-    height: 95px;
-  }
-
-  .complete-check-badge {
-    width: 34px;
-    height: 34px;
-    font-size: 17px;
+    width: 140px;
+    height: 140px;
   }
 }
 
