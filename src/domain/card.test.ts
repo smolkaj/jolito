@@ -266,6 +266,12 @@ describe('Anki spaced repetition scheduling', () => {
       expect(easy.schedule.state).toBe('review')
       expect(easy.schedule.intervalDays).toBe(4)
       expect(intervalLabel(relearningCard, 'easy')).toBe('4 days')
+
+      const relearn1 = {
+        ...relearningCard,
+        schedule: { ...relearningCard.schedule, intervalDays: 0 },
+      }
+      expect(intervalLabel(relearn1, 'good')).toBe('1 day')
     })
   })
 
@@ -305,6 +311,17 @@ describe('Anki spaced repetition scheduling', () => {
         lapses: 0,
       })
       expect(intervalLabel(reviewCard, 'easy')).toBe('33 days')
+
+      const zeroDayReview = {
+        ...newCard,
+        schedule: {
+          ...newCard.schedule,
+          state: 'review' as const,
+          intervalDays: 0,
+          easeFactor: 2.5,
+        },
+      }
+      expect(intervalLabel(zeroDayReview, 'good')).toBe('1 day')
     })
 
     it('reduces ease and applies hard multiplier on Hard', () => {
