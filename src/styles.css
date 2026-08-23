@@ -26,13 +26,13 @@
   --rosa-soft: #fdf0f7;
   --rosa-glow: rgba(228, 0, 124, 0.2);
 
-  /* Mexican Turquoise Green (Verde Turquesa / Cantera) - RGB(135, 169, 151) */
-  --turquesa: #87a997;
-  --turquesa-dark: #1b4d3e;
-  --turquesa-deep: #326d5f;
-  --turquesa-soft: #eef5f1;
-  --turquesa-border: #a8c8b7;
-  --turquesa-glow: rgba(135, 169, 151, 0.25);
+  /* Mexican Mineral Mint Green (Verde Cantera de Oaxaca) - RGB(183, 211, 194) */
+  --turquesa: #b7d3c2;
+  --turquesa-dark: #234734;
+  --turquesa-deep: #2d5a43;
+  --turquesa-soft: #eaf3ed;
+  --turquesa-border: #9ec2ad;
+  --turquesa-glow: rgba(183, 211, 194, 0.35);
 
   /* Tezontle / Cochineal Red */
   --tezontle: #d32f2f;
@@ -57,11 +57,6 @@
   --verde-dark: #14532d;
   --verde-soft: #f0fdf4;
   --verde-glow: rgba(21, 128, 61, 0.2);
-
-  /* Verde Cantera de Oaxaca / Mineral Mint Canvas */
-  --cantera: #b7d3c2;
-  --cantera-dark: #234734;
-  --cantera-soft: #eaf3ed;
 
   /* Tactile Hard Offset Neo-Brutalist Shadows (Refined & Balanced) */
   --shadow-sm: 2px 2px 0 rgba(18, 24, 21, 0.18);
@@ -392,13 +387,16 @@ summary:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Welcome Page — 100% Solid Verde Cantera de Oaxaca Mineral Mint Canvas */
+/* Welcome Page */
 .welcome-page {
-  background: var(--cantera);
+  background:
+    radial-gradient(ellipse at 88% 38%, #fef0f7 0%, rgba(254, 240, 247, 0) 50%),
+    radial-gradient(ellipse at 12% 80%, #eef7f3 0%, rgba(238, 247, 243, 0) 45%),
+    var(--paper);
 }
 
 .welcome-page .lede {
-  color: var(--cantera-dark);
+  color: var(--ink-soft);
 }
 
 .welcome-hero {
@@ -577,12 +575,12 @@ summary:focus-visible {
     10px 10px 0 2px var(--ink);
 }
 
-/* English Card Theme (Mexican Turquoise Green #87a997 / (135, 169, 151)) */
+/* English Card Theme (Verde Cantera de Oaxaca #b7d3c2 / (183, 211, 194)) */
 .sample-card-en {
   --card-shadow-color: var(--turquesa-dark);
   --card-shadow-hover: var(--turquesa-dark);
   color: var(--ink);
-  background: var(--card);
+  background: var(--turquesa);
 }
 
 .sample-card-en:focus-visible {
