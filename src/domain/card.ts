@@ -156,7 +156,7 @@ export function nextIntervalDays(
       case 'hard':
         return 1
       case 'good':
-        return 1
+        return 2
       case 'easy':
         return 4
     }
@@ -167,9 +167,9 @@ export function nextIntervalDays(
       case 'hard':
         return 1
       case 'good':
-        return 1
+        return 2
       case 'easy':
-        return Math.max(2, Math.round(schedule.intervalDays * 1.5))
+        return Math.max(4, Math.round(schedule.intervalDays * 1.5))
     }
   }
 
@@ -216,7 +216,7 @@ export function scheduleReview(
       schedule: {
         state:
           isLapse || current.state === 'relearning' ? 'relearning' : 'learning',
-        dueAt: now + MINUTE,
+        dueAt: now + 10 * MINUTE,
         intervalDays: 0,
         easeFactor,
         reviews,
@@ -274,7 +274,7 @@ export function isDue(card: StudyCard, now: number): boolean {
 }
 
 export function intervalLabel(card: StudyCard, grade: Grade): string {
-  if (grade === 'again') return '< 1 min'
+  if (grade === 'again') return '< 10 min'
   const days = nextIntervalDays(card.schedule, grade)
   return days === 1 ? '1 day' : `${days} days`
 }

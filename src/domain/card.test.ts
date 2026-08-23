@@ -120,36 +120,36 @@ describe('Anki spaced repetition scheduling', () => {
   )[0]!
 
   describe('new and learning cards', () => {
-    it('re-queues in session on Again (< 1 min) and stays in learning state', () => {
+    it('re-queues in session on Again (< 10 min) and stays in learning state', () => {
       expect(nextIntervalDays(newCard.schedule, 'again')).toBe(0)
       const reviewed = scheduleReview(newCard, 'again', now)
       expect(reviewed.schedule).toEqual({
         state: 'learning',
-        dueAt: now + 60_000,
+        dueAt: now + 600_000,
         intervalDays: 0,
         easeFactor: 2.5,
         reviews: 1,
         lapses: 0,
       })
       expect(shouldRequeueInSession(reviewed.schedule, 'again')).toBe(true)
-      expect(intervalLabel(newCard, 'again')).toBe('< 1 min')
+      expect(intervalLabel(newCard, 'again')).toBe('< 10 min')
       expect(isDue(reviewed, now)).toBe(false)
-      expect(isDue(reviewed, now + 60_000)).toBe(true)
+      expect(isDue(reviewed, now + 600_000)).toBe(true)
     })
 
-    it('graduates to review state on Good with 1 day interval', () => {
-      expect(nextIntervalDays(newCard.schedule, 'good')).toBe(1)
+    it('graduates to review state on Good with 2 days interval', () => {
+      expect(nextIntervalDays(newCard.schedule, 'good')).toBe(2)
       const reviewed = scheduleReview(newCard, 'good', now)
       expect(reviewed.schedule).toEqual({
         state: 'review',
-        dueAt: now + 1 * DAY,
-        intervalDays: 1,
+        dueAt: now + 2 * DAY,
+        intervalDays: 2,
         easeFactor: 2.5,
         reviews: 1,
         lapses: 0,
       })
       expect(shouldRequeueInSession(reviewed.schedule, 'good')).toBe(false)
-      expect(intervalLabel(newCard, 'good')).toBe('1 day')
+      expect(intervalLabel(newCard, 'good')).toBe('2 days')
     })
 
     it('graduates immediately on Easy with 4 days interval', () => {
@@ -202,20 +202,20 @@ describe('Anki spaced repetition scheduling', () => {
       expect(shouldRequeueInSession(reviewed.schedule, 'again')).toBe(true)
     })
 
-    it('graduates to 1 day on Hard or Good during relearning', () => {
+    it('graduates to 1 day on Hard and 2 days on Good during relearning', () => {
       const hard = scheduleReview(relearningCard, 'hard', now)
       expect(hard.schedule.state).toBe('review')
       expect(hard.schedule.intervalDays).toBe(1)
 
       const good = scheduleReview(relearningCard, 'good', now)
       expect(good.schedule.state).toBe('review')
-      expect(good.schedule.intervalDays).toBe(1)
+      expect(good.schedule.intervalDays).toBe(2)
     })
 
     it('graduates with easy boost on Easy during relearning', () => {
       const easy = scheduleReview(relearningCard, 'easy', now)
       expect(easy.schedule.state).toBe('review')
-      expect(easy.schedule.intervalDays).toBe(2)
+      expect(easy.schedule.intervalDays).toBe(4)
     })
   })
 
@@ -275,14 +275,14 @@ describe('Anki spaced repetition scheduling', () => {
       const reviewed = scheduleReview(reviewCard, 'again', now)
       expect(reviewed.schedule).toEqual({
         state: 'relearning',
-        dueAt: now + 60_000,
+        dueAt: now + 600_000,
         intervalDays: 0,
         easeFactor: 2.3,
         reviews: 6,
         lapses: 1,
       })
       expect(shouldRequeueInSession(reviewed.schedule, 'again')).toBe(true)
-      expect(intervalLabel(reviewCard, 'again')).toBe('< 1 min')
+      expect(intervalLabel(reviewCard, 'again')).toBe('< 10 min')
     })
 
     it('enforces minimum ease factor floor of 1.30', () => {
