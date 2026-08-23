@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react'
 import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
+import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
@@ -309,9 +310,9 @@ export function App({
       }
       setSamplePlaying(true)
       if (side === 'spanish') {
-        playAudio('Tal vez', 'es-MX')
+        playAudio('aguacate', 'es-MX')
       } else {
-        playAudio('Maybe', 'en-US')
+        playAudio('avocado', 'en-US')
       }
       sampleTimerRef.current = window.setTimeout(() => {
         setSamplePlaying(false)
@@ -509,23 +510,12 @@ export function App({
               onClick={() => onSampleCardClick('english')}
               aria-label={
                 activeSampleSide === 'english'
-                  ? 'Play pronunciation for English card: Maybe'
-                  : 'Show English card: Maybe'
+                  ? 'Play pronunciation for English card: avocado'
+                  : 'Show English card: avocado'
               }
             >
               <div className="sample-card-header">
                 <span className="sample-badge">ENGLISH</span>
-              </div>
-              <div className="sample-card-body">
-                <div className="sample-illustration" aria-hidden="true">
-                  <div className="mini-sun" />
-                  <svg className="sample-art-icon" viewBox="0 0 24 24">
-                    <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2.2-2.5 3.8m0 4.2h.01" />
-                  </svg>
-                </div>
-                <p className="sample-phrase">Maybe</p>
-              </div>
-              <div className="sample-card-footer">
                 <span className="sample-listen-hint" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
@@ -535,6 +525,16 @@ export function App({
                     : 'Tap to hear'}
                 </span>
               </div>
+              <div className="sample-card-body">
+                <div className="sample-illustration" aria-hidden="true">
+                  <img
+                    src={sampleAguacateUrl}
+                    alt=""
+                    className="sample-art-image"
+                  />
+                </div>
+                <p className="sample-phrase">avocado</p>
+              </div>
             </button>
             <button
               type="button"
@@ -542,23 +542,12 @@ export function App({
               onClick={() => onSampleCardClick('spanish')}
               aria-label={
                 activeSampleSide === 'spanish'
-                  ? 'Play pronunciation for Mexican Spanish card: Tal vez'
-                  : 'Show Mexican Spanish card: Tal vez'
+                  ? 'Play pronunciation for Mexican Spanish card: aguacate'
+                  : 'Show Mexican Spanish card: aguacate'
               }
             >
               <div className="sample-card-header">
                 <span className="sample-badge">MEXICAN SPANISH</span>
-              </div>
-              <div className="sample-card-body">
-                <div className="sample-illustration" aria-hidden="true">
-                  <div className="mini-sun" />
-                  <svg className="sample-art-icon" viewBox="0 0 24 24">
-                    <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2.2-2.5 3.8m0 4.2h.01" />
-                  </svg>
-                </div>
-                <p className="sample-phrase">Tal vez</p>
-              </div>
-              <div className="sample-card-footer">
                 <span className="sample-listen-hint" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
@@ -567,6 +556,16 @@ export function App({
                     ? 'Playing…'
                     : 'Tap to hear'}
                 </span>
+              </div>
+              <div className="sample-card-body">
+                <div className="sample-illustration" aria-hidden="true">
+                  <img
+                    src={sampleAguacateUrl}
+                    alt=""
+                    className="sample-art-image"
+                  />
+                </div>
+                <p className="sample-phrase">aguacate</p>
               </div>
             </button>
           </div>

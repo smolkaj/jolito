@@ -3,12 +3,13 @@ import { createStudyCards, type StudyCard } from '../domain/card'
 export const starterCards: StudyCard[] = [
   ...createStudyCards(
     {
-      spanish: 'Tal vez',
-      english: 'Maybe',
-      context: 'Everyday expression for uncertainty or possibility.',
+      spanish: 'aguacate',
+      english: 'avocado',
+      context:
+        'Essential ingredient across Mexican cuisine, from guacamole to tacos.',
       bidirectional: true,
     },
-    'starter-tal-vez',
+    'starter-aguacate',
     0,
   ),
   ...createStudyCards(
