@@ -58,12 +58,16 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('img', { name: /metro train/i }),
-    ).toBeInTheDocument()
+      screen.getByRole('img', { name: 'Hidden card illustration' }),
+    ).toHaveTextContent('?')
 
     const response = screen.getByLabelText('Your answer')
     await user.type(response, 'Where is metro')
     await user.keyboard('{Enter}')
+
+    expect(
+      screen.getByRole('img', { name: /metro train/i }),
+    ).toBeInTheDocument()
 
     expect(screen.getByText('You wrote')).toBeInTheDocument()
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
@@ -433,7 +437,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
-    // Card 1: aguacate (ES -> EN) — BEFORE REVEAL: scene shown, no spoiler sticker
+    // Card 1: aguacate (ES -> EN) — BEFORE REVEAL: question mark placeholder, zero distraction/spoiler
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
@@ -441,10 +445,10 @@ describe('Jolito', () => {
       screen.queryByRole('img', { name: 'Card illustration' }),
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('img', { name: /friendly conversation/i }),
-    ).toBeInTheDocument()
+      screen.getByRole('img', { name: 'Hidden card illustration' }),
+    ).toHaveTextContent('?')
 
-    // REVEAL Card 1 -> sticker art appears!
+    // REVEAL Card 1 -> sticker art blooms in!
     await user.keyboard('{Enter}')
     expect(
       screen.getByRole('img', { name: 'Card illustration' }),
@@ -458,8 +462,8 @@ describe('Jolito', () => {
     await user.keyboard('4')
     expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
     expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('img', { name: 'Hidden card illustration' }),
+    ).toHaveTextContent('?')
 
     // Reveal Card 2 -> sticker art appears
     await user.keyboard('{Enter}')
@@ -473,8 +477,8 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: 'Qué padre' }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('img', { name: 'Hidden card illustration' }),
+    ).toHaveTextContent('?')
 
     // Reveal Card 3 -> Qué padre sticker appears
     await user.keyboard('{Enter}')

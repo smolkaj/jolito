@@ -137,7 +137,23 @@ function SceneIllustration({
   card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>
   revealed?: boolean
 }) {
-  const customArt = revealed ? findCardArt(card) : null
+  if (!revealed) {
+    return (
+      <div
+        className="study-card-placeholder"
+        role="img"
+        aria-label="Hidden card illustration"
+      >
+        <div className="placeholder-bubble">
+          <span className="placeholder-mark" aria-hidden="true">
+            ?
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  const customArt = findCardArt(card)
   if (customArt) {
     return (
       <div
@@ -152,7 +168,7 @@ function SceneIllustration({
 
   return (
     <div
-      className={`scene scene-${scene}`}
+      className={`scene scene-${scene} is-revealed`}
       role="img"
       aria-label={sceneLabels[scene]}
     >

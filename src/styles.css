@@ -1156,6 +1156,46 @@ summary:focus-visible {
   box-shadow: 2px 2px 0 var(--ink);
 }
 
+/* Minimalist Focus Placeholder Prior to Reveal */
+.study-card-placeholder {
+  position: relative;
+  width: 140px;
+  height: 172px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-bubble {
+  width: 96px;
+  height: 96px;
+  border: 2px dashed var(--line-subtle);
+  border-radius: 50%;
+  background: var(--paper-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 220ms var(--ease-spring),
+    border-color 220ms ease;
+}
+
+.study-card:hover .placeholder-bubble {
+  border-color: var(--cempasuchil);
+  transform: scale(1.05);
+}
+
+.placeholder-mark {
+  font-family: var(--font-serif);
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--ink-muted);
+  line-height: 1;
+  user-select: none;
+}
+
 /* Custom Card Sticker Illustration (Standalone Free-Floating Sticker) */
 .study-card-illustration {
   position: relative;
