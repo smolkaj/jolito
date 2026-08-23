@@ -1,11 +1,7 @@
-import type {
-  AppServices,
-  Clock,
-  IdGenerator,
-  Speaker,
-} from '../../application/ports'
+import type { AppServices, Clock, IdGenerator } from '../../application/ports'
 import { LocalStorageCardRepository } from './card-repository'
 import { WebAudioSoundPlayer } from './sound'
+import { EnhancedBrowserSpeaker } from './speech'
 
 export class SystemClock implements Clock {
   now(): number {
@@ -22,37 +18,14 @@ export class RandomIdGenerator implements IdGenerator {
   }
 }
 
-export class BrowserSpeaker implements Speaker {
-  supported(): boolean {
-    return (
-      typeof window !== 'undefined' &&
-      'speechSynthesis' in window &&
-      typeof window.SpeechSynthesisUtterance === 'function'
-    )
-  }
-
-  speak(text: string, locale: string): boolean {
-    if (!this.supported()) return false
-
-    try {
-      window.speechSynthesis.cancel()
-      const utterance = new window.SpeechSynthesisUtterance(text)
-      utterance.lang = locale
-      utterance.rate = locale === 'es-MX' ? 0.86 : 0.9
-      window.speechSynthesis.speak(utterance)
-      return true
-    } catch {
-      return false
-    }
-  }
-}
+export { EnhancedBrowserSpeaker, EnhancedBrowserSpeaker as BrowserSpeaker }
 
 export function createBrowserServices(): AppServices {
   return {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
     cards: new LocalStorageCardRepository(),
-    speaker: new BrowserSpeaker(),
+    speaker: new EnhancedBrowserSpeaker(),
     sounds: new WebAudioSoundPlayer(),
   }
 }
