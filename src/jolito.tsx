@@ -630,22 +630,17 @@ export function App({
         <nav className="topbar" aria-label="Card creation navigation">
           <Brand onClick={goHome} />
           <button className="text-button" onClick={() => beginReview()}>
-            Review <b>{dueCount}</b>
+            Review {dueCount}
           </button>
         </nav>
         <section className="create-layout">
           <header>
-            <p className="eyebrow">ADD TO YOUR COLLECTION</p>
-            <h1>What do you want to remember?</h1>
-            <p>Words and whole phrases are equally welcome.</p>
+            <h1>New flashcard</h1>
           </header>
           <form className="create-form" onSubmit={createCard}>
-            <div className="field-group spanish-field">
+            <div className="field-group">
               <label htmlFor="spanish">
-                Spanish{' '}
-                <span>
-                  <MexicoFlag /> Mexican Spanish
-                </span>
+                <MexicoFlag /> Spanish
               </label>
               <textarea
                 id="spanish"
@@ -653,29 +648,19 @@ export function App({
                 rows={2}
                 autoFocus
                 required
-                placeholder="¿Qué escuchaste o quisiste decir hoy?"
+                placeholder="Palabra o frase en español"
               />
-              <small>
-                <MexicoFlag /> This side will be read aloud with a Mexican
-                Spanish voice.
-              </small>
             </div>
-            <div className="direction-connector" aria-hidden="true">
-              <span>↕</span>
-            </div>
-            <div className="field-group english-field">
+            <div className="field-group">
               <label htmlFor="english">
-                English{' '}
-                <span>
-                  <UsFlag /> Concise meaning
-                </span>
+                <UsFlag /> English
               </label>
               <textarea
                 id="english"
                 name="english"
                 rows={2}
                 required
-                placeholder="What should you recall?"
+                placeholder="English translation"
               />
             </div>
             <label className="toggle-row">
@@ -686,56 +671,43 @@ export function App({
                 onChange={(event) => setBidirectional(event.target.checked)}
               />
               <span className="toggle" aria-hidden="true" />
-              <span>
-                <strong>Practice both directions</strong>
-                <small>
-                  <MexicoFlag /> Spanish ↔ <UsFlag /> English
-                </small>
-              </span>
+              <span>Practice both directions</span>
             </label>
             {bidirectional && (
               <details className="form-details">
-                <summary>Customize the reverse card</summary>
-                <p>
-                  Leave these blank to mirror the text above, or use equivalent
-                  phrasing for production practice.
-                </p>
+                <summary>Customize reverse card</summary>
                 <div className="compact-fields">
                   <label>
-                    <UsFlag /> English prompt
+                    <UsFlag /> Prompt
                     <input
                       name="reversePrompt"
-                      placeholder="Uses English above"
+                      placeholder="Optional (defaults to English)"
                     />
                   </label>
                   <label>
-                    <MexicoFlag /> Spanish answer
+                    <MexicoFlag /> Answer
                     <input
                       name="reverseAnswer"
-                      placeholder="Uses Spanish above"
+                      placeholder="Optional (defaults to Spanish)"
                     />
                   </label>
                 </div>
               </details>
             )}
             <details className="form-details">
-              <summary>
-                Add context <small>Optional</small>
-              </summary>
-              <label className="context-field">
-                Note, nuance, or literal meaning
+              <summary>Add note</summary>
+              <div className="context-field">
                 <textarea
                   name="context"
-                  rows={3}
-                  placeholder="When would you say this? Is it formal, casual, or especially Mexican?"
+                  rows={2}
+                  placeholder="Optional context or note"
+                  aria-label="Note"
                 />
-              </label>
+              </div>
             </details>
             <button className="primary-button save-button" type="submit">
-              {bidirectional ? 'Save & practice both' : 'Save & practice'}
-              <span aria-hidden="true">→</span>
+              Save card <span aria-hidden="true">→</span>
             </button>
-            <p className="save-note">Saved immediately to this device.</p>
           </form>
         </section>
       </main>

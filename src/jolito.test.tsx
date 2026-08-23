@@ -34,33 +34,25 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
-    await user.type(
-      screen.getByLabelText(/^Spanish Mexican Spanish$/),
-      '¿Dónde está el metro?',
-    )
-    await user.type(
-      screen.getByLabelText(/^English Concise meaning$/),
-      'Where is the metro?',
-    )
+    await user.type(screen.getByLabelText(/spanish/i), '¿Dónde está el metro?')
+    await user.type(screen.getByLabelText(/english/i), 'Where is the metro?')
     await user.click(
-      screen.getByText('Customize the reverse card', { selector: 'summary' }),
+      screen.getByText('Customize reverse card', { selector: 'summary' }),
     )
     await user.type(
-      screen.getByLabelText('English prompt'),
+      screen.getByLabelText(/prompt/i),
       'Where can I find the metro?',
     )
     await user.type(
-      screen.getByLabelText('Spanish answer'),
+      screen.getByLabelText(/answer/i),
       '¿Por dónde queda el metro?',
     )
-    await user.click(screen.getByText('Add context', { selector: 'summary' }))
+    await user.click(screen.getByText('Add note', { selector: 'summary' }))
     await user.type(
-      screen.getByLabelText(/note, nuance/i),
+      screen.getByLabelText('Note'),
       'Useful when getting around CDMX.',
     )
-    await user.click(
-      screen.getByRole('button', { name: /save & practice both/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /save card/i }))
 
     expect(
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -125,16 +117,10 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
-    await user.type(
-      screen.getByLabelText(/^Spanish Mexican Spanish$/),
-      'Qué padre',
-    )
-    await user.type(
-      screen.getByLabelText(/^English Concise meaning$/),
-      'How cool',
-    )
+    await user.type(screen.getByLabelText(/spanish/i), 'Qué padre')
+    await user.type(screen.getByLabelText(/english/i), 'How cool')
     await user.click(screen.getByLabelText(/practice both directions/i))
-    await user.click(screen.getByRole('button', { name: /^save & practice$/i }))
+    await user.click(screen.getByRole('button', { name: /save card/i }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
@@ -193,15 +179,15 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
     await user.type(
-      screen.getByLabelText(/^Spanish Mexican Spanish$/),
+      screen.getByLabelText(/spanish/i),
       '¿Dónde está el restaurante?',
     )
     await user.type(
-      screen.getByLabelText(/^English Concise meaning$/),
+      screen.getByLabelText(/english/i),
       'Where is the restaurant?',
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
-    await user.click(screen.getByRole('button', { name: /^save & practice$/i }))
+    await user.click(screen.getByRole('button', { name: /save card/i }))
 
     // Type with missing inverted question mark, missing accents, and typo in restaurante
     await user.type(
@@ -281,7 +267,7 @@ describe('Jolito', () => {
     // Navigate to create card
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
     expect(
-      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+      screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
     expect(window.location.hash).toBe('#/create')
 
@@ -302,7 +288,7 @@ describe('Jolito', () => {
     })
 
     expect(
-      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+      screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
   })
 
