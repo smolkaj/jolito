@@ -9,8 +9,8 @@ test('reopens the installed app shell and saved cards while offline', async ({
   await page.locator('html[data-offline-ready="true"]').waitFor()
 
   await page.getByRole('button', { name: /^create a card$/i }).click()
-  await page.getByLabel(/^Spanish Mexican Spanish$/).fill('Nos vemos al rato')
-  await page.getByLabel(/^English Concise meaning$/).fill('See you later')
+  await page.getByLabel(/Spanish.*Mexican Spanish/i).fill('Nos vemos al rato')
+  await page.getByLabel(/English.*Concise meaning/i).fill('See you later')
   await page.getByRole('button', { name: /save & practice both/i }).click()
   await expect(
     page.getByRole('heading', { name: 'Nos vemos al rato' }),

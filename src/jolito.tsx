@@ -44,6 +44,46 @@ const localeForPrompt = (card: StudyCard) =>
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
 
+function MexicoFlag({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`flag-icon flag-mx ${className ?? ''}`}
+      viewBox="0 0 18 12"
+      width="16"
+      height="11"
+      aria-hidden="true"
+    >
+      <rect width="6" height="12" fill="#006847" />
+      <rect x="6" width="6" height="12" fill="#ffffff" />
+      <rect x="12" width="6" height="12" fill="#ce1126" />
+      <circle cx="9" cy="6" r="1.8" fill="#bfa054" />
+      <circle cx="9" cy="6" r="1.1" fill="#4a2e12" />
+      <circle cx="9" cy="5.4" r="0.5" fill="#006847" />
+    </svg>
+  )
+}
+
+function UsFlag({ className }: { className?: string }) {
+  return (
+    <svg
+      className={`flag-icon flag-us ${className ?? ''}`}
+      viewBox="0 0 18 12"
+      width="16"
+      height="11"
+      aria-hidden="true"
+    >
+      <rect width="18" height="12" fill="#bf0a30" />
+      <rect y="1.8" width="18" height="1.8" fill="#ffffff" />
+      <rect y="5.4" width="18" height="1.8" fill="#ffffff" />
+      <rect y="9" width="18" height="1.8" fill="#ffffff" />
+      <rect width="8" height="6" fill="#002868" />
+      <circle cx="2.5" cy="2" r="0.55" fill="#ffffff" />
+      <circle cx="5.5" cy="2" r="0.55" fill="#ffffff" />
+      <circle cx="4" cy="4" r="0.55" fill="#ffffff" />
+    </svg>
+  )
+}
+
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
@@ -521,7 +561,9 @@ export function App({
               }
             >
               <div className="sample-card-header">
-                <span className="sample-badge">ENGLISH</span>
+                <span className="sample-badge">
+                  <UsFlag /> ENGLISH
+                </span>
                 <span className="sample-listen-hint" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
@@ -554,7 +596,9 @@ export function App({
               }
             >
               <div className="sample-card-header">
-                <span className="sample-badge">MEXICAN SPANISH</span>
+                <span className="sample-badge">
+                  <MexicoFlag /> MEXICAN SPANISH
+                </span>
                 <span className="sample-listen-hint" aria-hidden="true">
                   <svg viewBox="0 0 24 24">
                     <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
@@ -598,7 +642,10 @@ export function App({
           <form className="create-form" onSubmit={createCard}>
             <div className="field-group spanish-field">
               <label htmlFor="spanish">
-                Spanish <span>Mexican Spanish</span>
+                Spanish{' '}
+                <span>
+                  <MexicoFlag /> Mexican Spanish
+                </span>
               </label>
               <textarea
                 id="spanish"
@@ -609,7 +656,8 @@ export function App({
                 placeholder="¿Qué escuchaste o quisiste decir hoy?"
               />
               <small>
-                This side will be read aloud with a Mexican Spanish voice.
+                <MexicoFlag /> This side will be read aloud with a Mexican
+                Spanish voice.
               </small>
             </div>
             <div className="direction-connector" aria-hidden="true">
@@ -617,7 +665,10 @@ export function App({
             </div>
             <div className="field-group english-field">
               <label htmlFor="english">
-                English <span>Concise meaning</span>
+                English{' '}
+                <span>
+                  <UsFlag /> Concise meaning
+                </span>
               </label>
               <textarea
                 id="english"
@@ -637,7 +688,9 @@ export function App({
               <span className="toggle" aria-hidden="true" />
               <span>
                 <strong>Practice both directions</strong>
-                <small>Spanish ↔ English</small>
+                <small>
+                  <MexicoFlag /> Spanish ↔ <UsFlag /> English
+                </small>
               </span>
             </label>
             {bidirectional && (
@@ -649,14 +702,14 @@ export function App({
                 </p>
                 <div className="compact-fields">
                   <label>
-                    English prompt
+                    <UsFlag /> English prompt
                     <input
                       name="reversePrompt"
                       placeholder="Uses English above"
                     />
                   </label>
                   <label>
-                    Spanish answer
+                    <MexicoFlag /> Spanish answer
                     <input
                       name="reverseAnswer"
                       placeholder="Uses Spanish above"
@@ -750,10 +803,16 @@ export function App({
       <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
         <SceneIllustration scene={currentCard.scene} />
         <div className="prompt-meta">
-          <p className="eyebrow">
-            {currentCard.direction === 'es-en'
-              ? 'SPANISH → ENGLISH'
-              : 'ENGLISH → SPANISH'}
+          <p className="eyebrow direction-eyebrow">
+            {currentCard.direction === 'es-en' ? (
+              <>
+                <MexicoFlag /> SPANISH → <UsFlag /> ENGLISH
+              </>
+            ) : (
+              <>
+                <UsFlag /> ENGLISH → <MexicoFlag /> SPANISH
+              </>
+            )}
           </p>
           <AudioButton
             prompt
