@@ -101,10 +101,10 @@ test('transitions sample card from background to foreground smoothly and remains
   await page.goto('/')
 
   const spanishCard = page.getByRole('button', {
-    name: /play pronunciation for mexican spanish card: tal vez/i,
+    name: /play pronunciation for mexican spanish card: aguacate/i,
   })
   const englishCard = page.getByRole('button', {
-    name: /show english card: maybe/i,
+    name: /show english card: avocado/i,
   })
 
   await expect(spanishCard).toHaveClass(/is-foreground/)
@@ -114,10 +114,10 @@ test('transitions sample card from background to foreground smoothly and remains
   await englishCard.getByText('ENGLISH').click()
 
   const foregroundEnglish = page.getByRole('button', {
-    name: /play pronunciation for english card: maybe/i,
+    name: /play pronunciation for english card: avocado/i,
   })
   const backgroundSpanish = page.getByRole('button', {
-    name: /show mexican spanish card: tal vez/i,
+    name: /show mexican spanish card: aguacate/i,
   })
 
   await expect(foregroundEnglish).toHaveClass(/is-foreground/)

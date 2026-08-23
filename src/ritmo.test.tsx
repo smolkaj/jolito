@@ -174,7 +174,9 @@ describe('Ritmo', () => {
     expect(
       screen.queryByRole('heading', { name: '¡Hecho!' }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
 
     // Finally pass Card 1 with Easy
     await user.keyboard('{Enter}')
@@ -230,27 +232,27 @@ describe('Ritmo', () => {
 
     // Spanish card is foreground initially
     const spanishCard = screen.getByRole('button', {
-      name: /play pronunciation for mexican spanish card: tal vez/i,
+      name: /play pronunciation for mexican spanish card: aguacate/i,
     })
     expect(spanishCard).toBeInTheDocument()
-    expect(spanishCard).toHaveTextContent('Tal vez')
+    expect(spanishCard).toHaveTextContent('aguacate')
     await user.click(spanishCard)
 
     expect(services.mockSpeaker.spoken).toContainEqual({
-      text: 'Tal vez',
+      text: 'aguacate',
       locale: 'es-MX',
     })
 
     // English card in background
     const englishCard = screen.getByRole('button', {
-      name: /show english card: maybe/i,
+      name: /show english card: avocado/i,
     })
     expect(englishCard).toBeInTheDocument()
-    expect(englishCard).toHaveTextContent('Maybe')
+    expect(englishCard).toHaveTextContent('avocado')
     await user.click(englishCard)
 
     expect(services.mockSpeaker.spoken).toContainEqual({
-      text: 'Maybe',
+      text: 'avocado',
       locale: 'en-US',
     })
   })
@@ -340,7 +342,9 @@ describe('Ritmo', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
-    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
 
     // Navigate back to welcome
@@ -357,7 +361,9 @@ describe('Ritmo', () => {
       window.location.hash = '#/study'
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
   })
 })
