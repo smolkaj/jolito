@@ -1,16 +1,19 @@
 <p align="center">
-  <img src="assets/ritmo-logo-concept-cropped.png" alt="Ritmo logo concept: a coral R with a flowing leg" width="180">
+  <img src="assets/ritmo-logo-concept-cropped.png" alt="Ritmo logo concept: an R with a flowing leg" width="180">
   <br><br>
   <strong>Find your rhythm in a new language.</strong>
   <br><br>
   <a href="https://ritmo.smolkaj.workers.dev"><strong>Try the live app →</strong></a>
   <br>
-  <sub>Production deployment of <code>main</code></sub>
+  <sub>Production deployment of <code>main</code> at <code>ritmo.smolkaj.workers.dev</code></sub>
   <br><br>
   <a href="https://github.com/smolkaj/ritmo/actions/workflows/quality.yml"><img src="https://github.com/smolkaj/ritmo/actions/workflows/quality.yml/badge.svg" alt="Quality checks"></a>
 </p>
 
 # Ritmo
+
+> [!TIP]
+> **Live Production App:** Try Ritmo now at **[ritmo.smolkaj.workers.dev](https://ritmo.smolkaj.workers.dev)**. It runs on both desktop and mobile, with full offline capability as an installable PWA.
 
 Ritmo is a multimodal language-learning app that combines Anki's proven, learner-controlled spaced repetition with the beauty, warmth, visual engagement, and frictionlessness that make daily language practice inviting. Each card brings together the written language, meaningful visuals, and natural audio so learners can connect what they read, see, and hear.
 
