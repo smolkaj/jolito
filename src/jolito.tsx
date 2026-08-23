@@ -960,32 +960,38 @@ export function App({
           </form>
         ) : (
           <div className="reveal-panel">
-            {findCardArt(currentCard) && (
-              <div
-                className="reveal-art-wrap"
-                role="img"
-                aria-label="Card illustration"
-              >
-                <img
-                  src={findCardArt(currentCard)!}
-                  alt=""
-                  className="reveal-art-image"
+            <div
+              className={`reveal-content ${findCardArt(currentCard) ? 'has-art' : ''}`}
+            >
+              <div className="reveal-main">
+                <AnswerComparison
+                  typed={answer}
+                  expected={currentCard.answer}
+                  onPlayAudio={() =>
+                    playAudio(currentCard.answer, localeForAnswer(currentCard))
+                  }
                 />
+                {currentCard.context && (
+                  <details className="context-panel">
+                    <summary>Meaning & context</summary>
+                    <p>{currentCard.context}</p>
+                  </details>
+                )}
               </div>
-            )}
-            <AnswerComparison
-              typed={answer}
-              expected={currentCard.answer}
-              onPlayAudio={() =>
-                playAudio(currentCard.answer, localeForAnswer(currentCard))
-              }
-            />
-            {currentCard.context && (
-              <details className="context-panel">
-                <summary>Meaning & context</summary>
-                <p>{currentCard.context}</p>
-              </details>
-            )}
+              {findCardArt(currentCard) && (
+                <div
+                  className="reveal-art-wrap"
+                  role="img"
+                  aria-label="Card illustration"
+                >
+                  <img
+                    src={findCardArt(currentCard)!}
+                    alt=""
+                    className="reveal-art-image"
+                  />
+                </div>
+              )}
+            </div>
             <fieldset className="grade-fieldset">
               <legend>How did that feel?</legend>
               <div className="grade-buttons">
