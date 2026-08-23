@@ -10,7 +10,7 @@ import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
-import { compareAnswer } from './domain/answer'
+import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   grades,
   intervalLabel,
@@ -127,20 +127,17 @@ function AudioButton({
   )
 }
 
-function renderTokenSegments(
-  value: string,
-  segments?: import('./domain/answer').TokenSegment[],
-) {
-  if (!segments || segments.length === 0) {
-    return value
-  }
+function renderDiffSegments(segments: DiffSegment[]) {
   return segments.map((seg, i) => {
-    if (seg.status === 'match') {
-      return <span key={i}>{seg.value}</span>
-    }
+    const isSpaceOnly = /^ +$/.test(seg.value)
     return (
-      <span className={`diff-seg diff-seg-${seg.status}`} key={i}>
-        {seg.value}
+      <span
+        className={`diff-seg diff-seg-${seg.status}${
+          isSpaceOnly ? ' diff-seg-space' : ''
+        }`}
+        key={i}
+      >
+        {isSpaceOnly && seg.status === 'extra' ? '␣' : seg.value}
       </span>
     )
   })
@@ -156,70 +153,39 @@ function AnswerComparison({
   onPlayAudio: () => void
 }) {
   const comparison = compareAnswer(typed, expected)
-  const isExact = comparison.quality === 'exact'
-  const isAccents = comparison.quality === 'accents-only'
-  const isClose = comparison.quality === 'close'
   const hasTyped = typed.trim().length > 0
 
+  if (comparison.isExact) {
+    return (
+      <div className="diff-exact-card" aria-label="Answer comparison">
+        <p className="diff-text diff-match">{expected}</p>
+        <AudioButton label="Play answer audio" onClick={onPlayAudio} />
+      </div>
+    )
+  }
+
   return (
-    <div className="answer-comparison" aria-label="Answer comparison">
-      {isExact ? (
-        <div className="diff-exact-card">
-          <div className="diff-exact-main">
-            <p className="diff-text diff-match">{expected}</p>
+    <div className="diff-card" aria-label="Answer comparison">
+      <div className="diff-rows">
+        {hasTyped && (
+          <div className="diff-row">
+            <span className="diff-label">You wrote</span>
+            <p className="diff-text">
+              {renderDiffSegments(comparison.typedSegments)}
+            </p>
+          </div>
+        )}
+
+        <div className="diff-row expected-row">
+          <span className="diff-label">Expected</span>
+          <div className="diff-row-main">
+            <p className="diff-text">
+              {renderDiffSegments(comparison.expectedSegments)}
+            </p>
             <AudioButton label="Play answer audio" onClick={onPlayAudio} />
           </div>
-          <span className="diff-badge exact">✓ Exact match</span>
         </div>
-      ) : (
-        <div className="diff-card">
-          <div className="diff-card-header">
-            <span className="diff-card-title">Answer comparison</span>
-            <span
-              className={`diff-badge ${
-                isAccents ? 'accents' : isClose ? 'close' : 'different'
-              }`}
-            >
-              {comparison.qualityLabel}
-            </span>
-          </div>
-
-          <div className="diff-rows">
-            {hasTyped && (
-              <div className="diff-row">
-                <span className="diff-label">You wrote</span>
-                <p className="diff-text">
-                  {comparison.typed.map((token, index) => (
-                    <span
-                      className={`diff-token ${token.status}`}
-                      key={`${token.value}-${index}`}
-                    >
-                      {renderTokenSegments(token.value, token.segments)}{' '}
-                    </span>
-                  ))}
-                </p>
-              </div>
-            )}
-
-            <div className="diff-row expected-row">
-              <span className="diff-label">Expected</span>
-              <div className="diff-row-main">
-                <p className="diff-text">
-                  {comparison.expected.map((token, index) => (
-                    <span
-                      className={`diff-token ${token.status}`}
-                      key={`${token.value}-${index}`}
-                    >
-                      {renderTokenSegments(token.value, token.segments)}{' '}
-                    </span>
-                  ))}
-                </p>
-                <AudioButton label="Play answer audio" onClick={onPlayAudio} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -73,7 +73,7 @@ describe('Ritmo', () => {
     await user.keyboard('{Enter}')
 
     expect(screen.getByText('You wrote')).toBeInTheDocument()
-    expect(screen.getByText('the')).toHaveClass('missing')
+    expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
     expect(screen.getByText('Meaning & context')).toBeInTheDocument()
 
     await user.keyboard('3')
@@ -140,7 +140,8 @@ describe('Ritmo', () => {
     )
     await user.type(screen.getByLabelText('Your answer'), 'How cool')
     await user.keyboard('{Enter}')
-    expect(screen.getByText(/Exact match/i)).toBeInTheDocument()
+    expect(screen.getByText('How cool')).toBeInTheDocument()
+    expect(document.querySelector('.diff-exact-card')).toBeInTheDocument()
     await user.keyboard('4')
     expect(screen.getByText(/1 card practiced/i)).toBeInTheDocument()
   })
@@ -206,8 +207,8 @@ describe('Ritmo', () => {
     )
     await user.keyboard('{Enter}')
 
-    expect(screen.getByText('Close')).toBeInTheDocument()
-    expect(document.querySelector('.diff-token.typo')).toBeInTheDocument()
+    expect(screen.getByText('You wrote')).toBeInTheDocument()
+    expect(document.querySelector('.diff-seg-extra')).toHaveTextContent('u')
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('u')
   })
 

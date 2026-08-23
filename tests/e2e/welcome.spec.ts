@@ -35,7 +35,9 @@ test('creates and reviews both directions with the keyboard', async ({
   ).toBeVisible()
   await page.getByLabel('Your answer').fill('Where is metro')
   await page.getByLabel('Your answer').press('Enter')
-  await expect(page.locator('.missing', { hasText: 'the' })).toBeVisible()
+  await expect(
+    page.locator('.diff-seg-missing', { hasText: 'the' }),
+  ).toBeVisible()
   await expect(page.getByText('You wrote')).toBeVisible()
 
   await page.keyboard.press('3')
