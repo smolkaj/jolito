@@ -378,6 +378,112 @@ summary:focus-visible {
   z-index: 2;
 }
 
+.hero-companion-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 8px;
+  margin-bottom: 20px;
+  background: var(--paper-subtle);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  box-shadow: 2px 2px 0 var(--shadow-sm);
+  transition:
+    transform 200ms var(--ease-spring),
+    box-shadow 200ms var(--ease-spring);
+}
+
+.hero-companion-badge:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--line);
+}
+
+.hero-companion-badge strong {
+  color: var(--rosa-dark);
+  font-weight: 700;
+}
+
+.companion-badge-avatar {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(1px 1px 0 rgba(18, 24, 21, 0.12));
+}
+
+.hero-mascot {
+  position: absolute;
+  top: -32px;
+  left: -28px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  animation: jolito-float 4.2s ease-in-out infinite alternate;
+  filter: drop-shadow(4px 4px 0 rgba(18, 24, 21, 0.12));
+  transition: transform 300ms var(--ease-spring);
+}
+
+.hero-mascot-image {
+  width: clamp(140px, 16vw, 175px);
+  height: auto;
+  display: block;
+  user-select: none;
+  transform-origin: center bottom;
+}
+
+.mascot-badge {
+  margin-top: -10px;
+  padding: 4px 12px;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--rosa-dark);
+  box-shadow: 2px 2px 0 var(--rosa);
+  white-space: nowrap;
+}
+
+.hero-mascot.is-dancing {
+  animation: jolito-dance 1.2s var(--ease-spring) infinite;
+}
+
+@keyframes jolito-float {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+  100% {
+    transform: translateY(-14px) rotate(1deg);
+  }
+}
+
+@keyframes jolito-dance {
+  0% {
+    transform: scale(1) translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05) translateY(-10px) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.02) translateY(-4px) rotate(2deg);
+  }
+  75% {
+    transform: scale(1.06) translateY(-12px) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) translateY(0px) rotate(0deg);
+  }
+}
+
 .hero-copy h1,
 .create-layout h1,
 .complete-card h1 {

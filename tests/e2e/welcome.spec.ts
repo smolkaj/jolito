@@ -10,6 +10,14 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
   await expect(
+    page.getByLabel(/meet jolito, your practice companion/i),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('img', {
+      name: /jolito the axolotl, ritmo's practice companion, greeting you/i,
+    }),
+  ).toBeVisible()
+  await expect(
     page.getByRole('button', { name: /^create a card$/i }),
   ).toBeVisible()
 

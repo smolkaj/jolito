@@ -8,6 +8,7 @@ import {
 } from 'react'
 import logoUrl from '../assets/ritmo-logo-concept-cropped.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
+import jolitoWelcomeUrl from '../assets/jolito-welcome.png'
 import { createCards } from './application/create-cards'
 import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
@@ -479,6 +480,19 @@ export function App({
         </nav>
         <section className="welcome-hero">
           <div className="hero-copy">
+            <div
+              className="hero-companion-badge"
+              aria-label="Meet Jolito, your practice companion"
+            >
+              <img
+                src={jolitoWelcomeUrl}
+                alt=""
+                className="companion-badge-avatar"
+              />
+              <span>
+                Meet <strong>Jolito</strong> · your CDMX rhythm companion
+              </span>
+            </div>
             <h1>
               Make the words <br />
               you meet <em>stick.</em>
@@ -504,6 +518,20 @@ export function App({
             </div>
           </div>
           <div className="hero-visual">
+            <div
+              className={`hero-mascot ${samplePlaying ? 'is-dancing' : ''}`}
+              role="img"
+              aria-label="Jolito the Axolotl, Ritmo's practice companion, greeting you"
+            >
+              <img
+                src={jolitoWelcomeUrl}
+                alt=""
+                className="hero-mascot-image"
+              />
+              <span className="mascot-badge" aria-hidden="true">
+                ¡Hola! Soy Jolito
+              </span>
+            </div>
             <button
               type="button"
               className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}

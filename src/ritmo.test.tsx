@@ -224,6 +224,14 @@ describe('Ritmo', () => {
       screen.getByRole('heading', { name: /make the words you meet stick/i }),
     ).toBeInTheDocument()
     expect(
+      screen.getByLabelText(/meet jolito, your practice companion/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', {
+        name: /jolito the axolotl, ritmo's practice companion, greeting you/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
       screen.getByText('Create beautiful, spoken cards.', { exact: false }),
     ).toBeInTheDocument()
     expect(
