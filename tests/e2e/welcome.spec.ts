@@ -136,3 +136,46 @@ test('transitions sample card from background to foreground smoothly and remains
     .analyze()
   expect(results.violations).toEqual([])
 })
+
+test('autocompletes Mexican Spanish phrases and corrects typos on card creation', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /^create a card$/i }).click()
+
+  // 1. Test Autocomplete
+  const spanishInput = page.getByLabel(/spanish/i)
+  await spanishInput.fill('ahor')
+
+  await expect(
+    page.getByRole('listbox', { name: /spanish suggestions/i }),
+  ).toBeVisible()
+  await expect(page.getByText('ahorita')).toBeVisible()
+
+  // Verify WCAG accessibility with dropdown open
+  const resultsDropdown = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(resultsDropdown.violations).toEqual([])
+
+  // Select suggestion
+  await page.getByText('ahorita').click()
+  await expect(spanishInput).toHaveValue('ahorita')
+  await expect(page.getByLabel(/english/i)).toHaveValue('right now / in a bit')
+
+  // 2. Test Typo / Did You Mean
+  await spanishInput.fill('aguacatte')
+  await expect(page.getByText(/did you mean/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: /aguacate/i })).toBeVisible()
+
+  // Click typo chip to apply
+  await page.getByRole('button', { name: /aguacate/i }).click()
+  await expect(spanishInput).toHaveValue('aguacate')
+  await expect(page.getByLabel(/english/i)).toHaveValue('avocado')
+
+  // Verify WCAG compliance
+  const resultsFinal = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(resultsFinal.violations).toEqual([])
+})
