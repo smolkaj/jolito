@@ -1,5 +1,6 @@
 import type {
   AppServices,
+  CardAssistant,
   CardRepository,
   Clock,
   Earcon,
@@ -7,6 +8,7 @@ import type {
   SoundPlayer,
   Speaker,
 } from '../application/ports'
+import { OfflineCardAssistant } from '../application/card-assistant'
 import type { StudyCard } from '../domain/card'
 
 export class FixedClock implements Clock {
@@ -67,12 +69,14 @@ export function createTestServices(options?: {
   cards?: StudyCard[] | null
   clockTime?: number
   speakerSupported?: boolean
+  assistant?: CardAssistant
 }): AppServices & {
   memoryCards: MemoryCardRepository
   mockSpeaker: MockSpeaker
   mockSounds: MockSoundPlayer
   fixedClock: FixedClock
   sequentialIds: SequentialIds
+  assistant: CardAssistant
 } {
   const memoryCards = new MemoryCardRepository(options?.cards ?? null)
   const mockSpeaker = new MockSpeaker()
@@ -82,6 +86,7 @@ export function createTestServices(options?: {
   const mockSounds = new MockSoundPlayer()
   const fixedClock = new FixedClock(options?.clockTime)
   const sequentialIds = new SequentialIds()
+  const assistant = options?.assistant ?? new OfflineCardAssistant()
 
   return {
     cards: memoryCards,
@@ -89,6 +94,7 @@ export function createTestServices(options?: {
     sounds: mockSounds,
     clock: fixedClock,
     ids: sequentialIds,
+    assistant,
     memoryCards,
     mockSpeaker,
     mockSounds,

@@ -802,6 +802,156 @@ summary:focus-visible {
   color: var(--ink-faint);
 }
 
+.field-group-relative {
+  position: relative;
+}
+
+.typo-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fffde6;
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.typo-label {
+  color: var(--ink-muted, #555);
+  font-weight: 600;
+}
+
+.typo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #ffffff;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  transition:
+    background 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.typo-chip:hover {
+  background: #fef8cc;
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.typo-translation {
+  color: var(--ink-muted, #555);
+}
+
+.typo-arrow {
+  color: var(--rosa);
+  font-weight: 800;
+}
+
+.suggestions-listbox {
+  position: absolute;
+  top: calc(100% - 8px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #ffffff;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--ink);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid transparent;
+}
+
+.suggestion-item:hover,
+.suggestion-item.is-active {
+  background: #fffde6;
+  border-color: var(--ink);
+}
+
+.suggestion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.suggestion-spanish {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.suggestion-tag {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--ink);
+}
+
+.tag-slang {
+  background: #ffd6e0;
+}
+
+.tag-idiom {
+  background: #e2f0d9;
+}
+
+.tag-food {
+  background: #fff2cc;
+}
+
+.tag-travel {
+  background: #c5e3f6;
+}
+
+.tag-basics,
+.tag-common {
+  background: #eaeaea;
+}
+
+.suggestion-english {
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.suggestion-context {
+  font-size: 11px;
+  color: var(--ink-muted, #666);
+  font-style: italic;
+  margin-top: 2px;
+}
+
 .toggle-row {
   margin-top: 12px;
   margin-bottom: 8px;

@@ -1,5 +1,7 @@
 import {
+  type ChangeEvent,
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -22,6 +24,7 @@ import {
   type Scene,
   type StudyCard,
 } from './domain/card'
+import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { type View, hashForView, viewFromHash } from './navigation'
 
@@ -283,6 +286,13 @@ export function App({
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
   const [bidirectional, setBidirectional] = useState(true)
+  const [spanishInput, setSpanishInput] = useState('')
+  const [englishInput, setEnglishInput] = useState('')
+  const [contextInput, setContextInput] = useState('')
+  const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([])
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+  const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
@@ -487,6 +497,82 @@ export function App({
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 
+  const applySuggestion = useCallback((entry: LexiconEntry) => {
+    setSpanishInput(entry.spanish)
+    setEnglishInput(entry.english)
+    if (entry.context) {
+      setContextInput(entry.context)
+    }
+    setSuggestions([])
+    setShowSuggestions(false)
+    setDidYouMean(null)
+    setActiveSuggestionIndex(-1)
+  }, [])
+
+  const onSpanishChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const val = event.target.value
+      setSpanishInput(val)
+      if (val.trim().length >= 2) {
+        const matches = services.assistant.suggest(val, 'es', 5)
+        setSuggestions(matches)
+        setShowSuggestions(matches.length > 0)
+        if (matches.length === 0) {
+          const typo = services.assistant.didYouMean(val, 'es')
+          setDidYouMean(typo)
+        } else {
+          setDidYouMean(null)
+        }
+      } else {
+        setSuggestions([])
+        setShowSuggestions(false)
+        setDidYouMean(null)
+      }
+      setActiveSuggestionIndex(-1)
+    },
+    [services.assistant],
+  )
+
+  const onEnglishChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const val = event.target.value
+      setEnglishInput(val)
+      if (val.trim().length >= 2 && !spanishInput.trim()) {
+        const matches = services.assistant.suggest(val, 'en', 5)
+        if (matches.length > 0) {
+          setSuggestions(matches)
+          setShowSuggestions(true)
+        }
+      }
+    },
+    [services.assistant, spanishInput],
+  )
+
+  const onSpanishKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+      if (!showSuggestions || suggestions.length === 0) return
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length)
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        setActiveSuggestionIndex((prev) =>
+          prev <= 0 ? suggestions.length - 1 : prev - 1,
+        )
+      } else if (event.key === 'Enter' || event.key === 'Tab') {
+        if (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+          event.preventDefault()
+          applySuggestion(suggestions[activeSuggestionIndex])
+        }
+      } else if (event.key === 'Escape') {
+        setShowSuggestions(false)
+        setActiveSuggestionIndex(-1)
+      }
+    },
+    [activeSuggestionIndex, applySuggestion, showSuggestions, suggestions],
+  )
+
   function createCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -508,6 +594,12 @@ export function App({
     if (created.length === 0) return
 
     setCards((current) => [...created, ...current])
+    setSpanishInput('')
+    setEnglishInput('')
+    setContextInput('')
+    setSuggestions([])
+    setDidYouMean(null)
+    setShowSuggestions(false)
     beginReview(created.map(({ id }) => id))
   }
 
@@ -638,18 +730,92 @@ export function App({
             <h1>New flashcard</h1>
           </header>
           <form className="create-form" onSubmit={createCard}>
-            <div className="field-group">
+            <div className="field-group field-group-relative">
               <label htmlFor="spanish">
                 <MexicoFlag /> Spanish
               </label>
               <textarea
                 id="spanish"
                 name="spanish"
+                role="combobox"
                 rows={2}
                 autoFocus
                 required
-                placeholder="Palabra o frase en español"
+                value={spanishInput}
+                onChange={onSpanishChange}
+                onKeyDown={onSpanishKeyDown}
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowSuggestions(true)
+                }}
+                placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
+                aria-autocomplete="list"
+                aria-controls="spanish-suggestions"
+                aria-expanded={showSuggestions && suggestions.length > 0}
+                aria-activedescendant={
+                  activeSuggestionIndex >= 0
+                    ? `suggestion-${activeSuggestionIndex}`
+                    : undefined
+                }
               />
+              {didYouMean && (
+                <div className="typo-suggestion" role="status">
+                  <span className="typo-label">Did you mean</span>
+                  <button
+                    type="button"
+                    className="typo-chip"
+                    onClick={() => applySuggestion(didYouMean)}
+                  >
+                    <strong>{didYouMean.spanish}</strong>
+                    <span className="typo-translation">
+                      {' '}
+                      ({didYouMean.english})
+                    </span>
+                    <span className="typo-arrow" aria-hidden="true">
+                      {' '}
+                      ↵
+                    </span>
+                  </button>
+                </div>
+              )}
+              {showSuggestions && suggestions.length > 0 && (
+                <ul
+                  className="suggestions-listbox"
+                  role="listbox"
+                  id="spanish-suggestions"
+                  aria-label="Spanish suggestions"
+                >
+                  {suggestions.map((item, index) => (
+                    <li
+                      key={item.spanish}
+                      id={`suggestion-${index}`}
+                      role="option"
+                      aria-selected={activeSuggestionIndex === index}
+                      className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        applySuggestion(item)
+                      }}
+                    >
+                      <div className="suggestion-head">
+                        <span className="suggestion-spanish">
+                          {item.spanish}
+                        </span>
+                        {item.tag && (
+                          <span className={`suggestion-tag tag-${item.tag}`}>
+                            {item.tag}
+                          </span>
+                        )}
+                      </div>
+                      <span className="suggestion-english">{item.english}</span>
+                      {item.context && (
+                        <span className="suggestion-context">
+                          {item.context}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="field-group">
               <label htmlFor="english">
@@ -660,6 +826,8 @@ export function App({
                 name="english"
                 rows={2}
                 required
+                value={englishInput}
+                onChange={onEnglishChange}
                 placeholder="English translation"
               />
             </div>
@@ -694,12 +862,14 @@ export function App({
                 </div>
               </details>
             )}
-            <details className="form-details">
+            <details className="form-details" open={Boolean(contextInput)}>
               <summary>Add note</summary>
               <div className="context-field">
                 <textarea
                   name="context"
                   rows={2}
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
                   placeholder="Optional context or note"
                   aria-label="Note"
                 />

@@ -1,4 +1,5 @@
 import type { AppServices, Clock, IdGenerator } from '../../application/ports'
+import { OfflineCardAssistant } from '../../application/card-assistant'
 import { LocalStorageCardRepository } from './card-repository'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
@@ -26,11 +27,15 @@ export {
 }
 
 export function createBrowserServices(): AppServices {
+  const assistant = new OfflineCardAssistant()
+  void assistant.loadDictionary()
+
   return {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
     cards: new LocalStorageCardRepository(),
     speaker: new LayeredNeuralSpeaker(),
     sounds: new WebAudioSoundPlayer(),
+    assistant,
   }
 }

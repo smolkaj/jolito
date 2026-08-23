@@ -355,4 +355,75 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
   })
+
+  it('suggests Mexican Spanish expressions and auto-fills translation and context on selection', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('ahorita')).toBeInTheDocument()
+
+    // Click suggestion item
+    await user.click(screen.getByText('ahorita'))
+
+    // Verifies auto-fill of Spanish, English, and context!
+    expect(spanishInput).toHaveValue('ahorita')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'right now / in a bit',
+    )
+    expect(screen.getByLabelText('Note')).toHaveValue(
+      'Iconic Mexican time nuance: right now, soon, or never.',
+    )
+  })
+
+  it('detects typos in Spanish input and offers "Did you mean" suggestion chip', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'aguacatte')
+
+    expect(screen.getByText(/did you mean/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /aguacate/i }),
+    ).toBeInTheDocument()
+
+    // Click typo chip
+    await user.click(screen.getByRole('button', { name: /aguacate/i }))
+
+    expect(spanishInput).toHaveValue('aguacate')
+    expect(screen.getByLabelText(/english/i)).toHaveValue('avocado')
+  })
+
+  it('supports keyboard navigation (ArrowDown + Enter) to select suggestions', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'que pad')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Navigate with ArrowDown and select with Enter
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Enter}')
+
+    expect(spanishInput).toHaveValue('Qué padre')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'How cool / fantastic',
+    )
+  })
 })
