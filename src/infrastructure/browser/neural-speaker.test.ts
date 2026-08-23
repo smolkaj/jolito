@@ -87,28 +87,40 @@ describe('LayeredNeuralSpeaker', () => {
 })
 
 describe('NeuralVoiceEngine', () => {
-  it('correctly registers and queries audio buffers with locale normalization', () => {
+  it('bundles pristine neural audio for starter and sample phrases', () => {
     const engine = new NeuralVoiceEngine()
-    expect(engine.hasAudio('aguacate', 'es_MX')).toBe(false)
-
-    const mockBuffer = {} as AudioBuffer
-    engine.registerAudioBuffer('aguacate', 'es_MX', mockBuffer)
-
-    // Should match both es_MX and es-MX case-insensitively
     expect(engine.hasAudio('aguacate', 'es-MX')).toBe(true)
     expect(engine.hasAudio('  AGUACATE  ', 'es_mx')).toBe(true)
-    expect(engine.hasAudio('avocado', 'en-US')).toBe(false)
+    expect(engine.hasAudio('avocado', 'en-US')).toBe(true)
+    expect(engine.hasAudio('¿Dónde está el metro?', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('Donde esta el metro', 'es-MX')).toBe(true)
+  })
+
+  it('correctly registers and queries custom audio buffers with locale normalization', () => {
+    const engine = new NeuralVoiceEngine()
+    expect(engine.hasAudio('custom unbundled phrase', 'es_MX')).toBe(false)
+
+    const mockBuffer = {} as AudioBuffer
+    engine.registerAudioBuffer('custom unbundled phrase', 'es_MX', mockBuffer)
+
+    // Should match both es_MX and es-MX case-insensitively
+    expect(engine.hasAudio('custom unbundled phrase', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('  CUSTOM UNBUNDLED PHRASE  ', 'es_mx')).toBe(true)
   })
 
   it('correctly registers and queries audio data URLs', () => {
     const engine = new NeuralVoiceEngine()
-    engine.registerAudioDataUrl('avocado', 'en-US', 'data:audio/wav;base64,...')
-    expect(engine.hasAudio('avocado', 'en-US')).toBe(true)
-    expect(engine.hasAudio('avocado', 'en_US')).toBe(true)
+    engine.registerAudioDataUrl(
+      'custom english phrase',
+      'en-US',
+      'data:audio/wav;base64,...',
+    )
+    expect(engine.hasAudio('custom english phrase', 'en-US')).toBe(true)
+    expect(engine.hasAudio('custom english phrase', 'en_US')).toBe(true)
   })
 
   it('returns false on playAudio when phrase is not in cache', () => {
     const engine = new NeuralVoiceEngine()
-    expect(engine.playAudio('nonexistent', 'es-MX')).toBe(false)
+    expect(engine.playAudio('unregistered-phrase-xyz', 'es-MX')).toBe(false)
   })
 })
