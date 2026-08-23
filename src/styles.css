@@ -387,12 +387,24 @@ summary:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Welcome Page */
+/* Welcome Page — Courageous Solid Mexican Turquoise Green Canvas */
 .welcome-page {
-  background:
-    radial-gradient(ellipse at 88% 38%, #fef0f7 0%, rgba(254, 240, 247, 0) 50%),
-    radial-gradient(ellipse at 12% 80%, #eef7f3 0%, rgba(238, 247, 243, 0) 45%),
-    var(--paper);
+  background-color: var(--turquesa);
+  background-image:
+    radial-gradient(
+      ellipse at 88% 28%,
+      rgba(228, 0, 124, 0.14) 0%,
+      transparent 48%
+    ),
+    radial-gradient(
+      ellipse at 15% 82%,
+      rgba(245, 158, 11, 0.16) 0%,
+      transparent 45%
+    );
+}
+
+.welcome-page .lede {
+  color: #1a3328;
 }
 
 .welcome-hero {
@@ -576,7 +588,7 @@ summary:focus-visible {
   --card-shadow-color: var(--turquesa-dark);
   --card-shadow-hover: var(--turquesa-dark);
   color: var(--ink);
-  background: var(--turquesa);
+  background: var(--card);
 }
 
 .sample-card-en:focus-visible {
