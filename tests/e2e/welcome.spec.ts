@@ -135,7 +135,7 @@ test('transitions sample card from background to foreground smoothly and remains
   expect(results.violations).toEqual([])
 })
 
-test('delights learners during card creation with live preview, diacritics, and rapid batch saving', async ({
+test('delights learners during card creation with diacritics, language swap, and rapid batch saving', async ({
   page,
 }) => {
   await page.goto('/#/create')
@@ -152,13 +152,20 @@ test('delights learners during card creation with live preview, diacritics, and 
   await spanishTextarea.fill('¿Qué tal?')
   await page.getByLabel(/^English Concise meaning$/).fill('How’s it going?')
 
-  // Verify live preview shows updated phrase
-  const preview = page.getByLabel('Live card preview')
-  await expect(preview).toContainText('¿Qué tal?')
+  // Test swap button
+  await page
+    .getByRole('button', { name: 'Swap Spanish and English fields' })
+    .click()
+  await expect(spanishTextarea).toHaveValue('How’s it going?')
+  await expect(page.getByLabel(/^English Concise meaning$/)).toHaveValue(
+    '¿Qué tal?',
+  )
 
-  // Test scene override
-  await page.getByRole('radio', { name: /☕ Takeaway/i }).click()
-  await expect(preview).toContainText('Takeaway')
+  // Swap back
+  await page
+    .getByRole('button', { name: 'Swap Spanish and English fields' })
+    .click()
+  await expect(spanishTextarea).toHaveValue('¿Qué tal?')
 
   // Verify zero WCAG A/AA accessibility violations on create screen
   const results = await new AxeBuilder({ page })

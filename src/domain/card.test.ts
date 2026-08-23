@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  chooseScene,
   createStudyCards,
   intervalLabel,
   isDue,
@@ -36,7 +35,6 @@ describe('createStudyCards', () => {
       answer: 'Can you make it to go?',
       context: 'Polite in a restaurant.',
       direction: 'es-en',
-      scene: 'takeaway',
       schedule: {
         state: 'new',
         dueAt: now,
@@ -94,30 +92,6 @@ describe('createStudyCards', () => {
         now,
       ),
     ).toEqual([])
-
-    const overridden = createStudyCards(
-      {
-        spanish: 'Mucho gusto',
-        english: 'Nice to meet you',
-        context: '',
-        bidirectional: true,
-        scene: 'takeaway',
-      },
-      'note-override',
-      now,
-    )
-    expect(overridden[0]?.scene).toBe('takeaway')
-    expect(overridden[1]?.scene).toBe('takeaway')
-  })
-})
-
-describe('illustration selection', () => {
-  it('selects a useful scene from either language', () => {
-    expect(chooseScene('¿Dónde está el metro?')).toBe('metro')
-    expect(chooseScene('¿Dónde está la estación?')).toBe('metro')
-    expect(chooseScene('A coffee, please')).toBe('takeaway')
-    expect(chooseScene('Un café con leche, por favor')).toBe('takeaway')
-    expect(chooseScene('Mucho gusto')).toBe('conversation')
   })
 })
 

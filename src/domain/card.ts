@@ -46,7 +46,7 @@ export const studyCardSchema = z.object({
   answer: z.string().trim().min(1),
   direction: directionSchema,
   context: z.string(),
-  scene: sceneSchema,
+  scene: sceneSchema.optional(),
   schedule: reviewScheduleSchema,
 })
 
@@ -79,25 +79,6 @@ const MINUTE = 60 * 1000
 const MIN_EASE_FACTOR = 1.3
 const INITIAL_EASE_FACTOR = 2.5
 
-const sceneMatchers: ReadonlyArray<[Scene, RegExp]> = [
-  [
-    'metro',
-    /(?:^|\P{L})(metro|metrob[uú]s|tren|bus|station|estaci[oó]n)(?:\P{L}|$)/iu,
-  ],
-  [
-    'takeaway',
-    /(?:^|\P{L})(caf[eé]|coffee|comida|food|restaurante|restaurant|llevar|takeaway|to go)(?:\P{L}|$)/iu,
-  ],
-]
-
-export function chooseScene(...text: string[]): Scene {
-  const phrase = text.join(' ')
-  return (
-    sceneMatchers.find(([, matcher]) => matcher.test(phrase))?.[0] ??
-    'conversation'
-  )
-}
-
 export function createStudyCards(
   note: NewNote,
   noteId: string,
@@ -108,7 +89,6 @@ export function createStudyCards(
   if (!spanish || !english) return []
 
   const context = note.context.trim()
-  const scene = note.scene ?? chooseScene(spanish, english, context)
   const newSchedule = (): ReviewSchedule => ({
     state: 'new',
     dueAt: now,
@@ -125,7 +105,6 @@ export function createStudyCards(
       answer: english,
       direction: 'es-en',
       context,
-      scene,
       schedule: newSchedule(),
     },
   ]
@@ -138,7 +117,6 @@ export function createStudyCards(
       answer: note.reverseAnswer?.trim() || spanish,
       direction: 'en-es',
       context,
-      scene,
       schedule: newSchedule(),
     })
   }

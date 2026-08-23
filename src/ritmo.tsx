@@ -12,24 +12,16 @@ import type { AppServices } from './application/ports'
 import { starterCards } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
-  chooseScene,
   grades,
   intervalLabel,
   isDue,
   scheduleReview,
   shouldRequeueInSession,
   type Grade,
-  type Scene,
   type StudyCard,
 } from './domain/card'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { type View, hashForView, viewFromHash } from './navigation'
-
-const sceneLabels: Record<Scene, string> = {
-  takeaway: 'A takeaway bag and warm drink',
-  metro: 'A Mexico City metro train',
-  conversation: 'Two people having a friendly conversation',
-}
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -58,47 +50,6 @@ function Brand({ onClick }: { onClick?: () => void }) {
     </button>
   ) : (
     <div className="brand">{content}</div>
-  )
-}
-
-function SceneIllustration({ scene }: { scene: Scene }) {
-  return (
-    <div
-      className={`scene scene-${scene}`}
-      role="img"
-      aria-label={sceneLabels[scene]}
-    >
-      <div className="scene-sun" />
-      {scene === 'takeaway' && (
-        <div className="takeaway-art">
-          <div className="takeaway-bag">
-            <span>para llevar</span>
-          </div>
-          <div className="takeaway-cup" />
-          <i className="steam-one" />
-          <i className="steam-two" />
-        </div>
-      )}
-      {scene === 'metro' && (
-        <div className="metro-art">
-          <span className="metro-sign">M</span>
-          <div className="metro-train">
-            <i />
-            <i />
-            <b />
-          </div>
-          <div className="metro-track" />
-        </div>
-      )}
-      {scene === 'conversation' && (
-        <div className="conversation-art">
-          <div className="person person-one" />
-          <div className="person person-two" />
-          <span className="speech-one">¡Hola!</span>
-          <span className="speech-two">¿Qué tal?</span>
-        </div>
-      )}
-    </div>
   )
 }
 
@@ -243,13 +194,7 @@ export function App({
   const [createReversePrompt, setCreateReversePrompt] = useState('')
   const [createReverseAnswer, setCreateReverseAnswer] = useState('')
   const [createBidirectional, setCreateBidirectional] = useState(true)
-  const [createSelectedScene, setCreateSelectedScene] = useState<
-    Scene | 'auto'
-  >('auto')
   const [createFeedback, setCreateFeedback] = useState<string | null>(null)
-  const [previewSide, setPreviewSide] = useState<'spanish' | 'english'>(
-    'spanish',
-  )
   const spanishTextareaRef = useRef<HTMLTextAreaElement>(null)
   const feedbackTimerRef = useRef<number | null>(null)
   const [audioUnavailable, setAudioUnavailable] = useState(
@@ -459,13 +404,6 @@ export function App({
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 
-  const autoDetectedScene = useMemo(
-    () => chooseScene(createSpanish, createEnglish, createContext),
-    [createSpanish, createEnglish, createContext],
-  )
-  const liveScene =
-    createSelectedScene === 'auto' ? autoDetectedScene : createSelectedScene
-
   function insertDiacritic(char: string) {
     const textarea = spanishTextareaRef.current
     if (!textarea) {
@@ -505,7 +443,6 @@ export function App({
         english,
         context: createContext.trim(),
         bidirectional: createBidirectional,
-        scene: createSelectedScene === 'auto' ? undefined : createSelectedScene,
         reversePrompt: createReversePrompt.trim() || undefined,
         reverseAnswer: createReverseAnswer.trim() || undefined,
       },
@@ -525,7 +462,6 @@ export function App({
       setCreateContext('')
       setCreateReversePrompt('')
       setCreateReverseAnswer('')
-      setCreateSelectedScene('auto')
       setCreateFeedback(
         created.length === 2
           ? '2 cards saved (bidirectional)! Ready for next phrase.'
@@ -667,105 +603,11 @@ export function App({
           </button>
         </nav>
         <section className="create-layout">
-          <div className="create-sidebar">
-            <header>
-              <p className="eyebrow">ADD TO YOUR COLLECTION</p>
-              <h1>What do you want to remember?</h1>
-              <p>Words and whole phrases are equally welcome.</p>
-            </header>
-
-            <div className="create-preview-wrapper">
-              <div className="preview-header-bar">
-                <span className="preview-label">LIVE PREVIEW</span>
-                {createBidirectional && (
-                  <button
-                    type="button"
-                    className="preview-toggle-btn"
-                    onClick={() =>
-                      setPreviewSide((side) =>
-                        side === 'spanish' ? 'english' : 'spanish',
-                      )
-                    }
-                    aria-label="Toggle preview direction"
-                  >
-                    <span>
-                      {previewSide === 'spanish' ? 'ES → EN' : 'EN → ES'}
-                    </span>
-                    <span className="flip-icon" aria-hidden="true">
-                      ⇄
-                    </span>
-                  </button>
-                )}
-              </div>
-
-              <div
-                className={`sample-card create-card-mockup ${
-                  previewSide === 'spanish'
-                    ? 'sample-card-es'
-                    : 'sample-card-en'
-                }`}
-                aria-label="Live card preview"
-              >
-                <div className="sample-card-header">
-                  <span className="sample-badge">
-                    {previewSide === 'spanish' ? 'MEXICAN SPANISH' : 'ENGLISH'}
-                  </span>
-                  <span className="sample-scene-badge">
-                    {liveScene === 'metro'
-                      ? '🚇 Metro'
-                      : liveScene === 'takeaway'
-                        ? '☕ Takeaway'
-                        : '💬 Chat'}
-                  </span>
-                </div>
-                <div className="sample-card-body">
-                  <SceneIllustration scene={liveScene} />
-                  <p className="sample-phrase">
-                    {previewSide === 'spanish'
-                      ? createSpanish.trim() || '¿Qué tal?'
-                      : createReversePrompt.trim() ||
-                        createEnglish.trim() ||
-                        'How’s it going?'}
-                  </p>
-                  {createContext.trim() && (
-                    <p className="sample-card-context">
-                      {createContext.trim()}
-                    </p>
-                  )}
-                </div>
-                <div className="sample-card-footer">
-                  <button
-                    type="button"
-                    className="sample-listen-hint"
-                    disabled={
-                      previewSide === 'spanish'
-                        ? !createSpanish.trim()
-                        : !(createReversePrompt.trim() || createEnglish.trim())
-                    }
-                    onClick={() => {
-                      if (previewSide === 'spanish' && createSpanish.trim()) {
-                        playAudio(createSpanish.trim(), 'es-MX')
-                      } else if (
-                        previewSide === 'english' &&
-                        (createReversePrompt.trim() || createEnglish.trim())
-                      ) {
-                        playAudio(
-                          createReversePrompt.trim() || createEnglish.trim(),
-                          'en-US',
-                        )
-                      }
-                    }}
-                    aria-label="Listen to live preview phrase"
-                  >
-                    <svg viewBox="0 0 24 24">
-                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                    </svg>
-                    <span>Tap to hear</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <header>
+            <p className="eyebrow">ADD TO YOUR COLLECTION</p>
+            <h1>What do you want to remember?</h1>
+            <p>Words and whole phrases are equally welcome.</p>
+          </header>
 
           <form
             className="create-form"
@@ -877,37 +719,6 @@ export function App({
                 <small>Spanish ↔ English</small>
               </span>
             </label>
-
-            <div className="scene-picker-section">
-              <span className="scene-picker-title">Illustration scene</span>
-              <div
-                className="scene-pill-group"
-                role="radiogroup"
-                aria-label="Card illustration scene"
-              >
-                {(
-                  [
-                    ['auto', `✨ Auto (${sceneLabels[autoDetectedScene]})`],
-                    ['conversation', '💬 Conversation'],
-                    ['takeaway', '☕ Takeaway'],
-                    ['metro', '🚇 Metro'],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`scene-pill ${
-                      createSelectedScene === key ? 'is-selected' : ''
-                    }`}
-                    onClick={() => setCreateSelectedScene(key)}
-                    role="radio"
-                    aria-checked={createSelectedScene === key}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {createBidirectional && (
               <details className="form-details">
@@ -1055,7 +866,6 @@ export function App({
         </button>
       </nav>
       <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-        <SceneIllustration scene={currentCard.scene} />
         <div className="prompt-meta">
           <p className="eyebrow">
             {currentCard.direction === 'es-en'

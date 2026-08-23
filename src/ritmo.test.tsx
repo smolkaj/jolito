@@ -65,9 +65,6 @@ describe('Ritmo', () => {
     expect(
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('img', { name: /metro train/i }),
-    ).toBeInTheDocument()
 
     const response = screen.getByLabelText('Your answer')
     await user.type(response, 'Where is metro')
@@ -380,18 +377,6 @@ describe('Ritmo', () => {
       'How are you?',
     )
 
-    // Verify live preview shows updated phrase and audio trigger
-    const preview = screen.getByLabelText('Live card preview')
-    expect(preview).toHaveTextContent('¿Qué tal?')
-    const liveListenBtn = screen.getByRole('button', {
-      name: 'Listen to live preview phrase',
-    })
-    await user.click(liveListenBtn)
-    expect(services.mockSpeaker.spoken).toContainEqual({
-      text: '¿Qué tal?',
-      locale: 'es-MX',
-    })
-
     // Click "Save & add another"
     await user.click(
       screen.getByRole('button', { name: /save & add another/i }),
@@ -414,7 +399,7 @@ describe('Ritmo', () => {
     ).toBeInTheDocument()
   })
 
-  it('swaps languages and overrides illustration scenes in card authoring', async () => {
+  it('swaps languages and previews Mexican Spanish pronunciation before saving', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -450,13 +435,10 @@ describe('Ritmo', () => {
       locale: 'es-MX',
     })
 
-    // Select manual scene override
-    await user.click(screen.getByRole('radio', { name: /☕ Takeaway/i }))
-
     // Save with Cmd+Enter keyboard shortcut
     await user.keyboard('{Meta>}{Enter}{/Meta}')
 
     expect(services.mockSounds.played).toContain('good')
-    expect(services.memoryCards.saved?.[0]?.scene).toBe('takeaway')
+    expect(services.memoryCards.saved?.[0]?.prompt).toBe('Buenos días')
   })
 })
