@@ -131,15 +131,17 @@ function findCardArt(
 function SceneIllustration({
   scene,
   card,
+  revealed = false,
 }: {
   scene: Scene
   card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>
+  revealed?: boolean
 }) {
-  const customArt = findCardArt(card)
+  const customArt = revealed ? findCardArt(card) : null
   if (customArt) {
     return (
       <div
-        className="study-card-illustration"
+        className="study-card-illustration is-revealed"
         role="img"
         aria-label="Card illustration"
       >
@@ -981,7 +983,11 @@ export function App({
         </button>
       </nav>
       <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-        <SceneIllustration scene={currentCard.scene} card={currentCard} />
+        <SceneIllustration
+          scene={currentCard.scene}
+          card={currentCard}
+          revealed={revealed}
+        />
         <div className="prompt-meta">
           <p className="eyebrow direction-eyebrow">
             {currentCard.direction === 'es-en' ? (

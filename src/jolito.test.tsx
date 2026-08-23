@@ -427,47 +427,72 @@ describe('Jolito', () => {
     )
   })
 
-  it('renders custom card illustration art for starter cards (aguacate and Qué padre)', async () => {
+  it('protects active recall by showing sticker art only upon reveal for starter cards', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
-    // Card 1: aguacate (ES -> EN)
+    // Card 1: aguacate (ES -> EN) — BEFORE REVEAL: scene shown, no spoiler sticker
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('img', { name: 'Card illustration' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: /friendly conversation/i }),
+    ).toBeInTheDocument()
+
+    // REVEAL Card 1 -> sticker art appears!
+    await user.keyboard('{Enter}')
     expect(
       screen.getByRole('img', { name: 'Card illustration' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Card illustration' })).toHaveClass(
       'study-card-illustration',
+      'is-revealed',
     )
 
-    // Advance to Card 2: avocado (EN -> ES)
-    await user.keyboard('{Enter}')
+    // Rate and advance to Card 2: avocado (EN -> ES)
     await user.keyboard('4')
     expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('img', { name: 'Card illustration' }),
+    ).not.toBeInTheDocument()
+
+    // Reveal Card 2 -> sticker art appears
+    await user.keyboard('{Enter}')
     expect(
       screen.getByRole('img', { name: 'Card illustration' }),
     ).toBeInTheDocument()
 
-    // Advance to Card 3: Qué padre (ES -> EN) -> renders Qué padre sticker art
-    await user.keyboard('{Enter}')
+    // Rate and advance to Card 3: Qué padre (ES -> EN)
     await user.keyboard('4')
     expect(
       screen.getByRole('heading', { name: 'Qué padre' }),
     ).toBeInTheDocument()
     expect(
+      screen.queryByRole('img', { name: 'Card illustration' }),
+    ).not.toBeInTheDocument()
+
+    // Reveal Card 3 -> Qué padre sticker appears
+    await user.keyboard('{Enter}')
+    expect(
       screen.getByRole('img', { name: 'Card illustration' }),
     ).toBeInTheDocument()
 
-    // Advance to Card 4: How cool (EN -> ES) -> renders Qué padre sticker art
-    await user.keyboard('{Enter}')
+    // Rate and advance to Card 4: How cool (EN -> ES)
     await user.keyboard('4')
     expect(
       screen.getByRole('heading', { name: 'How cool' }),
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('img', { name: 'Card illustration' }),
+    ).not.toBeInTheDocument()
+
+    // Reveal Card 4 -> Qué padre sticker appears
+    await user.keyboard('{Enter}')
     expect(
       screen.getByRole('img', { name: 'Card illustration' }),
     ).toBeInTheDocument()
