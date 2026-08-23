@@ -1698,7 +1698,8 @@ kbd {
 }
 
 .grade-buttons .grade-again small {
-  color: #fecaca;
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 .grade-buttons .grade-again:hover {
@@ -1714,18 +1715,20 @@ kbd {
 }
 
 .grade-buttons .grade-hard small {
-  color: #4a2800;
+  color: var(--ink);
+  opacity: 0.85;
 }
 
 .grade-buttons .grade-hard:hover {
-  background: #d97706;
-  color: #ffffff;
+  background: #e69500;
+  color: var(--ink);
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--cempasuchil-dark);
 }
 
 .grade-buttons .grade-hard:hover small {
-  color: #fef3c7;
+  color: var(--ink);
+  opacity: 0.9;
 }
 
 .grade-buttons .grade-good {
@@ -1735,27 +1738,30 @@ kbd {
 }
 
 .grade-buttons .grade-good small {
-  color: var(--turquesa-dark);
+  color: var(--ink);
+  opacity: 0.85;
 }
 
 .grade-buttons .grade-good:hover {
-  background: #739885;
+  background: #759a87;
+  color: var(--ink);
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--turquesa-dark);
 }
 
 .grade-buttons .grade-easy {
-  background: var(--maya);
+  background: var(--maya-dark);
   color: #ffffff;
-  box-shadow: 2px 2px 0 var(--maya-dark);
+  box-shadow: 2px 2px 0 #075985;
 }
 
 .grade-buttons .grade-easy small {
-  color: #e0f2fe;
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 .grade-buttons .grade-easy:hover {
-  background: var(--maya-dark);
+  background: #075985;
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--ink);
 }
