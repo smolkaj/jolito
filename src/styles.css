@@ -199,7 +199,6 @@ summary:focus-visible {
   width: 118px;
   height: 118px;
   object-fit: contain;
-  filter: drop-shadow(4px 4px 0 var(--rosa));
   animation: jolito-sway 4.5s ease-in-out infinite alternate;
   transition: transform 320ms var(--ease-spring);
 }
