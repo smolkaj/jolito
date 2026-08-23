@@ -29,9 +29,9 @@ test('creates and reviews both directions with the keyboard', async ({
   await page.goto('/')
   await page.getByRole('button', { name: /^create a card$/i }).click()
   await page
-    .getByLabel(/^Spanish Mexican Spanish$/)
+    .getByLabel(/Spanish.*Mexican Spanish/i)
     .fill('¿Dónde está el metro?')
-  await page.getByLabel(/^English Concise meaning$/).fill('Where is the metro?')
+  await page.getByLabel(/English.*Concise meaning/i).fill('Where is the metro?')
   await page.getByRole('button', { name: /save & practice both/i }).click()
 
   await expect(
