@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createCardAssistant } from './card-assistant'
+import { createCardAssistant, OfflineCardAssistant } from './card-assistant'
 
 describe('createCardAssistant', () => {
   const assistant = createCardAssistant()
@@ -51,5 +51,76 @@ describe('createCardAssistant', () => {
     const aTodaMadre = assistant.translate('a toda madre', 'es')
     expect(aTodaMadre).not.toBeNull()
     expect(aTodaMadre?.english).toContain('awesome')
+  })
+
+  it('loads remote dictionary JSON and expands the index dynamically', async () => {
+    const customAssistant = new OfflineCardAssistant([])
+    expect(customAssistant.suggest('reloj')).toHaveLength(0)
+
+    // Mock fetch for dictionary
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              spanish: 'reloj',
+              english: 'clock / watch',
+              context: 'noun.',
+              tag: 'basics',
+            },
+          ]),
+      })) as unknown as typeof fetch
+
+    try {
+      const loaded = await customAssistant.loadDictionary('/dict/es-en.json')
+      expect(loaded).toBe(true)
+      expect(customAssistant.entryCount()).toBe(1)
+      expect(customAssistant.suggest('reloj')).toHaveLength(1)
+      expect(customAssistant.translate('reloj', 'es')?.english).toBe(
+        'clock / watch',
+      )
+
+      // Test subsequent call when already loaded
+      const secondLoad =
+        await customAssistant.loadDictionary('/dict/es-en.json')
+      expect(secondLoad).toBe(true)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('gracefully handles fetch errors and non-array payloads when loading dictionary', async () => {
+    const customAssistant = new OfflineCardAssistant()
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: false,
+      })) as unknown as typeof fetch
+
+    try {
+      const loaded = await customAssistant.loadDictionary(
+        '/dict/nonexistent.json',
+      )
+      expect(loaded).toBe(false)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+
+    // Test non-array JSON payload
+    globalThis.fetch = (() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ notAnArray: true }),
+      })) as unknown as typeof fetch
+
+    try {
+      const loadedNonArray =
+        await customAssistant.loadDictionary('/dict/invalid.json')
+      expect(loadedNonArray).toBe(false)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 })

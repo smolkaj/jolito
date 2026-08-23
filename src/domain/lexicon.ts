@@ -65,22 +65,33 @@ export function damerauLevenshtein(source: string, target: string): number {
 }
 
 export class LexiconIndex {
-  private entries: LexiconEntry[]
+  private entries: LexiconEntry[] = []
   private normalizedSpanishMap: Map<string, LexiconEntry> = new Map()
   private normalizedEnglishMap: Map<string, LexiconEntry> = new Map()
 
-  constructor(entries: LexiconEntry[]) {
-    this.entries = entries
+  constructor(entries: LexiconEntry[] = []) {
+    this.addEntries(entries)
+  }
+
+  addEntries(entries: LexiconEntry[]): void {
     for (const entry of entries) {
       const normEs = normalizeForSearch(entry.spanish)
       const normEn = normalizeForSearch(entry.english)
-      if (normEs && !this.normalizedSpanishMap.has(normEs)) {
+      if (normEs && this.normalizedSpanishMap.has(normEs)) {
+        continue
+      }
+      this.entries.push(entry)
+      if (normEs) {
         this.normalizedSpanishMap.set(normEs, entry)
       }
       if (normEn && !this.normalizedEnglishMap.has(normEn)) {
         this.normalizedEnglishMap.set(normEn, entry)
       }
     }
+  }
+
+  count(): number {
+    return this.entries.length
   }
 
   suggest(

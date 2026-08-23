@@ -27,12 +27,15 @@ export {
 }
 
 export function createBrowserServices(): AppServices {
+  const assistant = new OfflineCardAssistant()
+  void assistant.loadDictionary()
+
   return {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
     cards: new LocalStorageCardRepository(),
     speaker: new LayeredNeuralSpeaker(),
     sounds: new WebAudioSoundPlayer(),
-    assistant: new OfflineCardAssistant(),
+    assistant,
   }
 }

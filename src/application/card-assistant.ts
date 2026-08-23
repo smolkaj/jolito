@@ -8,9 +8,27 @@ import type { CardAssistant } from './ports'
 
 export class OfflineCardAssistant implements CardAssistant {
   private index: LexiconIndex
+  private isLoaded = false
 
   constructor(entries: LexiconEntry[] = MEXICAN_SPANISH_DICTIONARY) {
     this.index = new LexiconIndex(entries)
+  }
+
+  async loadDictionary(url = './dict/es-en.json'): Promise<boolean> {
+    if (this.isLoaded) return true
+    try {
+      const response = await fetch(url)
+      if (!response.ok) return false
+      const data = (await response.json()) as LexiconEntry[]
+      if (Array.isArray(data)) {
+        this.index.addEntries(data)
+        this.isLoaded = true
+        return true
+      }
+    } catch {
+      // Offline or network error: gracefully keep bundled seeds
+    }
+    return false
   }
 
   suggest(
@@ -27,6 +45,10 @@ export class OfflineCardAssistant implements CardAssistant {
 
   translate(text: string, from: 'es' | 'en' = 'es'): LexiconEntry | null {
     return this.index.translate(text, from)
+  }
+
+  entryCount(): number {
+    return this.index.count()
   }
 }
 

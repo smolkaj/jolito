@@ -178,4 +178,25 @@ describe('LexiconIndex', () => {
       expect(index.translate('unknown word', 'es')).toBeNull()
     })
   })
+
+  describe('addEntries and count', () => {
+    it('appends new entries and updates search maps dynamically', () => {
+      const dynamicIndex = new LexiconIndex()
+      expect(dynamicIndex.count()).toBe(0)
+      expect(dynamicIndex.translate('antorcha', 'es')).toBeNull()
+
+      dynamicIndex.addEntries([
+        {
+          spanish: 'antorcha',
+          english: 'torch',
+          context: 'noun.',
+          tag: 'common',
+        },
+      ])
+
+      expect(dynamicIndex.count()).toBe(1)
+      expect(dynamicIndex.translate('antorcha', 'es')?.english).toBe('torch')
+      expect(dynamicIndex.suggest('antor')).toHaveLength(1)
+    })
+  })
 })
