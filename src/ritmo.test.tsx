@@ -300,4 +300,64 @@ describe('Ritmo', () => {
       screen.getByRole('heading', { name: 'What do you want to remember?' }),
     ).toBeInTheDocument()
   })
+
+  it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
+    const services = createTestServices({
+      cards: [
+        {
+          id: 'card-1',
+          noteId: 'note-1',
+          prompt: 'Tal vez',
+          answer: 'Maybe',
+          direction: 'es-en',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            dueAt: 100000,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            state: 'review',
+            reviews: 1,
+            lapses: 0,
+          },
+        },
+      ],
+      clockTime: 0,
+    })
+    window.location.hash = '#/study'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'You’re caught up.' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
+
+  it('resumes an in-progress review queue when navigating back and forward', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    window.location.hash = ''
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
+
+    // Navigate back to welcome
+    act(() => {
+      window.location.hash = '#/'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Navigate forward to study -> resumes active session!
+    act(() => {
+      window.location.hash = '#/study'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(screen.getByRole('heading', { name: 'Tal vez' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
+  })
 })

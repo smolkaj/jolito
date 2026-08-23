@@ -202,28 +202,37 @@ export function App({
     () => services.cards.load(starterCards),
     [services.cards],
   )
-  const initialView = useMemo(
-    () =>
-      typeof window !== 'undefined'
-        ? viewFromHash(window.location.hash)
-        : 'welcome',
-    [],
-  )
-  const initialQueue = useMemo(() => {
-    if (initialView === 'review') {
+  const initialResolved = useMemo<{
+    view: View
+    queue: string[]
+    total: number
+  }>(() => {
+    if (typeof window === 'undefined') {
+      return { view: 'welcome', queue: [], total: 0 }
+    }
+    const hash = window.location.hash
+    if (hash === '') {
+      window.history.replaceState({ view: 'welcome' }, '', '#/')
+    }
+    const requested = viewFromHash(hash)
+    if (requested === 'review') {
       const now = services.clock.now()
-      return initialCards
+      const due = initialCards
         .filter((card) => isDue(card, now))
         .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
         .map(({ id }) => id)
+      if (due.length === 0) {
+        return { view: 'complete', queue: [], total: 0 }
+      }
+      return { view: 'review', queue: due, total: due.length }
     }
-    return []
-  }, [initialCards, initialView, services.clock])
+    return { view: requested, queue: [], total: 0 }
+  }, [initialCards, services.clock])
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
-  const [view, setView] = useState<View>(initialView)
-  const [queue, setQueue] = useState<string[]>(initialQueue)
-  const [sessionTotal, setSessionTotal] = useState(initialQueue.length)
+  const [view, setView] = useState<View>(initialResolved.view)
+  const [queue, setQueue] = useState<string[]>(initialResolved.queue)
+  const [sessionTotal, setSessionTotal] = useState(initialResolved.total)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
@@ -259,17 +268,18 @@ export function App({
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
       if (nextView === 'welcome') {
-        setQueue([])
         setAnswer('')
         setRevealed(false)
       } else if (nextView === 'review') {
         setQueue((currentQueue) => {
           if (currentQueue.length > 0) return currentQueue
           const now = services.clock.now()
-          return cards
+          const due = cards
             .filter((card) => isDue(card, now))
             .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
             .map(({ id }) => id)
+          setSessionTotal(due.length)
+          return due
         })
       }
     }
@@ -669,7 +679,7 @@ export function App({
       </main>
     )
 
-  if (view === 'complete')
+  if (view === 'complete' || (view === 'review' && !currentCard))
     return (
       <main className="app-shell complete-page">
         <nav className="topbar" aria-label="Session navigation">
@@ -706,9 +716,10 @@ export function App({
 
   if (!currentCard) return null
 
-  const completedInSession = sessionTotal - queue.length
-  const progress = sessionTotal
-    ? ((completedInSession + (revealed ? 0.7 : 0.2)) / sessionTotal) * 100
+  const total = Math.max(sessionTotal, queue.length, 1)
+  const completedInSession = Math.max(0, sessionTotal - queue.length)
+  const progress = total
+    ? ((completedInSession + (revealed ? 0.7 : 0.2)) / total) * 100
     : 0
 
   return (
@@ -717,7 +728,7 @@ export function App({
         <Brand onClick={goHome} />
         <div className="review-progress" aria-label="Session progress">
           <span>
-            {completedInSession + 1} <i>/ {sessionTotal}</i>
+            {completedInSession + 1} <i>/ {total}</i>
           </span>
           <div>
             <b style={{ width: `${Math.min(progress, 100)}%` }} />
