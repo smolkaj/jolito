@@ -351,6 +351,9 @@ export function App({
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
       }
+      if (feedbackTimerRef.current !== null) {
+        window.clearTimeout(feedbackTimerRef.current)
+      }
     }
   }, [])
 
