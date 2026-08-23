@@ -392,20 +392,9 @@ summary:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Welcome Page — Verde Cantera de Oaxaca Mineral Mint Canvas */
+/* Welcome Page — 100% Solid Verde Cantera de Oaxaca Mineral Mint Canvas */
 .welcome-page {
-  background-color: var(--cantera);
-  background-image:
-    radial-gradient(
-      ellipse at 88% 25%,
-      rgba(228, 0, 124, 0.12) 0%,
-      transparent 45%
-    ),
-    radial-gradient(
-      ellipse at 15% 80%,
-      rgba(245, 158, 11, 0.14) 0%,
-      transparent 45%
-    );
+  background: var(--cantera);
 }
 
 .welcome-page .lede {
