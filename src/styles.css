@@ -139,7 +139,7 @@ summary:focus-visible {
 /* Base App Shell Layout */
 .app-shell {
   min-height: 100vh;
-  padding: 24px clamp(20px, 5vw, 80px) 48px;
+  padding: 16px clamp(20px, 5vw, 80px) 40px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -148,7 +148,6 @@ summary:focus-visible {
 /* Topbar Navigation */
 .topbar {
   width: min(1080px, 100%);
-  min-height: 120px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -156,21 +155,21 @@ summary:focus-visible {
   gap: 20px;
   position: relative;
   z-index: 10;
-  padding: 16px 0;
+  padding: 0;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 20px;
-  padding: 8px 20px;
+  gap: 18px;
+  padding: 4px 16px;
   margin-left: -16px;
   border: 2.5px solid transparent;
   border-radius: 24px;
   color: var(--ink);
   background: transparent;
   font-family: var(--font-serif);
-  font-size: 42px;
+  font-size: 40px;
   font-weight: 800;
   letter-spacing: -1.5px;
   transition:
@@ -391,13 +390,13 @@ summary:focus-visible {
 
 .welcome-hero {
   width: min(1080px, 100%);
-  min-height: calc(100vh - 120px);
+  flex: 1;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
-  gap: clamp(40px, 6vw, 72px);
-  padding: 40px 0 60px;
+  gap: clamp(32px, 5vw, 64px);
+  padding: 8px 0 32px;
 }
 
 .hero-copy {
@@ -698,7 +697,7 @@ summary:focus-visible {
 
 .create-layout {
   width: min(980px, 100%);
-  margin: clamp(36px, 6vh, 72px) auto 40px;
+  margin: clamp(18px, 3vh, 36px) auto 40px;
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
   align-items: start;
@@ -1886,7 +1885,7 @@ kbd {
 
 @media (max-width: 680px) {
   .app-shell {
-    padding: 18px 16px 32px;
+    padding: 12px 16px 28px;
   }
 
   .connection {
@@ -1894,20 +1893,19 @@ kbd {
   }
 
   .topbar {
-    min-height: 90px;
-    padding: 8px 0;
+    padding: 0;
   }
 
   .brand {
-    font-size: 32px;
-    gap: 14px;
-    padding: 6px 12px;
-    margin-left: -10px;
+    font-size: 30px;
+    gap: 12px;
+    padding: 4px 10px;
+    margin-left: -8px;
   }
 
   .brand img {
-    width: 82px;
-    height: 82px;
+    width: 76px;
+    height: 76px;
   }
 
   .welcome-page {
@@ -1915,10 +1913,11 @@ kbd {
   }
 
   .welcome-hero {
-    min-height: calc(100svh - 70px);
+    min-height: auto;
     grid-template-columns: 1fr;
     align-items: start;
-    padding-top: 6vh;
+    padding-top: 12px;
+    padding-bottom: 24px;
   }
 
   .hero-copy h1 {
