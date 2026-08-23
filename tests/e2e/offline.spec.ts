@@ -18,18 +18,14 @@ test('reopens the installed app shell and saved cards while offline', async ({
 
   await context.setOffline(true)
   await page.reload()
-  await expect(
-    page.getByRole('heading', { name: /make the words you meet stick/i }),
-  ).toBeVisible()
-  await expect(page.getByText(/on-device · works offline/i)).toBeVisible()
+  await expect(page.getByLabel('Your answer')).toBeVisible()
   expect(
     await page.evaluate(() => localStorage.getItem('ritmo-library-v1')),
   ).toContain('Nos vemos al rato')
 
-  await page.getByRole('button', { name: /practice \d+ due/i }).click()
+  await page.getByRole('button', { name: 'Ritmo' }).click()
   await expect(
-    page.getByRole('heading', {
-      name: 'Tal vez',
-    }),
+    page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
+  await expect(page.getByText(/on-device · works offline/i)).toBeVisible()
 })

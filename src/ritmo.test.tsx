@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './ritmo'
@@ -14,6 +14,7 @@ class SpeechSynthesisUtteranceMock {
 const speech = { cancel: vi.fn(), speak: vi.fn() }
 
 beforeEach(() => {
+  window.location.hash = ''
   localStorage.clear()
   vi.clearAllMocks()
   Object.defineProperty(window, 'speechSynthesis', {
@@ -260,5 +261,43 @@ describe('Ritmo', () => {
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
     expect(screen.getByLabelText('Your answer')).toBeInTheDocument()
+  })
+
+  it('navigates backwards and forwards with browser history and popstate events', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    window.location.hash = ''
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Navigate to create card
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+    ).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/create')
+
+    // Simulate browser Back button
+    act(() => {
+      window.location.hash = '#/'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Simulate browser Forward button
+    act(() => {
+      window.location.hash = '#/create'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to remember?' }),
+    ).toBeInTheDocument()
   })
 })
