@@ -2,7 +2,6 @@ import type { Speaker } from '../../application/ports'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
-  private initialized = false
 
   constructor() {
     this.initVoices()
@@ -24,7 +23,6 @@ export class EnhancedBrowserSpeaker implements Speaker {
           this.voices = window.speechSynthesis.getVoices()
         }
       }
-      this.initialized = true
     } catch {
       // Graceful fallback if getVoices throws
     }
@@ -44,8 +42,10 @@ export class EnhancedBrowserSpeaker implements Speaker {
     try {
       window.speechSynthesis.cancel()
 
-      if (!this.initialized || this.voices.length === 0) {
-        this.voices = window.speechSynthesis.getVoices()
+      // Always query latest voices to capture newly registered or async system voice packs
+      const currentVoices = window.speechSynthesis.getVoices()
+      if (currentVoices.length > 0) {
+        this.voices = currentVoices
       }
 
       const utterance = new window.SpeechSynthesisUtterance(text)
@@ -54,10 +54,13 @@ export class EnhancedBrowserSpeaker implements Speaker {
       const voice = this.selectBestVoice(locale)
       if (voice) {
         utterance.voice = voice
+      } else {
+        // Explicitly set null to prevent Chromium/WebKit from inheriting previous language's voice
+        utterance.voice = null
       }
 
       // Natural speech rate tuned for language acquisition
-      utterance.rate = locale === 'es-MX' ? 0.88 : 0.92
+      utterance.rate = locale.toLowerCase().startsWith('es') ? 0.88 : 0.92
       utterance.pitch = 1.0
 
       window.speechSynthesis.speak(utterance)
@@ -79,7 +82,9 @@ export class EnhancedBrowserSpeaker implements Speaker {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
-          lang === 'es-mx' &&
+          (lang === 'es-mx' ||
+            name.includes('mexic') ||
+            lang.includes('mexic')) &&
           (name.includes('natural') ||
             name.includes('enhanced') ||
             name.includes('premium') ||
@@ -87,33 +92,49 @@ export class EnhancedBrowserSpeaker implements Speaker {
             name.includes('jorge') ||
             name.includes('dalia') ||
             name.includes('raul') ||
-            name.includes('google'))
+            name.includes('sabina') ||
+            name.includes('google') ||
+            name.includes('siri'))
         )
       })
       if (mxNatural) return mxNatural
 
       // 2. Any exact Mexican Spanish voice
-      const mxAny = this.voices.find(
-        (v) => v.lang.toLowerCase().replace(/_/g, '-') === 'es-mx',
-      )
+      const mxAny = this.voices.find((v) => {
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        const name = v.name.toLowerCase()
+        return lang === 'es-mx' || name.includes('mexic')
+      })
       if (mxAny) return mxAny
 
-      // 3. Latin American Spanish variants (es-419, es-us, es-la)
+      // 3. Latin American Spanish variants (es-419, es-us, es-la, es-co, etc.)
       const latamAny = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        const name = v.name.toLowerCase()
         return (
           lang === 'es-419' ||
           lang === 'es-us' ||
           lang === 'es-la' ||
-          lang.includes('latin')
+          lang.includes('latin') ||
+          name.includes('latin') ||
+          name.includes('estados unidos') ||
+          lang.startsWith('es-')
         )
       })
       if (latamAny) return latamAny
 
-      // 4. Any Spanish voice
-      const esFallback = this.voices.find((v) =>
-        v.lang.toLowerCase().startsWith('es'),
-      )
+      // 4. Any Spanish voice (es-ES, es, spa, or name containing spanish/español)
+      const esFallback = this.voices.find((v) => {
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        const name = v.name.toLowerCase()
+        return (
+          lang.startsWith('es') ||
+          lang.startsWith('spa') ||
+          name.includes('spanish') ||
+          name.includes('español') ||
+          name.includes('castilian')
+        )
+      })
       if (esFallback) return esFallback
     } else {
       // US English selection
@@ -121,24 +142,36 @@ export class EnhancedBrowserSpeaker implements Speaker {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
-          lang === 'en-us' &&
+          (lang === 'en-us' || lang.startsWith('en')) &&
           (name.includes('natural') ||
             name.includes('enhanced') ||
+            name.includes('premium') ||
             name.includes('samantha') ||
             name.includes('ava') ||
-            name.includes('google'))
+            name.includes('google') ||
+            name.includes('allison') ||
+            name.includes('siri') ||
+            name.includes('tom'))
         )
       })
       if (enNatural) return enNatural
 
-      const enUs = this.voices.find(
-        (v) => v.lang.toLowerCase().replace(/_/g, '-') === 'en-us',
-      )
+      const enUs = this.voices.find((v) => {
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        return lang === 'en-us'
+      })
       if (enUs) return enUs
 
-      const enFallback = this.voices.find((v) =>
-        v.lang.toLowerCase().startsWith('en'),
-      )
+      const enFallback = this.voices.find((v) => {
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        const name = v.name.toLowerCase()
+        return (
+          lang.startsWith('en') ||
+          lang.startsWith('eng') ||
+          name.includes('english') ||
+          name.includes('inglés')
+        )
+      })
       if (enFallback) return enFallback
     }
 
