@@ -1142,6 +1142,7 @@ summary:focus-visible {
   border: 1.5px solid var(--line);
   flex-shrink: 0;
   box-shadow: 1px 1px 0 rgba(18, 24, 21, 0.18);
+  animation: bead-pop 200ms var(--ease-spring);
   transition:
     transform 220ms var(--ease-spring),
     background 180ms ease,
@@ -1150,6 +1151,7 @@ summary:focus-visible {
 
 .queue-bead.is-current {
   transform: scale(1.35);
+  animation: bead-current-pop 220ms var(--ease-spring);
   box-shadow:
     0 0 0 1.5px var(--card),
     0 0 0 3px var(--line),
@@ -1167,15 +1169,69 @@ summary:focus-visible {
   transform: rotate(45deg);
   width: 8px;
   height: 8px;
+  animation: bead-learn-pop 220ms var(--ease-spring);
 }
 
 .queue-bead.is-learn.is-current {
   transform: rotate(45deg) scale(1.35);
+  animation: bead-learn-current-pop 220ms var(--ease-spring);
 }
 
 .queue-bead.is-due {
   background: var(--verde);
   border-radius: 999px;
+}
+
+@keyframes bead-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.4;
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bead-current-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1.35);
+  }
+}
+
+@keyframes bead-learn-pop {
+  0% {
+    transform: rotate(45deg) scale(0.4);
+    opacity: 0.4;
+  }
+  70% {
+    transform: rotate(45deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(45deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bead-learn-current-pop {
+  0% {
+    transform: rotate(45deg) scale(0.6);
+  }
+  70% {
+    transform: rotate(45deg) scale(1.5);
+  }
+  100% {
+    transform: rotate(45deg) scale(1.35);
+  }
 }
 
 .queue-compact-pill {
@@ -1191,6 +1247,7 @@ summary:focus-visible {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 800;
+  transition: all 180ms var(--ease-spring);
 }
 
 .compact-chip i {
@@ -1245,6 +1302,19 @@ summary:focus-visible {
 .queue-count-num {
   font-weight: 800;
   color: var(--ink);
+  display: inline-block;
+  animation: count-bump 180ms var(--ease-spring);
+}
+
+@keyframes count-bump {
+  0% {
+    transform: scale(1.28);
+    color: var(--rosa);
+  }
+  100% {
+    transform: scale(1);
+    color: var(--ink);
+  }
 }
 
 .queue-count-suffix {
@@ -1263,6 +1333,22 @@ summary:focus-visible {
   border: 1px solid var(--tezontle);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  display: inline-block;
+  animation: retry-chip-pop 240ms var(--ease-spring);
+}
+
+@keyframes retry-chip-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Study Card - Clean, High-Signal Focus */

@@ -1686,12 +1686,20 @@ export function App({
               </div>
             )}
             <span className="queue-text-label" aria-hidden="true">
-              <span className="queue-count-num">{queue.length}</span>
+              <span
+                key={`queue-count-${queue.length}`}
+                className="queue-count-num"
+              >
+                {queue.length}
+              </span>
               <span className="queue-count-suffix">
                 {queue.length === 1 ? 'card' : 'cards'} left
               </span>
               {learnCount > 0 && (
-                <span className="queue-retry-chip">
+                <span
+                  key={`retry-count-${learnCount}`}
+                  className="queue-retry-chip"
+                >
                   {learnCount} {learnCount === 1 ? 'retry' : 'retries'}
                 </span>
               )}
