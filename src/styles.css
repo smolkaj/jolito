@@ -2340,6 +2340,20 @@ kbd {
   gap: 4px;
 }
 
+.config-settings-toggle {
+  font-size: 12px;
+  color: var(--ink-muted);
+  align-self: flex-start;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.config-settings-toggle:hover {
+  color: var(--ink);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

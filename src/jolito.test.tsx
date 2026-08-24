@@ -777,4 +777,32 @@ describe('Jolito', () => {
       await screen.findByRole('button', { name: /local deck only/i }),
     ).toBeInTheDocument()
   })
+
+  it('prompts to configure Supabase backend when unconfigured and allows connecting credentials', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    services.mockAuth.configured = false
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    expect(screen.getByLabelText(/supabase project url/i)).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(/supabase public anon key/i),
+    ).toBeInTheDocument()
+
+    const urlInput = screen.getByLabelText(/supabase project url/i)
+    await user.clear(urlInput)
+    await user.type(urlInput, 'https://myproject.supabase.co')
+
+    const keyInput = screen.getByLabelText(/supabase public anon key/i)
+    await user.clear(keyInput)
+    await user.type(keyInput, 'my-anon-key-123')
+    await user.click(screen.getByRole('button', { name: /save & connect/i }))
+
+    // Now transitioned to email sign-in
+    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
+    expect(services.mockAuth.configured).toBe(true)
+    expect(services.mockAuth.configUrl).toBe('https://myproject.supabase.co')
+    expect(services.mockAuth.configAnonKey).toBe('my-anon-key-123')
+  })
 })

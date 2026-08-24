@@ -72,7 +72,27 @@ export class MockSoundPlayer implements SoundPlayer {
 
 export class MockAuthService implements AuthService {
   public user: AuthUser | null = null
+  public configured = true
+  public configUrl = 'https://mock.supabase.co'
+  public configAnonKey = 'mock-anon-key'
   private listeners = new Set<(user: AuthUser | null) => void>()
+
+  isConfigured(): boolean {
+    return this.configured
+  }
+
+  getBackendConfig(): { url: string; anonKey: string } {
+    return {
+      url: this.configUrl,
+      anonKey: this.configAnonKey,
+    }
+  }
+
+  setBackendConfig(url: string, anonKey: string): void {
+    this.configUrl = url
+    this.configAnonKey = anonKey
+    this.configured = Boolean(url && anonKey)
+  }
 
   getUser(): Promise<AuthUser | null> {
     return Promise.resolve(this.user)
@@ -81,6 +101,12 @@ export class MockAuthService implements AuthService {
   sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
+    if (!this.configured) {
+      return Promise.resolve({
+        success: false,
+        error: 'Cloud sync backend is not configured.',
+      })
+    }
     void email
     return Promise.resolve({ success: true })
   }

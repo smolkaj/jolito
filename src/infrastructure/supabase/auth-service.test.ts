@@ -169,4 +169,20 @@ describe('SupabaseAuthService', () => {
 
     unsubscribe()
   })
+
+  it('supports runtime custom backend configuration in storage', () => {
+    const unconfigured = new SupabaseAuthService('', '', fakeStorage)
+    expect(unconfigured.isConfigured()).toBe(false)
+
+    unconfigured.setBackendConfig(
+      'https://custom.supabase.co/',
+      'custom-anon-key ',
+    )
+    expect(unconfigured.isConfigured()).toBe(true)
+    expect(unconfigured.getSupabaseUrl()).toBe('https://custom.supabase.co')
+    expect(unconfigured.getSupabaseAnonKey()).toBe('custom-anon-key')
+
+    unconfigured.setBackendConfig('', '')
+    expect(unconfigured.isConfigured()).toBe(false)
+  })
 })

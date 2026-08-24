@@ -8,6 +8,8 @@ interface StoredSession {
 }
 
 const STORAGE_KEY = 'jolito-auth-session-v1'
+const CONFIG_URL_KEY = 'jolito-supabase-url-v1'
+const CONFIG_KEY_KEY = 'jolito-supabase-anon-key-v1'
 
 export class SupabaseAuthService implements AuthService {
   private listeners: Set<(user: AuthUser | null) => void> = new Set()
@@ -22,6 +24,39 @@ export class SupabaseAuthService implements AuthService {
       : ({} as Storage),
   ) {
     this.currentUser = this.loadStoredUser()
+  }
+
+  getSupabaseUrl(): string {
+    const custom = this.storage.getItem?.(CONFIG_URL_KEY)?.trim()
+    return custom || (this.supabaseUrl ?? '')
+  }
+
+  getSupabaseAnonKey(): string {
+    const custom = this.storage.getItem?.(CONFIG_KEY_KEY)?.trim()
+    return custom || (this.supabaseAnonKey ?? '')
+  }
+
+  isConfigured(): boolean {
+    return Boolean(this.getSupabaseUrl() && this.getSupabaseAnonKey())
+  }
+
+  getBackendConfig(): { url: string; anonKey: string } {
+    return {
+      url: this.getSupabaseUrl(),
+      anonKey: this.getSupabaseAnonKey(),
+    }
+  }
+
+  setBackendConfig(url: string, anonKey: string): void {
+    const trimmedUrl = url.trim().replace(/\/+$/, '')
+    const trimmedKey = anonKey.trim()
+    if (trimmedUrl && trimmedKey) {
+      this.storage.setItem?.(CONFIG_URL_KEY, trimmedUrl)
+      this.storage.setItem?.(CONFIG_KEY_KEY, trimmedKey)
+    } else {
+      this.storage.removeItem?.(CONFIG_URL_KEY)
+      this.storage.removeItem?.(CONFIG_KEY_KEY)
+    }
   }
 
   private loadStoredUser(): AuthUser | null {
@@ -80,7 +115,9 @@ export class SupabaseAuthService implements AuthService {
   async sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
-    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+    const url = this.getSupabaseUrl()
+    const key = this.getSupabaseAnonKey()
+    if (!url || !key) {
       return {
         success: false,
         error: 'Cloud sync backend is not configured.',
@@ -88,10 +125,10 @@ export class SupabaseAuthService implements AuthService {
     }
 
     try {
-      const res = await fetch(`${this.supabaseUrl}/auth/v1/otp`, {
+      const res = await fetch(`${url}/auth/v1/otp`, {
         method: 'POST',
         headers: {
-          apikey: this.supabaseAnonKey,
+          apikey: key,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -130,7 +167,9 @@ export class SupabaseAuthService implements AuthService {
     email: string,
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
-    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+    const url = this.getSupabaseUrl()
+    const key = this.getSupabaseAnonKey()
+    if (!url || !key) {
       return {
         success: false,
         error: 'Cloud sync backend is not configured.',
@@ -138,10 +177,10 @@ export class SupabaseAuthService implements AuthService {
     }
 
     try {
-      const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
+      const res = await fetch(`${url}/auth/v1/verify`, {
         method: 'POST',
         headers: {
-          apikey: this.supabaseAnonKey,
+          apikey: key,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -201,11 +240,13 @@ export class SupabaseAuthService implements AuthService {
   async signOut(): Promise<void> {
     try {
       const token = this.getAccessToken()
-      if (token && this.supabaseUrl && this.supabaseAnonKey) {
-        await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
+      const url = this.getSupabaseUrl()
+      const key = this.getSupabaseAnonKey()
+      if (token && url && key) {
+        await fetch(`${url}/auth/v1/logout`, {
           method: 'POST',
           headers: {
-            apikey: this.supabaseAnonKey,
+            apikey: key,
             Authorization: `Bearer ${token}`,
           },
         }).catch(() => {})

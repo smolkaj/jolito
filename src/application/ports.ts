@@ -43,6 +43,9 @@ export type AuthUser = {
 
 export type AuthService = {
   getUser(): Promise<AuthUser | null>
+  isConfigured?(): boolean
+  getBackendConfig?(): { url: string; anonKey: string }
+  setBackendConfig?(url: string, anonKey: string): void
   sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }>
