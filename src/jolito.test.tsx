@@ -876,4 +876,46 @@ describe('Jolito', () => {
     expect(brandLogo).toHaveAttribute('src', expect.stringContaining('png'))
     expect(brandLogo).toHaveAttribute('aria-hidden', 'true')
   })
+
+  it('updates live flashcard preview interactively on the create screen', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /create a card/i }))
+
+    expect(
+      screen.getByRole('heading', { name: /new flashcard/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Palabra o frase…')).toBeInTheDocument()
+    expect(screen.getByText('English translation…')).toBeInTheDocument()
+
+    // Type Spanish phrase
+    await user.type(screen.getByLabelText(/mexican spanish/i), '¿Qué onda?')
+    expect(
+      document.querySelector('.create-visual .sample-card-es .sample-phrase'),
+    ).toHaveTextContent('¿Qué onda?')
+
+    // Type English translation
+    await user.type(screen.getByLabelText(/^english$/i), "What's up?")
+    expect(
+      document.querySelector('.create-visual .sample-card-en .sample-phrase'),
+    ).toHaveTextContent("What's up?")
+
+    // Type additional context
+    await user.type(
+      screen.getByLabelText(/additional context/i),
+      'Very common casual greeting across Mexico.',
+    )
+    expect(
+      document.querySelector('.create-card-context-preview'),
+    ).toHaveTextContent('Very common casual greeting across Mexico.')
+
+    // Click background English card to swap foreground and play pronunciation
+    const enCardBtn = screen.getByRole('button', {
+      name: /show translation/i,
+    })
+    await user.click(enCardBtn)
+    expect(enCardBtn).toHaveClass('is-foreground')
+  })
 })
