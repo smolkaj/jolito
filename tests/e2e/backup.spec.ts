@@ -67,15 +67,17 @@ test('restores deck from backup JSON file and updates local storage', async ({
   }
 
   // Upload backup JSON file
-  await page.getByLabel(/choose backup json file/i).setInputFiles({
+  await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
     name: 'test-backup.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(backupData)),
   })
 
-  await expect(page.getByText(/found 1 cards ready to import/i)).toBeVisible()
+  await expect(page.getByText(/found 1 cards.*ready to import/i)).toBeVisible()
 
-  await page.getByRole('button', { name: /restore backup/i }).click()
+  await page
+    .getByRole('button', { name: /import deck \(replace current\)/i })
+    .click()
 
   await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
 
@@ -94,5 +96,125 @@ test('restores deck from backup JSON file and updates local storage', async ({
   await page.getByRole('button', { name: /practice 1 due/i }).click()
   await expect(
     page.getByRole('heading', { name: 'Un boleto de metro' }),
+  ).toBeVisible()
+})
+
+test('imports Anki text export deck and updates review cards', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /tap to sync/i }).click()
+
+  const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
+
+  await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
+    name: 'anki-deck.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(ankiContent),
+  })
+
+  await expect(page.getByText(/found 1 cards.*ready to import/i)).toBeVisible()
+
+  await page
+    .getByRole('button', { name: /import deck \(replace current\)/i })
+    .click()
+
+  await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+
+  await page.getByRole('button', { name: /close dialog/i }).click()
+
+  await page.getByRole('button', { name: /practice 1 due/i }).click()
+  await expect(
+    page.getByRole('heading', { name: '¿Dónde está la estación?' }),
+  ).toBeVisible()
+})
+
+import * as fflate from 'fflate'
+import initSqlJs from 'sql.js'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+
+test('imports packaged .apkg Anki archive, preserves schedules, and supports full keyboard review', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /tap to sync/i }).click()
+
+  // Generate a real binary .apkg SQLite package
+  const wasmPath = path.resolve(
+    process.cwd(),
+    'node_modules/sql.js/dist/sql-wasm.wasm',
+  )
+  const wasmBuffer = fs.readFileSync(wasmPath)
+  const wasmBinary = wasmBuffer.buffer.slice(
+    wasmBuffer.byteOffset,
+    wasmBuffer.byteOffset + wasmBuffer.byteLength,
+  )
+  const SQL = await initSqlJs({ wasmBinary })
+  const db = new SQL.Database()
+
+  db.run(`
+    CREATE TABLE col (id INTEGER PRIMARY KEY, crt INTEGER, decks TEXT);
+    CREATE TABLE notes (id INTEGER PRIMARY KEY, mid INTEGER, flds TEXT, tags TEXT);
+    CREATE TABLE cards (
+      id INTEGER PRIMARY KEY, nid INTEGER, ord INTEGER, type INTEGER, queue INTEGER,
+      due INTEGER, ivl INTEGER, factor INTEGER, reps INTEGER, lapses INTEGER, did INTEGER
+    );
+  `)
+
+  db.run(`
+    INSERT INTO col VALUES (1, 1600000000, '{"1": {"name": "Mexican Spanish Vocab"}}');
+    INSERT INTO notes VALUES (1, 1, '¡Qué chido!\x1fHow cool!\x1fslang expression', 'cdmx slang');
+    INSERT INTO notes VALUES (2, 1, 'La cuenta, por favor\x1fThe bill, please\x1frestaurant phrase', 'dining');
+    INSERT INTO cards VALUES (101, 1, 0, 2, 2, 10, 5, 2500, 3, 0, 1);
+    INSERT INTO cards VALUES (102, 2, 0, 0, 0, 0, 0, 2500, 0, 0, 1);
+  `)
+
+  const dbBytes = db.export()
+  db.close()
+
+  const apkgZip = fflate.zipSync({
+    'collection.anki2': dbBytes,
+  })
+
+  // Upload .apkg binary file
+  await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
+    name: 'mexican-spanish.apkg',
+    mimeType: 'application/octet-stream',
+    buffer: Buffer.from(apkgZip),
+  })
+
+  await expect(
+    page.getByText(/found 2 cards from “mexican spanish vocab”/i),
+  ).toBeVisible()
+
+  await page
+    .getByRole('button', {
+      name: /import "mexican spanish vocab" \(replace\)/i,
+    })
+    .click()
+
+  await expect(
+    page.getByText(
+      /successfully imported 2 cards from “mexican spanish vocab”/i,
+    ),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: /close dialog/i }).click()
+
+  // Start review
+  await page.getByRole('button', { name: /practice 2 due/i }).click()
+  await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()
+
+  // Enter to reveal answer
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('How cool!')).toBeVisible()
+
+  // Grade 'Good' via keyboard '3'
+  await page.keyboard.press('3')
+
+  // Second card is revealed
+  await expect(
+    page.getByRole('heading', { name: 'La cuenta, por favor' }),
   ).toBeVisible()
 })

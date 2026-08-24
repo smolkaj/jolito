@@ -129,6 +129,9 @@ describe('reconcileStudyCards', () => {
 
     const merged = reconcileStudyCards([localNew], [remoteLearning])
     expect(merged[0]?.schedule.state).toBe('learning')
+
+    const mergedReverse = reconcileStudyCards([remoteLearning], [localNew])
+    expect(mergedReverse[0]?.schedule.state).toBe('learning')
   })
 
   it('favors card with more lapses or later due date when reviews are tied', () => {
@@ -143,5 +146,31 @@ describe('reconcileStudyCards', () => {
 
     const merged = reconcileStudyCards([localLapsed], [remoteNoLapse])
     expect(merged[0]?.schedule.lapses).toBe(1)
+
+    const mergedRemoteLapse = reconcileStudyCards(
+      [remoteNoLapse],
+      [localLapsed],
+    )
+    expect(mergedRemoteLapse[0]?.schedule.lapses).toBe(1)
+
+    const localDueLater = {
+      ...cardA,
+      schedule: { ...cardA.schedule, reviews: 1, lapses: 1, dueAt: 9000 },
+    }
+    const remoteDueEarlier = {
+      ...cardA,
+      schedule: { ...cardA.schedule, reviews: 1, lapses: 1, dueAt: 5000 },
+    }
+    const mergedDueLocal = reconcileStudyCards(
+      [localDueLater],
+      [remoteDueEarlier],
+    )
+    expect(mergedDueLocal[0]?.schedule.dueAt).toBe(9000)
+
+    const mergedDueRemote = reconcileStudyCards(
+      [remoteDueEarlier],
+      [localDueLater],
+    )
+    expect(mergedDueRemote[0]?.schedule.dueAt).toBe(9000)
   })
 })

@@ -35,7 +35,7 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   // Check export and import section is present
   await expect(
     page.getByRole('heading', {
-      name: /offline backup & export \(json\)/i,
+      name: /deck import & offline backup/i,
     }),
   ).toBeVisible()
 

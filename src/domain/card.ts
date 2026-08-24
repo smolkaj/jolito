@@ -375,7 +375,7 @@ export function intervalLabel(card: StudyCard, grade: Grade): string {
         return '1 day'
       case 'easy': {
         const days = nextIntervalDays(schedule, 'easy')
-        return days === 1 ? '1 day' : `${days} days`
+        return `${days} days`
       }
     }
   }
