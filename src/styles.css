@@ -750,24 +750,82 @@ summary:focus-visible {
 }
 
 .create-layout {
-  width: min(920px, 100%);
-  margin: clamp(24px, 4vh, 48px) auto 40px;
   display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 5vw, 48px);
   align-items: start;
-  gap: clamp(32px, 5vw, 64px);
+  width: min(980px, 100%);
+  margin: clamp(16px, 3vh, 32px) auto 40px;
 }
 
-.create-layout header {
+.create-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   position: sticky;
-  top: 40px;
-  padding-top: 12px;
+  top: 32px;
 }
 
-.create-layout h1 {
-  font-size: clamp(36px, 4.2vw, 50px);
-  line-height: 1.08;
-  letter-spacing: -1.6px;
+.create-sidebar header h1 {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 4.5vw, 46px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.create-sidebar header .lede {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+.create-visual {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  margin-top: 36px;
+}
+
+.create-visual .sample-card {
+  width: 310px;
+  height: 360px;
+  padding: 26px;
+  border-radius: 24px;
+}
+
+.create-visual .sample-card-body {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.create-visual .sample-phrase {
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.sample-phrase.is-placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.create-card-context-preview {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+  font-style: italic;
+  max-width: 240px;
 }
 
 .create-form {
@@ -825,6 +883,13 @@ summary:focus-visible {
   font-family: var(--font-serif);
   font-size: 19px;
   line-height: 1.4;
+}
+
+.field-group textarea#context {
+  min-height: 64px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .field-group input {
@@ -2003,11 +2068,16 @@ kbd {
   }
 
   .create-layout {
-    margin-top: 36px;
+    grid-template-columns: 1fr;
+    margin-top: 24px;
   }
 
   .create-layout h1 {
     font-size: 36px;
+  }
+
+  .create-visual {
+    display: none;
   }
 
   .create-form {

@@ -859,8 +859,13 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [samplePlaying, setSamplePlaying] = useState(false)
+  const [activeCreateSide, setActiveCreateSide] = useState<
+    'spanish' | 'english'
+  >('spanish')
+  const [createPlaying, setCreatePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
+  const createAudioTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -1030,10 +1035,36 @@ export function App({
     [activeSampleSide, playSampleAudio],
   )
 
+  const onCreateCardClick = useCallback(
+    (side: 'spanish' | 'english') => {
+      if (activeCreateSide !== side) {
+        setActiveCreateSide(side)
+      }
+      const textToPlay =
+        side === 'spanish'
+          ? spanishInput.trim() || 'Palabra o frase'
+          : englishInput.trim() || 'English translation'
+      const locale = side === 'spanish' ? 'es-MX' : 'en-US'
+      setCreatePlaying(true)
+      playAudio(textToPlay, locale)
+      if (createAudioTimerRef.current !== null) {
+        window.clearTimeout(createAudioTimerRef.current)
+      }
+      createAudioTimerRef.current = window.setTimeout(() => {
+        setCreatePlaying(false)
+        createAudioTimerRef.current = null
+      }, 1200)
+    },
+    [activeCreateSide, englishInput, playAudio, spanishInput],
+  )
+
   useEffect(() => {
     return () => {
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
+      }
+      if (createAudioTimerRef.current !== null) {
+        window.clearTimeout(createAudioTimerRef.current)
       }
     }
   }, [])
@@ -1395,9 +1426,106 @@ export function App({
             </div>
           </nav>
           <section className="create-layout">
-            <header>
-              <h1>New flashcard</h1>
-            </header>
+            <div className="create-sidebar">
+              <header>
+                <h1>New flashcard</h1>
+                <p className="lede">
+                  Build spoken bilingual cards with Mexican Spanish nuances.
+                </p>
+              </header>
+              <div className="create-visual">
+                {/* English Preview Card */}
+                <button
+                  type="button"
+                  className={`sample-card sample-card-en ${
+                    activeCreateSide === 'english'
+                      ? 'is-foreground'
+                      : 'is-background'
+                  } ${
+                    createPlaying && activeCreateSide === 'english'
+                      ? 'is-playing'
+                      : ''
+                  }`}
+                  onClick={() => onCreateCardClick('english')}
+                  aria-label={
+                    activeCreateSide === 'english'
+                      ? `Play pronunciation: ${englishInput.trim() || 'translation'}`
+                      : `Show translation${englishInput.trim() ? `: ${englishInput.trim()}` : ''}`
+                  }
+                >
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <UsFlag /> ENGLISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                      {createPlaying && activeCreateSide === 'english'
+                        ? 'Playing…'
+                        : 'Tap to hear'}
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <p
+                      className={`sample-phrase ${!englishInput.trim() ? 'is-placeholder' : ''}`}
+                    >
+                      {englishInput.trim() || 'English translation…'}
+                    </p>
+                    {contextInput.trim() && (
+                      <p className="create-card-context-preview">
+                        {contextInput}
+                      </p>
+                    )}
+                  </div>
+                </button>
+                {/* Mexican Spanish Preview Card */}
+                <button
+                  type="button"
+                  className={`sample-card sample-card-es ${
+                    activeCreateSide === 'spanish'
+                      ? 'is-foreground'
+                      : 'is-background'
+                  } ${
+                    createPlaying && activeCreateSide === 'spanish'
+                      ? 'is-playing'
+                      : ''
+                  }`}
+                  onClick={() => onCreateCardClick('spanish')}
+                  aria-label={
+                    activeCreateSide === 'spanish'
+                      ? `Play pronunciation: ${spanishInput.trim() || 'phrase'}`
+                      : `Show phrase${spanishInput.trim() ? `: ${spanishInput.trim()}` : ''}`
+                  }
+                >
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <MexicoFlag /> MEXICAN SPANISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                      {createPlaying && activeCreateSide === 'spanish'
+                        ? 'Playing…'
+                        : 'Tap to hear'}
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <p
+                      className={`sample-phrase ${!spanishInput.trim() ? 'is-placeholder' : ''}`}
+                    >
+                      {spanishInput.trim() || 'Palabra o frase…'}
+                    </p>
+                    {contextInput.trim() && (
+                      <p className="create-card-context-preview">
+                        {contextInput}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              </div>
+            </div>
             <form className="create-form" onSubmit={createCard}>
               <div className="field-group field-group-relative">
                 <label htmlFor="spanish">
@@ -1516,20 +1644,26 @@ export function App({
                 <details className="form-details">
                   <summary>Customize reverse card</summary>
                   <div className="compact-fields">
-                    <label>
-                      <UsFlag /> Reverse Prompt
+                    <div className="compact-field">
+                      <label htmlFor="reverse-prompt">
+                        <UsFlag /> Reverse Prompt
+                      </label>
                       <input
+                        id="reverse-prompt"
                         name="reversePrompt"
-                        placeholder="Optional (defaults to English)"
+                        placeholder="Optional"
                       />
-                    </label>
-                    <label>
-                      <MexicoFlag /> Reverse Answer
+                    </div>
+                    <div className="compact-field">
+                      <label htmlFor="reverse-answer">
+                        <MexicoFlag /> Reverse Answer
+                      </label>
                       <input
+                        id="reverse-answer"
                         name="reverseAnswer"
-                        placeholder="Optional (defaults to Mexican Spanish)"
+                        placeholder="Optional"
                       />
-                    </label>
+                    </div>
                   </div>
                 </details>
               )}
