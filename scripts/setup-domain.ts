@@ -120,9 +120,7 @@ async function main() {
       throw new Error('No Cloudflare accounts found for this API token.')
     }
     accountId = firstAccount.id
-    console.log(
-      `ℹ️  Using Cloudflare Account: ${firstAccount.name} (${accountId})`,
-    )
+    console.log(`ℹ️  Using Cloudflare Account: ${firstAccount.name}`)
   }
 
   // 3. Ensure Cloudflare Zone exists
@@ -211,8 +209,7 @@ async function main() {
         `✔ Spaceship nameservers automatically updated to [${zone.name_servers.join(', ')}]!`,
       )
     } else {
-      const errText = await ssRes.text()
-      console.warn(`⚠️  Spaceship API response (${ssRes.status}): ${errText}`)
+      console.warn(`⚠️  Spaceship API returned HTTP status: ${ssRes.status}`)
       console.log('👉 Please ensure the nameservers in Spaceship are set to:')
       zone.name_servers.forEach((ns) => console.log(`   - ${ns}`))
     }
@@ -259,7 +256,7 @@ async function main() {
   console.log(`\n🎉 Setup complete! Visit: https://${DOMAIN}\n`)
 }
 
-main().catch((err) => {
-  console.error('\n❌ Setup failed:', err instanceof Error ? err.message : err)
+main().catch(() => {
+  console.error('\n❌ Setup failed. Check credentials and permissions.')
   process.exit(1)
 })
