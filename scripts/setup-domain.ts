@@ -164,24 +164,22 @@ async function main() {
   }).catch(() => {})
   console.log('✔ Security settings (Strict SSL, HTTPS, TLS 1.3) active')
 
-  // 5. Attach Worker Custom Domains
-  console.log(`\n⚡ Attaching Custom Domains to Worker '${WORKER_NAME}'...`)
-  for (const host of [DOMAIN, `www.${DOMAIN}`]) {
-    try {
-      await cfApi(`/accounts/${accountId}/workers/domains`, cfToken, 'PUT', {
-        hostname: host,
-        zone_id: zone.id,
-        service: WORKER_NAME,
-        environment: 'production',
-      })
-      console.log(`✔ Attached custom domain: https://${host}`)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (msg.includes('already exists') || msg.includes('duplicate')) {
-        console.log(`ℹ️  Custom domain https://${host} already attached`)
-      } else {
-        console.warn(`⚠️  Notice on ${host}: ${msg}`)
-      }
+  // 5. Attach Worker Custom Domain
+  console.log(`\n⚡ Attaching Custom Domain to Worker '${WORKER_NAME}'...`)
+  try {
+    await cfApi(`/accounts/${accountId}/workers/domains`, cfToken, 'PUT', {
+      hostname: DOMAIN,
+      zone_id: zone.id,
+      service: WORKER_NAME,
+      environment: 'production',
+    })
+    console.log(`✔ Attached custom domain: https://${DOMAIN}`)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('already exists') || msg.includes('duplicate')) {
+      console.log(`ℹ️  Custom domain https://${DOMAIN} already attached`)
+    } else {
+      console.warn(`⚠️  Notice on ${DOMAIN}: ${msg}`)
     }
   }
 

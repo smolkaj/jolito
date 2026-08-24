@@ -8,10 +8,8 @@ output "nameservers" {
   value       = cloudflare_zone.joli_to.name_servers
 }
 
-output "custom_domains" {
-  description = "Configured Cloudflare Worker custom domains"
-  value = [
-    cloudflare_workers_custom_domain.apex.hostname,
-    cloudflare_workers_custom_domain.www.hostname
-  ]
+output "custom_domain" {
+  description = "Configured Cloudflare Worker custom domain"
+  value       = cloudflare_workers_custom_domain.apex.hostname
 }
+

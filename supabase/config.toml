@@ -18,7 +18,6 @@ site_url = "https://joli.to"
 # Allowed redirect wildcard patterns for production, branch previews, and local dev
 additional_redirect_urls = [
   "https://joli.to/**",
-  "https://www.joli.to/**",
   "https://*-jolito.smolkaj.workers.dev/**",
   "https://jolito.smolkaj.workers.dev/**",
   "http://localhost:*/**",

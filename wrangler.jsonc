@@ -11,9 +11,5 @@
       "pattern": "joli.to",
       "custom_domain": true,
     },
-    {
-      "pattern": "www.joli.to",
-      "custom_domain": true,
-    },
   ],
 }

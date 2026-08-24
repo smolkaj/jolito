@@ -34,10 +34,3 @@ resource "cloudflare_workers_custom_domain" "apex" {
   zone_id    = cloudflare_zone.joli_to.id
 }
 
-# 4. Attach www custom domain (www.joli.to) to Jolito Worker
-resource "cloudflare_workers_custom_domain" "www" {
-  account_id = var.cloudflare_account_id
-  hostname   = "www.${var.domain_name}"
-  service    = var.worker_name
-  zone_id    = cloudflare_zone.joli_to.id
-}
