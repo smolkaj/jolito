@@ -231,4 +231,52 @@ describe('SupabaseAuthService', () => {
     expect(callArgs[1].method).toBe('POST')
     expect(callArgs[1].body).toContain('"email_redirect_to"')
   })
+
+  it('falls back through OTP verification types until success', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ message: 'Not email type' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'signup-token',
+            refresh_token: 'signup-ref',
+            expires_in: 3600,
+            user: { id: 'usr-signup', email: 'signup@example.com' },
+          }),
+      })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const res = await service.verifyOtp('signup@example.com', '654321')
+    expect(res.success).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    const user = await service.getUser()
+    expect(user?.id).toBe('usr-signup')
+  })
+
+  it('clears error hash from address bar when error redirect occurs', async () => {
+    window.location.hash = '#error=access_denied&error_code=otp_expired'
+    const replaceStateSpy = vi.fn()
+    window.history.replaceState = replaceStateSpy
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const user = await service.getUser()
+    expect(user).toBeNull()
+    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/')
+  })
 })

@@ -1,4 +1,10 @@
+import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../application/ports'
+
+const jwtPayloadSchema = z.object({
+  sub: z.string().min(1),
+  email: z.string().optional(),
+})
 
 interface StoredSession {
   accessToken: string
@@ -32,7 +38,19 @@ export class SupabaseAuthService implements AuthService {
     if (typeof window === 'undefined' || !window.location) return null
     try {
       const hash = window.location.hash || ''
-      if (!hash.includes('access_token=')) return null
+      if (!hash.includes('access_token=')) {
+        if (hash.includes('error=')) {
+          // Clear error fragment from address bar
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(
+              null,
+              '',
+              window.location.pathname + window.location.search,
+            )
+          }
+        }
+        return null
+      }
 
       const searchStr = hash.startsWith('#') ? hash.substring(1) : hash
       const params = new URLSearchParams(searchStr)
@@ -42,22 +60,25 @@ export class SupabaseAuthService implements AuthService {
 
       if (!accessToken) return null
 
-      // Decode JWT payload (safe base64 decode of middle segment)
+      // Safe Base64URL and UTF-8 decoding of JWT payload
       const parts = accessToken.split('.')
       if (parts.length < 2) return null
       const base64Url = parts[1]
       if (!base64Url) return null
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const payload = JSON.parse(atob(base64)) as {
-        sub?: string
-        email?: string
-      }
+      const pad = base64.length % 4
+      const padded = pad ? base64 + '='.repeat(4 - pad) : base64
+      const binary = atob(padded)
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+      const jsonStr = new TextDecoder().decode(bytes)
+      const parsedPayload: unknown = JSON.parse(jsonStr)
 
-      if (!payload.sub) return null
+      const validation = jwtPayloadSchema.safeParse(parsedPayload)
+      if (!validation.success) return null
 
       const user: AuthUser = {
-        id: payload.sub,
-        email: payload.email || '',
+        id: validation.data.sub,
+        email: validation.data.email || '',
       }
 
       const session: StoredSession = {
