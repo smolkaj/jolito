@@ -63,7 +63,7 @@ describe('Jolito', () => {
 
     expect(screen.getByText('You wrote')).toBeInTheDocument()
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
-    expect(screen.getByText('Meaning & context')).toBeInTheDocument()
+    expect(screen.getByText('Additional Context')).toBeInTheDocument()
 
     await user.keyboard('4')
     expect(
