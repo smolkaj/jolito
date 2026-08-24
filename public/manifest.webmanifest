@@ -4,8 +4,8 @@
   "description": "Spoken Mexican Spanish at your rhythm.",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#fbf7ef",
-  "theme_color": "#fbf7ef",
+  "background_color": "#fdf5f8",
+  "theme_color": "#fdf5f8",
   "icons": [
     {
       "src": "/icon-192.png",
