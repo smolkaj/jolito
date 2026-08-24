@@ -63,7 +63,9 @@ describe('Jolito', () => {
 
     expect(screen.getByText('You wrote')).toBeInTheDocument()
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
-    expect(screen.getByText('Additional Context')).toBeInTheDocument()
+    expect(
+      screen.getByText('Useful when getting around CDMX.'),
+    ).toBeInTheDocument()
 
     await user.keyboard('4')
     expect(
@@ -427,73 +429,6 @@ describe('Jolito', () => {
     )
   })
 
-  it('protects active recall by showing sticker art only inside reveal panel for starter cards', async () => {
-    const user = userEvent.setup()
-    const services = createTestServices()
-    render(<App services={services} />)
-
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
-    // Card 1: aguacate (ES -> EN) — BEFORE REVEAL: prompt-first focus, zero distraction/spoiler
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
-
-    // REVEAL Card 1 -> sticker art blooms in inside reveal panel!
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Card illustration' })).toHaveClass(
-      'reveal-art-wrap',
-    )
-
-    // Rate and advance to Card 2: avocado (EN -> ES)
-    await user.keyboard('4')
-    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
-    expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
-
-    // Reveal Card 2 -> sticker art appears
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
-
-    // Rate and advance to Card 3: Qué padre (ES -> EN)
-    await user.keyboard('4')
-    expect(
-      screen.getByRole('heading', { name: 'Qué padre' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
-
-    // Reveal Card 3 -> Qué padre sticker appears
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
-
-    // Rate and advance to Card 4: How cool (EN -> ES)
-    await user.keyboard('4')
-    expect(
-      screen.getByRole('heading', { name: 'How cool' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
-
-    // Reveal Card 4 -> Qué padre sticker appears
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
-  })
-
   it('opens deck backup modal, exports backup JSON, and downloads file', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
@@ -668,5 +603,62 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /deck backup & safety/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('renders interactive dual-card preview on create screen with swap effect and live typing reflection', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+
+    // Initial state: Mexican Spanish card in foreground with placeholder, English in background
+    const spanishCard = screen.getByRole('button', {
+      name: /play pronunciation: aguacate/i,
+    })
+    const englishCard = screen.getByRole('button', {
+      name: /show translation: translation/i,
+    })
+    expect(spanishCard).toBeInTheDocument()
+    expect(englishCard).toBeInTheDocument()
+    expect(spanishCard).toHaveTextContent('Palabra o frase…')
+    expect(englishCard).toHaveTextContent('English translation…')
+
+    // Clicking the background English card swaps it to the foreground and plays audio
+    await user.click(englishCard)
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'avocado',
+      locale: 'en-US',
+    })
+
+    // Typing in Mexican Spanish input updates preview live and replaces placeholder
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(spanishInput, 'chido')
+    expect(spanishCard).toHaveTextContent('chido')
+
+    // Swapping back to Mexican Spanish card plays audio of entered text
+    await user.click(spanishCard)
+    expect(
+      screen.getByRole('button', { name: /play pronunciation: chido/i }),
+    ).toBeInTheDocument()
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'chido',
+      locale: 'es-MX',
+    })
+
+    // Typing in English input updates English preview live and replaces placeholder
+    const englishInput = screen.getByLabelText(/english/i)
+    await user.type(englishInput, 'cool')
+    expect(englishCard).toHaveTextContent('cool')
+
+    // Swapping to English card plays audio of entered text
+    await user.click(englishCard)
+    expect(
+      screen.getByRole('button', { name: /play pronunciation: cool/i }),
+    ).toBeInTheDocument()
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'cool',
+      locale: 'en-US',
+    })
   })
 })

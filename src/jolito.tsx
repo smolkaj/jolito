@@ -11,7 +11,6 @@ import {
 import celebrateUrl from '../assets/jolito-celebrate.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
-import sampleQuePadreUrl from '../assets/sample-que-padre.png'
 import { createCards } from './application/create-cards'
 import {
   createDeckBackup,
@@ -110,24 +109,6 @@ function Brand({ onClick }: { onClick?: () => void }) {
   ) : (
     <div className="brand">{content}</div>
   )
-}
-
-function findCardArt(
-  card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>,
-): string | null {
-  if (!card) return null
-  const combined = `${card.prompt} ${card.answer} ${card.id}`.toLowerCase()
-  if (combined.includes('aguacate') || combined.includes('avocado')) {
-    return sampleAguacateUrl
-  }
-  if (
-    combined.includes('padre') ||
-    combined.includes('how cool') ||
-    combined.includes('que-padre')
-  ) {
-    return sampleQuePadreUrl
-  }
-  return null
 }
 
 function AudioButton({
@@ -618,16 +599,18 @@ export function App({
       }
       setSamplePlaying(true)
       if (side === 'spanish') {
-        playAudio('aguacate', 'es-MX')
+        const text = (view === 'create' && spanishInput.trim()) || 'aguacate'
+        playAudio(text, 'es-MX')
       } else {
-        playAudio('avocado', 'en-US')
+        const text = (view === 'create' && englishInput.trim()) || 'avocado'
+        playAudio(text, 'en-US')
       }
       sampleTimerRef.current = window.setTimeout(() => {
         setSamplePlaying(false)
         sampleTimerRef.current = null
       }, 1200)
     },
-    [playAudio],
+    [englishInput, playAudio, spanishInput, view],
   )
 
   const onSampleCardClick = useCallback(
@@ -1007,13 +990,112 @@ export function App({
             </div>
           </nav>
           <section className="create-layout">
-            <header>
-              <h1>New flashcard</h1>
-            </header>
+            <div className="create-sidebar">
+              <header>
+                <p className="eyebrow">CREATE</p>
+                <h1>New flashcard</h1>
+                <p className="lede">
+                  Build spoken bilingual cards with Mexican Spanish nuance and
+                  instant audio feedback.
+                </p>
+              </header>
+              <div
+                className="create-visual"
+                role="region"
+                aria-label="Live card preview"
+              >
+                {/* English Card Preview (matching homepage hero styling) */}
+                <button
+                  type="button"
+                  className={`sample-card sample-card-en ${
+                    activeSampleSide === 'english'
+                      ? 'is-foreground'
+                      : 'is-background'
+                  } ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+                  onClick={() => onSampleCardClick('english')}
+                  aria-label={
+                    activeSampleSide === 'english'
+                      ? `Play pronunciation: ${englishInput.trim() || 'avocado'}`
+                      : `Show translation: ${englishInput.trim() || 'translation'}`
+                  }
+                >
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <UsFlag /> ENGLISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                      {samplePlaying && activeSampleSide === 'english'
+                        ? 'Playing…'
+                        : 'Tap to hear'}
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <p
+                      className={`sample-phrase ${
+                        !englishInput.trim() ? 'is-placeholder' : ''
+                      }`}
+                    >
+                      {englishInput.trim() || 'English translation…'}
+                    </p>
+                    {contextInput.trim() && (
+                      <p className="create-card-context-preview">
+                        {contextInput}
+                      </p>
+                    )}
+                  </div>
+                </button>
+                {/* Mexican Spanish Card Preview (matching homepage hero styling) */}
+                <button
+                  type="button"
+                  className={`sample-card sample-card-es ${
+                    activeSampleSide === 'spanish'
+                      ? 'is-foreground'
+                      : 'is-background'
+                  } ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+                  onClick={() => onSampleCardClick('spanish')}
+                  aria-label={
+                    activeSampleSide === 'spanish'
+                      ? `Play pronunciation: ${spanishInput.trim() || 'aguacate'}`
+                      : `Show phrase: ${spanishInput.trim() || 'phrase'}`
+                  }
+                >
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <MexicoFlag /> MEXICAN SPANISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                      {samplePlaying && activeSampleSide === 'spanish'
+                        ? 'Playing…'
+                        : 'Tap to hear'}
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <p
+                      className={`sample-phrase ${
+                        !spanishInput.trim() ? 'is-placeholder' : ''
+                      }`}
+                    >
+                      {spanishInput.trim() || 'Palabra o frase…'}
+                    </p>
+                    {contextInput.trim() && (
+                      <p className="create-card-context-preview">
+                        {contextInput}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              </div>
+            </div>
             <form className="create-form" onSubmit={createCard}>
               <div className="field-group field-group-relative">
                 <label htmlFor="spanish">
-                  <MexicoFlag /> Spanish
+                  <MexicoFlag /> Mexican Spanish
                 </label>
                 <textarea
                   id="spanish"
@@ -1063,7 +1145,7 @@ export function App({
                     className="suggestions-listbox"
                     role="listbox"
                     id="spanish-suggestions"
-                    aria-label="Spanish suggestions"
+                    aria-label="Mexican Spanish suggestions"
                   >
                     {suggestions.map((item, index) => (
                       <li
@@ -1139,7 +1221,7 @@ export function App({
                       <MexicoFlag /> Reverse Answer
                       <input
                         name="reverseAnswer"
-                        placeholder="Optional (defaults to Spanish)"
+                        placeholder="Optional (defaults to Mexican Spanish)"
                       />
                     </label>
                   </div>
@@ -1272,11 +1354,11 @@ export function App({
             <p className="eyebrow direction-eyebrow">
               {currentCard.direction === 'es-en' ? (
                 <>
-                  <MexicoFlag /> SPANISH → <UsFlag /> ENGLISH
+                  <MexicoFlag /> MEXICAN SPANISH → <UsFlag /> ENGLISH
                 </>
               ) : (
                 <>
-                  <UsFlag /> ENGLISH → <MexicoFlag /> SPANISH
+                  <UsFlag /> ENGLISH → <MexicoFlag /> MEXICAN SPANISH
                 </>
               )}
             </p>
@@ -1314,41 +1396,18 @@ export function App({
             </form>
           ) : (
             <div className="reveal-panel">
-              <div
-                className={`reveal-content ${findCardArt(currentCard) ? 'has-art' : ''}`}
-              >
-                <div className="reveal-main">
-                  <AnswerComparison
-                    typed={answer}
-                    expected={currentCard.answer}
-                    onPlayAudio={() =>
-                      playAudio(
-                        currentCard.answer,
-                        localeForAnswer(currentCard),
-                      )
-                    }
-                  />
-                  {currentCard.context && (
-                    <div className="reveal-context-block">
-                      <span className="context-label">Additional Context</span>
-                      <p className="context-text">{currentCard.context}</p>
-                    </div>
-                  )}
+              <AnswerComparison
+                typed={answer}
+                expected={currentCard.answer}
+                onPlayAudio={() =>
+                  playAudio(currentCard.answer, localeForAnswer(currentCard))
+                }
+              />
+              {currentCard.context && (
+                <div className="reveal-context-block">
+                  <p className="context-text">{currentCard.context}</p>
                 </div>
-                {findCardArt(currentCard) && (
-                  <div
-                    className="reveal-art-wrap"
-                    role="img"
-                    aria-label="Card illustration"
-                  >
-                    <img
-                      src={findCardArt(currentCard)!}
-                      alt=""
-                      className="reveal-art-image"
-                    />
-                  </div>
-                )}
-              </div>
+              )}
               <fieldset className="grade-fieldset">
                 <legend>How did that feel?</legend>
                 <div className="grade-buttons">

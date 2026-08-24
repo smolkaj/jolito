@@ -723,21 +723,74 @@ summary:focus-visible {
   width: min(920px, 100%);
   margin: clamp(24px, 4vh, 48px) auto 40px;
   display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: 0.85fr 1.15fr;
   align-items: start;
-  gap: clamp(32px, 5vw, 64px);
+  gap: clamp(32px, 5vw, 56px);
 }
 
-.create-layout header {
+.create-sidebar {
   position: sticky;
-  top: 40px;
-  padding-top: 12px;
+  top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.create-layout h1 {
+.create-sidebar header {
+  position: static;
+  padding-top: 0;
+}
+
+.create-sidebar h1 {
   font-size: clamp(36px, 4.2vw, 50px);
   line-height: 1.08;
   letter-spacing: -1.6px;
+  margin: 0;
+}
+
+.create-visual {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  margin-top: 20px;
+}
+
+.create-visual .sample-card {
+  width: 310px;
+  height: 360px;
+  padding: 26px;
+  border-radius: 24px;
+}
+
+.create-visual .sample-card-body {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 20px 0;
+}
+
+.create-visual .sample-phrase {
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.sample-phrase.is-placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.create-card-context-preview {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+  font-style: italic;
+  max-width: 240px;
 }
 
 .create-form {
@@ -791,6 +844,13 @@ summary:focus-visible {
   font-family: var(--font-serif);
   font-size: 19px;
   line-height: 1.4;
+}
+
+.field-group textarea#context {
+  min-height: 64px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .field-group textarea::placeholder,
@@ -1131,15 +1191,19 @@ summary:focus-visible {
 .audio-button {
   width: 38px;
   height: 38px;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
   padding: 0;
   border: 2px solid var(--line);
   border-radius: 50%;
   color: var(--ink);
   background: var(--card);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
   transition: all 140ms var(--ease-spring);
 }
 
@@ -1150,18 +1214,14 @@ summary:focus-visible {
 }
 
 .audio-button:active {
-  transform: translate(2px, 2px);
+  transform: translate(1px, 1px);
   box-shadow: 0 0 0 var(--ink);
 }
 
 .audio-button svg {
   width: 18px;
   height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  fill: currentColor;
 }
 
 .study-prompt {
@@ -1274,60 +1334,6 @@ kbd {
   box-shadow: var(--shadow-card);
   text-align: left;
   animation: slideUp 220ms var(--ease-spring);
-}
-
-.reveal-content {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.reveal-content.has-art {
-  display: grid;
-  grid-template-columns: 1fr 140px;
-  align-items: center;
-  gap: 20px;
-}
-
-.reveal-main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-/* Side Companion Sticker (Generous & Out of the Way) */
-.reveal-art-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: stickerPop 320ms var(--ease-spring);
-}
-
-.reveal-art-image {
-  width: 140px;
-  height: 140px;
-  object-fit: contain;
-  filter: drop-shadow(2.5px 3.5px 0 rgba(28, 25, 23, 0.45));
-  transition: transform 240ms var(--ease-spring);
-}
-
-.reveal-art-wrap:hover .reveal-art-image {
-  transform: scale(1.08) rotate(-3deg);
-}
-
-@keyframes stickerPop {
-  0% {
-    opacity: 0;
-    transform: scale(0.6) translateY(10px);
-  }
-  60% {
-    transform: scale(1.08) translateY(-3px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
 }
 
 .answer-comparison {
@@ -1507,9 +1513,9 @@ kbd {
   border-radius: 4px;
 }
 
-/* Subtle Always-Visible Additional Context Block (Pronounced on Hover) */
+/* Subtle Always-Visible Meaning & Context Block (Pronounced on Hover) */
 .reveal-context-block {
-  margin-top: 6px;
+  margin-top: 10px;
   padding: 10px 14px;
   border: 1.5px solid var(--line-subtle);
   border-left: 3.5px solid var(--line-subtle);
@@ -1527,23 +1533,8 @@ kbd {
   transform: translateY(-1px);
 }
 
-.context-label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--ink-faint);
-  transition: color 180ms ease;
-}
-
-.reveal-context-block:hover .context-label {
-  color: var(--cempasuchil-dark);
-}
-
 .context-text {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 13.5px;
   line-height: 1.45;
   color: var(--ink-muted);
@@ -1808,9 +1799,17 @@ kbd {
     max-width: 580px;
   }
 
-  .create-layout header {
+  .create-sidebar {
     position: static;
+  }
+
+  .create-sidebar header {
     max-width: 500px;
+  }
+
+  .create-visual {
+    min-height: 400px;
+    transform: scale(0.92);
   }
 }
 
@@ -1880,11 +1879,15 @@ kbd {
   }
 
   .create-layout {
-    margin-top: 36px;
+    margin-top: 24px;
   }
 
   .create-layout h1 {
     font-size: 36px;
+  }
+
+  .create-visual {
+    display: none;
   }
 
   .create-form {
@@ -1905,20 +1908,6 @@ kbd {
 
   .study-card {
     margin-top: 52px;
-  }
-
-  .reveal-content.has-art {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .reveal-art-wrap {
-    order: -1;
-  }
-
-  .reveal-art-image {
-    width: 120px;
-    height: 120px;
   }
 
   .study-prompt {
