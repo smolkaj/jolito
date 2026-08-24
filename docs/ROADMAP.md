@@ -71,8 +71,9 @@ _Goal: Provide complete learner autonomy over cards, tags, and collections._
 
 _Goal: Ensure cards and progress are safely backed up and synced without sacrificing offline capability._
 
-- **Frictionless Accounts:** Simple passwordless email and OAuth paths.
-- **Local-First Cloud Synchronization:** Seamless background multi-device replication (e.g. via PowerSync/Postgres as evaluated in [ADR 0003](adr/0003-offline-sync-evaluation.md)) where local reads and writes remain instant and offline by default.
+- **Frictionless Accounts (Complete ✅):** Passwordless email OTP and 1-click magic link auto-login with zero backend friction.
+- **Zero-Cost Snapshot Sync (Complete ✅):** Automatic cloud snapshot replication and deterministic reconciliation to PostgreSQL with Row-Level Security under Supabase's permanent free tier ([ADR 0005](adr/0005-cloud-snapshot-sync-supabase.md)).
+- **Incremental Replication (Future):** PowerSync / operation-log sync ([ADR 0003](adr/0003-offline-sync-evaluation.md)) when fine-grained multi-device concurrent editing is needed.
 
 ---
 
