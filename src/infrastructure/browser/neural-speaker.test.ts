@@ -86,13 +86,14 @@ describe('LayeredNeuralSpeaker', () => {
   })
 
   it('delegates prewarm to neural engine', async () => {
-    const prewarmSpy = vi.spyOn(neuralEngine, 'prewarm').mockResolvedValue()
+    const prewarmSpy = vi.spyOn(neuralEngine, 'prewarm').mockResolvedValue(true)
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
       fallbackSpeaker,
     })
 
-    await speaker.prewarm()
+    const result = await speaker.prewarm()
+    expect(result).toBe(true)
     expect(prewarmSpy).toHaveBeenCalled()
   })
 })
@@ -157,7 +158,8 @@ describe('NeuralVoiceEngine', () => {
       } as Response)
     })
 
-    await engine.prewarm(mockFetch)
+    const result = await engine.prewarm(mockFetch)
+    expect(result).toBe(true)
 
     expect(mockFetch).toHaveBeenCalled()
     // Should have decoded and registered in audioCache
@@ -169,15 +171,29 @@ describe('NeuralVoiceEngine', () => {
 
     // Calling prewarm again should be idempotent and not re-fetch
     const callCount = mockFetch.mock.calls.length
-    await engine.prewarm(mockFetch)
+    const secondResult = await engine.prewarm(mockFetch)
+    expect(secondResult).toBe(true)
     expect(mockFetch.mock.calls.length).toBe(callCount)
   })
 
-  it('handles network errors gracefully during prewarm without throwing', async () => {
+  it('handles network errors gracefully during prewarm and allows retry', async () => {
     const engine = new NeuralVoiceEngine()
     const failingFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    await expect(engine.prewarm(failingFetch)).resolves.toBeUndefined()
+    const result = await engine.prewarm(failingFetch)
+    expect(result).toBe(false)
+
+    // Successful retry should re-attempt fetching
+    const mockArrayBuffer = new ArrayBuffer(8)
+    const recoveredFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(mockArrayBuffer),
+      } as Response)
+    })
+    const retryResult = await engine.prewarm(recoveredFetch)
+    expect(retryResult).toBe(true)
+    expect(recoveredFetch).toHaveBeenCalled()
   })
 
   it('handles non-ok HTTP responses and decode failures gracefully during prewarm', async () => {
@@ -193,6 +209,7 @@ describe('NeuralVoiceEngine', () => {
       status: 404,
     })
 
-    await expect(engine.prewarm(notFoundFetch)).resolves.toBeUndefined()
+    const result = await engine.prewarm(notFoundFetch)
+    expect(result).toBe(false)
   })
 })

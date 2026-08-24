@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { OfflineCardAssistant } from '../../application/card-assistant'
+import { LayeredNeuralSpeaker } from './neural-speaker'
 import {
   createBrowserServices,
   RandomIdGenerator,
@@ -7,8 +9,17 @@ import {
 
 describe('createBrowserServices', () => {
   it('instantiates all required application services and triggers prewarming', () => {
+    const speakerSpy = vi
+      .spyOn(LayeredNeuralSpeaker.prototype, 'prewarm')
+      .mockResolvedValue(true)
+    const assistantSpy = vi
+      .spyOn(OfflineCardAssistant.prototype, 'loadDictionary')
+      .mockResolvedValue(true)
+
     const services = createBrowserServices()
 
+    expect(speakerSpy).toHaveBeenCalledTimes(1)
+    expect(assistantSpy).toHaveBeenCalledTimes(1)
     expect(services.clock).toBeDefined()
     expect(services.ids).toBeDefined()
     expect(services.cards).toBeDefined()
@@ -17,6 +28,9 @@ describe('createBrowserServices', () => {
     expect(services.assistant).toBeDefined()
     expect(services.auth).toBeDefined()
     expect(services.sync).toBeDefined()
+
+    speakerSpy.mockRestore()
+    assistantSpy.mockRestore()
   })
 
   it('SystemClock provides current epoch timestamp', () => {

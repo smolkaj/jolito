@@ -120,24 +120,33 @@ export class NeuralVoiceEngine {
     return false
   }
 
-  private prewarmPromise: Promise<void> | null = null
+  private prewarmedUrls = new Set<string>()
+  private inFlightPrewarm: Promise<boolean> | null = null
 
-  async prewarm(fetchFn: typeof fetch = fetch): Promise<void> {
-    if (this.prewarmPromise) return this.prewarmPromise
+  async prewarm(fetchFn: typeof fetch = fetch): Promise<boolean> {
+    if (this.inFlightPrewarm) return this.inFlightPrewarm
 
-    this.prewarmPromise = (async () => {
-      const urlToKeys = new Map<string, string[]>()
-      for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
-        const keys = urlToKeys.get(url) ?? []
-        keys.push(key)
-        urlToKeys.set(url, keys)
-      }
+    const urlToKeys = new Map<string, string[]>()
+    for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
+      if (this.prewarmedUrls.has(url)) continue
+      const keys = urlToKeys.get(url) ?? []
+      keys.push(key)
+      urlToKeys.set(url, keys)
+    }
+
+    if (urlToKeys.size === 0) return true
+
+    this.inFlightPrewarm = (async () => {
+      let allSucceeded = true
 
       await Promise.all(
         Array.from(urlToKeys.entries()).map(async ([url, keys]) => {
           try {
             const response = await fetchFn(url)
-            if (!response.ok) return
+            if (!response.ok) {
+              allSucceeded = false
+              return
+            }
             const arrayBuffer = await response.arrayBuffer()
 
             if (
@@ -172,14 +181,19 @@ export class NeuralVoiceEngine {
                 // If decoding fails, the network fetch has still warmed the browser/SW cache
               }
             }
+            this.prewarmedUrls.add(url)
           } catch {
-            // Gracefully ignore network failures during background prewarming
+            allSucceeded = false
           }
         }),
       )
-    })()
 
-    return this.prewarmPromise
+      return allSucceeded
+    })().finally(() => {
+      this.inFlightPrewarm = null
+    })
+
+    return this.inFlightPrewarm
   }
 
   private playBuffer(buffer: AudioBuffer): boolean {
@@ -221,8 +235,8 @@ export class LayeredNeuralSpeaker implements Speaker {
     return this.neuralEngine.supported() || this.fallbackSpeaker.supported()
   }
 
-  async prewarm(fetchFn?: typeof fetch): Promise<void> {
-    await this.neuralEngine.prewarm(fetchFn)
+  async prewarm(fetchFn?: typeof fetch): Promise<boolean> {
+    return this.neuralEngine.prewarm(fetchFn)
   }
 
   speak(text: string, locale: string): boolean {
