@@ -2081,20 +2081,6 @@ kbd {
   color: var(--ink);
 }
 
-.stat-pill.storage-pill {
-  background: var(--turquesa-soft);
-  border-color: var(--turquesa-dark);
-  color: var(--turquesa-dark);
-}
-
-.status-dot-active {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--turquesa-dark);
-  box-shadow: 0 0 0 2px rgba(27, 77, 62, 0.2);
-}
-
 .backup-sections {
   display: grid;
   grid-template-columns: 1fr 1fr;

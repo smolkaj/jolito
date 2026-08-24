@@ -241,9 +241,6 @@ function SyncModal({
     details?: string[] | undefined
   } | null>(null)
   const [selectedFileText, setSelectedFileText] = useState<string | null>(null)
-  const [isStorageProtected, setIsStorageProtected] = useState<boolean | null>(
-    null,
-  )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
@@ -253,14 +250,6 @@ function SyncModal({
       setUser(currentUser)
     })
   }, [auth])
-
-  useEffect(() => {
-    if (isOpen) {
-      void checkOrRequestStoragePersistence().then((persisted) => {
-        setIsStorageProtected(persisted)
-      })
-    }
-  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -473,12 +462,6 @@ function SyncModal({
           <div className="stat-pill">
             <strong>{cards.length}</strong> cards in collection
           </div>
-          {isStorageProtected && (
-            <div className="stat-pill storage-pill">
-              <i className="status-dot-active" aria-hidden="true" />
-              Storage protected
-            </div>
-          )}
         </div>
 
         <div className="modal-sections-stack">
@@ -942,6 +925,10 @@ export function App({
       window.removeEventListener('offline', onOffline)
     }
   }, [authUser, cards, services.sync])
+
+  useEffect(() => {
+    void checkOrRequestStoragePersistence()
+  }, [])
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
     setView(nextView)
