@@ -1110,6 +1110,10 @@ summary:focus-visible {
 
 /* Review Queue Status Badge (Anki-style SRS counters) */
 .review-queue-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1118,6 +1122,8 @@ summary:focus-visible {
   border-radius: 999px;
   padding: 5px 14px;
   box-shadow: var(--shadow-sm);
+  z-index: 5;
+  white-space: nowrap;
 }
 
 .queue-pill {
