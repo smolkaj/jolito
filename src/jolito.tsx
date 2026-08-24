@@ -864,8 +864,12 @@ export function App({
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
+  const cardMap = useMemo(
+    () => new Map(cards.map((card) => [card.id, card])),
+    [cards],
+  )
+
   const { newCount, learnCount, reviewCount } = useMemo(() => {
-    const cardMap = new Map(cards.map((card) => [card.id, card]))
     let nextNew = 0
     let nextLearn = 0
     let nextReview = 0
@@ -882,7 +886,7 @@ export function App({
       learnCount: nextLearn,
       reviewCount: nextReview,
     }
-  }, [cards, queue])
+  }, [cardMap, queue])
 
   const onUpdateCards = useCallback(
     (newCards: StudyCard[]) => {
@@ -1623,35 +1627,62 @@ export function App({
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
           <div className="review-queue-badge" aria-label="Session progress">
-            <span
-              className="queue-pill queue-pill-new"
-              title={`${newCount} new ${newCount === 1 ? 'card' : 'cards'}`}
-            >
-              <span className="queue-dot" aria-hidden="true" />
-              <span className="queue-num">{newCount}</span>
-              <span className="queue-label">new</span>
+            {queue.length <= 10 ? (
+              <div className="queue-beads-track" aria-hidden="true">
+                {queue.map((id, index) => {
+                  const card = cardMap.get(id)
+                  const state = card?.schedule.state ?? 'review'
+                  const isCurrent = index === 0
+                  const beadType =
+                    state === 'new'
+                      ? 'new'
+                      : state === 'learning' || state === 'relearning'
+                        ? 'learn'
+                        : 'due'
+                  return (
+                    <span
+                      key={`${id}-${index}`}
+                      className={`queue-bead is-${beadType} ${isCurrent ? 'is-current' : ''}`}
+                    />
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="queue-compact-pill" aria-hidden="true">
+                {newCount > 0 && (
+                  <span className="compact-chip is-new">
+                    <i />
+                    {newCount}
+                  </span>
+                )}
+                {learnCount > 0 && (
+                  <span className="compact-chip is-learn">
+                    <i />
+                    {learnCount}
+                  </span>
+                )}
+                {reviewCount > 0 && (
+                  <span className="compact-chip is-due">
+                    <i />
+                    {reviewCount}
+                  </span>
+                )}
+              </div>
+            )}
+            <span className="queue-text-label" aria-hidden="true">
+              <span className="queue-count-num">{queue.length}</span>
+              <span className="queue-count-suffix">
+                {queue.length === 1 ? 'card' : 'cards'} left
+              </span>
+              {learnCount > 0 && (
+                <span className="queue-retry-chip">
+                  {learnCount} {learnCount === 1 ? 'retry' : 'retries'}
+                </span>
+              )}
             </span>
-            <span className="queue-divider" aria-hidden="true">
-              ·
-            </span>
-            <span
-              className="queue-pill queue-pill-learn"
-              title={`${learnCount} learning / retry ${learnCount === 1 ? 'card' : 'cards'}`}
-            >
-              <span className="queue-dot" aria-hidden="true" />
-              <span className="queue-num">{learnCount}</span>
-              <span className="queue-label">learn</span>
-            </span>
-            <span className="queue-divider" aria-hidden="true">
-              ·
-            </span>
-            <span
-              className="queue-pill queue-pill-review"
-              title={`${reviewCount} due ${reviewCount === 1 ? 'card' : 'cards'}`}
-            >
-              <span className="queue-dot" aria-hidden="true" />
-              <span className="queue-num">{reviewCount}</span>
-              <span className="queue-label">due</span>
+            <span className="sr-only">
+              {queue.length} {queue.length === 1 ? 'card' : 'cards'} remaining (
+              {newCount} new, {learnCount} learning, {reviewCount} due)
             </span>
           </div>
           <div className="nav-actions">
