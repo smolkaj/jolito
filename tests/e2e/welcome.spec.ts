@@ -36,10 +36,18 @@ test('creates and reviews both directions with the keyboard', async ({
   page,
 }) => {
   await page.goto('/')
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({ version: 1, cards: [] }),
+    ),
+  )
+  await page.reload()
   await page.getByRole('button', { name: /^create a card$/i }).click()
   await page.getByLabel(/spanish/i).fill('¿Dónde está el metro?')
   await page.getByLabel(/english/i).fill('Where is the metro?')
   await page.getByRole('button', { name: /save card/i }).click()
+  await page.getByRole('button', { name: /review 2/i }).click()
 
   await expect(
     page.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -232,6 +240,57 @@ test('top navigation pills have consistent vertical height across views', async 
   expect(reviewSyncPill?.height).toBe(32)
 
   // 4. Accessibility check
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
+test('supports rapid batch card creation while remaining in create view', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /^create a card$/i }).click()
+
+  await expect(
+    page.getByRole('heading', { name: 'New flashcard' }),
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /review 4/i })).toBeVisible()
+
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
+  const englishInput = page.getByLabel(/english/i)
+
+  // 1. Create first card
+  await spanishInput.fill('chido')
+  await englishInput.fill('cool / nice')
+  await page.getByRole('button', { name: /save card/i }).click()
+
+  await expect(page.getByRole('status')).toContainText(/saved “chido”/i)
+  await expect(
+    page.getByRole('heading', { name: 'New flashcard' }),
+  ).toBeVisible()
+  await expect(spanishInput).toHaveValue('')
+  await expect(englishInput).toHaveValue('')
+  await expect(spanishInput).toBeFocused()
+  await expect(page.getByRole('button', { name: /review 6/i })).toBeVisible()
+
+  // 2. Create second card immediately in batch
+  await spanishInput.fill('popote')
+  await englishInput.fill('straw')
+  await page.getByRole('button', { name: /save card/i }).click()
+
+  await expect(page.getByRole('status')).toContainText(/saved “popote”/i)
+  await expect(
+    page.getByRole('heading', { name: 'New flashcard' }),
+  ).toBeVisible()
+  await expect(spanishInput).toHaveValue('')
+  await expect(spanishInput).toBeFocused()
+  await expect(page.getByRole('button', { name: /review 8/i })).toBeVisible()
+
+  // 3. Start review from top navbar
+  await page.getByRole('button', { name: /review 8/i }).click()
+  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()

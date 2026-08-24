@@ -1182,6 +1182,20 @@ summary:focus-visible {
   margin-top: 18px;
 }
 
+.create-save-feedback {
+  margin: 12px 0 0;
+  padding: 8px 14px;
+  background: var(--verde-soft);
+  color: var(--verde-dark);
+  border: 1.5px solid var(--verde);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
 /* Review Page */
 .review-page {
   background: var(--paper);

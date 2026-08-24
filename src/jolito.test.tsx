@@ -30,7 +30,7 @@ beforeEach(() => {
 describe('Jolito', () => {
   it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
     const user = userEvent.setup()
-    const services = createTestServices()
+    const services = createTestServices({ cards: [] })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -52,6 +52,7 @@ describe('Jolito', () => {
       'Useful when getting around CDMX.',
     )
     await user.click(screen.getByRole('button', { name: /save card/i }))
+    await user.click(screen.getByRole('button', { name: /review \d+/i }))
 
     expect(
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -103,7 +104,7 @@ describe('Jolito', () => {
       'easy',
       'complete',
     ])
-    expect(services.memoryCards.saved).toHaveLength(6)
+    expect(services.memoryCards.saved).toHaveLength(2)
     expect(services.memoryCards.saved?.[0]?.prompt).toBe(
       '¿Dónde está el metro?',
     )
@@ -111,7 +112,10 @@ describe('Jolito', () => {
 
   it('supports a one-way card and keeps review usable without speech synthesis', async () => {
     const user = userEvent.setup()
-    const services = createTestServices({ speakerSupported: false })
+    const services = createTestServices({
+      cards: [],
+      speakerSupported: false,
+    })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -119,6 +123,7 @@ describe('Jolito', () => {
     await user.type(screen.getByLabelText(/english/i), 'How cool')
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
+    await user.click(screen.getByRole('button', { name: /review \d+/i }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
@@ -172,7 +177,7 @@ describe('Jolito', () => {
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
     const user = userEvent.setup()
-    const services = createTestServices()
+    const services = createTestServices({ cards: [] })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -186,6 +191,7 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
+    await user.click(screen.getByRole('button', { name: /review \d+/i }))
 
     // Type with missing inverted question mark, missing accents, and typo in restaurante
     await user.type(
@@ -1018,5 +1024,61 @@ describe('Jolito', () => {
     })
     await user.click(enCardBtn)
     expect(enCardBtn).toHaveClass('is-foreground')
+  })
+
+  it('remains in create view after saving, resets form inputs, focuses Spanish field, and updates review counter for batch creation', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({ cards: [] })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    expect(
+      screen.getByRole('button', { name: /review 0/i }),
+    ).toBeInTheDocument()
+
+    // 1. Create first card
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    const contextInput = screen.getByLabelText(/additional context/i)
+
+    await user.type(spanishInput, 'chido')
+    await user.type(englishInput, 'cool')
+    await user.type(contextInput, 'Mexican slang')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    // Stays in create view with confirmation toast
+    expect(
+      screen.getByRole('heading', { name: 'New flashcard' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
+    expect(spanishInput).toHaveValue('')
+    expect(englishInput).toHaveValue('')
+    expect(contextInput).toHaveValue('')
+    expect(spanishInput).toHaveFocus()
+    // 0 existing due + 2 bidirectional new = 2 due
+    expect(
+      screen.getByRole('button', { name: /review 2/i }),
+    ).toBeInTheDocument()
+
+    // 2. Create second card in batch without needing to re-navigate or re-focus
+    await user.type(spanishInput, 'popote')
+    await user.type(englishInput, 'drinking straw')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    expect(
+      screen.getByRole('heading', { name: 'New flashcard' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/saved “popote”/i)
+    expect(spanishInput).toHaveValue('')
+    expect(englishInput).toHaveValue('')
+    expect(spanishInput).toHaveFocus()
+    // 2 due + 2 bidirectional new = 4 due
+    expect(
+      screen.getByRole('button', { name: /review 4/i }),
+    ).toBeInTheDocument()
+
+    // 3. Navigate to review and practice all due cards
+    await user.click(screen.getByRole('button', { name: /review 4/i }))
+    expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
   })
 })

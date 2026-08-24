@@ -7,6 +7,14 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   await page.goto('/')
   await page.evaluate(async () => navigator.serviceWorker.ready)
   await page.locator('html[data-offline-ready="true"]').waitFor()
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({ version: 1, cards: [] }),
+    ),
+  )
+  await page.reload()
+  await page.locator('html[data-offline-ready="true"]').waitFor()
 
   // Track any failed network requests while offline
   const failedRequests: string[] = []
@@ -26,6 +34,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   await spanishInput.fill('Nos vemos al rato')
   await page.getByLabel(/english/i).fill('See you later')
   await page.getByRole('button', { name: /save card/i }).click()
+  await page.getByRole('button', { name: /review 2/i }).click()
   await expect(
     page.getByRole('heading', { name: 'Nos vemos al rato' }),
   ).toBeVisible()

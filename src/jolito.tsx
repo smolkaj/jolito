@@ -883,6 +883,9 @@ export function App({
   const [spanishInput, setSpanishInput] = useState('')
   const [englishInput, setEnglishInput] = useState('')
   const [contextInput, setContextInput] = useState('')
+  const [reversePromptInput, setReversePromptInput] = useState('')
+  const [reverseAnswerInput, setReverseAnswerInput] = useState('')
+  const [savedToast, setSavedToast] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([])
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
@@ -906,8 +909,10 @@ export function App({
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
+  const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
+  const savedToastTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -1121,6 +1126,9 @@ export function App({
       }
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
+      }
+      if (savedToastTimerRef.current !== null) {
+        window.clearTimeout(savedToastTimerRef.current)
       }
     }
   }, [])
@@ -1337,13 +1345,27 @@ export function App({
     if (created.length === 0) return
 
     setCards((current) => [...created, ...current])
+    setReferenceTime(services.clock.now())
+    const savedSpanish = field('spanish').trim()
+    setSavedToast(savedSpanish)
+    if (savedToastTimerRef.current !== null) {
+      window.clearTimeout(savedToastTimerRef.current)
+    }
+    savedToastTimerRef.current = window.setTimeout(() => {
+      setSavedToast(null)
+      savedToastTimerRef.current = null
+    }, 3000)
+
     setSpanishInput('')
     setEnglishInput('')
     setContextInput('')
+    setReversePromptInput('')
+    setReverseAnswerInput('')
     setSuggestions([])
     setDidYouMean(null)
     setShowSuggestions(false)
-    beginReview(created.map(({ id }) => id))
+    setActiveSuggestionIndex(-1)
+    spanishInputRef.current?.focus()
   }
 
   if (view === 'welcome')
@@ -1598,6 +1620,7 @@ export function App({
                   <MexicoFlag /> Mexican Spanish
                 </label>
                 <textarea
+                  ref={spanishInputRef}
                   id="spanish"
                   name="spanish"
                   role="combobox"
@@ -1717,6 +1740,8 @@ export function App({
                       <input
                         id="reverse-prompt"
                         name="reversePrompt"
+                        value={reversePromptInput}
+                        onChange={(e) => setReversePromptInput(e.target.value)}
                         placeholder="Optional"
                       />
                     </div>
@@ -1727,6 +1752,8 @@ export function App({
                       <input
                         id="reverse-answer"
                         name="reverseAnswer"
+                        value={reverseAnswerInput}
+                        onChange={(e) => setReverseAnswerInput(e.target.value)}
                         placeholder="Optional"
                       />
                     </div>
@@ -1745,8 +1772,13 @@ export function App({
                 />
               </div>
               <button className="primary-button save-button" type="submit">
-                Save card <span aria-hidden="true">→</span>
+                Save card
               </button>
+              {savedToast && (
+                <p className="create-save-feedback" role="status">
+                  ✓ Saved “{savedToast}”
+                </p>
+              )}
             </form>
           </section>
         </main>
