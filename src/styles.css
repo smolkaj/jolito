@@ -789,7 +789,7 @@ summary:focus-visible {
   min-height: 420px;
   display: grid;
   place-items: center;
-  margin-top: 20px;
+  margin-top: 36px;
 }
 
 .create-visual .sample-card {

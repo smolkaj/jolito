@@ -1433,7 +1433,7 @@ export function App({
                   Build spoken bilingual cards with Mexican Spanish nuances.
                 </p>
               </header>
-              <div className="create-visual" aria-hidden="false">
+              <div className="create-visual">
                 {/* English Preview Card */}
                 <button
                   type="button"
