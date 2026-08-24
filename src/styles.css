@@ -1507,7 +1507,7 @@ kbd {
   border-radius: 4px;
 }
 
-/* Subtle Always-Visible Meaning & Context Block (Pronounced on Hover) */
+/* Subtle Always-Visible Additional Context Block (Pronounced on Hover) */
 .reveal-context-block {
   margin-top: 6px;
   padding: 10px 14px;

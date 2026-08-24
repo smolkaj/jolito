@@ -1330,7 +1330,7 @@ export function App({
                   />
                   {currentCard.context && (
                     <div className="reveal-context-block">
-                      <span className="context-label">Meaning & context</span>
+                      <span className="context-label">Additional Context</span>
                       <p className="context-text">{currentCard.context}</p>
                     </div>
                   )}
