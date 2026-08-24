@@ -897,7 +897,8 @@ describe('Jolito', () => {
     // Card 1: fail with Again (1) -> moves to learn queue (requeued at end)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
-    expect(badge).toHaveTextContent(/4\s*cards left.*1\s*retry/)
+    expect(badge).toHaveTextContent(/4\s*cards left/)
+    expect(badge.querySelector('.queue-retry-chip')).toBeNull()
     expect(badge).toHaveTextContent(/3\s*new.*1\s*learn.*0\s*due/)
     const requeuedBeads = badge.querySelectorAll('.queue-bead')
     expect(requeuedBeads).toHaveLength(4)
@@ -907,14 +908,14 @@ describe('Jolito', () => {
     // Card 2: pass with Easy (4) -> graduates out of session
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(badge).toHaveTextContent(/3\s*cards left.*1\s*retry/)
+    expect(badge).toHaveTextContent(/3\s*cards left/)
     expect(badge).toHaveTextContent(/2\s*new.*1\s*learn.*0\s*due/)
     expect(badge.querySelectorAll('.queue-bead')).toHaveLength(3)
 
     // Card 3: pass with Easy (4) -> graduates out of session
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(badge).toHaveTextContent(/2\s*cards left.*1\s*retry/)
+    expect(badge).toHaveTextContent(/2\s*cards left/)
     expect(badge).toHaveTextContent(/1\s*new.*1\s*learn.*0\s*due/)
     expect(badge.querySelectorAll('.queue-bead')).toHaveLength(2)
 
@@ -922,7 +923,7 @@ describe('Jolito', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('4')
     // Now only Card 1 (learning retry) remains
-    expect(badge).toHaveTextContent(/1\s*card left.*1\s*retry/)
+    expect(badge).toHaveTextContent(/1\s*card left/)
     expect(badge).toHaveTextContent(/0\s*new.*1\s*learn.*0\s*due/)
     const remainingBeads = badge.querySelectorAll('.queue-bead')
     expect(remainingBeads).toHaveLength(1)

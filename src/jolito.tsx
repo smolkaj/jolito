@@ -1922,11 +1922,6 @@ export function App({
               <span className="queue-count-suffix">
                 {queue.length === 1 ? 'card' : 'cards'} left
               </span>
-              {learnCount > 0 && (
-                <span className="queue-retry-chip">
-                  {learnCount} {learnCount === 1 ? 'retry' : 'retries'}
-                </span>
-              )}
             </span>
             <span className="sr-only">
               {queue.length} {queue.length === 1 ? 'card' : 'cards'} remaining (

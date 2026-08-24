@@ -1346,19 +1346,6 @@ summary:focus-visible {
   font-weight: 600;
 }
 
-.queue-retry-chip {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--tezontle-dark);
-  background: var(--tezontle-soft);
-  padding: 1px 6px;
-  border-radius: 999px;
-  border: 1px solid var(--tezontle);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 /* Study Card - Clean, High-Signal Focus */
 .study-card {
   width: min(640px, 100%);
