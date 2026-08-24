@@ -863,4 +863,17 @@ describe('Jolito', () => {
     expect(badge).toHaveTextContent(/12\s*cards left/)
     expect(badge).toHaveTextContent(/12\s*new/)
   })
+
+  it('renders the Jolito brand mascot logo in the header', () => {
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    const brandElement = screen.getByText('Jolito', { selector: 'span' })
+    expect(brandElement).toBeInTheDocument()
+
+    const brandLogo = brandElement.parentElement?.querySelector('img')
+    expect(brandLogo).toBeInTheDocument()
+    expect(brandLogo).toHaveAttribute('src', expect.stringContaining('png'))
+    expect(brandLogo).toHaveAttribute('aria-hidden', 'true')
+  })
 })
