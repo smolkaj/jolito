@@ -2,8 +2,8 @@
 
 :root {
   /* Canvas & Surface Palette */
-  --paper: #ffffff;
-  --paper-subtle: #f5f2eb;
+  --paper: #fdf5f8;
+  --paper-subtle: #f5edf1;
   --paper-deep: #ede7db;
   --card: #ffffff;
   --card-elevated: #ffffff;
