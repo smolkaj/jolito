@@ -66,9 +66,9 @@ export function cleanAnkiHtml(
 
   let text = raw
 
-  // Strip scripts, styles, and HTML comments (supporting optional whitespace in closing tags)
-  text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
-  text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ')
+  // Strip scripts, styles, and HTML comments (supporting any attributes in closing tags)
+  text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script[^>]*>/gi, ' ')
+  text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style[^>]*>/gi, ' ')
   text = text.replace(/<!--[\s\S]*?-->/g, ' ')
 
   // Strip zero-width characters and BOM
