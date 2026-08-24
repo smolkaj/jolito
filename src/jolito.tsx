@@ -893,29 +893,41 @@ export function App({
     }
   }, [cardMap, queue])
 
+  const cardsRef = useRef(cards)
+  const viewRef = useRef(view)
+  const authUserRef = useRef(authUser)
+
+  useEffect(() => {
+    cardsRef.current = cards
+    viewRef.current = view
+    authUserRef.current = authUser
+  })
+
   const onUpdateCards = useCallback(
-    (newCards: StudyCard[]) => {
+    (newCards: StudyCard[], syncToCloud = true) => {
       setCards(newCards)
       services.cards.save(newCards)
       const now = services.clock.now()
       setReferenceTime(now)
       setQueue((currentQueue) => {
-        if (view !== 'review') return currentQueue
+        if (viewRef.current !== 'review') return currentQueue
         const due = newCards
           .filter((card) => isDue(card, now))
           .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
           .map(({ id }) => id)
         return due
       })
-      if (authUser) {
+      if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
-        void services.sync.syncDeck(newCards, authUser).then((res) => {
-          if (res.success) setSyncStatus('synced')
-          else setSyncStatus('error')
-        })
+        void services.sync
+          .syncDeck(newCards, authUserRef.current)
+          .then((res) => {
+            if (res.success) setSyncStatus('synced')
+            else setSyncStatus('error')
+          })
       }
     },
-    [authUser, services.cards, services.clock, services.sync, view],
+    [services.cards, services.clock, services.sync],
   )
 
   useEffect(() => {
@@ -923,27 +935,29 @@ export function App({
       setAuthUser(user)
       if (user) {
         void syncDeckWithCloud({
-          localCards: cards,
+          localCards: cardsRef.current,
           user,
           syncService: services.sync,
-          onCardsUpdated: onUpdateCards,
+          onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
         }).then((res) => {
           if (res.success) setSyncStatus('synced')
         })
       }
     })
-  }, [cards, onUpdateCards, services.auth, services.sync])
+  }, [onUpdateCards, services.auth, services.sync])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const onOnline = () => {
       setIsOnline(true)
-      if (authUser) {
+      if (authUserRef.current) {
         setSyncStatus('syncing')
-        void services.sync.syncDeck(cards, authUser).then((res) => {
-          if (res.success) setSyncStatus('synced')
-          else setSyncStatus('error')
-        })
+        void services.sync
+          .syncDeck(cardsRef.current, authUserRef.current)
+          .then((res) => {
+            if (res.success) setSyncStatus('synced')
+            else setSyncStatus('error')
+          })
       }
     }
     const onOffline = () => setIsOnline(false)
@@ -953,7 +967,7 @@ export function App({
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
     }
-  }, [authUser, cards, services.sync])
+  }, [services.sync])
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()
@@ -983,7 +997,7 @@ export function App({
         setQueue((currentQueue) => {
           if (currentQueue.length > 0) return currentQueue
           const now = services.clock.now()
-          return cards
+          return cardsRef.current
             .filter((card) => isDue(card, now))
             .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
             .map(({ id }) => id)
@@ -996,7 +1010,7 @@ export function App({
       window.removeEventListener('popstate', onPopState)
       window.removeEventListener('hashchange', onPopState)
     }
-  }, [cards, services.clock])
+  }, [services.clock])
 
   const playAudio = useCallback(
     (text: string, locale: string) => {
@@ -1073,11 +1087,21 @@ export function App({
     services.cards.save(cards)
   }, [cards, services.cards])
 
+  const currentCardId = currentCard?.id
+  const currentPrompt = currentCard?.prompt
+  const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
+
   useEffect(() => {
-    if (view !== 'review' || !currentCard) return
+    if (view !== 'review' || !currentCardId || !currentPrompt) return
     responseInput.current?.focus()
-    services.speaker.speak(currentCard.prompt, localeForPrompt(currentCard))
-  }, [currentCard, services.speaker, view])
+    services.speaker.speak(currentPrompt, currentPromptLocale)
+  }, [
+    currentCardId,
+    currentPrompt,
+    currentPromptLocale,
+    services.speaker,
+    view,
+  ])
 
   const grade = useCallback(
     (gradeValue: Grade) => {
