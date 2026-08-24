@@ -479,14 +479,14 @@ describe('Jolito', () => {
     expect(legend).toHaveClass('sr-only')
   })
 
-  it('opens deck backup modal, exports backup JSON, and downloads file', async () => {
+  it('opens modal via connection pill, exports backup JSON, and downloads file', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
-      screen.getByRole('heading', { name: /deck backup & safety/i }),
+      screen.getByRole('heading', { name: /cloud sync & deck backup/i }),
     ).toBeInTheDocument()
 
     const exportBtn = screen.getByRole('button', {
@@ -502,7 +502,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
     const backupFile = new File(
       [
@@ -555,7 +555,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -613,7 +613,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
     const corruptFile = new File(['{ invalid json'], 'bad.json', {
       type: 'application/json',
@@ -627,34 +627,6 @@ describe('Jolito', () => {
     )
   })
 
-  it('closes backup modal via close button and Escape key', async () => {
-    const user = userEvent.setup()
-    const services = createTestServices()
-    render(<App services={services} />)
-
-    await user.click(screen.getByRole('button', { name: /backup/i }))
-    expect(
-      screen.getByRole('heading', { name: /deck backup & safety/i }),
-    ).toBeInTheDocument()
-
-    // Close via close button
-    await user.click(screen.getByRole('button', { name: /close dialog/i }))
-    expect(
-      screen.queryByRole('heading', { name: /deck backup & safety/i }),
-    ).not.toBeInTheDocument()
-
-    // Open again and close via Escape
-    await user.click(screen.getByRole('button', { name: /backup/i }))
-    expect(
-      screen.getByRole('heading', { name: /deck backup & safety/i }),
-    ).toBeInTheDocument()
-
-    await user.keyboard('{Escape}')
-    expect(
-      screen.queryByRole('heading', { name: /deck backup & safety/i }),
-    ).not.toBeInTheDocument()
-  })
-
   it('opens sync modal, sends magic link, verifies OTP, and signs in', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
@@ -663,7 +635,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync & multi-device backup/i,
+        name: /cloud sync & deck backup/i,
       }),
     ).toBeInTheDocument()
 
@@ -727,7 +699,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync & multi-device backup/i,
+        name: /cloud sync & deck backup/i,
       }),
     ).toBeInTheDocument()
 
@@ -735,7 +707,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /close dialog/i }))
     expect(
       screen.queryByRole('heading', {
-        name: /cloud sync & multi-device backup/i,
+        name: /cloud sync & deck backup/i,
       }),
     ).not.toBeInTheDocument()
 
@@ -743,14 +715,14 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync & multi-device backup/i,
+        name: /cloud sync & deck backup/i,
       }),
     ).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     expect(
       screen.queryByRole('heading', {
-        name: /cloud sync & multi-device backup/i,
+        name: /cloud sync & deck backup/i,
       }),
     ).not.toBeInTheDocument()
   })
@@ -778,7 +750,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('displays friendly notice when cloud sync is not enabled for preview and allows opening backup', async () => {
+  it('displays friendly notice when cloud sync is not enabled for preview', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     services.mockAuth.configured = false
@@ -787,16 +759,12 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync is not enabled for this preview/i,
+        name: /cloud sync is disabled in this preview/i,
       }),
     ).toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', { name: /backup deck locally/i }),
-    )
     expect(
       screen.getByRole('heading', {
-        name: /deck backup & safety/i,
+        name: /offline backup & export \(json\)/i,
       }),
     ).toBeInTheDocument()
   })

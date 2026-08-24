@@ -6,9 +6,9 @@ test('opens deck backup modal without automatically detectable WCAG violations a
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /deck backup/i }).click()
+  await page.getByRole('button', { name: /tap to sync/i }).click()
   await expect(
-    page.getByRole('heading', { name: /deck backup & safety/i }),
+    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
   ).toBeVisible()
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in backup dialog
@@ -31,7 +31,7 @@ test('opens deck backup modal without automatically detectable WCAG violations a
   // Close modal via Escape
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('heading', { name: /deck backup & safety/i }),
+    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
   ).not.toBeVisible()
 })
 
@@ -39,7 +39,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
   page,
 }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: /deck backup/i }).click()
+  await page.getByRole('button', { name: /tap to sync/i }).click()
 
   const backupData = {
     version: 1,
@@ -87,7 +87,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
 
   await page.getByRole('button', { name: /close dialog/i }).click()
   await expect(
-    page.getByRole('heading', { name: /deck backup & safety/i }),
+    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
   ).not.toBeVisible()
 
   // Start review with the imported card

@@ -2096,9 +2096,15 @@ kbd {
 }
 
 .backup-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 540px) {
+  .backup-sections {
+    grid-template-columns: 1fr;
+  }
 }
 
 .backup-section {
@@ -2247,48 +2253,138 @@ kbd {
   font-family: var(--font-mono);
 }
 
-/* Sync Modal & Account Styles */
-.sync-modal {
-  max-width: 500px;
+/* Unified Sync & Data Safety Modal Styles */
+.sync-modal,
+.data-safety-modal {
+  width: min(640px, 100%);
+  max-width: 640px;
+  padding: 22px 24px;
+  gap: 12px;
+}
+
+.modal-header-copy h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  color: var(--ink);
+}
+
+.modal-subtitle {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.deck-stats-bar {
+  margin-top: -2px;
+}
+
+.modal-sections-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.safety-section {
+  padding: 12px 14px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 14px;
+  background: var(--paper-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.section-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.section-title-row h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.section-caption {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+.backup-subcard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.backup-subcard h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.backup-subcard p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.35;
 }
 
 .sync-account-pane {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .account-info-card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border: 2px solid var(--line-subtle);
-  border-radius: 16px;
-  background: var(--paper-subtle);
+  gap: 12px;
+  padding: 12px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 12px;
+  background: var(--card);
 }
 
 .account-avatar {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px solid var(--line);
   border-radius: 50%;
-  background: var(--card);
-  font-size: 20px;
+  background: var(--paper-subtle);
+  font-size: 16px;
   box-shadow: 2px 2px 0 var(--ink);
 }
 
 .account-details {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .account-badge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2297,7 +2393,7 @@ kbd {
 
 .account-email {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -2306,66 +2402,60 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sync-auth-pane {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .sync-auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sync-explanation {
   margin: 0;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--ink-soft);
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .sync-auth-buttons {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.sync-unconfigured-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .sync-notice-card {
-  padding: 20px;
-  border: 2px solid var(--line-subtle);
-  border-radius: 18px;
-  background: var(--paper-subtle);
+  padding: 10px 12px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 12px;
+  background: var(--card);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .sync-notice-card .notice-icon {
-  font-size: 28px;
+  font-size: 20px;
 }
 
-.sync-notice-card h3 {
+.sync-notice-card h4 {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .sync-notice-card p {
   margin: 0;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--ink-soft);
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 @media (prefers-reduced-motion: reduce) {
