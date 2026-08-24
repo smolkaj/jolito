@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('reopens the installed app shell and saved cards while offline', async ({
+test('supports complete learner workflow, audio, autocomplete, and celebration while offline', async ({
   context,
   page,
 }) => {
@@ -8,26 +8,73 @@ test('reopens the installed app shell and saved cards while offline', async ({
   await page.evaluate(async () => navigator.serviceWorker.ready)
   await page.locator('html[data-offline-ready="true"]').waitFor()
 
+  // Track any failed network requests while offline
+  const failedRequests: string[] = []
+  page.on('requestfailed', (req) => {
+    failedRequests.push(req.url())
+  })
+
+  // Disconnect network completely
+  await context.setOffline(true)
+
+  // 1. Create a card with offline dictionary autocomplete
   await page.getByRole('button', { name: /^create a card$/i }).click()
-  await page.getByLabel(/spanish/i).fill('Nos vemos al rato')
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
+  await spanishInput.fill('¿Dónde está el')
+  await expect(page.getByText('¿Dónde está el metro?')).toBeVisible()
+
+  await spanishInput.fill('Nos vemos al rato')
   await page.getByLabel(/english/i).fill('See you later')
   await page.getByRole('button', { name: /save card/i }).click()
   await expect(
     page.getByRole('heading', { name: 'Nos vemos al rato' }),
   ).toBeVisible()
 
-  await context.setOffline(true)
+  // 2. Play prompt audio offline without network errors
+  const playAudioBtn = page.getByRole('button', {
+    name: /play prompt audio/i,
+  })
+  await expect(playAudioBtn).toBeVisible()
+  await playAudioBtn.click()
+
+  // 3. Review the card offline
+  await page.getByLabel('Your answer').fill('See you later')
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('MEXICAN SPANISH →')).toBeVisible()
+
+  // Rate first card as Easy
+  await page.getByRole('button', { name: /easy/i }).click()
+
+  // Review the reverse direction card
+  await expect(
+    page.getByRole('heading', { name: 'See you later' }),
+  ).toBeVisible()
+  await page.getByLabel('Your answer').fill('Nos vemos al rato')
+  await page.keyboard.press('Enter')
+  await page.getByRole('button', { name: /easy/i }).click()
+
+  // 4. Verify completion view and celebration mascot artwork load offline
+  await expect(page.getByText('SESSION COMPLETE')).toBeVisible()
+  const mascotImg = page.locator('.complete-mascot-img')
+  await expect(mascotImg).toBeVisible()
+  const isMascotLoaded = await mascotImg.evaluate(
+    (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+  )
+  expect(isMascotLoaded).toBe(true)
+
+  // 5. Reload while offline and verify cold boot & persistence
   await page.reload()
-  await expect(page.getByLabel('Your answer')).toBeVisible()
+  await expect(page.getByText('SESSION COMPLETE')).toBeVisible()
   expect(
     await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
   ).toContain('Nos vemos al rato')
 
-  await page.getByRole('button', { name: /jolito/i }).click()
+  // 6. Navigate home while offline
+  await page.getByRole('button', { name: /back home/i }).click()
   await expect(
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /local deck only/i }),
-  ).toBeVisible()
+
+  // 7. Verify zero network assets failed
+  expect(failedRequests).toEqual([])
 })
