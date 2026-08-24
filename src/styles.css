@@ -1861,20 +1861,6 @@ kbd {
     margin-top: 52px;
   }
 
-  .reveal-content.has-art {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .reveal-art-wrap {
-    order: -1;
-  }
-
-  .reveal-art-image {
-    width: 120px;
-    height: 120px;
-  }
-
   .study-prompt {
     font-size: 32px;
   }
