@@ -25,28 +25,25 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   expect(bgColor).not.toBe('rgba(0, 0, 0, 0)')
   expect(bgColor).not.toBe('transparent')
 
+  // Check preview notice is displayed when cloud backend is unconfigured
+  await expect(
+    page.getByRole('heading', {
+      name: /cloud sync is not enabled for this preview/i,
+    }),
+  ).toBeVisible()
+
   // Save screenshot for autonomous visual inspection
   await page.screenshot({ path: 'test-results/sync-modal.png' })
 
-  // Check backend configuration inputs when unconfigured
-  const urlInput = page.getByLabel(/supabase project url/i)
-  await expect(urlInput).toBeVisible()
-  await urlInput.fill('https://mock-project.supabase.co')
-
-  const keyInput = page.getByLabel(/supabase public anon key/i)
-  await expect(keyInput).toBeVisible()
-  await keyInput.fill('mock-anon-key-abc')
-
-  await page.getByRole('button', { name: /save & connect/i }).click()
-
-  // Verify transition to email address sign-in
-  const emailInput = page.getByLabel(/email address/i)
-  await expect(emailInput).toBeVisible()
-  await emailInput.fill('learner@example.com')
+  // Clicking "Backup deck locally →" opens the backup dialog
+  await page.getByRole('button', { name: /backup deck locally/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /deck backup & safety/i }),
+  ).toBeVisible()
 
   // Close modal via Escape
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('heading', { name: /cloud sync & multi-device backup/i }),
+    page.getByRole('heading', { name: /deck backup & safety/i }),
   ).not.toBeVisible()
 })

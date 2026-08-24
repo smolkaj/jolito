@@ -35,45 +35,24 @@ export class SupabaseSyncService implements SyncService {
     return id
   }
 
-  private getSupabaseUrl(): string {
-    return (
-      (
-        this.authService as { getSupabaseUrl?: () => string }
-      ).getSupabaseUrl?.() ||
-      (this.supabaseUrl ?? '')
-    )
-  }
-
-  private getSupabaseAnonKey(): string {
-    return (
-      (
-        this.authService as { getSupabaseAnonKey?: () => string }
-      ).getSupabaseAnonKey?.() ||
-      (this.supabaseAnonKey ?? '')
-    )
-  }
-
   getStatus(): SyncStatus {
     return this.status
   }
 
   private getAuthHeaders(): Record<string, string> | null {
     const token = this.authService.getAccessToken()
-    const key = this.getSupabaseAnonKey()
-    if (!token || !key) {
+    if (!token || !this.supabaseAnonKey) {
       return null
     }
     return {
-      apikey: key,
+      apikey: this.supabaseAnonKey,
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     }
   }
 
   async pullDeck(user: AuthUser): Promise<SyncResult> {
-    const url = this.getSupabaseUrl()
-    const key = this.getSupabaseAnonKey()
-    if (!url || !key) {
+    if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
@@ -83,7 +62,7 @@ export class SupabaseSyncService implements SyncService {
     }
 
     try {
-      const fetchUrl = `${url}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}&select=*`
+      const fetchUrl = `${this.supabaseUrl}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}&select=*`
       const res = await fetch(fetchUrl, { headers })
 
       if (!res.ok) {
@@ -133,9 +112,7 @@ export class SupabaseSyncService implements SyncService {
   }
 
   async pushDeck(cards: StudyCard[], user: AuthUser): Promise<SyncResult> {
-    const url = this.getSupabaseUrl()
-    const key = this.getSupabaseAnonKey()
-    if (!url || !key) {
+    if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
@@ -154,21 +131,23 @@ export class SupabaseSyncService implements SyncService {
         cards,
       }
 
-      const res = await fetch(`${url}/rest/v1/decks?on_conflict=user_id`, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          Prefer: 'resolution=merge-duplicates',
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/decks?on_conflict=user_id`,
+        {
+          method: 'POST',
+          headers: {
+            ...headers,
+            Prefer: 'resolution=merge-duplicates',
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            updated_at: nowIso,
+            device_id: this.deviceId,
+            version: 1,
+            data: payload,
+          }),
         },
-        body: JSON.stringify({
-          user_id: user.id,
-          updated_at: nowIso,
-          device_id: this.deviceId,
-          version: 1,
-          data: payload,
-        }),
-      })
-
+      )
       if (!res.ok) {
         return {
           success: false,

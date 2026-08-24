@@ -467,6 +467,7 @@ function SyncModal({
   onUpdateCards,
   auth,
   sync,
+  onOpenBackup,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -474,6 +475,7 @@ function SyncModal({
   onUpdateCards: (newCards: StudyCard[]) => void
   auth: AuthService
   sync: SyncService
+  onOpenBackup?: () => void
 }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
@@ -486,12 +488,6 @@ function SyncModal({
   } | null>(null)
 
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
-  const initialConfig = auth.getBackendConfig
-    ? auth.getBackendConfig()
-    : { url: '', anonKey: '' }
-  const [configUrl, setConfigUrl] = useState(initialConfig.url)
-  const [configKey, setConfigKey] = useState(initialConfig.anonKey)
-  const [showConfig, setShowConfig] = useState(!isBackendConfigured)
 
   useEffect(() => {
     return auth.onAuthStateChange((currentUser) => {
@@ -512,17 +508,6 @@ function SyncModal({
   }, [isOpen, onClose])
 
   if (!isOpen) return null
-
-  const handleSaveConfig = (e: FormEvent) => {
-    e.preventDefault()
-    if (!configUrl.trim() || !configKey.trim()) return
-    auth.setBackendConfig?.(configUrl.trim(), configKey.trim())
-    setShowConfig(false)
-    setStatus({
-      type: 'info',
-      message: 'Supabase backend connected. Enter your email to sign in.',
-    })
-  }
 
   const handleSendLink = async (e: FormEvent) => {
     e.preventDefault()
@@ -658,53 +643,42 @@ function SyncModal({
           </div>
         )}
 
-        {showConfig || !isBackendConfigured ? (
-          <form
-            onSubmit={handleSaveConfig}
-            className="sync-auth-form sync-config-form"
-          >
-            <p className="sync-explanation">
-              Connect a free Supabase project ($0/month) to enable multi-device
-              sync. Enter your project URL and public anon key:
-            </p>
-            <div className="field-group">
-              <label htmlFor="config-url">Supabase Project URL</label>
-              <input
-                id="config-url"
-                type="url"
-                required
-                autoFocus
-                placeholder="https://xyzcompany.supabase.co"
-                value={configUrl}
-                onChange={(e) => setConfigUrl(e.target.value)}
-              />
+        {!isBackendConfigured ? (
+          <div className="sync-unconfigured-pane">
+            <div className="sync-notice-card">
+              <span className="notice-icon" aria-hidden="true">
+                🛡️
+              </span>
+              <h3>Cloud sync is not enabled for this preview</h3>
+              <p>
+                Multi-device cloud synchronization is disabled in this preview
+                deployment. Your flashcards, audio, and spaced-repetition
+                schedules remain 100% functional and safely stored on this
+                device.
+              </p>
             </div>
-            <div className="field-group">
-              <label htmlFor="config-key">Supabase Public Anon Key</label>
-              <input
-                id="config-key"
-                type="text"
-                required
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                value={configKey}
-                onChange={(e) => setConfigKey(e.target.value)}
-              />
-            </div>
-            <div className="sync-auth-buttons">
-              <button type="submit" className="primary-button">
-                Save & connect →
-              </button>
-              {isBackendConfigured && (
+            <div className="sync-actions-row">
+              {onOpenBackup && (
                 <button
                   type="button"
-                  className="text-button"
-                  onClick={() => setShowConfig(false)}
+                  className="primary-button"
+                  onClick={() => {
+                    onClose()
+                    onOpenBackup()
+                  }}
                 >
-                  Cancel
+                  Backup deck locally →
                 </button>
               )}
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onClose}
+              >
+                Close
+              </button>
             </div>
-          </form>
+          </div>
         ) : user ? (
           <div className="sync-account-pane">
             <div className="account-info-card">
@@ -739,13 +713,6 @@ function SyncModal({
                 Sign out
               </button>
             </div>
-            <button
-              type="button"
-              className="text-button config-settings-toggle"
-              onClick={() => setShowConfig(true)}
-            >
-              Configure backend endpoint
-            </button>
           </div>
         ) : (
           <div className="sync-auth-pane">
@@ -819,13 +786,6 @@ function SyncModal({
                 </div>
               </form>
             )}
-            <button
-              type="button"
-              className="text-button config-settings-toggle"
-              onClick={() => setShowConfig(true)}
-            >
-              Configure backend endpoint
-            </button>
           </div>
         )}
       </div>
@@ -1458,6 +1418,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          onOpenBackup={() => setIsBackupOpen(true)}
         />
       </>
     )
@@ -1658,6 +1619,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          onOpenBackup={() => setIsBackupOpen(true)}
         />
       </>
     )
@@ -1729,6 +1691,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          onOpenBackup={() => setIsBackupOpen(true)}
         />
       </>
     )
@@ -1886,6 +1849,7 @@ export function App({
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}
+        onOpenBackup={() => setIsBackupOpen(true)}
       />
     </>
   )
