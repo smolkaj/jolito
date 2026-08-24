@@ -250,14 +250,21 @@ summary:focus-visible {
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all 140ms var(--ease-spring);
   text-decoration: none;
 }
 
 .connection-pill:hover {
-  background: var(--paper-subtle);
+  background: var(--turquesa-soft);
   border-color: var(--line);
   color: var(--ink);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.connection-pill:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .connection-pill:focus-visible {
