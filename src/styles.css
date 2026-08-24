@@ -1108,42 +1108,77 @@ summary:focus-visible {
   background: var(--paper);
 }
 
-.review-progress {
-  width: min(240px, 32vw);
-  display: flex;
+/* Review Queue Status Badge (Anki-style SRS counters) */
+.review-queue-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 14px;
+  box-shadow: var(--shadow-sm);
 }
 
-.review-progress > span {
-  white-space: nowrap;
-  color: var(--rosa-dark);
+.queue-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.queue-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.queue-pill-new {
+  color: var(--maya-dark);
+}
+
+.queue-pill-new .queue-dot {
+  background: var(--maya);
+}
+
+.queue-pill-learn {
+  color: var(--tezontle-dark);
+}
+
+.queue-pill-learn .queue-dot {
+  background: var(--tezontle);
+}
+
+.queue-pill-review {
+  color: var(--verde-dark);
+}
+
+.queue-pill-review .queue-dot {
+  background: var(--verde);
+}
+
+.queue-num {
   font-weight: 800;
 }
 
-.review-progress > span i {
+.queue-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
   color: var(--ink-muted);
-  font-style: normal;
-  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.review-progress > div {
-  height: 10px;
-  flex: 1;
-  overflow: hidden;
-  border: 1.5px solid var(--line);
-  border-radius: 999px;
-  background: var(--paper-subtle);
-}
-
-.review-progress b {
-  height: 100%;
-  display: block;
-  border-radius: inherit;
-  background: var(--rosa);
-  transition: width 280ms var(--ease-spring);
+.queue-divider {
+  color: var(--line-subtle);
+  font-weight: 700;
+  font-size: 12px;
+  user-select: none;
 }
 
 /* Study Card - Clean, High-Signal Focus */
@@ -1900,11 +1935,14 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  .review-progress {
+  .review-queue-badge {
     position: absolute;
     top: 66px;
-    left: 16px;
-    width: calc(100% - 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100% - 32px);
+    justify-content: center;
   }
 
   .study-card {
