@@ -322,4 +322,47 @@ describe('EnhancedBrowserSpeaker', () => {
     const speaker = new EnhancedBrowserSpeaker()
     expect(speaker.speak('test', 'es-MX')).toBe(false)
   })
+
+  it('deduplicates rapid consecutive speak calls for identical text and locale', () => {
+    const speakMock = vi.fn()
+    const cancelMock = vi.fn()
+
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        speak: speakMock,
+        cancel: cancelMock,
+        speaking: false,
+        pending: false,
+        getVoices: () => [],
+        onvoiceschanged: null,
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    class MockUtterance {
+      lang = ''
+      constructor(public text: string) {}
+    }
+
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: MockUtterance,
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+
+    // Rapid successive calls with the same text/locale within a few milliseconds
+    const first = speaker.speak('aguacate', 'es-MX')
+    const second = speaker.speak('aguacate', 'es-MX')
+
+    expect(first).toBe(true)
+    expect(second).toBe(true)
+    expect(speakMock).toHaveBeenCalledTimes(1)
+
+    // Different text plays immediately
+    speaker.speak('avocado', 'en-US')
+    expect(speakMock).toHaveBeenCalledTimes(2)
+  })
 })

@@ -96,6 +96,28 @@ describe('LayeredNeuralSpeaker', () => {
     expect(result).toBe(true)
     expect(prewarmSpy).toHaveBeenCalled()
   })
+
+  it('deduplicates rapid consecutive speak calls for identical phrase and locale', () => {
+    const mockPlayBuffer = vi.fn().mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'playAudio').mockImplementation(mockPlayBuffer)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const first = speaker.speak('aguacate', 'es-MX')
+    const second = speaker.speak('aguacate', 'es-MX')
+
+    expect(first).toBe(true)
+    expect(second).toBe(true)
+    expect(mockPlayBuffer).toHaveBeenCalledTimes(1)
+
+    // Different phrase speaks immediately
+    speaker.speak('Qué padre', 'es-MX')
+    expect(mockPlayBuffer).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('NeuralVoiceEngine', () => {
