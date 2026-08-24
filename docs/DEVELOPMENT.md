@@ -69,7 +69,7 @@ npx supabase config push
 
 ## Cloudflare deployment
 
-The [production app](https://jolito.smolkaj.workers.dev) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
+The [production app](https://joli.to) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
 
 - `npx wrangler deploy` for `main`;
 - `npx wrangler versions upload` for every non-production branch.

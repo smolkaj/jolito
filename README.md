@@ -3,9 +3,9 @@
   <br><br>
   <strong>Spoken Mexican Spanish at your rhythm.</strong>
   <br><br>
-  <a href="https://jolito.smolkaj.workers.dev"><strong>Try the live app →</strong></a>
+  <a href="https://joli.to"><strong>Try the live app →</strong></a>
   <br>
-  <sub>Production deployment of <code>main</code> at <code>jolito.smolkaj.workers.dev</code></sub>
+  <sub>Production deployment of <code>main</code> at <code>joli.to</code></sub>
   <br><br>
   <a href="https://github.com/smolkaj/jolito/actions/workflows/quality.yml"><img src="https://github.com/smolkaj/jolito/actions/workflows/quality.yml/badge.svg" alt="Quality checks"></a>
 </p>
@@ -13,7 +13,7 @@
 # Jolito
 
 > [!TIP]
-> **Live Production App:** Try Jolito now at **[jolito.smolkaj.workers.dev](https://jolito.smolkaj.workers.dev)**. It runs on both desktop and mobile, with full offline capability as an installable PWA.
+> **Live Production App:** Try Jolito now at **[joli.to](https://joli.to)**. It runs on both desktop and mobile, with full offline capability as an installable PWA.
 
 Jolito is a multimodal language-learning app that combines Anki's proven, learner-controlled spaced repetition with the beauty, warmth, visual engagement, and frictionlessness that make daily language practice inviting. Each card brings together the written language, meaningful visuals, and natural audio so learners can connect what they read, see, and hear.
 

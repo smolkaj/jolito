@@ -14,9 +14,11 @@ port = 54322
 [auth]
 enabled = true
 # Base URL for redirects and email link generation
-site_url = "https://jolito.smolkaj.workers.dev"
+site_url = "https://joli.to"
 # Allowed redirect wildcard patterns for production, branch previews, and local dev
 additional_redirect_urls = [
+  "https://joli.to/**",
+  "https://www.joli.to/**",
   "https://*-jolito.smolkaj.workers.dev/**",
   "https://jolito.smolkaj.workers.dev/**",
   "http://localhost:*/**",
