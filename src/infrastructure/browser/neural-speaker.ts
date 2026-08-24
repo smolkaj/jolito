@@ -153,32 +153,28 @@ export class NeuralVoiceEngine {
               this.audioContext &&
               typeof this.audioContext.decodeAudioData === 'function'
             ) {
-              try {
-                const bufferCopy = arrayBuffer.slice(0)
-                const decodedBuffer = await new Promise<AudioBuffer>(
-                  (resolve, reject) => {
-                    const res: unknown = this.audioContext!.decodeAudioData(
-                      bufferCopy,
-                      (buf) => resolve(buf),
-                      (err) => reject(err),
-                    )
-                    if (
-                      res !== null &&
-                      typeof res === 'object' &&
-                      'then' in res &&
-                      typeof (res as Promise<AudioBuffer>).then === 'function'
-                    ) {
-                      void (res as Promise<AudioBuffer>)
-                        .then(resolve)
-                        .catch(reject)
-                    }
-                  },
-                )
-                for (const key of keys) {
-                  this.audioCache.set(key, decodedBuffer)
-                }
-              } catch {
-                // If decoding fails, the network fetch has still warmed the browser/SW cache
+              const bufferCopy = arrayBuffer.slice(0)
+              const decodedBuffer = await new Promise<AudioBuffer>(
+                (resolve, reject) => {
+                  const res: unknown = this.audioContext!.decodeAudioData(
+                    bufferCopy,
+                    (buf) => resolve(buf),
+                    (err) => reject(err),
+                  )
+                  if (
+                    res !== null &&
+                    typeof res === 'object' &&
+                    'then' in res &&
+                    typeof (res as Promise<AudioBuffer>).then === 'function'
+                  ) {
+                    void (res as Promise<AudioBuffer>)
+                      .then(resolve)
+                      .catch(reject)
+                  }
+                },
+              )
+              for (const key of keys) {
+                this.audioCache.set(key, decodedBuffer)
               }
             }
             this.prewarmedUrls.add(url)

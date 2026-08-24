@@ -196,14 +196,8 @@ describe('NeuralVoiceEngine', () => {
     expect(recoveredFetch).toHaveBeenCalled()
   })
 
-  it('handles non-ok HTTP responses and decode failures gracefully during prewarm', async () => {
+  it('handles non-ok HTTP responses gracefully during prewarm', async () => {
     const engine = new NeuralVoiceEngine()
-    const mockAudioContext = {
-      decodeAudioData: vi.fn().mockRejectedValue(new Error('Decode failed')),
-    } as unknown as AudioContext
-    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
-      mockAudioContext
-
     const notFoundFetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
@@ -211,5 +205,28 @@ describe('NeuralVoiceEngine', () => {
 
     const result = await engine.prewarm(notFoundFetch)
     expect(result).toBe(false)
+  })
+
+  it('handles decode failures gracefully and allows retry without falsely caching', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      decodeAudioData: vi.fn().mockRejectedValue(new Error('Corrupted audio')),
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    })
+
+    const result = await engine.prewarm(mockFetch)
+    expect(result).toBe(false)
+
+    // Should not have registered in audioCache
+    const internalCache = (
+      engine as unknown as { audioCache: Map<string, AudioBuffer> }
+    ).audioCache
+    expect(internalCache.size).toBe(0)
   })
 })
