@@ -18,6 +18,7 @@ export type CardRepository = {
 export type Speaker = {
   speak(text: string, locale: string): boolean
   supported(): boolean
+  prewarm?(): Promise<void> | void
 }
 
 export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'

@@ -120,6 +120,68 @@ export class NeuralVoiceEngine {
     return false
   }
 
+  private prewarmPromise: Promise<void> | null = null
+
+  async prewarm(fetchFn: typeof fetch = fetch): Promise<void> {
+    if (this.prewarmPromise) return this.prewarmPromise
+
+    this.prewarmPromise = (async () => {
+      const urlToKeys = new Map<string, string[]>()
+      for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
+        const keys = urlToKeys.get(url) ?? []
+        keys.push(key)
+        urlToKeys.set(url, keys)
+      }
+
+      await Promise.all(
+        Array.from(urlToKeys.entries()).map(async ([url, keys]) => {
+          try {
+            const response = await fetchFn(url)
+            if (!response.ok) return
+            const arrayBuffer = await response.arrayBuffer()
+
+            if (
+              this.audioContext &&
+              typeof this.audioContext.decodeAudioData === 'function'
+            ) {
+              try {
+                const bufferCopy = arrayBuffer.slice(0)
+                const decodedBuffer = await new Promise<AudioBuffer>(
+                  (resolve, reject) => {
+                    const res: unknown = this.audioContext!.decodeAudioData(
+                      bufferCopy,
+                      (buf) => resolve(buf),
+                      (err) => reject(err),
+                    )
+                    if (
+                      res !== null &&
+                      typeof res === 'object' &&
+                      'then' in res &&
+                      typeof (res as Promise<AudioBuffer>).then === 'function'
+                    ) {
+                      void (res as Promise<AudioBuffer>)
+                        .then(resolve)
+                        .catch(reject)
+                    }
+                  },
+                )
+                for (const key of keys) {
+                  this.audioCache.set(key, decodedBuffer)
+                }
+              } catch {
+                // If decoding fails, the network fetch has still warmed the browser/SW cache
+              }
+            }
+          } catch {
+            // Gracefully ignore network failures during background prewarming
+          }
+        }),
+      )
+    })()
+
+    return this.prewarmPromise
+  }
+
   private playBuffer(buffer: AudioBuffer): boolean {
     try {
       if (!this.audioContext) {
@@ -157,6 +219,10 @@ export class LayeredNeuralSpeaker implements Speaker {
 
   supported(): boolean {
     return this.neuralEngine.supported() || this.fallbackSpeaker.supported()
+  }
+
+  async prewarm(fetchFn?: typeof fetch): Promise<void> {
+    await this.neuralEngine.prewarm(fetchFn)
   }
 
   speak(text: string, locale: string): boolean {

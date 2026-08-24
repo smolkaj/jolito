@@ -84,6 +84,17 @@ describe('LayeredNeuralSpeaker', () => {
     })
     expect(neuralOnlySpeaker.supported()).toBe(true)
   })
+
+  it('delegates prewarm to neural engine', async () => {
+    const prewarmSpy = vi.spyOn(neuralEngine, 'prewarm').mockResolvedValue()
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    await speaker.prewarm()
+    expect(prewarmSpy).toHaveBeenCalled()
+  })
 })
 
 describe('NeuralVoiceEngine', () => {
@@ -122,5 +133,66 @@ describe('NeuralVoiceEngine', () => {
   it('returns false on playAudio when phrase is not in cache', () => {
     const engine = new NeuralVoiceEngine()
     expect(engine.playAudio('unregistered-phrase-xyz', 'es-MX')).toBe(false)
+  })
+
+  it('prewarms bundled audio by fetching and decoding audio into memory', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioBuffer = { duration: 1.5 } as AudioBuffer
+    const mockArrayBuffer = new ArrayBuffer(8)
+
+    const mockDecode = vi.fn().mockResolvedValue(mockAudioBuffer)
+    const mockAudioContext = {
+      decodeAudioData: mockDecode,
+      createBufferSource: vi.fn(),
+      destination: {},
+      state: 'running',
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(mockArrayBuffer),
+      } as Response)
+    })
+
+    await engine.prewarm(mockFetch)
+
+    expect(mockFetch).toHaveBeenCalled()
+    // Should have decoded and registered in audioCache
+    const internalCache = (
+      engine as unknown as { audioCache: Map<string, AudioBuffer> }
+    ).audioCache
+    expect(internalCache.get('es-mx:aguacate')).toBe(mockAudioBuffer)
+    expect(internalCache.get('en-us:avocado')).toBe(mockAudioBuffer)
+
+    // Calling prewarm again should be idempotent and not re-fetch
+    const callCount = mockFetch.mock.calls.length
+    await engine.prewarm(mockFetch)
+    expect(mockFetch.mock.calls.length).toBe(callCount)
+  })
+
+  it('handles network errors gracefully during prewarm without throwing', async () => {
+    const engine = new NeuralVoiceEngine()
+    const failingFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    await expect(engine.prewarm(failingFetch)).resolves.toBeUndefined()
+  })
+
+  it('handles non-ok HTTP responses and decode failures gracefully during prewarm', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      decodeAudioData: vi.fn().mockRejectedValue(new Error('Decode failed')),
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const notFoundFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+    })
+
+    await expect(engine.prewarm(notFoundFetch)).resolves.toBeUndefined()
   })
 })
