@@ -704,8 +704,8 @@ function ConnectionPill({
   onClick,
 }: ConnectionPillProps) {
   let stateClass = 'is-local'
-  let label = 'Local only · Tap to sync'
-  let ariaLabel = 'Local deck only. Tap to sync with cloud'
+  let label = '☁️ Sync devices'
+  let ariaLabel = 'Cloud sync & backup. Tap to sync across devices'
 
   if (!isOnline) {
     stateClass = 'is-offline'
@@ -723,7 +723,7 @@ function ConnectionPill({
     } else {
       stateClass = 'is-synced'
       label = 'Cloud synced ✓'
-      ariaLabel = 'Cloud synced with account'
+      ariaLabel = `Cloud synced with ${authUser.email}`
     }
   }
 
@@ -1237,6 +1237,21 @@ export function App({
                   Practice {dueCount} due
                 </button>
               </div>
+              <div className="hero-trust-bar">
+                <span className="trust-item">✨ 100% offline-ready</span>
+                <span className="trust-dot" aria-hidden="true">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className="trust-link"
+                  onClick={() => setIsSyncOpen(true)}
+                >
+                  {authUser
+                    ? '🟢 Cloud synced'
+                    : '☁️ Free cloud sync across devices'}
+                </button>
+              </div>
             </div>
             <div className="hero-visual">
               {/* English Card (concise meaning) */}
@@ -1553,6 +1568,27 @@ export function App({
                 Back home
               </button>
             </div>
+            {!authUser && (
+              <div className="complete-sync-nudge">
+                <span className="nudge-icon" aria-hidden="true">
+                  ☁️
+                </span>
+                <div className="nudge-copy">
+                  <h3>Practice on your phone too</h3>
+                  <p>
+                    Sign in to sync your cards and study progress across all
+                    your devices.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button nudge-button"
+                  onClick={() => setIsSyncOpen(true)}
+                >
+                  Enable cloud sync →
+                </button>
+              </div>
+            )}
           </section>
         </main>
         <SyncModal

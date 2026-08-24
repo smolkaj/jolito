@@ -673,7 +673,11 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    await user.click(
+      screen.getByRole('button', {
+        name: /cloud synced with sync-user@example.com/i,
+      }),
+    )
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
@@ -692,7 +696,11 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    await user.click(
+      screen.getByRole('button', {
+        name: /cloud synced with sync-user@example.com/i,
+      }),
+    )
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
@@ -741,7 +749,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     expect(
-      screen.getByRole('button', { name: /local deck only/i }),
+      screen.getByRole('button', { name: /tap to sync across devices/i }),
     ).toBeInTheDocument()
 
     // Trigger offline event
@@ -755,7 +763,9 @@ describe('Jolito', () => {
     // Trigger online event
     window.dispatchEvent(new Event('online'))
     expect(
-      await screen.findByRole('button', { name: /local deck only/i }),
+      await screen.findByRole('button', {
+        name: /tap to sync across devices/i,
+      }),
     ).toBeInTheDocument()
   })
 
@@ -869,5 +879,50 @@ describe('Jolito', () => {
     expect(badge.querySelector('.queue-beads-track')).not.toBeInTheDocument()
     expect(badge).toHaveTextContent(/12\s*cards left/)
     expect(badge).toHaveTextContent(/12\s*new/)
+  })
+
+  it('allows opening sync modal from welcome screen trust link', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /free cloud sync across devices/i,
+      }),
+    )
+    expect(
+      screen.getByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('displays cloud sync nudge on celebration screen when signed out', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // Practice all 4 cards to completion
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    for (let i = 0; i < 4; i++) {
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+    }
+
+    expect(
+      await screen.findByRole('heading', { name: '¡Hecho!' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /practice on your phone too/i }),
+    ).toBeInTheDocument()
+
+    // Click enable cloud sync button in nudge
+    await user.click(screen.getByRole('button', { name: /enable cloud sync/i }))
+    expect(
+      screen.getByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
+    ).toBeInTheDocument()
   })
 })

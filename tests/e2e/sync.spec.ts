@@ -47,4 +47,35 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   await expect(
     page.getByRole('heading', { name: /cloud sync & deck backup/i }),
   ).not.toBeVisible()
+
+  // Verify Welcome screen trust link opens modal
+  await page.screenshot({
+    path: 'test-results/welcome-trust-bar.png',
+    fullPage: true,
+  })
+  await page
+    .getByRole('button', { name: /free cloud sync across devices/i })
+    .click()
+  await expect(
+    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // Complete study session and verify celebration screen sync nudge
+  await page.getByRole('button', { name: /practice 4 due/i }).click()
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('4')
+  }
+
+  await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /practice on your phone too/i }),
+  ).toBeVisible()
+
+  // Save screenshot of celebration screen with sync nudge
+  await page.screenshot({
+    path: 'test-results/celebration-sync-nudge.png',
+    fullPage: true,
+  })
 })
