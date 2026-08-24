@@ -1322,7 +1322,10 @@ export function App({
                     typed={answer}
                     expected={currentCard.answer}
                     onPlayAudio={() =>
-                      playAudio(currentCard.answer, localeForAnswer(currentCard))
+                      playAudio(
+                        currentCard.answer,
+                        localeForAnswer(currentCard),
+                      )
                     }
                   />
                   {currentCard.context && (
