@@ -12,11 +12,8 @@ import celebrateUrl from '../assets/jolito-celebrate.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
-import {
-  createDeckBackup,
-  restoreDeckFromBackup,
-  type RestoreMode,
-} from './application/deck-backup'
+import { importAnkiDeck } from './application/anki-import'
+import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
 import type {
   AppServices,
@@ -36,7 +33,7 @@ import {
   type StudyCard,
 } from './domain/card'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
-import { parseDeckBackup } from './domain/deck-backup'
+import { parseAnkiDeck } from './domain/anki-import'
 import type { SyncStatus } from './domain/sync'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
@@ -233,14 +230,23 @@ function SyncModal({
     message: string
   } | null>(null)
 
-  // Backup & Restore state
+  // Backup & Import state
   const [mode, setMode] = useState<RestoreMode>('replace')
   const [backupStatus, setBackupStatus] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
     details?: string[] | undefined
   } | null>(null)
-  const [selectedFileText, setSelectedFileText] = useState<string | null>(null)
+  const [selectedImportData, setSelectedImportData] = useState<{
+    fileData: ArrayBuffer | string
+    filename: string
+    count: number
+    deckName?: string | undefined
+    stats?:
+      | { newCount: number; reviewCount: number; learningCount: number }
+      | undefined
+  } | null>(null)
+  const [isParsingImport, setIsParsingImport] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
@@ -375,42 +381,67 @@ function SyncModal({
     })
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const text = event.target?.result
-      if (typeof text !== 'string') return
-      const parsed = parseDeckBackup(text)
+    setIsParsingImport(true)
+    setBackupStatus(null)
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const parsed = await parseAnkiDeck(buffer, file.name, clock.now())
+      setIsParsingImport(false)
       if (parsed.success) {
-        setSelectedFileText(text)
+        setSelectedImportData({
+          fileData: buffer,
+          filename: file.name,
+          count: parsed.count,
+          deckName: parsed.deckName,
+          stats: parsed.stats,
+        })
+        const deckInfo = parsed.deckName ? ` from “${parsed.deckName}”` : ''
+        const statsInfo = parsed.stats
+          ? ` (${parsed.stats.newCount} new, ${parsed.stats.reviewCount} review)`
+          : ''
         setBackupStatus({
           type: 'info',
-          message: `Found ${parsed.count} cards ready to import.`,
+          message: `Found ${parsed.count} cards${deckInfo}${statsInfo} ready to import.`,
         })
       } else {
-        setSelectedFileText(null)
+        setSelectedImportData(null)
         setBackupStatus({
           type: 'error',
           message: parsed.error,
           details: parsed.details,
         })
       }
+    } catch (err) {
+      setIsParsingImport(false)
+      setSelectedImportData(null)
+      setBackupStatus({
+        type: 'error',
+        message: `Failed to read file: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      })
     }
-    reader.readAsText(file)
   }
 
-  const handleRestore = () => {
-    if (!selectedFileText) return
-    const result = restoreDeckFromBackup(cards, selectedFileText, mode)
+  const handleRestore = async () => {
+    if (!selectedImportData) return
+    const result = await importAnkiDeck(
+      cards,
+      selectedImportData.fileData,
+      mode,
+      clock,
+      selectedImportData.filename,
+    )
     if (result.success) {
       onUpdateCards(result.cards)
+      const deckInfo = result.deckName ? ` from “${result.deckName}”` : ''
       setBackupStatus({
         type: 'success',
-        message: `Successfully imported ${result.importedCount} cards (${result.count} total cards in library).`,
+        message: `Successfully imported ${result.importedCount} cards${deckInfo} (${result.count} total cards in library).`,
       })
-      setSelectedFileText(null)
+      setSelectedImportData(null)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -615,17 +646,17 @@ function SyncModal({
             )}
           </section>
 
-          {/* Section 2: Offline File Backup & Restore (JSON) */}
+          {/* Section 2: Offline File Backup & Anki Import */}
           <section className="safety-section backup-export-section">
             <div className="section-title-row">
               <span className="section-icon" aria-hidden="true">
                 💾
               </span>
               <div>
-                <h3>Offline backup & export (JSON)</h3>
+                <h3>Deck import & offline backup</h3>
                 <p className="section-caption">
-                  Export or restore your cards and schedules to portable JSON
-                  files.
+                  Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
+                  offline JSON backups.
                 </p>
               </div>
             </div>
@@ -647,10 +678,10 @@ function SyncModal({
               </div>
 
               <div className="backup-subcard import-subcard">
-                <h4>Restore or merge file</h4>
+                <h4>Import Anki deck or backup</h4>
                 <p>
-                  Load cards and schedules from a previously exported Jolito
-                  JSON file.
+                  Load cards from an Anki package (.apkg), text export (.txt,
+                  .tsv, .csv), or Jolito backup (.json).
                 </p>
 
                 <div
@@ -695,26 +726,37 @@ function SyncModal({
                     htmlFor="backup-file-input"
                     className="file-input-label"
                   >
-                    Choose backup JSON file
+                    Choose Anki deck or backup file
                   </label>
                   <input
                     id="backup-file-input"
                     ref={fileInputRef}
                     type="file"
-                    accept=".json,application/json"
+                    accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
                     className="backup-file-input"
-                    onChange={handleFileChange}
-                    aria-label="Choose backup JSON file"
+                    onChange={(e) => {
+                      void handleFileChange(e)
+                    }}
+                    aria-label="Choose Anki deck or backup file"
                   />
                 </div>
 
-                {selectedFileText && (
+                {selectedImportData && (
                   <button
                     type="button"
                     className="secondary-button restore-confirm-button"
-                    onClick={handleRestore}
+                    disabled={isParsingImport}
+                    onClick={() => {
+                      void handleRestore()
+                    }}
                   >
-                    {mode === 'replace' ? 'Restore backup' : 'Merge backup'}
+                    {mode === 'replace'
+                      ? selectedImportData.deckName
+                        ? `Import "${selectedImportData.deckName}" (Replace)`
+                        : 'Import deck (Replace current)'
+                      : selectedImportData.deckName
+                        ? `Merge "${selectedImportData.deckName}" with library`
+                        : 'Merge deck with library'}
                   </button>
                 )}
               </div>

@@ -67,15 +67,17 @@ test('restores deck from backup JSON file and updates local storage', async ({
   }
 
   // Upload backup JSON file
-  await page.getByLabel(/choose backup json file/i).setInputFiles({
+  await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
     name: 'test-backup.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(backupData)),
   })
 
-  await expect(page.getByText(/found 1 cards ready to import/i)).toBeVisible()
+  await expect(page.getByText(/found 1 cards.*ready to import/i)).toBeVisible()
 
-  await page.getByRole('button', { name: /restore backup/i }).click()
+  await page
+    .getByRole('button', { name: /import deck \(replace current\)/i })
+    .click()
 
   await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
 
@@ -94,5 +96,35 @@ test('restores deck from backup JSON file and updates local storage', async ({
   await page.getByRole('button', { name: /practice 1 due/i }).click()
   await expect(
     page.getByRole('heading', { name: 'Un boleto de metro' }),
+  ).toBeVisible()
+})
+
+test('imports Anki text export deck and updates review cards', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /tap to sync/i }).click()
+
+  const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
+
+  await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
+    name: 'anki-deck.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(ankiContent),
+  })
+
+  await expect(page.getByText(/found 1 cards.*ready to import/i)).toBeVisible()
+
+  await page
+    .getByRole('button', { name: /import deck \(replace current\)/i })
+    .click()
+
+  await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+
+  await page.getByRole('button', { name: /close dialog/i }).click()
+
+  await page.getByRole('button', { name: /practice 1 due/i }).click()
+  await expect(
+    page.getByRole('heading', { name: '¿Dónde está la estación?' }),
   ).toBeVisible()
 })

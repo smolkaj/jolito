@@ -12,10 +12,13 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
   await expect(page.getByText('Jolito')).toBeVisible()
   const brandImg = page.locator('.brand img')
   await expect(brandImg).toBeVisible()
-  const isLoaded = await brandImg.evaluate(
-    (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
-  )
-  expect(isLoaded).toBe(true)
+  await expect
+    .poll(async () =>
+      brandImg.evaluate(
+        (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+      ),
+    )
+    .toBe(true)
   await expect(
     page.getByText(/create beautiful, spoken flashcards/i),
   ).toBeVisible()

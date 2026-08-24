@@ -604,14 +604,16 @@ describe('Jolito', () => {
       { type: 'application/json' },
     )
 
-    const fileInput = screen.getByLabelText(/choose backup json file/i)
+    const fileInput = screen.getByLabelText(/choose anki deck or backup file/i)
     await user.upload(fileInput, backupFile)
 
     expect(
-      await screen.findByText(/found 1 cards ready to import/i),
+      await screen.findByText(/found 1 cards.*ready to import/i),
     ).toBeInTheDocument()
 
-    const restoreBtn = screen.getByRole('button', { name: /restore backup/i })
+    const restoreBtn = screen.getByRole('button', {
+      name: /import deck \(replace current\)/i,
+    })
     await user.click(restoreBtn)
 
     expect(
@@ -660,14 +662,16 @@ describe('Jolito', () => {
       { type: 'application/json' },
     )
 
-    const fileInput = screen.getByLabelText(/choose backup json file/i)
+    const fileInput = screen.getByLabelText(/choose anki deck or backup file/i)
     await user.upload(fileInput, backupFile)
 
     expect(
-      await screen.findByText(/found 1 cards ready to import/i),
+      await screen.findByText(/found 1 cards.*ready to import/i),
     ).toBeInTheDocument()
 
-    const mergeBtn = screen.getByRole('button', { name: /merge backup/i })
+    const mergeBtn = screen.getByRole('button', {
+      name: /merge deck with library/i,
+    })
     await user.click(mergeBtn)
 
     expect(
@@ -679,6 +683,36 @@ describe('Jolito', () => {
     ).toBe(true)
   })
 
+  it('imports Anki text export (TSV) via modal', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+
+    const ankiText = `#separator:tab\n#html:true\nel perro\tthe dog\nla casa\tthe house`
+    const ankiFile = new File([ankiText], 'anki-spanish.txt', {
+      type: 'text/plain',
+    })
+
+    const fileInput = screen.getByLabelText(/choose anki deck or backup file/i)
+    await user.upload(fileInput, ankiFile)
+
+    expect(
+      await screen.findByText(/found 2 cards.*ready to import/i),
+    ).toBeInTheDocument()
+
+    const importBtn = screen.getByRole('button', {
+      name: /import deck \(replace current\)/i,
+    })
+    await user.click(importBtn)
+
+    expect(
+      await screen.findByText(/successfully imported 2 cards/i),
+    ).toBeInTheDocument()
+    expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
   it('displays error message when importing invalid file', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
@@ -686,15 +720,15 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
-    const corruptFile = new File(['{ invalid json'], 'bad.json', {
-      type: 'application/json',
+    const corruptFile = new File([''], 'bad.txt', {
+      type: 'text/plain',
     })
 
-    const fileInput = screen.getByLabelText(/choose backup json file/i)
+    const fileInput = screen.getByLabelText(/choose anki deck or backup file/i)
     await user.upload(fileInput, corruptFile)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /invalid json format/i,
+      /no flashcards found/i,
     )
   })
 
@@ -833,7 +867,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
-        name: /offline backup & export \(json\)/i,
+        name: /deck import & offline backup/i,
       }),
     ).toBeInTheDocument()
   })
