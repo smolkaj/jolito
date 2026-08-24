@@ -2,6 +2,9 @@ import type { Speaker } from '../../application/ports'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
+  private lastSpokenText: string | null = null
+  private lastSpokenLocale: string | null = null
+  private lastSpokenTime = 0
 
   constructor() {
     this.initVoices()
@@ -39,7 +42,20 @@ export class EnhancedBrowserSpeaker implements Speaker {
   speak(text: string, locale: string): boolean {
     if (!this.supported()) return false
 
+    const now = Date.now()
+    if (
+      this.lastSpokenText === text &&
+      this.lastSpokenLocale === locale &&
+      now - this.lastSpokenTime < 80
+    ) {
+      return true
+    }
+
     try {
+      this.lastSpokenText = text
+      this.lastSpokenLocale = locale
+      this.lastSpokenTime = now
+
       window.speechSynthesis.cancel()
 
       // Always query latest voices to capture newly registered or async system voice packs

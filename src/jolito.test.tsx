@@ -483,6 +483,73 @@ describe('Jolito', () => {
     expect(legend).toHaveClass('sr-only')
   })
 
+  it('plays prompt audio exactly once when starting practice with an authenticated user and does not loop', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    // Simulate realistic async network sync returning parsed cards from remote JSON
+    services.mockSync.syncDeck = async (cards) => {
+      await new Promise((resolve) => setTimeout(resolve, 30))
+      return {
+        success: true,
+        cards: cards.map((c) => ({ ...c })),
+        syncedAt: Date.now(),
+      }
+    }
+
+    render(<App services={services} />)
+
+    // Wait for initial mount sync to complete
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    // Reset spoken list before starting review
+    services.mockSpeaker.spoken = []
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+
+    // Wait 100ms for any background sync or effects to run
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    // Prompt audio should have been played exactly once for 'aguacate'
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'aguacate', locale: 'es-MX' },
+    ])
+  })
+
+  it('does not restart prompt audio when cards are updated in the background during active review', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'aguacate', locale: 'es-MX' },
+    ])
+
+    // Clear spoken list
+    services.mockSpeaker.spoken = []
+
+    // Simulate an external background save / card update
+    act(() => {
+      services.cards.save([
+        ...services.memoryCards.saved!.map((c) => ({ ...c })),
+      ])
+    })
+
+    // Speaker should not have re-spoken 'aguacate'
+    expect(services.mockSpeaker.spoken).toEqual([])
+  })
+
   it('opens modal via connection pill, exports backup JSON, and downloads file', async () => {
     const user = userEvent.setup()
     const services = createTestServices()

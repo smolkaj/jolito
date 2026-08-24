@@ -137,13 +137,20 @@ export class MockSyncService implements SyncService {
 
   pushDeck(cards: StudyCard[], user: AuthUser): Promise<SyncResult> {
     void user
-    this.remoteCards = cards
-    return Promise.resolve({ success: true, cards, syncedAt: Date.now() })
+    this.remoteCards = cards.map((c) => ({ ...c }))
+    return Promise.resolve({
+      success: true,
+      cards: this.remoteCards.map((c) => ({ ...c })),
+      syncedAt: Date.now(),
+    })
   }
 
   pullDeck(user: AuthUser): Promise<SyncResult> {
     void user
-    return Promise.resolve({ success: true, cards: this.remoteCards })
+    return Promise.resolve({
+      success: true,
+      cards: this.remoteCards.map((c) => ({ ...c })),
+    })
   }
 
   syncDeck(localCards: StudyCard[], user: AuthUser): Promise<SyncResult> {
@@ -154,7 +161,7 @@ export class MockSyncService implements SyncService {
     this.status = 'synced'
     return Promise.resolve({
       success: true,
-      cards: this.remoteCards,
+      cards: this.remoteCards.map((c) => ({ ...c })),
       syncedAt: Date.now(),
     })
   }
