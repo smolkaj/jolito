@@ -831,7 +831,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders compact summary pill when review queue exceeds 10 cards', async () => {
+  it('renders compact summary pill when review queue exceeds 6 cards', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     // Populate 12 due cards
@@ -861,5 +861,6 @@ describe('Jolito', () => {
     expect(badge.querySelector('.queue-compact-pill')).toBeInTheDocument()
     expect(badge.querySelector('.queue-beads-track')).not.toBeInTheDocument()
     expect(badge).toHaveTextContent(/12\s*cards left/)
+    expect(badge).toHaveTextContent(/12\s*new/)
   })
 })

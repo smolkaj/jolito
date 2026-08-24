@@ -1627,7 +1627,7 @@ export function App({
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
           <div className="review-queue-badge" aria-label="Session progress">
-            {queue.length <= 10 ? (
+            {queue.length <= 6 ? (
               <div className="queue-beads-track" aria-hidden="true">
                 {queue.map((id, index) => {
                   const card = cardMap.get(id)
@@ -1643,6 +1643,13 @@ export function App({
                     <span
                       key={`${id}-${index}`}
                       className={`queue-bead is-${beadType} ${isCurrent ? 'is-current' : ''}`}
+                      title={
+                        beadType === 'learn'
+                          ? 'Retry card'
+                          : beadType === 'new'
+                            ? 'New card'
+                            : 'Review card'
+                      }
                     />
                   )
                 })}
@@ -1650,21 +1657,30 @@ export function App({
             ) : (
               <div className="queue-compact-pill" aria-hidden="true">
                 {newCount > 0 && (
-                  <span className="compact-chip is-new">
+                  <span
+                    className="compact-chip is-new"
+                    title={`${newCount} new ${newCount === 1 ? 'card' : 'cards'}`}
+                  >
                     <i />
-                    {newCount}
+                    {newCount} <span className="compact-label">new</span>
                   </span>
                 )}
                 {learnCount > 0 && (
-                  <span className="compact-chip is-learn">
+                  <span
+                    className="compact-chip is-learn"
+                    title={`${learnCount} learning ${learnCount === 1 ? 'card' : 'cards'}`}
+                  >
                     <i />
-                    {learnCount}
+                    {learnCount} <span className="compact-label">learn</span>
                   </span>
                 )}
                 {reviewCount > 0 && (
-                  <span className="compact-chip is-due">
+                  <span
+                    className="compact-chip is-due"
+                    title={`${reviewCount} due ${reviewCount === 1 ? 'card' : 'cards'}`}
+                  >
                     <i />
-                    {reviewCount}
+                    {reviewCount} <span className="compact-label">due</span>
                   </span>
                 )}
               </div>
