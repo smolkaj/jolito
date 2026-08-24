@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
@@ -427,71 +427,56 @@ describe('Jolito', () => {
     )
   })
 
-  it('protects active recall by showing sticker art only inside reveal panel for starter cards', async () => {
+  it('renders clean study view without pictures, positions prompt audio beside prompt, and replays expected answer after reveal', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
-    // Card 1: aguacate (ES -> EN) — BEFORE REVEAL: prompt-first focus, zero distraction/spoiler
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+
+    // Prompt wrap contains heading and prompt audio button side by side
+    const promptHeading = screen.getByRole('heading', { name: 'aguacate' })
+    const promptAudioButton = screen.getByRole('button', {
+      name: /play prompt audio/i,
+    })
+    expect(promptHeading).toBeInTheDocument()
+    expect(promptAudioButton).toBeInTheDocument()
+    expect(promptHeading.parentElement).toContainElement(promptAudioButton)
+    expect(promptHeading.parentElement).toHaveClass('study-prompt-wrap')
+
+    // Direction line sits below prompt with Mexican Spanish
+    expect(screen.getByText(/MEXICAN SPANISH →.*ENGLISH/)).toBeInTheDocument()
+
+    // No picture / sticker images in study section
     expect(
       screen.queryByRole('img', { name: 'Card illustration' }),
     ).not.toBeInTheDocument()
 
-    // REVEAL Card 1 -> sticker art blooms in inside reveal panel!
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Card illustration' })).toHaveClass(
-      'reveal-art-wrap',
-    )
+    // Replay audio shortcut before reveal replays the prompt
+    services.mockSpeaker.spoken = []
+    fireEvent.keyDown(window, { code: 'Space', ctrlKey: true })
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'aguacate', locale: 'es-MX' },
+    ])
 
-    // Rate and advance to Card 2: avocado (EN -> ES)
-    await user.keyboard('4')
-    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
+    // Reveal answer
+    await user.keyboard('{Enter}')
+
+    // No picture on reveal screen either
     expect(
       screen.queryByRole('img', { name: 'Card illustration' }),
     ).not.toBeInTheDocument()
 
-    // Reveal Card 2 -> sticker art appears
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
+    // Replay audio shortcut after reveal replays the EXPECTED ANSWER!
+    services.mockSpeaker.spoken = []
+    fireEvent.keyDown(window, { code: 'Space' })
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'avocado', locale: 'en-US' },
+    ])
 
-    // Rate and advance to Card 3: Qué padre (ES -> EN)
-    await user.keyboard('4')
-    expect(
-      screen.getByRole('heading', { name: 'Qué padre' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
-
-    // Reveal Card 3 -> Qué padre sticker appears
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
-
-    // Rate and advance to Card 4: How cool (EN -> ES)
-    await user.keyboard('4')
-    expect(
-      screen.getByRole('heading', { name: 'How cool' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('img', { name: 'Card illustration' }),
-    ).not.toBeInTheDocument()
-
-    // Reveal Card 4 -> Qué padre sticker appears
-    await user.keyboard('{Enter}')
-    expect(
-      screen.getByRole('img', { name: 'Card illustration' }),
-    ).toBeInTheDocument()
+    // Rating fieldset has visually-hidden legend
+    const legend = document.querySelector('.grade-fieldset legend')
+    expect(legend).toHaveClass('sr-only')
   })
 
   it('opens deck backup modal, exports backup JSON, and downloads file', async () => {

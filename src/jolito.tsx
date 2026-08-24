@@ -11,7 +11,6 @@ import {
 import celebrateUrl from '../assets/jolito-celebrate.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
-import sampleQuePadreUrl from '../assets/sample-que-padre.png'
 import { createCards } from './application/create-cards'
 import {
   createDeckBackup,
@@ -110,24 +109,6 @@ function Brand({ onClick }: { onClick?: () => void }) {
   ) : (
     <div className="brand">{content}</div>
   )
-}
-
-function findCardArt(
-  card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>,
-): string | null {
-  if (!card) return null
-  const combined = `${card.prompt} ${card.answer} ${card.id}`.toLowerCase()
-  if (combined.includes('aguacate') || combined.includes('avocado')) {
-    return sampleAguacateUrl
-  }
-  if (
-    combined.includes('padre') ||
-    combined.includes('how cool') ||
-    combined.includes('que-padre')
-  ) {
-    return sampleQuePadreUrl
-  }
-  return null
 }
 
 function AudioButton({
@@ -692,13 +673,17 @@ export function App({
       if (view !== 'review' || !currentCard) return
 
       if (
-        event.code === 'Space' &&
+        (event.code === 'Space' || event.key === ' ') &&
         (document.activeElement !== responseInput.current ||
           event.ctrlKey ||
           event.metaKey)
       ) {
         event.preventDefault()
-        playAudio(currentCard.prompt, localeForPrompt(currentCard))
+        if (revealed) {
+          playAudio(currentCard.answer, localeForAnswer(currentCard))
+        } else {
+          playAudio(currentCard.prompt, localeForPrompt(currentCard))
+        }
       }
 
       if (revealed && ['1', '2', '3', '4'].includes(event.key)) {
@@ -1013,7 +998,7 @@ export function App({
             <form className="create-form" onSubmit={createCard}>
               <div className="field-group field-group-relative">
                 <label htmlFor="spanish">
-                  <MexicoFlag /> Spanish
+                  <MexicoFlag /> Mexican Spanish
                 </label>
                 <textarea
                   id="spanish"
@@ -1063,7 +1048,7 @@ export function App({
                     className="suggestions-listbox"
                     role="listbox"
                     id="spanish-suggestions"
-                    aria-label="Spanish suggestions"
+                    aria-label="Mexican Spanish suggestions"
                   >
                     {suggestions.map((item, index) => (
                       <li
@@ -1139,7 +1124,7 @@ export function App({
                       <MexicoFlag /> Reverse Answer
                       <input
                         name="reverseAnswer"
-                        placeholder="Optional (defaults to Spanish)"
+                        placeholder="Optional (defaults to Mexican Spanish)"
                       />
                     </label>
                   </div>
@@ -1268,18 +1253,8 @@ export function App({
           </div>
         </nav>
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-          <div className="prompt-meta">
-            <p className="eyebrow direction-eyebrow">
-              {currentCard.direction === 'es-en' ? (
-                <>
-                  <MexicoFlag /> SPANISH → <UsFlag /> ENGLISH
-                </>
-              ) : (
-                <>
-                  <UsFlag /> ENGLISH → <MexicoFlag /> SPANISH
-                </>
-              )}
-            </p>
+          <div className="study-prompt-wrap">
+            <h1 className="study-prompt">{currentCard.prompt}</h1>
             <AudioButton
               prompt
               label="Play prompt audio"
@@ -1288,7 +1263,19 @@ export function App({
               }
             />
           </div>
-          <h1 className="study-prompt">{currentCard.prompt}</h1>
+          <div className="prompt-meta">
+            <p className="eyebrow direction-eyebrow">
+              {currentCard.direction === 'es-en' ? (
+                <>
+                  <MexicoFlag /> MEXICAN SPANISH → <UsFlag /> ENGLISH
+                </>
+              ) : (
+                <>
+                  <UsFlag /> ENGLISH → <MexicoFlag /> MEXICAN SPANISH
+                </>
+              )}
+            </p>
+          </div>
           {audioUnavailable && (
             <p className="audio-unavailable" role="status">
               Audio isn’t available in this browser. You can keep reviewing.
@@ -1314,9 +1301,7 @@ export function App({
             </form>
           ) : (
             <div className="reveal-panel">
-              <div
-                className={`reveal-content ${findCardArt(currentCard) ? 'has-art' : ''}`}
-              >
+              <div className="reveal-content">
                 <div className="reveal-main">
                   <AnswerComparison
                     typed={answer}
@@ -1335,22 +1320,9 @@ export function App({
                     </div>
                   )}
                 </div>
-                {findCardArt(currentCard) && (
-                  <div
-                    className="reveal-art-wrap"
-                    role="img"
-                    aria-label="Card illustration"
-                  >
-                    <img
-                      src={findCardArt(currentCard)!}
-                      alt=""
-                      className="reveal-art-image"
-                    />
-                  </div>
-                )}
               </div>
               <fieldset className="grade-fieldset">
-                <legend>How did that feel?</legend>
+                <legend className="sr-only">How did that feel?</legend>
                 <div className="grade-buttons">
                   {grades.map((gradeValue, index) => (
                     <button
