@@ -35,7 +35,7 @@ Every PR must be reviewed by a fresh, independent read-only agent instance and i
 
 ## Review loop to fixpoint
 
-1. Author passes all gates (`npm run check`, `npm run audit:prod`, and `npm run test:e2e` for workflow changes).
+1. Author passes all gates (`npm run check`, `npm run audit:prod`, and `npm run test:e2e` with visual verification for UI changes).
 2. Author opens PR and invokes read-only reviewer with only PR description, diff, and docs.
 3. Reviewer records base/head commit SHAs and reports findings.
 4. If blocking issues exist, author resolves them, reruns checks, pushes, and requests re-review on the new head SHA.
@@ -56,3 +56,4 @@ Every PR must be reviewed by a fresh, independent read-only agent instance and i
 3. **Never fail silently.** Prefer compile-time constraints. Fail loudly with structured errors rather than fallback defaults.
 4. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads) must be validated with runtime Zod schemas.
 5. **Data migrations are mandatory.** When changing storage representations, provide an explicit, tested migration for existing cards.
+6. **Visual verification is mandatory.** DOM presence is not visual correctness. Author and reviewer must visually verify rendered appearance, layering, and contrast on UI changes.

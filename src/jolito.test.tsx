@@ -479,14 +479,14 @@ describe('Jolito', () => {
     expect(legend).toHaveClass('sr-only')
   })
 
-  it('opens deck backup modal, exports backup JSON, and downloads file', async () => {
+  it('opens modal via connection pill, exports backup JSON, and downloads file', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
-      screen.getByRole('heading', { name: /deck backup & safety/i }),
+      screen.getByRole('heading', { name: /cloud sync & deck backup/i }),
     ).toBeInTheDocument()
 
     const exportBtn = screen.getByRole('button', {
@@ -502,7 +502,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
     const backupFile = new File(
       [
@@ -555,7 +555,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -613,7 +613,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
 
     const corruptFile = new File(['{ invalid json'], 'bad.json', {
       type: 'application/json',
@@ -627,31 +627,145 @@ describe('Jolito', () => {
     )
   })
 
-  it('closes backup modal via close button and Escape key', async () => {
+  it('opens sync modal, sends magic link, verifies OTP, and signs in', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
-      screen.getByRole('heading', { name: /deck backup & safety/i }),
+      screen.getByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
+    ).toBeInTheDocument()
+
+    // Enter email
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+
+    expect(
+      await screen.findByText(/sign-in code sent to your email/i),
+    ).toBeInTheDocument()
+
+    // Enter OTP
+    const otpInput = screen.getByLabelText(/verification code/i)
+    await user.type(otpInput, '123456')
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    expect(await screen.findByText(/signed in/i)).toBeInTheDocument()
+    expect(screen.getByText('learner@example.com')).toBeInTheDocument()
+  })
+
+  it('allows signed in user to manually trigger sync now', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({
+      user: { id: 'usr-1', email: 'sync-user@example.com' },
+    })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
+
+    const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
+    await user.click(syncNowBtn)
+
+    expect(
+      await screen.findByText(/deck successfully synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(services.mockSync.syncedCount).toBeGreaterThan(0)
+  })
+
+  it('allows signed in user to sign out and returns to auth form', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({
+      user: { id: 'usr-1', email: 'sync-user@example.com' },
+    })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /sign out/i }))
+
+    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
+  })
+
+  it('closes sync modal via close button and Escape key', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    expect(
+      screen.getByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
     ).toBeInTheDocument()
 
     // Close via close button
     await user.click(screen.getByRole('button', { name: /close dialog/i }))
     expect(
-      screen.queryByRole('heading', { name: /deck backup & safety/i }),
+      screen.queryByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
     ).not.toBeInTheDocument()
 
     // Open again and close via Escape
-    await user.click(screen.getByRole('button', { name: /backup/i }))
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
-      screen.getByRole('heading', { name: /deck backup & safety/i }),
+      screen.getByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
     ).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     expect(
-      screen.queryByRole('heading', { name: /deck backup & safety/i }),
+      screen.queryByRole('heading', {
+        name: /cloud sync & deck backup/i,
+      }),
     ).not.toBeInTheDocument()
+  })
+
+  it('updates connection pill when network goes offline and recovers online', async () => {
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('button', { name: /local deck only/i }),
+    ).toBeInTheDocument()
+
+    // Trigger offline event
+    window.dispatchEvent(new Event('offline'))
+    expect(
+      await screen.findByRole('button', {
+        name: /offline\. changes saved locally/i,
+      }),
+    ).toBeInTheDocument()
+
+    // Trigger online event
+    window.dispatchEvent(new Event('online'))
+    expect(
+      await screen.findByRole('button', { name: /local deck only/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('displays friendly notice when cloud sync is not enabled for preview', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    services.mockAuth.configured = false
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    expect(
+      screen.getByRole('heading', {
+        name: /cloud sync is disabled in this preview/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: /offline backup & export \(json\)/i,
+      }),
+    ).toBeInTheDocument()
   })
 })

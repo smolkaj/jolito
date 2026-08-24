@@ -1,5 +1,7 @@
 import type { AppServices, Clock, IdGenerator } from '../../application/ports'
 import { OfflineCardAssistant } from '../../application/card-assistant'
+import { SupabaseAuthService } from '../supabase/auth-service'
+import { SupabaseSyncService } from '../supabase/sync-service'
 import { LocalStorageCardRepository } from './card-repository'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
@@ -30,6 +32,9 @@ export function createBrowserServices(): AppServices {
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
 
+  const auth = new SupabaseAuthService()
+  const sync = new SupabaseSyncService(auth)
+
   return {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
@@ -37,5 +42,7 @@ export function createBrowserServices(): AppServices {
     speaker: new LayeredNeuralSpeaker(),
     sounds: new WebAudioSoundPlayer(),
     assistant,
+    auth,
+    sync,
   }
 }

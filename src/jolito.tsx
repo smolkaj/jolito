@@ -17,7 +17,13 @@ import {
   restoreDeckFromBackup,
   type RestoreMode,
 } from './application/deck-backup'
-import type { AppServices } from './application/ports'
+import { syncDeckWithCloud } from './application/deck-sync'
+import type {
+  AppServices,
+  AuthService,
+  AuthUser,
+  SyncService,
+} from './application/ports'
 import { starterCards } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
@@ -31,6 +37,7 @@ import {
 } from './domain/card'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseDeckBackup } from './domain/deck-backup'
+import type { SyncStatus } from './domain/sync'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -198,39 +205,51 @@ function AnswerComparison({
     </div>
   )
 }
-
-function BackupModal({
+function SyncModal({
   isOpen,
   onClose,
   cards,
   onUpdateCards,
+  auth,
+  sync,
   clock,
 }: {
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
   onUpdateCards: (newCards: StudyCard[]) => void
+  auth: AuthService
+  sync: SyncService
   clock: { now(): number }
 }) {
+  // Auth & Cloud Sync state
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState('')
+  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<{
+    type: 'success' | 'error' | 'info'
+    message: string
+  } | null>(null)
+
+  // Backup & Restore state
   const [mode, setMode] = useState<RestoreMode>('replace')
-  const [status, setStatus] = useState<{
+  const [backupStatus, setBackupStatus] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
     details?: string[] | undefined
   } | null>(null)
   const [selectedFileText, setSelectedFileText] = useState<string | null>(null)
-  const [isStorageProtected, setIsStorageProtected] = useState<boolean | null>(
-    null,
-  )
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
+
   useEffect(() => {
-    if (isOpen) {
-      void checkOrRequestStoragePersistence().then((persisted) => {
-        setIsStorageProtected(persisted)
-      })
-    }
-  }, [isOpen])
+    return auth.onAuthStateChange((currentUser) => {
+      setUser(currentUser)
+    })
+  }, [auth])
 
   useEffect(() => {
     if (!isOpen) return
@@ -246,10 +265,110 @@ function BackupModal({
 
   if (!isOpen) return null
 
+  // Auth handlers
+  const handleSendLink = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setLoading(true)
+    setSyncStatusMsg(null)
+    const res = await auth.sendMagicLink(email.trim())
+    setLoading(false)
+    if (res.success) {
+      setIsOtpSent(true)
+      setSyncStatusMsg({
+        type: 'info',
+        message: 'Sign-in code sent to your email. Enter it below to sync.',
+      })
+    } else {
+      setSyncStatusMsg({
+        type: 'error',
+        message: res.error || 'Failed to send sign-in link.',
+      })
+    }
+  }
+
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!token.trim()) return
+    setLoading(true)
+    setSyncStatusMsg(null)
+    const res = await auth.verifyOtp(email.trim(), token.trim())
+    if (res.success) {
+      const loggedUser = await auth.getUser()
+      if (loggedUser) {
+        setSyncStatusMsg({
+          type: 'info',
+          message: 'Signed in! Syncing deck with cloud...',
+        })
+        const syncRes = await syncDeckWithCloud({
+          localCards: cards,
+          user: loggedUser,
+          syncService: sync,
+          onCardsUpdated: onUpdateCards,
+        })
+        setLoading(false)
+        if (syncRes.success) {
+          setSyncStatusMsg({
+            type: 'success',
+            message: `Deck synchronized (${cards.length} cards up to date).`,
+          })
+        } else {
+          setSyncStatusMsg({
+            type: 'error',
+            message: syncRes.error || 'Sync completed with errors.',
+          })
+        }
+      } else {
+        setLoading(false)
+      }
+    } else {
+      setLoading(false)
+      setSyncStatusMsg({
+        type: 'error',
+        message: res.error || 'Invalid code.',
+      })
+    }
+  }
+
+  const handleSyncNow = async () => {
+    if (!user) return
+    setLoading(true)
+    setSyncStatusMsg(null)
+    const res = await syncDeckWithCloud({
+      localCards: cards,
+      user,
+      syncService: sync,
+      onCardsUpdated: onUpdateCards,
+    })
+    setLoading(false)
+    if (res.success) {
+      setSyncStatusMsg({
+        type: 'success',
+        message: `Deck successfully synchronized with cloud.`,
+      })
+    } else {
+      setSyncStatusMsg({
+        type: 'error',
+        message: res.error || 'Failed to sync with cloud.',
+      })
+    }
+  }
+
+  const handleSignOut = async () => {
+    await auth.signOut()
+    setIsOtpSent(false)
+    setToken('')
+    setSyncStatusMsg({
+      type: 'info',
+      message: 'Signed out. Cards remain safely stored on this device.',
+    })
+  }
+
+  // Backup / Export / Restore handlers
   const handleExport = () => {
     const backup = createDeckBackup(cards, clock)
     downloadJsonFile(backup.filename, backup.json)
-    setStatus({
+    setBackupStatus({
       type: 'success',
       message: `Deck exported: ${cards.length} cards saved to ${backup.filename}.`,
     })
@@ -265,13 +384,13 @@ function BackupModal({
       const parsed = parseDeckBackup(text)
       if (parsed.success) {
         setSelectedFileText(text)
-        setStatus({
+        setBackupStatus({
           type: 'info',
           message: `Found ${parsed.count} cards ready to import.`,
         })
       } else {
         setSelectedFileText(null)
-        setStatus({
+        setBackupStatus({
           type: 'error',
           message: parsed.error,
           details: parsed.details,
@@ -286,7 +405,7 @@ function BackupModal({
     const result = restoreDeckFromBackup(cards, selectedFileText, mode)
     if (result.success) {
       onUpdateCards(result.cards)
-      setStatus({
+      setBackupStatus({
         type: 'success',
         message: `Successfully imported ${result.importedCount} cards (${result.count} total cards in library).`,
       })
@@ -294,8 +413,17 @@ function BackupModal({
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
+      // If signed in, sync newly imported cards to cloud
+      if (user) {
+        void syncDeckWithCloud({
+          localCards: result.cards,
+          user,
+          syncService: sync,
+          onCardsUpdated: onUpdateCards,
+        })
+      }
     } else {
-      setStatus({
+      setBackupStatus({
         type: 'error',
         message: result.error,
         details: result.details,
@@ -306,18 +434,18 @@ function BackupModal({
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className="modal-content backup-modal"
+        className="modal-content sync-modal data-safety-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="backup-modal-title"
+        aria-labelledby="sync-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="backup-modal-title">Deck backup & safety</h2>
+            <h2 id="sync-modal-title">Cloud sync & deck backup</h2>
             <p className="modal-subtitle">
-              Export your cards and spaced-repetition schedules or restore a
-              backup.
+              Replicate your cards across devices or export offline JSON
+              backups.
             </p>
           </div>
           <button
@@ -334,122 +462,331 @@ function BackupModal({
           <div className="stat-pill">
             <strong>{cards.length}</strong> cards in collection
           </div>
-          {isStorageProtected && (
-            <div className="stat-pill storage-pill">
-              <i className="status-dot-active" aria-hidden="true" />
-              Storage protected
-            </div>
-          )}
         </div>
 
-        <div className="backup-sections">
-          <section className="backup-section export-section">
-            <div className="backup-section-header">
-              <h3>Export backup</h3>
-              <p>
-                Save all cards, schedules, notes, and study history to a
-                portable JSON file.
-              </p>
+        <div className="modal-sections-stack">
+          {/* Section 1: Multi-Device Cloud Sync */}
+          <section className="safety-section cloud-sync-section">
+            <div className="section-title-row">
+              <span className="section-icon" aria-hidden="true">
+                ☁️
+              </span>
+              <div>
+                <h3>Multi-device cloud sync</h3>
+                <p className="section-caption">
+                  Automatic background synchronization for your phones, tablets,
+                  and laptops.
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              className="primary-button export-button"
-              onClick={handleExport}
-            >
-              Export backup (JSON) <span aria-hidden="true">↓</span>
-            </button>
+
+            {syncStatusMsg && (
+              <div
+                className={`status-banner status-${syncStatusMsg.type}`}
+                role={syncStatusMsg.type === 'error' ? 'alert' : 'status'}
+              >
+                <p>{syncStatusMsg.message}</p>
+              </div>
+            )}
+
+            {!isBackendConfigured ? (
+              <div className="sync-notice-card">
+                <span className="notice-icon" aria-hidden="true">
+                  🛡️
+                </span>
+                <h4>Cloud sync is disabled in this preview</h4>
+                <p>
+                  Multi-device cloud synchronization is disabled in this preview
+                  deployment. Your flashcards, audio, and spaced-repetition
+                  schedules remain 100% functional and safely stored on this
+                  device.
+                </p>
+              </div>
+            ) : user ? (
+              <div className="sync-account-pane">
+                <div className="account-info-card">
+                  <div className="account-avatar" aria-hidden="true">
+                    ☁️
+                  </div>
+                  <div className="account-details">
+                    <span className="account-badge">Signed in</span>
+                    <p className="account-email">{user.email}</p>
+                  </div>
+                </div>
+
+                <div className="sync-actions-row">
+                  <button
+                    type="button"
+                    className="primary-button sync-now-button"
+                    onClick={() => {
+                      void handleSyncNow()
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Syncing…' : 'Sync now ⟳'}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-button sign-out-button"
+                    onClick={() => {
+                      void handleSignOut()
+                    }}
+                    disabled={loading}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="sync-auth-pane">
+                {!isOtpSent ? (
+                  <form
+                    onSubmit={(e) => {
+                      void handleSendLink(e)
+                    }}
+                    className="sync-auth-form"
+                  >
+                    <p className="sync-explanation">
+                      Enter your email to receive a passwordless sign-in code.
+                    </p>
+                    <div className="field-group">
+                      <label htmlFor="sync-email">Email address</label>
+                      <input
+                        id="sync-email"
+                        type="email"
+                        required
+                        placeholder="learner@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="primary-button"
+                      disabled={loading}
+                    >
+                      {loading ? 'Sending code…' : 'Send sign-in code →'}
+                    </button>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      void handleVerifyOtp(e)
+                    }}
+                    className="sync-auth-form"
+                  >
+                    <p className="sync-explanation">
+                      Enter the verification code sent to{' '}
+                      <strong>{email}</strong>:
+                    </p>
+                    <div className="field-group">
+                      <label htmlFor="sync-otp">Verification code</label>
+                      <input
+                        id="sync-otp"
+                        type="text"
+                        required
+                        autoFocus
+                        placeholder="e.g. 123456"
+                        value={token}
+                        onChange={(e) => setToken(e.target.value)}
+                      />
+                    </div>
+                    <div className="sync-auth-buttons">
+                      <button
+                        type="submit"
+                        className="primary-button"
+                        disabled={loading}
+                      >
+                        {loading ? 'Verifying…' : 'Verify & sync →'}
+                      </button>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => setIsOtpSent(false)}
+                      >
+                        Use different email
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
           </section>
 
-          <section className="backup-section import-section">
-            <div className="backup-section-header">
-              <h3>Restore or merge backup</h3>
-              <p>
-                Load cards and schedules from a previously exported Jolito JSON
-                file.
-              </p>
+          {/* Section 2: Offline File Backup & Restore (JSON) */}
+          <section className="safety-section backup-export-section">
+            <div className="section-title-row">
+              <span className="section-icon" aria-hidden="true">
+                💾
+              </span>
+              <div>
+                <h3>Offline backup & export (JSON)</h3>
+                <p className="section-caption">
+                  Export or restore your cards and schedules to portable JSON
+                  files.
+                </p>
+              </div>
             </div>
 
-            <div
-              className="import-mode-selector"
-              role="radiogroup"
-              aria-label="Import mode"
-            >
-              <label
-                className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="restoreMode"
-                  value="replace"
-                  checked={mode === 'replace'}
-                  onChange={() => setMode('replace')}
-                />
-                <span className="mode-label">
-                  <strong>Restore</strong>
-                  <small>Replace current deck completely</small>
-                </span>
-              </label>
-              <label
-                className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="restoreMode"
-                  value="merge"
-                  checked={mode === 'merge'}
-                  onChange={() => setMode('merge')}
-                />
-                <span className="mode-label">
-                  <strong>Merge</strong>
-                  <small>Combine with current cards</small>
-                </span>
-              </label>
+            <div className="backup-sections">
+              <div className="backup-subcard export-subcard">
+                <h4>Export deck</h4>
+                <p>
+                  Save all cards, schedules, notes, and study history to a JSON
+                  file.
+                </p>
+                <button
+                  type="button"
+                  className="primary-button export-button"
+                  onClick={handleExport}
+                >
+                  Export backup (JSON) <span aria-hidden="true">↓</span>
+                </button>
+              </div>
+
+              <div className="backup-subcard import-subcard">
+                <h4>Restore or merge file</h4>
+                <p>
+                  Load cards and schedules from a previously exported Jolito
+                  JSON file.
+                </p>
+
+                <div
+                  className="import-mode-selector"
+                  role="radiogroup"
+                  aria-label="Import mode"
+                >
+                  <label
+                    className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="restoreMode"
+                      value="replace"
+                      checked={mode === 'replace'}
+                      onChange={() => setMode('replace')}
+                    />
+                    <span className="mode-label">
+                      <strong>Restore</strong>
+                      <small>Replace current deck</small>
+                    </span>
+                  </label>
+                  <label
+                    className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="restoreMode"
+                      value="merge"
+                      checked={mode === 'merge'}
+                      onChange={() => setMode('merge')}
+                    />
+                    <span className="mode-label">
+                      <strong>Merge</strong>
+                      <small>Combine with current</small>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="file-input-wrapper">
+                  <label
+                    htmlFor="backup-file-input"
+                    className="file-input-label"
+                  >
+                    Choose backup JSON file
+                  </label>
+                  <input
+                    id="backup-file-input"
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    className="backup-file-input"
+                    onChange={handleFileChange}
+                    aria-label="Choose backup JSON file"
+                  />
+                </div>
+
+                {selectedFileText && (
+                  <button
+                    type="button"
+                    className="secondary-button restore-confirm-button"
+                    onClick={handleRestore}
+                  >
+                    {mode === 'replace' ? 'Restore backup' : 'Merge backup'}
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="file-input-wrapper">
-              <label htmlFor="backup-file-input" className="file-input-label">
-                Choose backup JSON file
-              </label>
-              <input
-                id="backup-file-input"
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                className="backup-file-input"
-                onChange={handleFileChange}
-                aria-label="Choose backup JSON file"
-              />
-            </div>
-
-            {selectedFileText && (
-              <button
-                type="button"
-                className="secondary-button restore-confirm-button"
-                onClick={handleRestore}
+            {backupStatus && (
+              <div
+                className={`status-banner status-${backupStatus.type}`}
+                role={backupStatus.type === 'error' ? 'alert' : 'status'}
               >
-                {mode === 'replace' ? 'Restore backup' : 'Merge backup'}
-              </button>
+                <p>{backupStatus.message}</p>
+                {backupStatus.details && (
+                  <ul className="status-details">
+                    {backupStatus.details.map((detail, idx) => (
+                      <li key={idx}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
           </section>
         </div>
-
-        {status && (
-          <div
-            className={`status-banner status-${status.type}`}
-            role={status.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{status.message}</p>
-            {status.details && (
-              <ul className="status-details">
-                {status.details.map((detail, idx) => (
-                  <li key={idx}>{detail}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
       </div>
     </div>
+  )
+}
+
+interface ConnectionPillProps {
+  authUser: AuthUser | null
+  syncStatus: SyncStatus
+  isOnline: boolean
+  onClick: () => void
+}
+
+function ConnectionPill({
+  authUser,
+  syncStatus,
+  isOnline,
+  onClick,
+}: ConnectionPillProps) {
+  let stateClass = 'is-local'
+  let label = 'Local only · Tap to sync'
+  let ariaLabel = 'Local deck only. Tap to sync with cloud'
+
+  if (!isOnline) {
+    stateClass = 'is-offline'
+    label = 'Offline · Saved locally'
+    ariaLabel = 'Offline. Changes saved locally'
+  } else if (authUser) {
+    if (syncStatus === 'syncing') {
+      stateClass = 'is-syncing'
+      label = 'Syncing…'
+      ariaLabel = 'Synchronizing deck with cloud'
+    } else if (syncStatus === 'error') {
+      stateClass = 'is-offline'
+      label = 'Sync issue · Tap to retry'
+      ariaLabel = 'Sync issue. Tap to view status and retry'
+    } else {
+      stateClass = 'is-synced'
+      label = 'Cloud synced ✓'
+      ariaLabel = 'Cloud synced with account'
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={`connection-pill ${stateClass}`}
+      onClick={onClick}
+      aria-label={ariaLabel}
+    >
+      <i className="pill-dot" aria-hidden="true" />
+      <span>{label}</span>
+    </button>
   )
 }
 
@@ -508,7 +845,12 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  )
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
@@ -536,9 +878,57 @@ export function App({
           .map(({ id }) => id)
         return due
       })
+      if (authUser) {
+        setSyncStatus('syncing')
+        void services.sync.syncDeck(newCards, authUser).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
+      }
     },
-    [services.cards, services.clock, view],
+    [authUser, services.cards, services.clock, services.sync, view],
   )
+
+  useEffect(() => {
+    return services.auth.onAuthStateChange((user) => {
+      setAuthUser(user)
+      if (user) {
+        void syncDeckWithCloud({
+          localCards: cards,
+          user,
+          syncService: services.sync,
+          onCardsUpdated: onUpdateCards,
+        }).then((res) => {
+          if (res.success) setSyncStatus('synced')
+        })
+      }
+    })
+  }, [cards, onUpdateCards, services.auth, services.sync])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onOnline = () => {
+      setIsOnline(true)
+      if (authUser) {
+        setSyncStatus('syncing')
+        void services.sync.syncDeck(cards, authUser).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
+      }
+    }
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [authUser, cards, services.sync])
+
+  useEffect(() => {
+    void checkOrRequestStoragePersistence()
+  }, [])
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
     setView(nextView)
@@ -848,17 +1238,12 @@ export function App({
           <nav className="topbar" aria-label="Main navigation">
             <Brand />
             <div className="nav-actions">
-              <button
-                type="button"
-                className="text-button backup-button"
-                onClick={() => setIsBackupOpen(true)}
-                aria-label="Deck backup and restore"
-              >
-                Backup
-              </button>
-              <span className="connection">
-                <i /> On-device · works offline
-              </span>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => setIsSyncOpen(true)}
+              />
             </div>
           </nav>
           <section className="welcome-hero">
@@ -961,11 +1346,13 @@ export function App({
             </div>
           </section>
         </main>
-        <BackupModal
-          isOpen={isBackupOpen}
-          onClose={() => setIsBackupOpen(false)}
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={() => setIsSyncOpen(false)}
           cards={cards}
           onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
           clock={services.clock}
         />
       </>
@@ -978,17 +1365,15 @@ export function App({
           <nav className="topbar" aria-label="Card creation navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
-              <button
-                type="button"
-                className="text-button backup-button"
-                onClick={() => setIsBackupOpen(true)}
-                aria-label="Deck backup and restore"
-              >
-                Backup
-              </button>
               <button className="text-button" onClick={() => beginReview()}>
                 Review {dueCount}
               </button>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => setIsSyncOpen(true)}
+              />
             </div>
           </nav>
           <section className="create-layout">
@@ -1147,11 +1532,13 @@ export function App({
             </form>
           </section>
         </main>
-        <BackupModal
-          isOpen={isBackupOpen}
-          onClose={() => setIsBackupOpen(false)}
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={() => setIsSyncOpen(false)}
           cards={cards}
           onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
           clock={services.clock}
         />
       </>
@@ -1165,19 +1552,17 @@ export function App({
             <Brand onClick={goHome} />
             <div className="nav-actions">
               <button
-                type="button"
-                className="text-button backup-button"
-                onClick={() => setIsBackupOpen(true)}
-                aria-label="Deck backup and restore"
-              >
-                Backup
-              </button>
-              <button
                 className="text-button"
                 onClick={() => navigateTo('create')}
               >
                 + New card
               </button>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => setIsSyncOpen(true)}
+              />
             </div>
           </nav>
           <section className="complete-card">
@@ -1204,11 +1589,13 @@ export function App({
             </div>
           </section>
         </main>
-        <BackupModal
-          isOpen={isBackupOpen}
-          onClose={() => setIsBackupOpen(false)}
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={() => setIsSyncOpen(false)}
           cards={cards}
           onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
           clock={services.clock}
         />
       </>
@@ -1237,19 +1624,17 @@ export function App({
           </div>
           <div className="nav-actions">
             <button
-              type="button"
-              className="text-button backup-button"
-              onClick={() => setIsBackupOpen(true)}
-              aria-label="Deck backup and restore"
-            >
-              Backup
-            </button>
-            <button
               className="text-button"
               onClick={() => navigateTo('create')}
             >
               + New card
             </button>
+            <ConnectionPill
+              authUser={authUser}
+              syncStatus={syncStatus}
+              isOnline={isOnline}
+              onClick={() => setIsSyncOpen(true)}
+            />
           </div>
         </nav>
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
@@ -1347,11 +1732,13 @@ export function App({
           </p>
         </section>
       </main>
-      <BackupModal
-        isOpen={isBackupOpen}
-        onClose={() => setIsBackupOpen(false)}
+      <SyncModal
+        isOpen={isSyncOpen}
+        onClose={() => setIsSyncOpen(false)}
         cards={cards}
         onUpdateCards={onUpdateCards}
+        auth={services.auth}
+        sync={services.sync}
         clock={services.clock}
       />
     </>
