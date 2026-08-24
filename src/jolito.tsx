@@ -806,10 +806,9 @@ export function App({
   const initialResolved = useMemo<{
     view: View
     queue: string[]
-    total: number
   }>(() => {
     if (typeof window === 'undefined') {
-      return { view: 'welcome', queue: [], total: 0 }
+      return { view: 'welcome', queue: [] }
     }
     const hash = window.location.hash
     if (hash === '') {
@@ -823,17 +822,16 @@ export function App({
         .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
         .map(({ id }) => id)
       if (due.length === 0) {
-        return { view: 'complete', queue: [], total: 0 }
+        return { view: 'complete', queue: [] }
       }
-      return { view: 'review', queue: due, total: due.length }
+      return { view: 'review', queue: due }
     }
-    return { view: requested, queue: [], total: 0 }
+    return { view: requested, queue: [] }
   }, [initialCards, services.clock])
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
   const [view, setView] = useState<View>(initialResolved.view)
   const [queue, setQueue] = useState<string[]>(initialResolved.queue)
-  const [sessionTotal, setSessionTotal] = useState(initialResolved.total)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
@@ -863,6 +861,26 @@ export function App({
   const sampleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
+
+  const { newCount, learnCount, reviewCount } = useMemo(() => {
+    const cardMap = new Map(cards.map((card) => [card.id, card]))
+    let nextNew = 0
+    let nextLearn = 0
+    let nextReview = 0
+    for (const id of queue) {
+      const card = cardMap.get(id)
+      if (!card) continue
+      const state = card.schedule.state
+      if (state === 'new') nextNew++
+      else if (state === 'learning' || state === 'relearning') nextLearn++
+      else if (state === 'review') nextReview++
+    }
+    return {
+      newCount: nextNew,
+      learnCount: nextLearn,
+      reviewCount: nextReview,
+    }
+  }, [cards, queue])
 
   const onUpdateCards = useCallback(
     (newCards: StudyCard[]) => {
@@ -958,11 +976,6 @@ export function App({
             .filter((card) => isDue(card, now))
             .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
             .map(({ id }) => id)
-        })
-        setSessionTotal((currentTotal) => {
-          if (currentTotal > 0) return currentTotal
-          const now = services.clock.now()
-          return cards.filter((card) => isDue(card, now)).length
         })
       }
     }
@@ -1109,7 +1122,6 @@ export function App({
         .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
         .map(({ id }) => id)
     setQueue(nextQueue)
-    setSessionTotal(nextQueue.length)
     setReviewedCount(0)
     setReferenceTime(now)
     setAnswer('')
@@ -1603,24 +1615,42 @@ export function App({
 
   if (!currentCard) return null
 
-  const total = Math.max(sessionTotal, queue.length, 1)
-  const completedInSession = Math.max(0, sessionTotal - queue.length)
-  const progress = total
-    ? ((completedInSession + (revealed ? 0.7 : 0.2)) / total) * 100
-    : 0
-
   return (
     <>
       <main className="app-shell review-page">
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
-          <div className="review-progress" aria-label="Session progress">
-            <span>
-              {completedInSession + 1} <i>/ {total}</i>
+          <div className="review-queue-badge" aria-label="Session progress">
+            <span
+              className="queue-pill queue-pill-new"
+              title={`${newCount} new ${newCount === 1 ? 'card' : 'cards'}`}
+            >
+              <span className="queue-dot" aria-hidden="true" />
+              <span className="queue-num">{newCount}</span>
+              <span className="queue-label">new</span>
             </span>
-            <div>
-              <b style={{ width: `${Math.min(progress, 100)}%` }} />
-            </div>
+            <span className="queue-divider" aria-hidden="true">
+              ·
+            </span>
+            <span
+              className="queue-pill queue-pill-learn"
+              title={`${learnCount} learning / retry ${learnCount === 1 ? 'card' : 'cards'}`}
+            >
+              <span className="queue-dot" aria-hidden="true" />
+              <span className="queue-num">{learnCount}</span>
+              <span className="queue-label">learn</span>
+            </span>
+            <span className="queue-divider" aria-hidden="true">
+              ·
+            </span>
+            <span
+              className="queue-pill queue-pill-review"
+              title={`${reviewCount} due ${reviewCount === 1 ? 'card' : 'cards'}`}
+            >
+              <span className="queue-dot" aria-hidden="true" />
+              <span className="queue-num">{reviewCount}</span>
+              <span className="queue-label">due</span>
+            </span>
           </div>
           <div className="nav-actions">
             <button

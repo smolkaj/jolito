@@ -334,7 +334,9 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
+      /4\s*new.*0\s*learn.*0\s*due/,
+    )
 
     // Navigate back to welcome
     act(() => {
@@ -353,7 +355,9 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent('1 / 4')
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
+      /4\s*new.*0\s*learn.*0\s*due/,
+    )
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation and context on selection', async () => {
@@ -766,6 +770,48 @@ describe('Jolito', () => {
       screen.getByRole('heading', {
         name: /offline backup & export \(json\)/i,
       }),
+    ).toBeInTheDocument()
+  })
+
+  it('dynamically updates new, learn, and due queue counters during study and retries', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+
+    // Initial state: 4 new cards in queue
+    const badge = screen.getByLabelText('Session progress')
+    expect(badge).toHaveTextContent(/4\s*new.*0\s*learn.*0\s*due/)
+
+    // Card 1: fail with Again (1) -> moves to learn queue (requeued)
+    await user.keyboard('{Enter}')
+    await user.keyboard('1')
+    expect(badge).toHaveTextContent(/3\s*new.*1\s*learn.*0\s*due/)
+
+    // Card 2: pass with Easy (4) -> graduates out of session
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(badge).toHaveTextContent(/2\s*new.*1\s*learn.*0\s*due/)
+
+    // Card 3: pass with Easy (4) -> graduates out of session
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(badge).toHaveTextContent(/1\s*new.*1\s*learn.*0\s*due/)
+
+    // Card 4: pass with Easy (4) -> graduates out of session
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    // Now only Card 1 (learning retry) remains
+    expect(badge).toHaveTextContent(/0\s*new.*1\s*learn.*0\s*due/)
+
+    // Card 1 retry: pass with Good (3) -> graduates learning card
+    await user.keyboard('{Enter}')
+    await user.keyboard('3')
+
+    // Session completes
+    expect(
+      await screen.findByRole('heading', { name: '¡Hecho!' }),
     ).toBeInTheDocument()
   })
 })
