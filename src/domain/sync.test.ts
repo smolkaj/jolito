@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { StudyCard } from './card'
-import { deckSyncPayloadSchema, reconcileStudyCards } from './sync'
+import {
+  deckSyncPayloadSchema,
+  isDefaultStarterDeck,
+  reconcileStudyCards,
+} from './sync'
 
 const cardA: StudyCard = {
   id: 'card-a:es-en',
@@ -143,5 +147,36 @@ describe('reconcileStudyCards', () => {
 
     const merged = reconcileStudyCards([localLapsed], [remoteNoLapse])
     expect(merged[0]?.schedule.lapses).toBe(1)
+  })
+})
+
+describe('isDefaultStarterDeck', () => {
+  it('returns true when all cards match starter card prefixes with 0 reviews', () => {
+    const pristineStarters: StudyCard[] = [
+      {
+        ...cardA,
+        id: 'starter-aguacate:es-en',
+        schedule: { ...cardA.schedule, reviews: 0, state: 'new' },
+      },
+      {
+        ...cardB,
+        id: 'starter-que-padre:es-en',
+        schedule: { ...cardB.schedule, reviews: 0, state: 'new' },
+      },
+    ]
+
+    expect(isDefaultStarterDeck(pristineStarters)).toBe(true)
+  })
+
+  it('returns false when empty, modified, or contains custom cards', () => {
+    expect(isDefaultStarterDeck([])).toBe(false)
+    expect(isDefaultStarterDeck([cardA])).toBe(false)
+
+    const studiedStarter: StudyCard = {
+      ...cardA,
+      id: 'starter-aguacate:es-en',
+      schedule: { ...cardA.schedule, reviews: 2, state: 'review' },
+    }
+    expect(isDefaultStarterDeck([studiedStarter])).toBe(false)
   })
 })

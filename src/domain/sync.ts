@@ -92,3 +92,24 @@ function reconcileSingleCard(local: StudyCard, remote: StudyCard): StudyCard {
   // 5. Default to remote if all scheduling metrics are tied
   return remote
 }
+
+const STARTER_CARD_PREFIXES = [
+  'starter-aguacate',
+  'starter-que-padre',
+  'starter-la-cuenta',
+  'starter-nos-vemos-al-rato',
+]
+
+/**
+ * Returns true if the collection consists entirely of untouched placeholder starter cards
+ * (all matching starter IDs, 0 reviews, and 'new' state).
+ */
+export function isDefaultStarterDeck(cards: StudyCard[]): boolean {
+  if (cards.length === 0) return false
+  return cards.every(
+    (c) =>
+      STARTER_CARD_PREFIXES.some((p) => c.id.startsWith(p)) &&
+      c.schedule.reviews === 0 &&
+      c.schedule.state === 'new',
+  )
+}

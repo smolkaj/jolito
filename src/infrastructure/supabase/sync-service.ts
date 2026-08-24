@@ -2,6 +2,7 @@ import type { AuthUser, SyncResult, SyncService } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import {
   deckSyncPayloadSchema,
+  isDefaultStarterDeck,
   reconcileStudyCards,
   type DeckSyncPayload,
   type SyncStatus,
@@ -179,7 +180,12 @@ export class SupabaseSyncService implements SyncService {
     }
 
     const remoteCards = pullRes.cards || []
-    const merged = reconcileStudyCards(localCards, remoteCards)
+    let merged: StudyCard[]
+    if (remoteCards.length > 0 && isDefaultStarterDeck(localCards)) {
+      merged = remoteCards
+    } else {
+      merged = reconcileStudyCards(localCards, remoteCards)
+    }
 
     const pushRes = await this.pushDeck(merged, user)
     if (!pushRes.success) {

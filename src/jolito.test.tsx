@@ -631,7 +631,7 @@ describe('Jolito', () => {
     )
   })
 
-  it('opens sync modal, sends magic link, verifies OTP, and signs in', async () => {
+  it('opens sync modal, sends magic link, and displays check email confirmation card', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -652,12 +652,18 @@ describe('Jolito', () => {
       await screen.findByRole('heading', { name: /check your email/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
+
+    // Resend link
+    await user.click(screen.getByRole('button', { name: /resend link/i }))
     expect(
-      screen.getByRole('button', { name: /resend link/i }),
+      await screen.findByRole('heading', { name: /check your email/i }),
     ).toBeInTheDocument()
-    expect(
+
+    // Switch email
+    await user.click(
       screen.getByRole('button', { name: /use different email/i }),
-    ).toBeInTheDocument()
+    )
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
