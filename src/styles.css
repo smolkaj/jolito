@@ -2,7 +2,7 @@
 
 :root {
   /* Canvas & Surface Palette */
-  --paper: #fcfbfa;
+  --paper: #ffffff;
   --paper-subtle: #f5f2eb;
   --paper-deep: #ede7db;
   --card: #ffffff;
@@ -388,10 +388,7 @@ summary:focus-visible {
 
 /* Welcome Page */
 .welcome-page {
-  background:
-    radial-gradient(ellipse at 88% 38%, #fef0f7 0%, rgba(254, 240, 247, 0) 50%),
-    radial-gradient(ellipse at 12% 80%, #eef7f3 0%, rgba(238, 247, 243, 0) 45%),
-    var(--paper);
+  background: var(--paper);
 }
 
 .welcome-page .lede {
@@ -714,9 +711,7 @@ summary:focus-visible {
 
 /* Card Creation Page */
 .create-page {
-  background:
-    radial-gradient(ellipse at 15% 25%, #fef8ee 0%, rgba(254, 248, 238, 0) 45%),
-    var(--paper);
+  background: var(--paper);
 }
 
 .create-layout {
@@ -1062,9 +1057,7 @@ summary:focus-visible {
 
 /* Review Page */
 .review-page {
-  background:
-    radial-gradient(ellipse at 50% 12%, #fef0f7 0%, rgba(254, 240, 247, 0) 55%),
-    var(--paper);
+  background: var(--paper);
 }
 
 .review-progress {
@@ -1697,10 +1690,7 @@ kbd {
 
 /* Completion Page */
 .complete-page {
-  background:
-    radial-gradient(circle at 50% 45%, #fef0f7 0%, rgba(254, 240, 247, 0) 40%),
-    radial-gradient(circle at 50% 20%, #fef9ee 0%, rgba(254, 249, 238, 0) 50%),
-    var(--paper);
+  background: var(--paper);
 }
 
 .complete-card {
