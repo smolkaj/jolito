@@ -118,13 +118,26 @@ export function cleanAnkiHtml(
   }
 
   // Decode numeric decimal entities (e.g. &#160;)
-  text = text.replace(/&#(\d+);/g, (_, dec: string) =>
-    String.fromCodePoint(Number(dec)),
-  )
+  text = text.replace(/&#(\d+);/g, (_: string, dec: string): string => {
+    const codePoint = Number(dec)
+    return Number.isSafeInteger(codePoint) &&
+      codePoint >= 0 &&
+      codePoint <= 0x10ffff
+      ? String.fromCodePoint(codePoint)
+      : ''
+  })
 
   // Decode numeric hex entities (e.g. &#x20;)
-  text = text.replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) =>
-    String.fromCodePoint(parseInt(hex, 16)),
+  text = text.replace(
+    /&#x([0-9a-fA-F]+);/g,
+    (_: string, hex: string): string => {
+      const codePoint = parseInt(hex, 16)
+      return Number.isSafeInteger(codePoint) &&
+        codePoint >= 0 &&
+        codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : ''
+    },
   )
 
   // Normalize spaces

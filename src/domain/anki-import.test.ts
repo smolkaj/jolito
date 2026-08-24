@@ -800,3 +800,13 @@ describe('more branch coverage tests', () => {
     expect(res.success).toBe(false)
   })
 })
+
+describe('numeric entity bounds tests', () => {
+  it('handles invalid or out-of-bounds numeric entities safely', () => {
+    const textDec = 'Word &#999999999; test'
+    expect(cleanAnkiHtml(textDec)).toBe('Word test')
+
+    const textHex = 'Word &#x110000; test'
+    expect(cleanAnkiHtml(textHex)).toBe('Word test')
+  })
+})
