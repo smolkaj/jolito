@@ -195,3 +195,42 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
     .analyze()
   expect(resultsFinal.violations).toEqual([])
 })
+
+test('top navigation pills have consistent vertical height across views', async ({
+  page,
+}) => {
+  // 1. Welcome view
+  await page.goto('/')
+  const welcomePill = await page.locator('.connection-pill').boundingBox()
+  expect(welcomePill?.height).toBe(32)
+
+  // 2. Create view
+  await page.goto('/#/create')
+  const createReviewBtn = await page
+    .locator('.nav-actions .text-button')
+    .boundingBox()
+  const createSyncPill = await page
+    .locator('.nav-actions .connection-pill')
+    .boundingBox()
+  expect(createReviewBtn?.height).toBe(32)
+  expect(createSyncPill?.height).toBe(32)
+
+  // 3. Study / Review view
+  await page.goto('/#/study')
+  const reviewBadge = await page.locator('.review-queue-badge').boundingBox()
+  const reviewNewCardBtn = await page
+    .locator('.nav-actions .text-button')
+    .boundingBox()
+  const reviewSyncPill = await page
+    .locator('.nav-actions .connection-pill')
+    .boundingBox()
+  expect(reviewBadge?.height).toBe(32)
+  expect(reviewNewCardBtn?.height).toBe(32)
+  expect(reviewSyncPill?.height).toBe(32)
+
+  // 4. Accessibility check
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})

@@ -237,7 +237,8 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  height: 32px;
+  padding: 0 14px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   background: var(--card);
@@ -248,18 +249,19 @@ summary:focus-visible {
   letter-spacing: -0.1px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s ease;
   text-decoration: none;
 }
 
 .connection-pill:hover {
-  background: var(--papel-accent);
-  border-color: var(--ink);
+  background: var(--paper-subtle);
+  border-color: var(--line);
   color: var(--ink);
 }
 
 .connection-pill:focus-visible {
-  outline: 2px solid var(--papel-focus);
+  outline: 2.5px solid var(--rosa);
   outline-offset: 2px;
 }
 
@@ -314,14 +316,19 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px;
-  border: 2px solid var(--line);
+  height: 32px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
   border-radius: 999px;
   color: var(--ink);
   background: var(--card);
-  font-size: 13px;
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: -0.1px;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  white-space: nowrap;
   transition: all 140ms var(--ease-spring);
 }
 
@@ -338,8 +345,8 @@ summary:focus-visible {
 }
 
 .text-button b {
-  min-width: 22px;
-  padding: 2px 7px;
+  min-width: 20px;
+  padding: 1px 6px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   color: var(--card);
@@ -1182,10 +1189,11 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  height: 32px;
+  padding: 0 14px;
   background: var(--card);
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  padding: 6px 14px;
   box-shadow: var(--shadow-sm);
   z-index: 5;
   white-space: nowrap;
@@ -2005,8 +2013,14 @@ kbd {
     padding: 12px 16px 28px;
   }
 
-  .connection-pill {
-    padding: 6px 10px;
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .connection-pill,
+  .text-button {
+    height: 32px;
+    padding: 0 10px;
     font-size: 11px;
     gap: 6px;
   }
@@ -2096,6 +2110,8 @@ kbd {
     transform: translateX(-50%);
     width: max-content;
     max-width: calc(100% - 32px);
+    height: 32px;
+    padding: 0 10px;
     justify-content: center;
   }
 
@@ -2259,13 +2275,15 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  height: 32px;
+  padding: 0 14px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   background: var(--paper-subtle);
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 .stat-pill strong {
