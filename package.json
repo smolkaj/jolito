@@ -21,6 +21,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "ingest:dict": "python3 scripts/ingest-wiktionary.py",
+    "setup:domain": "node scripts/setup-domain.ts",
     "deploy": "npm run build && wrangler deploy",
     "deploy:preview": "npm run build && wrangler versions upload"
   },

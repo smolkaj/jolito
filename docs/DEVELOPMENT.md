@@ -69,7 +69,7 @@ npx supabase config push
 
 ## Cloudflare deployment
 
-The [production app](https://jolito.smolkaj.workers.dev) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
+The [production app](https://joli.to) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
 
 - `npx wrangler deploy` for `main`;
 - `npx wrangler versions upload` for every non-production branch.
@@ -77,6 +77,14 @@ The [production app](https://jolito.smolkaj.workers.dev) tracks `main` through C
 For each non-production branch, Cloudflare posts a stable branch preview and an immutable commit preview on its pull request. The branch link follows new commits; the commit link identifies one exact deployment.
 
 The checked-in [Wrangler configuration](../wrangler.jsonc) owns the Worker name, compatibility date, static `dist/` assets, and single-page-app fallback. The equivalent local commands are `npm run deploy` and `npm run deploy:preview`; use Wrangler's `--dry-run` option to validate them without credentials or an upload.
+
+The Cloudflare DNS zone, edge TLS settings, custom domain bindings for `joli.to`, Spaceship nameserver delegation, and Supabase auth sync can be provisioned in one automated command:
+
+```sh
+npm run setup:domain
+```
+
+Alternatively, the Cloudflare infrastructure can be managed declaratively via Terraform in [`infra/`](../infra/README.md).
 
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality and browser checks remain the code-quality gates.
 
