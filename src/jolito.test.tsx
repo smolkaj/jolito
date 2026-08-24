@@ -778,30 +778,48 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
 
-    // Initial state: 4 new cards in queue
+    // Initial state: 4 new cards in queue with tactile beads
     const badge = screen.getByLabelText('Session progress')
+    expect(badge).toHaveTextContent(/4\s*cards left/)
     expect(badge).toHaveTextContent(/4\s*new.*0\s*learn.*0\s*due/)
+    const initialBeads = badge.querySelectorAll('.queue-bead')
+    expect(initialBeads).toHaveLength(4)
+    expect(initialBeads[0]).toHaveClass('is-new', 'is-current')
+    expect(initialBeads[1]).toHaveClass('is-new')
 
-    // Card 1: fail with Again (1) -> moves to learn queue (requeued)
+    // Card 1: fail with Again (1) -> moves to learn queue (requeued at end)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
+    expect(badge).toHaveTextContent(/4\s*cards left.*1\s*retry/)
     expect(badge).toHaveTextContent(/3\s*new.*1\s*learn.*0\s*due/)
+    const requeuedBeads = badge.querySelectorAll('.queue-bead')
+    expect(requeuedBeads).toHaveLength(4)
+    expect(requeuedBeads[0]).toHaveClass('is-new', 'is-current')
+    expect(requeuedBeads[3]).toHaveClass('is-learn')
 
     // Card 2: pass with Easy (4) -> graduates out of session
     await user.keyboard('{Enter}')
     await user.keyboard('4')
+    expect(badge).toHaveTextContent(/3\s*cards left.*1\s*retry/)
     expect(badge).toHaveTextContent(/2\s*new.*1\s*learn.*0\s*due/)
+    expect(badge.querySelectorAll('.queue-bead')).toHaveLength(3)
 
     // Card 3: pass with Easy (4) -> graduates out of session
     await user.keyboard('{Enter}')
     await user.keyboard('4')
+    expect(badge).toHaveTextContent(/2\s*cards left.*1\s*retry/)
     expect(badge).toHaveTextContent(/1\s*new.*1\s*learn.*0\s*due/)
+    expect(badge.querySelectorAll('.queue-bead')).toHaveLength(2)
 
     // Card 4: pass with Easy (4) -> graduates out of session
     await user.keyboard('{Enter}')
     await user.keyboard('4')
     // Now only Card 1 (learning retry) remains
+    expect(badge).toHaveTextContent(/1\s*card left.*1\s*retry/)
     expect(badge).toHaveTextContent(/0\s*new.*1\s*learn.*0\s*due/)
+    const remainingBeads = badge.querySelectorAll('.queue-bead')
+    expect(remainingBeads).toHaveLength(1)
+    expect(remainingBeads[0]).toHaveClass('is-learn', 'is-current')
 
     // Card 1 retry: pass with Good (3) -> graduates learning card
     await user.keyboard('{Enter}')
@@ -811,5 +829,38 @@ describe('Jolito', () => {
     expect(
       await screen.findByRole('heading', { name: '¡Hecho!' }),
     ).toBeInTheDocument()
+  })
+
+  it('renders compact summary pill when review queue exceeds 6 cards', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    // Populate 12 due cards
+    const extraCards = Array.from({ length: 12 }, (_, i) => ({
+      id: `bulk-card-${i}`,
+      noteId: `bulk-note-${i}`,
+      prompt: `prompt-${i}`,
+      answer: `answer-${i}`,
+      direction: 'es-en' as const,
+      context: '',
+      scene: 'conversation' as const,
+      schedule: {
+        state: 'new' as const,
+        dueAt: 0,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }))
+    services.cards.save(extraCards)
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 12 due/i }))
+
+    const badge = screen.getByLabelText('Session progress')
+    expect(badge.querySelector('.queue-compact-pill')).toBeInTheDocument()
+    expect(badge.querySelector('.queue-beads-track')).not.toBeInTheDocument()
+    expect(badge).toHaveTextContent(/12\s*cards left/)
+    expect(badge).toHaveTextContent(/12\s*new/)
   })
 })
