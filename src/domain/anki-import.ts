@@ -66,9 +66,9 @@ export function cleanAnkiHtml(
 
   let text = raw
 
-  // Strip scripts, styles, and HTML comments
-  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+  // Strip scripts, styles, and HTML comments (supporting optional whitespace in closing tags)
+  text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
+  text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' ')
   text = text.replace(/<!--[\s\S]*?-->/g, ' ')
 
   // Strip zero-width characters and BOM
@@ -116,10 +116,14 @@ export function cleanAnkiHtml(
   text = text.replace(/\[anki:[^\]]+\]/gi, '')
 
   // Replace block & break tags with spaces
-  text = text.replace(/<(br|div|p|li|tr|\/tr|\/p|\/div)\s*\/?>/gi, ' ')
+  text = text.replace(/<(br|div|p|li|tr|\/tr|\/p|\/div)\b[^>]*\/?>/gi, ' ')
 
-  // Strip all other HTML tags
-  text = text.replace(/<[^>]+>/g, '')
+  // Strip all remaining HTML tags iteratively until fixpoint
+  let prevText = ''
+  while (prevText !== text) {
+    prevText = text
+    text = text.replace(/<[^>]+>/g, '')
+  }
 
   // Decode named entities
   for (const [entity, replacement] of Object.entries(ENTITY_MAP)) {
