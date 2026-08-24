@@ -49,6 +49,13 @@ Every PR must be reviewed by a fresh, independent read-only agent instance and i
 - **Walking skeleton first.** Get a minimal end-to-end slice compiling and passing one test before polishing internals.
 - **Churn is free.** Never leave dead code, redundant helpers, or stale call sites behind to avoid touching files. Mechanical refactoring is cheap.
 
+# Visual & UI verification
+
+DOM assertions (`toBeVisible()`, `getByRole()`) verify element presence and accessibility tree geometry, not painted pixels. To prevent layering, transparency, and layout defects autonomously:
+
+1. **Solid elevated surfaces:** Modals, overlays, drawers, and popovers must have an explicit opaque background (`var(--card)`) and border on their base container. In E2E tests, assert non-transparent computed background colors.
+2. **Autonomous screenshot inspection:** For any new or modified UI component, modal, or layout, take a screenshot during E2E tests (`await page.screenshot({ path: ... })`). Both author and independent reviewer must inspect the screenshot file using `view_file` to verify visual layering, contrast, and layout before approving for merge.
+
 # Design invariants
 
 1. **Local-first & offline by default.** Card review, creation, and audio playback must work completely without network connectivity. Sync is an enhancer, never a prerequisite.

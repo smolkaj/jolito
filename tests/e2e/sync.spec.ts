@@ -17,6 +17,17 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
     .analyze()
   expect(results.violations).toEqual([])
 
+  // Verify modal has opaque surface
+  const modalContent = page.locator('.modal-content.sync-modal')
+  const bgColor = await modalContent.evaluate(
+    (el) => window.getComputedStyle(el).backgroundColor,
+  )
+  expect(bgColor).not.toBe('rgba(0, 0, 0, 0)')
+  expect(bgColor).not.toBe('transparent')
+
+  // Save screenshot for autonomous visual inspection
+  await page.screenshot({ path: 'test-results/sync-modal.png' })
+
   // Check email field is accessible and can receive input
   const emailInput = page.getByLabel(/email address/i)
   await expect(emailInput).toBeVisible()
