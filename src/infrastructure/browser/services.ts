@@ -32,6 +32,9 @@ export function createBrowserServices(): AppServices {
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
 
+  const speaker = new LayeredNeuralSpeaker()
+  void speaker.prewarm()
+
   const auth = new SupabaseAuthService()
   const sync = new SupabaseSyncService(auth)
 
@@ -39,7 +42,7 @@ export function createBrowserServices(): AppServices {
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
     cards: new LocalStorageCardRepository(),
-    speaker: new LayeredNeuralSpeaker(),
+    speaker,
     sounds: new WebAudioSoundPlayer(),
     assistant,
     auth,

@@ -18,6 +18,7 @@ export type CardRepository = {
 export type Speaker = {
   speak(text: string, locale: string): boolean
   supported(): boolean
+  prewarm?(): Promise<boolean> | boolean | Promise<void> | void
 }
 
 export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'
@@ -34,6 +35,7 @@ export type CardAssistant = {
   ): AutocompleteSuggestion[]
   didYouMean(query: string, lang?: 'es' | 'en'): LexiconEntry | null
   translate(text: string, from?: 'es' | 'en'): LexiconEntry | null
+  loadDictionary?(): Promise<boolean> | boolean | Promise<void> | void
 }
 
 export type AuthUser = {

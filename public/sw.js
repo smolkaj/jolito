@@ -4,12 +4,29 @@ const CACHE_NAME = 'jolito-shell-v1'
 const scopePath = new URL(self.registration.scope).pathname
 const shellUrl = scopePath
 const indexUrl = `${scopePath}index.html`
+const PWA_ASSETS = [
+  `${scopePath}manifest.webmanifest`,
+  `${scopePath}favicon.svg`,
+  `${scopePath}favicon.png`,
+  `${scopePath}favicon-32x32.png`,
+  `${scopePath}favicon-16x16.png`,
+  `${scopePath}apple-touch-icon.png`,
+  `${scopePath}icon-192.png`,
+  `${scopePath}icon-512.png`,
+  `${scopePath}icon-512-maskable.png`,
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll([shellUrl, indexUrl]))
+      .then((cache) =>
+        Promise.all(
+          [shellUrl, indexUrl, ...PWA_ASSETS].map((url) =>
+            cache.add(url).catch(() => {}),
+          ),
+        ),
+      )
       .then(() => self.skipWaiting()),
   )
 })
@@ -41,7 +58,9 @@ self.addEventListener('message', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(uniqueUrls))
+      .then((cache) =>
+        Promise.all(uniqueUrls.map((url) => cache.add(url).catch(() => {}))),
+      )
       .then(() => event.ports[0]?.postMessage('cached'))
       .catch(() => event.ports[0]?.postMessage('cached')),
   )

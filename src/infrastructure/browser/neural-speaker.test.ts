@@ -84,6 +84,18 @@ describe('LayeredNeuralSpeaker', () => {
     })
     expect(neuralOnlySpeaker.supported()).toBe(true)
   })
+
+  it('delegates prewarm to neural engine', async () => {
+    const prewarmSpy = vi.spyOn(neuralEngine, 'prewarm').mockResolvedValue(true)
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const result = await speaker.prewarm()
+    expect(result).toBe(true)
+    expect(prewarmSpy).toHaveBeenCalled()
+  })
 })
 
 describe('NeuralVoiceEngine', () => {
@@ -122,5 +134,99 @@ describe('NeuralVoiceEngine', () => {
   it('returns false on playAudio when phrase is not in cache', () => {
     const engine = new NeuralVoiceEngine()
     expect(engine.playAudio('unregistered-phrase-xyz', 'es-MX')).toBe(false)
+  })
+
+  it('prewarms bundled audio by fetching and decoding audio into memory', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioBuffer = { duration: 1.5 } as AudioBuffer
+    const mockArrayBuffer = new ArrayBuffer(8)
+
+    const mockDecode = vi.fn().mockResolvedValue(mockAudioBuffer)
+    const mockAudioContext = {
+      decodeAudioData: mockDecode,
+      createBufferSource: vi.fn(),
+      destination: {},
+      state: 'running',
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(mockArrayBuffer),
+      } as Response)
+    })
+
+    const result = await engine.prewarm(mockFetch)
+    expect(result).toBe(true)
+
+    expect(mockFetch).toHaveBeenCalled()
+    // Should have decoded and registered in audioCache
+    const internalCache = (
+      engine as unknown as { audioCache: Map<string, AudioBuffer> }
+    ).audioCache
+    expect(internalCache.get('es-mx:aguacate')).toBe(mockAudioBuffer)
+    expect(internalCache.get('en-us:avocado')).toBe(mockAudioBuffer)
+
+    // Calling prewarm again should be idempotent and not re-fetch
+    const callCount = mockFetch.mock.calls.length
+    const secondResult = await engine.prewarm(mockFetch)
+    expect(secondResult).toBe(true)
+    expect(mockFetch.mock.calls.length).toBe(callCount)
+  })
+
+  it('handles network errors gracefully during prewarm and allows retry', async () => {
+    const engine = new NeuralVoiceEngine()
+    const failingFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    const result = await engine.prewarm(failingFetch)
+    expect(result).toBe(false)
+
+    // Successful retry should re-attempt fetching
+    const mockArrayBuffer = new ArrayBuffer(8)
+    const recoveredFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(mockArrayBuffer),
+      } as Response)
+    })
+    const retryResult = await engine.prewarm(recoveredFetch)
+    expect(retryResult).toBe(true)
+    expect(recoveredFetch).toHaveBeenCalled()
+  })
+
+  it('handles non-ok HTTP responses gracefully during prewarm', async () => {
+    const engine = new NeuralVoiceEngine()
+    const notFoundFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+    })
+
+    const result = await engine.prewarm(notFoundFetch)
+    expect(result).toBe(false)
+  })
+
+  it('handles decode failures gracefully and allows retry without falsely caching', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      decodeAudioData: vi.fn().mockRejectedValue(new Error('Corrupted audio')),
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    })
+
+    const result = await engine.prewarm(mockFetch)
+    expect(result).toBe(false)
+
+    // Should not have registered in audioCache
+    const internalCache = (
+      engine as unknown as { audioCache: Map<string, AudioBuffer> }
+    ).audioCache
+    expect(internalCache.size).toBe(0)
   })
 })
