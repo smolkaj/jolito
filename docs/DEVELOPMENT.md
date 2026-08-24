@@ -78,6 +78,8 @@ For each non-production branch, Cloudflare posts a stable branch preview and an 
 
 The checked-in [Wrangler configuration](../wrangler.jsonc) owns the Worker name, compatibility date, static `dist/` assets, and single-page-app fallback. The equivalent local commands are `npm run deploy` and `npm run deploy:preview`; use Wrangler's `--dry-run` option to validate them without credentials or an upload.
 
+The Cloudflare DNS zone, edge TLS settings, and custom domain bindings for `joli.to` can also be provisioned declaratively via Terraform in [`infra/`](../infra/README.md).
+
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality and browser checks remain the code-quality gates.
 
 ## Before opening a PR
