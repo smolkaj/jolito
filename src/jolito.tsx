@@ -862,6 +862,26 @@ export function App({
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
+  const { newCount, learnCount, reviewCount } = useMemo(() => {
+    const cardMap = new Map(cards.map((card) => [card.id, card]))
+    let nextNew = 0
+    let nextLearn = 0
+    let nextReview = 0
+    for (const id of queue) {
+      const card = cardMap.get(id)
+      if (!card) continue
+      const state = card.schedule.state
+      if (state === 'new') nextNew++
+      else if (state === 'learning' || state === 'relearning') nextLearn++
+      else if (state === 'review') nextReview++
+    }
+    return {
+      newCount: nextNew,
+      learnCount: nextLearn,
+      reviewCount: nextReview,
+    }
+  }, [cards, queue])
+
   const onUpdateCards = useCallback(
     (newCards: StudyCard[]) => {
       setCards(newCards)
@@ -1594,21 +1614,6 @@ export function App({
     )
 
   if (!currentCard) return null
-
-  const queueCards = queue
-    .map((id) => cards.find((card) => card.id === id))
-    .filter((card): card is StudyCard => card !== undefined)
-  const newCount = queueCards.filter(
-    (card) => card.schedule.state === 'new',
-  ).length
-  const learnCount = queueCards.filter(
-    (card) =>
-      card.schedule.state === 'learning' ||
-      card.schedule.state === 'relearning',
-  ).length
-  const reviewCount = queueCards.filter(
-    (card) => card.schedule.state === 'review',
-  ).length
 
   return (
     <>
