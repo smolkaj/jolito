@@ -1,0 +1,33 @@
+# Supabase Configuration as Code
+# Docs: https://supabase.com/docs/guides/cli/config
+
+project_id = "jolito"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+
+[auth]
+enabled = true
+# Base URL for redirects and email link generation
+site_url = "https://jolito.smolkaj.workers.dev"
+# Allowed redirect wildcard patterns for production, branch previews, and local dev
+additional_redirect_urls = [
+  "https://*-jolito.smolkaj.workers.dev/**",
+  "https://jolito.smolkaj.workers.dev/**",
+  "http://localhost:*/**",
+  "http://127.0.0.1:*/**"
+]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+otp_length = 6
+otp_expiry = 3600
