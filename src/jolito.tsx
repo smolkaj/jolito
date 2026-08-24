@@ -11,6 +11,7 @@ import {
 import celebrateUrl from '../assets/jolito-celebrate.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
+import sampleQuePadreUrl from '../assets/sample-que-padre.png'
 import { createCards } from './application/create-cards'
 import {
   createDeckBackup,
@@ -27,7 +28,6 @@ import {
   scheduleReview,
   shouldRequeueInSession,
   type Grade,
-  type Scene,
   type StudyCard,
 } from './domain/card'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
@@ -36,12 +36,6 @@ import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
 import { type View, hashForView, viewFromHash } from './navigation'
-
-const sceneLabels: Record<Scene, string> = {
-  takeaway: 'A takeaway bag and warm drink',
-  metro: 'A Mexico City metro train',
-  conversation: 'Two people having a friendly conversation',
-}
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -118,45 +112,22 @@ function Brand({ onClick }: { onClick?: () => void }) {
   )
 }
 
-function SceneIllustration({ scene }: { scene: Scene }) {
-  return (
-    <div
-      className={`scene scene-${scene}`}
-      role="img"
-      aria-label={sceneLabels[scene]}
-    >
-      <div className="scene-sun" />
-      {scene === 'takeaway' && (
-        <div className="takeaway-art">
-          <div className="takeaway-bag">
-            <span>para llevar</span>
-          </div>
-          <div className="takeaway-cup" />
-          <i className="steam-one" />
-          <i className="steam-two" />
-        </div>
-      )}
-      {scene === 'metro' && (
-        <div className="metro-art">
-          <span className="metro-sign">M</span>
-          <div className="metro-train">
-            <i />
-            <i />
-            <b />
-          </div>
-          <div className="metro-track" />
-        </div>
-      )}
-      {scene === 'conversation' && (
-        <div className="conversation-art">
-          <div className="person person-one" />
-          <div className="person person-two" />
-          <span className="speech-one">¡Hola!</span>
-          <span className="speech-two">¿Qué tal?</span>
-        </div>
-      )}
-    </div>
-  )
+function findCardArt(
+  card?: Pick<StudyCard, 'prompt' | 'answer' | 'id'>,
+): string | null {
+  if (!card) return null
+  const combined = `${card.prompt} ${card.answer} ${card.id}`.toLowerCase()
+  if (combined.includes('aguacate') || combined.includes('avocado')) {
+    return sampleAguacateUrl
+  }
+  if (
+    combined.includes('padre') ||
+    combined.includes('how cool') ||
+    combined.includes('que-padre')
+  ) {
+    return sampleQuePadreUrl
+  }
+  return null
 }
 
 function AudioButton({
@@ -1297,7 +1268,6 @@ export function App({
           </div>
         </nav>
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-          <SceneIllustration scene={currentCard.scene} />
           <div className="prompt-meta">
             <p className="eyebrow direction-eyebrow">
               {currentCard.direction === 'es-en' ? (
@@ -1344,21 +1314,41 @@ export function App({
             </form>
           ) : (
             <div className="reveal-panel">
-              <AnswerComparison
-                typed={answer}
-                expected={currentCard.answer}
-                onPlayAudio={() =>
-                  playAudio(currentCard.answer, localeForAnswer(currentCard))
-                }
-              />
-              {currentCard.context && (
-                <div className="context-panel">
-                  <span className="context-panel-title">
-                    Additional Context
-                  </span>
-                  <p>{currentCard.context}</p>
+              <div
+                className={`reveal-content ${findCardArt(currentCard) ? 'has-art' : ''}`}
+              >
+                <div className="reveal-main">
+                  <AnswerComparison
+                    typed={answer}
+                    expected={currentCard.answer}
+                    onPlayAudio={() =>
+                      playAudio(
+                        currentCard.answer,
+                        localeForAnswer(currentCard),
+                      )
+                    }
+                  />
+                  {currentCard.context && (
+                    <div className="reveal-context-block">
+                      <span className="context-label">Meaning & context</span>
+                      <p className="context-text">{currentCard.context}</p>
+                    </div>
+                  )}
                 </div>
-              )}
+                {findCardArt(currentCard) && (
+                  <div
+                    className="reveal-art-wrap"
+                    role="img"
+                    aria-label="Card illustration"
+                  >
+                    <img
+                      src={findCardArt(currentCard)!}
+                      alt=""
+                      className="reveal-art-image"
+                    />
+                  </div>
+                )}
+              </div>
               <fieldset className="grade-fieldset">
                 <legend>How did that feel?</legend>
                 <div className="grade-buttons">
