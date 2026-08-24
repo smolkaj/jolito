@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 import { App } from './jolito'
+import celebrateUrl from '../assets/jolito-celebrate.png'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -10,6 +11,11 @@ createRoot(document.getElementById('root')!).render(
 )
 
 async function prepareOfflineShell() {
+  if (typeof Image !== 'undefined') {
+    const img = new Image()
+    img.src = celebrateUrl
+  }
+
   await navigator.serviceWorker.register('/sw.js')
   const activeWorker = (await navigator.serviceWorker.ready).active
   if (!activeWorker) return
@@ -17,6 +23,7 @@ async function prepareOfflineShell() {
   const urls = Array.from(
     new Set([
       window.location.href,
+      celebrateUrl,
       ...performance
         .getEntriesByType('resource')
         .map((resource) => resource.name),
