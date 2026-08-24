@@ -27,10 +27,11 @@ Every PR must be reviewed by a fresh, independent read-only agent instance and i
 1. **Strict separation:** The reviewer is read-only. It must not edit files, stage changes, push commits, or merge.
 2. **Self-documenting PRs:** The reviewer receives **only** the PR, and no additional context
 3. **PR narrative structure:** PRs must lead with big-picture wins, clearly contrast the world before vs. after, and name the next steps toward the north star.
+4. **Vigilance against cognitive debt & ambient magic:** Reviewers must actively evaluate cognitive overhead, readability, and long-term evolvability. Flag ambient "magic" (e.g. hidden runtime interceptors, complex build-time code gen, uninspectable background state) and dual/divergent architectures (e.g. static-only mechanisms that cannot scale to dynamic user assets). Favor explicit, testable TypeScript in domain/infrastructure ports over invisible framework machinery.
 
 ## Findings taxonomy
 
-- **Blocking:** Correctness bugs, invariant violations, missing/failing tests, missing docs for behavioral changes, or quality gate failures. Must be resolved before merge.
+- **Blocking:** Correctness bugs, invariant violations, ambient magic / untestable hidden state, architectural divergence, missing/failing tests, missing docs for behavioral changes, or quality gate failures. Must be resolved before merge.
 - **Advisory:** Optional style or non-critical cleanups.
 
 ## Review loop to fixpoint
@@ -44,6 +45,7 @@ Every PR must be reviewed by a fresh, independent read-only agent instance and i
 # Philosophy
 
 - **Simplicity above all.** Every layer of indirection, abstraction, or "just in case" parameter must justify its existence. When in doubt, leave it out.
+- **Reject ambient magic & dual systems.** Favor explicit, inspectable code over invisible runtime interception or complex build-time code generation. Avoid building static-only solutions that will require a second, divergent mechanism for dynamic/user-created data later.
 - **Know the ideal north star.** Design the unconstrained ideal first. If taking a pragmatic shortcut, explicitly name what was traded away and why.
 - **Test-first & DAMP.** Write the test before the code. Three clear, readable test bodies beat one clever parameterized helper.
 - **Walking skeleton first.** Get a minimal end-to-end slice compiling and passing one test before polishing internals.
