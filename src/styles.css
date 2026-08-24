@@ -2538,6 +2538,42 @@ kbd {
   gap: 10px;
 }
 
+.sync-sent-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sync-sent-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.sync-sent-card .sent-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.sync-sent-card h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sync-sent-card p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
 .sync-notice-card {
   padding: 10px 12px;
   border: 1.5px solid var(--line-subtle);

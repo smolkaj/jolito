@@ -225,8 +225,7 @@ function SyncModal({
   // Auth & Cloud Sync state
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
-  const [token, setToken] = useState('')
-  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [isLinkSent, setIsLinkSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [syncStatusMsg, setSyncStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -266,67 +265,23 @@ function SyncModal({
   if (!isOpen) return null
 
   // Auth handlers
-  const handleSendLink = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSendLink = async (e?: FormEvent) => {
+    if (e) e.preventDefault()
     if (!email.trim()) return
     setLoading(true)
     setSyncStatusMsg(null)
     const res = await auth.sendMagicLink(email.trim())
     setLoading(false)
     if (res.success) {
-      setIsOtpSent(true)
+      setIsLinkSent(true)
       setSyncStatusMsg({
         type: 'info',
-        message:
-          'Sign-in link sent! Click the link in your email to sign in automatically, or enter your code below.',
+        message: 'Sign-in link sent! Check your email to sign in.',
       })
     } else {
       setSyncStatusMsg({
         type: 'error',
         message: res.error || 'Failed to send sign-in link.',
-      })
-    }
-  }
-
-  const handleVerifyOtp = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!token.trim()) return
-    setLoading(true)
-    setSyncStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), token.trim())
-    if (res.success) {
-      const loggedUser = await auth.getUser()
-      if (loggedUser) {
-        setSyncStatusMsg({
-          type: 'info',
-          message: 'Signed in! Syncing deck with cloud...',
-        })
-        const syncRes = await syncDeckWithCloud({
-          localCards: cards,
-          user: loggedUser,
-          syncService: sync,
-          onCardsUpdated: onUpdateCards,
-        })
-        setLoading(false)
-        if (syncRes.success) {
-          setSyncStatusMsg({
-            type: 'success',
-            message: `Deck synchronized (${cards.length} cards up to date).`,
-          })
-        } else {
-          setSyncStatusMsg({
-            type: 'error',
-            message: syncRes.error || 'Sync completed with errors.',
-          })
-        }
-      } else {
-        setLoading(false)
-      }
-    } else {
-      setLoading(false)
-      setSyncStatusMsg({
-        type: 'error',
-        message: res.error || 'Invalid code.',
       })
     }
   }
@@ -357,8 +312,7 @@ function SyncModal({
 
   const handleSignOut = async () => {
     await auth.signOut()
-    setIsOtpSent(false)
-    setToken('')
+    setIsLinkSent(false)
     setSyncStatusMsg({
       type: 'info',
       message: 'Signed out. Cards remain safely stored on this device.',
@@ -540,7 +494,7 @@ function SyncModal({
               </div>
             ) : (
               <div className="sync-auth-pane">
-                {!isOtpSent ? (
+                {!isLinkSent ? (
                   <form
                     onSubmit={(e) => {
                       void handleSendLink(e)
@@ -570,46 +524,40 @@ function SyncModal({
                     </button>
                   </form>
                 ) : (
-                  <form
-                    onSubmit={(e) => {
-                      void handleVerifyOtp(e)
-                    }}
-                    className="sync-auth-form"
-                  >
-                    <p className="sync-explanation">
-                      Click the confirmation link sent to{' '}
-                      <strong>{email}</strong> to sign in automatically, or
-                      enter your code:
-                    </p>
-                    <div className="field-group">
-                      <label htmlFor="sync-otp">Verification code</label>
-                      <input
-                        id="sync-otp"
-                        type="text"
-                        required
-                        autoFocus
-                        placeholder="e.g. 123456"
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                      />
+                  <div className="sync-sent-pane">
+                    <div className="sync-sent-card">
+                      <span className="sent-icon" aria-hidden="true">
+                        ✉️
+                      </span>
+                      <div>
+                        <h4>Check your email</h4>
+                        <p>
+                          We sent a sign-in link to <strong>{email}</strong>.
+                          Click the link in the email to sign in on this device.
+                        </p>
+                      </div>
                     </div>
                     <div className="sync-auth-buttons">
                       <button
-                        type="submit"
-                        className="primary-button"
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          void handleSendLink()
+                        }}
                         disabled={loading}
                       >
-                        {loading ? 'Verifying…' : 'Verify & sync →'}
+                        {loading ? 'Resending…' : 'Resend link ⟳'}
                       </button>
                       <button
                         type="button"
                         className="text-button"
-                        onClick={() => setIsOtpSent(false)}
+                        onClick={() => setIsLinkSent(false)}
+                        disabled={loading}
                       >
                         Use different email
                       </button>
                     </div>
-                  </form>
+                  </div>
                 )}
               </div>
             )}

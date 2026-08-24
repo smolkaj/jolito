@@ -648,15 +648,16 @@ describe('Jolito', () => {
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    expect(await screen.findByText(/sign-in link sent/i)).toBeInTheDocument()
-
-    // Enter OTP
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
-
-    expect(await screen.findByText(/signed in/i)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: /check your email/i }),
+    ).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /resend link/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /use different email/i }),
+    ).toBeInTheDocument()
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
