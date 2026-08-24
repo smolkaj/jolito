@@ -65,6 +65,15 @@ export function cleanAnkiHtml(
   if (!raw) return ''
 
   let text = raw
+
+  // Strip scripts, styles, and HTML comments
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+  text = text.replace(/<!--[\s\S]*?-->/g, ' ')
+
+  // Strip zero-width characters and BOM
+  text = text.replace(/[\uFEFF\u200B\u200C\u200D]/g, '')
+
   const target = (options?.targetOrdinal ?? 0) + 1
 
   // If answer side of a cloze card, extract the cloze target content
@@ -102,7 +111,7 @@ export function cleanAnkiHtml(
     text = text.replace(/\{\{c\d+::([^:]+?)(?:::(.*?))?\}\}/g, '$1')
   }
 
-  // Remove Anki media markup like [sound:...]
+  // Remove Anki media markup like [sound:...] and [anki:play:...]
   text = text.replace(/\[sound:[^\]]+\]/gi, '')
   text = text.replace(/\[anki:[^\]]+\]/gi, '')
 
@@ -117,7 +126,7 @@ export function cleanAnkiHtml(
     text = text.split(entity).join(replacement)
   }
 
-  // Decode numeric decimal entities (e.g. &#160;)
+  // Decode numeric decimal entities (e.g. &#160;) with safe integer bounds
   text = text.replace(/&#(\d+);/g, (_: string, dec: string): string => {
     const codePoint = Number(dec)
     return Number.isSafeInteger(codePoint) &&
@@ -127,7 +136,7 @@ export function cleanAnkiHtml(
       : ''
   })
 
-  // Decode numeric hex entities (e.g. &#x20;)
+  // Decode numeric hex entities (e.g. &#x20;) with safe integer bounds
   text = text.replace(
     /&#x([0-9a-fA-F]+);/g,
     (_: string, hex: string): string => {
@@ -339,8 +348,10 @@ function parseCsvTsvRows(text: string, delimiter: string): string[][] {
     i++
   }
 
-  currentRow.push(currentField)
-  rows.push(currentRow)
+  if (currentRow.length > 0 || currentField.length > 0) {
+    currentRow.push(currentField)
+    rows.push(currentRow)
+  }
 
   return rows
 }
@@ -399,10 +410,20 @@ export function parseAnkiText(content: string, now: number): ParseAnkiResult {
 
   for (const [rowIndex, rawCols] of dataRows.entries()) {
     const firstCol = rawCols[0]?.trim() || ''
-    if (firstCol.startsWith('#') || rawCols.length < 2) continue
+    if (firstCol.startsWith('#')) continue
 
-    const prompt = cleanAnkiHtml(rawCols[0] || '')
-    const answer = cleanAnkiHtml(rawCols[1] || '')
+    const rawPrompt = rawCols[0] || ''
+    let rawAnswer = rawCols[1] || ''
+
+    const hasCloze = /\{\{c\d+::/.test(rawPrompt)
+    if (hasCloze && !rawAnswer) {
+      rawAnswer = rawPrompt
+    }
+
+    if (!rawPrompt || !rawAnswer) continue
+
+    const prompt = cleanAnkiHtml(rawPrompt, { clozeSide: 'prompt' })
+    const answer = cleanAnkiHtml(rawAnswer, { clozeSide: 'answer' })
     const context = rawCols.length >= 3 ? cleanAnkiHtml(rawCols[2] || '') : ''
 
     if (!prompt || !answer) continue
@@ -478,8 +499,16 @@ export async function parseAnkiPackage(
     }
   }
 
-  const SQL = await getSqlJs()
-  const db = new SQL.Database(dbData)
+  let db: InstanceType<Awaited<ReturnType<typeof getSqlJs>>['Database']>
+  try {
+    const SQL = await getSqlJs()
+    db = new SQL.Database(dbData)
+  } catch (err) {
+    return {
+      success: false,
+      error: `Invalid Anki package: database could not be opened (${err instanceof Error ? err.message : 'invalid sqlite database'}).`,
+    }
+  }
 
   try {
     let crt = Math.floor(now / 1000)
@@ -549,16 +578,21 @@ export async function parseAnkiPackage(
       const fields = fldsStr.split('\x1f')
       let rawPrompt = fields[0] || ''
       let rawAnswer = fields[1] || ''
-      const extraFields = fields.slice(2).join(' ')
-      const contextText = [extraFields, tagsStr.trim()]
-        .filter(Boolean)
-        .join(' ')
+      let extraFields = fields.slice(2).join(' ')
 
-      // If reversed template (ord > 0)
-      if (ord === 1 && fields.length >= 2) {
+      const hasCloze = /\{\{c\d+::/.test(rawPrompt)
+      if (hasCloze && (!rawAnswer || ord > 0)) {
+        rawAnswer = rawPrompt
+        extraFields = fields.slice(1).join(' ')
+      } else if (ord === 1 && fields.length >= 2) {
+        // Reversed card template (ord 1)
         rawPrompt = fields[1] || ''
         rawAnswer = fields[0] || ''
       }
+
+      const contextText = [extraFields, tagsStr.trim()]
+        .filter(Boolean)
+        .join(' ')
 
       const prompt = cleanAnkiHtml(rawPrompt, {
         clozeSide: 'prompt',
@@ -648,6 +682,11 @@ export async function parseAnkiPackage(
         reviewCount,
         learningCount,
       },
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: `Failed to read Anki database: ${err instanceof Error ? err.message : 'query execution failed'}.`,
     }
   } finally {
     db.close()

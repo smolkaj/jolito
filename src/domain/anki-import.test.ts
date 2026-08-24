@@ -810,3 +810,156 @@ describe('numeric entity bounds tests', () => {
     expect(cleanAnkiHtml(textHex)).toBe('Word test')
   })
 })
+
+describe('bulletproof stress and edge case testing', () => {
+  const fixedNow = 1700000000000
+
+  it('strips <style>, <script>, and <!-- comments --> from HTML', () => {
+    const raw = `
+      <style>
+        .my-class { color: red; font-size: 16px; }
+      </style>
+      <script>
+        alert("evil");
+      </script>
+      <!-- this is an internal comment -->
+      <span class="my-class">Buenos días</span>
+    `
+    expect(cleanAnkiHtml(raw)).toBe('Buenos días')
+  })
+
+  it('strips zero-width spaces, joiners, and BOM marks', () => {
+    const raw = '\uFEFF\u200B\u200CHola\u200D mundo\u200B'
+    expect(cleanAnkiHtml(raw)).toBe('Hola mundo')
+  })
+
+  it('parses text export with 1-column cloze deletion notes', () => {
+    const clozeText =
+      'El {{c1::perro::canine}} duerme.\nLa {{c1::casa::house}} es grande.'
+    const res = parseAnkiText(clozeText, fixedNow)
+    expect(res.success).toBe(true)
+    if (res.success) {
+      expect(res.count).toBe(2)
+      expect(res.cards[0]?.prompt).toBe('El [canine] duerme.')
+      expect(res.cards[0]?.answer).toBe('perro')
+      expect(res.cards[1]?.prompt).toBe('La [house] es grande.')
+      expect(res.cards[1]?.answer).toBe('casa')
+    }
+  })
+
+  it('parses text export with space separator header #separator:space', () => {
+    const spaceText = `#separator:space\nperro dog\ngato cat`
+    const res = parseAnkiText(spaceText, fixedNow)
+    expect(res.success).toBe(true)
+    if (res.success) {
+      expect(res.count).toBe(2)
+      expect(res.cards[0]?.prompt).toBe('perro')
+      expect(res.cards[0]?.answer).toBe('dog')
+    }
+  })
+
+  it('parses text export with pipe separator header #separator:pipe', () => {
+    const pipeText = `#separator:pipe\n#html:true\nmesa|table|furniture\nsilla|chair|furniture`
+    const res = parseAnkiText(pipeText, fixedNow)
+    expect(res.success).toBe(true)
+    if (res.success) {
+      expect(res.count).toBe(2)
+      expect(res.cards[0]?.prompt).toBe('mesa')
+      expect(res.cards[0]?.answer).toBe('table')
+      expect(res.cards[0]?.context).toBe('furniture')
+    }
+  })
+
+  it('handles Anki cloze note inside .apkg SQLite package with 1 field', async () => {
+    const SQL = await getSqlJs()
+    const db = new SQL.Database()
+
+    db.run(`
+      CREATE TABLE col (id INTEGER PRIMARY KEY, crt INTEGER, decks TEXT);
+      CREATE TABLE notes (id INTEGER PRIMARY KEY, mid INTEGER, flds TEXT, tags TEXT);
+      CREATE TABLE cards (
+        id INTEGER PRIMARY KEY, nid INTEGER, ord INTEGER, type INTEGER, queue INTEGER,
+        due INTEGER, ivl INTEGER, factor INTEGER, reps INTEGER, lapses INTEGER, did INTEGER
+      );
+    `)
+
+    db.run(`
+      INSERT INTO col VALUES (1, 1600000000, '{"1": {"name": "Spanish Clozes"}}');
+      INSERT INTO notes VALUES (1, 10, '¿Quieres un {{c1::vaso de agua::glass of water}}?', 'dining');
+      INSERT INTO cards VALUES (101, 1, 0, 0, 0, 0, 0, 2500, 0, 0, 1);
+    `)
+
+    const dbBytes = db.export()
+    db.close()
+
+    const zip = fflate.zipSync({
+      'collection.anki2': dbBytes,
+    })
+
+    const res = await parseAnkiPackage(zip, fixedNow)
+    expect(res.success).toBe(true)
+    if (res.success) {
+      expect(res.count).toBe(1)
+      expect(res.cards[0]?.prompt).toBe('¿Quieres un [glass of water]?')
+      expect(res.cards[0]?.answer).toBe('vaso de agua')
+      expect(res.cards[0]?.context).toBe('dining')
+    }
+  })
+
+  it('handles SQLite database with missing notes table gracefully without throwing', async () => {
+    const SQL = await getSqlJs()
+    const db = new SQL.Database()
+    db.run(
+      `CREATE TABLE col (id INTEGER PRIMARY KEY, crt INTEGER, decks TEXT);`,
+    )
+    const dbBytes = db.export()
+    db.close()
+
+    const zip = fflate.zipSync({
+      'collection.anki2': dbBytes,
+    })
+
+    const res = await parseAnkiPackage(zip, fixedNow)
+    expect(res.success).toBe(false)
+    if (!res.success) {
+      expect(res.error).toContain('Failed to read Anki database')
+    }
+  })
+
+  it('handles corrupt SQLite binary inside zip gracefully without throwing', async () => {
+    const corruptDb = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04])
+    const zip = fflate.zipSync({
+      'collection.anki2': corruptDb,
+    })
+
+    const res = await parseAnkiPackage(zip, fixedNow)
+    expect(res.success).toBe(false)
+    if (!res.success) {
+      expect(res.error).toMatch(/database|failed/i)
+    }
+  })
+
+  it('fuzz testing: handles arbitrary random strings without throwing', async () => {
+    const fuzzInputs = [
+      '<html><body><script>unclosed',
+      '{{c1::broken',
+      '{{c999999999999999999::answer}}',
+      '#separator:unknown_custom\n\n\n\n',
+      '"""unclosed quotes in csv',
+      '\x00\x01\x02\x03\x04\x05',
+      '&#xZZZZ; &#9999999999999; &unknown;',
+      '   \r\n\t\r\n   ',
+      '# comment only\n# another comment',
+      JSON.stringify({ not: 'a valid backup payload' }),
+    ]
+
+    for (const input of fuzzInputs) {
+      expect(() => cleanAnkiHtml(input)).not.toThrow()
+      expect(() => detectDirection(input, input)).not.toThrow()
+      expect(() => parseAnkiText(input, fixedNow)).not.toThrow()
+      await expect(
+        parseAnkiDeck(input, 'test.txt', fixedNow),
+      ).resolves.toBeDefined()
+    }
+  })
+})
