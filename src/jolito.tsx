@@ -277,7 +277,8 @@ function SyncModal({
       setIsOtpSent(true)
       setSyncStatusMsg({
         type: 'info',
-        message: 'Sign-in code sent to your email. Enter it below to sync.',
+        message:
+          'Sign-in link sent! Click the link in your email to sign in automatically, or enter your code below.',
       })
     } else {
       setSyncStatusMsg({
@@ -547,7 +548,7 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Enter your email to receive a passwordless sign-in code.
+                      Enter your email to receive a passwordless sign-in link.
                     </p>
                     <div className="field-group">
                       <label htmlFor="sync-email">Email address</label>
@@ -565,7 +566,7 @@ function SyncModal({
                       className="primary-button"
                       disabled={loading}
                     >
-                      {loading ? 'Sending code…' : 'Send sign-in code →'}
+                      {loading ? 'Sending link…' : 'Send sign-in link →'}
                     </button>
                   </form>
                 ) : (
@@ -576,8 +577,9 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Enter the verification code sent to{' '}
-                      <strong>{email}</strong>:
+                      Click the confirmation link sent to{' '}
+                      <strong>{email}</strong> to sign in automatically, or
+                      enter your code:
                     </p>
                     <div className="field-group">
                       <label htmlFor="sync-otp">Verification code</label>

@@ -646,11 +646,9 @@ describe('Jolito', () => {
     // Enter email
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    expect(
-      await screen.findByText(/sign-in code sent to your email/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/sign-in link sent/i)).toBeInTheDocument()
 
     // Enter OTP
     const otpInput = screen.getByLabelText(/verification code/i)
