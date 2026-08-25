@@ -468,6 +468,11 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
 
   await page.screenshot({ path: 'test-results/save-card-auth-modal.png' })
 
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+
   // Modal can be dismissed with Escape and preserves form inputs
   await page.keyboard.press('Escape')
   await expect(
