@@ -32,6 +32,59 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
   expect(results.violations).toEqual([])
 })
 
+test('brand mascot logo preserves opaque body fill and transparent negative space', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const brandImg = page.locator('.brand img')
+  await expect(brandImg).toBeVisible()
+
+  await expect
+    .poll(async () =>
+      brandImg.evaluate(
+        (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
+      ),
+    )
+    .toBe(true)
+
+  const pixelData = await brandImg.evaluate((img: HTMLImageElement) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0)
+    const scaleX = img.naturalWidth / 878
+    const scaleY = img.naturalHeight / 916
+    const getPixel = (x: number, y: number) => {
+      const p = ctx.getImageData(
+        Math.round(x * scaleX),
+        Math.round(y * scaleY),
+        1,
+        1,
+      ).data
+      return [p[0], p[1], p[2], p[3]]
+    }
+    return {
+      head: getPixel(400, 300),
+      body: getPixel(400, 600),
+      hole: getPixel(300, 620),
+      bg: getPixel(10, 10),
+    }
+  })
+
+  expect(pixelData).not.toBeNull()
+  // Head & body are opaque white
+  expect(pixelData!.head[3]).toBe(255)
+  expect(pixelData!.head[0]).toBeGreaterThan(200)
+  expect(pixelData!.body[3]).toBe(255)
+  expect(pixelData!.body[0]).toBeGreaterThan(200)
+  // Hole between left arm and left leg is transparent
+  expect(pixelData!.hole[3]).toBe(0)
+  // Background is transparent
+  expect(pixelData!.bg[3]).toBe(0)
+})
+
 test('creates and reviews both directions with the keyboard', async ({
   page,
 }) => {
