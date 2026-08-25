@@ -1,8 +1,8 @@
 <p align="center">
   <img src="assets/jolito-welcome.png" alt="Jolito the Axolotl mascot logo" width="180">
-  <br><br>
+  <br>
   <strong>Spoken Mexican Spanish at your rhythm.</strong>
-  <br><br>
+  <br>
   <a href="https://joli.to"><strong>Try the live app →</strong></a>
   <br>
   <sub>Production deployment of <code>main</code> at <code>joli.to</code></sub>
@@ -11,9 +11,6 @@
 </p>
 
 # Jolito
-
-> [!TIP]
-> **Live Production App:** Try Jolito now at **[joli.to](https://joli.to)**. It runs on both desktop and mobile, with full offline capability as an installable PWA.
 
 Jolito is a multimodal language-learning app that combines Anki's proven, learner-controlled spaced repetition with the beauty, warmth, visual engagement, and frictionlessness that make daily language practice inviting. Each card brings together the written language, meaningful visuals, and natural audio so learners can connect what they read, see, and hear.
 
