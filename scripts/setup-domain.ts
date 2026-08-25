@@ -181,7 +181,50 @@ async function main() {
     }
   }
 
-  // 6. Spaceship.com API Automation
+  // 6. Configure www -> apex 301 Permanent Redirect
+  console.log(
+    `\n🔀 Configuring 301 Permanent Redirect for www.${DOMAIN} -> https://${DOMAIN}...`,
+  )
+  try {
+    await cfApi(`/zones/${zone.id}/dns_records`, cfToken, 'POST', {
+      type: 'AAAA',
+      name: 'www',
+      content: '100::',
+      proxied: true,
+    })
+  } catch {
+    // ignore if record already exists
+  }
+  try {
+    await cfApi(`/zones/${zone.id}/pagerules`, cfToken, 'POST', {
+      targets: [
+        {
+          target: 'url',
+          constraint: {
+            operator: 'matches',
+            value: `*www.${DOMAIN}/*`,
+          },
+        },
+      ],
+      actions: [
+        {
+          id: 'forwarding_url',
+          value: {
+            url: `https://${DOMAIN}/$2`,
+            status_code: 301,
+          },
+        },
+      ],
+      status: 'active',
+    })
+    console.log(
+      `✔ 301 Permanent Redirect active: www.${DOMAIN}/* -> https://${DOMAIN}/*`,
+    )
+  } catch {
+    // ignore if rule already exists
+  }
+
+  // 7. Spaceship.com API Automation
   console.log('\n🛰️  Spaceship Nameserver Configuration...')
   const spaceshipKey = process.env.SPACESHIP_API_KEY
   const spaceshipSecret = process.env.SPACESHIP_API_SECRET

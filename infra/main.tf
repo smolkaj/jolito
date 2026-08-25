@@ -34,3 +34,28 @@ resource "cloudflare_workers_custom_domain" "apex" {
   zone_id    = cloudflare_zone.joli_to.id
 }
 
+# 4. Proxied DNS record for www subdomain
+resource "cloudflare_record" "www" {
+  zone_id = cloudflare_zone.joli_to.id
+  name    = "www"
+  content = "100::"
+  type    = "AAAA"
+  proxied = true
+}
+
+# 5. Permanent 301 redirect from www.joli.to/* to https://joli.to/*
+resource "cloudflare_page_rule" "www_redirect" {
+  zone_id  = cloudflare_zone.joli_to.id
+  target   = "*www.${var.domain_name}/*"
+  priority = 1
+  status   = "active"
+
+  actions {
+    forwarding_url {
+      url         = "https://${var.domain_name}/$2"
+      status_code = 301
+    }
+  }
+}
+
+

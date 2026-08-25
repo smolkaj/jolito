@@ -5,6 +5,7 @@ This Terraform configuration manages the Cloudflare resources for Jolito:
 - Cloudflare Zone for `joli.to`
 - HTTPS, SSL (Strict), HTTP/3, TLS 1.3, and Brotli settings
 - Cloudflare Worker Custom Domain for `joli.to`
+- Permanent 301 redirect from `www.joli.to` to `https://joli.to` (preserving path and query)
 
 ## Prerequisites
 
