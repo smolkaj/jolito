@@ -486,7 +486,7 @@ summary:focus-visible {
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
-  padding: 28px 0 36px;
+  padding: 20px 0 28px;
 }
 
 .hero-copy {
@@ -495,13 +495,11 @@ summary:focus-visible {
 }
 
 .welcome-mascot-img {
-  position: absolute;
-  bottom: calc(100% + 14px);
-  left: 0;
   width: 124px;
   height: 124px;
   object-fit: contain;
   display: block;
+  margin-bottom: 16px;
   transform: scaleX(-1);
   user-select: none;
   pointer-events: none;
@@ -2060,6 +2058,67 @@ kbd {
   .create-layout header {
     position: static;
     max-width: 500px;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 681px) {
+  .welcome-hero {
+    padding: 12px 0 20px;
+    gap: clamp(24px, 4vw, 48px);
+  }
+
+  .welcome-mascot-img {
+    width: clamp(72px, 12vh, 104px);
+    height: clamp(72px, 12vh, 104px);
+    margin-bottom: 12px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(36px, 4.5vw, 54px);
+  }
+
+  .lede {
+    margin: 12px 0 20px;
+    font-size: 16px;
+  }
+
+  .hero-visual {
+    min-height: 380px;
+  }
+
+  .sample-card {
+    height: 320px;
+    padding: 20px;
+  }
+}
+
+@media (max-height: 620px) and (min-width: 681px) {
+  .welcome-hero {
+    padding: 8px 0 14px;
+  }
+
+  .welcome-mascot-img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 8px;
+  }
+
+  .hero-copy h1 {
+    font-size: 32px;
+  }
+
+  .lede {
+    margin: 8px 0 14px;
+    font-size: 14px;
+  }
+
+  .hero-visual {
+    min-height: 300px;
+  }
+
+  .sample-card {
+    height: 270px;
+    padding: 16px;
   }
 }
 

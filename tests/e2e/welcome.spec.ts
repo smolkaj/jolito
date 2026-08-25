@@ -34,6 +34,30 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
   expect(results.violations).toEqual([])
 })
 
+test('maintains clear vertical clearance between topbar and mascot across reduced window heights', async ({
+  page,
+}) => {
+  for (const height of [800, 650, 540]) {
+    await page.setViewportSize({ width: 1280, height })
+    await page.goto('/')
+
+    const topbar = page.locator('.topbar')
+    const mascotImg = page.locator('.welcome-mascot-img')
+    await expect(topbar).toBeVisible()
+    await expect(mascotImg).toBeVisible()
+
+    const topbarBox = await topbar.boundingBox()
+    const mascotBox = await mascotImg.boundingBox()
+
+    expect(topbarBox).not.toBeNull()
+    expect(mascotBox).not.toBeNull()
+
+    // Mascot must strictly be positioned below the topbar with positive vertical gap
+    const gap = mascotBox!.y - (topbarBox!.y + topbarBox!.height)
+    expect(gap).toBeGreaterThanOrEqual(8)
+  }
+})
+
 test('brand mascot logo preserves opaque body fill and transparent negative space', async ({
   page,
 }) => {
