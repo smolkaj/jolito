@@ -12,34 +12,64 @@
 
 # Jolito
 
-Jolito is a multimodal language-learning app that combines Anki's proven, learner-controlled spaced repetition with the beauty, warmth, visual engagement, and frictionlessness that make daily language practice inviting. Each card brings together the written language, meaningful visuals, and natural audio so learners can connect what they read, see, and hear.
+Jolito blends the proven power of spaced-repetition flashcards with the audio immersion and friction-free flow of a modern practice app. Built for mastering real-world Mexican Spanish, Jolito turns daily language practice into a fast, rewarding habit—online or offline.
 
-We are initially building it for learning Mexican Spanish in Mexico City. The first experience will make it enjoyable to manually create beautiful, spoken Mexican Spanish ↔ English cards, practice active typed recall, and review them at speed—online or offline.
+## Highlights
 
-## Status
+- **Fast keyboard reviews:** Fly through cards with `Enter` to reveal, `1`–`4` to grade, and `Space` for audio. Inputs autofocus automatically so your hands never need to leave the keyboard.
+- **Ear-first immersion:** Spoken Mexican Spanish audio on prompts and answers trains your ear for everyday conversation.
+- **Active typed recall:** Produce language instead of just recognizing it. Instant visual diffs highlight spelling nuances while you retain full authority over your self-grading.
+- **Live dual-card workbench:** Create linked Spanish ↔ English reciprocal cards simultaneously with side-by-side previews, contextual explanations, and rapid batch creation.
+- **Anki import:** Bring existing decks (`.apkg` packages or text exports) in seconds, preserving learning history and spaced-repetition schedules.
+- **Offline by default:** Installable PWA with local browser storage and service worker caching. Practice anywhere with zero network latency.
+- **Cloud backup:** Optional passwordless sign-in with instant multi-device synchronization powered by Supabase.
 
-Jolito has a functional, local-first MVP: create one- or two-way Mexican Spanish ↔ English cards, customize the reverse direction, add context, and move through a typed, spoken review session entirely by keyboard. Cards and review schedules persist on the device, and the production build reopens offline after its initial load.
+## Review controls
 
-Account sync, generated audio and visuals, and AI-assisted authoring are still ahead. The product direction is captured in [the product vision](docs/PRODUCT_VISION.md), its development tracks in [the roadmap](docs/ROADMAP.md), and its engineering standards in [the quality guide](docs/QUALITY.md). See [the development guide](docs/DEVELOPMENT.md) to run it locally.
+| Key                   | Action                                                 |
+| --------------------- | ------------------------------------------------------ |
+| `Type`                | Enter your answer in active recall mode                |
+| `Enter`               | Reveal canonical answer & display visual diff          |
+| `1` / `2` / `3` / `4` | Self-grade: **Again**, **Hard**, **Good**, or **Easy** |
+| `Space`               | Replay spoken audio                                    |
 
 ## Run it locally
 
-Requires Node.js 24 (Krypton LTS) and npm.
+Requires **Node.js 24** (Krypton LTS) and npm.
 
 ```sh
+# Clone & install
+git clone https://github.com/smolkaj/jolito.git
+cd jolito
 npm ci
+
+# Start the dev server
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173). To try the offline-capable production build instead, run `npm run build && npm run preview`, then open [http://localhost:4173](http://localhost:4173) once before going offline.
+Open [http://localhost:5173](http://localhost:5173). To test the installable, offline-capable production build:
 
-Working over mosh? Run this from your local terminal:
+```sh
+npm run build && npm run preview
+```
+
+Open [http://localhost:4173](http://localhost:4173) once while online, then toggle offline in DevTools and reload.
+
+### Remote development over SSH/Mosh
 
 ```sh
 ssh -L 5173:127.0.0.1:5173 -t <host> 'cd ~/src/jolito && npm ci && npm run dev -- --host 127.0.0.1'
 ```
 
 Mosh cannot carry the TCP port, so SSH provides the tunnel. Substitute a task worktree path for `~/src/jolito` when reviewing unmerged work.
+
+## Explore more
+
+- **[Product Vision](docs/PRODUCT_VISION.md):** Philosophy, core principles, and the target learner experience.
+- **[Roadmap](docs/ROADMAP.md):** Current progress, active tracks, and upcoming capabilities.
+- **[Architecture](docs/ARCHITECTURE.md):** Hexagonal domain structure, local-first storage, and clean abstractions.
+- **[Quality Guide](docs/QUALITY.md):** Test pyramid, accessibility invariants, and CI contracts.
+- **[Development Guide](docs/DEVELOPMENT.md):** Supabase sync configuration, Cloudflare Workers deployment, and testing workflows.
 
 ## License
 
