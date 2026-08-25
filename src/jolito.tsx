@@ -215,6 +215,7 @@ function SyncModal({
   auth,
   sync,
   clock,
+  authPromptReason,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -223,6 +224,7 @@ function SyncModal({
   auth: AuthService
   sync: SyncService
   clock: { now(): number }
+  authPromptReason?: 'save_card' | null
 }) {
   // Auth & Cloud Sync state
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -305,36 +307,13 @@ function SyncModal({
     setLoading(true)
     setSyncStatusMsg(null)
     const res = await auth.verifyOtp(email.trim(), token.trim())
+    setLoading(false)
     if (res.success) {
-      const loggedUser = await auth.getUser()
-      if (loggedUser) {
-        setSyncStatusMsg({
-          type: 'info',
-          message: 'Signed in! Syncing deck with cloud...',
-        })
-        const syncRes = await syncDeckWithCloud({
-          localCards: cards,
-          user: loggedUser,
-          syncService: sync,
-          onCardsUpdated: onUpdateCards,
-        })
-        setLoading(false)
-        if (syncRes.success) {
-          setSyncStatusMsg({
-            type: 'success',
-            message: `Deck synchronized (${cards.length} cards up to date).`,
-          })
-        } else {
-          setSyncStatusMsg({
-            type: 'error',
-            message: syncRes.error || 'Sync completed with errors.',
-          })
-        }
-      } else {
-        setLoading(false)
-      }
+      setSyncStatusMsg({
+        type: 'success',
+        message: 'Signed in! Deck synchronized with cloud.',
+      })
     } else {
-      setLoading(false)
       setSyncStatusMsg({
         type: 'error',
         message: res.error || 'Invalid code.',
@@ -479,10 +458,15 @@ function SyncModal({
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="sync-modal-title">Cloud sync & deck backup</h2>
+            <h2 id="sync-modal-title">
+              {authPromptReason === 'save_card'
+                ? 'Sign in to save your cards'
+                : 'Cloud sync & deck backup'}
+            </h2>
             <p className="modal-subtitle">
-              Replicate your cards across devices or export offline JSON
-              backups.
+              {authPromptReason === 'save_card'
+                ? 'Create an account or sign in to save your flashcards and sync across all your devices.'
+                : 'Replicate your cards across devices or export offline JSON backups.'}
             </p>
           </div>
           <button
@@ -516,6 +500,20 @@ function SyncModal({
                 </p>
               </div>
             </div>
+
+            {authPromptReason === 'save_card' &&
+              !user &&
+              isBackendConfigured && (
+                <div className="save-card-gate-banner" role="status">
+                  <span className="gate-icon" aria-hidden="true">
+                    ✨
+                  </span>
+                  <span>
+                    Sign in or create an account to save your new card and start
+                    building your library.
+                  </span>
+                </div>
+              )}
 
             {syncStatusMsg && (
               <div
@@ -903,6 +901,17 @@ export function App({
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [syncModalReason, setSyncModalReason] = useState<'save_card' | null>(
+    null,
+  )
+  const [pendingCard, setPendingCard] = useState<{
+    spanish: string
+    english: string
+    context: string
+    bidirectional: boolean
+    reversePrompt: string
+    reverseAnswer: string
+  } | null>(null)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
@@ -955,11 +964,13 @@ export function App({
   const cardsRef = useRef(cards)
   const viewRef = useRef(view)
   const authUserRef = useRef(authUser)
+  const pendingCardRef = useRef(pendingCard)
 
   useEffect(() => {
     cardsRef.current = cards
     viewRef.current = view
     authUserRef.current = authUser
+    pendingCardRef.current = pendingCard
   })
 
   const onUpdateCards = useCallback(
@@ -989,21 +1000,71 @@ export function App({
     [services.cards, services.clock, services.sync],
   )
 
+  const saveCardFromParams = useCallback(
+    (params: {
+      spanish: string
+      english: string
+      context: string
+      bidirectional: boolean
+      reversePrompt: string
+      reverseAnswer: string
+    }) => {
+      const created = createCards(params, {
+        clock: services.clock,
+        ids: services.ids,
+      })
+      if (created.length === 0) return
+
+      onUpdateCards([...created, ...cardsRef.current])
+      const savedSpanish = params.spanish.trim()
+      setSavedToast(savedSpanish)
+      if (savedToastTimerRef.current !== null) {
+        window.clearTimeout(savedToastTimerRef.current)
+      }
+      savedToastTimerRef.current = window.setTimeout(() => {
+        setSavedToast(null)
+        savedToastTimerRef.current = null
+      }, 3000)
+
+      setSpanishInput('')
+      setEnglishInput('')
+      setContextInput('')
+      setReversePromptInput('')
+      setReverseAnswerInput('')
+      setSuggestions([])
+      setDidYouMean(null)
+      setShowSuggestions(false)
+      setActiveSuggestionIndex(-1)
+      setPendingCard(null)
+      pendingCardRef.current = null
+      spanishInputRef.current?.focus()
+    },
+    [onUpdateCards, services.clock, services.ids],
+  )
+
   useEffect(() => {
     return services.auth.onAuthStateChange((user) => {
+      authUserRef.current = user
       setAuthUser(user)
       if (user) {
-        void syncDeckWithCloud({
-          localCards: cardsRef.current,
-          user,
-          syncService: services.sync,
-          onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
-        }).then((res) => {
-          if (res.success) setSyncStatus('synced')
-        })
+        if (pendingCardRef.current) {
+          const pending = pendingCardRef.current
+          saveCardFromParams(pending)
+          setIsSyncOpen(false)
+          setSyncModalReason(null)
+        } else {
+          void syncDeckWithCloud({
+            localCards: cardsRef.current,
+            user,
+            syncService: services.sync,
+            onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
+          }).then((res) => {
+            if (res.success) setSyncStatus('synced')
+          })
+        }
       }
     })
-  }, [onUpdateCards, services.auth, services.sync])
+  }, [onUpdateCards, saveCardFromParams, services.auth, services.sync])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1356,6 +1417,12 @@ export function App({
     [activeSuggestionIndex, applySuggestion, showSuggestions, suggestions],
   )
 
+  const openSyncModal = useCallback((reason?: 'save_card' | null) => {
+    setShowSuggestions(false)
+    setSyncModalReason(reason ?? null)
+    setIsSyncOpen(true)
+  }, [])
+
   function createCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -1363,41 +1430,31 @@ export function App({
       const value = form.get(name)
       return typeof value === 'string' ? value : ''
     }
-    const created = createCards(
-      {
-        spanish: field('spanish'),
-        english: field('english'),
-        context: field('context'),
-        bidirectional: form.get('bidirectional') === 'on',
-        reversePrompt: field('reversePrompt'),
-        reverseAnswer: field('reverseAnswer'),
-      },
-      { clock: services.clock, ids: services.ids },
-    )
-    if (created.length === 0) return
+    const spanish = field('spanish').trim()
+    const english = field('english').trim()
+    if (!spanish || !english) return
 
-    setCards((current) => [...created, ...current])
-    setReferenceTime(services.clock.now())
-    const savedSpanish = field('spanish').trim()
-    setSavedToast(savedSpanish)
-    if (savedToastTimerRef.current !== null) {
-      window.clearTimeout(savedToastTimerRef.current)
+    const cardParams = {
+      spanish: field('spanish'),
+      english: field('english'),
+      context: field('context'),
+      bidirectional: form.get('bidirectional') === 'on',
+      reversePrompt: field('reversePrompt'),
+      reverseAnswer: field('reverseAnswer'),
     }
-    savedToastTimerRef.current = window.setTimeout(() => {
-      setSavedToast(null)
-      savedToastTimerRef.current = null
-    }, 3000)
 
-    setSpanishInput('')
-    setEnglishInput('')
-    setContextInput('')
-    setReversePromptInput('')
-    setReverseAnswerInput('')
-    setSuggestions([])
-    setDidYouMean(null)
-    setShowSuggestions(false)
-    setActiveSuggestionIndex(-1)
-    spanishInputRef.current?.focus()
+    const isBackendConfigured = services.auth.isConfigured
+      ? services.auth.isConfigured()
+      : true
+
+    if (!authUserRef.current && isBackendConfigured) {
+      setPendingCard(cardParams)
+      pendingCardRef.current = cardParams
+      openSyncModal('save_card')
+      return
+    }
+
+    saveCardFromParams(cardParams)
   }
 
   if (view === 'welcome')
@@ -1411,7 +1468,7 @@ export function App({
                 authUser={authUser}
                 syncStatus={syncStatus}
                 isOnline={isOnline}
-                onClick={() => setIsSyncOpen(true)}
+                onClick={() => openSyncModal()}
               />
             </div>
           </nav>
@@ -1517,12 +1574,16 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => setIsSyncOpen(false)}
+          onClose={() => {
+            setIsSyncOpen(false)
+            setSyncModalReason(null)
+          }}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
+          authPromptReason={syncModalReason}
         />
       </>
     )
@@ -1541,7 +1602,7 @@ export function App({
                 authUser={authUser}
                 syncStatus={syncStatus}
                 isOnline={isOnline}
-                onClick={() => setIsSyncOpen(true)}
+                onClick={() => openSyncModal()}
               />
             </div>
           </nav>
@@ -1831,12 +1892,16 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => setIsSyncOpen(false)}
+          onClose={() => {
+            setIsSyncOpen(false)
+            setSyncModalReason(null)
+          }}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
+          authPromptReason={syncModalReason}
         />
       </>
     )
@@ -1858,7 +1923,7 @@ export function App({
                 authUser={authUser}
                 syncStatus={syncStatus}
                 isOnline={isOnline}
-                onClick={() => setIsSyncOpen(true)}
+                onClick={() => openSyncModal()}
               />
             </div>
           </nav>
@@ -1888,12 +1953,16 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => setIsSyncOpen(false)}
+          onClose={() => {
+            setIsSyncOpen(false)
+            setSyncModalReason(null)
+          }}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
+          authPromptReason={syncModalReason}
         />
       </>
     )
@@ -1986,7 +2055,7 @@ export function App({
               authUser={authUser}
               syncStatus={syncStatus}
               isOnline={isOnline}
-              onClick={() => setIsSyncOpen(true)}
+              onClick={() => openSyncModal()}
             />
           </div>
         </nav>
@@ -2087,12 +2156,16 @@ export function App({
       </main>
       <SyncModal
         isOpen={isSyncOpen}
-        onClose={() => setIsSyncOpen(false)}
+        onClose={() => {
+          setIsSyncOpen(false)
+          setSyncModalReason(null)
+        }}
         cards={cards}
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}
         clock={services.clock}
+        authPromptReason={syncModalReason}
       />
     </>
   )

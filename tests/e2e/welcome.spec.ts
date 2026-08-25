@@ -349,3 +349,77 @@ test('supports rapid batch card creation while remaining in create view', async 
     .analyze()
   expect(results.violations).toEqual([])
 })
+
+test('allows guests to practice example deck immediately and explore card creator without signing in', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  // 1. Practice example starter cards immediately as a guest
+  await expect(
+    page.getByRole('button', { name: /practice 4 due/i }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: /practice 4 due/i }).click()
+
+  // Card 1: aguacate -> avocado
+  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('avocado')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4') // Easy
+
+  // Card 2: avocado -> aguacate
+  await expect(page.getByRole('heading', { name: 'avocado' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('aguacate')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+
+  // Card 3: Qué padre -> How cool
+  await expect(page.getByRole('heading', { name: 'Qué padre' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('How cool')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+
+  // Card 4: How cool -> Qué padre
+  await expect(page.getByRole('heading', { name: 'How cool' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('Qué padre')
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+
+  // 2. Reach celebratory session complete screen
+  await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
+  await expect(page.getByText(/4 cards practiced/i)).toBeVisible()
+
+  // 3. Guest explores create card screen
+  await page.getByRole('button', { name: /create a card/i }).click()
+  await expect(
+    page.getByRole('heading', { name: 'New flashcard' }),
+  ).toBeVisible()
+
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
+  const englishInput = page.getByLabel(/english/i)
+
+  await spanishInput.fill('chela')
+  await englishInput.fill('beer')
+
+  // Live preview cards update
+  await expect(
+    page.locator('.create-visual .sample-card-es .sample-phrase'),
+  ).toHaveText('chela')
+  await expect(
+    page.locator('.create-visual .sample-card-en .sample-phrase'),
+  ).toHaveText('beer')
+
+  await page.screenshot({ path: 'test-results/guest-create-exploration.png' })
+
+  // 4. Open Sync Modal directly to inspect modal appearance
+  await page.getByRole('button', { name: /tap to sync/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
+  ).toBeVisible()
+  await page.screenshot({ path: 'test-results/guest-sync-modal.png' })
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})

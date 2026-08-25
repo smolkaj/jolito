@@ -30,7 +30,10 @@ beforeEach(() => {
 describe('Jolito', () => {
   it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
     const user = userEvent.setup()
-    const services = createTestServices({ cards: [] })
+    const services = createTestServices({
+      cards: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -115,6 +118,7 @@ describe('Jolito', () => {
     const services = createTestServices({
       cards: [],
       speakerSupported: false,
+      user: { id: 'usr-1', email: 'learner@example.com' },
     })
     render(<App services={services} />)
 
@@ -177,7 +181,10 @@ describe('Jolito', () => {
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
     const user = userEvent.setup()
-    const services = createTestServices({ cards: [] })
+    const services = createTestServices({
+      cards: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -762,7 +769,10 @@ describe('Jolito', () => {
     await user.type(otpInput, '123456')
     await user.click(screen.getByRole('button', { name: /verify & sync/i }))
 
-    expect(await screen.findByText(/signed in/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/deck synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
   })
 
@@ -1029,7 +1039,10 @@ describe('Jolito', () => {
 
   it('remains in create view after saving, resets form inputs, focuses Spanish field, and updates review counter for batch creation', async () => {
     const user = userEvent.setup()
-    const services = createTestServices({ cards: [] })
+    const services = createTestServices({
+      cards: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -1081,5 +1094,124 @@ describe('Jolito', () => {
     // 3. Navigate to review and practice all due cards
     await user.click(screen.getByRole('button', { name: /review 4/i }))
     expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
+  })
+
+  it('allows guest to explore create card screen and prompts sign in when clicking save card', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({ cards: [] })
+    render(<App services={services} />)
+
+    // Guest navigates to Create screen without signing in
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+
+    // Interacts with create form
+    await user.type(spanishInput, 'chela')
+    await user.type(englishInput, 'beer')
+
+    // Clicks "Save card" -> gates and opens sign-in modal
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    expect(
+      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /sign in or create an account to save your new card and start building your library/i,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+
+    // Form inputs remain preserved while modal is displayed
+    expect(spanishInput).toHaveValue('chela')
+    expect(englishInput).toHaveValue('beer')
+  })
+
+  it('automatically saves pending card when guest signs in via OTP in modal', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({ cards: [] })
+    render(<App services={services} />)
+
+    // 1. Guest types card and clicks Save card
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'chido')
+    await user.type(englishInput, 'cool')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    // 2. Sign-in modal opens
+    expect(
+      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+    ).toBeInTheDocument()
+
+    // 3. Guest enters email and requests link
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    // 4. Guest enters OTP code
+    const otpInput = screen.getByLabelText(/verification code/i)
+    await user.type(otpInput, '123456')
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    // 5. Verification succeeds -> pending card is automatically saved!
+    expect(
+      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
+    expect(spanishInput).toHaveValue('')
+    expect(englishInput).toHaveValue('')
+    expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('preserves typed card input in create form if guest closes sign in modal without authenticating', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({ cards: [] })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'popote')
+    await user.type(englishInput, 'straw')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    // Modal is open
+    expect(
+      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+    ).toBeInTheDocument()
+
+    // Guest presses Escape to dismiss modal
+    await user.keyboard('{Escape}')
+
+    // Modal is closed, but typed input is preserved in form!
+    expect(
+      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+    ).not.toBeInTheDocument()
+    expect(spanishInput).toHaveValue('popote')
+    expect(englishInput).toHaveValue('straw')
+  })
+
+  it('saves card locally without opening modal when auth backend is unconfigured', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({ cards: [] })
+    services.mockAuth.configured = false // Unconfigured / offline preview mode
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'orale')
+    await user.type(englishInput, 'right on / wow')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    // Saves locally directly without modal
+    expect(
+      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/saved “orale”/i)
+    expect(services.memoryCards.saved).toHaveLength(2)
   })
 })
