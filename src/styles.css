@@ -3231,16 +3231,6 @@ kbd {
   gap: 6px;
 }
 
-.deck-card-row .audio-button {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  min-height: 26px;
-  padding: 4px;
-  border-radius: 6px;
-  box-shadow: none;
-}
-
 @media (max-width: 860px) {
   .deck-list-table-header {
     display: none;
