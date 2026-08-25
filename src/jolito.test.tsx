@@ -994,16 +994,16 @@ describe('Jolito', () => {
     expect(badge).toHaveTextContent(/12\s*new/)
   })
 
-  it('renders the Jolito brand mascot logo in the header', () => {
+  it('renders the Jolito brand vector mark in the header', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
     const brandElement = screen.getByText('Jolito', { selector: 'span' })
     expect(brandElement).toBeInTheDocument()
 
-    const brandLogo = brandElement.parentElement?.querySelector('img')
+    const brandLogo =
+      brandElement.parentElement?.querySelector('svg.brand-mark')
     expect(brandLogo).toBeInTheDocument()
-    expect(brandLogo).toHaveAttribute('src', expect.stringContaining('png'))
     expect(brandLogo).toHaveAttribute('aria-hidden', 'true')
   })
 
@@ -1106,6 +1106,26 @@ describe('Jolito', () => {
     // 3. Navigate to review and practice all due cards
     await user.click(screen.getByRole('button', { name: /review 4/i }))
     expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
+  })
+
+  it('renders vector brandmark in navigation and prominently displays the mascot on the homescreen', () => {
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // 1. Verify Brand component renders the vector JolitoMark
+    const brandElement = screen.getByText('Jolito').closest('.brand')
+    expect(brandElement).toBeInTheDocument()
+    const brandMark = brandElement?.querySelector('.brand-mark')
+    expect(brandMark).toBeInTheDocument()
+    expect(brandMark?.tagName.toLowerCase()).toBe('svg')
+    expect(brandMark?.querySelector('.jolito-gills')).toBeInTheDocument()
+    expect(brandMark?.querySelector('.jolito-core')).toBeInTheDocument()
+
+    // 2. Verify mascot is prominently displayed on the welcome homescreen
+    const mascotImg = document.querySelector('.welcome-mascot-img')
+    expect(mascotImg).toBeInTheDocument()
+    expect(mascotImg).toHaveAttribute('src', expect.stringContaining('png'))
+    expect(mascotImg).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('allows guest to explore create card screen and prompts sign in when clicking save card', async () => {

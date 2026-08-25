@@ -10,11 +10,13 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
   await expect(page.getByText('Jolito')).toBeVisible()
-  const brandImg = page.locator('.brand img')
-  await expect(brandImg).toBeVisible()
+  const brandMark = page.locator('.brand .brand-mark')
+  await expect(brandMark).toBeVisible()
+  const mascotImg = page.locator('.welcome-mascot-img')
+  await expect(mascotImg).toBeVisible()
   await expect
     .poll(async () =>
-      brandImg.evaluate(
+      mascotImg.evaluate(
         (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
       ),
     )
@@ -36,18 +38,18 @@ test('brand mascot logo preserves opaque body fill and transparent negative spac
   page,
 }) => {
   await page.goto('/')
-  const brandImg = page.locator('.brand img')
-  await expect(brandImg).toBeVisible()
+  const mascotImg = page.locator('.welcome-mascot-img')
+  await expect(mascotImg).toBeVisible()
 
   await expect
     .poll(async () =>
-      brandImg.evaluate(
+      mascotImg.evaluate(
         (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
       ),
     )
     .toBe(true)
 
-  const pixelData = await brandImg.evaluate((img: HTMLImageElement) => {
+  const pixelData = await mascotImg.evaluate((img: HTMLImageElement) => {
     const canvas = document.createElement('canvas')
     canvas.width = img.naturalWidth
     canvas.height = img.naturalHeight

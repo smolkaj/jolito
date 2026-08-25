@@ -168,17 +168,18 @@ summary:focus-visible {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 18px;
-  padding: 4px 16px;
-  margin-left: -16px;
-  border: 2.5px solid transparent;
-  border-radius: 24px;
+  gap: 12px;
+  padding: 4px 14px;
+  margin-left: -14px;
+  border: 2px solid transparent;
+  border-radius: 20px;
   color: var(--ink);
   background: transparent;
   font-family: var(--font-serif);
-  font-size: 40px;
+  font-size: 32px;
   font-weight: var(--brand-weight, 800);
-  letter-spacing: -1.5px;
+  letter-spacing: -1.2px;
+  line-height: 1;
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -195,36 +196,69 @@ summary:focus-visible {
   transform: translateY(1px);
 }
 
-.brand img {
-  width: 118px;
-  height: 118px;
-  object-fit: contain;
-  animation: jolito-sway 4.5s ease-in-out infinite alternate;
+/* Jolito Brandmark SVG */
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  overflow: visible;
+  transition: transform 260ms var(--ease-spring);
+}
+
+.jolito-gill {
+  fill: var(--rosa);
+  transform-box: view-box;
   transition: transform 320ms var(--ease-spring);
 }
 
-.brand:hover img {
-  animation-play-state: paused;
-  transform: rotate(-14deg) scale(1.18);
+.gill-tl {
+  transform-origin: 8.5px 8.75px;
+  transform: rotate(-22deg);
 }
 
-@keyframes jolito-sway {
-  0% {
-    transform: rotate(0deg) translateY(0px);
-  }
-  50% {
-    transform: rotate(2.5deg) translateY(-4px);
-  }
-  100% {
-    transform: rotate(-2.5deg) translateY(3px);
-  }
+.gill-ml {
+  transform-origin: 7px 16px;
+  transform: rotate(0deg);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .brand img {
-    animation: none;
-    transition: none;
-  }
+.gill-bl {
+  transform-origin: 8.5px 23.25px;
+  transform: rotate(22deg);
+}
+
+.gill-tr {
+  transform-origin: 23.5px 8.75px;
+  transform: rotate(22deg);
+}
+
+.gill-mr {
+  transform-origin: 25px 16px;
+  transform: rotate(0deg);
+}
+
+.gill-br {
+  transform-origin: 23.5px 23.25px;
+  transform: rotate(-22deg);
+}
+
+.jolito-core {
+  transform-box: view-box;
+  transform-origin: 16px 16px;
+  transition: transform 260ms var(--ease-spring);
+}
+
+.jolito-core-outer {
+  fill: var(--ink);
+}
+
+.jolito-core-mid {
+  fill: var(--cempasuchil);
+}
+
+.jolito-core-inner {
+  fill: #ffffff;
 }
 
 .nav-actions {
@@ -452,12 +486,25 @@ summary:focus-visible {
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
-  padding: 8px 0 32px;
+  padding: 28px 0 36px;
 }
 
 .hero-copy {
   position: relative;
   z-index: 2;
+}
+
+.welcome-mascot-img {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 0;
+  width: 124px;
+  height: 124px;
+  object-fit: contain;
+  display: block;
+  transform: scaleX(-1);
+  user-select: none;
+  pointer-events: none;
 }
 
 .hero-copy h1,
@@ -2038,15 +2085,15 @@ kbd {
   }
 
   .brand {
-    font-size: 30px;
-    gap: 12px;
-    padding: 4px 10px;
+    font-size: 26px;
+    gap: 10px;
+    padding: 4px 8px;
     margin-left: -8px;
   }
 
-  .brand img {
-    width: 76px;
-    height: 76px;
+  .brand-mark {
+    width: 28px;
+    height: 28px;
   }
 
   .welcome-page {
@@ -2057,8 +2104,15 @@ kbd {
     min-height: auto;
     grid-template-columns: 1fr;
     align-items: start;
-    padding-top: 12px;
+    padding-top: 18px;
     padding-bottom: 24px;
+  }
+
+  .welcome-mascot-img {
+    position: static;
+    width: 88px;
+    height: 88px;
+    margin-bottom: 14px;
   }
 
   .hero-copy h1 {

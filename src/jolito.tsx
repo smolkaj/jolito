@@ -101,10 +101,89 @@ function UsFlag({ className }: { className?: string }) {
   )
 }
 
+export function JolitoMark({
+  className = '',
+  size = 34,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`jolito-mark ${className}`.trim()}
+      viewBox="0 0 32 32"
+      width={size}
+      height={size}
+      aria-hidden={ariaHidden}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g className="jolito-gills jolito-gills-left">
+        <rect
+          className="jolito-gill gill-tl"
+          x="3"
+          y="6.5"
+          width="11"
+          height="4.5"
+          rx="2.25"
+        />
+        <rect
+          className="jolito-gill gill-ml"
+          x="1"
+          y="13.75"
+          width="12"
+          height="4.5"
+          rx="2.25"
+        />
+        <rect
+          className="jolito-gill gill-bl"
+          x="3"
+          y="21"
+          width="11"
+          height="4.5"
+          rx="2.25"
+        />
+      </g>
+      <g className="jolito-gills jolito-gills-right">
+        <rect
+          className="jolito-gill gill-tr"
+          x="18"
+          y="6.5"
+          width="11"
+          height="4.5"
+          rx="2.25"
+        />
+        <rect
+          className="jolito-gill gill-mr"
+          x="19"
+          y="13.75"
+          width="12"
+          height="4.5"
+          rx="2.25"
+        />
+        <rect
+          className="jolito-gill gill-br"
+          x="18"
+          y="21"
+          width="11"
+          height="4.5"
+          rx="2.25"
+        />
+      </g>
+      <g className="jolito-core">
+        <circle className="jolito-core-outer" cx="16" cy="16" r="6" />
+        <circle className="jolito-core-mid" cx="16" cy="16" r="4.2" />
+        <circle className="jolito-core-inner" cx="16" cy="16" r="2.2" />
+      </g>
+    </svg>
+  )
+}
+
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
-      <img src={logoUrl} alt="" aria-hidden="true" />
+      <JolitoMark className="brand-mark" />
       <span>Jolito</span>
     </>
   )
@@ -1664,7 +1743,7 @@ export function App({
     saveCardFromParams(cardParams)
   }
 
-  if (view === 'welcome')
+  if (view === 'welcome') {
     return (
       <>
         <main className="app-shell welcome-page">
@@ -1681,6 +1760,13 @@ export function App({
           </nav>
           <section className="welcome-hero">
             <div className="hero-copy">
+              <img
+                src={logoUrl}
+                alt=""
+                aria-hidden="true"
+                className="welcome-mascot-img"
+                style={{ transform: 'scaleX(-1)' }}
+              />
               <h1>
                 Make the words <br />
                 you meet <em>stick.</em>
@@ -1790,6 +1876,7 @@ export function App({
         />
       </>
     )
+  }
 
   if (view === 'create')
     return (
