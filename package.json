@@ -23,6 +23,7 @@
     "ingest:dict": "python3 scripts/ingest-wiktionary.py",
     "setup:domain": "node scripts/setup-domain.ts",
     "generate:seo": "node scripts/generate-seo-assets.ts",
+    "build:favicons": "node scripts/build-favicons.mjs",
     "deploy": "npm run build && wrangler deploy",
     "deploy:preview": "npm run build && wrangler versions upload"
   },
