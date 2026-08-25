@@ -1,0 +1,32 @@
+# Jolito
+
+> Spoken Mexican Spanish flashcards built for active recall, spaced repetition, and real-world conversation. Jolito turns daily language practice into a fast, rewarding habit with natural audio pronunciation, instant visual typo diffs, and zero-friction keyboard reviews.
+
+## Origin Story
+
+Jolito was born out of a real-life transition: moving to Mexico City with my Mexican wife and twin daughters, and taking intensive Spanish classes at International House in Condesa. 
+
+I needed a practical way to internalize what I learned in class and heard on the streets every day at home. While Anki provided the unbeatable spaced repetition algorithm needed for long-term retention, manually creating rich cards—clipping audio, finding pictures, and configuring templates—felt like an exhausting chore when I was tired at the end of the day. Capturing what you learned should feel effortless and fun, with the visual beauty, natural audio, and delightful flow state of modern apps like Duolingo. On the other end of the spectrum, gamified apps locked learners into rigid beginner courses without control over the real-world Mexican phrases they actually wanted to learn.
+
+Jolito was created to bridge that gap: pairing the proven power of spaced repetition and multimodal learning with zero-friction card authoring, ear-first native Mexican Spanish audio, active typed recall, and a joyful keyboard flow.
+
+## Highlights & Learner Experience
+
+- **Spaced Repetition (SRS):** Smart review intervals optimized for long-term memory retention and daily practice without artificial daily limits.
+- **Keyboard-First Reviews:** Fly through reviews entirely from the keyboard (`Enter` to reveal, `1`–`4` to self-grade, `Space` for audio replay) with automatic input autofocus.
+- **Native Mexican Spanish Audio:** High-quality spoken pronunciation audio for both prompts and answers to train ear comprehension for everyday conversation.
+- **Active Typed Recall & Visual Diffs:** Produce words actively with sub-word typo highlighting and accent-sensitive diffs while retaining full authority over self-grading.
+- **Bidirectional Reciprocal Cards:** Create linked Spanish ↔ English cards simultaneously with side-by-side previews, contextual explanations, and rapid batch creation.
+- **Mexican Spanish Lexicon & Autocomplete:** Built-in dictionary of common Mexican Spanish terms, idioms, and CDMX slang with instant suggestions and typo correction during card creation.
+- **Anki Import:** Bring existing Anki decks (`.apkg` packages or text exports) in seconds, preserving learning history and spaced-repetition schedules.
+- **Offline by Default:** Complete card creation, editing, audio playback, and review work seamlessly with zero network latency.
+- **Free with No Sign-Up Barrier:** Start studying immediately in the browser with local storage; optional passwordless cloud backup is available for cross-device sync.
+
+## Web Application
+
+- [Jolito Web App](https://joli.to/): Open the live app to study and create Mexican Spanish flashcards.
+
+## Optional
+
+- [Full Product Overview](https://joli.to/llms-full.txt): Comprehensive learner guide, origin story, and feature overview.
+- [Sitemap](https://joli.to/sitemap.xml): XML sitemap listing indexable site URLs.

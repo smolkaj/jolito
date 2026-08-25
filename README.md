@@ -16,9 +16,11 @@ Jolito blends the proven power of [spaced repetition](https://en.wikipedia.org/w
 
 ## Why another flashcard app?
 
-[Anki](https://apps.ankiweb.net/) is unbeatable for [spaced repetition](https://en.wikipedia.org/wiki/Spaced_repetition), but it was designed as a general-purpose database in 2006. Creating rich language cards with natural audio, reciprocal directions, and context requires tedious template configuration and manual media clipping. On the other end of the spectrum, gamified apps like [Duolingo](https://www.duolingo.com/) make daily practice inviting, but lock you into rigid multiple-choice curricula without control over the real-world phrases you actually want to learn.
+Jolito was born out of a real-life transition: moving to Mexico City with my Mexican wife and twin daughters, and taking intensive Spanish classes at International House in Condesa.
 
-Jolito was created out of personal frustration while living in Mexico City: wanting to capture the living phrases heard on the street every day, hear them spoken naturally, and practice active recall without wrestling with database software.
+I needed a practical way to internalize what I learned in class and heard on the streets every day at home. While [Anki](https://apps.ankiweb.net/) provided the unbeatable [spaced repetition](https://en.wikipedia.org/wiki/Spaced_repetition) algorithm needed for long-term retention, manually creating rich cards—clipping audio, finding pictures, and configuring templates—felt like an exhausting chore when I was tired at the end of the day. Capturing what you learned should feel effortless and fun, with the visual beauty, natural audio, and delightful flow state of modern apps like [Duolingo](https://www.duolingo.com/). On the other end of the spectrum, gamified apps locked learners into rigid beginner courses without control over the real-world Mexican phrases they actually wanted to learn.
+
+Jolito was created to bridge that gap: pairing the proven power of spaced repetition and multimodal learning with zero-friction card authoring, ear-first native Mexican Spanish audio, active typed recall, and a joyful keyboard flow.
 
 |                          | **Anki**                                        | **Duolingo**                 | **Jolito**                                         |
 | ------------------------ | ----------------------------------------------- | ---------------------------- | -------------------------------------------------- |
