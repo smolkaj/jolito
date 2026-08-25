@@ -23,3 +23,11 @@ export const starterCards: StudyCard[] = [
     0,
   ),
 ]
+
+export function isStarterCard(card: StudyCard): boolean {
+  return card.noteId.startsWith('starter-')
+}
+
+export function filterOutStarterCards(cards: StudyCard[]): StudyCard[] {
+  return cards.filter((card) => !isStarterCard(card))
+}
