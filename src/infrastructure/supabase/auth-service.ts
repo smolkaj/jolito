@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../application/ports'
+import { getCanonicalOrigin } from '../browser/host'
 
 const jwtPayloadSchema = z.object({
   sub: z.string().min(1),
@@ -172,10 +173,9 @@ export class SupabaseAuthService implements AuthService {
     }
 
     try {
-      const redirectUrl =
-        typeof window !== 'undefined' && window.location
-          ? window.location.origin
-          : undefined
+      const redirectUrl = getCanonicalOrigin(
+        typeof window !== 'undefined' ? window.location : undefined,
+      )
 
       const res = await fetch(`${this.supabaseUrl}/auth/v1/otp`, {
         method: 'POST',

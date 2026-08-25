@@ -232,6 +232,38 @@ describe('SupabaseAuthService', () => {
     expect(callArgs[1].body).toContain('"email_redirect_to"')
   })
 
+  it('canonicalizes email_redirect_to to https://joli.to when sendMagicLink called on apex workers.dev', async () => {
+    vi.stubGlobal('location', {
+      hostname: 'jolito.smolkaj.workers.dev',
+      origin: 'https://jolito.smolkaj.workers.dev',
+    })
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    await service.sendMagicLink('learner@example.com')
+
+    const callArgs = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody = JSON.parse(callArgs[1].body) as {
+      email_redirect_to?: string
+    }
+    expect(parsedBody.email_redirect_to).toBe('https://joli.to')
+
+    vi.unstubAllGlobals()
+  })
+
   it('falls back through OTP verification types until success', async () => {
     const fetchSpy = vi
       .fn()

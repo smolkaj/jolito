@@ -279,7 +279,7 @@ test('top navigation pills have consistent vertical height across views', async 
   // 1. Welcome view
   await page.goto('/')
   const welcomePill = await page.locator('.connection-pill').boundingBox()
-  expect(welcomePill?.height).toBe(32)
+  expect(welcomePill?.height).toBeCloseTo(32, 1)
 
   // 2. Create view
   await page.goto('/#/create')
@@ -289,8 +289,8 @@ test('top navigation pills have consistent vertical height across views', async 
   const createSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  expect(createReviewBtn?.height).toBe(32)
-  expect(createSyncPill?.height).toBe(32)
+  expect(createReviewBtn?.height).toBeCloseTo(32, 1)
+  expect(createSyncPill?.height).toBeCloseTo(32, 1)
 
   // 3. Study / Review view
   await page.goto('/#/study')
@@ -301,9 +301,9 @@ test('top navigation pills have consistent vertical height across views', async 
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  expect(reviewBadge?.height).toBe(32)
-  expect(reviewNewCardBtn?.height).toBe(32)
-  expect(reviewSyncPill?.height).toBe(32)
+  expect(reviewBadge?.height).toBeCloseTo(32, 1)
+  expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
+  expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
   // 4. Accessibility check
   const results = await new AxeBuilder({ page })

@@ -1,4 +1,3 @@
-import { execSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import * as readline from 'node:readline/promises'
@@ -28,6 +27,20 @@ loadEnvLocal()
 
 const DOMAIN = process.env.DOMAIN ?? 'joli.to'
 const WORKER_NAME = process.env.WORKER_NAME ?? 'jolito'
+
+function extractSupabaseProjectRef(): string | undefined {
+  if (process.env.SUPABASE_PROJECT_REF) {
+    return process.env.SUPABASE_PROJECT_REF.trim()
+  }
+  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  if (supabaseUrl) {
+    const match = supabaseUrl.match(/https:\/\/([a-z0-9-]+)\.supabase\.co/)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+  return undefined
+}
 
 async function promptIfMissing(
   varName: string,
@@ -268,14 +281,61 @@ async function main() {
     zone.name_servers.forEach((ns) => console.log(`   - ${ns}`))
   }
 
-  // 8. Supabase Auth Config Push
-  console.log('\n📦 Pushing Supabase Auth Configuration...')
-  try {
-    execSync('npx supabase config push', { stdio: 'inherit' })
-    console.log('✔ Supabase Auth redirect URLs synchronized')
-  } catch {
+  // 8. Supabase Auth Configuration
+  console.log(
+    `\n📦 Synchronizing Supabase Auth Configuration for https://${DOMAIN}...`,
+  )
+  const projectRef = extractSupabaseProjectRef()
+  const supabaseToken = process.env.SUPABASE_ACCESS_TOKEN
+
+  if (projectRef && supabaseToken) {
+    try {
+      console.log(
+        `🔄 Updating Supabase Auth settings via Management API for project ${projectRef}...`,
+      )
+      const authRes = await fetch(
+        `https://api.supabase.com/v1/projects/${projectRef}/config/auth`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${supabaseToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            site_url: `https://${DOMAIN}`,
+            uri_allow_list: `https://${DOMAIN}/**,https://*-jolito.smolkaj.workers.dev/**,https://jolito.smolkaj.workers.dev/**,http://localhost:*/**,http://127.0.0.1:*/**`,
+          }),
+        },
+      )
+      if (authRes.ok) {
+        console.log(
+          `✔ Supabase Auth Site URL and Redirect URLs successfully updated to https://${DOMAIN}`,
+        )
+      } else {
+        const errText = await authRes.text().catch(() => '')
+        console.warn(
+          `⚠️  Supabase Management API error (${authRes.status}): ${errText}`,
+        )
+      }
+    } catch (err: unknown) {
+      console.warn(
+        `⚠️  Failed to reach Supabase Management API: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    }
+  } else {
     console.log(
-      'ℹ️  Supabase CLI not linked or skipped. Run `npx supabase config push` when ready.',
+      'ℹ️  SUPABASE_ACCESS_TOKEN not provided (or VITE_SUPABASE_URL not configured).',
+    )
+    console.log(
+      `👉 Please ensure Supabase Auth URL Configuration is set in the Supabase Dashboard:\n` +
+        `   URL: https://supabase.com/dashboard/project/${projectRef ?? '<project-ref>'}/auth/url-configuration\n` +
+        `   • Site URL: https://${DOMAIN}\n` +
+        `   • Redirect URLs:\n` +
+        `     - https://${DOMAIN}/**\n` +
+        `     - https://*-jolito.smolkaj.workers.dev/**\n` +
+        `     - https://jolito.smolkaj.workers.dev/**\n` +
+        `     - http://localhost:*/**\n` +
+        `     - http://127.0.0.1:*/**`,
     )
   }
 
