@@ -28,6 +28,11 @@
       content="Beautiful, spoken flashcards for the Mexican Spanish you actually want to use."
     />
     <meta property="og:image" content="https://joli.to/og-image.png" />
+    <meta
+      property="og:image:secure_url"
+      content="https://joli.to/og-image.png"
+    />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
@@ -50,6 +55,11 @@
       name="twitter:image:alt"
       content="Jolito — Mexican Spanish that sticks"
     />
+
+    <!-- Apple Web App Metadata -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Jolito" />
 
     <!-- Structured Data (Schema.org) -->
     <script type="application/ld+json">
@@ -99,7 +109,35 @@
     <title>Jolito — Mexican Spanish that sticks</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <noscript>
+        <div
+          style="
+            font-family: system-ui, sans-serif;
+            padding: 2rem;
+            max-width: 640px;
+            margin: 0 auto;
+            color: #2a2026;
+            background: #fdf5f8;
+            border-radius: 1rem;
+          "
+        >
+          <h1 style="color: #c23363; font-size: 1.8rem; margin-bottom: 0.5rem">
+            Jolito — Spoken Mexican Spanish that sticks
+          </h1>
+          <p style="margin-bottom: 1rem; line-height: 1.5">
+            Beautiful, spoken flashcards for the Mexican Spanish you actually
+            want to use. Please enable JavaScript to study interactively.
+          </p>
+          <ul style="padding-left: 1.25rem; line-height: 1.6">
+            <li>Spaced repetition algorithm (SRS)</li>
+            <li>Native Mexican Spanish audio and CDMX contextual notes</li>
+            <li>100% offline study with local card creation and storage</li>
+            <li>Anki (.apkg) import and export</li>
+          </ul>
+        </div>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
