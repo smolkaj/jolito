@@ -309,6 +309,7 @@ test('top navigation pills have consistent vertical height across views', async 
   await page.goto('/#/create')
   const createReviewBtn = await page
     .locator('.nav-actions .text-button')
+    .first()
     .boundingBox()
   const createSyncPill = await page
     .locator('.nav-actions .connection-pill')
@@ -321,6 +322,7 @@ test('top navigation pills have consistent vertical height across views', async 
   const reviewBadge = await page.locator('.review-queue-badge').boundingBox()
   const reviewNewCardBtn = await page
     .locator('.nav-actions .text-button')
+    .first()
     .boundingBox()
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
@@ -329,7 +331,34 @@ test('top navigation pills have consistent vertical height across views', async 
   expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
-  // 4. Accessibility check
+  // 4. Deck view pills
+  await page.goto('/#/deck')
+  const deckNewCardBtn = await page
+    .locator('.nav-actions .text-button')
+    .first()
+    .boundingBox()
+  const deckSyncPill = await page
+    .locator('.nav-actions .connection-pill')
+    .boundingBox()
+  const deckStatChip = await page
+    .locator('.deck-stats-strip .deck-stat-chip')
+    .first()
+    .boundingBox()
+  const deckFilterPill = await page
+    .locator('.deck-filter-pills .deck-filter-pill')
+    .first()
+    .boundingBox()
+  const deckBackupBtn = await page
+    .locator('.deck-header-actions .secondary-button')
+    .boundingBox()
+
+  expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
+  expect(deckSyncPill?.height).toBeCloseTo(32, 1)
+  expect(deckStatChip?.height).toBeCloseTo(32, 1)
+  expect(deckFilterPill?.height).toBeCloseTo(32, 1)
+  expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
+
+  // 5. Accessibility check
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -462,7 +491,7 @@ test('allows guests to practice example deck immediately and explore card creato
   // 4. Open Sync Modal directly to inspect modal appearance
   await page.getByRole('button', { name: /tap to sync/i }).click()
   await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
+    page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
   await page.screenshot({ path: 'test-results/guest-sync-modal.png' })
 

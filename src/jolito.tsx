@@ -32,9 +32,16 @@ import {
   isDue,
   scheduleReview,
   shouldRequeueInSession,
+  updateStudyCard,
+  deleteStudyCard,
   type Grade,
   type StudyCard,
 } from './domain/card'
+import {
+  filterDeckCards,
+  getDeckStats,
+  type DeckFilterState,
+} from './application/deck-management'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import type { SyncStatus } from './domain/sync'
@@ -509,35 +516,358 @@ function SaveCardAuthModal({
   )
 }
 
-function SyncModal({
+function getCardScheduleBadge(
+  card: StudyCard,
+  now: number,
+): {
+  label: string
+  type: 'due' | 'new' | 'learning' | 'review'
+} {
+  if (isDue(card, now)) {
+    return { label: 'Due now', type: 'due' }
+  }
+  const state = card.schedule.state
+  if (state === 'new') {
+    return { label: 'New', type: 'new' }
+  }
+  if (state === 'learning' || state === 'relearning') {
+    return { label: 'Learning', type: 'learning' }
+  }
+  const msUntilDue = card.schedule.dueAt - now
+  const daysUntilDue = Math.max(
+    1,
+    Math.round(msUntilDue / (24 * 60 * 60 * 1000)),
+  )
+  return { label: `Due in ${daysUntilDue}d`, type: 'review' }
+}
+
+function EditCardModalInner({
+  card,
+  onClose,
+  onSave,
+  onPlayAudio,
+}: {
+  card: StudyCard
+  onClose: () => void
+  onSave: (
+    card: StudyCard,
+    updates: { prompt: string; answer: string; context: string },
+  ) => void
+  onPlayAudio: (text: string, locale: string) => void
+}) {
+  const [prompt, setPrompt] = useState(card.prompt)
+  const [answer, setAnswer] = useState(card.answer)
+  const [context, setContext] = useState(card.context ?? '')
+  const [error, setError] = useState<string | null>(null)
+
+  const isEsToEn = card.direction === 'es-en'
+  const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
+  const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    const trimmedPrompt = prompt.trim()
+    const trimmedAnswer = answer.trim()
+    if (!trimmedPrompt) {
+      setError('Prompt cannot be empty.')
+      return
+    }
+    if (!trimmedAnswer) {
+      setError('Answer cannot be empty.')
+      return
+    }
+    setError(null)
+    onSave(card, {
+      prompt: trimmedPrompt,
+      answer: trimmedAnswer,
+      context: context.trim(),
+    })
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content edit-card-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-card-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="edit-card-modal-title">Edit flashcard</h2>
+            <p className="modal-subtitle">
+              Modify prompt, answer, or memory notes.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {error && (
+          <div className="status-banner status-error" role="alert">
+            <p>{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="edit-card-form">
+          <div className="field-group">
+            <div className="field-label-row">
+              <label htmlFor="edit-prompt">
+                {isEsToEn ? <MexicoFlag /> : <UsFlag />}{' '}
+                {isEsToEn ? 'Mexican Spanish (Prompt)' : 'English (Prompt)'}
+              </label>
+              {prompt.trim() && (
+                <AudioButton
+                  label="Play prompt preview"
+                  onClick={() => onPlayAudio(prompt.trim(), promptLocale)}
+                />
+              )}
+            </div>
+            <textarea
+              id="edit-prompt"
+              rows={2}
+              required
+              autoFocus
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Prompt text"
+            />
+          </div>
+
+          <div className="field-group">
+            <div className="field-label-row">
+              <label htmlFor="edit-answer">
+                {isEsToEn ? <UsFlag /> : <MexicoFlag />}{' '}
+                {isEsToEn ? 'English (Answer)' : 'Mexican Spanish (Answer)'}
+              </label>
+              {answer.trim() && (
+                <AudioButton
+                  label="Play answer preview"
+                  onClick={() => onPlayAudio(answer.trim(), answerLocale)}
+                />
+              )}
+            </div>
+            <textarea
+              id="edit-answer"
+              rows={2}
+              required
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Answer text"
+            />
+          </div>
+
+          <div className="field-group">
+            <label htmlFor="edit-context">Additional Context</label>
+            <textarea
+              id="edit-context"
+              rows={2}
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Optional context, usage notes, or nuance"
+            />
+          </div>
+
+          <div className="edit-modal-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button type="submit" className="primary-button">
+              Save changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function EditCardModal({
   isOpen,
+  card,
+  onClose,
+  onSave,
+  onPlayAudio,
+}: {
+  isOpen: boolean
+  card: StudyCard | null
+  onClose: () => void
+  onSave: (
+    card: StudyCard,
+    updates: { prompt: string; answer: string; context: string },
+  ) => void
+  onPlayAudio: (text: string, locale: string) => void
+}) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen || !card) return null
+
+  return (
+    <EditCardModalInner
+      key={card.id}
+      card={card}
+      onClose={onClose}
+      onSave={onSave}
+      onPlayAudio={onPlayAudio}
+    />
+  )
+}
+
+function DeleteCardsModal({
+  isOpen,
+  cards,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean
+  cards: StudyCard[] | null
+  onClose: () => void
+  onConfirm: (cards: StudyCard[]) => void
+}) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen || !cards || cards.length === 0) return null
+
+  const isSingle = cards.length === 1
+  const singleCard = cards[0]!
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content delete-card-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-card-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="delete-card-modal-title">
+              {isSingle
+                ? 'Delete flashcard?'
+                : `Delete ${cards.length} flashcards?`}
+            </h2>
+            <p className="modal-subtitle">
+              {isSingle
+                ? 'This card will be removed from your deck and scheduled reviews.'
+                : 'These cards will be permanently removed from your deck and scheduled reviews.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {isSingle ? (
+          <div className="delete-card-preview-card">
+            <p className="delete-card-prompt">
+              <strong>Prompt:</strong> {singleCard.prompt}
+            </p>
+            <p className="delete-card-answer">
+              <strong>Answer:</strong> {singleCard.answer}
+            </p>
+            {singleCard.context && (
+              <p className="delete-card-context">
+                <strong>Context:</strong> {singleCard.context}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="delete-cards-preview-list">
+            <p className="delete-cards-count-label">
+              Selected cards to delete ({cards.length}):
+            </p>
+            <ul className="delete-cards-summary-list">
+              {cards.slice(0, 5).map((c) => (
+                <li key={c.id}>
+                  <strong>{c.prompt}</strong> → {c.answer}
+                </li>
+              ))}
+              {cards.length > 5 && (
+                <li className="delete-cards-more">
+                  …and {cards.length - 5} more cards
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        <div className="delete-modal-actions">
+          <button type="button" className="secondary-button" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="danger-button"
+            onClick={() => onConfirm(cards)}
+          >
+            {isSingle ? 'Delete card' : `Delete ${cards.length} cards`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DeckBackupModalInner({
   onClose,
   cards,
   onUpdateCards,
-  auth,
-  sync,
   clock,
+  user,
+  sync,
 }: {
-  isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
   onUpdateCards: (newCards: StudyCard[]) => void
-  auth: AuthService
-  sync: SyncService
   clock: { now(): number }
+  user: AuthUser | null
+  sync: SyncService
 }) {
-  // Auth & Cloud Sync state
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [email, setEmail] = useState('')
-  const [token, setToken] = useState('')
-  const [isOtpSent, setIsOtpSent] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [syncStatusMsg, setSyncStatusMsg] = useState<{
-    type: 'success' | 'error' | 'info'
-    message: string
-  } | null>(null)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
-  // Backup & Import state
   const [mode, setMode] = useState<RestoreMode>('replace')
   const [backupStatus, setBackupStatus] = useState<{
     type: 'success' | 'error' | 'info'
@@ -555,6 +885,287 @@ function SyncModal({
   } | null>(null)
   const [isParsingImport, setIsParsingImport] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleExport = () => {
+    const backup = createDeckBackup(cards, clock)
+    downloadJsonFile(backup.filename, backup.json)
+    setBackupStatus({
+      type: 'success',
+      message: `Deck exported: ${cards.length} cards saved to ${backup.filename}.`,
+    })
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsParsingImport(true)
+    setBackupStatus(null)
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const parsed = await parseAnkiDeck(buffer, file.name, clock.now())
+      setIsParsingImport(false)
+      if (parsed.success) {
+        setSelectedImportData({
+          fileData: buffer,
+          filename: file.name,
+          count: parsed.count,
+          deckName: parsed.deckName,
+          stats: parsed.stats,
+        })
+        const deckInfo = parsed.deckName ? ` from “${parsed.deckName}”` : ''
+        const statsInfo = parsed.stats
+          ? ` (${parsed.stats.newCount} new, ${parsed.stats.reviewCount} review)`
+          : ''
+        setBackupStatus({
+          type: 'info',
+          message: `Found ${parsed.count} cards${deckInfo}${statsInfo} ready to import.`,
+        })
+      } else {
+        setSelectedImportData(null)
+        setBackupStatus({
+          type: 'error',
+          message: parsed.error,
+          details: parsed.details,
+        })
+      }
+    } catch (err) {
+      setIsParsingImport(false)
+      setSelectedImportData(null)
+      setBackupStatus({
+        type: 'error',
+        message: `Failed to read file: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      })
+    }
+  }
+
+  const handleRestore = async () => {
+    if (!selectedImportData) return
+    const result = await importAnkiDeck(
+      cards,
+      selectedImportData.fileData,
+      mode,
+      clock,
+      selectedImportData.filename,
+    )
+    if (result.success) {
+      onUpdateCards(result.cards)
+      const deckInfo = result.deckName ? ` from “${result.deckName}”` : ''
+      setBackupStatus({
+        type: 'success',
+        message: `Successfully imported ${result.importedCount} cards${deckInfo} (${result.count} total cards in library).`,
+      })
+      setSelectedImportData(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      if (user) {
+        void syncDeckWithCloud({
+          localCards: result.cards,
+          user,
+          syncService: sync,
+          onCardsUpdated: onUpdateCards,
+        })
+      }
+    } else {
+      setBackupStatus({
+        type: 'error',
+        message: result.error,
+        details: result.details,
+      })
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content backup-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="backup-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="backup-modal-title">Deck import & offline backup</h2>
+            <p className="modal-subtitle">
+              Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
+              offline JSON backups.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {backupStatus && (
+          <div
+            className={`status-banner status-${backupStatus.type}`}
+            role={backupStatus.type === 'error' ? 'alert' : 'status'}
+          >
+            <p>{backupStatus.message}</p>
+            {backupStatus.details && (
+              <ul className="status-details">
+                {backupStatus.details.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        <div className="backup-sections">
+          <div className="backup-section export-section">
+            <div className="backup-section-header">
+              <h3>Export deck</h3>
+              <p>
+                Save all cards, schedules, notes, and study history to a JSON
+                file.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="primary-button export-button"
+              onClick={handleExport}
+            >
+              Export backup (JSON) <span aria-hidden="true">↓</span>
+            </button>
+          </div>
+
+          <div className="backup-section import-section">
+            <div className="backup-section-header">
+              <h3>Import Anki deck or backup</h3>
+              <p>
+                Load cards from an Anki package (.apkg), text export (.txt,
+                .tsv, .csv), or Jolito backup (.json).
+              </p>
+            </div>
+
+            <div
+              className="import-mode-selector"
+              role="radiogroup"
+              aria-label="Import mode"
+            >
+              <label
+                className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="deckRestoreMode"
+                  value="replace"
+                  checked={mode === 'replace'}
+                  onChange={() => setMode('replace')}
+                />
+                <span className="mode-label">
+                  <strong>Restore</strong>
+                  <small>Replace current deck</small>
+                </span>
+              </label>
+              <label
+                className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="deckRestoreMode"
+                  value="merge"
+                  checked={mode === 'merge'}
+                  onChange={() => setMode('merge')}
+                />
+                <span className="mode-label">
+                  <strong>Merge</strong>
+                  <small>Combine with current</small>
+                </span>
+              </label>
+            </div>
+
+            <div className="file-input-wrapper">
+              <label
+                htmlFor="deck-backup-file-input"
+                className="file-input-label"
+              >
+                Choose Anki deck or backup file
+              </label>
+              <input
+                id="deck-backup-file-input"
+                ref={fileInputRef}
+                type="file"
+                accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
+                className="backup-file-input"
+                onChange={(e) => {
+                  void handleFileChange(e)
+                }}
+                aria-label="Choose Anki deck or backup file"
+              />
+            </div>
+
+            {selectedImportData && (
+              <button
+                type="button"
+                className="secondary-button restore-confirm-button"
+                disabled={isParsingImport}
+                onClick={() => {
+                  void handleRestore()
+                }}
+              >
+                {mode === 'replace'
+                  ? selectedImportData.deckName
+                    ? `Import "${selectedImportData.deckName}" (Replace)`
+                    : 'Import deck (Replace current)'
+                  : selectedImportData.deckName
+                    ? `Merge "${selectedImportData.deckName}" with library`
+                    : 'Merge deck with library'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DeckBackupModal(props: {
+  isOpen: boolean
+  onClose: () => void
+  cards: StudyCard[]
+  onUpdateCards: (newCards: StudyCard[]) => void
+  clock: { now(): number }
+  user: AuthUser | null
+  sync: SyncService
+}) {
+  if (!props.isOpen) return null
+  return <DeckBackupModalInner {...props} />
+}
+
+function SyncModal({
+  isOpen,
+  onClose,
+  cards,
+  onUpdateCards,
+  auth,
+  sync,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  cards: StudyCard[]
+  onUpdateCards: (newCards: StudyCard[]) => void
+  auth: AuthService
+  sync: SyncService
+}) {
+  // Auth & Cloud Sync state
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState('')
+  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<{
+    type: 'success' | 'error' | 'info'
+    message: string
+  } | null>(null)
 
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
 
@@ -655,98 +1266,6 @@ function SyncModal({
     })
   }
 
-  // Backup / Export / Restore handlers
-  const handleExport = () => {
-    const backup = createDeckBackup(cards, clock)
-    downloadJsonFile(backup.filename, backup.json)
-    setBackupStatus({
-      type: 'success',
-      message: `Deck exported: ${cards.length} cards saved to ${backup.filename}.`,
-    })
-  }
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setIsParsingImport(true)
-    setBackupStatus(null)
-
-    try {
-      const buffer = await file.arrayBuffer()
-      const parsed = await parseAnkiDeck(buffer, file.name, clock.now())
-      setIsParsingImport(false)
-      if (parsed.success) {
-        setSelectedImportData({
-          fileData: buffer,
-          filename: file.name,
-          count: parsed.count,
-          deckName: parsed.deckName,
-          stats: parsed.stats,
-        })
-        const deckInfo = parsed.deckName ? ` from “${parsed.deckName}”` : ''
-        const statsInfo = parsed.stats
-          ? ` (${parsed.stats.newCount} new, ${parsed.stats.reviewCount} review)`
-          : ''
-        setBackupStatus({
-          type: 'info',
-          message: `Found ${parsed.count} cards${deckInfo}${statsInfo} ready to import.`,
-        })
-      } else {
-        setSelectedImportData(null)
-        setBackupStatus({
-          type: 'error',
-          message: parsed.error,
-          details: parsed.details,
-        })
-      }
-    } catch (err) {
-      setIsParsingImport(false)
-      setSelectedImportData(null)
-      setBackupStatus({
-        type: 'error',
-        message: `Failed to read file: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      })
-    }
-  }
-
-  const handleRestore = async () => {
-    if (!selectedImportData) return
-    const result = await importAnkiDeck(
-      cards,
-      selectedImportData.fileData,
-      mode,
-      clock,
-      selectedImportData.filename,
-    )
-    if (result.success) {
-      onUpdateCards(result.cards)
-      const deckInfo = result.deckName ? ` from “${result.deckName}”` : ''
-      setBackupStatus({
-        type: 'success',
-        message: `Successfully imported ${result.importedCount} cards${deckInfo} (${result.count} total cards in library).`,
-      })
-      setSelectedImportData(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-      // If signed in, sync newly imported cards to cloud
-      if (user) {
-        void syncDeckWithCloud({
-          localCards: result.cards,
-          user,
-          syncService: sync,
-          onCardsUpdated: onUpdateCards,
-        })
-      }
-    } else {
-      setBackupStatus({
-        type: 'error',
-        message: result.error,
-        details: result.details,
-      })
-    }
-  }
-
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
@@ -758,10 +1277,9 @@ function SyncModal({
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="sync-modal-title">Cloud sync & deck backup</h2>
+            <h2 id="sync-modal-title">Cloud sync</h2>
             <p className="modal-subtitle">
-              Replicate your cards across devices or export offline JSON
-              backups.
+              Replicate your cards and progress across devices automatically.
             </p>
           </div>
           <button
@@ -774,14 +1292,8 @@ function SyncModal({
           </button>
         </div>
 
-        <div className="deck-stats-bar">
-          <div className="stat-pill">
-            <strong>{cards.length}</strong> cards in collection
-          </div>
-        </div>
-
         <div className="modal-sections-stack">
-          {/* Section 1: Multi-Device Cloud Sync */}
+          {/* Section: Multi-Device Cloud Sync */}
           <section className="safety-section cloud-sync-section">
             <div className="section-title-row">
               <span className="section-icon" aria-hidden="true">
@@ -929,139 +1441,6 @@ function SyncModal({
               </div>
             )}
           </section>
-
-          {/* Section 2: Offline File Backup & Anki Import */}
-          <section className="safety-section backup-export-section">
-            <div className="section-title-row">
-              <span className="section-icon" aria-hidden="true">
-                💾
-              </span>
-              <div>
-                <h3>Deck import & offline backup</h3>
-                <p className="section-caption">
-                  Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
-                  offline JSON backups.
-                </p>
-              </div>
-            </div>
-
-            <div className="backup-sections">
-              <div className="backup-subcard export-subcard">
-                <h4>Export deck</h4>
-                <p>
-                  Save all cards, schedules, notes, and study history to a JSON
-                  file.
-                </p>
-                <button
-                  type="button"
-                  className="primary-button export-button"
-                  onClick={handleExport}
-                >
-                  Export backup (JSON) <span aria-hidden="true">↓</span>
-                </button>
-              </div>
-
-              <div className="backup-subcard import-subcard">
-                <h4>Import Anki deck or backup</h4>
-                <p>
-                  Load cards from an Anki package (.apkg), text export (.txt,
-                  .tsv, .csv), or Jolito backup (.json).
-                </p>
-
-                <div
-                  className="import-mode-selector"
-                  role="radiogroup"
-                  aria-label="Import mode"
-                >
-                  <label
-                    className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="restoreMode"
-                      value="replace"
-                      checked={mode === 'replace'}
-                      onChange={() => setMode('replace')}
-                    />
-                    <span className="mode-label">
-                      <strong>Restore</strong>
-                      <small>Replace current deck</small>
-                    </span>
-                  </label>
-                  <label
-                    className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
-                  >
-                    <input
-                      type="radio"
-                      name="restoreMode"
-                      value="merge"
-                      checked={mode === 'merge'}
-                      onChange={() => setMode('merge')}
-                    />
-                    <span className="mode-label">
-                      <strong>Merge</strong>
-                      <small>Combine with current</small>
-                    </span>
-                  </label>
-                </div>
-
-                <div className="file-input-wrapper">
-                  <label
-                    htmlFor="backup-file-input"
-                    className="file-input-label"
-                  >
-                    Choose Anki deck or backup file
-                  </label>
-                  <input
-                    id="backup-file-input"
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
-                    className="backup-file-input"
-                    onChange={(e) => {
-                      void handleFileChange(e)
-                    }}
-                    aria-label="Choose Anki deck or backup file"
-                  />
-                </div>
-
-                {selectedImportData && (
-                  <button
-                    type="button"
-                    className="secondary-button restore-confirm-button"
-                    disabled={isParsingImport}
-                    onClick={() => {
-                      void handleRestore()
-                    }}
-                  >
-                    {mode === 'replace'
-                      ? selectedImportData.deckName
-                        ? `Import "${selectedImportData.deckName}" (Replace)`
-                        : 'Import deck (Replace current)'
-                      : selectedImportData.deckName
-                        ? `Merge "${selectedImportData.deckName}" with library`
-                        : 'Merge deck with library'}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {backupStatus && (
-              <div
-                className={`status-banner status-${backupStatus.type}`}
-                role={backupStatus.type === 'error' ? 'alert' : 'status'}
-              >
-                <p>{backupStatus.message}</p>
-                {backupStatus.details && (
-                  <ul className="status-details">
-                    {backupStatus.details.map((detail, idx) => (
-                      <li key={idx}>{detail}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </section>
         </div>
       </div>
     </div>
@@ -1166,6 +1545,19 @@ export function App({
     }
   }, [view])
 
+  const navigateTo = useCallback((nextView: View, replace = false) => {
+    setView(nextView)
+    if (typeof window === 'undefined') return
+    const targetHash = hashForView(nextView)
+    if (window.location.hash !== targetHash) {
+      if (replace) {
+        window.history.replaceState({ view: nextView }, '', targetHash)
+      } else {
+        window.history.pushState({ view: nextView }, '', targetHash)
+      }
+    }
+  }, [])
+
   const [queue, setQueue] = useState<string[]>(initialResolved.queue)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
@@ -1181,8 +1573,18 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
+
   const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
+  const [editingCard, setEditingCard] = useState<StudyCard | null>(null)
+  const [deletingCards, setDeletingCards] = useState<StudyCard[] | null>(null)
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const [deckSearchQuery, setDeckSearchQuery] = useState('')
+  const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
@@ -1269,6 +1671,63 @@ export function App({
       }
     },
     [services.cards, services.clock, services.sync],
+  )
+
+  const handleSaveEdit = useCallback(
+    (
+      card: StudyCard,
+      updates: { prompt: string; answer: string; context: string },
+    ) => {
+      const updated = updateStudyCard(card, updates)
+      const newCards = cardsRef.current.map((c) =>
+        c.id === card.id ? updated : c,
+      )
+      onUpdateCards(newCards)
+      setEditingCard(null)
+    },
+    [onUpdateCards],
+  )
+
+  const handleConfirmDelete = useCallback(
+    (cardsToDelete: StudyCard[]) => {
+      const idsToDelete = new Set(cardsToDelete.map((c) => c.id))
+      let updatedCards = cardsRef.current
+      for (const id of idsToDelete) {
+        updatedCards = deleteStudyCard(updatedCards, id)
+      }
+      onUpdateCards(updatedCards)
+      setQueue((prevQueue) => {
+        const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
+        if (viewRef.current === 'review' && nextQueue.length === 0) {
+          navigateTo('complete')
+        }
+        return nextQueue
+      })
+      setSelectedCardIds((prev) => {
+        const next = new Set(prev)
+        for (const id of idsToDelete) {
+          next.delete(id)
+        }
+        return next
+      })
+      setDeletingCards(null)
+    },
+    [navigateTo, onUpdateCards],
+  )
+
+  const deckStats = useMemo(
+    () => getDeckStats(cards, referenceTime),
+    [cards, referenceTime],
+  )
+
+  const filteredDeckCards = useMemo(
+    () =>
+      filterDeckCards(cards, {
+        query: deckSearchQuery,
+        stateFilter: deckFilterState,
+        now: referenceTime,
+      }),
+    [cards, deckFilterState, deckSearchQuery, referenceTime],
   )
 
   const saveCardFromParams = useCallback(
@@ -1363,19 +1822,6 @@ export function App({
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()
-  }, [])
-
-  const navigateTo = useCallback((nextView: View, replace = false) => {
-    setView(nextView)
-    if (typeof window === 'undefined') return
-    const targetHash = hashForView(nextView)
-    if (window.location.hash !== targetHash) {
-      if (replace) {
-        window.history.replaceState({ view: nextView }, '', targetHash)
-      } else {
-        window.history.pushState({ view: nextView }, '', targetHash)
-      }
-    }
   }, [])
 
   useEffect(() => {
@@ -1529,7 +1975,18 @@ export function App({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (view !== 'review' || !currentCard) return
+      if (
+        view !== 'review' ||
+        !currentCard ||
+        editingCard !== null ||
+        deletingCards !== null ||
+        isSyncOpen
+      )
+        return
+
+      const isInputActive =
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
 
       if (
         (event.code === 'Space' || event.key === ' ') &&
@@ -1556,10 +2013,29 @@ export function App({
         const gradeValue = gradeMap[event.key]
         if (gradeValue) grade(gradeValue)
       }
+
+      if (
+        (event.key === 'e' || event.key === 'E') &&
+        !isInputActive &&
+        !event.ctrlKey &&
+        !event.metaKey
+      ) {
+        event.preventDefault()
+        setEditingCard(currentCard)
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [currentCard, grade, playAudio, revealed, view])
+  }, [
+    currentCard,
+    deletingCards,
+    editingCard,
+    grade,
+    isSyncOpen,
+    playAudio,
+    revealed,
+    view,
+  ])
 
   function goHome() {
     setReferenceTime(services.clock.now())
@@ -1722,6 +2198,12 @@ export function App({
           <nav className="topbar" aria-label="Main navigation">
             <Brand />
             <div className="nav-actions">
+              <button
+                className="text-button"
+                onClick={() => navigateTo('deck')}
+              >
+                Deck ({cards.length})
+              </button>
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -1844,7 +2326,19 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          clock={services.clock}
+        />
+        <EditCardModal
+          isOpen={editingCard !== null}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onSave={handleSaveEdit}
+          onPlayAudio={playAudio}
+        />
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
+          onConfirm={handleConfirmDelete}
         />
       </>
     )
@@ -1857,6 +2351,12 @@ export function App({
           <nav className="topbar" aria-label="Card creation navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
+              <button
+                className="text-button"
+                onClick={() => navigateTo('deck')}
+              >
+                Deck ({cards.length})
+              </button>
               <button className="text-button" onClick={() => beginReview()}>
                 Review {dueCount}
               </button>
@@ -2141,7 +2641,6 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          clock={services.clock}
         />
         <SaveCardAuthModal
           isOpen={isSaveCardAuthOpen}
@@ -2149,8 +2648,425 @@ export function App({
           auth={services.auth}
           onSaveLocally={handleSavePendingLocally}
         />
+        <EditCardModal
+          isOpen={editingCard !== null}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onSave={handleSaveEdit}
+          onPlayAudio={playAudio}
+        />
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
+          onConfirm={handleConfirmDelete}
+        />
       </>
     )
+
+  if (view === 'deck') {
+    const isAllSelected =
+      filteredDeckCards.length > 0 &&
+      filteredDeckCards.every((c) => selectedCardIds.has(c.id))
+    const isSomeSelected = filteredDeckCards.some((c) =>
+      selectedCardIds.has(c.id),
+    )
+
+    const handleRowKeyDown = (
+      e: ReactKeyboardEvent<HTMLElement>,
+      card: StudyCard,
+    ) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault()
+        e.stopPropagation()
+        setSelectedCardIds((prev) => {
+          const next = new Set(prev)
+          if (next.has(card.id)) next.delete(card.id)
+          else next.add(card.id)
+          return next
+        })
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        setEditingCard(card)
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const nextRow = e.currentTarget.nextElementSibling as HTMLElement | null
+        if (nextRow && typeof nextRow.focus === 'function') nextRow.focus()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const prevRow = e.currentTarget
+          .previousElementSibling as HTMLElement | null
+        if (prevRow && typeof prevRow.focus === 'function') prevRow.focus()
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        if (selectedCardIds.has(card.id) && selectedCardIds.size > 1) {
+          setDeletingCards(cards.filter((c) => selectedCardIds.has(c.id)))
+        } else {
+          setDeletingCards([card])
+        }
+      }
+    }
+
+    return (
+      <>
+        <main className="app-shell deck-page">
+          <nav className="topbar" aria-label="Deck navigation">
+            <Brand onClick={goHome} />
+            <div className="nav-actions">
+              {cards.length > 0 && (
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('create')}
+                >
+                  + New card
+                </button>
+              )}
+              {dueCount > 0 && (
+                <button className="text-button" onClick={() => beginReview()}>
+                  Practice {dueCount} due
+                </button>
+              )}
+              <button
+                className="text-button"
+                onClick={() => setIsBackupOpen(true)}
+              >
+                Backup & Import
+              </button>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => openSyncModal()}
+              />
+            </div>
+          </nav>
+          <section className="deck-layout">
+            <header className="deck-header-row">
+              <h1>Your deck</h1>
+              <div className="deck-header-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsBackupOpen(true)}
+                >
+                  Backup & Import
+                </button>
+              </div>
+            </header>
+
+            <div className="deck-stats-strip" aria-label="Deck statistics">
+              <span className="deck-stat-chip">
+                <strong>{deckStats.total}</strong>{' '}
+                {deckStats.total === 1 ? 'card' : 'cards'}
+              </span>
+              <span
+                className={`deck-stat-chip ${deckStats.due > 0 ? 'is-due' : ''}`}
+              >
+                <strong>{deckStats.due}</strong> due
+              </span>
+              {deckStats.learningCount > 0 && (
+                <span className="deck-stat-chip is-learning">
+                  <strong>{deckStats.learningCount}</strong> learning
+                </span>
+              )}
+              {deckStats.newCount > 0 && (
+                <span className="deck-stat-chip is-new">
+                  <strong>{deckStats.newCount}</strong> new
+                </span>
+              )}
+              {deckStats.reviewCount > 0 && (
+                <span className="deck-stat-chip is-review">
+                  <strong>{deckStats.reviewCount}</strong> review
+                </span>
+              )}
+            </div>
+
+            <div className="deck-toolbar">
+              <div className="deck-search-wrap">
+                <span className="deck-search-icon" aria-hidden="true">
+                  🔍
+                </span>
+                <input
+                  type="search"
+                  className="deck-search-input"
+                  placeholder="Search cards by Spanish, English, or notes…"
+                  value={deckSearchQuery}
+                  onChange={(e) => setDeckSearchQuery(e.target.value)}
+                  aria-label="Search cards in deck"
+                />
+              </div>
+
+              <div className="deck-toolbar-controls">
+                <div
+                  className="deck-filter-pills"
+                  role="radiogroup"
+                  aria-label="Filter cards by state"
+                >
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('all')}
+                    aria-pressed={deckFilterState === 'all'}
+                  >
+                    All ({deckStats.total})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('due')}
+                    aria-pressed={deckFilterState === 'due'}
+                  >
+                    Due ({deckStats.due})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('new')}
+                    aria-pressed={deckFilterState === 'new'}
+                  >
+                    New ({deckStats.newCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('learning')}
+                    aria-pressed={deckFilterState === 'learning'}
+                  >
+                    Learning ({deckStats.learningCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('review')}
+                    aria-pressed={deckFilterState === 'review'}
+                  >
+                    Review ({deckStats.reviewCount})
+                  </button>
+                </div>
+
+                {selectedCardIds.size > 0 && (
+                  <div
+                    className="deck-batch-actions"
+                    aria-label="Batch card actions"
+                  >
+                    <button
+                      type="button"
+                      className="danger-button batch-delete-btn"
+                      onClick={() =>
+                        setDeletingCards(
+                          cards.filter((c) => selectedCardIds.has(c.id)),
+                        )
+                      }
+                    >
+                      🗑️ Delete selected ({selectedCardIds.size})
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button deck-clear-selection-btn"
+                      onClick={() => setSelectedCardIds(new Set())}
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {filteredDeckCards.length === 0 ? (
+              <div className="deck-empty-state">
+                <h3>No cards found</h3>
+                <p>
+                  {deckSearchQuery.trim()
+                    ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
+                    : cards.length === 0
+                      ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
+                      : `No cards in the “${deckFilterState}” category right now.`}
+                </p>
+                {cards.length === 0 ? (
+                  <div className="deck-empty-actions">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => navigateTo('create')}
+                    >
+                      Create a card →
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setIsBackupOpen(true)}
+                    >
+                      Import Anki / Backup
+                    </button>
+                  </div>
+                ) : deckSearchQuery.trim() || deckFilterState !== 'all' ? (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setDeckSearchQuery('')
+                      setDeckFilterState('all')
+                    }}
+                  >
+                    Clear search & filters
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <div
+                className="deck-cards-list is-compact"
+                role="table"
+                aria-label="Deck cards"
+              >
+                <div className="deck-list-table-header" role="row">
+                  <div className="col-select" role="columnheader">
+                    <input
+                      type="checkbox"
+                      className="deck-select-checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el)
+                          el.indeterminate = isSomeSelected && !isAllSelected
+                      }}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCardIds(
+                            new Set(filteredDeckCards.map((c) => c.id)),
+                          )
+                        } else {
+                          setSelectedCardIds(new Set())
+                        }
+                      }}
+                      aria-label={
+                        isAllSelected
+                          ? 'Deselect all cards'
+                          : 'Select all cards'
+                      }
+                    />
+                  </div>
+                  <div className="col-dir" role="columnheader">
+                    Direction
+                  </div>
+                  <div className="col-phrase col-prompt" role="columnheader">
+                    Prompt
+                  </div>
+                  <div className="col-phrase col-answer" role="columnheader">
+                    Answer
+                  </div>
+                  <div className="col-status" role="columnheader">
+                    Status
+                  </div>
+                </div>
+
+                {filteredDeckCards.map((card) => {
+                  const scheduleBadge = getCardScheduleBadge(
+                    card,
+                    referenceTime,
+                  )
+                  const isEsToEn = card.direction === 'es-en'
+
+                  return (
+                    <div
+                      key={card.id}
+                      className={`deck-card-row ${selectedCardIds.has(card.id) ? 'is-selected' : ''}`}
+                      role="row"
+                      tabIndex={0}
+                      aria-selected={selectedCardIds.has(card.id)}
+                      aria-label={`Card: ${card.prompt}, answer: ${card.answer}. Click or press Enter to edit, Space to select.`}
+                      title="Click or press Enter to edit card"
+                      onClick={() => setEditingCard(card)}
+                      onKeyDown={(e) => handleRowKeyDown(e, card)}
+                    >
+                      <div
+                        className="col-select"
+                        role="cell"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          className="deck-select-checkbox"
+                          checked={selectedCardIds.has(card.id)}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            setSelectedCardIds((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(card.id)) next.delete(card.id)
+                              else next.add(card.id)
+                              return next
+                            })
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select card ${card.prompt}`}
+                        />
+                      </div>
+                      <div className="col-dir" role="cell">
+                        <span
+                          className="deck-direction-badge"
+                          title={
+                            isEsToEn
+                              ? 'Mexican Spanish Prompt → English Answer'
+                              : 'English Prompt → Mexican Spanish Answer'
+                          }
+                        >
+                          {isEsToEn ? <MexicoFlag /> : <UsFlag />}
+                          <span>{isEsToEn ? 'ES → EN' : 'EN → ES'}</span>
+                        </span>
+                      </div>
+                      <div className="col-phrase col-prompt" role="cell">
+                        <span className="deck-phrase-text">{card.prompt}</span>
+                      </div>
+                      <div className="col-phrase col-answer" role="cell">
+                        <span className="deck-answer-text">{card.answer}</span>
+                      </div>
+
+                      <div className="col-status" role="cell">
+                        <span
+                          className={`deck-stat-chip is-${scheduleBadge.type} is-mini`}
+                        >
+                          {scheduleBadge.label}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        </main>
+        <DeckBackupModal
+          isOpen={isBackupOpen}
+          onClose={() => setIsBackupOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          clock={services.clock}
+          user={authUser}
+          sync={services.sync}
+        />
+
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={closeSyncModal}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
+        />
+        <EditCardModal
+          isOpen={editingCard !== null}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onSave={handleSaveEdit}
+          onPlayAudio={playAudio}
+        />
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      </>
+    )
+  }
 
   if (view === 'complete' || (view === 'review' && !currentCard))
     return (
@@ -2159,6 +3075,12 @@ export function App({
           <nav className="topbar" aria-label="Session navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
+              <button
+                className="text-button"
+                onClick={() => navigateTo('deck')}
+              >
+                Deck ({cards.length})
+              </button>
               <button
                 className="text-button"
                 onClick={() => navigateTo('create')}
@@ -2191,7 +3113,13 @@ export function App({
               >
                 Create a card <span aria-hidden="true">→</span>
               </button>
-              <button className="secondary-button" onClick={goHome}>
+              <button
+                className="secondary-button"
+                onClick={() => navigateTo('deck')}
+              >
+                View deck ({cards.length})
+              </button>
+              <button className="text-button" onClick={goHome}>
                 Back home
               </button>
             </div>
@@ -2204,7 +3132,19 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          clock={services.clock}
+        />
+        <EditCardModal
+          isOpen={editingCard !== null}
+          card={editingCard}
+          onClose={() => setEditingCard(null)}
+          onSave={handleSaveEdit}
+          onPlayAudio={playAudio}
+        />
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
+          onConfirm={handleConfirmDelete}
         />
       </>
     )
@@ -2287,6 +3227,9 @@ export function App({
             </span>
           </div>
           <div className="nav-actions">
+            <button className="text-button" onClick={() => navigateTo('deck')}>
+              Deck ({cards.length})
+            </button>
             <button
               className="text-button"
               onClick={() => navigateTo('create')}
@@ -2390,9 +3333,29 @@ export function App({
               </fieldset>
             </div>
           )}
+
+          <div className="study-card-quick-actions">
+            <button
+              type="button"
+              className="study-quick-btn edit-btn"
+              aria-label={`Edit card: ${currentCard.prompt}`}
+              onClick={() => setEditingCard(currentCard)}
+            >
+              ✏️ Edit card
+            </button>
+            <button
+              type="button"
+              className="study-quick-btn delete-btn"
+              aria-label={`Delete card: ${currentCard.prompt}`}
+              onClick={() => setDeletingCards([currentCard])}
+            >
+              🗑️ Delete card
+            </button>
+          </div>
+
           <p className="keyboard-hint">
-            <kbd>Enter</kbd> reveal · <kbd>1–4</kbd> rate · <kbd>⌃ Space</kbd>{' '}
-            replay audio
+            <kbd>Enter</kbd> reveal · <kbd>1–4</kbd> rate · <kbd>e</kbd> edit ·{' '}
+            <kbd>⌃ Space</kbd> replay audio
           </p>
         </section>
       </main>
@@ -2403,7 +3366,19 @@ export function App({
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}
-        clock={services.clock}
+      />
+      <EditCardModal
+        isOpen={editingCard !== null}
+        card={editingCard}
+        onClose={() => setEditingCard(null)}
+        onSave={handleSaveEdit}
+        onPlayAudio={playAudio}
+      />
+      <DeleteCardsModal
+        isOpen={deletingCards !== null}
+        cards={deletingCards}
+        onClose={() => setDeletingCards(null)}
+        onConfirm={handleConfirmDelete}
       />
     </>
   )

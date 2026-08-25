@@ -1,17 +1,30 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import * as fflate from 'fflate'
+import initSqlJs from 'sql.js'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
-test('opens deck backup modal without automatically detectable WCAG violations and exports deck JSON', async ({
+test('opens deck manager without automatically detectable WCAG violations and exports deck JSON', async ({
   page,
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /tap to sync/i }).click()
-  await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
-  ).toBeVisible()
+  await page.getByRole('button', { name: /deck \(4\)/i }).click()
+  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
 
-  // Verify zero WCAG 2.1 A/AA accessibility violations in backup dialog
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
+  await expect(
+    page.getByRole('heading', { name: /deck import & offline backup/i }),
+  ).toBeVisible()
+  await page.screenshot({ path: 'test-results/deck-backup-vertical-modal.png' })
+
+  // Verify zero WCAG 2.1 A/AA accessibility violations in deck manager
+  await page.waitForTimeout(200)
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -28,18 +41,22 @@ test('opens deck backup modal without automatically detectable WCAG violations a
 
   await expect(page.getByRole('status')).toContainText(/deck exported/i)
 
-  // Close modal via Escape
+  // Save screenshot for autonomous visual inspection
+  await page.screenshot({ path: 'test-results/deck-manager.png' })
   await page.keyboard.press('Escape')
-  await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
-  ).not.toBeVisible()
 })
 
 test('restores deck from backup JSON file and updates local storage', async ({
   page,
 }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: /tap to sync/i }).click()
+  await page.goto('/#/deck')
+  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
 
   const backupData = {
     version: 1,
@@ -80,6 +97,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
     .click()
 
   await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await page.keyboard.press('Escape')
 
   // Verify local storage is updated with the imported cards
   const stored = await page.evaluate(() =>
@@ -87,13 +105,11 @@ test('restores deck from backup JSON file and updates local storage', async ({
   )
   expect(stored).toContain('Un boleto de metro')
 
-  await page.getByRole('button', { name: /close dialog/i }).click()
-  await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
-  ).not.toBeVisible()
-
   // Start review with the imported card
-  await page.getByRole('button', { name: /practice 1 due/i }).click()
+  await page
+    .getByRole('button', { name: /practice 1 due/i })
+    .first()
+    .click()
   await expect(
     page.getByRole('heading', { name: 'Un boleto de metro' }),
   ).toBeVisible()
@@ -102,8 +118,13 @@ test('restores deck from backup JSON file and updates local storage', async ({
 test('imports Anki text export deck and updates review cards', async ({
   page,
 }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: /tap to sync/i }).click()
+  await page.goto('/#/deck')
+
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
 
   const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
 
@@ -120,25 +141,21 @@ test('imports Anki text export deck and updates review cards', async ({
     .click()
 
   await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await page.keyboard.press('Escape')
 
-  await page.getByRole('button', { name: /close dialog/i }).click()
-
-  await page.getByRole('button', { name: /practice 1 due/i }).click()
+  await page
+    .getByRole('button', { name: /practice 1 due/i })
+    .first()
+    .click()
   await expect(
     page.getByRole('heading', { name: '¿Dónde está la estación?' }),
   ).toBeVisible()
 })
 
-import * as fflate from 'fflate'
-import initSqlJs from 'sql.js'
-import * as fs from 'node:fs'
-import * as path from 'node:path'
-
 test('imports packaged .apkg Anki archive, preserves schedules, and supports full keyboard review', async ({
   page,
 }) => {
-  await page.goto('/')
-  await page.getByRole('button', { name: /tap to sync/i }).click()
+  await page.goto('/#/deck')
 
   // Generate a real binary .apkg SQLite package
   const wasmPath = path.resolve(
@@ -177,6 +194,12 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
     'collection.anki2': dbBytes,
   })
 
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
+
   // Upload .apkg binary file
   await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
     name: 'mexican-spanish.apkg',
@@ -193,17 +216,19 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
       name: /import "mexican spanish vocab" \(replace\)/i,
     })
     .click()
-
   await expect(
     page.getByText(
       /successfully imported 2 cards from “mexican spanish vocab”/i,
     ),
   ).toBeVisible()
 
-  await page.getByRole('button', { name: /close dialog/i }).click()
+  await page.keyboard.press('Escape')
 
   // Start review
-  await page.getByRole('button', { name: /practice 2 due/i }).click()
+  await page
+    .getByRole('button', { name: /practice 2 due/i })
+    .first()
+    .click()
   await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()
 
   // Enter to reveal answer
@@ -217,4 +242,85 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
   await expect(
     page.getByRole('heading', { name: 'La cuenta, por favor' }),
   ).toBeVisible()
+})
+
+test('modifies and deletes cards in the deck manager with zero accessibility violations', async ({
+  page,
+}) => {
+  await page.goto('/#/deck')
+  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+
+  // Verify list of cards
+  const cardsList = page.getByRole('table', { name: /deck cards/i })
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
+
+  // Search filter
+  await page.getByLabel(/search cards in deck/i).fill('aguacate')
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(2)
+  await page.getByLabel(/search cards in deck/i).fill('')
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
+
+  await page.screenshot({ path: 'test-results/deck-table-view.png' })
+
+  // Click row to edit card
+  await cardsList.getByText('aguacate').first().click()
+
+  await expect(
+    page.getByRole('heading', { name: /edit flashcard/i }),
+  ).toBeVisible()
+  await page.screenshot({ path: 'test-results/deck-edit-card-modal.png' })
+
+  // Verify accessibility of edit modal
+  const editAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(editAxe.violations).toEqual([])
+
+  await page.getByLabel(/mexican spanish \(prompt\)/i).fill('el aguacate')
+  await page.getByLabel(/english \(answer\)/i).fill('the avocado')
+  await page.getByRole('button', { name: /save changes/i }).click()
+
+  await expect(
+    page.getByRole('heading', { name: /edit flashcard/i }),
+  ).not.toBeVisible()
+  await expect(page.getByText('el aguacate')).toBeVisible()
+
+  // Select card via checkbox to delete
+  await page.getByRole('checkbox', { name: /select card el aguacate/i }).click()
+  await page.screenshot({ path: 'test-results/deck-selected-row.png' })
+
+  const deleteBtn = page.getByRole('button', { name: /delete selected \(1\)/i })
+  await expect(deleteBtn).toBeVisible()
+  await deleteBtn.click()
+
+  await expect(
+    page.getByRole('heading', { name: /delete flashcard\?/i }),
+  ).toBeVisible()
+  await page.locator('.delete-card-modal').waitFor({ state: 'visible' })
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: 'test-results/deck-delete-modal.png' })
+
+  // Verify accessibility of delete modal
+  const deleteAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+
+  expect(deleteAxe.violations).toEqual([])
+
+  // Cancel deletion
+  await page.getByRole('button', { name: /cancel/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /delete flashcard\?/i }),
+  ).not.toBeVisible()
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
+
+  // Confirm deletion
+  await deleteBtn.click()
+  await page.getByRole('button', { name: /^delete card$/i }).click()
+
+  await expect(
+    page.getByRole('heading', { name: /delete flashcard\?/i }),
+  ).not.toBeVisible()
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(3)
+  await expect(page.getByText('el aguacate')).not.toBeVisible()
 })
