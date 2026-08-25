@@ -480,13 +480,12 @@ summary:focus-visible {
 
 .welcome-hero {
   width: min(1080px, 100%);
-  flex: 1;
-  margin: 0 auto;
+  margin: 8px auto auto;
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
-  padding: 20px 0 28px;
+  padding: 8px 0 32px;
 }
 
 .hero-copy {
