@@ -2652,12 +2652,14 @@ export function App({
           <nav className="topbar" aria-label="Deck navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
-              <button
-                className="text-button"
-                onClick={() => navigateTo('create')}
-              >
-                + New card
-              </button>
+              {cards.length > 0 && (
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('create')}
+                >
+                  + New card
+                </button>
+              )}
               {dueCount > 0 && (
                 <button className="text-button" onClick={() => beginReview()}>
                   Practice {dueCount} due
@@ -2680,22 +2682,16 @@ export function App({
                   collection.
                 </p>
               </div>
-              <div className="deck-header-actions">
-                <button
-                  className="primary-button"
-                  onClick={() => navigateTo('create')}
-                >
-                  + New card <span aria-hidden="true">→</span>
-                </button>
-                {dueCount > 0 && (
+              {dueCount > 0 && (
+                <div className="deck-header-actions">
                   <button
-                    className="secondary-button"
+                    className="primary-button"
                     onClick={() => beginReview()}
                   >
-                    Practice {dueCount} due
+                    Practice {dueCount} due <span aria-hidden="true">→</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </header>
 
             <div className="deck-stats-strip" aria-label="Deck statistics">
