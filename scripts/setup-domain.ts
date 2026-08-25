@@ -268,7 +268,7 @@ async function main() {
     zone.name_servers.forEach((ns) => console.log(`   - ${ns}`))
   }
 
-  // 7. Supabase Auth Config Push
+  // 8. Supabase Auth Config Push
   console.log('\n📦 Pushing Supabase Auth Configuration...')
   try {
     execSync('npx supabase config push', { stdio: 'inherit' })
@@ -279,7 +279,7 @@ async function main() {
     )
   }
 
-  // 8. DNS & Live Health Check
+  // 9. DNS & Live Health Check
   console.log('\n🌐 Checking DNS propagation & live status...')
   try {
     const dnsRes = await fetch(
