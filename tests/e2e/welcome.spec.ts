@@ -461,16 +461,17 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
 
   // Sign in modal MUST open asking the user to log in!
   await expect(
-    page.getByRole('heading', { name: /sign in to save your cards/i }),
+    page.getByRole('heading', { name: /save your flashcard/i }),
   ).toBeVisible()
-  await expect(
-    page.getByText(/sign in or create an account to save your new card/i),
-  ).toBeVisible()
+  await expect(page.getByLabel(/card to save/i)).toContainText('chido')
+  await expect(page.getByLabel(/card to save/i)).toContainText('cool')
+
+  await page.screenshot({ path: 'test-results/save-card-auth-modal.png' })
 
   // Modal can be dismissed with Escape and preserves form inputs
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('heading', { name: /sign in to save your cards/i }),
+    page.getByRole('heading', { name: /save your flashcard/i }),
   ).not.toBeVisible()
   await expect(spanishInput).toHaveValue('chido')
   await expect(englishInput).toHaveValue('cool')

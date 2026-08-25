@@ -1126,13 +1126,14 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
     expect(
-      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+      screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        /sign in or create an account to save your new card and start building your library/i,
+        /sign in or create a free account to save your cards and sync across devices/i,
       ),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
 
     // Form inputs remain preserved while modal is displayed
@@ -1153,24 +1154,29 @@ describe('Jolito', () => {
     await user.type(englishInput, 'cool')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // 2. Sign-in modal opens
+    // 2. Sign-in modal opens with focused save card heading and pending card preview
     expect(
-      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+      screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
 
     // 3. Guest enters email and requests link
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+    await user.click(
+      screen.getByRole('button', { name: /continue with email/i }),
+    )
 
     // 4. Guest enters OTP code
     const otpInput = screen.getByLabelText(/verification code/i)
     await user.type(otpInput, '123456')
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(
+      screen.getByRole('button', { name: /verify & save card/i }),
+    )
 
     // 5. Verification succeeds -> pending card is automatically saved!
     expect(
-      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+      screen.queryByRole('heading', { name: /save your flashcard/i }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
     expect(spanishInput).toHaveValue('')
@@ -1192,15 +1198,16 @@ describe('Jolito', () => {
 
     // Modal is open
     expect(
-      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+      screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
 
     // Guest presses Escape to dismiss modal
     await user.keyboard('{Escape}')
 
     // Modal is closed, but typed input is preserved in form!
     expect(
-      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+      screen.queryByRole('heading', { name: /save your flashcard/i }),
     ).not.toBeInTheDocument()
     expect(spanishInput).toHaveValue('popote')
     expect(englishInput).toHaveValue('straw')
@@ -1221,7 +1228,7 @@ describe('Jolito', () => {
 
     // Modal opens asking to sign in and showing preview notice
     expect(
-      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+      screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByText(/cloud sync is disabled in this preview/i),
@@ -1231,7 +1238,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /save card locally/i }))
 
     expect(
-      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+      screen.queryByRole('heading', { name: /save your flashcard/i }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “orale”/i)
     expect(services.memoryCards.saved).toHaveLength(2)
@@ -1259,15 +1266,19 @@ describe('Jolito', () => {
     // 3. Guest signs in
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+    await user.click(
+      screen.getByRole('button', { name: /continue with email/i }),
+    )
 
     const otpInput = screen.getByLabelText(/verification code/i)
     await user.type(otpInput, '123456')
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(
+      screen.getByRole('button', { name: /verify & save card/i }),
+    )
 
     // 4. Modal closes and card is saved
     expect(
-      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+      screen.queryByRole('heading', { name: /save your flashcard/i }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
 

@@ -210,6 +210,246 @@ function AnswerComparison({
     </div>
   )
 }
+interface PendingCardParams {
+  spanish: string
+  english: string
+  context: string
+  bidirectional: boolean
+  reversePrompt: string
+  reverseAnswer: string
+}
+
+function SaveCardAuthModal({
+  isOpen,
+  onClose,
+  pendingCard,
+  auth,
+  onSaveLocally,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  pendingCard: PendingCardParams | null
+  auth: AuthService
+  onSaveLocally?: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState('')
+  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<{
+    type: 'success' | 'error' | 'info'
+    message: string
+  } | null>(null)
+
+  const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleSendLink = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setLoading(true)
+    setStatusMsg(null)
+    const res = await auth.sendMagicLink(email.trim())
+    setLoading(false)
+    if (res.success) {
+      setIsOtpSent(true)
+      setStatusMsg({
+        type: 'info',
+        message: `Sign-in code sent to ${email.trim()}.`,
+      })
+    } else {
+      setStatusMsg({
+        type: 'error',
+        message: res.error || 'Failed to send sign-in link.',
+      })
+    }
+  }
+
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!token.trim()) return
+    setLoading(true)
+    setStatusMsg(null)
+    const res = await auth.verifyOtp(email.trim(), token.trim())
+    setLoading(false)
+    if (res.success) {
+      setStatusMsg({
+        type: 'success',
+        message: 'Signed in! Saving card…',
+      })
+    } else {
+      setStatusMsg({
+        type: 'error',
+        message: res.error || 'Invalid verification code.',
+      })
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content save-card-auth-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-card-auth-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="save-card-auth-header">
+          <div className="save-card-icon-badge" aria-hidden="true">
+            ✨
+          </div>
+          <div className="save-card-header-text">
+            <h2 id="save-card-auth-title">Save your flashcard</h2>
+            <p className="save-card-subtitle">
+              Sign in or create a free account to save your cards and sync
+              across devices.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {pendingCard && (
+          <div className="pending-card-preview" aria-label="Card to save">
+            <span className="pending-card-label">Card to save</span>
+            <div className="pending-card-pill">
+              <span className="pending-flag" aria-hidden="true">
+                🇲🇽
+              </span>
+              <strong className="pending-spanish">{pendingCard.spanish}</strong>
+              <span className="pending-arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="pending-english">{pendingCard.english}</span>
+            </div>
+          </div>
+        )}
+
+        {statusMsg && (
+          <div
+            className={`status-banner status-${statusMsg.type}`}
+            role={statusMsg.type === 'error' ? 'alert' : 'status'}
+          >
+            <p>{statusMsg.message}</p>
+          </div>
+        )}
+
+        {!isBackendConfigured ? (
+          <div className="preview-fallback-box">
+            <p className="preview-fallback-caption">
+              Cloud sync is disabled in this preview deployment. Your cards are
+              safely stored in your browser.
+            </p>
+            {onSaveLocally && (
+              <button
+                type="button"
+                className="primary-button save-locally-cta"
+                onClick={onSaveLocally}
+              >
+                Save card locally (preview) →
+              </button>
+            )}
+          </div>
+        ) : !isOtpSent ? (
+          <form
+            onSubmit={(e) => {
+              void handleSendLink(e)
+            }}
+            className="save-card-auth-form"
+          >
+            <div className="field-group">
+              <label htmlFor="save-card-email">Email address</label>
+              <input
+                id="save-card-email"
+                type="email"
+                required
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="learner@example.com"
+                autoComplete="email"
+                className="save-card-email-input"
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button save-card-submit-btn"
+              disabled={loading || !email.trim()}
+            >
+              {loading ? 'Sending link…' : 'Continue with email →'}
+            </button>
+            <p className="save-card-hint">
+              We’ll send a magic link and 6-digit code. No password needed.
+            </p>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              void handleVerifyOtp(e)
+            }}
+            className="save-card-auth-form"
+          >
+            <div className="field-group">
+              <label htmlFor="save-card-otp">Verification code</label>
+              <input
+                id="save-card-otp"
+                type="text"
+                required
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="123456"
+                autoComplete="one-time-code"
+                className="save-card-otp-input"
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button save-card-submit-btn"
+              disabled={loading || !token.trim()}
+            >
+              {loading ? 'Verifying…' : 'Verify & save card ✓'}
+            </button>
+            <button
+              type="button"
+              className="text-button change-email-btn"
+              onClick={() => {
+                setIsOtpSent(false)
+                setToken('')
+                setStatusMsg(null)
+              }}
+            >
+              ← Use a different email
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SyncModal({
   isOpen,
   onClose,
@@ -218,8 +458,6 @@ function SyncModal({
   auth,
   sync,
   clock,
-  authPromptReason,
-  onSavePendingCardLocally,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -228,8 +466,6 @@ function SyncModal({
   auth: AuthService
   sync: SyncService
   clock: { now(): number }
-  authPromptReason?: 'save_card' | null
-  onSavePendingCardLocally?: () => void
 }) {
   // Auth & Cloud Sync state
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -463,15 +699,10 @@ function SyncModal({
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="sync-modal-title">
-              {authPromptReason === 'save_card'
-                ? 'Sign in to save your cards'
-                : 'Cloud sync & deck backup'}
-            </h2>
+            <h2 id="sync-modal-title">Cloud sync & deck backup</h2>
             <p className="modal-subtitle">
-              {authPromptReason === 'save_card'
-                ? 'Create an account or sign in to save your flashcards and sync across all your devices.'
-                : 'Replicate your cards across devices or export offline JSON backups.'}
+              Replicate your cards across devices or export offline JSON
+              backups.
             </p>
           </div>
           <button
@@ -506,18 +737,6 @@ function SyncModal({
               </div>
             </div>
 
-            {authPromptReason === 'save_card' && !user && (
-              <div className="save-card-gate-banner" role="status">
-                <span className="gate-icon" aria-hidden="true">
-                  ✨
-                </span>
-                <span>
-                  Sign in or create an account to save your new card and start
-                  building your library.
-                </span>
-              </div>
-            )}
-
             {syncStatusMsg && (
               <div
                 className={`status-banner status-${syncStatusMsg.type}`}
@@ -539,17 +758,6 @@ function SyncModal({
                   schedules remain 100% functional and safely stored on this
                   device.
                 </p>
-                {authPromptReason === 'save_card' &&
-                  onSavePendingCardLocally && (
-                    <button
-                      type="button"
-                      className="primary-button"
-                      style={{ marginTop: '12px', width: '100%' }}
-                      onClick={onSavePendingCardLocally}
-                    >
-                      Save card locally (preview)
-                    </button>
-                  )}
               </div>
             ) : user ? (
               <div className="sync-account-pane">
@@ -915,17 +1123,8 @@ export function App({
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
-  const [syncModalReason, setSyncModalReason] = useState<'save_card' | null>(
-    null,
-  )
-  const [pendingCard, setPendingCard] = useState<{
-    spanish: string
-    english: string
-    context: string
-    bidirectional: boolean
-    reversePrompt: string
-    reverseAnswer: string
-  } | null>(null)
+  const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
+  const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
@@ -1065,8 +1264,7 @@ export function App({
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
           saveCardFromParams(pending)
-          setIsSyncOpen(false)
-          setSyncModalReason(null)
+          setIsSaveCardAuthOpen(false)
         } else {
           const userCards = filterOutStarterCards(cardsRef.current)
           void syncDeckWithCloud({
@@ -1434,15 +1632,17 @@ export function App({
     [activeSuggestionIndex, applySuggestion, showSuggestions, suggestions],
   )
 
-  const openSyncModal = useCallback((reason?: 'save_card' | null) => {
+  const openSyncModal = useCallback(() => {
     setShowSuggestions(false)
-    setSyncModalReason(reason ?? null)
     setIsSyncOpen(true)
   }, [])
 
   const closeSyncModal = useCallback(() => {
     setIsSyncOpen(false)
-    setSyncModalReason(null)
+  }, [])
+
+  const closeSaveCardAuthModal = useCallback(() => {
+    setIsSaveCardAuthOpen(false)
     setPendingCard(null)
     pendingCardRef.current = null
   }, [])
@@ -1451,8 +1651,8 @@ export function App({
     if (pendingCardRef.current) {
       saveCardFromParams(pendingCardRef.current)
     }
-    closeSyncModal()
-  }, [closeSyncModal, saveCardFromParams])
+    setIsSaveCardAuthOpen(false)
+  }, [saveCardFromParams])
 
   function createCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -1477,7 +1677,7 @@ export function App({
     if (!authUserRef.current) {
       setPendingCard(cardParams)
       pendingCardRef.current = cardParams
-      openSyncModal('save_card')
+      setIsSaveCardAuthOpen(true)
       return
     }
 
@@ -1607,8 +1807,6 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
-          authPromptReason={syncModalReason}
-          onSavePendingCardLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -1923,8 +2121,13 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
-          authPromptReason={syncModalReason}
-          onSavePendingCardLocally={handleSavePendingLocally}
+        />
+        <SaveCardAuthModal
+          isOpen={isSaveCardAuthOpen}
+          onClose={closeSaveCardAuthModal}
+          pendingCard={pendingCard}
+          auth={services.auth}
+          onSaveLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -1982,8 +2185,6 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
-          authPromptReason={syncModalReason}
-          onSavePendingCardLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -2183,8 +2384,6 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         clock={services.clock}
-        authPromptReason={syncModalReason}
-        onSavePendingCardLocally={handleSavePendingLocally}
       />
     </>
   )
