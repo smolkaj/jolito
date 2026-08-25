@@ -22,17 +22,19 @@ async function main() {
   }
 
   const server = createServer((req, res) => {
-    let filePath = resolve(
-      distDir,
-      req.url === '/' ? 'index.html' : (req.url?.slice(1) ?? ''),
-    )
-    if (!existsSync(filePath) || filePath.includes('..')) {
-      filePath = resolve(distDir, 'index.html')
-    }
-    const ext = extname(filePath)
+    const rawPath = req.url ? new URL(req.url, 'http://127.0.0.1:4199').pathname : '/'
+    const sanitizedRelPath = rawPath === '/' ? 'index.html' : rawPath.slice(1).replace(/\.\./g, '')
+    const targetFile = resolve(distDir, sanitizedRelPath)
+
+    const finalPath =
+      targetFile.startsWith(distDir) && existsSync(targetFile)
+        ? targetFile
+        : resolve(distDir, 'index.html')
+
+    const ext = extname(finalPath)
     const mime = mimeTypes[ext] ?? 'application/octet-stream'
     res.writeHead(200, { 'Content-Type': mime })
-    res.end(readFileSync(filePath))
+    res.end(readFileSync(finalPath))
   })
 
   await new Promise<void>((res) =>
