@@ -30,7 +30,7 @@ beforeEach(() => {
 
 describe('Jolito', () => {
   it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       cards: [],
       user: { id: 'usr-1', email: 'learner@example.com' },
@@ -115,7 +115,7 @@ describe('Jolito', () => {
   })
 
   it('supports a one-way card and keeps review usable without speech synthesis', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       cards: [],
       speakerSupported: false,
@@ -142,7 +142,7 @@ describe('Jolito', () => {
   })
 
   it('circulates failed cards to the end of the session queue until all cards are graduated', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -181,7 +181,7 @@ describe('Jolito', () => {
   })
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       cards: [],
       user: { id: 'usr-1', email: 'learner@example.com' },
@@ -214,7 +214,7 @@ describe('Jolito', () => {
   })
 
   it('renders refined landing page copy and plays audio when clicking the sample cards', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -259,7 +259,7 @@ describe('Jolito', () => {
   })
 
   it('works with default browser services without explicitly passing props', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     render(<App />)
 
     await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
@@ -267,7 +267,7 @@ describe('Jolito', () => {
   })
 
   it('navigates backwards and forwards with browser history and popstate events', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     window.location.hash = ''
     render(<App services={services} />)
@@ -339,7 +339,7 @@ describe('Jolito', () => {
   })
 
   it('resumes an in-progress review queue when navigating back and forward', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     window.location.hash = ''
     render(<App services={services} />)
@@ -375,7 +375,7 @@ describe('Jolito', () => {
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation and context on selection', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -402,7 +402,7 @@ describe('Jolito', () => {
   })
 
   it('detects typos in Spanish input and offers "Did you mean" suggestion chip', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -423,7 +423,7 @@ describe('Jolito', () => {
   })
 
   it('supports keyboard navigation (ArrowDown + Enter) to select suggestions', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -446,7 +446,7 @@ describe('Jolito', () => {
   })
 
   it('renders clean study view without pictures, positions prompt audio beside prompt, and replays expected answer after reveal', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -498,7 +498,7 @@ describe('Jolito', () => {
   })
 
   it('plays prompt audio exactly once when starting practice with an authenticated user and does not loop', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const customCards = createStudyCards(
       {
         spanish: 'aguacate',
@@ -548,7 +548,7 @@ describe('Jolito', () => {
   })
 
   it('does not restart prompt audio when cards are updated in the background during active review', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -576,7 +576,7 @@ describe('Jolito', () => {
   })
 
   it('opens modal via connection pill, exports backup JSON, and downloads file', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -594,7 +594,7 @@ describe('Jolito', () => {
   })
 
   it('imports backup JSON in replace mode and updates cards and storage', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -649,7 +649,7 @@ describe('Jolito', () => {
   })
 
   it('imports backup JSON in merge mode and preserves existing cards', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -709,7 +709,7 @@ describe('Jolito', () => {
   })
 
   it('imports Anki text export (TSV) via modal', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -739,7 +739,7 @@ describe('Jolito', () => {
   })
 
   it('displays error message when importing invalid file', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -758,7 +758,7 @@ describe('Jolito', () => {
   })
 
   it('opens sync modal, sends magic link, verifies OTP, and signs in', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -789,7 +789,7 @@ describe('Jolito', () => {
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       user: { id: 'usr-1', email: 'sync-user@example.com' },
     })
@@ -808,7 +808,7 @@ describe('Jolito', () => {
   })
 
   it('allows signed in user to sign out and returns to auth form', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       user: { id: 'usr-1', email: 'sync-user@example.com' },
     })
@@ -823,7 +823,7 @@ describe('Jolito', () => {
   })
 
   it('closes sync modal via close button and Escape key', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -882,7 +882,7 @@ describe('Jolito', () => {
   })
 
   it('displays friendly notice when cloud sync is not enabled for preview', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     services.mockAuth.configured = false
     render(<App services={services} />)
@@ -901,7 +901,7 @@ describe('Jolito', () => {
   })
 
   it('dynamically updates new, learn, and due queue counters during study and retries', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -962,7 +962,7 @@ describe('Jolito', () => {
   })
 
   it('renders compact summary pill when review queue exceeds 6 cards', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     // Populate 12 due cards
     const extraCards = Array.from({ length: 12 }, (_, i) => ({
@@ -1008,7 +1008,7 @@ describe('Jolito', () => {
   })
 
   it('updates live flashcard preview interactively on the create screen', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -1050,7 +1050,7 @@ describe('Jolito', () => {
   })
 
   it('remains in create view after saving, resets form inputs, focuses Spanish field, and updates review counter for batch creation', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       cards: [],
       user: { id: 'usr-1', email: 'learner@example.com' },
@@ -1129,7 +1129,7 @@ describe('Jolito', () => {
   })
 
   it('allows guest to explore create card screen and prompts sign in when clicking save card', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
     render(<App services={services} />)
 
@@ -1159,7 +1159,7 @@ describe('Jolito', () => {
   })
 
   it('automatically saves pending card when guest signs in via OTP in modal', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
     render(<App services={services} />)
 
@@ -1201,7 +1201,7 @@ describe('Jolito', () => {
   })
 
   it('preserves typed card input in create form if guest closes sign in modal without authenticating', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
     render(<App services={services} />)
 
@@ -1229,7 +1229,7 @@ describe('Jolito', () => {
   })
 
   it('opens modal when auth backend is unconfigured and allows saving card locally in preview mode', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
     services.mockAuth.configured = false // Unconfigured / offline preview mode
     render(<App services={services} />)
@@ -1262,7 +1262,7 @@ describe('Jolito', () => {
   })
 
   it('ensures example starter cards do not end up in the user deck when a guest creates their first card and signs in', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     // Start with starter cards loaded by default as fallback
     const services = createTestServices()
     render(<App services={services} />)

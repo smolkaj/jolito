@@ -4,3 +4,11 @@ playwright-report/
 test-results/
 coverage/
 public/dict/
+.eslintcache
+assets/
+public/audio/
+public/fonts/
+public/*.png
+public/*.ico
+public/*.svg
+public/*.wasm
