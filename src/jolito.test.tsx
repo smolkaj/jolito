@@ -399,6 +399,9 @@ describe('Jolito', () => {
     expect(screen.getByLabelText(/context/i)).toHaveValue(
       'Iconic Mexican time nuance: right now, soon, or never.',
     )
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('detects typos in Spanish input and offers "Did you mean" suggestion chip', async () => {
@@ -420,9 +423,13 @@ describe('Jolito', () => {
 
     expect(spanishInput).toHaveValue('aguacate')
     expect(screen.getByLabelText(/english/i)).toHaveValue('avocado')
+    expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
   })
 
-  it('supports keyboard navigation (ArrowDown + Enter) to select suggestions', async () => {
+  it('supports keyboard navigation (ArrowDown + Enter) to select suggestions and closes overlay', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
@@ -443,6 +450,55 @@ describe('Jolito', () => {
     expect(screen.getByLabelText(/english/i)).toHaveValue(
       'how cool / fantastic',
     )
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports selecting suggestions with Tab key and closes overlay', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'no man')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Tab}')
+
+    expect(spanishInput).toHaveValue('no manches')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'no way / you are kidding',
+    )
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('closes suggestion overlay on Escape key without modifying input', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
   })
 
   it('renders clean study view without pictures, positions prompt audio beside prompt, and replays expected answer after reveal', async () => {

@@ -9,6 +9,39 @@ export type AutocompleteSuggestion = LexiconEntry & {
   matchType: 'exact' | 'prefix' | 'fuzzy'
 }
 
+export const SEED_LEXICON: LexiconEntry[] = [
+  {
+    spanish: 'aguacate',
+    english: 'avocado',
+    context: 'Key ingredient across Mexican cuisine.',
+    tag: 'food',
+  },
+  {
+    spanish: 'ahorita',
+    english: 'right now / in a bit',
+    context: 'Iconic Mexican time nuance: right now, soon, or never.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'qué padre',
+    english: 'how cool / fantastic',
+    context: 'Quintessential Mexican Spanish slang for something great.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'no manches',
+    english: 'no way / you are kidding',
+    context: 'Everyday Mexican expression of disbelief.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'chela',
+    english: 'beer',
+    context: 'Casual Mexican word for a cold beer.',
+    tag: 'slang',
+  },
+]
+
 export function normalizeForSearch(text: string): string {
   return text
     .toLowerCase()
