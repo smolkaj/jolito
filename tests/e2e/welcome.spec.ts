@@ -324,15 +324,15 @@ test('top navigation pills have consistent vertical height across views', async 
     .locator('.deck-filter-pills .deck-filter-pill')
     .first()
     .boundingBox()
-  const deckDensitySelector = await page
-    .locator('.deck-density-selector')
+  const deckBackupBtn = await page
+    .locator('.deck-header-actions .secondary-button')
     .boundingBox()
 
   expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
   expect(deckStatChip?.height).toBeCloseTo(32, 1)
   expect(deckFilterPill?.height).toBeCloseTo(32, 1)
-  expect(deckDensitySelector?.height).toBeCloseTo(32, 1)
+  expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
 
   // 5. Accessibility check
   const results = await new AxeBuilder({ page })

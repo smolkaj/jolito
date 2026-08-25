@@ -1367,55 +1367,54 @@ describe('Jolito', () => {
     expect(statsStrip).toHaveTextContent(/4\s*due/)
 
     // 4 starter cards are shown
-    const cardItems = screen.getAllByRole('listitem')
+    const cardItems = screen.getAllByRole('row', { name: /card:/i })
     expect(cardItems).toHaveLength(4)
 
     // Search for "aguacate" (matches 2 bidirectional cards: es-en prompt and en-es answer)
     const searchInput = screen.getByLabelText(/search cards in deck/i)
     await user.type(searchInput, 'aguacate')
 
-    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
     expect(screen.getAllByText('aguacate')).toHaveLength(2)
 
     // Clear search
     await user.clear(searchInput)
-    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
 
     // Filter by state pill "Review" (0 cards in review state initially)
     await user.click(screen.getByRole('button', { name: /review \(0\)/i }))
-    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+    expect(screen.queryAllByRole('row', { name: /card:/i })).toHaveLength(0)
     expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
 
     // Clear filter
     await user.click(screen.getByRole('button', { name: /all \(4\)/i }))
-    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
 
-    // Switch density view between Compact and Cards (Comfortable)
-    const cardsDensityBtn = screen.getByRole('button', { name: /cards/i })
-    await user.click(cardsDensityBtn)
-    expect(screen.getByRole('list', { name: 'Deck cards' })).toHaveClass(
-      'is-comfortable',
-    )
+    // Checkbox selection & batch actions
+    const selectAllCheckbox = screen.getByRole('checkbox', {
+      name: /select all cards/i,
+    })
+    await user.click(selectAllCheckbox)
+    expect(
+      screen.getByRole('button', { name: /delete selected \(4\)/i }),
+    ).toBeInTheDocument()
 
-    const compactDensityBtn = screen.getByRole('button', { name: /compact/i })
-    await user.click(compactDensityBtn)
-    expect(screen.getByRole('list', { name: 'Deck cards' })).toHaveClass(
-      'is-compact',
-    )
+    // Clear selection
+    await user.click(screen.getByRole('button', { name: /clear selection/i }))
+    expect(
+      screen.queryByRole('button', { name: /delete selected/i }),
+    ).not.toBeInTheDocument()
   })
 
-  it('modifies card in deck manager and persists updates to storage', async () => {
+  it('modifies card in deck manager by clicking row and persists updates to storage', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
-    // Click edit on "aguacate" card
-    const editBtn = screen.getByRole('button', {
-      name: /edit card: aguacate/i,
-    })
-    await user.click(editBtn)
+    // Click card row directly to edit "aguacate"
+    await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
 
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
@@ -1444,10 +1443,6 @@ describe('Jolito', () => {
     expect(screen.getByText('el aguacate')).toBeInTheDocument()
     expect(screen.getByText('the avocado')).toBeInTheDocument()
 
-    // Switch to Cards density view to see the detailed context note
-    await user.click(screen.getByRole('button', { name: /cards/i }))
-    expect(screen.getByText(/great with lime/i)).toBeInTheDocument()
-
     // Verify storage update
     expect(
       services.memoryCards.saved?.some(
@@ -1459,18 +1454,23 @@ describe('Jolito', () => {
     ).toBe(true)
   })
 
-  it('deletes card in deck manager after confirmation modal', async () => {
+  it('deletes card in deck manager after checkbox selection and confirmation modal', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
-    // Click delete on "aguacate" card
-    const deleteBtn = screen.getByRole('button', {
-      name: /delete card: aguacate/i,
+    // Select checkbox on "aguacate" card
+    const checkbox = screen.getByRole('checkbox', {
+      name: /select card aguacate/i,
     })
-    await user.click(deleteBtn)
+    await user.click(checkbox)
+
+    const batchDeleteBtn = screen.getByRole('button', {
+      name: /delete selected \(1\)/i,
+    })
+    await user.click(batchDeleteBtn)
 
     expect(
       screen.getByRole('heading', { name: /delete flashcard\?/i }),
@@ -1484,11 +1484,11 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /delete flashcard\?/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
 
     // Delete again and confirm
     await user.click(
-      screen.getByRole('button', { name: /delete card: aguacate/i }),
+      screen.getByRole('button', { name: /delete selected \(1\)/i }),
     )
     await user.click(screen.getByRole('button', { name: /^delete card$/i }))
 
@@ -1496,11 +1496,75 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /delete flashcard\?/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
     expect(
-      screen.queryByRole('button', { name: /delete card: aguacate/i }),
+      screen.queryByRole('row', { name: /card: aguacate,/i }),
     ).not.toBeInTheDocument()
     expect(services.memoryCards.saved).toHaveLength(3)
+  })
+
+  it('supports batch deletion of multiple selected cards in deck manager', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    // Select 2 cards
+    await user.click(
+      screen.getByRole('checkbox', { name: /select card aguacate/i }),
+    )
+    await user.click(
+      screen.getByRole('checkbox', { name: /select card avocado/i }),
+    )
+
+    const batchDeleteBtn = screen.getByRole('button', {
+      name: /delete selected \(2\)/i,
+    })
+    await user.click(batchDeleteBtn)
+
+    expect(
+      screen.getByRole('heading', { name: /delete 2 flashcards\?/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/these cards will be permanently removed/i),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /delete 2 cards/i }))
+
+    expect(
+      screen.queryByRole('heading', { name: /delete 2 flashcards\?/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
+    expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('supports keyboard navigation, space to select, and enter to edit card row in deck manager', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    const rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(rows).toHaveLength(4)
+
+    // Focus first row and press Space to toggle selection
+    rows[0]!.focus()
+    fireEvent.keyDown(rows[0]!, { key: ' ', code: 'Space' })
+    expect(rows[0]).toHaveClass('is-selected')
+
+    // Press Enter to open edit modal
+    fireEvent.keyDown(rows[0]!, { key: 'Enter' })
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
+    ).toBeInTheDocument()
+
+    // Dismiss with Escape
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(
+      screen.queryByRole('heading', { name: /edit flashcard/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('allows quick editing and deleting during an active study review session', async () => {

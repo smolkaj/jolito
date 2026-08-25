@@ -734,16 +734,16 @@ function EditCardModal({
   )
 }
 
-function DeleteCardModal({
+function DeleteCardsModal({
   isOpen,
-  card,
+  cards,
   onClose,
   onConfirm,
 }: {
   isOpen: boolean
-  card: StudyCard | null
+  cards: StudyCard[] | null
   onClose: () => void
-  onConfirm: (card: StudyCard) => void
+  onConfirm: (cards: StudyCard[]) => void
 }) {
   useEffect(() => {
     if (!isOpen) return
@@ -757,7 +757,10 @@ function DeleteCardModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  if (!isOpen || !card) return null
+  if (!isOpen || !cards || cards.length === 0) return null
+
+  const isSingle = cards.length === 1
+  const singleCard = cards[0]!
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
@@ -770,9 +773,15 @@ function DeleteCardModal({
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="delete-card-modal-title">Delete flashcard?</h2>
+            <h2 id="delete-card-modal-title">
+              {isSingle
+                ? 'Delete flashcard?'
+                : `Delete ${cards.length} flashcards?`}
+            </h2>
             <p className="modal-subtitle">
-              This card will be removed from your deck and scheduled reviews.
+              {isSingle
+                ? 'This card will be removed from your deck and scheduled reviews.'
+                : 'These cards will be permanently removed from your deck and scheduled reviews.'}
             </p>
           </div>
           <button
@@ -785,19 +794,39 @@ function DeleteCardModal({
           </button>
         </div>
 
-        <div className="delete-card-preview-card">
-          <p className="delete-card-prompt">
-            <strong>Prompt:</strong> {card.prompt}
-          </p>
-          <p className="delete-card-answer">
-            <strong>Answer:</strong> {card.answer}
-          </p>
-          {card.context && (
-            <p className="delete-card-context">
-              <strong>Context:</strong> {card.context}
+        {isSingle ? (
+          <div className="delete-card-preview-card">
+            <p className="delete-card-prompt">
+              <strong>Prompt:</strong> {singleCard.prompt}
             </p>
-          )}
-        </div>
+            <p className="delete-card-answer">
+              <strong>Answer:</strong> {singleCard.answer}
+            </p>
+            {singleCard.context && (
+              <p className="delete-card-context">
+                <strong>Context:</strong> {singleCard.context}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="delete-cards-preview-list">
+            <p className="delete-cards-count-label">
+              Selected cards to delete ({cards.length}):
+            </p>
+            <ul className="delete-cards-summary-list">
+              {cards.slice(0, 5).map((c) => (
+                <li key={c.id}>
+                  <strong>{c.prompt}</strong> → {c.answer}
+                </li>
+              ))}
+              {cards.length > 5 && (
+                <li className="delete-cards-more">
+                  …and {cards.length - 5} more cards
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
 
         <div className="delete-modal-actions">
           <button type="button" className="secondary-button" onClick={onClose}>
@@ -806,9 +835,9 @@ function DeleteCardModal({
           <button
             type="button"
             className="danger-button"
-            onClick={() => onConfirm(card)}
+            onClick={() => onConfirm(cards)}
           >
-            Delete card
+            {isSingle ? 'Delete card' : `Delete ${cards.length} cards`}
           </button>
         </div>
       </div>
@@ -991,12 +1020,14 @@ function DeckBackupModalInner({
         )}
 
         <div className="backup-sections">
-          <div className="backup-subcard export-subcard">
-            <h4>Export deck</h4>
-            <p>
-              Save all cards, schedules, notes, and study history to a JSON
-              file.
-            </p>
+          <div className="backup-section export-section">
+            <div className="backup-section-header">
+              <h3>Export deck</h3>
+              <p>
+                Save all cards, schedules, notes, and study history to a JSON
+                file.
+              </p>
+            </div>
             <button
               type="button"
               className="primary-button export-button"
@@ -1006,12 +1037,14 @@ function DeckBackupModalInner({
             </button>
           </div>
 
-          <div className="backup-subcard import-subcard">
-            <h4>Import Anki deck or backup</h4>
-            <p>
-              Load cards from an Anki package (.apkg), text export (.txt, .tsv,
-              .csv), or Jolito backup (.json).
-            </p>
+          <div className="backup-section import-section">
+            <div className="backup-section-header">
+              <h3>Import Anki deck or backup</h3>
+              <p>
+                Load cards from an Anki package (.apkg), text export (.txt,
+                .tsv, .csv), or Jolito backup (.json).
+              </p>
+            </div>
 
             <div
               className="import-mode-selector"
@@ -1546,27 +1579,12 @@ export function App({
 
   const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
   const [editingCard, setEditingCard] = useState<StudyCard | null>(null)
-  const [deletingCard, setDeletingCard] = useState<StudyCard | null>(null)
+  const [deletingCards, setDeletingCards] = useState<StudyCard[] | null>(null)
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(
+    () => new Set(),
+  )
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
   const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
-  const [deckDensity, setDeckDensity] = useState<'compact' | 'comfortable'>(
-    () => {
-      if (typeof window !== 'undefined') {
-        const saved = window.localStorage.getItem('jolito-deck-density-v1')
-        if (saved === 'comfortable' || saved === 'compact') return saved
-      }
-      return 'compact'
-    },
-  )
-
-  const handleSetDeckDensity = (density: 'compact' | 'comfortable') => {
-    setDeckDensity(density)
-    try {
-      window.localStorage.setItem('jolito-deck-density-v1', density)
-    } catch {
-      // Ignore storage errors
-    }
-  }
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
@@ -1672,17 +1690,28 @@ export function App({
   )
 
   const handleConfirmDelete = useCallback(
-    (card: StudyCard) => {
-      const newCards = deleteStudyCard(cardsRef.current, card.id)
-      onUpdateCards(newCards)
+    (cardsToDelete: StudyCard[]) => {
+      const idsToDelete = new Set(cardsToDelete.map((c) => c.id))
+      let updatedCards = cardsRef.current
+      for (const id of idsToDelete) {
+        updatedCards = deleteStudyCard(updatedCards, id)
+      }
+      onUpdateCards(updatedCards)
       setQueue((prevQueue) => {
-        const nextQueue = prevQueue.filter((id) => id !== card.id)
+        const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
         if (viewRef.current === 'review' && nextQueue.length === 0) {
           navigateTo('complete')
         }
         return nextQueue
       })
-      setDeletingCard(null)
+      setSelectedCardIds((prev) => {
+        const next = new Set(prev)
+        for (const id of idsToDelete) {
+          next.delete(id)
+        }
+        return next
+      })
+      setDeletingCards(null)
     },
     [navigateTo, onUpdateCards],
   )
@@ -1952,7 +1981,7 @@ export function App({
         view !== 'review' ||
         !currentCard ||
         editingCard !== null ||
-        deletingCard !== null ||
+        deletingCards !== null ||
         isSyncOpen
       )
         return
@@ -2001,7 +2030,7 @@ export function App({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [
     currentCard,
-    deletingCard,
+    deletingCards,
     editingCard,
     grade,
     isSyncOpen,
@@ -2333,10 +2362,10 @@ export function App({
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
         />
-        <DeleteCardModal
-          isOpen={deletingCard !== null}
-          card={deletingCard}
-          onClose={() => setDeletingCard(null)}
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
       </>
@@ -2672,16 +2701,58 @@ export function App({
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
         />
-        <DeleteCardModal
-          isOpen={deletingCard !== null}
-          card={deletingCard}
-          onClose={() => setDeletingCard(null)}
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
       </>
     )
 
   if (view === 'deck') {
+    const isAllSelected =
+      filteredDeckCards.length > 0 &&
+      filteredDeckCards.every((c) => selectedCardIds.has(c.id))
+    const isSomeSelected = filteredDeckCards.some((c) =>
+      selectedCardIds.has(c.id),
+    )
+
+    const handleRowKeyDown = (
+      e: ReactKeyboardEvent<HTMLElement>,
+      card: StudyCard,
+    ) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault()
+        e.stopPropagation()
+        setSelectedCardIds((prev) => {
+          const next = new Set(prev)
+          if (next.has(card.id)) next.delete(card.id)
+          else next.add(card.id)
+          return next
+        })
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        setEditingCard(card)
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const nextRow = e.currentTarget.nextElementSibling as HTMLElement | null
+        if (nextRow && typeof nextRow.focus === 'function') nextRow.focus()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const prevRow = e.currentTarget
+          .previousElementSibling as HTMLElement | null
+        if (prevRow && typeof prevRow.focus === 'function') prevRow.focus()
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        if (selectedCardIds.has(card.id) && selectedCardIds.size > 1) {
+          setDeletingCards(cards.filter((c) => selectedCardIds.has(c.id)))
+        } else {
+          setDeletingCards([card])
+        }
+      }
+    }
+
     return (
       <>
         <main className="app-shell deck-page">
@@ -2819,30 +2890,31 @@ export function App({
                   </button>
                 </div>
 
-                <div
-                  className="deck-density-selector"
-                  role="radiogroup"
-                  aria-label="View density"
-                >
-                  <button
-                    type="button"
-                    className={`deck-density-btn ${deckDensity === 'compact' ? 'is-active' : ''}`}
-                    onClick={() => handleSetDeckDensity('compact')}
-                    aria-pressed={deckDensity === 'compact'}
-                    title="Compact table view (dense list)"
+                {selectedCardIds.size > 0 && (
+                  <div
+                    className="deck-batch-actions"
+                    aria-label="Batch card actions"
                   >
-                    <span aria-hidden="true">☰</span> Compact
-                  </button>
-                  <button
-                    type="button"
-                    className={`deck-density-btn ${deckDensity === 'comfortable' ? 'is-active' : ''}`}
-                    onClick={() => handleSetDeckDensity('comfortable')}
-                    aria-pressed={deckDensity === 'comfortable'}
-                    title="Card tiles view (spacious cards)"
-                  >
-                    <span aria-hidden="true">🎴</span> Cards
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      className="danger-button batch-delete-btn"
+                      onClick={() =>
+                        setDeletingCards(
+                          cards.filter((c) => selectedCardIds.has(c.id)),
+                        )
+                      }
+                    >
+                      🗑️ Delete selected ({selectedCardIds.size})
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button deck-clear-selection-btn"
+                      onClick={() => setSelectedCardIds(new Set())}
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2888,156 +2960,119 @@ export function App({
               </div>
             ) : (
               <div
-                className={`deck-cards-list is-${deckDensity}`}
-                role="list"
+                className="deck-cards-list is-compact"
+                role="table"
                 aria-label="Deck cards"
               >
-                {deckDensity === 'compact' && (
-                  <div className="deck-list-table-header" aria-hidden="true">
-                    <span className="col-dir">Direction</span>
-                    <span className="col-phrase col-prompt">Prompt</span>
-                    <span className="col-phrase col-answer">Answer</span>
-                    <span className="col-status">Status</span>
-                    <span className="col-actions">Actions</span>
+                <div className="deck-list-table-header" role="row">
+                  <div className="col-select" role="columnheader">
+                    <input
+                      type="checkbox"
+                      className="deck-select-checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el)
+                          el.indeterminate = isSomeSelected && !isAllSelected
+                      }}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCardIds(
+                            new Set(filteredDeckCards.map((c) => c.id)),
+                          )
+                        } else {
+                          setSelectedCardIds(new Set())
+                        }
+                      }}
+                      aria-label={
+                        isAllSelected
+                          ? 'Deselect all cards'
+                          : 'Select all cards'
+                      }
+                    />
                   </div>
-                )}
+                  <div className="col-dir" role="columnheader">
+                    Direction
+                  </div>
+                  <div className="col-phrase col-prompt" role="columnheader">
+                    Prompt
+                  </div>
+                  <div className="col-phrase col-answer" role="columnheader">
+                    Answer
+                  </div>
+                  <div className="col-status" role="columnheader">
+                    Status
+                  </div>
+                </div>
+
                 {filteredDeckCards.map((card) => {
                   const scheduleBadge = getCardScheduleBadge(
                     card,
                     referenceTime,
                   )
                   const isEsToEn = card.direction === 'es-en'
-                  const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
-                  const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
-
-                  if (deckDensity === 'compact') {
-                    return (
-                      <article
-                        key={card.id}
-                        className="deck-card-row"
-                        role="listitem"
-                      >
-                        <div className="col-dir">
-                          <span
-                            className="deck-direction-badge"
-                            title={
-                              isEsToEn
-                                ? 'Mexican Spanish Prompt → English Answer'
-                                : 'English Prompt → Mexican Spanish Answer'
-                            }
-                          >
-                            {isEsToEn ? <MexicoFlag /> : <UsFlag />}
-                            <span>{isEsToEn ? 'ES → EN' : 'EN → ES'}</span>
-                          </span>
-                        </div>
-                        <div className="col-phrase col-prompt">
-                          <span className="deck-phrase-text">
-                            {card.prompt}
-                          </span>
-                        </div>
-                        <div className="col-phrase col-answer">
-                          <span className="deck-answer-text">
-                            {card.answer}
-                          </span>
-                        </div>
-
-                        <div className="col-status">
-                          <span
-                            className={`deck-stat-chip is-${scheduleBadge.type} is-mini`}
-                          >
-                            {scheduleBadge.label}
-                          </span>
-                        </div>
-                        <div className="col-actions deck-card-item-actions">
-                          <button
-                            type="button"
-                            className="card-action-btn edit-btn"
-                            aria-label={`Edit card: ${card.prompt}`}
-                            title={`Edit card: ${card.prompt}`}
-                            onClick={() => setEditingCard(card)}
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="card-action-btn delete-btn"
-                            aria-label={`Delete card: ${card.prompt}`}
-                            title={`Delete card: ${card.prompt}`}
-                            onClick={() => setDeletingCard(card)}
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </article>
-                    )
-                  }
 
                   return (
-                    <article
+                    <div
                       key={card.id}
-                      className="deck-card-item"
-                      role="listitem"
+                      className={`deck-card-row ${selectedCardIds.has(card.id) ? 'is-selected' : ''}`}
+                      role="row"
+                      tabIndex={0}
+                      aria-selected={selectedCardIds.has(card.id)}
+                      aria-label={`Card: ${card.prompt}, answer: ${card.answer}. Click or press Enter to edit, Space to select.`}
+                      title="Click or press Enter to edit card"
+                      onClick={() => setEditingCard(card)}
+                      onKeyDown={(e) => handleRowKeyDown(e, card)}
                     >
-                      <header className="deck-card-item-header">
-                        <div className="deck-card-item-meta">
-                          <span className="sample-badge">
-                            {isEsToEn ? <MexicoFlag /> : <UsFlag />}
-                            {isEsToEn ? 'ES → EN' : 'EN → ES'}
-                          </span>
-                          <span
-                            className={`deck-stat-chip is-${scheduleBadge.type}`}
-                          >
-                            {scheduleBadge.label}
-                          </span>
-                        </div>
-                        <div className="deck-card-item-actions">
-                          <button
-                            type="button"
-                            className="card-action-btn edit-btn"
-                            aria-label={`Edit card: ${card.prompt}`}
-                            onClick={() => setEditingCard(card)}
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="card-action-btn delete-btn"
-                            aria-label={`Delete card: ${card.prompt}`}
-                            onClick={() => setDeletingCard(card)}
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </header>
-
-                      <div className="deck-card-item-body">
-                        <div className="deck-phrase-col">
+                      <div
+                        className="col-select"
+                        role="cell"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          className="deck-select-checkbox"
+                          checked={selectedCardIds.has(card.id)}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            setSelectedCardIds((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(card.id)) next.delete(card.id)
+                              else next.add(card.id)
+                              return next
+                            })
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select card ${card.prompt}`}
+                        />
+                      </div>
+                      <div className="col-dir" role="cell">
+                        <span
+                          className="deck-direction-badge"
+                          title={
+                            isEsToEn
+                              ? 'Mexican Spanish Prompt → English Answer'
+                              : 'English Prompt → Mexican Spanish Answer'
+                          }
+                        >
                           {isEsToEn ? <MexicoFlag /> : <UsFlag />}
-                          <p className="deck-phrase-text">{card.prompt}</p>
-                          <AudioButton
-                            label={`Play ${card.prompt}`}
-                            onClick={() => playAudio(card.prompt, promptLocale)}
-                          />
-                        </div>
-                        <div className="deck-arrow-col" aria-hidden="true">
-                          →
-                        </div>
-                        <div className="deck-phrase-col">
-                          {isEsToEn ? <UsFlag /> : <MexicoFlag />}
-                          <p className="deck-phrase-text">{card.answer}</p>
-                          <AudioButton
-                            label={`Play ${card.answer}`}
-                            onClick={() => playAudio(card.answer, answerLocale)}
-                          />
-                        </div>
+                          <span>{isEsToEn ? 'ES → EN' : 'EN → ES'}</span>
+                        </span>
+                      </div>
+                      <div className="col-phrase col-prompt" role="cell">
+                        <span className="deck-phrase-text">{card.prompt}</span>
+                      </div>
+                      <div className="col-phrase col-answer" role="cell">
+                        <span className="deck-answer-text">{card.answer}</span>
                       </div>
 
-                      {card.context && (
-                        <div className="deck-card-context-row">
-                          <span>Note:</span> {card.context}
-                        </div>
-                      )}
-                    </article>
+                      <div className="col-status" role="cell">
+                        <span
+                          className={`deck-stat-chip is-${scheduleBadge.type} is-mini`}
+                        >
+                          {scheduleBadge.label}
+                        </span>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
@@ -3069,10 +3104,10 @@ export function App({
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
         />
-        <DeleteCardModal
-          isOpen={deletingCard !== null}
-          card={deletingCard}
-          onClose={() => setDeletingCard(null)}
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
       </>
@@ -3151,10 +3186,10 @@ export function App({
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
         />
-        <DeleteCardModal
-          isOpen={deletingCard !== null}
-          card={deletingCard}
-          onClose={() => setDeletingCard(null)}
+        <DeleteCardsModal
+          isOpen={deletingCards !== null}
+          cards={deletingCards}
+          onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
       </>
@@ -3358,7 +3393,7 @@ export function App({
               type="button"
               className="study-quick-btn delete-btn"
               aria-label={`Delete card: ${currentCard.prompt}`}
-              onClick={() => setDeletingCard(currentCard)}
+              onClick={() => setDeletingCards([currentCard])}
             >
               🗑️ Delete card
             </button>
@@ -3385,10 +3420,10 @@ export function App({
         onSave={handleSaveEdit}
         onPlayAudio={playAudio}
       />
-      <DeleteCardModal
-        isOpen={deletingCard !== null}
-        card={deletingCard}
-        onClose={() => setDeletingCard(null)}
+      <DeleteCardsModal
+        isOpen={deletingCards !== null}
+        cards={deletingCards}
+        onClose={() => setDeletingCards(null)}
         onConfirm={handleConfirmDelete}
       />
     </>

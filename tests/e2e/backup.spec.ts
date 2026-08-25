@@ -21,6 +21,7 @@ test('opens deck manager without automatically detectable WCAG violations and ex
   await expect(
     page.getByRole('heading', { name: /deck import & offline backup/i }),
   ).toBeVisible()
+  await page.screenshot({ path: 'test-results/deck-backup-vertical-modal.png' })
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in deck manager
   await page.waitForTimeout(200)
@@ -250,27 +251,24 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
 
   // Verify list of cards
-  const cardsList = page.getByRole('list', { name: /deck cards/i })
-  await expect(cardsList.getByRole('listitem')).toHaveCount(4)
+  const cardsList = page.getByRole('table', { name: /deck cards/i })
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
 
   // Search filter
   await page.getByLabel(/search cards in deck/i).fill('aguacate')
-  await expect(cardsList.getByRole('listitem')).toHaveCount(2)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(2)
   await page.getByLabel(/search cards in deck/i).fill('')
-  await expect(cardsList.getByRole('listitem')).toHaveCount(4)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
 
-  // Verify density switcher between Compact and Cards (Comfortable)
-  await page.getByRole('button', { name: /cards/i }).click()
-  await expect(cardsList).toHaveClass(/is-comfortable/)
-  await page.getByRole('button', { name: /compact/i }).click()
-  await expect(cardsList).toHaveClass(/is-compact/)
+  await page.screenshot({ path: 'test-results/deck-table-view.png' })
 
-  // Edit card
-  await page.getByRole('button', { name: /edit card: aguacate/i }).click()
+  // Click row to edit card
+  await cardsList.getByText('aguacate').first().click()
 
   await expect(
     page.getByRole('heading', { name: /edit flashcard/i }),
   ).toBeVisible()
+  await page.screenshot({ path: 'test-results/deck-edit-card-modal.png' })
 
   // Verify accessibility of edit modal
   const editAxe = await new AxeBuilder({ page })
@@ -287,18 +285,26 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   ).not.toBeVisible()
   await expect(page.getByText('el aguacate')).toBeVisible()
 
-  // Delete card
-  await page.getByRole('button', { name: /delete card: el aguacate/i }).click()
+  // Select card via checkbox to delete
+  await page.getByRole('checkbox', { name: /select card el aguacate/i }).click()
+  await page.screenshot({ path: 'test-results/deck-selected-row.png' })
+
+  const deleteBtn = page.getByRole('button', { name: /delete selected \(1\)/i })
+  await expect(deleteBtn).toBeVisible()
+  await deleteBtn.click()
+
   await expect(
     page.getByRole('heading', { name: /delete flashcard\?/i }),
   ).toBeVisible()
   await page.locator('.delete-card-modal').waitFor({ state: 'visible' })
   await page.waitForTimeout(200)
+  await page.screenshot({ path: 'test-results/deck-delete-modal.png' })
 
   // Verify accessibility of delete modal
   const deleteAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
+
   expect(deleteAxe.violations).toEqual([])
 
   // Cancel deletion
@@ -306,17 +312,15 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await expect(
     page.getByRole('heading', { name: /delete flashcard\?/i }),
   ).not.toBeVisible()
-  await expect(cardsList.getByRole('listitem')).toHaveCount(4)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
 
   // Confirm deletion
-  await page.getByRole('button', { name: /delete card: el aguacate/i }).click()
+  await deleteBtn.click()
   await page.getByRole('button', { name: /^delete card$/i }).click()
 
   await expect(
     page.getByRole('heading', { name: /delete flashcard\?/i }),
   ).not.toBeVisible()
-  await expect(cardsList.getByRole('listitem')).toHaveCount(3)
-  await expect(
-    page.getByRole('button', { name: /delete card: el aguacate/i }),
-  ).not.toBeVisible()
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(3)
+  await expect(page.getByText('el aguacate')).not.toBeVisible()
 })
