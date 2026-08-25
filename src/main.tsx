@@ -4,6 +4,7 @@ import './styles.css'
 import { App } from './jolito'
 import { createBrowserServices } from './infrastructure/browser/services'
 import celebrateUrl from '../assets/jolito-celebrate.png'
+import logoUrl from '../assets/jolito-welcome.png'
 
 const services = createBrowserServices()
 
@@ -15,8 +16,10 @@ createRoot(document.getElementById('root')!).render(
 
 async function prepareOfflineShell() {
   if (typeof Image !== 'undefined') {
-    const img = new Image()
-    img.src = celebrateUrl
+    const imgCelebrate = new Image()
+    imgCelebrate.src = celebrateUrl
+    const imgLogo = new Image()
+    imgLogo.src = logoUrl
   }
 
   const prewarms: Array<Promise<unknown>> = []
@@ -36,6 +39,7 @@ async function prepareOfflineShell() {
     new Set([
       window.location.href,
       celebrateUrl,
+      logoUrl,
       ...performance
         .getEntriesByType('resource')
         .map((resource) => resource.name),

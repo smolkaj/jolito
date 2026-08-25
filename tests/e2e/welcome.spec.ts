@@ -10,11 +10,13 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
   await expect(page.getByText('Jolito')).toBeVisible()
-  const brandImg = page.locator('.brand img')
-  await expect(brandImg).toBeVisible()
+  const brandMark = page.locator('.brand .brand-mark')
+  await expect(brandMark).toBeVisible()
+  const mascotImg = page.locator('.welcome-mascot-img')
+  await expect(mascotImg).toBeVisible()
   await expect
     .poll(async () =>
-      brandImg.evaluate(
+      mascotImg.evaluate(
         (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
       ),
     )
@@ -36,18 +38,18 @@ test('brand mascot logo preserves opaque body fill and transparent negative spac
   page,
 }) => {
   await page.goto('/')
-  const brandImg = page.locator('.brand img')
-  await expect(brandImg).toBeVisible()
+  const mascotImg = page.locator('.welcome-mascot-img')
+  await expect(mascotImg).toBeVisible()
 
   await expect
     .poll(async () =>
-      brandImg.evaluate(
+      mascotImg.evaluate(
         (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
       ),
     )
     .toBe(true)
 
-  const pixelData = await brandImg.evaluate((img: HTMLImageElement) => {
+  const pixelData = await mascotImg.evaluate((img: HTMLImageElement) => {
     const canvas = document.createElement('canvas')
     canvas.width = img.naturalWidth
     canvas.height = img.naturalHeight
@@ -83,6 +85,30 @@ test('brand mascot logo preserves opaque body fill and transparent negative spac
   expect(pixelData!.hole[3]).toBe(0)
   // Background is transparent
   expect(pixelData!.bg[3]).toBe(0)
+})
+
+test('interactive mascot companion cycles Mexican Spanish greetings on click', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const mascotBtn = page.getByRole('button', {
+    name: /jolito:/i,
+  })
+  await expect(mascotBtn).toBeVisible()
+  await expect(page.getByText('¡Qué padre verte!')).toBeVisible()
+
+  // Click mascot companion to trigger micro-interaction and cycle phrase
+  await mascotBtn.click()
+  await expect(page.getByText('¡A darle con todo!')).toBeVisible()
+
+  await mascotBtn.click()
+  await expect(page.getByText('¡Órale, a practicar!')).toBeVisible()
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
 })
 
 test('creates and reviews both directions with the keyboard', async ({
@@ -224,7 +250,7 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   await page.getByRole('button', { name: /^create a card$/i }).click()
 
   // 1. Test Autocomplete
-  const spanishInput = page.getByLabel(/spanish/i)
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   await spanishInput.fill('ahor')
 
   await expect(

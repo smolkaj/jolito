@@ -972,16 +972,16 @@ describe('Jolito', () => {
     expect(badge).toHaveTextContent(/12\s*new/)
   })
 
-  it('renders the Jolito brand mascot logo in the header', () => {
+  it('renders the Jolito brand vector mark in the header', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
     const brandElement = screen.getByText('Jolito', { selector: 'span' })
     expect(brandElement).toBeInTheDocument()
 
-    const brandLogo = brandElement.parentElement?.querySelector('img')
+    const brandLogo =
+      brandElement.parentElement?.querySelector('svg.brand-mark')
     expect(brandLogo).toBeInTheDocument()
-    expect(brandLogo).toHaveAttribute('src', expect.stringContaining('png'))
     expect(brandLogo).toHaveAttribute('aria-hidden', 'true')
   })
 
@@ -1081,5 +1081,42 @@ describe('Jolito', () => {
     // 3. Navigate to review and practice all due cards
     await user.click(screen.getByRole('button', { name: /review 4/i }))
     expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
+  })
+
+  it('renders vector brandmark in navigation and supports interactive mascot companion greetings', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // 1. Verify Brand component renders the vector JolitoMark
+    const brandElement = screen.getByText('Jolito').closest('.brand')
+    expect(brandElement).toBeInTheDocument()
+    const brandMark = brandElement?.querySelector('.brand-mark')
+    expect(brandMark).toBeInTheDocument()
+    expect(brandMark?.tagName.toLowerCase()).toBe('svg')
+    expect(brandMark?.querySelector('.jolito-gills')).toBeInTheDocument()
+    expect(brandMark?.querySelector('.jolito-core')).toBeInTheDocument()
+
+    // 2. Verify mascot companion on the welcome start screen
+    const mascotButton = screen.getByRole('button', {
+      name: /jolito: ¡qué padre verte!/i,
+    })
+    expect(mascotButton).toBeInTheDocument()
+    expect(screen.getByText('¡Qué padre verte!')).toBeInTheDocument()
+
+    // 3. Click mascot to cycle phrases and trigger Mexican Spanish speech
+    await user.click(mascotButton)
+    expect(screen.getByText('¡A darle con todo!')).toBeInTheDocument()
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: '¡A darle con todo!',
+      locale: 'es-MX',
+    })
+
+    await user.click(mascotButton)
+    expect(screen.getByText('¡Órale, a practicar!')).toBeInTheDocument()
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: '¡Órale, a practicar!',
+      locale: 'es-MX',
+    })
   })
 })

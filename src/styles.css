@@ -168,17 +168,18 @@ summary:focus-visible {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 18px;
-  padding: 4px 16px;
-  margin-left: -16px;
-  border: 2.5px solid transparent;
-  border-radius: 24px;
+  gap: 12px;
+  padding: 4px 14px;
+  margin-left: -14px;
+  border: 2px solid transparent;
+  border-radius: 20px;
   color: var(--ink);
   background: transparent;
   font-family: var(--font-serif);
-  font-size: 40px;
+  font-size: 32px;
   font-weight: var(--brand-weight, 800);
-  letter-spacing: -1.5px;
+  letter-spacing: -1.2px;
+  line-height: 1;
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -195,35 +196,185 @@ summary:focus-visible {
   transform: translateY(1px);
 }
 
-.brand img {
-  width: 118px;
-  height: 118px;
-  object-fit: contain;
-  animation: jolito-sway 4.5s ease-in-out infinite alternate;
+/* Jolito Brandmark SVG */
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  overflow: visible;
+  transition: transform 260ms var(--ease-spring);
+}
+
+.jolito-gill {
+  fill: var(--rosa);
+  transform-box: view-box;
   transition: transform 320ms var(--ease-spring);
 }
 
-.brand:hover img {
-  animation-play-state: paused;
-  transform: rotate(-14deg) scale(1.18);
+.gill-tl {
+  transform-origin: 8.5px 8.75px;
+  transform: rotate(-22deg);
 }
 
-@keyframes jolito-sway {
+.gill-ml {
+  transform-origin: 7px 16px;
+  transform: rotate(0deg);
+}
+
+.gill-bl {
+  transform-origin: 8.5px 23.25px;
+  transform: rotate(22deg);
+}
+
+.gill-tr {
+  transform-origin: 23.5px 8.75px;
+  transform: rotate(22deg);
+}
+
+.gill-mr {
+  transform-origin: 25px 16px;
+  transform: rotate(0deg);
+}
+
+.gill-br {
+  transform-origin: 23.5px 23.25px;
+  transform: rotate(-22deg);
+}
+
+.jolito-core {
+  transform-box: view-box;
+  transform-origin: 16px 16px;
+  transition: transform 260ms var(--ease-spring);
+}
+
+.jolito-core-outer {
+  fill: var(--ink);
+}
+
+.jolito-core-mid {
+  fill: var(--cempasuchil);
+  transition: fill 200ms ease;
+}
+
+.jolito-core-inner {
+  fill: #ffffff;
+}
+
+/* Micro-interaction on Brand hover & keyboard focus */
+.brand:hover .brand-mark,
+.brand:focus-visible .brand-mark {
+  transform: scale(1.08);
+}
+
+.brand:hover .gill-tl,
+.brand:focus-visible .gill-tl {
+  animation: gill-flutter-tl 0.8s ease-in-out infinite alternate;
+}
+
+.brand:hover .gill-ml,
+.brand:focus-visible .gill-ml {
+  animation: gill-flutter-ml 0.8s ease-in-out infinite alternate 0.1s;
+}
+
+.brand:hover .gill-bl,
+.brand:focus-visible .gill-bl {
+  animation: gill-flutter-bl 0.8s ease-in-out infinite alternate 0.2s;
+}
+
+.brand:hover .gill-tr,
+.brand:focus-visible .gill-tr {
+  animation: gill-flutter-tr 0.8s ease-in-out infinite alternate 0.05s;
+}
+
+.brand:hover .gill-mr,
+.brand:focus-visible .gill-mr {
+  animation: gill-flutter-mr 0.8s ease-in-out infinite alternate 0.15s;
+}
+
+.brand:hover .gill-br,
+.brand:focus-visible .gill-br {
+  animation: gill-flutter-br 0.8s ease-in-out infinite alternate 0.25s;
+}
+
+.brand:hover .jolito-core,
+.brand:focus-visible .jolito-core {
+  animation: core-flutter 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes gill-flutter-tl {
   0% {
-    transform: rotate(0deg) translateY(0px);
-  }
-  50% {
-    transform: rotate(2.5deg) translateY(-4px);
+    transform: rotate(-22deg);
   }
   100% {
-    transform: rotate(-2.5deg) translateY(3px);
+    transform: rotate(-34deg) scaleX(1.1);
+  }
+}
+
+@keyframes gill-flutter-ml {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-12deg) scaleX(1.14);
+  }
+}
+
+@keyframes gill-flutter-bl {
+  0% {
+    transform: rotate(22deg);
+  }
+  100% {
+    transform: rotate(10deg) scaleX(1.08);
+  }
+}
+
+@keyframes gill-flutter-tr {
+  0% {
+    transform: rotate(22deg);
+  }
+  100% {
+    transform: rotate(34deg) scaleX(1.1);
+  }
+}
+
+@keyframes gill-flutter-mr {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(12deg) scaleX(1.14);
+  }
+}
+
+@keyframes gill-flutter-br {
+  0% {
+    transform: rotate(-22deg);
+  }
+  100% {
+    transform: rotate(-10deg) scaleX(1.08);
+  }
+}
+
+@keyframes core-flutter {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.12);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand img {
-    animation: none;
-    transition: none;
+  .brand:hover .brand-mark,
+  .brand:focus-visible .brand-mark,
+  .brand:hover .jolito-gill,
+  .brand:focus-visible .jolito-gill,
+  .brand:hover .jolito-core,
+  .brand:focus-visible .jolito-core {
+    animation: none !important;
+    transform: none !important;
   }
 }
 
@@ -458,6 +609,190 @@ summary:focus-visible {
 .hero-copy {
   position: relative;
   z-index: 2;
+}
+
+/* Hero Mascot Companion (Start Screen) */
+.hero-mascot-companion {
+  margin-bottom: 20px;
+}
+
+.hero-mascot-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 16px 6px 6px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink);
+  text-align: left;
+  transition:
+    transform 220ms var(--ease-spring),
+    box-shadow 220ms var(--ease-spring),
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.hero-mascot-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--rosa);
+  background: var(--rosa-soft);
+}
+
+.hero-mascot-btn:focus-visible {
+  outline: 2.5px solid var(--rosa);
+  outline-offset: 2px;
+}
+
+.hero-mascot-btn:active,
+.hero-mascot-btn.is-wiggling {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 1px 1px 0 rgba(18, 24, 21, 0.18);
+}
+
+.hero-mascot-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--paper-subtle);
+  border: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.welcome-mascot-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  animation: mascot-idle 4s ease-in-out infinite alternate;
+  transition: transform 260ms var(--ease-spring);
+}
+
+.hero-mascot-btn:hover .welcome-mascot-img {
+  animation-play-state: paused;
+  transform: rotate(-10deg) scale(1.15);
+}
+
+.hero-mascot-btn.is-wiggling .welcome-mascot-img {
+  animation: mascot-bounce 0.55s var(--ease-spring);
+}
+
+.hero-mascot-sparkle {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 12px;
+  pointer-events: none;
+  animation: sparkle-float 2.5s ease-in-out infinite alternate;
+}
+
+.hero-mascot-speech {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-mascot-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--rosa-dark);
+}
+
+.hero-mascot-flag {
+  border-radius: 2px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+.hero-mascot-phrase {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+
+.hero-mascot-audio-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--paper-subtle);
+  color: var(--ink-soft);
+  margin-left: 2px;
+  flex-shrink: 0;
+  transition:
+    background 200ms ease,
+    color 200ms ease,
+    transform 200ms var(--ease-spring);
+}
+
+.hero-mascot-btn:hover .hero-mascot-audio-hint {
+  background: var(--rosa);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+@keyframes mascot-idle {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(2deg);
+  }
+  100% {
+    transform: translateY(1px) rotate(-2deg);
+  }
+}
+
+@keyframes mascot-bounce {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  30% {
+    transform: scale(1.25) rotate(-14deg) translateY(-4px);
+  }
+  60% {
+    transform: scale(0.95) rotate(8deg) translateY(1px);
+  }
+  80% {
+    transform: scale(1.08) rotate(-4deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes sparkle-float {
+  0% {
+    transform: scale(0.9) rotate(0deg);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.15) rotate(15deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-mascot-img,
+  .hero-mascot-sparkle,
+  .hero-mascot-btn.is-wiggling .welcome-mascot-img {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .hero-copy h1,
@@ -2038,15 +2373,15 @@ kbd {
   }
 
   .brand {
-    font-size: 30px;
-    gap: 12px;
-    padding: 4px 10px;
+    font-size: 26px;
+    gap: 10px;
+    padding: 4px 8px;
     margin-left: -8px;
   }
 
-  .brand img {
-    width: 76px;
-    height: 76px;
+  .brand-mark {
+    width: 28px;
+    height: 28px;
   }
 
   .welcome-page {
