@@ -1404,6 +1404,7 @@ describe('Jolito', () => {
     await user.type(promptInput, 'el aguacate')
     await user.clear(answerInput)
     await user.type(answerInput, 'the avocado')
+    await user.clear(contextInput)
     await user.type(contextInput, 'Great with lime')
 
     await user.click(screen.getByRole('button', { name: /save changes/i }))
@@ -1414,12 +1415,18 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('el aguacate')).toBeInTheDocument()
     expect(screen.getByText('the avocado')).toBeInTheDocument()
+
+    // Switch to Cards density view to see the detailed context note
+    await user.click(screen.getByRole('button', { name: /cards/i }))
     expect(screen.getByText(/great with lime/i)).toBeInTheDocument()
 
     // Verify storage update
     expect(
       services.memoryCards.saved?.some(
-        (c) => c.prompt === 'el aguacate' && c.answer === 'the avocado',
+        (c) =>
+          c.prompt === 'el aguacate' &&
+          c.answer === 'the avocado' &&
+          c.context === 'Great with lime',
       ),
     ).toBe(true)
   })

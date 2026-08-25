@@ -3129,12 +3129,11 @@ kbd {
 
 .deck-list-table-header {
   display: grid;
-  grid-template-columns: 44px minmax(130px, 1.2fr) minmax(130px, 1.2fr) minmax(
-      140px,
-      1.5fr
-    ) 95px 145px;
+  grid-template-columns:
+    minmax(105px, 120px) minmax(160px, 1.2fr) minmax(160px, 1.2fr)
+    95px 145px;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   padding: 8px 14px;
   font-size: 11px;
   font-weight: 800;
@@ -3146,12 +3145,11 @@ kbd {
 
 .deck-card-row {
   display: grid;
-  grid-template-columns: 44px minmax(130px, 1.2fr) minmax(130px, 1.2fr) minmax(
-      140px,
-      1.5fr
-    ) 95px 145px;
+  grid-template-columns:
+    minmax(105px, 120px) minmax(160px, 1.2fr) minmax(160px, 1.2fr)
+    95px 145px;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   padding: 6px 14px;
   min-height: 44px;
   border: 1.5px solid var(--line-subtle);
@@ -3172,12 +3170,28 @@ kbd {
 .deck-card-row .col-dir {
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
-.deck-mini-flag {
+.deck-direction-badge {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--paper-subtle);
+  border: 1.5px solid var(--line-subtle);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.deck-direction-badge svg {
+  flex-shrink: 0;
 }
 
 .deck-card-row .col-phrase {
@@ -3203,24 +3217,6 @@ kbd {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.deck-card-row .col-context {
-  min-width: 0;
-}
-
-.deck-context-snippet {
-  font-size: 12px;
-  color: var(--ink-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-.deck-context-empty {
-  font-size: 12px;
-  color: var(--line-subtle);
 }
 
 .deck-card-row .col-status {
@@ -3251,13 +3247,9 @@ kbd {
   }
 
   .deck-card-row {
-    grid-template-columns: 36px 1fr 1fr auto;
+    grid-template-columns: minmax(95px, 110px) 1fr 1fr auto;
     gap: 8px;
     padding: 8px 10px;
-  }
-
-  .deck-card-row .col-context {
-    display: none;
   }
 
   .deck-card-row .col-status {
@@ -3265,9 +3257,9 @@ kbd {
   }
 }
 
-@media (max-width: 540px) {
+@media (max-width: 580px) {
   .deck-card-row {
-    grid-template-columns: 32px 1fr auto;
+    grid-template-columns: minmax(85px, 95px) 1fr auto;
     gap: 6px;
   }
 

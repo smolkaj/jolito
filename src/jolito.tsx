@@ -2850,10 +2850,9 @@ export function App({
               >
                 {deckDensity === 'compact' && (
                   <div className="deck-list-table-header" aria-hidden="true">
-                    <span className="col-dir">Dir</span>
-                    <span className="col-phrase">Prompt</span>
-                    <span className="col-phrase">Answer</span>
-                    <span className="col-context">Context / Notes</span>
+                    <span className="col-dir">Direction</span>
+                    <span className="col-phrase col-prompt">Prompt</span>
+                    <span className="col-phrase col-answer">Answer</span>
                     <span className="col-status">Status</span>
                     <span className="col-actions">Actions</span>
                   </div>
@@ -2876,14 +2875,15 @@ export function App({
                       >
                         <div className="col-dir">
                           <span
-                            className="deck-mini-flag"
+                            className="deck-direction-badge"
                             title={
                               isEsToEn
-                                ? 'Mexican Spanish → English'
-                                : 'English → Mexican Spanish'
+                                ? 'Mexican Spanish Prompt → English Answer'
+                                : 'English Prompt → Mexican Spanish Answer'
                             }
                           >
                             {isEsToEn ? <MexicoFlag /> : <UsFlag />}
+                            <span>{isEsToEn ? 'ES → EN' : 'EN → ES'}</span>
                           </span>
                         </div>
                         <div className="col-phrase col-prompt">
@@ -2903,18 +2903,6 @@ export function App({
                             label={`Play ${card.answer}`}
                             onClick={() => playAudio(card.answer, answerLocale)}
                           />
-                        </div>
-                        <div className="col-context">
-                          {card.context ? (
-                            <span
-                              className="deck-context-snippet"
-                              title={card.context}
-                            >
-                              {card.context}
-                            </span>
-                          ) : (
-                            <span className="deck-context-empty">—</span>
-                          )}
                         </div>
                         <div className="col-status">
                           <span
