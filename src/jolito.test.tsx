@@ -119,8 +119,8 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
-    await user.type(screen.getByLabelText(/spanish/i), 'Qué padre')
-    await user.type(screen.getByLabelText(/english/i), 'How cool')
+    await user.type(screen.getByLabelText(/spanish/i), 'qué padre')
+    await user.type(screen.getByLabelText(/english/i), 'how cool')
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
     await user.click(screen.getByRole('button', { name: /review \d+/i }))
@@ -128,9 +128,9 @@ describe('Jolito', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
     )
-    await user.type(screen.getByLabelText('Your answer'), 'How cool')
+    await user.type(screen.getByLabelText('Your answer'), 'how cool')
     await user.keyboard('{Enter}')
-    expect(screen.getByText('How cool')).toBeInTheDocument()
+    expect(screen.getByText('how cool')).toBeInTheDocument()
     expect(document.querySelector('.diff-exact-card')).toBeInTheDocument()
     await user.keyboard('4')
     expect(screen.getByText(/1 card practiced/i)).toBeInTheDocument()
@@ -431,9 +431,9 @@ describe('Jolito', () => {
     await user.keyboard('{ArrowDown}')
     await user.keyboard('{Enter}')
 
-    expect(spanishInput).toHaveValue('Qué padre')
+    expect(spanishInput).toHaveValue('qué padre')
     expect(screen.getByLabelText(/english/i)).toHaveValue(
-      'How cool / fantastic',
+      'how cool / fantastic',
     )
   })
 

@@ -1296,6 +1296,26 @@ export function App({
     [services.assistant],
   )
 
+  useEffect(() => {
+    if (
+      view === 'create' &&
+      spanishInput.trim().length >= 2 &&
+      suggestions.length === 0
+    ) {
+      void Promise.resolve(services.assistant.loadDictionary?.()).then(() => {
+        const matches = services.assistant.suggest(spanishInput, 'es', 5)
+        if (matches.length > 0) {
+          setSuggestions(matches)
+          setShowSuggestions(true)
+          setDidYouMean(null)
+        } else {
+          const typo = services.assistant.didYouMean(spanishInput, 'es')
+          setDidYouMean(typo)
+        }
+      })
+    }
+  }, [services.assistant, spanishInput, suggestions.length, view])
+
   const onEnglishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
       const val = event.target.value
@@ -1643,7 +1663,22 @@ export function App({
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
                   onFocus={() => {
-                    if (suggestions.length > 0) setShowSuggestions(true)
+                    if (spanishInput.trim().length >= 2) {
+                      const matches = services.assistant.suggest(
+                        spanishInput,
+                        'es',
+                        5,
+                      )
+                      setSuggestions(matches)
+                      setShowSuggestions(matches.length > 0)
+                      if (matches.length === 0) {
+                        setDidYouMean(
+                          services.assistant.didYouMean(spanishInput, 'es'),
+                        )
+                      }
+                    } else if (suggestions.length > 0) {
+                      setShowSuggestions(true)
+                    }
                   }}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"

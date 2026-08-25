@@ -57,8 +57,8 @@ describe('createStudyCards', () => {
   it('mirrors the concise text by default and supports one-way cards', () => {
     const reverse = createStudyCards(
       {
-        spanish: 'Qué padre',
-        english: 'How cool',
+        spanish: 'qué padre',
+        english: 'how cool',
         context: '',
         bidirectional: true,
       },
@@ -66,8 +66,8 @@ describe('createStudyCards', () => {
       now,
     )
     expect(reverse[1]).toMatchObject({
-      prompt: 'How cool',
-      answer: 'Qué padre',
+      prompt: 'how cool',
+      answer: 'qué padre',
     })
 
     expect(

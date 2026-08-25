@@ -224,7 +224,7 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   await page.getByRole('button', { name: /^create a card$/i }).click()
 
   // 1. Test Autocomplete
-  const spanishInput = page.getByLabel(/spanish/i)
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   await spanishInput.fill('ahor')
 
   await expect(

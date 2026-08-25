@@ -14,8 +14,8 @@ export const starterCards: StudyCard[] = [
   ),
   ...createStudyCards(
     {
-      spanish: 'Qué padre',
-      english: 'How cool',
+      spanish: 'qué padre',
+      english: 'how cool',
       context: 'Quintessential Mexican Spanish slang for something great.',
       bidirectional: true,
     },

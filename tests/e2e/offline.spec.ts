@@ -87,3 +87,29 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   // 7. Verify zero network assets failed
   expect(failedRequests).toEqual([])
 })
+
+test('supports immediate card creation and dictionary autocomplete after service worker installation without synthetic wait barriers', async ({
+  context,
+  page,
+}) => {
+  await page.goto('/')
+  await page.evaluate(async () => navigator.serviceWorker.ready)
+
+  // Go offline immediately without waiting for data-offline-ready synthetic attribute
+  await context.setOffline(true)
+
+  // Navigate directly to create card
+  await page.getByRole('button', { name: /^create a card$/i }).click()
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
+  await spanishInput.fill('ahor')
+
+  // Autocomplete suggestions should resolve from offline cached dictionary
+  await expect(
+    page.getByRole('listbox', { name: /spanish suggestions/i }),
+  ).toBeVisible()
+  await expect(page.getByText('ahorita')).toBeVisible()
+
+  await page.getByText('ahorita').click()
+  await expect(spanishInput).toHaveValue('ahorita')
+  await expect(page.getByLabel(/english/i)).toHaveValue('right now / in a bit')
+})
