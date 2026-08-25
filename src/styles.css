@@ -480,12 +480,12 @@ summary:focus-visible {
 
 .welcome-hero {
   width: min(1080px, 100%);
-  margin: 8px auto auto;
+  margin: clamp(16px, 3vh, 36px) auto auto;
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
-  padding: 8px 0 32px;
+  padding: 16px 0 36px;
 }
 
 .hero-copy {
@@ -2062,6 +2062,7 @@ kbd {
 
 @media (max-height: 760px) and (min-width: 681px) {
   .welcome-hero {
+    margin-top: 12px;
     padding: 12px 0 20px;
     gap: clamp(24px, 4vw, 48px);
   }
@@ -2093,6 +2094,7 @@ kbd {
 
 @media (max-height: 620px) and (min-width: 681px) {
   .welcome-hero {
+    margin-top: 6px;
     padding: 8px 0 14px;
   }
 
