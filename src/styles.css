@@ -495,12 +495,15 @@ summary:focus-visible {
 }
 
 .welcome-mascot-img {
-  width: 96px;
-  height: 96px;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 0;
+  width: 84px;
+  height: 84px;
   object-fit: contain;
   display: block;
-  margin-bottom: 20px;
   user-select: none;
+  pointer-events: none;
 }
 
 .hero-copy h1,
@@ -2105,9 +2108,10 @@ kbd {
   }
 
   .welcome-mascot-img {
-    width: 72px;
-    height: 72px;
-    margin-bottom: 16px;
+    position: static;
+    width: 68px;
+    height: 68px;
+    margin-bottom: 14px;
   }
 
   .hero-copy h1 {
