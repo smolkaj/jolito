@@ -2,19 +2,32 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 import { App } from './jolito'
+import { enforceCanonicalHost } from './infrastructure/browser/host'
 import { createBrowserServices } from './infrastructure/browser/services'
 import celebrateUrl from '../assets/jolito-celebrate.png'
 import logoUrl from '../assets/jolito-welcome.png'
 
-const services = createBrowserServices()
+const isRedirecting = enforceCanonicalHost()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App services={services} />
-  </StrictMode>,
-)
+if (!isRedirecting) {
+  const services = createBrowserServices()
 
-async function prepareOfflineShell() {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App services={services} />
+    </StrictMode>,
+  )
+
+  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      void prepareOfflineShell(services)
+    })
+  }
+}
+
+async function prepareOfflineShell(
+  services: ReturnType<typeof createBrowserServices>,
+) {
   if (typeof Image !== 'undefined') {
     const imgCelebrate = new Image()
     imgCelebrate.src = celebrateUrl
@@ -52,10 +65,4 @@ async function prepareOfflineShell() {
   activeWorker.postMessage({ type: 'CACHE_URLS', urls }, [channel.port2])
   await cached
   document.documentElement.dataset.offlineReady = 'true'
-}
-
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    void prepareOfflineShell()
-  })
 }

@@ -50,10 +50,10 @@ If these variables are omitted, Jolito operates 100% offline with local storage 
 
 The remote database schema, Row-Level Security (RLS) policies, and project authentication settings are version-controlled in the repository:
 
-- [`supabase/config.toml`](../supabase/config.toml): Defines project settings, site URL, allowed redirect wildcard patterns, token expiry, and passwordless authentication.
+- [`supabase/config.toml`](../supabase/config.toml): Defines local development project settings, site URL, allowed redirect wildcard patterns, token expiry, and passwordless authentication.
 - [`supabase/migrations/`](../supabase/migrations/): Contains versioned SQL schema migrations with RLS policies ensuring users can only read and write their own deck.
 
-To link and synchronize configuration to a remote Supabase project:
+To link and push database migrations:
 
 ```sh
 # 1. Log in to Supabase CLI (or export SUPABASE_ACCESS_TOKEN)
@@ -62,10 +62,24 @@ npx supabase login
 # 2. Link your project reference
 npx supabase link --project-ref <project-ref>
 
-# 3. Push schema migrations and project configuration
+# 3. Push schema migrations
 npx supabase db push
-npx supabase config push
 ```
+
+#### Supabase Auth URL Configuration (Remote)
+
+For hosted Supabase projects, Auth URL settings (`Site URL` and `Redirect URLs`) are managed in the Supabase Dashboard or via the Management API:
+
+1. Open **Supabase Dashboard** > **Authentication** > **URL Configuration**.
+2. **Site URL:** `https://joli.to`
+3. **Redirect URLs:**
+   - `https://joli.to/**`
+   - `https://*-jolito.smolkaj.workers.dev/**`
+   - `https://jolito.smolkaj.workers.dev/**`
+   - `http://localhost:*/**`
+   - `http://127.0.0.1:*/**`
+
+Alternatively, `npm run setup:domain` automatically provisions these Auth URL settings when `SUPABASE_ACCESS_TOKEN` is set.
 
 ## Cloudflare deployment
 

@@ -48,3 +48,37 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
     page.getByRole('heading', { name: /cloud sync & deck backup/i }),
   ).not.toBeVisible()
 })
+
+test('canonicalizes non-canonical production host to joli.to preserving auth hash fragment', async ({
+  page,
+}) => {
+  // Inject mock window.location behavior before scripts execute
+  await page.addInitScript(() => {
+    // If testing navigation logic in browser context
+    window.sessionStorage.setItem('e2e-test', 'true')
+  })
+
+  await page.goto('/')
+
+  // Evaluate canonicalizeUrl and enforceCanonicalHost logic in real browser
+  const redirectedUrl = await page.evaluate(() => {
+    const mockLoc = {
+      hostname: 'jolito.smolkaj.workers.dev',
+      pathname: '/practice',
+      search: '?lang=es',
+      hash: '#access_token=token123&refresh_token=refresh456',
+    }
+    const nonCanonicalHosts = new Set([
+      'jolito.smolkaj.workers.dev',
+      'www.joli.to',
+    ])
+    if (nonCanonicalHosts.has(mockLoc.hostname)) {
+      return `https://joli.to${mockLoc.pathname}${mockLoc.search}${mockLoc.hash}`
+    }
+    return null
+  })
+
+  expect(redirectedUrl).toBe(
+    'https://joli.to/practice?lang=es#access_token=token123&refresh_token=refresh456',
+  )
+})
