@@ -21,7 +21,10 @@ import type {
   AuthUser,
   SyncService,
 } from './application/ports'
-import { starterCards } from './application/starter-cards'
+import {
+  filterOutStarterCards,
+  starterCards,
+} from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   grades,
@@ -1015,7 +1018,8 @@ export function App({
       })
       if (created.length === 0) return
 
-      onUpdateCards([...created, ...cardsRef.current])
+      const userCards = filterOutStarterCards(cardsRef.current)
+      onUpdateCards([...created, ...userCards])
       const savedSpanish = params.spanish.trim()
       setSavedToast(savedSpanish)
       if (savedToastTimerRef.current !== null) {
@@ -1053,8 +1057,9 @@ export function App({
           setIsSyncOpen(false)
           setSyncModalReason(null)
         } else {
+          const userCards = filterOutStarterCards(cardsRef.current)
           void syncDeckWithCloud({
-            localCards: cardsRef.current,
+            localCards: userCards,
             user,
             syncService: services.sync,
             onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
@@ -1072,8 +1077,9 @@ export function App({
       setIsOnline(true)
       if (authUserRef.current) {
         setSyncStatus('syncing')
+        const userCards = filterOutStarterCards(cardsRef.current)
         void services.sync
-          .syncDeck(cardsRef.current, authUserRef.current)
+          .syncDeck(userCards, authUserRef.current)
           .then((res) => {
             if (res.success) setSyncStatus('synced')
             else setSyncStatus('error')

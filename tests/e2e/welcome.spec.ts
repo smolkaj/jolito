@@ -325,7 +325,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(spanishInput).toHaveValue('')
   await expect(englishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /review 6/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /review 2/i })).toBeVisible()
 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
@@ -338,11 +338,11 @@ test('supports rapid batch card creation while remaining in create view', async 
   ).toBeVisible()
   await expect(spanishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /review 8/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /review 4/i })).toBeVisible()
 
   // 3. Start review from top navbar
-  await page.getByRole('button', { name: /review 8/i }).click()
-  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+  await page.getByRole('button', { name: /review 4/i }).click()
+  await expect(page.getByRole('heading', { name: 'chido' })).toBeVisible()
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

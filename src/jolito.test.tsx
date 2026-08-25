@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
+import { createStudyCards } from './domain/card'
 import { createTestServices } from './test/services'
 
 class SpeechSynthesisUtteranceMock {
@@ -498,8 +499,19 @@ describe('Jolito', () => {
 
   it('plays prompt audio exactly once when starting practice with an authenticated user and does not loop', async () => {
     const user = userEvent.setup()
+    const customCards = createStudyCards(
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: '',
+        bidirectional: false,
+      },
+      'custom-aguacate',
+      0,
+    )
     const services = createTestServices({
       user: { id: 'usr-1', email: 'learner@example.com' },
+      cards: customCards,
     })
 
     // Simulate realistic async network sync returning parsed cards from remote JSON
@@ -520,7 +532,7 @@ describe('Jolito', () => {
     // Reset spoken list before starting review
     services.mockSpeaker.spoken = []
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /practice 1 due/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -1213,5 +1225,61 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “orale”/i)
     expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('ensures example starter cards do not end up in the user deck when a guest creates their first card and signs in', async () => {
+    const user = userEvent.setup()
+    // Start with starter cards loaded by default as fallback
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // 1. Guest explores welcome view with starter cards due (4 due)
+    expect(
+      screen.getByRole('button', { name: /practice 4 due/i }),
+    ).toBeInTheDocument()
+
+    // 2. Guest goes to Create screen and creates their first personal card
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'chido')
+    await user.type(englishInput, 'cool')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    // 3. Guest signs in
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const otpInput = screen.getByLabelText(/verification code/i)
+    await user.type(otpInput, '123456')
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    // 4. Modal closes and card is saved
+    expect(
+      screen.queryByRole('heading', { name: /sign in to save your cards/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
+
+    // 5. Verify local storage has ONLY the 2 user cards (zero starter cards!)
+    expect(services.memoryCards.saved).toHaveLength(2)
+    expect(
+      services.memoryCards.saved?.every(
+        (card) => !card.noteId.startsWith('starter-'),
+      ),
+    ).toBe(true)
+
+    // 6. Verify cloud sync has ONLY the 2 user cards (zero starter cards!)
+    expect(services.mockSync.remoteCards).toHaveLength(2)
+    expect(
+      services.mockSync.remoteCards.every(
+        (card) => !card.noteId.startsWith('starter-'),
+      ),
+    ).toBe(true)
+
+    // 7. Review button reflects only the 2 user cards
+    expect(
+      screen.getByRole('button', { name: /review 2/i }),
+    ).toBeInTheDocument()
   })
 })
