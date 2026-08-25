@@ -8,7 +8,7 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
 
   await page.getByRole('button', { name: /tap to sync/i }).click()
   await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
+    page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in sync dialog
@@ -32,20 +32,13 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
     }),
   ).toBeVisible()
 
-  // Check export and import section is present
-  await expect(
-    page.getByRole('heading', {
-      name: /deck import & offline backup/i,
-    }),
-  ).toBeVisible()
-
   // Save screenshot for autonomous visual inspection
   await page.screenshot({ path: 'test-results/sync-modal.png' })
 
   // Close modal via Escape
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
+    page.getByRole('heading', { name: /^cloud sync$/i }),
   ).not.toBeVisible()
 })
 

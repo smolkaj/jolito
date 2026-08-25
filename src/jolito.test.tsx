@@ -575,14 +575,15 @@ describe('Jolito', () => {
     expect(services.mockSpeaker.spoken).toEqual([])
   })
 
-  it('opens modal via connection pill, exports backup JSON, and downloads file', async () => {
+  it('exports backup JSON and downloads file from deck manager', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
+
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
     expect(
-      screen.getByRole('heading', { name: /cloud sync & deck backup/i }),
+      screen.getByRole('heading', { name: /your deck/i }),
     ).toBeInTheDocument()
 
     const exportBtn = screen.getByRole('button', {
@@ -598,7 +599,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     const backupFile = new File(
       [
@@ -653,7 +654,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -708,12 +709,13 @@ describe('Jolito', () => {
     ).toBe(true)
   })
 
-  it('imports Anki text export (TSV) via modal', async () => {
+  it('imports Anki text export (TSV) via deck manager', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
+
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     const ankiText = `#separator:tab\n#html:true\nel perro\tthe dog\nla casa\tthe house`
     const ankiFile = new File([ankiText], 'anki-spanish.txt', {
@@ -743,7 +745,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     const corruptFile = new File([''], 'bad.txt', {
       type: 'text/plain',
@@ -765,7 +767,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync & deck backup/i,
+        name: /^cloud sync$/i,
       }),
     ).toBeInTheDocument()
 
@@ -830,7 +832,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync & deck backup/i,
+        name: /^cloud sync$/i,
       }),
     ).toBeInTheDocument()
 
@@ -838,7 +840,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /close dialog/i }))
     expect(
       screen.queryByRole('heading', {
-        name: /cloud sync & deck backup/i,
+        name: /^cloud sync$/i,
       }),
     ).not.toBeInTheDocument()
 
@@ -846,14 +848,14 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     expect(
       screen.getByRole('heading', {
-        name: /cloud sync & deck backup/i,
+        name: /^cloud sync$/i,
       }),
     ).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     expect(
       screen.queryByRole('heading', {
-        name: /cloud sync & deck backup/i,
+        name: /^cloud sync$/i,
       }),
     ).not.toBeInTheDocument()
   })
@@ -894,10 +896,10 @@ describe('Jolito', () => {
       }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', {
+      screen.queryByRole('heading', {
         name: /deck import & offline backup/i,
       }),
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
   })
 
   it('dynamically updates new, learn, and due queue counters during study and retries', async () => {
@@ -1318,6 +1320,209 @@ describe('Jolito', () => {
     // 7. Review button reflects only the 2 user cards
     expect(
       screen.getByRole('button', { name: /review 2/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('navigates to deck manager, displays deck stats, and filters cards by search and state pills', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // Navigate to Deck Manager
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    expect(
+      screen.getByRole('heading', { name: /your deck/i }),
+    ).toBeInTheDocument()
+    const statsStrip = screen.getByLabelText('Deck statistics')
+    expect(statsStrip).toHaveTextContent(/4\s*cards/)
+    expect(statsStrip).toHaveTextContent(/4\s*due/)
+
+    // 4 starter cards are shown
+    const cardItems = screen.getAllByRole('listitem')
+    expect(cardItems).toHaveLength(4)
+
+    // Search for "aguacate" (matches 2 bidirectional cards: es-en prompt and en-es answer)
+    const searchInput = screen.getByLabelText(/search cards in deck/i)
+    await user.type(searchInput, 'aguacate')
+
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getAllByText('aguacate')).toHaveLength(2)
+
+    // Clear search
+    await user.clear(searchInput)
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+
+    // Filter by state pill "Review" (0 cards in review state initially)
+    await user.click(screen.getByRole('button', { name: /review \(0\)/i }))
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+    expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
+
+    // Clear filter
+    await user.click(screen.getByRole('button', { name: /all \(4\)/i }))
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+  })
+
+  it('modifies card in deck manager and persists updates to storage', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    // Click edit on "aguacate" card
+    const editBtn = screen.getByRole('button', {
+      name: /edit card: aguacate/i,
+    })
+    await user.click(editBtn)
+
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
+    ).toBeInTheDocument()
+    const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    const answerInput = screen.getByLabelText(/english \(answer\)/i)
+    const contextInput = screen.getByLabelText(/additional context/i)
+
+    expect(promptInput).toHaveValue('aguacate')
+    expect(answerInput).toHaveValue('avocado')
+
+    // Update fields
+    await user.clear(promptInput)
+    await user.type(promptInput, 'el aguacate')
+    await user.clear(answerInput)
+    await user.type(answerInput, 'the avocado')
+    await user.type(contextInput, 'Great with lime')
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    // Modal closes and updated card is displayed
+    expect(
+      screen.queryByRole('heading', { name: /edit flashcard/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('el aguacate')).toBeInTheDocument()
+    expect(screen.getByText('the avocado')).toBeInTheDocument()
+    expect(screen.getByText(/great with lime/i)).toBeInTheDocument()
+
+    // Verify storage update
+    expect(
+      services.memoryCards.saved?.some(
+        (c) => c.prompt === 'el aguacate' && c.answer === 'the avocado',
+      ),
+    ).toBe(true)
+  })
+
+  it('deletes card in deck manager after confirmation modal', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    // Click delete on "aguacate" card
+    const deleteBtn = screen.getByRole('button', {
+      name: /delete card: aguacate/i,
+    })
+    await user.click(deleteBtn)
+
+    expect(
+      screen.getByRole('heading', { name: /delete flashcard\?/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/this card will be removed from your deck/i),
+    ).toBeInTheDocument()
+
+    // Cancel first
+    await user.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(
+      screen.queryByRole('heading', { name: /delete flashcard\?/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+
+    // Delete again and confirm
+    await user.click(
+      screen.getByRole('button', { name: /delete card: aguacate/i }),
+    )
+    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+    // Modal closes, card is deleted
+    expect(
+      screen.queryByRole('heading', { name: /delete flashcard\?/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    expect(
+      screen.queryByRole('button', { name: /delete card: aguacate/i }),
+    ).not.toBeInTheDocument()
+    expect(services.memoryCards.saved).toHaveLength(3)
+  })
+
+  it('allows quick editing and deleting during an active study review session', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // Start practice session
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+
+    // In-study quick edit
+    const editBtn = screen.getByRole('button', {
+      name: /edit card: aguacate/i,
+    })
+    await user.click(editBtn)
+
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
+    ).toBeInTheDocument()
+    const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    await user.clear(promptInput)
+    await user.type(promptInput, 'palta fresca')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    // Active study card immediately updates its prompt!
+    expect(
+      screen.getByRole('heading', { name: 'palta fresca' }),
+    ).toBeInTheDocument()
+
+    // In-study quick delete
+    const deleteBtn = screen.getByRole('button', {
+      name: /delete card: palta fresca/i,
+    })
+    await user.click(deleteBtn)
+
+    expect(
+      screen.getByRole('heading', { name: /delete flashcard\?/i }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+    // Queue moves directly to next card in queue ('avocado')
+    expect(
+      screen.queryByRole('heading', { name: 'palta fresca' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
+      /3\s*cards left/,
+    )
+  })
+
+  it('opens edit modal via "e" keyboard shortcut during study session', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+
+    // Blur input or reveal answer to press 'e'
+    await user.keyboard('{Enter}')
+    await user.keyboard('e')
+
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
   })
 })

@@ -285,6 +285,7 @@ test('top navigation pills have consistent vertical height across views', async 
   await page.goto('/#/create')
   const createReviewBtn = await page
     .locator('.nav-actions .text-button')
+    .first()
     .boundingBox()
   const createSyncPill = await page
     .locator('.nav-actions .connection-pill')
@@ -297,6 +298,7 @@ test('top navigation pills have consistent vertical height across views', async 
   const reviewBadge = await page.locator('.review-queue-badge').boundingBox()
   const reviewNewCardBtn = await page
     .locator('.nav-actions .text-button')
+    .first()
     .boundingBox()
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
@@ -438,7 +440,7 @@ test('allows guests to practice example deck immediately and explore card creato
   // 4. Open Sync Modal directly to inspect modal appearance
   await page.getByRole('button', { name: /tap to sync/i }).click()
   await expect(
-    page.getByRole('heading', { name: /cloud sync & deck backup/i }),
+    page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
   await page.screenshot({ path: 'test-results/guest-sync-modal.png' })
 

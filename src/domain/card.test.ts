@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import {
   chooseScene,
   createStudyCards,
+  deleteStudyCard,
   intervalLabel,
   isDue,
   nextIntervalDays,
   scheduleReview,
   shouldRequeueInSession,
   reviewScheduleSchema,
+  updateStudyCard,
   type ReviewSchedule,
 } from './card'
 
@@ -407,6 +409,94 @@ describe('Anki spaced repetition scheduling', () => {
     it('handles non-object inputs safely through schema validation', () => {
       expect(reviewScheduleSchema.safeParse(null).success).toBe(false)
       expect(reviewScheduleSchema.safeParse('invalid').success).toBe(false)
+    })
+  })
+
+  describe('updateStudyCard', () => {
+    const sampleCard = createStudyCards(
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: 'En el mercado',
+        bidirectional: false,
+      },
+      'note-1',
+      now,
+    )[0]!
+
+    it('updates prompt, answer, and context while recomputing scene and preserving schedule', () => {
+      const updated = updateStudyCard(sampleCard, {
+        prompt: 'tomar el metro',
+        answer: 'take the subway',
+        context: 'Estación Insurgentes',
+      })
+
+      expect(updated.id).toBe(sampleCard.id)
+      expect(updated.noteId).toBe(sampleCard.noteId)
+      expect(updated.prompt).toBe('tomar el metro')
+      expect(updated.answer).toBe('take the subway')
+      expect(updated.context).toBe('Estación Insurgentes')
+      expect(updated.scene).toBe('metro')
+      expect(updated.schedule).toEqual(sampleCard.schedule)
+    })
+
+    it('allows partial updates to prompt only, answer only, or context only', () => {
+      const updatedPrompt = updateStudyCard(sampleCard, {
+        prompt: 'el aguacate fresco',
+      })
+      expect(updatedPrompt.prompt).toBe('el aguacate fresco')
+      expect(updatedPrompt.answer).toBe('avocado')
+      expect(updatedPrompt.context).toBe('En el mercado')
+
+      const updatedAnswer = updateStudyCard(sampleCard, {
+        answer: 'fresh avocado',
+      })
+      expect(updatedAnswer.prompt).toBe('aguacate')
+      expect(updatedAnswer.answer).toBe('fresh avocado')
+
+      const updatedContext = updateStudyCard(sampleCard, {
+        context: 'Frutas y verduras',
+      })
+      expect(updatedContext.context).toBe('Frutas y verduras')
+    })
+
+    it('rejects empty strings for prompt or answer with validation error', () => {
+      expect(() =>
+        updateStudyCard(sampleCard, {
+          prompt: '   ',
+        }),
+      ).toThrow()
+
+      expect(() =>
+        updateStudyCard(sampleCard, {
+          answer: '',
+        }),
+      ).toThrow()
+    })
+  })
+
+  describe('deleteStudyCard', () => {
+    const cards = createStudyCards(
+      {
+        spanish: 'uno',
+        english: 'one',
+        context: '',
+        bidirectional: true,
+      },
+      'note-1',
+      now,
+    )
+
+    it('removes the specified card by id and preserves remaining cards', () => {
+      const remaining = deleteStudyCard(cards, 'note-1:es-en')
+      expect(remaining).toHaveLength(1)
+      expect(remaining[0]?.id).toBe('note-1:en-es')
+    })
+
+    it('returns the same array when id does not match any card', () => {
+      const remaining = deleteStudyCard(cards, 'non-existent')
+      expect(remaining).toHaveLength(2)
+      expect(remaining).toEqual(cards)
     })
   })
 })

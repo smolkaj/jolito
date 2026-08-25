@@ -64,6 +64,12 @@ export const newNoteSchema = z.object({
   reverseAnswer: z.string().optional(),
 })
 
+export const updateCardSchema = z.object({
+  prompt: z.string().trim().min(1).optional(),
+  answer: z.string().trim().min(1).optional(),
+  context: z.string().optional(),
+})
+
 export type Grade = z.infer<typeof gradeSchema>
 export type Direction = z.infer<typeof directionSchema>
 export type Scene = z.infer<typeof sceneSchema>
@@ -72,6 +78,7 @@ export type ReviewSchedule = z.infer<typeof reviewScheduleSchema>
 export type StudyCard = z.infer<typeof studyCardSchema>
 export type StudyCardCollection = z.infer<typeof studyCardCollectionSchema>
 export type NewNote = z.infer<typeof newNoteSchema>
+export type UpdateCardParams = z.infer<typeof updateCardSchema>
 
 const DAY = 24 * 60 * 60 * 1000
 const MINUTE = 60 * 1000
@@ -383,4 +390,33 @@ export function intervalLabel(card: StudyCard, grade: Grade): string {
   if (grade === 'again') return '< 10 min'
   const days = nextIntervalDays(schedule, grade)
   return days === 1 ? '1 day' : `${days} days`
+}
+
+export function updateStudyCard(
+  existing: StudyCard,
+  updates: UpdateCardParams,
+): StudyCard {
+  const parsed = updateCardSchema.parse(updates)
+  const prompt =
+    parsed.prompt !== undefined ? parsed.prompt.trim() : existing.prompt
+  const answer =
+    parsed.answer !== undefined ? parsed.answer.trim() : existing.answer
+  const context =
+    parsed.context !== undefined ? parsed.context.trim() : existing.context
+  const scene = chooseScene(prompt, answer, context)
+
+  return {
+    ...existing,
+    prompt,
+    answer,
+    context,
+    scene,
+  }
+}
+
+export function deleteStudyCard(
+  cards: StudyCard[],
+  cardIdToDelete: string,
+): StudyCard[] {
+  return cards.filter((card) => card.id !== cardIdToDelete)
 }
