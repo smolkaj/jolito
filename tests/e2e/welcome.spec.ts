@@ -307,7 +307,34 @@ test('top navigation pills have consistent vertical height across views', async 
   expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
-  // 4. Accessibility check
+  // 4. Deck view pills
+  await page.goto('/#/deck')
+  const deckNewCardBtn = await page
+    .locator('.nav-actions .text-button')
+    .first()
+    .boundingBox()
+  const deckSyncPill = await page
+    .locator('.nav-actions .connection-pill')
+    .boundingBox()
+  const deckStatChip = await page
+    .locator('.deck-stats-strip .deck-stat-chip')
+    .first()
+    .boundingBox()
+  const deckFilterPill = await page
+    .locator('.deck-filter-pills .deck-filter-pill')
+    .first()
+    .boundingBox()
+  const deckDensitySelector = await page
+    .locator('.deck-density-selector')
+    .boundingBox()
+
+  expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
+  expect(deckSyncPill?.height).toBeCloseTo(32, 1)
+  expect(deckStatChip?.height).toBeCloseTo(32, 1)
+  expect(deckFilterPill?.height).toBeCloseTo(32, 1)
+  expect(deckDensitySelector?.height).toBeCloseTo(32, 1)
+
+  // 5. Accessibility check
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()

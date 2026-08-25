@@ -230,8 +230,15 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await page.getByLabel(/search cards in deck/i).fill('')
   await expect(cardsList.getByRole('listitem')).toHaveCount(4)
 
+  // Verify density switcher between Compact and Cards (Comfortable)
+  await page.getByRole('button', { name: /cards/i }).click()
+  await expect(cardsList).toHaveClass(/is-comfortable/)
+  await page.getByRole('button', { name: /compact/i }).click()
+  await expect(cardsList).toHaveClass(/is-compact/)
+
   // Edit card
   await page.getByRole('button', { name: /edit card: aguacate/i }).click()
+
   await expect(
     page.getByRole('heading', { name: /edit flashcard/i }),
   ).toBeVisible()

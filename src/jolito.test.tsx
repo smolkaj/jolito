@@ -1361,6 +1361,19 @@ describe('Jolito', () => {
     // Clear filter
     await user.click(screen.getByRole('button', { name: /all \(4\)/i }))
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
+
+    // Switch density view between Compact and Cards (Comfortable)
+    const cardsDensityBtn = screen.getByRole('button', { name: /cards/i })
+    await user.click(cardsDensityBtn)
+    expect(screen.getByRole('list', { name: 'Deck cards' })).toHaveClass(
+      'is-comfortable',
+    )
+
+    const compactDensityBtn = screen.getByRole('button', { name: /compact/i })
+    await user.click(compactDensityBtn)
+    expect(screen.getByRole('list', { name: 'Deck cards' })).toHaveClass(
+      'is-compact',
+    )
   })
 
   it('modifies card in deck manager and persists updates to storage', async () => {

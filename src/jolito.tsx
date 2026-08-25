@@ -1513,6 +1513,25 @@ export function App({
   const [deletingCard, setDeletingCard] = useState<StudyCard | null>(null)
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
   const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+  const [deckDensity, setDeckDensity] = useState<'compact' | 'comfortable'>(
+    () => {
+      if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem('jolito-deck-density-v1')
+        if (saved === 'comfortable' || saved === 'compact') return saved
+      }
+      return 'compact'
+    },
+  )
+
+  const handleSetDeckDensity = (density: 'compact' | 'comfortable') => {
+    setDeckDensity(density)
+    try {
+      window.localStorage.setItem('jolito-deck-density-v1', density)
+    } catch {
+      // Ignore storage errors
+    }
+  }
+
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
@@ -2640,10 +2659,7 @@ export function App({
                 + New card
               </button>
               {dueCount > 0 && (
-                <button
-                  className="primary-button"
-                  onClick={() => beginReview()}
-                >
+                <button className="text-button" onClick={() => beginReview()}>
                   Practice {dueCount} due
                 </button>
               )}
@@ -2724,51 +2740,78 @@ export function App({
                 />
               </div>
 
-              <div
-                className="deck-filter-pills"
-                role="radiogroup"
-                aria-label="Filter cards by state"
-              >
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('all')}
-                  aria-pressed={deckFilterState === 'all'}
+              <div className="deck-toolbar-controls">
+                <div
+                  className="deck-filter-pills"
+                  role="radiogroup"
+                  aria-label="Filter cards by state"
                 >
-                  All ({deckStats.total})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('due')}
-                  aria-pressed={deckFilterState === 'due'}
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('all')}
+                    aria-pressed={deckFilterState === 'all'}
+                  >
+                    All ({deckStats.total})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('due')}
+                    aria-pressed={deckFilterState === 'due'}
+                  >
+                    Due ({deckStats.due})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('new')}
+                    aria-pressed={deckFilterState === 'new'}
+                  >
+                    New ({deckStats.newCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('learning')}
+                    aria-pressed={deckFilterState === 'learning'}
+                  >
+                    Learning ({deckStats.learningCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
+                    onClick={() => setDeckFilterState('review')}
+                    aria-pressed={deckFilterState === 'review'}
+                  >
+                    Review ({deckStats.reviewCount})
+                  </button>
+                </div>
+
+                <div
+                  className="deck-density-selector"
+                  role="radiogroup"
+                  aria-label="View density"
                 >
-                  Due ({deckStats.due})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('new')}
-                  aria-pressed={deckFilterState === 'new'}
-                >
-                  New ({deckStats.newCount})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('learning')}
-                  aria-pressed={deckFilterState === 'learning'}
-                >
-                  Learning ({deckStats.learningCount})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('review')}
-                  aria-pressed={deckFilterState === 'review'}
-                >
-                  Review ({deckStats.reviewCount})
-                </button>
+                  <button
+                    type="button"
+                    className={`deck-density-btn ${deckDensity === 'compact' ? 'is-active' : ''}`}
+                    onClick={() => handleSetDeckDensity('compact')}
+                    aria-pressed={deckDensity === 'compact'}
+                    title="Compact table view (dense list)"
+                  >
+                    <span aria-hidden="true">☰</span> Compact
+                  </button>
+                  <button
+                    type="button"
+                    className={`deck-density-btn ${deckDensity === 'comfortable' ? 'is-active' : ''}`}
+                    onClick={() => handleSetDeckDensity('comfortable')}
+                    aria-pressed={deckDensity === 'comfortable'}
+                    title="Card tiles view (spacious cards)"
+                  >
+                    <span aria-hidden="true">🎴</span> Cards
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2805,10 +2848,20 @@ export function App({
               </div>
             ) : (
               <div
-                className="deck-cards-list"
+                className={`deck-cards-list is-${deckDensity}`}
                 role="list"
                 aria-label="Deck cards"
               >
+                {deckDensity === 'compact' && (
+                  <div className="deck-list-table-header" aria-hidden="true">
+                    <span className="col-dir">Dir</span>
+                    <span className="col-phrase">Prompt</span>
+                    <span className="col-phrase">Answer</span>
+                    <span className="col-context">Context / Notes</span>
+                    <span className="col-status">Status</span>
+                    <span className="col-actions">Actions</span>
+                  </div>
+                )}
                 {filteredDeckCards.map((card) => {
                   const scheduleBadge = getCardScheduleBadge(
                     card,
@@ -2817,6 +2870,86 @@ export function App({
                   const isEsToEn = card.direction === 'es-en'
                   const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
                   const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
+
+                  if (deckDensity === 'compact') {
+                    return (
+                      <article
+                        key={card.id}
+                        className="deck-card-row"
+                        role="listitem"
+                      >
+                        <div className="col-dir">
+                          <span
+                            className="deck-mini-flag"
+                            title={
+                              isEsToEn
+                                ? 'Mexican Spanish → English'
+                                : 'English → Mexican Spanish'
+                            }
+                          >
+                            {isEsToEn ? <MexicoFlag /> : <UsFlag />}
+                          </span>
+                        </div>
+                        <div className="col-phrase col-prompt">
+                          <span className="deck-phrase-text">
+                            {card.prompt}
+                          </span>
+                          <AudioButton
+                            label={`Play ${card.prompt}`}
+                            onClick={() => playAudio(card.prompt, promptLocale)}
+                          />
+                        </div>
+                        <div className="col-phrase col-answer">
+                          <span className="deck-answer-text">
+                            {card.answer}
+                          </span>
+                          <AudioButton
+                            label={`Play ${card.answer}`}
+                            onClick={() => playAudio(card.answer, answerLocale)}
+                          />
+                        </div>
+                        <div className="col-context">
+                          {card.context ? (
+                            <span
+                              className="deck-context-snippet"
+                              title={card.context}
+                            >
+                              {card.context}
+                            </span>
+                          ) : (
+                            <span className="deck-context-empty">—</span>
+                          )}
+                        </div>
+                        <div className="col-status">
+                          <span
+                            className={`deck-stat-chip is-${scheduleBadge.type} is-mini`}
+                          >
+                            {scheduleBadge.label}
+                          </span>
+                        </div>
+                        <div className="col-actions deck-card-item-actions">
+                          <button
+                            type="button"
+                            className="card-action-btn edit-btn"
+                            aria-label={`Edit card: ${card.prompt}`}
+                            title={`Edit card: ${card.prompt}`}
+                            onClick={() => setEditingCard(card)}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="card-action-btn delete-btn"
+                            aria-label={`Delete card: ${card.prompt}`}
+                            title={`Delete card: ${card.prompt}`}
+                            onClick={() => setDeletingCard(card)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </article>
+                    )
+                  }
 
                   return (
                     <article

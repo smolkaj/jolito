@@ -2933,13 +2933,27 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+  padding: 0 12px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1;
   border: 1.5px solid var(--line-subtle);
   background: var(--card);
   color: var(--ink-soft);
+}
+
+.deck-stat-chip.is-mini {
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .deck-stat-chip strong {
@@ -2970,7 +2984,7 @@ kbd {
   color: var(--verde-dark);
 }
 
-/* Toolbar & Filters */
+/* Toolbar, Search & Density Controls */
 .deck-toolbar {
   display: flex;
   flex-direction: column;
@@ -3011,6 +3025,14 @@ kbd {
   opacity: 0.6;
 }
 
+.deck-toolbar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .deck-filter-pills {
   display: flex;
   align-items: center;
@@ -3019,14 +3041,22 @@ kbd {
 }
 
 .deck-filter-pill {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+  padding: 0 14px;
   border: 1.5px solid var(--line-subtle);
-  border-radius: 20px;
+  border-radius: 999px;
   background: var(--card);
   font-size: 13px;
   font-weight: 700;
+  line-height: 1;
   color: var(--ink-soft);
   transition: all 150ms ease;
+  cursor: pointer;
 }
 
 .deck-filter-pill:hover {
@@ -3041,13 +3071,212 @@ kbd {
   box-shadow: var(--shadow-sm);
 }
 
-/* Cards List */
+.deck-density-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--paper-subtle);
+  padding: 2px 4px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line-subtle);
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
+}
+
+.deck-density-btn {
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 120ms ease;
+}
+
+.deck-density-btn:hover {
+  color: var(--ink);
+}
+
+.deck-density-btn.is-active {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line-subtle);
+  box-shadow: 1px 1px 0 var(--line-subtle);
+}
+
+/* Cards List - Common */
 .deck-cards-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* Compact Table Layout (Scales to 100s/1000s of cards) */
+.deck-cards-list.is-compact {
+  gap: 4px;
+}
+
+.deck-list-table-header {
+  display: grid;
+  grid-template-columns: 44px minmax(130px, 1.2fr) minmax(130px, 1.2fr) minmax(
+      140px,
+      1.5fr
+    ) 95px 145px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--ink-muted);
+  border-bottom: 2px solid var(--line);
+}
+
+.deck-card-row {
+  display: grid;
+  grid-template-columns: 44px minmax(130px, 1.2fr) minmax(130px, 1.2fr) minmax(
+      140px,
+      1.5fr
+    ) 95px 145px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  min-height: 44px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 10px;
+  background: var(--card);
+  transition:
+    background 100ms ease,
+    border-color 100ms ease,
+    box-shadow 100ms ease;
+}
+
+.deck-card-row:hover {
+  background: var(--paper-subtle);
+  border-color: var(--line);
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.deck-card-row .col-dir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deck-mini-flag {
+  display: inline-flex;
+  align-items: center;
+}
+
+.deck-card-row .col-phrase {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.deck-card-row .deck-phrase-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-card-row .deck-answer-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deck-card-row .col-context {
+  min-width: 0;
+}
+
+.deck-context-snippet {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.deck-context-empty {
+  font-size: 12px;
+  color: var(--line-subtle);
+}
+
+.deck-card-row .col-status {
+  display: flex;
+  align-items: center;
+}
+
+.deck-card-row .col-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.deck-card-row .audio-button {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 4px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+@media (max-width: 860px) {
+  .deck-list-table-header {
+    display: none;
+  }
+
+  .deck-card-row {
+    grid-template-columns: 36px 1fr 1fr auto;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .deck-card-row .col-context {
+    display: none;
+  }
+
+  .deck-card-row .col-status {
+    display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .deck-card-row {
+    grid-template-columns: 32px 1fr auto;
+    gap: 6px;
+  }
+
+  .deck-card-row .col-answer {
+    display: none;
+  }
+}
+
+/* Comfortable Card Tiles Layout */
 .deck-card-item {
   display: flex;
   flex-direction: column;
@@ -3091,14 +3320,18 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
   border: 1.5px solid var(--line-subtle);
   border-radius: 8px;
   background: var(--paper-subtle);
   color: var(--ink-soft);
   font-size: 12px;
   font-weight: 700;
+  line-height: 1;
   transition: all 120ms ease;
+  cursor: pointer;
 }
 
 .card-action-btn:hover {
