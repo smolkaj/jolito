@@ -1765,7 +1765,6 @@ export function App({
                 alt=""
                 aria-hidden="true"
                 className="welcome-mascot-img"
-                style={{ transform: 'scaleX(-1)' }}
               />
               <h1>
                 Make the words <br />
