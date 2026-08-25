@@ -52,14 +52,6 @@ const gradeLabels: Record<Grade, string> = {
   easy: 'Easy',
 }
 
-const mascotGreetings = [
-  { text: '¡Qué padre verte!', audio: '¡Qué padre verte!' },
-  { text: '¡A darle con todo!', audio: '¡A darle con todo!' },
-  { text: '¡Órale, a practicar!', audio: '¡Órale, a practicar!' },
-  { text: '¡Vámonos recio!', audio: '¡Vámonos recio!' },
-  { text: '¡Tu español va al 100!', audio: '¡Tu español va al cien!' },
-]
-
 const localeForPrompt = (card: StudyCard) =>
   card.direction === 'es-en' ? 'es-MX' : 'en-US'
 
@@ -1007,14 +999,11 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
-  const [mascotIndex, setMascotIndex] = useState(0)
-  const [mascotWiggling, setMascotWiggling] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
-  const mascotWiggleTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -1221,23 +1210,6 @@ export function App({
     [activeCreateSide, englishInput, playAudio, spanishInput],
   )
 
-  const onMascotClick = useCallback(() => {
-    const nextIndex = (mascotIndex + 1) % mascotGreetings.length
-    setMascotIndex(nextIndex)
-    setMascotWiggling(true)
-    if (mascotWiggleTimerRef.current !== null) {
-      window.clearTimeout(mascotWiggleTimerRef.current)
-    }
-    mascotWiggleTimerRef.current = window.setTimeout(() => {
-      setMascotWiggling(false)
-      mascotWiggleTimerRef.current = null
-    }, 600)
-    const nextGreeting = mascotGreetings[nextIndex]
-    if (nextGreeting) {
-      playAudio(nextGreeting.audio, 'es-MX')
-    }
-  }, [mascotIndex, playAudio])
-
   useEffect(() => {
     return () => {
       if (sampleTimerRef.current !== null) {
@@ -1248,9 +1220,6 @@ export function App({
       }
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
-      }
-      if (mascotWiggleTimerRef.current !== null) {
-        window.clearTimeout(mascotWiggleTimerRef.current)
       }
     }
   }, [])
@@ -1491,8 +1460,6 @@ export function App({
   }
 
   if (view === 'welcome') {
-    const currentMascotGreeting =
-      mascotGreetings[mascotIndex] ?? mascotGreetings[0]!
     return (
       <>
         <main className="app-shell welcome-page">
@@ -1509,43 +1476,12 @@ export function App({
           </nav>
           <section className="welcome-hero">
             <div className="hero-copy">
-              <div className="hero-mascot-companion">
-                <button
-                  type="button"
-                  className={`hero-mascot-btn ${mascotWiggling ? 'is-wiggling' : ''}`}
-                  onClick={onMascotClick}
-                  aria-label={`Jolito: ${currentMascotGreeting.text}. Click to hear Jolito speak Mexican Spanish.`}
-                >
-                  <div className="hero-mascot-avatar">
-                    <img
-                      src={logoUrl}
-                      alt="Jolito the axolotl mascot"
-                      className="welcome-mascot-img"
-                    />
-                    <span className="hero-mascot-sparkle" aria-hidden="true">
-                      ✨
-                    </span>
-                  </div>
-                  <div className="hero-mascot-speech">
-                    <span className="hero-mascot-badge-tag">
-                      <MexicoFlag className="hero-mascot-flag" /> Tu compañero
-                    </span>
-                    <span className="hero-mascot-phrase">
-                      {currentMascotGreeting.text}
-                    </span>
-                  </div>
-                  <span className="hero-mascot-audio-hint" aria-hidden="true">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="14"
-                      height="14"
-                      fill="currentColor"
-                    >
-                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                    </svg>
-                  </span>
-                </button>
-              </div>
+              <img
+                src={logoUrl}
+                alt=""
+                aria-hidden="true"
+                className="welcome-mascot-img"
+              />
               <h1>
                 Make the words <br />
                 you meet <em>stick.</em>

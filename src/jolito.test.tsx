@@ -1083,8 +1083,7 @@ describe('Jolito', () => {
     expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
   })
 
-  it('renders vector brandmark in navigation and supports interactive mascot companion greetings', async () => {
-    const user = userEvent.setup()
+  it('renders vector brandmark in navigation and prominently displays the mascot on the homescreen', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
@@ -1097,26 +1096,10 @@ describe('Jolito', () => {
     expect(brandMark?.querySelector('.jolito-gills')).toBeInTheDocument()
     expect(brandMark?.querySelector('.jolito-core')).toBeInTheDocument()
 
-    // 2. Verify mascot companion on the welcome start screen
-    const mascotButton = screen.getByRole('button', {
-      name: /jolito: ¡qué padre verte!/i,
-    })
-    expect(mascotButton).toBeInTheDocument()
-    expect(screen.getByText('¡Qué padre verte!')).toBeInTheDocument()
-
-    // 3. Click mascot to cycle phrases and trigger Mexican Spanish speech
-    await user.click(mascotButton)
-    expect(screen.getByText('¡A darle con todo!')).toBeInTheDocument()
-    expect(services.mockSpeaker.spoken).toContainEqual({
-      text: '¡A darle con todo!',
-      locale: 'es-MX',
-    })
-
-    await user.click(mascotButton)
-    expect(screen.getByText('¡Órale, a practicar!')).toBeInTheDocument()
-    expect(services.mockSpeaker.spoken).toContainEqual({
-      text: '¡Órale, a practicar!',
-      locale: 'es-MX',
-    })
+    // 2. Verify mascot is prominently displayed on the welcome homescreen
+    const mascotImg = document.querySelector('.welcome-mascot-img')
+    expect(mascotImg).toBeInTheDocument()
+    expect(mascotImg).toHaveAttribute('src', expect.stringContaining('png'))
+    expect(mascotImg).toHaveAttribute('aria-hidden', 'true')
   })
 })

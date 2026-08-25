@@ -87,30 +87,6 @@ test('brand mascot logo preserves opaque body fill and transparent negative spac
   expect(pixelData!.bg[3]).toBe(0)
 })
 
-test('interactive mascot companion cycles Mexican Spanish greetings on click', async ({
-  page,
-}) => {
-  await page.goto('/')
-
-  const mascotBtn = page.getByRole('button', {
-    name: /jolito:/i,
-  })
-  await expect(mascotBtn).toBeVisible()
-  await expect(page.getByText('¡Qué padre verte!')).toBeVisible()
-
-  // Click mascot companion to trigger micro-interaction and cycle phrase
-  await mascotBtn.click()
-  await expect(page.getByText('¡A darle con todo!')).toBeVisible()
-
-  await mascotBtn.click()
-  await expect(page.getByText('¡Órale, a practicar!')).toBeVisible()
-
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
-  expect(results.violations).toEqual([])
-})
-
 test('creates and reviews both directions with the keyboard', async ({
   page,
 }) => {
