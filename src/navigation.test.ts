@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hashForView, viewFromHash } from './navigation'
+import { hashForView, titleForView, viewFromHash } from './navigation'
 
 describe('navigation', () => {
   it('maps url hashes to view names', () => {
@@ -20,5 +20,12 @@ describe('navigation', () => {
     expect(hashForView('review')).toBe('#/study')
     expect(hashForView('complete')).toBe('#/complete')
     expect(hashForView('welcome')).toBe('#/')
+  })
+
+  it('maps view names to descriptive document titles', () => {
+    expect(titleForView('create')).toBe('Create Flashcard • Jolito')
+    expect(titleForView('review')).toBe('Study Session • Jolito')
+    expect(titleForView('complete')).toBe('¡Hecho! • Jolito')
+    expect(titleForView('welcome')).toBe('Jolito — Mexican Spanish that sticks')
   })
 })

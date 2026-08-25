@@ -38,7 +38,12 @@ import type { SyncStatus } from './domain/sync'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
-import { type View, hashForView, viewFromHash } from './navigation'
+import {
+  type View,
+  hashForView,
+  titleForView,
+  viewFromHash,
+} from './navigation'
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -875,6 +880,13 @@ export function App({
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
   const [view, setView] = useState<View>(initialResolved.view)
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = titleForView(view)
+    }
+  }, [view])
+
   const [queue, setQueue] = useState<string[]>(initialResolved.queue)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
