@@ -2623,14 +2623,22 @@ export function App({
                   placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
-              <button className="primary-button save-button" type="submit">
-                Save card
+              <button
+                className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
+                type="submit"
+                aria-label={savedToast ? `Saved “${savedToast}”` : 'Save card'}
+              >
+                {savedToast ? (
+                  <span role="status" className="save-button-saved">
+                    <span className="save-button-check" aria-hidden="true">
+                      ✓
+                    </span>{' '}
+                    Saved “{savedToast}”
+                  </span>
+                ) : (
+                  'Save card'
+                )}
               </button>
-              {savedToast && (
-                <p className="create-save-feedback" role="status">
-                  ✓ Saved “{savedToast}”
-                </p>
-              )}
             </form>
           </section>
         </main>

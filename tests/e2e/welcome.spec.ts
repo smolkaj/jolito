@@ -395,7 +395,12 @@ test('supports rapid batch card creation while remaining in create view', async 
   await englishInput.fill('cool / nice')
   await page.getByRole('button', { name: /save card/i }).click()
 
-  await expect(page.getByRole('status')).toContainText(/saved “chido”/i)
+  const savedButton = page.getByRole('button', { name: /saved “chido”/i })
+  await expect(savedButton).toBeVisible()
+  await expect(savedButton).toHaveClass(/is-saved/)
+  await expect(page.locator('.create-save-feedback')).toHaveCount(0)
+  await page.screenshot({ path: 'test-results/save-button-animated.png' })
+
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
@@ -407,9 +412,11 @@ test('supports rapid batch card creation while remaining in create view', async 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
   await englishInput.fill('straw')
-  await page.getByRole('button', { name: /save card/i }).click()
+  await page.getByRole('button', { name: /save card|saved/i }).click()
 
-  await expect(page.getByRole('status')).toContainText(/saved “popote”/i)
+  await expect(
+    page.getByRole('button', { name: /saved “popote”/i }),
+  ).toBeVisible()
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()

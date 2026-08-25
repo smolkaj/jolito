@@ -1158,11 +1158,17 @@ describe('Jolito', () => {
     await user.type(contextInput, 'Mexican slang')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // Stays in create view with confirmation toast
+    // Stays in create view with animated save button confirmation
     expect(
       screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
+    expect(screen.getByRole('button', { name: /saved “chido”/i })).toHaveClass(
+      'is-saved',
+    )
+    expect(
+      document.querySelector('.create-save-feedback'),
+    ).not.toBeInTheDocument()
     expect(spanishInput).toHaveValue('')
     expect(englishInput).toHaveValue('')
     expect(contextInput).toHaveValue('')
@@ -1175,12 +1181,15 @@ describe('Jolito', () => {
     // 2. Create second card in batch without needing to re-navigate or re-focus
     await user.type(spanishInput, 'popote')
     await user.type(englishInput, 'drinking straw')
-    await user.click(screen.getByRole('button', { name: /save card/i }))
+    await user.click(screen.getByRole('button', { name: /save card|saved/i }))
 
     expect(
       screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “popote”/i)
+    expect(screen.getByRole('button', { name: /saved “popote”/i })).toHaveClass(
+      'is-saved',
+    )
     expect(spanishInput).toHaveValue('')
     expect(englishInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()

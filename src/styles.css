@@ -1227,20 +1227,86 @@ summary:focus-visible {
 .save-button {
   width: 100%;
   margin-top: 18px;
+  transition: all 180ms var(--ease-spring);
 }
 
-.create-save-feedback {
-  margin: 12px 0 0;
-  padding: 8px 14px;
-  background: var(--verde-soft);
-  color: var(--verde-dark);
-  border: 1.5px solid var(--verde);
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.4;
-  word-break: break-word;
+.save-button.is-saved {
+  background: var(--verde);
+  color: #ffffff;
+  border-color: var(--verde-dark);
+  box-shadow: 4px 4px 0 var(--verde-dark);
+  animation: saveButtonPop 320ms var(--ease-spring);
+}
+
+.save-button.is-saved:hover {
+  background: var(--verde-dark);
+  box-shadow: 6px 6px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+.save-button.is-saved:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--verde-dark);
+}
+
+.save-button-saved {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  animation: saveTextFade 200ms ease-out;
+}
+
+.save-button-check {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 800;
+  animation: saveCheckmarkBounce 350ms var(--ease-spring);
+}
+
+@keyframes saveButtonPop {
+  0% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes saveTextFade {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes saveCheckmarkBounce {
+  0% {
+    transform: scale(0.5) rotate(-15deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25) rotate(5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .save-button.is-saved,
+  .save-button-saved,
+  .save-button-check {
+    animation: none;
+  }
 }
 
 /* Review Page */
