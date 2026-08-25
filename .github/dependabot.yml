@@ -7,6 +7,7 @@ updates:
     groups:
       development-dependencies:
         dependency-type: development
+    # TODO(#104): Remove typescript ignore once typescript-eslint supports TypeScript 7+
     ignore:
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major']
