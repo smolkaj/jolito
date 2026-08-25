@@ -88,6 +88,17 @@ test('brand mascot logo preserves opaque body fill and transparent negative spac
 test('creates and reviews both directions with the keyboard', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify({
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh',
+        expiresAt: Date.now() + 3600000,
+        user: { id: 'usr-1', email: 'creator@example.com' },
+      }),
+    )
+  })
   await page.goto('/')
   await page.evaluate(() =>
     localStorage.setItem(
@@ -302,6 +313,17 @@ test('top navigation pills have consistent vertical height across views', async 
 test('supports rapid batch card creation while remaining in create view', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify({
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh',
+        expiresAt: Date.now() + 3600000,
+        user: { id: 'usr-1', email: 'batch-creator@example.com' },
+      }),
+    )
+  })
   await page.goto('/')
   await page.getByRole('button', { name: /^create a card$/i }).click()
 
@@ -422,4 +444,34 @@ test('allows guests to practice example deck immediately and explore card creato
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
   expect(results.violations).toEqual([])
+})
+
+test('prompts unauthenticated guest to sign in when clicking save card in card creator', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /^create a card$/i }).click()
+
+  const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
+  const englishInput = page.getByLabel(/english/i)
+
+  await spanishInput.fill('chido')
+  await englishInput.fill('cool')
+  await page.getByRole('button', { name: /save card/i }).click()
+
+  // Sign in modal MUST open asking the user to log in!
+  await expect(
+    page.getByRole('heading', { name: /sign in to save your cards/i }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(/sign in or create an account to save your new card/i),
+  ).toBeVisible()
+
+  // Modal can be dismissed with Escape and preserves form inputs
+  await page.keyboard.press('Escape')
+  await expect(
+    page.getByRole('heading', { name: /sign in to save your cards/i }),
+  ).not.toBeVisible()
+  await expect(spanishInput).toHaveValue('chido')
+  await expect(englishInput).toHaveValue('cool')
 })

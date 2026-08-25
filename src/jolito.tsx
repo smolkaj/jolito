@@ -219,6 +219,7 @@ function SyncModal({
   sync,
   clock,
   authPromptReason,
+  onSavePendingCardLocally,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -228,6 +229,7 @@ function SyncModal({
   sync: SyncService
   clock: { now(): number }
   authPromptReason?: 'save_card' | null
+  onSavePendingCardLocally?: () => void
 }) {
   // Auth & Cloud Sync state
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -504,19 +506,17 @@ function SyncModal({
               </div>
             </div>
 
-            {authPromptReason === 'save_card' &&
-              !user &&
-              isBackendConfigured && (
-                <div className="save-card-gate-banner" role="status">
-                  <span className="gate-icon" aria-hidden="true">
-                    ✨
-                  </span>
-                  <span>
-                    Sign in or create an account to save your new card and start
-                    building your library.
-                  </span>
-                </div>
-              )}
+            {authPromptReason === 'save_card' && !user && (
+              <div className="save-card-gate-banner" role="status">
+                <span className="gate-icon" aria-hidden="true">
+                  ✨
+                </span>
+                <span>
+                  Sign in or create an account to save your new card and start
+                  building your library.
+                </span>
+              </div>
+            )}
 
             {syncStatusMsg && (
               <div
@@ -539,6 +539,17 @@ function SyncModal({
                   schedules remain 100% functional and safely stored on this
                   device.
                 </p>
+                {authPromptReason === 'save_card' &&
+                  onSavePendingCardLocally && (
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ marginTop: '12px', width: '100%' }}
+                      onClick={onSavePendingCardLocally}
+                    >
+                      Save card locally (preview)
+                    </button>
+                  )}
               </div>
             ) : user ? (
               <div className="sync-account-pane">
@@ -1436,6 +1447,13 @@ export function App({
     pendingCardRef.current = null
   }, [])
 
+  const handleSavePendingLocally = useCallback(() => {
+    if (pendingCardRef.current) {
+      saveCardFromParams(pendingCardRef.current)
+    }
+    closeSyncModal()
+  }, [closeSyncModal, saveCardFromParams])
+
   function createCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -1456,11 +1474,7 @@ export function App({
       reverseAnswer: field('reverseAnswer'),
     }
 
-    const isBackendConfigured = services.auth.isConfigured
-      ? services.auth.isConfigured()
-      : true
-
-    if (!authUserRef.current && isBackendConfigured) {
+    if (!authUserRef.current) {
       setPendingCard(cardParams)
       pendingCardRef.current = cardParams
       openSyncModal('save_card')
@@ -1594,6 +1608,7 @@ export function App({
           sync={services.sync}
           clock={services.clock}
           authPromptReason={syncModalReason}
+          onSavePendingCardLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -1909,6 +1924,7 @@ export function App({
           sync={services.sync}
           clock={services.clock}
           authPromptReason={syncModalReason}
+          onSavePendingCardLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -1967,6 +1983,7 @@ export function App({
           sync={services.sync}
           clock={services.clock}
           authPromptReason={syncModalReason}
+          onSavePendingCardLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -2167,6 +2184,7 @@ export function App({
         sync={services.sync}
         clock={services.clock}
         authPromptReason={syncModalReason}
+        onSavePendingCardLocally={handleSavePendingLocally}
       />
     </>
   )

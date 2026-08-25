@@ -1206,7 +1206,7 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('straw')
   })
 
-  it('saves card locally without opening modal when auth backend is unconfigured', async () => {
+  it('opens modal when auth backend is unconfigured and allows saving card locally in preview mode', async () => {
     const user = userEvent.setup()
     const services = createTestServices({ cards: [] })
     services.mockAuth.configured = false // Unconfigured / offline preview mode
@@ -1219,7 +1219,17 @@ describe('Jolito', () => {
     await user.type(englishInput, 'right on / wow')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // Saves locally directly without modal
+    // Modal opens asking to sign in and showing preview notice
+    expect(
+      screen.getByRole('heading', { name: /sign in to save your cards/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/cloud sync is disabled in this preview/i),
+    ).toBeInTheDocument()
+
+    // User clicks save locally in preview
+    await user.click(screen.getByRole('button', { name: /save card locally/i }))
+
     expect(
       screen.queryByRole('heading', { name: /sign in to save your cards/i }),
     ).not.toBeInTheDocument()

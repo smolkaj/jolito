@@ -4,6 +4,17 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   context,
   page,
 }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify({
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh',
+        expiresAt: Date.now() + 3600000,
+        user: { id: 'usr-1', email: 'offline-learner@example.com' },
+      }),
+    )
+  })
   await page.goto('/')
   await page.evaluate(async () => navigator.serviceWorker.ready)
   await page.locator('html[data-offline-ready="true"]').waitFor()
