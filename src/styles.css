@@ -480,12 +480,12 @@ summary:focus-visible {
 
 .welcome-hero {
   width: min(1080px, 100%);
-  margin: clamp(16px, 3vh, 36px) auto auto;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
-  padding: 16px 0 36px;
+  padding: clamp(24px, 4vh, 48px) 0 clamp(32px, 6vh, 64px);
 }
 
 .hero-copy {
@@ -2060,52 +2060,20 @@ kbd {
   }
 }
 
-@media (max-height: 760px) and (min-width: 681px) {
+@media (max-height: 520px) and (min-width: 681px) {
   .welcome-hero {
-    margin-top: 12px;
-    padding: 12px 0 20px;
-    gap: clamp(24px, 4vw, 48px);
+    padding: 12px 0 16px;
+    gap: 24px;
   }
 
   .welcome-mascot-img {
-    width: clamp(72px, 12vh, 104px);
-    height: clamp(72px, 12vh, 104px);
-    margin-bottom: 12px;
-  }
-
-  .hero-copy h1 {
-    font-size: clamp(36px, 4.5vw, 54px);
-  }
-
-  .lede {
-    margin: 12px 0 20px;
-    font-size: 16px;
-  }
-
-  .hero-visual {
-    min-height: 380px;
-  }
-
-  .sample-card {
-    height: 320px;
-    padding: 20px;
-  }
-}
-
-@media (max-height: 620px) and (min-width: 681px) {
-  .welcome-hero {
-    margin-top: 6px;
-    padding: 8px 0 14px;
-  }
-
-  .welcome-mascot-img {
-    width: 64px;
-    height: 64px;
+    width: 80px;
+    height: 80px;
     margin-bottom: 8px;
   }
 
   .hero-copy h1 {
-    font-size: 32px;
+    font-size: 36px;
   }
 
   .lede {
@@ -2114,11 +2082,11 @@ kbd {
   }
 
   .hero-visual {
-    min-height: 300px;
+    min-height: 280px;
   }
 
   .sample-card {
-    height: 270px;
+    height: 260px;
     padding: 16px;
   }
 }
