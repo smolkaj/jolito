@@ -222,13 +222,11 @@ interface PendingCardParams {
 function SaveCardAuthModal({
   isOpen,
   onClose,
-  pendingCard,
   auth,
   onSaveLocally,
 }: {
   isOpen: boolean
   onClose: () => void
-  pendingCard: PendingCardParams | null
   auth: AuthService
   onSaveLocally?: () => void
 }) {
@@ -316,27 +314,9 @@ function SaveCardAuthModal({
         <div className="save-card-hero-header">
           <h2 id="save-card-auth-title">Save your flashcard</h2>
           <p className="save-card-subtitle">
-            Sign in to save this card to your personal library and sync across
-            devices.
+            Sign in to save this card to your library and sync across devices.
           </p>
         </div>
-
-        {pendingCard && (
-          <div className="save-card-showcase" aria-label="Card to save">
-            <div className="showcase-card-header">
-              <span className="showcase-badge">
-                <MexicoFlag /> MEXICAN SPANISH
-              </span>
-              {pendingCard.context && (
-                <span className="showcase-context">{pendingCard.context}</span>
-              )}
-            </div>
-            <div className="showcase-card-body">
-              <p className="showcase-phrase">{pendingCard.spanish}</p>
-              <p className="showcase-translation">{pendingCard.english}</p>
-            </div>
-          </div>
-        )}
 
         {statusMsg && (
           <div
@@ -2125,7 +2105,6 @@ export function App({
         <SaveCardAuthModal
           isOpen={isSaveCardAuthOpen}
           onClose={closeSaveCardAuthModal}
-          pendingCard={pendingCard}
           auth={services.auth}
           onSaveLocally={handleSavePendingLocally}
         />

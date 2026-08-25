@@ -1130,10 +1130,9 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        /sign in to save this card to your personal library and sync across devices/i,
+        /sign in to save this card to your library and sync across devices/i,
       ),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
 
     // Form inputs remain preserved while modal is displayed
@@ -1154,11 +1153,10 @@ describe('Jolito', () => {
     await user.type(englishInput, 'cool')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // 2. Sign-in modal opens with focused save card heading and pending card preview
+    // 2. Sign-in modal opens with focused save card heading
     expect(
       screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
 
     // 3. Guest enters email and requests link
     const emailInput = screen.getByLabelText(/email address/i)
@@ -1200,7 +1198,6 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
 
     // Guest presses Escape to dismiss modal
     await user.keyboard('{Escape}')

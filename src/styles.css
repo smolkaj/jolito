@@ -2682,18 +2682,18 @@ kbd {
 }
 
 /* ==========================================================================
-   Save Card Auth Modal (Spacious, Minimalist, High-Craft Editorial Design)
+   Save Card Auth Modal (Ultra-Minimalist, Featherlight Design)
    ========================================================================== */
 
 .save-card-auth-modal {
-  width: min(520px, 100%);
-  padding: clamp(32px, 6vw, 44px) clamp(24px, 5vw, 36px);
-  gap: 22px;
-  border-radius: 28px;
+  width: min(440px, 100%);
+  padding: clamp(28px, 5vw, 36px) clamp(22px, 4vw, 30px);
+  gap: 20px;
+  border-radius: 24px;
   border: 2.5px solid var(--line);
   box-shadow:
-    6px 6px 0 var(--line),
-    0 20px 48px -8px rgba(18, 24, 21, 0.14);
+    5px 5px 0 var(--line),
+    0 16px 36px -6px rgba(18, 24, 21, 0.12);
   background: var(--card);
   text-align: center;
   position: relative;
@@ -2701,8 +2701,8 @@ kbd {
 
 .save-card-close-btn {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  top: 16px;
+  right: 16px;
 }
 
 .save-card-hero-header {
@@ -2710,105 +2710,25 @@ kbd {
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  padding: 0 16px;
 }
 
 .save-card-hero-header h2 {
   font-family: var(--font-serif);
-  font-size: clamp(24px, 4.5vw, 28px);
+  font-size: clamp(22px, 4.5vw, 26px);
   font-weight: 800;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.6px;
   color: var(--ink);
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .save-card-subtitle {
   font-size: 14px;
   color: var(--ink-soft);
   margin: 0;
-  line-height: 1.45;
-  max-width: 380px;
-}
-
-/* Miniature Hero Flashcard Preview */
-.save-card-showcase {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: var(--card);
-  border: 2px solid var(--line);
-  border-radius: 20px;
-  padding: 18px 22px;
-  box-shadow: 4px 4px 0 var(--rosa);
-  text-align: left;
-  transition:
-    transform 160ms var(--ease-spring),
-    box-shadow 160ms var(--ease-spring);
-}
-
-.save-card-showcase:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 0 var(--rosa-dark);
-}
-
-.showcase-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.showcase-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--rosa-dark);
-  text-transform: uppercase;
-}
-
-.showcase-badge .flag-icon {
-  border-radius: 2px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-}
-
-.showcase-context {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-muted);
-  background: var(--paper-subtle);
-  padding: 2px 8px;
-  border-radius: 6px;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.showcase-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.showcase-phrase {
-  font-family: var(--font-serif);
-  font-size: clamp(20px, 3.5vw, 24px);
-  font-weight: 800;
-  color: var(--ink);
-  margin: 0;
-  letter-spacing: -0.4px;
-  line-height: 1.2;
-}
-
-.showcase-translation {
-  font-size: 15px;
-  color: var(--ink-soft);
-  font-weight: 500;
-  margin: 0;
-  line-height: 1.35;
+  line-height: 1.4;
+  max-width: 320px;
 }
 
 /* Action Area */
