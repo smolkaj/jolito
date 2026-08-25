@@ -37,15 +37,6 @@ Jolito was created out of personal frustration while living in Mexico City: want
 - **Offline by default:** Installable PWA with local browser storage and service worker caching. Practice anywhere with zero network latency.
 - **Cloud backup:** Optional passwordless sign-in with instant multi-device synchronization powered by Supabase.
 
-## Review controls
-
-| Key                   | Action                                                 |
-| --------------------- | ------------------------------------------------------ |
-| `Type`                | Enter your answer in active recall mode                |
-| `Enter`               | Reveal canonical answer & display visual diff          |
-| `1` / `2` / `3` / `4` | Self-grade: **Again**, **Hard**, **Good**, or **Easy** |
-| `Space`               | Replay spoken audio                                    |
-
 ## Run it locally
 
 Requires **Node.js 24** (Krypton LTS) and npm.
