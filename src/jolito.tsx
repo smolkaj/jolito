@@ -2717,22 +2717,8 @@ export function App({
           </nav>
           <section className="deck-layout">
             <header className="deck-header-row">
-              <div>
-                <h1>Your deck</h1>
-                <p className="lede">
-                  Browse, search, edit, and backup your Mexican Spanish
-                  collection.
-                </p>
-              </div>
+              <h1>Your deck</h1>
               <div className="deck-header-actions">
-                {dueCount > 0 && (
-                  <button
-                    className="primary-button"
-                    onClick={() => beginReview()}
-                  >
-                    Practice {dueCount} due <span aria-hidden="true">→</span>
-                  </button>
-                )}
                 <button
                   type="button"
                   className="secondary-button"
