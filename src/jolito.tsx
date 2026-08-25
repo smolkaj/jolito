@@ -1429,6 +1429,13 @@ export function App({
     setIsSyncOpen(true)
   }, [])
 
+  const closeSyncModal = useCallback(() => {
+    setIsSyncOpen(false)
+    setSyncModalReason(null)
+    setPendingCard(null)
+    pendingCardRef.current = null
+  }, [])
+
   function createCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -1580,10 +1587,7 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => {
-            setIsSyncOpen(false)
-            setSyncModalReason(null)
-          }}
+          onClose={closeSyncModal}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
@@ -1898,10 +1902,7 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => {
-            setIsSyncOpen(false)
-            setSyncModalReason(null)
-          }}
+          onClose={closeSyncModal}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
@@ -1959,10 +1960,7 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => {
-            setIsSyncOpen(false)
-            setSyncModalReason(null)
-          }}
+          onClose={closeSyncModal}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
@@ -2162,10 +2160,7 @@ export function App({
       </main>
       <SyncModal
         isOpen={isSyncOpen}
-        onClose={() => {
-          setIsSyncOpen(false)
-          setSyncModalReason(null)
-        }}
+        onClose={closeSyncModal}
         cards={cards}
         onUpdateCards={onUpdateCards}
         auth={services.auth}
