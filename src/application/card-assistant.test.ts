@@ -1,8 +1,72 @@
 import { describe, expect, it } from 'vitest'
+import type { LexiconEntry } from '../domain/lexicon'
 import { createCardAssistant, OfflineCardAssistant } from './card-assistant'
 
+const TEST_ENTRIES: LexiconEntry[] = [
+  {
+    spanish: 'ahorita',
+    english: 'right now / in a bit',
+    context: 'Can mean immediately or never in Mexican Spanish.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'aguacate',
+    english: 'avocado',
+    context: 'Key ingredient across Mexican cuisine.',
+    tag: 'food',
+  },
+  {
+    spanish: 'qué padre',
+    english: 'how cool / fantastic',
+    context: 'Quintessential Mexican Spanish slang for something great.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'chela',
+    english: 'beer',
+    context: 'Casual Mexican word for a cold beer.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'madre',
+    english: 'mother',
+    context: 'Also central to countless Mexican idioms and slang.',
+    tag: 'basics',
+  },
+  {
+    spanish: 'chica',
+    english: 'girl / small (fem.)',
+    context: 'Common word for young woman or small size.',
+    tag: 'basics',
+  },
+  {
+    spanish: 'qué chido',
+    english: 'how cool / that is great',
+    context: 'Universal Mexican exclamation of enthusiasm.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'desmadre',
+    english: 'chaos / wild party / mess',
+    context: 'Very common Mexican slang for disorder or intense fun.',
+    tag: 'slang',
+  },
+  {
+    spanish: 'a toda madre',
+    english: 'awesome / great / at full speed',
+    context: 'Colloquial Mexican expression meaning fantastic or very fast.',
+    tag: 'slang',
+  },
+]
+
 describe('createCardAssistant', () => {
-  const assistant = createCardAssistant()
+  const assistant = createCardAssistant(TEST_ENTRIES)
+
+  it('starts with 0 entries by default when initialized with no arguments', () => {
+    const emptyAssistant = new OfflineCardAssistant()
+    expect(emptyAssistant.entryCount()).toBe(0)
+    expect(emptyAssistant.suggest('ahor')).toHaveLength(0)
+  })
 
   it('provides autocomplete suggestions for Mexican Spanish phrases', () => {
     const suggestions = assistant.suggest('ahor')
@@ -19,7 +83,7 @@ describe('createCardAssistant', () => {
   })
 
   it('translates known Spanish phrases with context', () => {
-    const entry = assistant.translate('Qué padre', 'es')
+    const entry = assistant.translate('qué padre', 'es')
     expect(entry).not.toBeNull()
     expect(entry?.english).toContain('cool')
     expect(entry?.context).toBeDefined()
@@ -119,6 +183,43 @@ describe('createCardAssistant', () => {
       const loadedNonArray =
         await customAssistant.loadDictionary('/dict/invalid.json')
       expect(loadedNonArray).toBe(false)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('allows retrying dictionary load after a temporary failure', async () => {
+    const customAssistant = new OfflineCardAssistant()
+    const originalFetch = globalThis.fetch
+    let failFirst = true
+
+    globalThis.fetch = (() => {
+      if (failFirst) {
+        failFirst = false
+        return Promise.resolve({ ok: false })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              spanish: 'reloj',
+              english: 'clock / watch',
+              context: 'noun.',
+              tag: 'basics',
+            },
+          ]),
+      })
+    }) as unknown as typeof fetch
+
+    try {
+      const firstTry = await customAssistant.loadDictionary()
+      expect(firstTry).toBe(false)
+      expect(customAssistant.entryCount()).toBe(0)
+
+      const secondTry = await customAssistant.loadDictionary()
+      expect(secondTry).toBe(true)
+      expect(customAssistant.entryCount()).toBe(1)
     } finally {
       globalThis.fetch = originalFetch
     }

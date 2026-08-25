@@ -20,8 +20,8 @@ const TEST_DICTIONARY: LexiconEntry[] = [
     tag: 'slang',
   },
   {
-    spanish: 'Qué padre',
-    english: 'How cool',
+    spanish: 'qué padre',
+    english: 'how cool',
     context: 'Quintessential Mexican Spanish slang for something great.',
     tag: 'slang',
   },
@@ -96,7 +96,7 @@ describe('LexiconIndex', () => {
     it('matches accent-insensitively', () => {
       const results = index.suggest('que pad')
       expect(results.length).toBeGreaterThan(0)
-      expect(results[0]?.spanish).toBe('Qué padre')
+      expect(results[0]?.spanish).toBe('qué padre')
     })
 
     it('finds substring matches when prefix matches are fewer than limit', () => {
@@ -125,7 +125,7 @@ describe('LexiconIndex', () => {
 
     it('returns null for exact matches in Spanish and English', () => {
       expect(index.didYouMean('aguacate', 'es')).toBeNull()
-      expect(index.didYouMean('Qué padre', 'es')).toBeNull()
+      expect(index.didYouMean('qué padre', 'es')).toBeNull()
       expect(index.didYouMean('avocado', 'en')).toBeNull()
     })
 
@@ -171,7 +171,7 @@ describe('LexiconIndex', () => {
     it('translates accent-insensitively', () => {
       const result = index.translate('que padre', 'es')
       expect(result).not.toBeNull()
-      expect(result?.spanish).toBe('Qué padre')
+      expect(result?.spanish).toBe('qué padre')
     })
 
     it('returns null for unknown phrases', () => {
