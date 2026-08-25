@@ -14,7 +14,7 @@ import type {
 } from '../application/ports'
 import { OfflineCardAssistant } from '../application/card-assistant'
 import type { StudyCard } from '../domain/card'
-import type { LexiconEntry } from '../domain/lexicon'
+import { SEED_LEXICON, type LexiconEntry } from '../domain/lexicon'
 import { reconcileStudyCards, type SyncStatus } from '../domain/sync'
 
 export class FixedClock implements Clock {
@@ -168,38 +168,7 @@ export class MockSyncService implements SyncService {
   }
 }
 
-export const TEST_LEXICON: LexiconEntry[] = [
-  {
-    spanish: 'aguacate',
-    english: 'avocado',
-    context: 'Key ingredient across Mexican cuisine.',
-    tag: 'food',
-  },
-  {
-    spanish: 'ahorita',
-    english: 'right now / in a bit',
-    context: 'Iconic Mexican time nuance: right now, soon, or never.',
-    tag: 'slang',
-  },
-  {
-    spanish: 'qué padre',
-    english: 'how cool / fantastic',
-    context: 'Quintessential Mexican exclamation of approval.',
-    tag: 'slang',
-  },
-  {
-    spanish: 'no manches',
-    english: 'no way / you are kidding',
-    context: 'Everyday Mexican expression of disbelief.',
-    tag: 'slang',
-  },
-  {
-    spanish: 'chela',
-    english: 'beer',
-    context: 'Casual Mexican word for a cold beer.',
-    tag: 'slang',
-  },
-]
+export const TEST_LEXICON: LexiconEntry[] = SEED_LEXICON
 
 export function createTestServices(options?: {
   cards?: StudyCard[] | null

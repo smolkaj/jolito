@@ -62,8 +62,14 @@ const TEST_ENTRIES: LexiconEntry[] = [
 describe('createCardAssistant', () => {
   const assistant = createCardAssistant(TEST_ENTRIES)
 
-  it('starts with 0 entries by default when initialized with no arguments', () => {
-    const emptyAssistant = new OfflineCardAssistant()
+  it('starts with core seed phrases by default when initialized with no arguments', () => {
+    const defaultAssistant = new OfflineCardAssistant()
+    expect(defaultAssistant.entryCount()).toBeGreaterThan(0)
+    expect(defaultAssistant.suggest('ahor')).toHaveLength(1)
+  })
+
+  it('starts with 0 entries when initialized with an empty array', () => {
+    const emptyAssistant = new OfflineCardAssistant([])
     expect(emptyAssistant.entryCount()).toBe(0)
     expect(emptyAssistant.suggest('ahor')).toHaveLength(0)
   })
@@ -189,7 +195,7 @@ describe('createCardAssistant', () => {
   })
 
   it('allows retrying dictionary load after a temporary failure', async () => {
-    const customAssistant = new OfflineCardAssistant()
+    const customAssistant = new OfflineCardAssistant([])
     const originalFetch = globalThis.fetch
     let failFirst = true
 

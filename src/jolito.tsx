@@ -1180,7 +1180,6 @@ export function App({
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([])
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
-  const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
   const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
@@ -1306,7 +1305,6 @@ export function App({
       setReverseAnswerInput('')
       setSuggestions([])
       setDidYouMean(null)
-      setShowSuggestions(false)
       setActiveSuggestionIndex(-1)
       setPendingCard(null)
       pendingCardRef.current = null
@@ -1602,7 +1600,6 @@ export function App({
       setContextInput(entry.context)
     }
     setSuggestions([])
-    setShowSuggestions(false)
     setDidYouMean(null)
     setActiveSuggestionIndex(-1)
   }, [])
@@ -1614,32 +1611,13 @@ export function App({
       if (val.trim().length >= 2) {
         const matches = services.assistant.suggest(val, 'es', 5)
         setSuggestions(matches)
-        setShowSuggestions(matches.length > 0)
-        if (matches.length === 0) {
-          const typo = services.assistant.didYouMean(val, 'es')
-          setDidYouMean(typo)
-          if (services.assistant.loadDictionary) {
-            void Promise.resolve(services.assistant.loadDictionary()).then(
-              () => {
-                if (spanishInputRef.current?.value === val) {
-                  const refreshed = services.assistant.suggest(val, 'es', 5)
-                  if (refreshed.length > 0) {
-                    setSuggestions(refreshed)
-                    setShowSuggestions(true)
-                    setDidYouMean(null)
-                  } else {
-                    setDidYouMean(services.assistant.didYouMean(val, 'es'))
-                  }
-                }
-              },
-            )
-          }
-        } else {
-          setDidYouMean(null)
-        }
+        setDidYouMean(
+          matches.length === 0
+            ? services.assistant.didYouMean(val, 'es')
+            : null,
+        )
       } else {
         setSuggestions([])
-        setShowSuggestions(false)
         setDidYouMean(null)
       }
       setActiveSuggestionIndex(-1)
@@ -1652,21 +1630,9 @@ export function App({
       const val = event.target.value
       setEnglishInput(val)
       if (val.trim().length >= 2 && !spanishInput.trim()) {
-        const matches = services.assistant.suggest(val, 'en', 5)
-        if (matches.length > 0) {
-          setSuggestions(matches)
-          setShowSuggestions(true)
-        } else if (services.assistant.loadDictionary) {
-          void Promise.resolve(services.assistant.loadDictionary()).then(() => {
-            if (!spanishInputRef.current?.value.trim()) {
-              const refreshed = services.assistant.suggest(val, 'en', 5)
-              if (refreshed.length > 0) {
-                setSuggestions(refreshed)
-                setShowSuggestions(true)
-              }
-            }
-          })
-        }
+        setSuggestions(services.assistant.suggest(val, 'en', 5))
+      } else if (!spanishInput.trim()) {
+        setSuggestions([])
       }
     },
     [services.assistant, spanishInput],
@@ -1674,7 +1640,7 @@ export function App({
 
   const onSpanishKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-      if (!showSuggestions || suggestions.length === 0) return
+      if (suggestions.length === 0) return
 
       if (event.key === 'ArrowDown') {
         event.preventDefault()
@@ -1690,15 +1656,15 @@ export function App({
           applySuggestion(suggestions[activeSuggestionIndex])
         }
       } else if (event.key === 'Escape') {
-        setShowSuggestions(false)
+        setSuggestions([])
         setActiveSuggestionIndex(-1)
       }
     },
-    [activeSuggestionIndex, applySuggestion, showSuggestions, suggestions],
+    [activeSuggestionIndex, applySuggestion, suggestions],
   )
 
   const openSyncModal = useCallback(() => {
-    setShowSuggestions(false)
+    setSuggestions([])
     setIsSyncOpen(true)
   }, [])
 
@@ -2019,15 +1985,10 @@ export function App({
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
-                  onFocus={() => {
-                    if (suggestions.length > 0) {
-                      setShowSuggestions(true)
-                    }
-                  }}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
                   aria-controls="spanish-suggestions"
-                  aria-expanded={showSuggestions && suggestions.length > 0}
+                  aria-expanded={suggestions.length > 0}
                   aria-activedescendant={
                     activeSuggestionIndex >= 0
                       ? `suggestion-${activeSuggestionIndex}`
@@ -2054,7 +2015,7 @@ export function App({
                     </button>
                   </div>
                 )}
-                {showSuggestions && suggestions.length > 0 && (
+                {suggestions.length > 0 && (
                   <ul
                     className="suggestions-listbox"
                     role="listbox"
