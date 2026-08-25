@@ -1129,9 +1129,7 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        /sign in to save this card to your library and sync across devices/i,
-      ),
+      screen.getByText(/free cloud sync across all your devices/i),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
 

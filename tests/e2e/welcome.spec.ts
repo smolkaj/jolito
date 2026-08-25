@@ -464,9 +464,7 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
     page.getByRole('heading', { name: /save your flashcard/i }),
   ).toBeVisible()
   await expect(
-    page.getByText(
-      /sign in to save this card to your library and sync across devices/i,
-    ),
+    page.getByText(/free cloud sync across all your devices/i),
   ).toBeVisible()
 
   await page.screenshot({ path: 'test-results/save-card-auth-modal.png' })

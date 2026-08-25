@@ -314,7 +314,7 @@ function SaveCardAuthModal({
         <div className="save-card-hero-header">
           <h2 id="save-card-auth-title">Save your flashcard</h2>
           <p className="save-card-subtitle">
-            Sign in to save this card to your library and sync across devices.
+            Free cloud sync across all your devices.
           </p>
         </div>
 
@@ -373,7 +373,7 @@ function SaveCardAuthModal({
               {loading ? 'Sending link…' : 'Continue with email →'}
             </button>
             <p className="save-card-micro-hint">
-              Passwordless · We’ll email you a 1-click sign-in link and code
+              100% free · No password needed
             </p>
           </form>
         ) : (
