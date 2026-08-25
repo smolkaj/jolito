@@ -3424,6 +3424,34 @@ kbd {
   gap: 14px;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.field-label-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.field-label-row .audio-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 4px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
 .delete-card-preview-card {
   background: var(--paper-subtle);
   border: 2px solid var(--line-subtle);

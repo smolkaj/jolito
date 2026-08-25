@@ -2890,20 +2890,13 @@ export function App({
                           <span className="deck-phrase-text">
                             {card.prompt}
                           </span>
-                          <AudioButton
-                            label={`Play ${card.prompt}`}
-                            onClick={() => playAudio(card.prompt, promptLocale)}
-                          />
                         </div>
                         <div className="col-phrase col-answer">
                           <span className="deck-answer-text">
                             {card.answer}
                           </span>
-                          <AudioButton
-                            label={`Play ${card.answer}`}
-                            onClick={() => playAudio(card.answer, answerLocale)}
-                          />
                         </div>
+
                         <div className="col-status">
                           <span
                             className={`deck-stat-chip is-${scheduleBadge.type} is-mini`}
