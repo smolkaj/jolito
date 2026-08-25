@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'jolito-shell-v1'
+const CACHE_NAME = 'jolito-shell-v2'
 const scopePath = new URL(self.registration.scope).pathname
 const shellUrl = scopePath
 const indexUrl = `${scopePath}index.html`
