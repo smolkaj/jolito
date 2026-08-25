@@ -14,8 +14,8 @@ export const starterCards: StudyCard[] = [
   ),
   ...createStudyCards(
     {
-      spanish: 'Qué padre',
-      english: 'How cool',
+      spanish: 'qué padre',
+      english: 'how cool',
       context: 'Quintessential Mexican Spanish slang for something great.',
       bidirectional: true,
     },
@@ -23,3 +23,11 @@ export const starterCards: StudyCard[] = [
     0,
   ),
 ]
+
+export function isStarterCard(card: StudyCard): boolean {
+  return card.noteId.startsWith('starter-')
+}
+
+export function filterOutStarterCards(cards: StudyCard[]): StudyCard[] {
+  return cards.filter((card) => !isStarterCard(card))
+}

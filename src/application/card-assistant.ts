@@ -1,4 +1,3 @@
-import { MEXICAN_SPANISH_DICTIONARY } from '../domain/dictionary-data'
 import {
   LexiconIndex,
   type AutocompleteSuggestion,
@@ -9,26 +8,36 @@ import type { CardAssistant } from './ports'
 export class OfflineCardAssistant implements CardAssistant {
   private index: LexiconIndex
   private isLoaded = false
+  private loadPromise: Promise<boolean> | null = null
 
-  constructor(entries: LexiconEntry[] = MEXICAN_SPANISH_DICTIONARY) {
+  constructor(entries: LexiconEntry[] = []) {
     this.index = new LexiconIndex(entries)
   }
 
-  async loadDictionary(url = './dict/es-en.json'): Promise<boolean> {
+  async loadDictionary(url = '/dict/es-en.json'): Promise<boolean> {
     if (this.isLoaded) return true
-    try {
-      const response = await fetch(url)
-      if (!response.ok) return false
-      const data = (await response.json()) as LexiconEntry[]
-      if (Array.isArray(data)) {
-        this.index.addEntries(data)
-        this.isLoaded = true
-        return true
+    if (this.loadPromise) return this.loadPromise
+    this.loadPromise = (async () => {
+      try {
+        const response = await fetch(url)
+        if (!response.ok) return false
+        const data = (await response.json()) as LexiconEntry[]
+        if (Array.isArray(data)) {
+          this.index.addEntries(data)
+          this.isLoaded = true
+          return true
+        }
+      } catch {
+        // Offline or network error: gracefully keep current index
       }
-    } catch {
-      // Offline or network error: gracefully keep bundled seeds
-    }
-    return false
+      return false
+    })().then((success) => {
+      if (!success) {
+        this.loadPromise = null
+      }
+      return success
+    })
+    return this.loadPromise
   }
 
   suggest(
@@ -53,7 +62,7 @@ export class OfflineCardAssistant implements CardAssistant {
 }
 
 export function createCardAssistant(
-  entries: LexiconEntry[] = MEXICAN_SPANISH_DICTIONARY,
+  entries: LexiconEntry[] = [],
 ): CardAssistant {
   return new OfflineCardAssistant(entries)
 }

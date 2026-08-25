@@ -1,0 +1,47 @@
+# Jolito — Product & Learner Guide
+
+> Spoken Mexican Spanish flashcards built for active recall, spaced repetition, and real-world conversation. Jolito turns daily language practice into a fast, rewarding habit with natural audio pronunciation, instant visual typo diffs, and zero-friction keyboard reviews.
+
+---
+
+# Origin Story
+
+Jolito was born out of a real-life transition: moving to Mexico City with my Mexican wife and twin daughters, and taking intensive Spanish classes at International House in Condesa.
+
+I needed a practical way to internalize what I learned in class and heard on the streets every day at home. While Anki provided the unbeatable spaced repetition algorithm needed for long-term retention, manually creating rich cards—clipping audio, finding pictures, and configuring templates—felt like an exhausting chore when I was tired at the end of the day. Capturing what you learned should feel effortless and fun, with the visual beauty, natural audio, and delightful flow state of modern apps like Duolingo. On the other end of the spectrum, gamified apps locked learners into rigid beginner courses without control over the real-world Mexican phrases they actually wanted to learn.
+
+Jolito was created to bridge that gap: pairing the proven power of spaced repetition and multimodal learning with zero-friction card authoring, ear-first native Mexican Spanish audio, active typed recall, and a joyful keyboard flow.
+
+---
+
+# Product Overview
+
+Jolito blends the proven power of spaced repetition flashcards with the audio immersion and friction-free flow of a modern practice app. Built for mastering real-world Mexican Spanish, Jolito turns daily language practice into a fast, rewarding habit—online or offline.
+
+## Why Another Flashcard App?
+
+- **Anki** is unbeatable for spaced repetition, but creating rich language cards with natural audio, reciprocal directions, and context requires tedious template configuration and manual media clipping.
+- **Duolingo** makes daily practice inviting, but locks learners into rigid multiple-choice curricula without control over the real-world phrases they actually want to learn.
+- **Jolito** delivers the speed and control of spaced repetition with zero-friction authoring, native Mexican Spanish audio, and keyboard-first typed active recall.
+
+---
+
+# Core Principles & Learning Design
+
+1. **AI proposes; the learner authors:** Jolito removes repetitive work by suggesting translations, pronunciations, audio, and context, while the learner stays in control.
+2. **Production, not recognition:** Learners type answers before revealing the canonical response. Self-evaluation remains authoritative because natural language has valid alternatives.
+3. **Make it flow:** New cards focus inputs automatically; prompt audio plays automatically; keyboard shortcuts (`Enter` to reveal, `1`–`4` to grade, `Space` for audio) carry the learner through review with zero friction.
+4. **Words and chunks are equally valid:** A card may be a single word, an idiom, or any useful language chunk.
+5. **Two-way by default, independently editable:** Most cards create linked Spanish ↔ English and English ↔ Spanish practice cards with side-by-side previews.
+6. **Offline is a first-class requirement:** Review, creation, and audio work completely without an internet connection using local browser storage and service worker caching.
+7. **Context is available, never in the way:** Concise answers serve as the primary card target, while an optional context drawer provides richer explanations, grammar notes, and CDMX slang variants.
+8. **Use modes in concert:** Text, visuals, and audio clarify and reinforce one another without competing for attention.
+
+---
+
+# Keyboard Controls & Review Flow
+
+- `Enter`: Reveal canonical answer / submit response
+- `1`, `2`, `3`, `4`: Self-grade recall (**1: Again**, **2: Hard**, **3: Good**, **4: Easy**)
+- `Space`: Replay pronunciation audio (prompt before reveal, expected answer after reveal)
+- Autofocus: Inputs automatically focus on each new card so hands never need to leave the keyboard.

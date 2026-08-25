@@ -21,7 +21,10 @@ import type {
   AuthUser,
   SyncService,
 } from './application/ports'
-import { starterCards } from './application/starter-cards'
+import {
+  filterOutStarterCards,
+  starterCards,
+} from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   grades,
@@ -286,6 +289,226 @@ function AnswerComparison({
     </div>
   )
 }
+interface PendingCardParams {
+  spanish: string
+  english: string
+  context: string
+  bidirectional: boolean
+  reversePrompt: string
+  reverseAnswer: string
+}
+
+function SaveCardAuthModal({
+  isOpen,
+  onClose,
+  auth,
+  onSaveLocally,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  auth: AuthService
+  onSaveLocally?: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [token, setToken] = useState('')
+  const [isOtpSent, setIsOtpSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [statusMsg, setStatusMsg] = useState<{
+    type: 'success' | 'error' | 'info'
+    message: string
+  } | null>(null)
+
+  const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  const handleSendLink = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setLoading(true)
+    setStatusMsg(null)
+    const res = await auth.sendMagicLink(email.trim())
+    setLoading(false)
+    if (res.success) {
+      setIsOtpSent(true)
+      setStatusMsg(null)
+    } else {
+      setStatusMsg({
+        type: 'error',
+        message: res.error || 'Failed to send sign-in link.',
+      })
+    }
+  }
+
+  const handleVerifyOtp = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!token.trim()) return
+    setLoading(true)
+    setStatusMsg(null)
+    const res = await auth.verifyOtp(email.trim(), token.trim())
+    setLoading(false)
+    if (res.success) {
+      setStatusMsg({
+        type: 'success',
+        message: 'Signed in! Saving card…',
+      })
+    } else {
+      setStatusMsg({
+        type: 'error',
+        message: res.error || 'Invalid verification code.',
+      })
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content save-card-auth-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-card-auth-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="modal-close save-card-close-btn"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+
+        <div className="save-card-hero-header">
+          <h2 id="save-card-auth-title">Save your flashcard</h2>
+          <p className="save-card-subtitle">
+            Free cloud sync across all your devices.
+          </p>
+        </div>
+
+        {statusMsg && (
+          <div
+            className={`status-banner status-${statusMsg.type}`}
+            role={statusMsg.type === 'error' ? 'alert' : 'status'}
+          >
+            <p>{statusMsg.message}</p>
+          </div>
+        )}
+
+        {!isBackendConfigured ? (
+          <div className="save-card-action-container">
+            {onSaveLocally && (
+              <button
+                type="button"
+                className="primary-button save-card-main-cta"
+                onClick={onSaveLocally}
+              >
+                Save card to this device →
+              </button>
+            )}
+            <p className="save-card-micro-hint">
+              Cloud sync disabled in preview · Saved safely in this browser
+            </p>
+          </div>
+        ) : !isOtpSent ? (
+          <form
+            onSubmit={(e) => {
+              void handleSendLink(e)
+            }}
+            className="save-card-auth-form"
+          >
+            <div className="save-card-field">
+              <label htmlFor="save-card-email" className="visually-hidden">
+                Email address
+              </label>
+              <input
+                id="save-card-email"
+                type="email"
+                required
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                autoComplete="email"
+                className="save-card-email-input"
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button save-card-main-cta"
+              disabled={loading || !email.trim()}
+            >
+              {loading ? 'Sending link…' : 'Continue with email →'}
+            </button>
+            <p className="save-card-micro-hint">
+              100% free · No password needed
+            </p>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              void handleVerifyOtp(e)
+            }}
+            className="save-card-auth-form"
+          >
+            <p className="save-card-otp-notice">
+              Enter the 6-digit code sent to <strong>{email.trim()}</strong>
+            </p>
+            <div className="save-card-field">
+              <label htmlFor="save-card-otp" className="visually-hidden">
+                Verification code
+              </label>
+              <input
+                id="save-card-otp"
+                type="text"
+                required
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="123456"
+                autoComplete="one-time-code"
+                className="save-card-otp-input"
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button save-card-main-cta"
+              disabled={loading || !token.trim()}
+            >
+              {loading ? 'Saving…' : 'Verify & save card ✓'}
+            </button>
+            <button
+              type="button"
+              className="text-button change-email-btn"
+              onClick={() => {
+                setIsOtpSent(false)
+                setToken('')
+                setStatusMsg(null)
+              }}
+            >
+              ← Use a different email
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SyncModal({
   isOpen,
   onClose,
@@ -384,36 +607,13 @@ function SyncModal({
     setLoading(true)
     setSyncStatusMsg(null)
     const res = await auth.verifyOtp(email.trim(), token.trim())
+    setLoading(false)
     if (res.success) {
-      const loggedUser = await auth.getUser()
-      if (loggedUser) {
-        setSyncStatusMsg({
-          type: 'info',
-          message: 'Signed in! Syncing deck with cloud...',
-        })
-        const syncRes = await syncDeckWithCloud({
-          localCards: cards,
-          user: loggedUser,
-          syncService: sync,
-          onCardsUpdated: onUpdateCards,
-        })
-        setLoading(false)
-        if (syncRes.success) {
-          setSyncStatusMsg({
-            type: 'success',
-            message: `Deck synchronized (${cards.length} cards up to date).`,
-          })
-        } else {
-          setSyncStatusMsg({
-            type: 'error',
-            message: syncRes.error || 'Sync completed with errors.',
-          })
-        }
-      } else {
-        setLoading(false)
-      }
+      setSyncStatusMsg({
+        type: 'success',
+        message: 'Signed in! Deck synchronized with cloud.',
+      })
     } else {
-      setLoading(false)
       setSyncStatusMsg({
         type: 'error',
         message: res.error || 'Invalid code.',
@@ -982,6 +1182,8 @@ export function App({
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
+  const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
@@ -1034,11 +1236,13 @@ export function App({
   const cardsRef = useRef(cards)
   const viewRef = useRef(view)
   const authUserRef = useRef(authUser)
+  const pendingCardRef = useRef(pendingCard)
 
   useEffect(() => {
     cardsRef.current = cards
     viewRef.current = view
     authUserRef.current = authUser
+    pendingCardRef.current = pendingCard
   })
 
   const onUpdateCards = useCallback(
@@ -1068,21 +1272,72 @@ export function App({
     [services.cards, services.clock, services.sync],
   )
 
+  const saveCardFromParams = useCallback(
+    (params: {
+      spanish: string
+      english: string
+      context: string
+      bidirectional: boolean
+      reversePrompt: string
+      reverseAnswer: string
+    }) => {
+      const created = createCards(params, {
+        clock: services.clock,
+        ids: services.ids,
+      })
+      if (created.length === 0) return
+
+      const userCards = filterOutStarterCards(cardsRef.current)
+      onUpdateCards([...created, ...userCards])
+      const savedSpanish = params.spanish.trim()
+      setSavedToast(savedSpanish)
+      if (savedToastTimerRef.current !== null) {
+        window.clearTimeout(savedToastTimerRef.current)
+      }
+      savedToastTimerRef.current = window.setTimeout(() => {
+        setSavedToast(null)
+        savedToastTimerRef.current = null
+      }, 3000)
+
+      setSpanishInput('')
+      setEnglishInput('')
+      setContextInput('')
+      setReversePromptInput('')
+      setReverseAnswerInput('')
+      setSuggestions([])
+      setDidYouMean(null)
+      setShowSuggestions(false)
+      setActiveSuggestionIndex(-1)
+      setPendingCard(null)
+      pendingCardRef.current = null
+      spanishInputRef.current?.focus()
+    },
+    [onUpdateCards, services.clock, services.ids],
+  )
+
   useEffect(() => {
     return services.auth.onAuthStateChange((user) => {
+      authUserRef.current = user
       setAuthUser(user)
       if (user) {
-        void syncDeckWithCloud({
-          localCards: cardsRef.current,
-          user,
-          syncService: services.sync,
-          onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
-        }).then((res) => {
-          if (res.success) setSyncStatus('synced')
-        })
+        if (pendingCardRef.current) {
+          const pending = pendingCardRef.current
+          saveCardFromParams(pending)
+          setIsSaveCardAuthOpen(false)
+        } else {
+          const userCards = filterOutStarterCards(cardsRef.current)
+          void syncDeckWithCloud({
+            localCards: userCards,
+            user,
+            syncService: services.sync,
+            onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
+          }).then((res) => {
+            if (res.success) setSyncStatus('synced')
+          })
+        }
       }
     })
-  }, [onUpdateCards, services.auth, services.sync])
+  }, [onUpdateCards, saveCardFromParams, services.auth, services.sync])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1090,8 +1345,9 @@ export function App({
       setIsOnline(true)
       if (authUserRef.current) {
         setSyncStatus('syncing')
+        const userCards = filterOutStarterCards(cardsRef.current)
         void services.sync
-          .syncDeck(cardsRef.current, authUserRef.current)
+          .syncDeck(userCards, authUserRef.current)
           .then((res) => {
             if (res.success) setSyncStatus('synced')
             else setSyncStatus('error')
@@ -1375,6 +1631,26 @@ export function App({
     [services.assistant],
   )
 
+  useEffect(() => {
+    if (
+      view === 'create' &&
+      spanishInput.trim().length >= 2 &&
+      suggestions.length === 0
+    ) {
+      void Promise.resolve(services.assistant.loadDictionary?.()).then(() => {
+        const matches = services.assistant.suggest(spanishInput, 'es', 5)
+        if (matches.length > 0) {
+          setSuggestions(matches)
+          setShowSuggestions(true)
+          setDidYouMean(null)
+        } else {
+          const typo = services.assistant.didYouMean(spanishInput, 'es')
+          setDidYouMean(typo)
+        }
+      })
+    }
+  }, [services.assistant, spanishInput, suggestions.length, view])
+
   const onEnglishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
       const val = event.target.value
@@ -1415,6 +1691,28 @@ export function App({
     [activeSuggestionIndex, applySuggestion, showSuggestions, suggestions],
   )
 
+  const openSyncModal = useCallback(() => {
+    setShowSuggestions(false)
+    setIsSyncOpen(true)
+  }, [])
+
+  const closeSyncModal = useCallback(() => {
+    setIsSyncOpen(false)
+  }, [])
+
+  const closeSaveCardAuthModal = useCallback(() => {
+    setIsSaveCardAuthOpen(false)
+    setPendingCard(null)
+    pendingCardRef.current = null
+  }, [])
+
+  const handleSavePendingLocally = useCallback(() => {
+    if (pendingCardRef.current) {
+      saveCardFromParams(pendingCardRef.current)
+    }
+    setIsSaveCardAuthOpen(false)
+  }, [saveCardFromParams])
+
   function createCard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -1422,41 +1720,27 @@ export function App({
       const value = form.get(name)
       return typeof value === 'string' ? value : ''
     }
-    const created = createCards(
-      {
-        spanish: field('spanish'),
-        english: field('english'),
-        context: field('context'),
-        bidirectional: form.get('bidirectional') === 'on',
-        reversePrompt: field('reversePrompt'),
-        reverseAnswer: field('reverseAnswer'),
-      },
-      { clock: services.clock, ids: services.ids },
-    )
-    if (created.length === 0) return
+    const spanish = field('spanish').trim()
+    const english = field('english').trim()
+    if (!spanish || !english) return
 
-    setCards((current) => [...created, ...current])
-    setReferenceTime(services.clock.now())
-    const savedSpanish = field('spanish').trim()
-    setSavedToast(savedSpanish)
-    if (savedToastTimerRef.current !== null) {
-      window.clearTimeout(savedToastTimerRef.current)
+    const cardParams = {
+      spanish: field('spanish'),
+      english: field('english'),
+      context: field('context'),
+      bidirectional: form.get('bidirectional') === 'on',
+      reversePrompt: field('reversePrompt'),
+      reverseAnswer: field('reverseAnswer'),
     }
-    savedToastTimerRef.current = window.setTimeout(() => {
-      setSavedToast(null)
-      savedToastTimerRef.current = null
-    }, 3000)
 
-    setSpanishInput('')
-    setEnglishInput('')
-    setContextInput('')
-    setReversePromptInput('')
-    setReverseAnswerInput('')
-    setSuggestions([])
-    setDidYouMean(null)
-    setShowSuggestions(false)
-    setActiveSuggestionIndex(-1)
-    spanishInputRef.current?.focus()
+    if (!authUserRef.current) {
+      setPendingCard(cardParams)
+      pendingCardRef.current = cardParams
+      setIsSaveCardAuthOpen(true)
+      return
+    }
+
+    saveCardFromParams(cardParams)
   }
 
   if (view === 'welcome') {
@@ -1470,7 +1754,7 @@ export function App({
                 authUser={authUser}
                 syncStatus={syncStatus}
                 isOnline={isOnline}
-                onClick={() => setIsSyncOpen(true)}
+                onClick={() => openSyncModal()}
               />
             </div>
           </nav>
@@ -1583,7 +1867,7 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => setIsSyncOpen(false)}
+          onClose={closeSyncModal}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
@@ -1608,7 +1892,7 @@ export function App({
                 authUser={authUser}
                 syncStatus={syncStatus}
                 isOnline={isOnline}
-                onClick={() => setIsSyncOpen(true)}
+                onClick={() => openSyncModal()}
               />
             </div>
           </nav>
@@ -1730,7 +2014,22 @@ export function App({
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
                   onFocus={() => {
-                    if (suggestions.length > 0) setShowSuggestions(true)
+                    if (spanishInput.trim().length >= 2) {
+                      const matches = services.assistant.suggest(
+                        spanishInput,
+                        'es',
+                        5,
+                      )
+                      setSuggestions(matches)
+                      setShowSuggestions(matches.length > 0)
+                      if (matches.length === 0) {
+                        setDidYouMean(
+                          services.assistant.didYouMean(spanishInput, 'es'),
+                        )
+                      }
+                    } else if (suggestions.length > 0) {
+                      setShowSuggestions(true)
+                    }
                   }}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
@@ -1883,12 +2182,18 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => setIsSyncOpen(false)}
+          onClose={closeSyncModal}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
           clock={services.clock}
+        />
+        <SaveCardAuthModal
+          isOpen={isSaveCardAuthOpen}
+          onClose={closeSaveCardAuthModal}
+          auth={services.auth}
+          onSaveLocally={handleSavePendingLocally}
         />
       </>
     )
@@ -1910,7 +2215,7 @@ export function App({
                 authUser={authUser}
                 syncStatus={syncStatus}
                 isOnline={isOnline}
-                onClick={() => setIsSyncOpen(true)}
+                onClick={() => openSyncModal()}
               />
             </div>
           </nav>
@@ -1940,7 +2245,7 @@ export function App({
         </main>
         <SyncModal
           isOpen={isSyncOpen}
-          onClose={() => setIsSyncOpen(false)}
+          onClose={closeSyncModal}
           cards={cards}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
@@ -2038,7 +2343,7 @@ export function App({
               authUser={authUser}
               syncStatus={syncStatus}
               isOnline={isOnline}
-              onClick={() => setIsSyncOpen(true)}
+              onClick={() => openSyncModal()}
             />
           </div>
         </nav>
@@ -2139,7 +2444,7 @@ export function App({
       </main>
       <SyncModal
         isOpen={isSyncOpen}
-        onClose={() => setIsSyncOpen(false)}
+        onClose={closeSyncModal}
         cards={cards}
         onUpdateCards={onUpdateCards}
         auth={services.auth}
