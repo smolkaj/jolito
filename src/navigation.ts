@@ -25,3 +25,17 @@ export function hashForView(view: View): string {
       return '#/'
   }
 }
+
+export function titleForView(view: View): string {
+  switch (view) {
+    case 'create':
+      return 'Create Flashcard • Jolito'
+    case 'review':
+      return 'Study Session • Jolito'
+    case 'complete':
+      return '¡Hecho! • Jolito'
+    case 'welcome':
+    default:
+      return 'Jolito — Mexican Spanish that sticks'
+  }
+}

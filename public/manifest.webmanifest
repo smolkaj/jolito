@@ -2,8 +2,13 @@
   "name": "Jolito",
   "short_name": "Jolito",
   "description": "Spoken Mexican Spanish at your rhythm.",
-  "start_url": ".",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["education", "productivity"],
   "background_color": "#fdf5f8",
   "theme_color": "#fdf5f8",
   "icons": [
@@ -22,6 +27,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Jolito study review session on desktop"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Jolito study review session on mobile"
     }
   ]
 }
