@@ -486,7 +486,7 @@ summary:focus-visible {
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
-  padding: 8px 0 32px;
+  padding: 24px 0 36px;
 }
 
 .hero-copy {
@@ -495,13 +495,12 @@ summary:focus-visible {
 }
 
 .welcome-mascot-img {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 0;
-  width: 84px;
-  height: 84px;
+  width: 128px;
+  height: 128px;
   object-fit: contain;
   display: block;
+  margin-bottom: 20px;
+  transform: scaleX(-1);
   user-select: none;
   pointer-events: none;
 }
@@ -2108,10 +2107,9 @@ kbd {
   }
 
   .welcome-mascot-img {
-    position: static;
-    width: 68px;
-    height: 68px;
-    margin-bottom: 14px;
+    width: 84px;
+    height: 84px;
+    margin-bottom: 16px;
   }
 
   .hero-copy h1 {
