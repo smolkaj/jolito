@@ -495,11 +495,11 @@ summary:focus-visible {
 }
 
 .welcome-mascot-img {
-  width: 128px;
-  height: 128px;
+  width: 180px;
+  height: 180px;
   object-fit: contain;
   display: block;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   transform: scaleX(-1);
   user-select: none;
   pointer-events: none;
@@ -2107,8 +2107,8 @@ kbd {
   }
 
   .welcome-mascot-img {
-    width: 84px;
-    height: 84px;
+    width: 110px;
+    height: 110px;
     margin-bottom: 16px;
   }
 
