@@ -22,8 +22,11 @@ async function main() {
   }
 
   const server = createServer((req, res) => {
-    const rawPath = req.url ? new URL(req.url, 'http://127.0.0.1:4199').pathname : '/'
-    const sanitizedRelPath = rawPath === '/' ? 'index.html' : rawPath.slice(1).replace(/\.\./g, '')
+    const rawPath = req.url
+      ? new URL(req.url, 'http://127.0.0.1:4199').pathname
+      : '/'
+    const sanitizedRelPath =
+      rawPath === '/' ? 'index.html' : rawPath.slice(1).replace(/\.\./g, '')
     const targetFile = resolve(distDir, sanitizedRelPath)
 
     const finalPath =
