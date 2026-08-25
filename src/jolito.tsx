@@ -2626,19 +2626,22 @@ export function App({
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"
-                aria-label={savedToast ? `Saved “${savedToast}”` : 'Save card'}
+                aria-label="Save card"
               >
                 {savedToast ? (
-                  <span role="status" className="save-button-saved">
-                    <span className="save-button-check" aria-hidden="true">
-                      ✓
-                    </span>{' '}
-                    Saved “{savedToast}”
+                  <span className="save-button-saved" aria-hidden="true">
+                    <span className="save-button-check">✓</span>
+                    <span className="save-button-text">
+                      Saved “{savedToast}”
+                    </span>
                   </span>
                 ) : (
-                  'Save card'
+                  <span>Save card</span>
                 )}
               </button>
+              <div className="sr-only" role="status" aria-live="polite">
+                {savedToast ? `Saved “${savedToast}”` : ''}
+              </div>
             </form>
           </section>
         </main>

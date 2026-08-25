@@ -1163,7 +1163,7 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
-    expect(screen.getByRole('button', { name: /saved “chido”/i })).toHaveClass(
+    expect(screen.getByRole('button', { name: 'Save card' })).toHaveClass(
       'is-saved',
     )
     expect(
@@ -1181,13 +1181,13 @@ describe('Jolito', () => {
     // 2. Create second card in batch without needing to re-navigate or re-focus
     await user.type(spanishInput, 'popote')
     await user.type(englishInput, 'drinking straw')
-    await user.click(screen.getByRole('button', { name: /save card|saved/i }))
+    await user.click(screen.getByRole('button', { name: 'Save card' }))
 
     expect(
       screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “popote”/i)
-    expect(screen.getByRole('button', { name: /saved “popote”/i })).toHaveClass(
+    expect(screen.getByRole('button', { name: 'Save card' })).toHaveClass(
       'is-saved',
     )
     expect(spanishInput).toHaveValue('')

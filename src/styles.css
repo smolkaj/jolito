@@ -1230,6 +1230,17 @@ summary:focus-visible {
   transition: all 180ms var(--ease-spring);
 }
 
+.save-button span {
+  margin-left: 0;
+  line-height: inherit;
+  font-size: inherit;
+  transition: none;
+}
+
+.save-button:hover span {
+  transform: none;
+}
+
 .save-button.is-saved {
   background: var(--verde);
   color: #ffffff;
@@ -1253,7 +1264,9 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+  max-width: 100%;
+  padding: 0 4px;
   animation: saveTextFade 200ms ease-out;
 }
 
@@ -1261,7 +1274,15 @@ summary:focus-visible {
   display: inline-block;
   font-size: 16px;
   font-weight: 800;
+  flex-shrink: 0;
   animation: saveCheckmarkBounce 350ms var(--ease-spring);
+}
+
+.save-button-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 @keyframes saveButtonPop {
