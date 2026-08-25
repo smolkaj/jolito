@@ -20,12 +20,12 @@ Jolito blends the proven power of [spaced repetition](https://en.wikipedia.org/w
 
 Jolito was created out of personal frustration while living in Mexico City: wanting to capture the living phrases heard on the street every day, hear them spoken naturally, and practice active recall without wrestling with database software.
 
-|                          | **Anki**                           | **Duolingo**                | **Jolito**                        |
-| ------------------------ | ---------------------------------- | --------------------------- | --------------------------------- |
-| **Focus**                | General-purpose                    | Rigid beginner courses      | Real-world spoken language        |
-| **Adding audio & cards** | High friction (plugins, templates) | None (fixed curriculum)     | Zero-friction authoring           |
-| **Practice style**       | Passive self-report                | Multiple-choice recognition | Active typed recall + audio       |
-| **Learner control**      | 100%                               | Low                         | 100% (custom cards & Anki import) |
+|                          | **Anki**                                        | **Duolingo**                 | **Jolito**                                         |
+| ------------------------ | ----------------------------------------------- | ---------------------------- | -------------------------------------------------- |
+| **Focus**                | General-purpose                                 | Rigid beginner courses       | Real-world spoken language                         |
+| **Adding audio & cards** | High friction (plugins, templates)              | None (fixed curriculum)      | Zero-friction authoring                            |
+| **Review experience**    | Flip-and-grade (typing requires template setup) | Multiple choice & word banks | Keyboard-first typed recall & audio out of the box |
+| **Learner control**      | 100%                                            | Low                          | 100% (custom cards & Anki import)                  |
 
 ## Highlights
 
