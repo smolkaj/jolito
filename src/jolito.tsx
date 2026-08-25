@@ -266,10 +266,7 @@ function SaveCardAuthModal({
     setLoading(false)
     if (res.success) {
       setIsOtpSent(true)
-      setStatusMsg({
-        type: 'info',
-        message: `Sign-in code sent to ${email.trim()}.`,
-      })
+      setStatusMsg(null)
     } else {
       setStatusMsg({
         type: 'error',
@@ -307,39 +304,36 @@ function SaveCardAuthModal({
         aria-labelledby="save-card-auth-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="save-card-auth-header">
-          <div className="save-card-icon-badge" aria-hidden="true">
-            ✨
-          </div>
-          <div className="save-card-header-text">
-            <h2 id="save-card-auth-title">Save your flashcard</h2>
-            <p className="save-card-subtitle">
-              Sign in or create a free account to save your cards and sync
-              across devices.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
+        <button
+          type="button"
+          className="modal-close save-card-close-btn"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+
+        <div className="save-card-hero-header">
+          <h2 id="save-card-auth-title">Save your flashcard</h2>
+          <p className="save-card-subtitle">
+            Sign in to save this card to your personal library and sync across
+            devices.
+          </p>
         </div>
 
         {pendingCard && (
-          <div className="pending-card-preview" aria-label="Card to save">
-            <span className="pending-card-label">Card to save</span>
-            <div className="pending-card-pill">
-              <span className="pending-flag" aria-hidden="true">
-                🇲🇽
+          <div className="save-card-showcase" aria-label="Card to save">
+            <div className="showcase-card-header">
+              <span className="showcase-badge">
+                <MexicoFlag /> MEXICAN SPANISH
               </span>
-              <strong className="pending-spanish">{pendingCard.spanish}</strong>
-              <span className="pending-arrow" aria-hidden="true">
-                →
-              </span>
-              <span className="pending-english">{pendingCard.english}</span>
+              {pendingCard.context && (
+                <span className="showcase-context">{pendingCard.context}</span>
+              )}
+            </div>
+            <div className="showcase-card-body">
+              <p className="showcase-phrase">{pendingCard.spanish}</p>
+              <p className="showcase-translation">{pendingCard.english}</p>
             </div>
           </div>
         )}
@@ -354,20 +348,19 @@ function SaveCardAuthModal({
         )}
 
         {!isBackendConfigured ? (
-          <div className="preview-fallback-box">
-            <p className="preview-fallback-caption">
-              Cloud sync is disabled in this preview deployment. Your cards are
-              safely stored in your browser.
-            </p>
+          <div className="save-card-action-container">
             {onSaveLocally && (
               <button
                 type="button"
-                className="primary-button save-locally-cta"
+                className="primary-button save-card-main-cta"
                 onClick={onSaveLocally}
               >
-                Save card locally (preview) →
+                Save card to this device →
               </button>
             )}
+            <p className="save-card-micro-hint">
+              Cloud sync disabled in preview · Saved safely in this browser
+            </p>
           </div>
         ) : !isOtpSent ? (
           <form
@@ -376,8 +369,10 @@ function SaveCardAuthModal({
             }}
             className="save-card-auth-form"
           >
-            <div className="field-group">
-              <label htmlFor="save-card-email">Email address</label>
+            <div className="save-card-field">
+              <label htmlFor="save-card-email" className="visually-hidden">
+                Email address
+              </label>
               <input
                 id="save-card-email"
                 type="email"
@@ -385,20 +380,20 @@ function SaveCardAuthModal({
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="learner@example.com"
+                placeholder="Enter your email address"
                 autoComplete="email"
                 className="save-card-email-input"
               />
             </div>
             <button
               type="submit"
-              className="primary-button save-card-submit-btn"
+              className="primary-button save-card-main-cta"
               disabled={loading || !email.trim()}
             >
               {loading ? 'Sending link…' : 'Continue with email →'}
             </button>
-            <p className="save-card-hint">
-              We’ll send a magic link and 6-digit code. No password needed.
+            <p className="save-card-micro-hint">
+              Passwordless · We’ll email you a 1-click sign-in link and code
             </p>
           </form>
         ) : (
@@ -408,8 +403,13 @@ function SaveCardAuthModal({
             }}
             className="save-card-auth-form"
           >
-            <div className="field-group">
-              <label htmlFor="save-card-otp">Verification code</label>
+            <p className="save-card-otp-notice">
+              Enter the 6-digit code sent to <strong>{email.trim()}</strong>
+            </p>
+            <div className="save-card-field">
+              <label htmlFor="save-card-otp" className="visually-hidden">
+                Verification code
+              </label>
               <input
                 id="save-card-otp"
                 type="text"
@@ -427,10 +427,10 @@ function SaveCardAuthModal({
             </div>
             <button
               type="submit"
-              className="primary-button save-card-submit-btn"
+              className="primary-button save-card-main-cta"
               disabled={loading || !token.trim()}
             >
-              {loading ? 'Verifying…' : 'Verify & save card ✓'}
+              {loading ? 'Saving…' : 'Verify & save card ✓'}
             </button>
             <button
               type="button"

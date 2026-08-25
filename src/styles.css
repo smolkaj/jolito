@@ -2682,118 +2682,190 @@ kbd {
 }
 
 /* ==========================================================================
-   Save Card Auth Modal (Guest Card Creation Sign-in Gate)
+   Save Card Auth Modal (Spacious, Minimalist, High-Craft Editorial Design)
    ========================================================================== */
 
 .save-card-auth-modal {
-  width: min(440px, 100%);
-  padding: clamp(24px, 4vw, 32px);
-  gap: 16px;
-  border-radius: 24px;
-}
-
-.save-card-auth-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  width: min(520px, 100%);
+  padding: clamp(32px, 6vw, 44px) clamp(24px, 5vw, 36px);
+  gap: 22px;
+  border-radius: 28px;
+  border: 2.5px solid var(--line);
+  box-shadow:
+    6px 6px 0 var(--line),
+    0 20px 48px -8px rgba(18, 24, 21, 0.14);
+  background: var(--card);
+  text-align: center;
   position: relative;
 }
 
-.save-card-icon-badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: var(--rosa-soft);
-  border: 2px solid var(--rosa-dark);
+.save-card-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.save-card-hero-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  flex-shrink: 0;
+  gap: 6px;
 }
 
-.save-card-header-text {
-  flex: 1;
-  padding-right: 32px;
-}
-
-.save-card-header-text h2 {
+.save-card-hero-header h2 {
   font-family: var(--font-serif);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: clamp(24px, 4.5vw, 28px);
+  font-weight: 800;
+  letter-spacing: -0.8px;
   color: var(--ink);
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  margin: 0;
+  line-height: 1.15;
 }
 
 .save-card-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-soft);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.45;
+  max-width: 380px;
 }
 
-.pending-card-preview {
+/* Miniature Hero Flashcard Preview */
+.save-card-showcase {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: var(--paper-subtle);
-  border: 1.5px solid var(--line);
-  border-radius: 14px;
-  padding: 10px 14px;
+  gap: 12px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  padding: 18px 22px;
+  box-shadow: 4px 4px 0 var(--rosa);
+  text-align: left;
+  transition:
+    transform 160ms var(--ease-spring),
+    box-shadow 160ms var(--ease-spring);
 }
 
-.pending-card-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
+.save-card-showcase:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0 var(--rosa-dark);
 }
 
-.pending-card-pill {
+.showcase-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  font-size: 14px;
+}
+
+.showcase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--rosa-dark);
+  text-transform: uppercase;
+}
+
+.showcase-badge .flag-icon {
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.showcase-context {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--paper-subtle);
+  padding: 2px 8px;
+  border-radius: 6px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.pending-card-pill .pending-flag {
-  font-size: 16px;
+.showcase-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.pending-card-pill .pending-spanish {
+.showcase-phrase {
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 3.5vw, 24px);
+  font-weight: 800;
   color: var(--ink);
-  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
 }
 
-.pending-card-pill .pending-arrow {
-  color: var(--ink-faint);
-  font-weight: 600;
-}
-
-.pending-card-pill .pending-english {
+.showcase-translation {
+  font-size: 15px;
   color: var(--ink-soft);
   font-weight: 500;
+  margin: 0;
+  line-height: 1.35;
 }
 
+/* Action Area */
+.save-card-action-container,
 .save-card-auth-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  width: 100%;
 }
 
-.save-card-email-input,
+.save-card-field {
+  width: 100%;
+}
+
+.save-card-email-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 18px;
+  font-size: 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+  text-align: center;
+}
+
+.save-card-email-input::placeholder {
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.save-card-email-input:focus {
+  border-color: var(--rosa);
+  box-shadow: 0 0 0 3px var(--rosa-glow);
+}
+
+.save-card-otp-notice {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.4;
+}
+
 .save-card-otp-input {
   width: 100%;
-  padding: 12px 14px;
-  font-size: 15px;
+  height: 56px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-align: center;
   border: 2px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--card);
   color: var(--ink);
   outline: none;
@@ -2802,28 +2874,25 @@ kbd {
     box-shadow 140ms ease;
 }
 
-.save-card-otp-input {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-align: center;
-}
-
-.save-card-email-input:focus,
 .save-card-otp-input:focus {
   border-color: var(--rosa);
   box-shadow: 0 0 0 3px var(--rosa-glow);
 }
 
-.save-card-submit-btn {
+.save-card-main-cta {
   width: 100%;
-  padding: 12px;
-  font-size: 14px;
+  height: 52px;
+  font-size: 16px;
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 14px;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.save-card-hint {
+.save-card-micro-hint {
   font-size: 12px;
   color: var(--ink-muted);
   text-align: center;
@@ -2840,27 +2909,6 @@ kbd {
 
 .change-email-btn:hover {
   color: var(--ink);
-}
-
-.preview-fallback-box {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  background: var(--paper-subtle);
-  border: 1.5px solid var(--line-subtle);
-  border-radius: 14px;
-}
-
-.preview-fallback-caption {
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.save-locally-cta {
-  width: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {

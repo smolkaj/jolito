@@ -1130,7 +1130,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        /sign in or create a free account to save your cards and sync across devices/i,
+        /sign in to save this card to your personal library and sync across devices/i,
       ),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/card to save/i)).toBeInTheDocument()
@@ -1231,11 +1231,13 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /save your flashcard/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/cloud sync is disabled in this preview/i),
+      screen.getByText(/cloud sync disabled in preview/i),
     ).toBeInTheDocument()
 
     // User clicks save locally in preview
-    await user.click(screen.getByRole('button', { name: /save card locally/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save card to this device/i }),
+    )
 
     expect(
       screen.queryByRole('heading', { name: /save your flashcard/i }),
