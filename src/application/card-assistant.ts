@@ -1,5 +1,6 @@
 import {
   LexiconIndex,
+  SEED_LEXICON,
   type AutocompleteSuggestion,
   type LexiconEntry,
 } from '../domain/lexicon'
@@ -10,7 +11,7 @@ export class OfflineCardAssistant implements CardAssistant {
   private isLoaded = false
   private loadPromise: Promise<boolean> | null = null
 
-  constructor(entries: LexiconEntry[] = []) {
+  constructor(entries: LexiconEntry[] = SEED_LEXICON) {
     this.index = new LexiconIndex(entries)
   }
 
