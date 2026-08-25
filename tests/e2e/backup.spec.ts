@@ -12,11 +12,18 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 
   await page.getByRole('button', { name: /deck \(4\)/i }).click()
   await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
   await expect(
     page.getByRole('heading', { name: /deck import & offline backup/i }),
   ).toBeVisible()
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in deck manager
+  await page.waitForTimeout(200)
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -35,6 +42,7 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 
   // Save screenshot for autonomous visual inspection
   await page.screenshot({ path: 'test-results/deck-manager.png' })
+  await page.keyboard.press('Escape')
 })
 
 test('restores deck from backup JSON file and updates local storage', async ({
@@ -42,6 +50,12 @@ test('restores deck from backup JSON file and updates local storage', async ({
 }) => {
   await page.goto('/#/deck')
   await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
 
   const backupData = {
     version: 1,
@@ -82,6 +96,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
     .click()
 
   await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await page.keyboard.press('Escape')
 
   // Verify local storage is updated with the imported cards
   const stored = await page.evaluate(() =>
@@ -104,6 +119,12 @@ test('imports Anki text export deck and updates review cards', async ({
 }) => {
   await page.goto('/#/deck')
 
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
+
   const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
 
   await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
@@ -119,6 +140,7 @@ test('imports Anki text export deck and updates review cards', async ({
     .click()
 
   await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await page.keyboard.press('Escape')
 
   await page
     .getByRole('button', { name: /practice 1 due/i })
@@ -171,6 +193,12 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
     'collection.anki2': dbBytes,
   })
 
+  // Open Backup & Import modal
+  await page
+    .getByRole('button', { name: /backup & import/i })
+    .first()
+    .click()
+
   // Upload .apkg binary file
   await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
     name: 'mexican-spanish.apkg',
@@ -187,12 +215,13 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
       name: /import "mexican spanish vocab" \(replace\)/i,
     })
     .click()
-
   await expect(
     page.getByText(
       /successfully imported 2 cards from “mexican spanish vocab”/i,
     ),
   ).toBeVisible()
+
+  await page.keyboard.press('Escape')
 
   // Start review
   await page

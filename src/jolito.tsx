@@ -816,19 +816,29 @@ function DeleteCardModal({
   )
 }
 
-function DeckBackupSection({
+function DeckBackupModalInner({
+  onClose,
   cards,
   onUpdateCards,
   clock,
   user,
   sync,
 }: {
+  onClose: () => void
   cards: StudyCard[]
   onUpdateCards: (newCards: StudyCard[]) => void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const [mode, setMode] = useState<RestoreMode>('replace')
   const [backupStatus, setBackupStatus] = useState<{
     type: 'success' | 'error' | 'info'
@@ -938,140 +948,164 @@ function DeckBackupSection({
   }
 
   return (
-    <section
-      className="safety-section backup-export-section"
-      aria-label="Deck backup and import"
-    >
-      <div className="section-title-row">
-        <span className="section-icon" aria-hidden="true">
-          💾
-        </span>
-        <div>
-          <h3>Deck import & offline backup</h3>
-          <p className="section-caption">
-            Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
-            offline JSON backups.
-          </p>
-        </div>
-      </div>
-
-      <div className="backup-sections">
-        <div className="backup-subcard export-subcard">
-          <h4>Export deck</h4>
-          <p>
-            Save all cards, schedules, notes, and study history to a JSON file.
-          </p>
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content backup-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="backup-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="backup-modal-title">Deck import & offline backup</h2>
+            <p className="modal-subtitle">
+              Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
+              offline JSON backups.
+            </p>
+          </div>
           <button
             type="button"
-            className="primary-button export-button"
-            onClick={handleExport}
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close dialog"
           >
-            Export backup (JSON) <span aria-hidden="true">↓</span>
+            ✕
           </button>
         </div>
 
-        <div className="backup-subcard import-subcard">
-          <h4>Import Anki deck or backup</h4>
-          <p>
-            Load cards from an Anki package (.apkg), text export (.txt, .tsv,
-            .csv), or Jolito backup (.json).
-          </p>
-
+        {backupStatus && (
           <div
-            className="import-mode-selector"
-            role="radiogroup"
-            aria-label="Import mode"
+            className={`status-banner status-${backupStatus.type}`}
+            role={backupStatus.type === 'error' ? 'alert' : 'status'}
           >
-            <label
-              className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
-            >
-              <input
-                type="radio"
-                name="deckRestoreMode"
-                value="replace"
-                checked={mode === 'replace'}
-                onChange={() => setMode('replace')}
-              />
-              <span className="mode-label">
-                <strong>Restore</strong>
-                <small>Replace current deck</small>
-              </span>
-            </label>
-            <label
-              className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
-            >
-              <input
-                type="radio"
-                name="deckRestoreMode"
-                value="merge"
-                checked={mode === 'merge'}
-                onChange={() => setMode('merge')}
-              />
-              <span className="mode-label">
-                <strong>Merge</strong>
-                <small>Combine with current</small>
-              </span>
-            </label>
+            <p>{backupStatus.message}</p>
+            {backupStatus.details && (
+              <ul className="status-details">
+                {backupStatus.details.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            )}
           </div>
+        )}
 
-          <div className="file-input-wrapper">
-            <label
-              htmlFor="deck-backup-file-input"
-              className="file-input-label"
-            >
-              Choose Anki deck or backup file
-            </label>
-            <input
-              id="deck-backup-file-input"
-              ref={fileInputRef}
-              type="file"
-              accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
-              className="backup-file-input"
-              onChange={(e) => {
-                void handleFileChange(e)
-              }}
-              aria-label="Choose Anki deck or backup file"
-            />
-          </div>
-
-          {selectedImportData && (
+        <div className="backup-sections">
+          <div className="backup-subcard export-subcard">
+            <h4>Export deck</h4>
+            <p>
+              Save all cards, schedules, notes, and study history to a JSON
+              file.
+            </p>
             <button
               type="button"
-              className="secondary-button restore-confirm-button"
-              disabled={isParsingImport}
-              onClick={() => {
-                void handleRestore()
-              }}
+              className="primary-button export-button"
+              onClick={handleExport}
             >
-              {mode === 'replace'
-                ? selectedImportData.deckName
-                  ? `Import "${selectedImportData.deckName}" (Replace)`
-                  : 'Import deck (Replace current)'
-                : selectedImportData.deckName
-                  ? `Merge "${selectedImportData.deckName}" with library`
-                  : 'Merge deck with library'}
+              Export backup (JSON) <span aria-hidden="true">↓</span>
             </button>
-          )}
+          </div>
+
+          <div className="backup-subcard import-subcard">
+            <h4>Import Anki deck or backup</h4>
+            <p>
+              Load cards from an Anki package (.apkg), text export (.txt, .tsv,
+              .csv), or Jolito backup (.json).
+            </p>
+
+            <div
+              className="import-mode-selector"
+              role="radiogroup"
+              aria-label="Import mode"
+            >
+              <label
+                className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="deckRestoreMode"
+                  value="replace"
+                  checked={mode === 'replace'}
+                  onChange={() => setMode('replace')}
+                />
+                <span className="mode-label">
+                  <strong>Restore</strong>
+                  <small>Replace current deck</small>
+                </span>
+              </label>
+              <label
+                className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="deckRestoreMode"
+                  value="merge"
+                  checked={mode === 'merge'}
+                  onChange={() => setMode('merge')}
+                />
+                <span className="mode-label">
+                  <strong>Merge</strong>
+                  <small>Combine with current</small>
+                </span>
+              </label>
+            </div>
+
+            <div className="file-input-wrapper">
+              <label
+                htmlFor="deck-backup-file-input"
+                className="file-input-label"
+              >
+                Choose Anki deck or backup file
+              </label>
+              <input
+                id="deck-backup-file-input"
+                ref={fileInputRef}
+                type="file"
+                accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
+                className="backup-file-input"
+                onChange={(e) => {
+                  void handleFileChange(e)
+                }}
+                aria-label="Choose Anki deck or backup file"
+              />
+            </div>
+
+            {selectedImportData && (
+              <button
+                type="button"
+                className="secondary-button restore-confirm-button"
+                disabled={isParsingImport}
+                onClick={() => {
+                  void handleRestore()
+                }}
+              >
+                {mode === 'replace'
+                  ? selectedImportData.deckName
+                    ? `Import "${selectedImportData.deckName}" (Replace)`
+                    : 'Import deck (Replace current)'
+                  : selectedImportData.deckName
+                    ? `Merge "${selectedImportData.deckName}" with library`
+                    : 'Merge deck with library'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-
-      {backupStatus && (
-        <div
-          className={`status-banner status-${backupStatus.type}`}
-          role={backupStatus.type === 'error' ? 'alert' : 'status'}
-        >
-          <p>{backupStatus.message}</p>
-          {backupStatus.details && (
-            <ul className="status-details">
-              {backupStatus.details.map((detail, idx) => (
-                <li key={idx}>{detail}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </section>
+    </div>
   )
+}
+
+function DeckBackupModal(props: {
+  isOpen: boolean
+  onClose: () => void
+  cards: StudyCard[]
+  onUpdateCards: (newCards: StudyCard[]) => void
+  clock: { now(): number }
+  user: AuthUser | null
+  sync: SyncService
+}) {
+  if (!props.isOpen) return null
+  return <DeckBackupModalInner {...props} />
 }
 
 function SyncModal({
@@ -1507,7 +1541,9 @@ export function App({
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
+
   const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
   const [editingCard, setEditingCard] = useState<StudyCard | null>(null)
   const [deletingCard, setDeletingCard] = useState<StudyCard | null>(null)
@@ -2665,6 +2701,12 @@ export function App({
                   Practice {dueCount} due
                 </button>
               )}
+              <button
+                className="text-button"
+                onClick={() => setIsBackupOpen(true)}
+              >
+                Backup & Import
+              </button>
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -2682,16 +2724,23 @@ export function App({
                   collection.
                 </p>
               </div>
-              {dueCount > 0 && (
-                <div className="deck-header-actions">
+              <div className="deck-header-actions">
+                {dueCount > 0 && (
                   <button
                     className="primary-button"
                     onClick={() => beginReview()}
                   >
                     Practice {dueCount} due <span aria-hidden="true">→</span>
                   </button>
-                </div>
-              )}
+                )}
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsBackupOpen(true)}
+                >
+                  Backup & Import
+                </button>
+              </div>
             </header>
 
             <div className="deck-stats-strip" aria-label="Deck statistics">
@@ -2822,13 +2871,22 @@ export function App({
                       : `No cards in the “${deckFilterState}” category right now.`}
                 </p>
                 {cards.length === 0 ? (
-                  <button
-                    type="button"
-                    className="primary-button"
-                    onClick={() => navigateTo('create')}
-                  >
-                    Create a card →
-                  </button>
+                  <div className="deck-empty-actions">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => navigateTo('create')}
+                    >
+                      Create a card →
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setIsBackupOpen(true)}
+                    >
+                      Import Anki / Backup
+                    </button>
+                  </div>
                 ) : deckSearchQuery.trim() || deckFilterState !== 'all' ? (
                   <button
                     type="button"
@@ -2998,16 +3056,18 @@ export function App({
                 })}
               </div>
             )}
-
-            <DeckBackupSection
-              cards={cards}
-              onUpdateCards={onUpdateCards}
-              clock={services.clock}
-              user={authUser}
-              sync={services.sync}
-            />
           </section>
         </main>
+        <DeckBackupModal
+          isOpen={isBackupOpen}
+          onClose={() => setIsBackupOpen(false)}
+          cards={cards}
+          onUpdateCards={onUpdateCards}
+          clock={services.clock}
+          user={authUser}
+          sync={services.sync}
+        />
+
         <SyncModal
           isOpen={isSyncOpen}
           onClose={closeSyncModal}

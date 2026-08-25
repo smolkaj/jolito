@@ -3402,10 +3402,24 @@ kbd {
   max-width: 400px;
 }
 
-/* Edit & Delete Modal Styles */
+.deck-empty-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Edit, Delete & Backup Modal Styles */
 .edit-card-modal,
 .delete-card-modal {
   width: min(560px, 100%);
+}
+
+.backup-modal {
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .edit-card-form {

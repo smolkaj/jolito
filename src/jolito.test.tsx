@@ -586,6 +586,14 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /your deck/i }),
     ).toBeInTheDocument()
 
+    // Open Backup & Import modal
+    await user.click(
+      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
+    )
+    expect(
+      screen.getByRole('heading', { name: /deck import & offline backup/i }),
+    ).toBeInTheDocument()
+
     const exportBtn = screen.getByRole('button', {
       name: /export backup \(json\)/i,
     })
@@ -600,6 +608,11 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    // Open Backup & Import modal
+    await user.click(
+      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
+    )
 
     const backupFile = new File(
       [
@@ -655,6 +668,11 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    // Open Backup & Import modal
+    await user.click(
+      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
+    )
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -717,6 +735,11 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
+    // Open Backup & Import modal
+    await user.click(
+      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
+    )
+
     const ankiText = `#separator:tab\n#html:true\nel perro\tthe dog\nla casa\tthe house`
     const ankiFile = new File([ankiText], 'anki-spanish.txt', {
       type: 'text/plain',
@@ -746,6 +769,11 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+
+    // Open Backup & Import modal
+    await user.click(
+      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
+    )
 
     const corruptFile = new File([''], 'bad.txt', {
       type: 'text/plain',
