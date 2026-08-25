@@ -84,8 +84,6 @@ The Cloudflare DNS zone, edge TLS settings, custom domain bindings for `joli.to`
 npm run setup:domain
 ```
 
-Alternatively, the Cloudflare infrastructure can be managed declaratively via Terraform in [`infra/`](../infra/README.md).
-
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality and browser checks remain the code-quality gates.
 
 ## Before opening a PR

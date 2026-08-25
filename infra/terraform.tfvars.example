@@ -1,4 +1,0 @@
-cloudflare_api_token  = "your-cloudflare-api-token"
-cloudflare_account_id = "your-cloudflare-account-id"
-domain_name           = "joli.to"
-worker_name           = "jolito"
