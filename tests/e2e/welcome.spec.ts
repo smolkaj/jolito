@@ -244,6 +244,7 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
     page.getByRole('listbox', { name: /spanish suggestions/i }),
   ).toBeVisible()
   await expect(page.getByText('ahorita')).toBeVisible()
+  await page.screenshot({ path: 'test-results/suggestion-open.png' })
 
   // Verify WCAG accessibility with dropdown open
   const resultsDropdown = await new AxeBuilder({ page })
@@ -255,6 +256,12 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   await page.getByText('ahorita').click()
   await expect(spanishInput).toHaveValue('ahorita')
   await expect(page.getByLabel(/english/i)).toHaveValue('right now / in a bit')
+  await expect(
+    page.getByRole('listbox', { name: /spanish suggestions/i }),
+  ).not.toBeVisible()
+  await page.screenshot({
+    path: 'test-results/suggestion-closed-after-selection.png',
+  })
 
   // 2. Test Typo / Did You Mean
   await spanishInput.fill('aguacatte')
@@ -265,6 +272,23 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   await page.getByRole('button', { name: /aguacate/i }).click()
   await expect(spanishInput).toHaveValue('aguacate')
   await expect(page.getByLabel(/english/i)).toHaveValue('avocado')
+  await expect(page.getByText(/did you mean/i)).not.toBeVisible()
+  await expect(
+    page.getByRole('listbox', { name: /spanish suggestions/i }),
+  ).not.toBeVisible()
+
+  // 3. Test keyboard selection (ArrowDown + Enter) closes overlay
+  await spanishInput.fill('que pad')
+  await expect(
+    page.getByRole('listbox', { name: /spanish suggestions/i }),
+  ).toBeVisible()
+  await spanishInput.press('ArrowDown')
+  await spanishInput.press('Enter')
+  await expect(spanishInput).toHaveValue('qué padre')
+  await expect(page.getByLabel(/english/i)).toHaveValue('how cool / fantastic')
+  await expect(
+    page.getByRole('listbox', { name: /spanish suggestions/i }),
+  ).not.toBeVisible()
 
   // Verify WCAG compliance
   const resultsFinal = await new AxeBuilder({ page })

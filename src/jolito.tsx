@@ -1618,6 +1618,22 @@ export function App({
         if (matches.length === 0) {
           const typo = services.assistant.didYouMean(val, 'es')
           setDidYouMean(typo)
+          if (services.assistant.loadDictionary) {
+            void Promise.resolve(services.assistant.loadDictionary()).then(
+              () => {
+                if (spanishInputRef.current?.value === val) {
+                  const refreshed = services.assistant.suggest(val, 'es', 5)
+                  if (refreshed.length > 0) {
+                    setSuggestions(refreshed)
+                    setShowSuggestions(true)
+                    setDidYouMean(null)
+                  } else {
+                    setDidYouMean(services.assistant.didYouMean(val, 'es'))
+                  }
+                }
+              },
+            )
+          }
         } else {
           setDidYouMean(null)
         }
@@ -1631,26 +1647,6 @@ export function App({
     [services.assistant],
   )
 
-  useEffect(() => {
-    if (
-      view === 'create' &&
-      spanishInput.trim().length >= 2 &&
-      suggestions.length === 0
-    ) {
-      void Promise.resolve(services.assistant.loadDictionary?.()).then(() => {
-        const matches = services.assistant.suggest(spanishInput, 'es', 5)
-        if (matches.length > 0) {
-          setSuggestions(matches)
-          setShowSuggestions(true)
-          setDidYouMean(null)
-        } else {
-          const typo = services.assistant.didYouMean(spanishInput, 'es')
-          setDidYouMean(typo)
-        }
-      })
-    }
-  }, [services.assistant, spanishInput, suggestions.length, view])
-
   const onEnglishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
       const val = event.target.value
@@ -1660,6 +1656,16 @@ export function App({
         if (matches.length > 0) {
           setSuggestions(matches)
           setShowSuggestions(true)
+        } else if (services.assistant.loadDictionary) {
+          void Promise.resolve(services.assistant.loadDictionary()).then(() => {
+            if (!spanishInputRef.current?.value.trim()) {
+              const refreshed = services.assistant.suggest(val, 'en', 5)
+              if (refreshed.length > 0) {
+                setSuggestions(refreshed)
+                setShowSuggestions(true)
+              }
+            }
+          })
         }
       }
     },
@@ -2014,20 +2020,7 @@ export function App({
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
                   onFocus={() => {
-                    if (spanishInput.trim().length >= 2) {
-                      const matches = services.assistant.suggest(
-                        spanishInput,
-                        'es',
-                        5,
-                      )
-                      setSuggestions(matches)
-                      setShowSuggestions(matches.length > 0)
-                      if (matches.length === 0) {
-                        setDidYouMean(
-                          services.assistant.didYouMean(spanishInput, 'es'),
-                        )
-                      }
-                    } else if (suggestions.length > 0) {
+                    if (suggestions.length > 0) {
                       setShowSuggestions(true)
                     }
                   }}
