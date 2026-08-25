@@ -12,7 +12,20 @@
 
 # Jolito
 
-Jolito blends the proven power of spaced-repetition flashcards with the audio immersion and friction-free flow of a modern practice app. Built for mastering real-world Mexican Spanish, Jolito turns daily language practice into a fast, rewarding habit—online or offline.
+Jolito blends the proven power of [spaced repetition](https://en.wikipedia.org/wiki/Spaced_repetition) flashcards with the audio immersion and friction-free flow of a modern practice app. Built for mastering real-world Mexican Spanish, Jolito turns daily language practice into a fast, rewarding habit—online or offline.
+
+## Why another flashcard app?
+
+[Anki](https://apps.ankiweb.net/) is unbeatable for [spaced repetition](https://en.wikipedia.org/wiki/Spaced_repetition), but it was designed as a general-purpose database in 2006. Creating rich language cards with natural audio, reciprocal directions, and context requires tedious template configuration and manual media clipping. On the other end of the spectrum, gamified apps like [Duolingo](https://www.duolingo.com/) make daily practice inviting, but lock you into rigid multiple-choice curricula without control over the real-world phrases you actually want to learn.
+
+Jolito was created out of personal frustration while living in Mexico City: wanting to capture the living phrases heard on the street every day, hear them spoken naturally, and practice active recall without wrestling with database software.
+
+|                          | **Anki**                           | **Duolingo**                | **Jolito**                        |
+| ------------------------ | ---------------------------------- | --------------------------- | --------------------------------- |
+| **Focus**                | General-purpose                    | Rigid beginner courses      | Real-world spoken language        |
+| **Adding audio & cards** | High friction (plugins, templates) | None (fixed curriculum)     | Zero-friction authoring           |
+| **Practice style**       | Passive self-report                | Multiple-choice recognition | Active typed recall + audio       |
+| **Learner control**      | 100%                               | Low                         | 100% (custom cards & Anki import) |
 
 ## Highlights
 
@@ -20,7 +33,7 @@ Jolito blends the proven power of spaced-repetition flashcards with the audio im
 - **Ear-first immersion:** Spoken Mexican Spanish audio on prompts and answers trains your ear for everyday conversation.
 - **Active typed recall:** Produce language instead of just recognizing it. Instant visual diffs highlight spelling nuances while you retain full authority over your self-grading.
 - **Live dual-card workbench:** Create linked Spanish ↔ English reciprocal cards simultaneously with side-by-side previews, contextual explanations, and rapid batch creation.
-- **Anki import:** Bring existing decks (`.apkg` packages or text exports) in seconds, preserving learning history and spaced-repetition schedules.
+- **Anki import:** Bring existing [Anki](https://apps.ankiweb.net/) decks (`.apkg` packages or text exports) in seconds, preserving learning history and [spaced-repetition](https://en.wikipedia.org/wiki/Spaced_repetition) schedules.
 - **Offline by default:** Installable PWA with local browser storage and service worker caching. Practice anywhere with zero network latency.
 - **Cloud backup:** Optional passwordless sign-in with instant multi-device synchronization powered by Supabase.
 
