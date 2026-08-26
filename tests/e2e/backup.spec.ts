@@ -14,10 +14,8 @@ test('opens deck manager without automatically detectable WCAG violations and ex
   await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
+
   await expect(
     page.getByRole('heading', { name: /deck import & offline backup/i }),
   ).toBeVisible()
@@ -53,10 +51,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
   await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   const backupData = {
     version: 1,
@@ -121,10 +116,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.goto('/#/deck')
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
 
@@ -195,10 +187,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
   })
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   // Upload .apkg binary file
   await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({

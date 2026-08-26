@@ -643,9 +643,8 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+
     expect(
       screen.getByRole('heading', { name: /deck import & offline backup/i }),
     ).toBeInTheDocument()
@@ -666,9 +665,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const backupFile = new File(
       [
@@ -726,9 +723,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -792,9 +787,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const ankiText = `#separator:tab\n#html:true\nel perro\tthe dog\nla casa\tthe house`
     const ankiFile = new File([ankiText], 'anki-spanish.txt', {
@@ -827,9 +820,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const corruptFile = new File([''], 'bad.txt', {
       type: 'text/plain',

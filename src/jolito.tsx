@@ -2737,12 +2737,6 @@ export function App({
                   Practice {dueCount} due
                 </button>
               )}
-              <button
-                className="text-button"
-                onClick={() => setIsBackupOpen(true)}
-              >
-                Backup & Import
-              </button>
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
