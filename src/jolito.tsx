@@ -2202,7 +2202,7 @@ export function App({
                 className="text-button"
                 onClick={() => navigateTo('deck')}
               >
-                Deck ({cards.length})
+                Manage deck
               </button>
               <ConnectionPill
                 authUser={authUser}
@@ -2241,7 +2241,7 @@ export function App({
                   className="secondary-button"
                   onClick={() => beginReview()}
                 >
-                  Practice {dueCount} due
+                  Practice
                 </button>
               </div>
             </div>
@@ -2355,11 +2355,13 @@ export function App({
                 className="text-button"
                 onClick={() => navigateTo('deck')}
               >
-                Deck ({cards.length})
+                Manage deck
               </button>
-              <button className="text-button" onClick={() => beginReview()}>
-                Review {dueCount}
-              </button>
+              {dueCount > 0 && (
+                <button className="text-button" onClick={() => beginReview()}>
+                  Practice
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -2734,7 +2736,7 @@ export function App({
               )}
               {dueCount > 0 && (
                 <button className="text-button" onClick={() => beginReview()}>
-                  Practice {dueCount} due
+                  Practice
                 </button>
               )}
               <ConnectionPill
@@ -2747,7 +2749,7 @@ export function App({
           </nav>
           <section className="deck-layout">
             <header className="deck-header-row">
-              <h1>Your deck</h1>
+              <h1>Manage deck</h1>
               <div className="deck-header-actions">
                 <button
                   type="button"
@@ -3084,7 +3086,7 @@ export function App({
                 className="text-button"
                 onClick={() => navigateTo('deck')}
               >
-                Deck ({cards.length})
+                Manage deck
               </button>
               <button
                 className="text-button"
@@ -3122,7 +3124,7 @@ export function App({
                 className="secondary-button"
                 onClick={() => navigateTo('deck')}
               >
-                View deck ({cards.length})
+                Manage deck
               </button>
               <button className="text-button" onClick={goHome}>
                 Back home
@@ -3233,7 +3235,7 @@ export function App({
           </div>
           <div className="nav-actions">
             <button className="text-button" onClick={() => navigateTo('deck')}>
-              Deck ({cards.length})
+              Manage deck
             </button>
             <button
               className="text-button"

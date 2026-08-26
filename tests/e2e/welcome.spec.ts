@@ -113,7 +113,7 @@ test('creates and reviews both directions with the keyboard', async ({
   await page.getByLabel(/spanish/i).fill('¿Dónde está el metro?')
   await page.getByLabel(/english/i).fill('Where is the metro?')
   await page.getByRole('button', { name: /save card/i }).click()
-  await page.getByRole('button', { name: /review 2/i }).click()
+  await page.getByRole('button', { name: /^practice$/i }).click()
 
   await expect(
     page.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -175,7 +175,7 @@ test('supports browser back and forward navigation across views', async ({
 
   // Navigate to Study from Welcome
   await page.goBack()
-  await page.getByRole('button', { name: /practice 4 due/i }).click()
+  await page.getByRole('button', { name: /^practice$/i }).click()
   await expect(page.getByLabel('Your answer')).toBeVisible()
   expect(page.url()).toContain('#/study')
 
@@ -385,7 +385,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: /review 4/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)
@@ -409,7 +409,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(spanishInput).toHaveValue('')
   await expect(englishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /review 2/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
@@ -424,10 +424,10 @@ test('supports rapid batch card creation while remaining in create view', async 
   ).toBeVisible()
   await expect(spanishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /review 4/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 3. Start review from top navbar
-  await page.getByRole('button', { name: /review 4/i }).click()
+  await page.getByRole('button', { name: /^practice$/i }).click()
   await expect(page.getByRole('heading', { name: 'chido' })).toBeVisible()
 
   const results = await new AxeBuilder({ page })
@@ -442,10 +442,8 @@ test('allows guests to practice example deck immediately and explore card creato
   await page.goto('/')
 
   // 1. Practice example starter cards immediately as a guest
-  await expect(
-    page.getByRole('button', { name: /practice 4 due/i }),
-  ).toBeVisible()
-  await page.getByRole('button', { name: /practice 4 due/i }).click()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await page.getByRole('button', { name: /^practice$/i }).click()
 
   // Card 1: aguacate -> avocado
   await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()

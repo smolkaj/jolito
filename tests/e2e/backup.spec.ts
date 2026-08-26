@@ -10,8 +10,10 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /deck \(4\)/i }).click()
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await page.getByRole('button', { name: /manage deck/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Open Backup & Import modal
   await page.getByRole('button', { name: /backup & import/i }).click()
@@ -48,7 +50,9 @@ test('restores deck from backup JSON file and updates local storage', async ({
   page,
 }) => {
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Open Backup & Import modal
   await page.getByRole('button', { name: /backup & import/i }).click()
@@ -102,7 +106,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
 
   // Start review with the imported card
   await page
-    .getByRole('button', { name: /practice 1 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -136,7 +140,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.keyboard.press('Escape')
 
   await page
-    .getByRole('button', { name: /practice 1 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -215,7 +219,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
 
   // Start review
   await page
-    .getByRole('button', { name: /practice 2 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()
@@ -237,7 +241,9 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   page,
 }) => {
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Verify list of cards
   const cardsList = page.getByRole('table', { name: /deck cards/i })
