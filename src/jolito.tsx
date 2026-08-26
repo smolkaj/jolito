@@ -37,6 +37,7 @@ import {
   deleteStudyCard,
   type Grade,
   type StudyCard,
+  type UpdateCardParams,
 } from './domain/card'
 import {
   filterDeckCards,
@@ -560,20 +561,21 @@ function EditCardModalInner({
 }: {
   card: StudyCard
   onClose: () => void
-  onSave: (
-    card: StudyCard,
-    updates: { prompt: string; answer: string; context: string },
-  ) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
   const [answer, setAnswer] = useState(card.answer)
   const [context, setContext] = useState(card.context ?? '')
+  const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isEsToEn = card.direction === 'es-en'
   const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
   const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
+
+  const isAlreadyNew =
+    card.schedule.state === 'new' && card.schedule.reviews === 0
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -592,6 +594,7 @@ function EditCardModalInner({
       prompt: trimmedPrompt,
       answer: trimmedAnswer,
       context: context.trim(),
+      resetProgress: isAlreadyNew ? false : resetProgress,
     })
   }
 
@@ -689,6 +692,28 @@ function EditCardModalInner({
             />
           </div>
 
+          <label
+            className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
+          >
+            <input
+              id="edit-reset-progress"
+              name="resetProgress"
+              type="checkbox"
+              checked={resetProgress && !isAlreadyNew}
+              disabled={isAlreadyNew}
+              onChange={(e) => setResetProgress(e.target.checked)}
+            />
+            <span className="toggle" aria-hidden="true" />
+            <div className="toggle-label-group">
+              <span className="toggle-title">Reset learning progress</span>
+              <span className="toggle-description">
+                {isAlreadyNew
+                  ? 'Card is already brand new (0 reviews)'
+                  : 'Treat as a new card and restart review history'}
+              </span>
+            </div>
+          </label>
+
           <div className="edit-modal-actions">
             <button
               type="button"
@@ -717,10 +742,7 @@ function EditCardModal({
   isOpen: boolean
   card: StudyCard | null
   onClose: () => void
-  onSave: (
-    card: StudyCard,
-    updates: { prompt: string; answer: string; context: string },
-  ) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
   useEffect(() => {
@@ -1688,18 +1710,16 @@ export function App({
   )
 
   const handleSaveEdit = useCallback(
-    (
-      card: StudyCard,
-      updates: { prompt: string; answer: string; context: string },
-    ) => {
-      const updated = updateStudyCard(card, updates)
+    (card: StudyCard, updates: UpdateCardParams) => {
+      const now = services.clock.now()
+      const updated = updateStudyCard(card, updates, now)
       const newCards = cardsRef.current.map((c) =>
         c.id === card.id ? updated : c,
       )
       onUpdateCards(newCards)
       setEditingCard(null)
     },
-    [onUpdateCards],
+    [onUpdateCards, services.clock],
   )
 
   const handleConfirmDelete = useCallback(
