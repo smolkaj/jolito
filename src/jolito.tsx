@@ -540,7 +540,7 @@ function getCardScheduleBadge(
   }
   const state = card.schedule.state
   if (state === 'new') {
-    return { label: 'New', type: 'new' }
+    return { label: 'Unstudied', type: 'new' }
   }
   if (state === 'learning' || state === 'relearning') {
     return { label: 'Learning', type: 'learning' }
@@ -2816,7 +2816,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('all')}
                     aria-pressed={deckFilterState === 'all'}
-                    title="All cards in your deck regardless of review status"
+                    title="All cards in your deck"
                   >
                     All ({deckStats.total})
                   </button>
@@ -2825,25 +2825,25 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('due')}
                     aria-pressed={deckFilterState === 'due'}
-                    title="Cards ready to practice right now (new cards or scheduled reviews that are due)"
+                    title="Cards ready to practice right now (unstudied cards + due reviews)"
                   >
-                    Due ({deckStats.due})
+                    Due now ({deckStats.due})
                   </button>
                   <button
                     type="button"
                     className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('new')}
                     aria-pressed={deckFilterState === 'new'}
-                    title="Unstudied cards that have not been practiced yet"
+                    title="Cards you haven't practiced yet"
                   >
-                    New ({deckStats.newCount})
+                    Unstudied ({deckStats.newCount})
                   </button>
                   <button
                     type="button"
                     className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('learning')}
                     aria-pressed={deckFilterState === 'learning'}
-                    title="Cards currently in short learning steps before graduating to long-term review"
+                    title="Cards you are currently acquiring in short repetition steps"
                   >
                     Learning ({deckStats.learningCount})
                   </button>
@@ -2852,9 +2852,9 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('review')}
                     aria-pressed={deckFilterState === 'review'}
-                    title="Graduated cards scheduled for long-term spaced repetition (1+ days interval)"
+                    title="Graduated cards scheduled for long-term memory retention (1+ days)"
                   >
-                    Review ({deckStats.reviewCount})
+                    Mastered ({deckStats.reviewCount})
                   </button>
                 </div>
 
@@ -2894,7 +2894,7 @@ export function App({
                     ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                     : cards.length === 0
                       ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                      : `No cards in the “${deckFilterState}” category right now.`}
+                      : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered' }[deckFilterState]}” category right now.`}
                 </p>
                 {cards.length === 0 ? (
                   <div className="deck-empty-actions">
@@ -3126,12 +3126,6 @@ export function App({
                 onClick={() => navigateTo('create')}
               >
                 Create a card <span aria-hidden="true">→</span>
-              </button>
-              <button
-                className="secondary-button"
-                onClick={() => navigateTo('deck')}
-              >
-                Manage deck
               </button>
               <button className="secondary-button" onClick={goHome}>
                 Back home
