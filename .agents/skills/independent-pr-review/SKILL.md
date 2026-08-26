@@ -1,5 +1,5 @@
 ---
-name: review
+name: independent-pr-review
 description: Run a formal pre-merge pull-request review as its author/orchestrator or as a fresh independent read-only reviewer. Use for requested PR reviews and repository-required review loops, not informal code explanation or author self-review.
 ---
 

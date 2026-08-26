@@ -20,7 +20,7 @@ git worktree remove ../jolito-<task> && git worktree prune
 
 # Independent review loop
 
-Every PR must pass the independent review loop in [`.agents/skills/review`](.agents/skills/review) before merge.
+Every PR must pass the [independent PR review loop](.agents/skills/independent-pr-review) before merge.
 
 # Philosophy
 
