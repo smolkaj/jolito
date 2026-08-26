@@ -3067,13 +3067,6 @@ kbd {
   box-shadow: var(--shadow-sm);
 }
 
-.deck-stats-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .deck-stat-chip {
   display: inline-flex;
   align-items: center;
