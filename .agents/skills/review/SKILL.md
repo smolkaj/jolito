@@ -1,21 +1,64 @@
 ---
 name: review
-description: Conduct an independent, read-only code review of a pull request, branch, or git diff using specialized parallel review perspectives (architecture, correctness/safety, quality/testing, accessibility/operability, UI design/cleanliness).
+description: Conduct an independent, read-only code review of a pull request, branch, or git diff using specialized parallel review perspectives (architecture, correctness/safety, quality/testing, accessibility/operability, UI design/cleanliness) combined with an author hindsight refactoring loop.
 ---
 
-# Multi-Perspective Independent Code Review
+# Multi-Perspective Independent Code Review & Hindsight Refactoring
 
-This skill orchestrates a rigorous, read-only code review using **specialized parallel review perspectives**. By evaluating a change through distinct, concurrent lenses, the review catches architecture drift, subtle correctness bugs, test omissions, accessibility flaws, and visual/design regressions.
+This skill orchestrates a rigorous, multi-perspective code review combined with an **author hindsight refactoring loop**. By combining specialized, concurrent reviewer lenses with an unconstrained author self-critique ("churn is free"), the protocol catches subtle bugs, eliminates cognitive debt, and drives the code to clean fixpoint.
 
 ## Core Invariants
 
-1. **Strict Read-Only Separation:** Reviewers must **never** edit files, stage changes, push commits, or merge.
+1. **Strict Read-Only Reviewers:** Review subagents must **never** edit files, stage changes, push commits, or merge.
 2. **Specialized Perspectives in Parallel:** Run concurrent reviewer evaluations with distinct areas of focus.
-3. **Loop to Fixpoint:** Zero blocking issues are required for approval. If blocking issues exist, request changes with actionable remediation.
+3. **Author Hindsight Loop ("Churn is free"):** The main author iterates on _"In hindsight, is there anything you would refactor?"_ without fearing large blast radius, followed by the sanity check: _"Did the refactorings improve things, or did we take things too far?"_.
+4. **Fixpoint Re-Review:** If any changes are made during the hindsight loop or to address feedback, all quality gates must pass and reviewers run a fresh review pass on the new head commit SHA.
 
 ---
 
-## Review Protocol
+## Review & Refactoring Protocol
+
+```text
+                           ┌──────────────────────────────────────────┐
+                           │          PR Description & Diff           │
+                           └────────────────────┬─────────────────────┘
+                                                │
+                 ┌──────────────────────────────┴──────────────────────────────┐
+                 ▼                                                             ▼
+┌─────────────────────────────────────────────┐               ┌─────────────────────────────────┐
+│   Parallel Read-Only Review Perspectives    │               │  Author Hindsight Refactor Loop │
+│  (Architecture, Correctness, Quality, etc.) │               │        ("Churn is free")        │
+└──────────────────────┬──────────────────────┘               └────────────────┬────────────────┘
+                       │                                                       │
+                       │    ┌──────────────────────────────────────────────────┘
+                       ▼    ▼
+        ┌─────────────────────────────────────────────┐
+        │ Did the author refactor or change any code? │
+        └──────────────────────┬──────────────────────┘
+                               │
+                ┌──────────────┴──────────────┐
+                │ YES                         │ NO
+                ▼                             ▼
+┌───────────────────────────────┐     ┌─────────────────────────────────┐
+│ 1. Run automated quality gates│     │ Consolidate findings across all │
+│ 2. Push new Head commit SHA   │     │ parallel reviewer perspectives  │
+│ 3. Run fresh review pass on   │     └────────────────┬────────────────┘
+│    new Head SHA               │                      │
+└───────────────┬───────────────┘                      │
+                │                                      │
+                └───────────────────┬──────────────────┘
+                                    ▼
+                          ┌───────────────────┐
+                          │  Synthesis Stage  │
+                          │ (Fixpoint Status) │
+                          └─────────┬─────────┘
+                                    ▼
+                          ┌───────────────────┐
+                          │  Verdict & Trail  │
+                          └───────────────────┘
+```
+
+---
 
 ### Step 1: Establish Review Baseline & Diff Context
 
@@ -36,97 +79,64 @@ git diff "$BASE_SHA..$HEAD_SHA"
 
 ---
 
-### Step 2: Launch Parallel Review Perspectives
+### Step 2: Launch Parallel Review Perspectives & Author Hindsight Loop
 
-Evaluate the PR across up to 5 specialized perspectives concurrently (perspectives 4 and 5 run whenever UI or user-facing interactions are modified):
+Execute the following two tracks concurrently:
 
-```text
-                             ┌─────────────────────────────────────────┐
-                             │          PR Description & Diff          │
-                             └────────────────────┬────────────────────┘
-                                                  │
-       ┌───────────────────┬──────────────────────┼──────────────────────┬───────────────────┐
-       ▼                   ▼                      ▼                      ▼                   ▼
-┌─────────────┐     ┌─────────────┐        ┌─────────────┐        ┌─────────────┐     ┌─────────────┐
-│1.Architecture│    │2.Correctness│        │3.Quality &  │        │4.Accessi-   │     │5.UI Design &│
-│ & Simplicity│     │  & Safety   │        │  Automation │        │  bility (UI)│     │  Cleanliness│
-└──────┬──────┘     └──────┬──────┘        └──────┬──────┘        └──────┬──────┘     └──────┬──────┘
-       │                   │                      │                      │                   │
-       └───────────────────┴──────────────────────┼──────────────────────┴───────────────────┘
-                                                  ▼
-                                         ┌─────────────────┐
-                                         │ Synthesis Stage │
-                                         │ (Lead Reviewer) │
-                                         └────────┬────────┘
-                                                  ▼
-                                         ┌─────────────────┐
-                                         │ Verdict & Trail │
-                                         └─────────────────┘
-```
+#### Track A: Parallel Read-Only Review Perspectives
 
-#### Perspective 1: Architecture, Modularity & Simplicity
+Launch up to 5 specialized reviewer perspectives concurrently (perspectives 4 and 5 run whenever UI or user-facing interactions are modified):
 
-- **Layer & Boundary Integrity:** Explicit dependency flow between domain logic, application orchestration, and infrastructure adapters.
-- **Simplicity Above All:** Eliminate unnecessary indirection, dead code, unused parameters, or speculative abstractions.
-- **Anti-Magic & Inspectability:** Flag hidden runtime interceptors, uninspectable background singletons, or implicit side-effects.
+1. 🏛️ **Architecture, Modularity & Simplicity Reviewer:** Layer boundaries, dependency flow, cognitive debt, abstraction necessity, anti-magic, and elimination of dead code.
+2. 🛡️ **Correctness, Safety & Security Reviewer:** Logic bugs, edge cases, fail-loud structured error handling, runtime boundary validation (Zod schemas), data migrations, concurrency/race-condition safety.
+3. 🧪 **Quality, Testing & Automated Gates Reviewer:** Automated gate checks (`check`, `audit:prod`, `test:e2e`), DAMP test design, comprehensive positive and negative test coverage.
+4. ♿ **Accessibility & Operability Reviewer** _(UI Changes)_: 100% keyboard operability (`Enter`, `Tab`, `Space`, `Arrow` keys, `Escape`), visible focus indicators, WCAG 2.1 AA semantics, and screen reader live regions.
+5. 🎨 **UI Design, Aesthetics & Cleanliness Reviewer** _(UI Changes)_: Visual restraint ("less, but better", zero gimmicks/fluff), design token discipline, visual hierarchy, whitespace scannability, self-explanatory affordances, and tactile polish with zero layout shift.
 
-#### Perspective 2: Correctness, Safety & Security
+_Consult [references/reviewer-personas.md](./references/reviewer-personas.md) for detailed checklists and prompt templates._
 
-- **Logic & Edge Cases:** Algorithmic correctness, off-by-one errors, state synchronization, and race conditions.
-- **Fail Fast & Loudly:** Structured errors and explicit handling; no swallowed exceptions or silent fallbacks.
-- **Runtime Boundary Validation:** Untrusted input from storage, network, files, or AI must be validated at runtime (e.g. Zod schemas).
-- **Data Evolution & Migrations:** Explicit, tested migrations when persistence formats or schemas evolve.
-- **Security:** Input sanitization, injection prevention, and credential hygiene.
+#### Track B: Author Hindsight Refactoring Loop ("Churn is free")
 
-#### Perspective 3: Quality, Testing & Automated Gates
+In parallel, the main author iterates on the following reflective loop:
 
-- **Automated Quality Gates:** Execute and verify repository gates:
-  ```sh
-  npm run check       # Format, lint, typecheck, unit/integration test coverage, build
-  npm run audit:prod  # Dependency security audit
-  npm run test:e2e    # E2E / browser smoke tests (for UI/workflow changes)
-  ```
-- **Test Design:** DAMP (Descriptive And Meaningful Phrases) test structure over clever parameterized helpers.
-- **Coverage & Edge Cases:** High coverage across core domain and application logic with both positive and negative assertions.
-
-#### Perspective 4: Accessibility & Operability _(Required for UI changes)_
-
-- **Keyboard-First:** 100% operable via keyboard alone (`Enter`, `Tab`, `Space`, `Arrow` keys, `Escape`).
-- **Semantic & Accessible Markup:** Visible focus indicators, correct ARIA roles/labels, accessible live regions, and WCAG 2.1 AA compliance.
-- **Screen Reader Parity:** Dynamic updates announced clearly without redundant speech stutter.
-
-#### Perspective 5: UI Design, Aesthetics & Cleanliness _(Required for UI changes)_
-
-- **Restraint & No Gimmicks:** Zero visual clutter, decorative junk, or superfluous status badges; embraces "less, but better".
-- **Design System Coherence:** Strict adherence to design tokens (spacing rhythm, typographic scales, border radii, color palette, control height parity).
-- **Visual Hierarchy & Whitespace:** Immediate scannability, clear primary actions, and purposeful whitespace grouping.
-- **Self-Explanatory Affordances:** Clean, intuitive interactions without requiring walls of helper text.
-- **Tactile Polish:** Subtle, purposeful micro-interactions and transitions with zero layout shift.
-
-_Consult [references/reviewer-personas.md](./references/reviewer-personas.md) for detailed checklists and prompt templates for each perspective._
+1. **The Hindsight Question:**
+   - Ask: _"In hindsight, is there anything you would refactor?"_
+   - Mindset: **"Churn is free"** — do not shy away from refactorings with a huge blast radius. If an interface is awkward, a data model could be cleaner, a state machine could be simplified, or call sites are messy, mechanically refactor and clean them up now.
+   - Iterate on this question until genuinely satisfied.
+2. **The Restraint Sanity Check:**
+   - Once the refactorings feel complete, ask: _"Did the refactorings actually improve things, or did we take things too far?"_
+   - Verify that the code became simpler, more legible, and easier to evolve rather than over-engineered or needlessly abstract.
+   - Do a final rewrite or rollback of unnecessary indirection if needed.
 
 ---
 
-### Step 3: Synthesis & Findings Categorization
+### Step 3: Feedback Incorporation & Second Review Pass (If Code Changed)
+
+If the main agent made any code changes during the Hindsight Refactoring Loop or to address first-round feedback:
+
+1. **Run Automated Quality Gates:**
+   ```sh
+   npm run check       # Format, lint, typecheck, unit/integration test coverage, build
+   npm run audit:prod  # Dependency security audit
+   npm run test:e2e    # E2E / browser smoke tests (if UI/workflow modified)
+   ```
+2. **Commit and Push New Head SHA:**
+   Commit the refactorings and push to update the branch.
+3. **Kick Off Second Review Pass:**
+   Launch the parallel subagent reviewers a **second time** on the new Head commit SHA, incorporating applicable feedback from the first round.
+
+Repeat until all parallel reviewers reach fixpoint (**0 blocking issues**).
+
+---
+
+### Step 4: Synthesis & Deliver Review Report
 
 Consolidate findings across all parallel reviews and categorize every finding into the standard taxonomy:
 
-- **🛑 Blocking (Must be 0 for approval):**
-  - Quality gate failure (formatting, lint, types, tests, coverage, build, or audit).
-  - Correctness bugs, logic errors, regressions, or unhandled failure states.
-  - Invariant or architectural boundary violations.
-  - Unvalidated external boundaries or missing data migration paths.
-  - Accessibility flaws or broken keyboard navigation in modified UI.
-  - Visual hierarchy breakdown, severe design token drift, or layout shifts.
-  - Missing tests for new behavior or domain coverage drops.
-- **💡 Advisory (Non-blocking suggestions):**
-  - Minor naming improvements, optional refactoring opportunities, subtle spacing polish, or non-critical documentation tweaks.
+- **🛑 Blocking (Must be 0 for approval):** Quality gate failures, correctness/safety bugs, invariant or architectural violations, missing boundary validation or migrations, accessibility flaws, design hierarchy/token breakdowns, missing tests.
+- **💡 Advisory (Non-blocking suggestions):** Minor naming ideas, non-critical comments, or future roadmap suggestions.
 
 _Consult [references/findings-taxonomy.md](./references/findings-taxonomy.md) for classification rules._
-
----
-
-### Step 4: Deliver Review Report & Audit Trail
 
 Deliver the consolidated review report in the following markdown schema:
 
@@ -135,7 +145,7 @@ Deliver the consolidated review report in the following markdown schema:
 
 - **Base Commit SHA:** `<base-sha>`
 - **Head Commit SHA:** `<head-sha>`
-- **Review Mode:** Parallel Multi-Perspective (`architecture`, `correctness`, `quality`, `accessibility`, `ui-design`)
+- **Review Mode:** Parallel Multi-Perspective (`architecture`, `correctness`, `quality`, `accessibility`, `ui-design`) + Author Hindsight Loop
 - **Verdict:** `APPROVED` | `CHANGES REQUESTED`
 
 ---
@@ -150,7 +160,14 @@ Deliver the consolidated review report in the following markdown schema:
 
 ---
 
-## 2. Perspective Evaluations
+## 2. Author Hindsight & Refactoring Summary
+
+- **Hindsight Refactorings ("Churn is free"):** <summary of refactorings performed, or "None needed; clean on first pass">
+- **Restraint Sanity Check:** <summary of whether refactorings improved clarity without taking things too far>
+
+---
+
+## 3. Perspective Evaluations
 
 ### 🏛️ Architecture & Simplicity
 
@@ -179,7 +196,7 @@ Deliver the consolidated review report in the following markdown schema:
 
 ---
 
-## 3. Findings & Action Items
+## 4. Findings & Action Items
 
 ### 🛑 Blocking Issues (Must be 0 for approval)
 
@@ -198,7 +215,7 @@ _(If none, state "None.")_
 
 ---
 
-## 4. Audit Trail Record
+## 5. Audit Trail Record
 
 <!-- When Approved, copy the block below into the PR description or comment -->
 
@@ -208,6 +225,7 @@ _(If none, state "None.")_
 - **Base Commit SHA:** `<base-sha>`
 - **Head Commit SHA:** `<head-sha>`
 - **Reviewer Perspectives:** Architecture, Correctness/Safety, Quality/Gates, Accessibility/Operability, UI Design/Cleanliness
+- **Author Hindsight Loop:** Completed ("Churn is free" refactorings verified with restraint sanity check)
 - **Outcome:** APPROVED (0 blocking issues)
 ```
 ````

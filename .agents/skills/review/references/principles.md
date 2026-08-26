@@ -56,3 +56,17 @@ This guide details the core principles evaluated during independent code reviews
 - **Visual Hierarchy & Scannability:** Make the primary call-to-action immediately obvious. Use intentional whitespace to group related controls and give the interface breathing room.
 - **Self-Explanatory Affordances:** UI interactions, states, and icons must be intuitive and self-explanatory without needing paragraphs of explanatory hint copy.
 - **Tactile Polish & Micro-Interactions:** Micro-interactions (hover, active, focus, reveal) should be crisp, purposeful, and snappy (< 150ms) with zero layout shifting.
+
+---
+
+## 7. The Hindsight Refactoring & Restraint Loop
+
+- **"In hindsight, is there anything you would refactor?" ("Churn is free"):**
+  - Never preserve awkward abstractions, clumsy data shapes, or convoluted call sites simply because they are already working or to avoid a larger git diff.
+  - Do not fear refactorings with a large blast radius. If refactoring 15 files makes the architecture simpler, clearer, and more robust, do it unconditionally.
+- **"Did the refactorings improve things, or did we take things too far?":**
+  - The critical counter-balance to prevents over-engineering.
+  - Ask: _Is this genuinely simpler to read, maintain, and test, or did we add unnecessary cleverness / speculative generics / layers of indirection?_
+  - If complexity increased, do a final rewrite or rollback to achieve the most direct, elegant solution.
+- **Fixpoint Re-Review Guarantee:**
+  - Any code change made during the hindsight loop mandates a full run of automated quality gates and triggering a fresh round of parallel reviews on the new Head commit SHA.
