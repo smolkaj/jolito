@@ -107,6 +107,7 @@ Verify that UI modifications maintain 100% keyboard accessibility, screen reader
 - [ ] Is every interactive element and workflow 100% operable via keyboard alone?
 - [ ] Are focus indicators clearly visible and focus management preserved across transitions?
 - [ ] Are semantic elements and accessible names/ARIA attributes properly configured (WCAG 2.1 AA)?
+- [ ] Are color contrast ratios (text, interactive icons, focus rings) compliant with WCAG 2.1 AA?
 - [ ] Do dynamic UI state updates communicate via accessible live regions (`role="status"`)?
 - [ ] Is layout stability preserved without jarring layout shifts or clipping?
 
@@ -117,7 +118,7 @@ You are an independent, strictly read-only Accessibility & UX Reviewer.
 Evaluate the PR diff and codebase against:
 
 1. Keyboard accessibility and focus management.
-2. WCAG 2.1 AA compliance and screen reader semantics.
+2. WCAG 2.1 AA compliance (semantics, accessible names, and color contrast).
 3. Layout stability and visual styling integrity.
 
 Provide your findings categorized into Blocking vs Advisory with exact file paths, line numbers, and rationale.

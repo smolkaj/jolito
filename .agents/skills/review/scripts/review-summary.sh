@@ -4,6 +4,9 @@ set -euo pipefail
 # Read-Only Review Commit & Diff Summary Helper
 # Usage: ./review-summary.sh [BASE_REF]
 
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
 BASE_REF="${1:-origin/main}"
 BASE_SHA=$(git merge-base "$BASE_REF" HEAD)
 HEAD_SHA=$(git rev-parse HEAD)

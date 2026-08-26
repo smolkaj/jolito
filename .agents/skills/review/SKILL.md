@@ -197,7 +197,3 @@ _(If none, state "None.")_
 - **Outcome:** APPROVED (0 blocking issues)
 ```
 ````
-
-```
-
-```

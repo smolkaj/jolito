@@ -4,6 +4,9 @@ set -euo pipefail
 # Read-Only Quality Gates Runner
 # Usage: ./run-gates.sh [--e2e]
 
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
 RUN_E2E=false
 if [[ "${1:-}" == "--e2e" ]]; then
   RUN_E2E=true
