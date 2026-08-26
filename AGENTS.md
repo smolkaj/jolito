@@ -20,7 +20,7 @@ git worktree remove ../jolito-<task> && git worktree prune
 
 # Independent review loop
 
-Every PR must be reviewed by fresh, independent read-only reviewer instances running in parallel and iterated to fixpoint (zero blocking issues) before merge. Follow the review skill ([`.agents/skills/review`](.agents/skills/review), callable as `/review` across `agy`, `claude`, and `codex`).
+Every PR must pass the independent review loop in [`.agents/skills/review`](.agents/skills/review) before merge.
 
 # Philosophy
 

@@ -1,243 +1,39 @@
 ---
 name: review
-description: Conduct an independent, read-only code review of a pull request, branch, or git diff using specialized parallel review perspectives (architecture, correctness/safety, quality/testing, accessibility/operability, UI design/cleanliness) combined with an author hindsight refactoring loop.
+description: Run a formal pre-merge pull-request review as its author/orchestrator or as a fresh independent read-only reviewer. Use for requested PR reviews and repository-required review loops, not informal code explanation or author self-review.
 ---
 
-# Multi-Perspective Independent Code Review & Hindsight Refactoring
+# Review a pull request
 
-This skill orchestrates a rigorous, multi-perspective code review combined with an **author hindsight refactoring loop**. By combining specialized, concurrent reviewer lenses with an unconstrained author self-critique ("churn is free"), the protocol catches subtle bugs, eliminates cognitive debt, and drives the code to clean fixpoint.
+Reach a trustworthy decision about one exact PR head. Keep the process small; spend the effort on understanding the change.
 
-## Core Invariants
+Use **Author or orchestrator** when preparing a PR or coordinating its review. Use **Independent reviewer** when assigned a read-only review; do not delegate another review from that role.
 
-1. **Strict Read-Only Reviewers:** Review subagents must **never** edit files, stage changes, push commits, or merge.
-2. **Specialized Perspectives in Parallel:** Run concurrent reviewer evaluations with distinct areas of focus.
-3. **Author Hindsight Loop ("Churn is free"):** The main author iterates on _"In hindsight, is there anything you would refactor?"_ without fearing large blast radius, followed by the sanity check: _"Did the refactorings improve things, or did we take things too far?"_.
-4. **Preserve & Evaluate First-Round Feedback:** When refactorings occur, never discard initial review findings—systematically check if they still apply to the refactored code and address them.
-5. **Fixpoint Re-Review:** If any changes are made during the hindsight loop or to address feedback, all quality gates must pass and reviewers run a fresh review pass on the new head commit SHA.
+## Non-negotiables
 
----
+- An independent reviewer is fresh, has not authored the change, and is strictly read-only. Reviewers may inspect code and trusted CI, but must not modify tracked files or Git/remote state: no edits, commits, pushes, comments, approvals, thread resolution, or merges.
+- Give each reviewer only the PR URL. The description, diff, and repository must provide the rationale and evidence needed to review it.
+- Resolve the base and head commit SHAs from the PR before reviewing and confirm the live head is unchanged before reporting a verdict. A verdict applies only to that head.
+- Report **blocking** findings separately from **advisory** observations. Blocking findings are defects, failed requirements or gates, or missing evidence that makes merging unsafe. Advisory observations are genuinely optional.
+- Any change to the PR head invalidates prior approval. Repeat the required gates and use fresh reviewers until the current head has zero blocking findings.
+- Never merge without the user's explicit approval.
 
-## Review & Refactoring Protocol
+## Author or orchestrator
 
-```text
-                           ┌──────────────────────────────────────────┐
-                           │          PR Description & Diff           │
-                           └────────────────────┬─────────────────────┘
-                                                │
-                 ┌──────────────────────────────┴──────────────────────────────┐
-                 ▼                                                             ▼
-┌─────────────────────────────────────────────┐               ┌─────────────────────────────────┐
-│   Parallel Read-Only Review Perspectives    │               │  Author Hindsight Refactor Loop │
-│  (Architecture, Correctness, Quality, etc.) │               │        ("Churn is free")        │
-└──────────────────────┬──────────────────────┘               └────────────────┬────────────────┘
-                       │                                                       │
-                       │    ┌──────────────────────────────────────────────────┘
-                       ▼    ▼
-        ┌─────────────────────────────────────────────┐
-        │ Did the author refactor or change any code? │
-        └──────────────────────┬──────────────────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                │ YES                         │ NO
-                ▼                             ▼
-┌───────────────────────────────────────┐     ┌─────────────────────────────────┐
-│ 1. Evaluate first-round feedback:     │     │ Consolidate findings across all │
-│    check which findings still apply   │     │ parallel reviewer perspectives  │
-│ 2. Address surviving feedback         │     └────────────────┬────────────────┘
-│ 3. Run automated quality gates        │                      │
-│ 4. Push new Head commit SHA           │                      │
-│ 5. Kick off 2nd review pass on new SHA│                      │
-└───────────────┬───────────────────────┘                      │
-                │                                              │
-                └───────────────────┬──────────────────────────┘
-                                    ▼
-                          ┌───────────────────┐
-                          │  Synthesis Stage  │
-                          │ (Fixpoint Status) │
-                          └─────────┬─────────┘
-                                    ▼
-                          ┌───────────────────┐
-                          │  Verdict & Trail  │
-                          └───────────────────┘
-```
+1. Make the PR self-documenting. Lead with the big-picture win, contrast before and after, explain the next step toward the north star, and include risks and verification.
+2. Before formal review, run the repository's required gates and take one deliberate hindsight pass: knowing the finished diff, would you choose a simpler design? Change it only when the result is materially clearer; avoid refactoring theatre.
+3. Launch a fresh independent reviewer and give it only the PR URL. Do not change the branch while review is in progress. Add parallel reviewers only when the actual risk warrants another perspective; do not assign a fixed quota or divide responsibility for the whole change.
+4. Consolidate their findings without hiding disagreements. Decide each observation on the evidence; resolve every blocker, rerun the gates, update the PR, and start a new review round with fresh instances.
+5. At fixpoint, add a concise PR record containing the base/head SHAs, reviewer identifiers, gates actually run, and outcome.
 
----
+Do not count author self-review as independent review. Track every blocker until it is resolved or demonstrably no longer applies.
 
-### Step 1: Establish Review Baseline & Diff Context
+## Independent reviewer
 
-Identify the base and head commit SHAs to establish an immutable review baseline:
+1. Read the PR description, commits, full diff, repository instructions, and the surrounding code or documentation needed to understand the change. Verify claims rather than trusting the narrative.
+2. Review the whole change according to its real risks. Consider correctness, security, data compatibility, failure behavior, architecture and cognitive cost (especially hidden state, ambient magic, or divergent mechanisms), test and documentation sufficiency, and—when user-facing—accessibility and rendered behavior. Do not manufacture findings to fill categories.
+3. Verify the relevant required checks from trusted CI. Distinguish results you observed from claims in the PR description. If local execution is necessary, do not execute untrusted PR code outside an isolated, credential-free environment. UI changes require visual inspection; DOM assertions alone are not visual verification.
+4. Put findings first, ordered by severity. For each, cite the file and line, explain the concrete consequence, and propose a direction for remediation. Then list open questions and advisory observations. If there are no findings, say so plainly.
+5. End with the reviewed base/head SHAs and a verdict: `APPROVED` only when the current head has zero blocking findings; otherwise `CHANGES REQUESTED`.
 
-```sh
-BASE_SHA=$(git merge-base origin/main HEAD)
-HEAD_SHA=$(git rev-parse HEAD)
-echo "Base: $BASE_SHA | Head: $HEAD_SHA"
-```
-
-Inspect the commit history and full diff:
-
-```sh
-git log --oneline "$BASE_SHA..$HEAD_SHA"
-git diff "$BASE_SHA..$HEAD_SHA"
-```
-
----
-
-### Step 2: Launch Parallel Review Perspectives & Author Hindsight Loop
-
-Execute the following two tracks concurrently:
-
-#### Track A: Parallel Read-Only Review Perspectives
-
-Launch up to 5 specialized reviewer perspectives concurrently (perspectives 4 and 5 run whenever UI or user-facing interactions are modified):
-
-1. 🏛️ **Architecture, Modularity & Simplicity Reviewer:** Layer boundaries, dependency flow, cognitive debt, abstraction necessity, anti-magic, and elimination of dead code.
-2. 🛡️ **Correctness, Safety & Security Reviewer:** Logic bugs, edge cases, fail-loud structured error handling, runtime boundary validation (Zod schemas), data migrations, concurrency/race-condition safety.
-3. 🧪 **Quality, Testing & Automated Gates Reviewer:** Automated gate checks (`check`, `audit:prod`, `test:e2e`), DAMP test design, comprehensive positive and negative test coverage.
-4. ♿ **Accessibility & Operability Reviewer** _(UI Changes)_: 100% keyboard operability (`Enter`, `Tab`, `Space`, `Arrow` keys, `Escape`), visible focus indicators, WCAG 2.1 AA semantics, and screen reader live regions.
-5. 🎨 **UI Design, Aesthetics & Cleanliness Reviewer** _(UI Changes)_: Visual restraint ("less, but better", zero gimmicks/fluff), design token discipline, visual hierarchy, whitespace scannability, self-explanatory affordances, and tactile polish with zero layout shift.
-
-_Consult [references/reviewer-personas.md](./references/reviewer-personas.md) for detailed checklists and prompt templates._
-
-#### Track B: Author Hindsight Refactoring Loop ("Churn is free")
-
-In parallel, the main author iterates on the following reflective loop:
-
-1. **The Hindsight Question:**
-   - Ask: _"In hindsight, is there anything you would refactor?"_
-   - Mindset: **"Churn is free"** — do not shy away from refactorings with a huge blast radius. If an interface is awkward, a data model could be cleaner, a state machine could be simplified, or call sites are messy, mechanically refactor and clean them up now.
-   - Iterate on this question until genuinely satisfied.
-2. **The Restraint Sanity Check:**
-   - Once the refactorings feel complete, ask: _"Did the refactorings actually improve things, or did we take things too far?"_
-   - Verify that the code became simpler, more legible, and easier to evolve rather than over-engineered or needlessly abstract.
-   - Do a final rewrite or rollback of unnecessary indirection if needed.
-3. **First-Round Feedback Evaluation (Do NOT Discard):**
-   - Collect the completed evaluations from the first round of reviews.
-   - **Do not simply discard the first round of reviews:** Systematically check whether each reported issue (blocking or advisory) still applies to the refactored code.
-   - If a finding was eliminated by the refactor, verify that no regression was introduced in its place.
-   - If a finding still applies, incorporate the fix before launching the next review round.
-
----
-
-### Step 3: Feedback Incorporation & Second Review Pass (If Code Changed)
-
-If the main agent made any code changes during the Hindsight Refactoring Loop or to address first-round feedback:
-
-1. **Incorporate Surviving First-Round Feedback:**
-   Apply fixes for all first-round findings that still apply to the refactored codebase.
-2. **Run Automated Quality Gates:**
-   ```sh
-   npm run check       # Format, lint, typecheck, unit/integration test coverage, build
-   npm run audit:prod  # Dependency security audit
-   npm run test:e2e    # E2E / browser smoke tests (if UI/workflow modified)
-   ```
-3. **Commit and Push New Head SHA:**
-   Commit the refactorings and push to update the branch.
-4. **Kick Off Second Review Pass:**
-   Launch the parallel subagent reviewers a **second time** on the new Head commit SHA, providing context on the refactoring and confirming resolved vs. surviving items.
-
-Repeat until all parallel reviewers reach fixpoint (**0 blocking issues**).
-
----
-
-### Step 4: Synthesis & Deliver Review Report
-
-Consolidate findings across all parallel reviews and categorize every finding into the standard taxonomy:
-
-- **🛑 Blocking (Must be 0 for approval):** Quality gate failures, correctness/safety bugs, invariant or architectural violations, missing boundary validation or migrations, accessibility flaws, design hierarchy/token breakdowns, missing tests.
-- **💡 Advisory (Non-blocking suggestions):** Minor naming ideas, non-critical comments, or future roadmap suggestions.
-
-_Consult [references/findings-taxonomy.md](./references/findings-taxonomy.md) for classification rules._
-
-Deliver the consolidated review report in the following markdown schema:
-
-````markdown
-# 🔍 Multi-Perspective Independent Review Report
-
-- **Base Commit SHA:** `<base-sha>`
-- **Head Commit SHA:** `<head-sha>`
-- **Review Mode:** Parallel Multi-Perspective (`architecture`, `correctness`, `quality`, `accessibility`, `ui-design`) + Author Hindsight Loop
-- **Verdict:** `APPROVED` | `CHANGES REQUESTED`
-
----
-
-## 1. Automated Quality Gates
-
-| Gate                    | Command              | Status                     | Notes                           |
-| :---------------------- | :------------------- | :------------------------- | :------------------------------ |
-| Code Quality & Coverage | `npm run check`      | ✅ PASS / ❌ FAIL          | <coverage / test summary>       |
-| Dependency Audit        | `npm run audit:prod` | ✅ PASS / ❌ FAIL          | 0 high-severity vulnerabilities |
-| E2E / Accessibility     | `npm run test:e2e`   | ✅ PASS / ❌ FAIL / ⚪ N/A | <summary>                       |
-
----
-
-## 2. Author Hindsight & Refactoring Summary
-
-- **Hindsight Refactorings ("Churn is free"):** <summary of refactorings performed, or "None needed; clean on first pass">
-- **Restraint Sanity Check:** <summary of whether refactorings improved clarity without taking things too far>
-- **First-Round Feedback Evaluation:** <summary of first-round review findings checked against refactored code and incorporated>
-
----
-
-## 3. Perspective Evaluations
-
-### 🏛️ Architecture & Simplicity
-
-- **Status:** [PASS / CONCERNS]
-- **Observations:** <summary of boundary, simplicity, and modularity assessment>
-
-### 🛡️ Correctness, Safety & Security
-
-- **Status:** [PASS / CONCERNS]
-- **Observations:** <summary of logic, fail-loud handling, boundary validation, and migration safety>
-
-### 🧪 Quality & Test Automation
-
-- **Status:** [PASS / CONCERNS]
-- **Observations:** <summary of test quality, DAMP design, coverage, and edge cases>
-
-### ♿ Accessibility & Operability (UI Changes)
-
-- **Status:** [PASS / CONCERNS / N/A]
-- **Observations:** <summary of keyboard navigation, ARIA/WCAG compliance, and focus management>
-
-### 🎨 UI Design, Aesthetics & Cleanliness (UI Changes)
-
-- **Status:** [PASS / CONCERNS / N/A]
-- **Observations:** <summary of visual restraint, design system coherence, hierarchy, and polish>
-
----
-
-## 4. Findings & Action Items
-
-### 🛑 Blocking Issues (Must be 0 for approval)
-
-_(If none, state "None. Zero blocking issues found.")_
-
-1. **`[File Path:Line Number]`**: Issue description.
-   - **Perspective:** Architecture / Correctness / Quality / Accessibility / UI Design
-   - **Impact:** Why this blocks merge.
-   - **Remediation:** Actionable fix instructions.
-
-### 💡 Advisory Observations (Non-blocking)
-
-_(If none, state "None.")_
-
-1. **`[File Path:Line Number]`**: Suggestion description.
-
----
-
-## 5. Audit Trail Record
-
-<!-- When Approved, copy the block below into the PR description or comment -->
-
-```markdown
-### Independent AI Review Record
-
-- **Base Commit SHA:** `<base-sha>`
-- **Head Commit SHA:** `<head-sha>`
-- **Reviewer Perspectives:** Architecture, Correctness/Safety, Quality/Gates, Accessibility/Operability, UI Design/Cleanliness
-- **Author Hindsight Loop:** Completed ("Churn is free" refactorings verified with restraint sanity check)
-- **First-Round Feedback:** Triaged and addressed where applicable
-- **Outcome:** APPROVED (0 blocking issues)
-```
-````
+Stay read-only even if asked to fix an issue discovered during the review. Return it to the author/orchestrator.
