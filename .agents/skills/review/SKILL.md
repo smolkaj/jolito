@@ -12,7 +12,8 @@ This skill orchestrates a rigorous, multi-perspective code review combined with 
 1. **Strict Read-Only Reviewers:** Review subagents must **never** edit files, stage changes, push commits, or merge.
 2. **Specialized Perspectives in Parallel:** Run concurrent reviewer evaluations with distinct areas of focus.
 3. **Author Hindsight Loop ("Churn is free"):** The main author iterates on _"In hindsight, is there anything you would refactor?"_ without fearing large blast radius, followed by the sanity check: _"Did the refactorings improve things, or did we take things too far?"_.
-4. **Fixpoint Re-Review:** If any changes are made during the hindsight loop or to address feedback, all quality gates must pass and reviewers run a fresh review pass on the new head commit SHA.
+4. **Preserve & Evaluate First-Round Feedback:** When refactorings occur, never discard initial review findings—systematically check if they still apply to the refactored code and address them.
+5. **Fixpoint Re-Review:** If any changes are made during the hindsight loop or to address feedback, all quality gates must pass and reviewers run a fresh review pass on the new head commit SHA.
 
 ---
 
@@ -39,14 +40,16 @@ This skill orchestrates a rigorous, multi-perspective code review combined with 
                 ┌──────────────┴──────────────┐
                 │ YES                         │ NO
                 ▼                             ▼
-┌───────────────────────────────┐     ┌─────────────────────────────────┐
-│ 1. Run automated quality gates│     │ Consolidate findings across all │
-│ 2. Push new Head commit SHA   │     │ parallel reviewer perspectives  │
-│ 3. Run fresh review pass on   │     └────────────────┬────────────────┘
-│    new Head SHA               │                      │
-└───────────────┬───────────────┘                      │
-                │                                      │
-                └───────────────────┬──────────────────┘
+┌───────────────────────────────────────┐     ┌─────────────────────────────────┐
+│ 1. Evaluate first-round feedback:     │     │ Consolidate findings across all │
+│    check which findings still apply   │     │ parallel reviewer perspectives  │
+│ 2. Address surviving feedback         │     └────────────────┬────────────────┘
+│ 3. Run automated quality gates        │                      │
+│ 4. Push new Head commit SHA           │                      │
+│ 5. Kick off 2nd review pass on new SHA│                      │
+└───────────────┬───────────────────────┘                      │
+                │                                              │
+                └───────────────────┬──────────────────────────┘
                                     ▼
                           ┌───────────────────┐
                           │  Synthesis Stage  │
@@ -107,6 +110,11 @@ In parallel, the main author iterates on the following reflective loop:
    - Once the refactorings feel complete, ask: _"Did the refactorings actually improve things, or did we take things too far?"_
    - Verify that the code became simpler, more legible, and easier to evolve rather than over-engineered or needlessly abstract.
    - Do a final rewrite or rollback of unnecessary indirection if needed.
+3. **First-Round Feedback Evaluation (Do NOT Discard):**
+   - Collect the completed evaluations from the first round of reviews.
+   - **Do not simply discard the first round of reviews:** Systematically check whether each reported issue (blocking or advisory) still applies to the refactored code.
+   - If a finding was eliminated by the refactor, verify that no regression was introduced in its place.
+   - If a finding still applies, incorporate the fix before launching the next review round.
 
 ---
 
@@ -114,16 +122,18 @@ In parallel, the main author iterates on the following reflective loop:
 
 If the main agent made any code changes during the Hindsight Refactoring Loop or to address first-round feedback:
 
-1. **Run Automated Quality Gates:**
+1. **Incorporate Surviving First-Round Feedback:**
+   Apply fixes for all first-round findings that still apply to the refactored codebase.
+2. **Run Automated Quality Gates:**
    ```sh
    npm run check       # Format, lint, typecheck, unit/integration test coverage, build
    npm run audit:prod  # Dependency security audit
    npm run test:e2e    # E2E / browser smoke tests (if UI/workflow modified)
    ```
-2. **Commit and Push New Head SHA:**
+3. **Commit and Push New Head SHA:**
    Commit the refactorings and push to update the branch.
-3. **Kick Off Second Review Pass:**
-   Launch the parallel subagent reviewers a **second time** on the new Head commit SHA, incorporating applicable feedback from the first round.
+4. **Kick Off Second Review Pass:**
+   Launch the parallel subagent reviewers a **second time** on the new Head commit SHA, providing context on the refactoring and confirming resolved vs. surviving items.
 
 Repeat until all parallel reviewers reach fixpoint (**0 blocking issues**).
 
@@ -164,6 +174,7 @@ Deliver the consolidated review report in the following markdown schema:
 
 - **Hindsight Refactorings ("Churn is free"):** <summary of refactorings performed, or "None needed; clean on first pass">
 - **Restraint Sanity Check:** <summary of whether refactorings improved clarity without taking things too far>
+- **First-Round Feedback Evaluation:** <summary of first-round review findings checked against refactored code and incorporated>
 
 ---
 
@@ -226,6 +237,7 @@ _(If none, state "None.")_
 - **Head Commit SHA:** `<head-sha>`
 - **Reviewer Perspectives:** Architecture, Correctness/Safety, Quality/Gates, Accessibility/Operability, UI Design/Cleanliness
 - **Author Hindsight Loop:** Completed ("Churn is free" refactorings verified with restraint sanity check)
+- **First-Round Feedback:** Triaged and addressed where applicable
 - **Outcome:** APPROVED (0 blocking issues)
 ```
 ````

@@ -65,8 +65,11 @@ This guide details the core principles evaluated during independent code reviews
   - Never preserve awkward abstractions, clumsy data shapes, or convoluted call sites simply because they are already working or to avoid a larger git diff.
   - Do not fear refactorings with a large blast radius. If refactoring 15 files makes the architecture simpler, clearer, and more robust, do it unconditionally.
 - **"Did the refactorings improve things, or did we take things too far?":**
-  - The critical counter-balance to prevents over-engineering.
+  - The critical counter-balance that prevents over-engineering.
   - Ask: _Is this genuinely simpler to read, maintain, and test, or did we add unnecessary cleverness / speculative generics / layers of indirection?_
   - If complexity increased, do a final rewrite or rollback to achieve the most direct, elegant solution.
+- **Evaluate First-Round Feedback (Do Not Simply Discard):**
+  - After completing refactorings, examine all findings from the parallel first-round review.
+  - Systematically evaluate whether each finding still applies to the refactored code. Incorporate all surviving fixes before launching the next review round.
 - **Fixpoint Re-Review Guarantee:**
   - Any code change made during the hindsight loop mandates a full run of automated quality gates and triggering a fresh round of parallel reviews on the new Head commit SHA.
