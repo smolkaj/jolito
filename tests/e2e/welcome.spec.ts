@@ -290,6 +290,12 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
     page.getByRole('listbox', { name: /spanish suggestions/i }),
   ).not.toBeVisible()
 
+  // 4. Tab into English field -> auto-selects text and allows instant overwrite
+  await page.keyboard.press('Tab')
+  await expect(page.getByLabel(/english/i)).toBeFocused()
+  await page.keyboard.type('awesome')
+  await expect(page.getByLabel(/english/i)).toHaveValue('awesome')
+
   // Verify WCAG compliance
   const resultsFinal = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

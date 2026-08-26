@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   chooseScene,
+  createNewReviewSchedule,
   createStudyCards,
   deleteStudyCard,
   intervalLabel,
   isDue,
   nextIntervalDays,
+  resetCardProgress,
   scheduleReview,
   shouldRequeueInSession,
   reviewScheduleSchema,
@@ -472,6 +474,109 @@ describe('Anki spaced repetition scheduling', () => {
           answer: '',
         }),
       ).toThrow()
+    })
+
+    it('resets card learning schedule to brand new state when resetProgress is true', () => {
+      const matureCard = {
+        ...sampleCard,
+        schedule: {
+          state: 'review' as const,
+          dueAt: now + 30 * DAY,
+          intervalDays: 30,
+          easeFactor: 2.7,
+          reviews: 12,
+          lapses: 1,
+        },
+      }
+      const resetTime = now + 10 * DAY
+      const updated = updateStudyCard(
+        matureCard,
+        {
+          prompt: 'palta',
+          resetProgress: true,
+        },
+        resetTime,
+      )
+
+      expect(updated.prompt).toBe('palta')
+      expect(updated.schedule).toEqual({
+        state: 'new',
+        dueAt: resetTime,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      })
+    })
+
+    it('preserves existing learning schedule when resetProgress is false or omitted', () => {
+      const matureCard = {
+        ...sampleCard,
+        schedule: {
+          state: 'review' as const,
+          dueAt: now + 30 * DAY,
+          intervalDays: 30,
+          easeFactor: 2.7,
+          reviews: 12,
+          lapses: 1,
+        },
+      }
+      const updatedWithoutReset = updateStudyCard(matureCard, {
+        prompt: 'palta',
+      })
+      expect(updatedWithoutReset.schedule).toEqual(matureCard.schedule)
+
+      const updatedExplicitFalse = updateStudyCard(matureCard, {
+        prompt: 'palta',
+        resetProgress: false,
+      })
+      expect(updatedExplicitFalse.schedule).toEqual(matureCard.schedule)
+    })
+  })
+
+  describe('resetCardProgress and createNewReviewSchedule', () => {
+    it('creates a clean brand new schedule', () => {
+      const schedule = createNewReviewSchedule(now)
+      expect(schedule).toEqual({
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      })
+    })
+
+    it('resets a learned card back to new schedule', () => {
+      const card = {
+        ...createStudyCards(
+          {
+            spanish: 'hola',
+            english: 'hello',
+            context: '',
+            bidirectional: false,
+          },
+          'n1',
+          now,
+        )[0]!,
+        schedule: {
+          state: 'review' as const,
+          dueAt: now + 1000,
+          intervalDays: 14,
+          easeFactor: 2.35,
+          reviews: 5,
+          lapses: 2,
+        },
+      }
+      const reset = resetCardProgress(card, now + 5000)
+      expect(reset.schedule).toEqual({
+        state: 'new',
+        dueAt: now + 5000,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      })
     })
   })
 

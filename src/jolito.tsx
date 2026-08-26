@@ -1,5 +1,6 @@
 import {
   type ChangeEvent,
+  type FocusEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -36,6 +37,7 @@ import {
   deleteStudyCard,
   type Grade,
   type StudyCard,
+  type UpdateCardParams,
 } from './domain/card'
 import {
   filterDeckCards,
@@ -54,6 +56,16 @@ import {
   titleForView,
   viewFromHash,
 } from './navigation'
+
+function handleFocusSelect(
+  event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+) {
+  const target = event.currentTarget
+  target.select()
+  setTimeout(() => {
+    target.select()
+  }, 0)
+}
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -549,20 +561,21 @@ function EditCardModalInner({
 }: {
   card: StudyCard
   onClose: () => void
-  onSave: (
-    card: StudyCard,
-    updates: { prompt: string; answer: string; context: string },
-  ) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
   const [answer, setAnswer] = useState(card.answer)
   const [context, setContext] = useState(card.context ?? '')
+  const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isEsToEn = card.direction === 'es-en'
   const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
   const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
+
+  const isAlreadyNew =
+    card.schedule.state === 'new' && card.schedule.reviews === 0
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -581,6 +594,7 @@ function EditCardModalInner({
       prompt: trimmedPrompt,
       answer: trimmedAnswer,
       context: context.trim(),
+      resetProgress: isAlreadyNew ? false : resetProgress,
     })
   }
 
@@ -637,6 +651,7 @@ function EditCardModalInner({
               autoFocus
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Prompt text"
             />
           </div>
@@ -660,6 +675,7 @@ function EditCardModalInner({
               required
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Answer text"
             />
           </div>
@@ -671,9 +687,32 @@ function EditCardModalInner({
               rows={2}
               value={context}
               onChange={(e) => setContext(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Optional context, usage notes, or nuance"
             />
           </div>
+
+          <label
+            className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
+          >
+            <input
+              id="edit-reset-progress"
+              name="resetProgress"
+              type="checkbox"
+              checked={resetProgress && !isAlreadyNew}
+              disabled={isAlreadyNew}
+              onChange={(e) => setResetProgress(e.target.checked)}
+            />
+            <span className="toggle" aria-hidden="true" />
+            <div className="toggle-label-group">
+              <span className="toggle-title">Reset learning progress</span>
+              <span className="toggle-description">
+                {isAlreadyNew
+                  ? 'Card is already brand new (0 reviews)'
+                  : 'Treat as a new card and restart review history'}
+              </span>
+            </div>
+          </label>
 
           <div className="edit-modal-actions">
             <button
@@ -703,10 +742,7 @@ function EditCardModal({
   isOpen: boolean
   card: StudyCard | null
   onClose: () => void
-  onSave: (
-    card: StudyCard,
-    updates: { prompt: string; answer: string; context: string },
-  ) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
   useEffect(() => {
@@ -1674,18 +1710,16 @@ export function App({
   )
 
   const handleSaveEdit = useCallback(
-    (
-      card: StudyCard,
-      updates: { prompt: string; answer: string; context: string },
-    ) => {
-      const updated = updateStudyCard(card, updates)
+    (card: StudyCard, updates: UpdateCardParams) => {
+      const now = services.clock.now()
+      const updated = updateStudyCard(card, updates, now)
       const newCards = cardsRef.current.map((c) =>
         c.id === card.id ? updated : c,
       )
       onUpdateCards(newCards)
       setEditingCard(null)
     },
-    [onUpdateCards],
+    [onUpdateCards, services.clock],
   )
 
   const handleConfirmDelete = useCallback(
@@ -2487,6 +2521,7 @@ export function App({
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
+                  onFocus={handleFocusSelect}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
                   aria-controls="spanish-suggestions"
@@ -2570,7 +2605,20 @@ export function App({
                   required
                   value={englishInput}
                   onChange={onEnglishChange}
+                  onFocus={handleFocusSelect}
                   placeholder="English translation"
+                />
+              </div>
+              <div className="field-group">
+                <label htmlFor="context">Additional Context</label>
+                <textarea
+                  id="context"
+                  name="context"
+                  rows={2}
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
+                  onFocus={handleFocusSelect}
+                  placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
               <label className="toggle-row">
@@ -2596,6 +2644,7 @@ export function App({
                         name="reversePrompt"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
@@ -2608,23 +2657,13 @@ export function App({
                         name="reverseAnswer"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
                   </div>
                 </details>
               )}
-              <div className="field-group">
-                <label htmlFor="context">Additional Context</label>
-                <textarea
-                  id="context"
-                  name="context"
-                  rows={2}
-                  value={contextInput}
-                  onChange={(e) => setContextInput(e.target.value)}
-                  placeholder="Optional context, regional nuance, or memory hook"
-                />
-              </div>
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"
@@ -2799,6 +2838,7 @@ export function App({
                   placeholder="Search cards by Spanish, English, or notes…"
                   value={deckSearchQuery}
                   onChange={(e) => setDeckSearchQuery(e.target.value)}
+                  onFocus={handleFocusSelect}
                   aria-label="Search cards in deck"
                 />
               </div>
