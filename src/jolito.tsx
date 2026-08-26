@@ -2894,7 +2894,7 @@ export function App({
                     ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                     : cards.length === 0
                       ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                      : `No cards in the “${deckFilterState}” category right now.`}
+                      : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered' }[deckFilterState]}” category right now.`}
                 </p>
                 {cards.length === 0 ? (
                   <div className="deck-empty-actions">
