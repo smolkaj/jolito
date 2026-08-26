@@ -49,7 +49,8 @@ export class SupabaseAuthService implements AuthService {
   getSessionLink(): string | null {
     const session = this.currentUser ? this.loadStoredSession() : null
     if (!session) return null
-    return `${getCanonicalOrigin()}/#access_token=${session.accessToken}&refresh_token=${session.refreshToken}&expires_in=3600`
+    const origin = getCanonicalOrigin() ?? 'https://joli.to'
+    return `${origin}/#access_token=${session.accessToken}&refresh_token=${session.refreshToken}&expires_in=3600`
   }
 
   private parseJwtUser(
