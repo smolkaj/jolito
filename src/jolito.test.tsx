@@ -1453,9 +1453,15 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
-    const statsStrip = screen.getByLabelText('Deck statistics')
-    expect(statsStrip).toHaveTextContent(/4\s*cards/)
-    expect(statsStrip).toHaveTextContent(/4\s*due/)
+    expect(
+      screen.getByRole('button', { name: /all \(4\)/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /due \(4\)/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /new \(4\)/i }),
+    ).toBeInTheDocument()
 
     // 4 starter cards are shown
     const cardItems = screen.getAllByRole('row', { name: /card:/i })

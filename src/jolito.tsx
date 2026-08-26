@@ -2789,33 +2789,6 @@ export function App({
               </div>
             </header>
 
-            <div className="deck-stats-strip" aria-label="Deck statistics">
-              <span className="deck-stat-chip">
-                <strong>{deckStats.total}</strong>{' '}
-                {deckStats.total === 1 ? 'card' : 'cards'}
-              </span>
-              <span
-                className={`deck-stat-chip ${deckStats.due > 0 ? 'is-due' : ''}`}
-              >
-                <strong>{deckStats.due}</strong> due
-              </span>
-              {deckStats.learningCount > 0 && (
-                <span className="deck-stat-chip is-learning">
-                  <strong>{deckStats.learningCount}</strong> learning
-                </span>
-              )}
-              {deckStats.newCount > 0 && (
-                <span className="deck-stat-chip is-new">
-                  <strong>{deckStats.newCount}</strong> new
-                </span>
-              )}
-              {deckStats.reviewCount > 0 && (
-                <span className="deck-stat-chip is-review">
-                  <strong>{deckStats.reviewCount}</strong> review
-                </span>
-              )}
-            </div>
-
             <div className="deck-toolbar">
               <div className="deck-search-wrap">
                 <span className="deck-search-icon" aria-hidden="true">

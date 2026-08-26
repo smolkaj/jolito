@@ -348,10 +348,6 @@ test('top navigation pills have consistent vertical height across views', async 
   const deckSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  const deckStatChip = await page
-    .locator('.deck-stats-strip .deck-stat-chip')
-    .first()
-    .boundingBox()
   const deckFilterPill = await page
     .locator('.deck-filter-pills .deck-filter-pill')
     .first()
@@ -362,7 +358,6 @@ test('top navigation pills have consistent vertical height across views', async 
 
   expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
-  expect(deckStatChip?.height).toBeCloseTo(32, 1)
   expect(deckFilterPill?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
 
