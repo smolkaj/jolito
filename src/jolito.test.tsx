@@ -555,7 +555,7 @@ describe('Jolito', () => {
     const services = createTestServices({ cards })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     await user.click(screen.getByRole('row', { name: /card: el aguacate/i }))
 
     const promptInput = screen.getByLabelText<HTMLTextAreaElement>(
@@ -1590,7 +1590,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
 
     expect(
@@ -1633,7 +1633,7 @@ describe('Jolito', () => {
     services.cards.save([cardWithHistory])
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Initially shows Review state pill in filter and Due in 14d chip in table
     expect(
@@ -1718,7 +1718,7 @@ describe('Jolito', () => {
     services.cards.save([cardWithHistory])
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     await user.click(screen.getByRole('row', { name: /card: platicar,/i }))
 
     const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)

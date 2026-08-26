@@ -350,7 +350,9 @@ test('resets learning history to new card in deck manager edit modal with zero a
   }, matureCard)
 
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   const cardsList = page.getByRole('table', { name: /deck cards/i })
   await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(1)
