@@ -29,17 +29,14 @@ console.log('Saved public/favicon.svg (Option 4: Ramillete Radial)')
 async function buildRasters() {
   const browser = await chromium.launch()
 
-  const iconSizes = [
+  // 1. Browser tab favicons (transparent background for light/dark tab strips)
+  const tabFavicons = [
     { name: 'favicon-16x16.png', size: 16 },
     { name: 'favicon-32x32.png', size: 32 },
     { name: 'favicon.png', size: 32 },
-    { name: 'apple-touch-icon.png', size: 180 },
-    { name: 'icon-192.png', size: 192 },
-    { name: 'icon-512.png', size: 512 },
-    { name: 'icon-512-maskable.png', size: 512 },
   ]
 
-  for (const item of iconSizes) {
+  for (const item of tabFavicons) {
     const page = await browser.newPage({
       viewport: { width: item.size, height: item.size },
       deviceScaleFactor: 1,
@@ -64,8 +61,65 @@ async function buildRasters() {
     await page.close()
   }
 
+  // 2. App launcher & Home screen icons (iOS apple-touch-icon, Android/PWA icons)
+  // iOS renders transparent touch icons with a black background; maskable icons
+  // require a solid background and safe-zone padding (~72% scale).
+  const appIcons = [
+    { name: 'apple-touch-icon.png', size: 180, scale: 0.72 },
+    { name: 'icon-192.png', size: 192, scale: 0.72 },
+    { name: 'icon-512.png', size: 512, scale: 0.72 },
+    { name: 'icon-512-maskable.png', size: 512, scale: 0.72 },
+  ]
+
+  for (const item of appIcons) {
+    const markSize = Math.round(item.size * item.scale)
+    const page = await browser.newPage({
+      viewport: { width: item.size, height: item.size },
+      deviceScaleFactor: 1,
+    })
+    await page.setContent(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            width: ${item.size}px;
+            height: ${item.size}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf5f8;
+            overflow: hidden;
+          }
+          .mark-wrapper {
+            width: ${markSize}px;
+            height: ${markSize}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          svg { width: 100%; height: 100%; }
+        </style>
+      </head>
+      <body>
+        <div class="mark-wrapper">
+          ${option4Svg}
+        </div>
+      </body>
+      </html>
+    `)
+    await page.screenshot({
+      path: path.join(publicDir, item.name),
+      omitBackground: false,
+    })
+    await page.close()
+  }
+
   await browser.close()
-  console.log('Generated production raster icons')
+  console.log(
+    'Generated production raster icons (transparent tab favicons + solid paper app icons)',
+  )
 }
 
 // Generate multi-layer favicon.ico (16, 32, 48px)

@@ -47,6 +47,7 @@ import {
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import type { SyncStatus } from './domain/sync'
+import { isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -353,8 +354,8 @@ function SaveCardAuthModal({
 
   if (!isOpen) return null
 
-  const handleSendLink = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSendLink = async (e?: FormEvent) => {
+    e?.preventDefault()
     if (!email.trim()) return
     setLoading(true)
     setStatusMsg(null)
@@ -371,22 +372,33 @@ function SaveCardAuthModal({
     }
   }
 
-  const handleVerifyOtp = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!token.trim()) return
+  const handlePasteClipboard = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+      try {
+        const text = await navigator.clipboard.readText()
+        if (text) {
+          setToken(text.trim())
+        }
+      } catch {
+        // clipboard access denied/unavailable
+      }
+    }
+  }
+
+  const handleVerifyOtp = async (e?: FormEvent) => {
+    e?.preventDefault()
+    const cleanToken = token.trim()
+    if (!cleanToken) return
     setLoading(true)
     setStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), token.trim())
+    const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoading(false)
     if (res.success) {
-      setStatusMsg({
-        type: 'success',
-        message: 'Signed in! Saving card…',
-      })
+      onClose()
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid verification code.',
+        message: res.error || 'Invalid sign-in link.',
       })
     }
   }
@@ -395,10 +407,10 @@ function SaveCardAuthModal({
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
         className="modal-content save-card-auth-modal"
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="save-card-auth-title"
-        onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
@@ -458,8 +470,7 @@ function SaveCardAuthModal({
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                autoComplete="email"
+                placeholder="Enter your email to save card…"
                 className="save-card-email-input"
               />
             </div>
@@ -471,7 +482,7 @@ function SaveCardAuthModal({
               {loading ? 'Sending link…' : 'Continue with email →'}
             </button>
             <p className="save-card-micro-hint">
-              100% free · No password needed
+              We’ll send a passwordless sign-in link to your email.
             </p>
           </form>
         ) : (
@@ -482,26 +493,50 @@ function SaveCardAuthModal({
             className="save-card-auth-form"
           >
             <p className="save-card-otp-notice">
-              Enter the 6-digit code sent to <strong>{email.trim()}</strong>
+              Paste the sign-in link sent to <strong>{email.trim()}</strong>
             </p>
+            <div className="sync-pwa-guidance save-card-pwa-guidance">
+              <span className="pwa-guidance-icon" aria-hidden="true">
+                📱
+              </span>
+              <p>
+                <strong>Home Screen app on iOS?</strong> Long-press the button
+                in your email and tap <strong>Copy Link</strong>, or open the
+                link in Safari and copy your sign-in link there. Paste it below
+                to sign in.
+              </p>
+            </div>
             <div className="save-card-field">
               <label htmlFor="save-card-otp" className="visually-hidden">
-                Verification code
+                Sign-in link
               </label>
-              <input
-                id="save-card-otp"
-                type="text"
-                required
-                autoFocus
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="123456"
-                autoComplete="one-time-code"
-                className="save-card-otp-input"
-              />
+              <div className="otp-input-wrap">
+                <input
+                  id="save-card-otp"
+                  type="text"
+                  required
+                  autoFocus
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="Paste your sign-in link"
+                  autoComplete="one-time-code"
+                  className="save-card-otp-input"
+                />
+                {typeof navigator !== 'undefined' &&
+                  typeof navigator.clipboard?.readText === 'function' && (
+                    <button
+                      type="button"
+                      className="paste-clipboard-btn"
+                      onClick={() => {
+                        void handlePasteClipboard()
+                      }}
+                      title="Paste from clipboard"
+                      aria-label="Paste from clipboard"
+                    >
+                      📋 Paste
+                    </button>
+                  )}
+              </div>
             </div>
             <button
               type="submit"
@@ -510,17 +545,29 @@ function SaveCardAuthModal({
             >
               {loading ? 'Saving…' : 'Verify & save card ✓'}
             </button>
-            <button
-              type="button"
-              className="text-button change-email-btn"
-              onClick={() => {
-                setIsOtpSent(false)
-                setToken('')
-                setStatusMsg(null)
-              }}
-            >
-              ← Use a different email
-            </button>
+            <div className="save-card-auth-secondary-row">
+              <button
+                type="button"
+                className="text-button change-email-btn"
+                disabled={loading}
+                onClick={() => {
+                  void handleSendLink()
+                }}
+              >
+                Resend link
+              </button>
+              <button
+                type="button"
+                className="text-button change-email-btn"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setToken('')
+                  setStatusMsg(null)
+                }}
+              >
+                ← Use a different email
+              </button>
+            </div>
           </form>
         )}
       </div>
@@ -1226,8 +1273,8 @@ function SyncModal({
   if (!isOpen) return null
 
   // Auth handlers
-  const handleSendLink = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSendLink = async (e?: FormEvent) => {
+    e?.preventDefault()
     if (!email.trim()) return
     setLoading(true)
     setSyncStatusMsg(null)
@@ -1237,8 +1284,7 @@ function SyncModal({
       setIsOtpSent(true)
       setSyncStatusMsg({
         type: 'info',
-        message:
-          'Sign-in link sent! Click the link in your email to sign in automatically, or enter your code below.',
+        message: 'Sign-in link sent! Check your email.',
       })
     } else {
       setSyncStatusMsg({
@@ -1248,12 +1294,26 @@ function SyncModal({
     }
   }
 
-  const handleVerifyOtp = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!token.trim()) return
+  const handlePasteClipboard = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+      try {
+        const text = await navigator.clipboard.readText()
+        if (text) {
+          setToken(text.trim())
+        }
+      } catch {
+        // clipboard access not permitted
+      }
+    }
+  }
+
+  const handleVerifyOtp = async (e?: FormEvent) => {
+    e?.preventDefault()
+    const cleanToken = token.trim()
+    if (!cleanToken) return
     setLoading(true)
     setSyncStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), token.trim())
+    const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoading(false)
     if (res.success) {
       setSyncStatusMsg({
@@ -1263,7 +1323,7 @@ function SyncModal({
     } else {
       setSyncStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid code.',
+        message: res.error || 'Invalid sign-in link.',
       })
     }
   }
@@ -1427,7 +1487,7 @@ function SyncModal({
                     <button
                       type="submit"
                       className="primary-button"
-                      disabled={loading}
+                      disabled={loading || !email.trim()}
                     >
                       {loading ? 'Sending link…' : 'Send sign-in link →'}
                     </button>
@@ -1440,34 +1500,76 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Click the confirmation link sent to{' '}
-                      <strong>{email}</strong> to sign in automatically, or
-                      enter your code:
+                      Paste the sign-in link sent to <strong>{email}</strong>:
                     </p>
+                    <div className="sync-pwa-guidance">
+                      <span className="pwa-guidance-icon" aria-hidden="true">
+                        📱
+                      </span>
+                      <p>
+                        <strong>Home Screen app on iOS?</strong> Long-press the
+                        button in your email and tap <strong>Copy Link</strong>,
+                        or open the link in Safari and copy your sign-in link
+                        there. Paste it below to sign in.
+                      </p>
+                    </div>
                     <div className="field-group">
-                      <label htmlFor="sync-otp">Verification code</label>
-                      <input
-                        id="sync-otp"
-                        type="text"
-                        required
-                        autoFocus
-                        placeholder="e.g. 123456"
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                      />
+                      <label htmlFor="sync-otp">Sign-in link</label>
+                      <div className="otp-input-wrap">
+                        <input
+                          id="sync-otp"
+                          type="text"
+                          required
+                          autoFocus
+                          placeholder="Paste your sign-in link"
+                          autoComplete="one-time-code"
+                          value={token}
+                          onChange={(e) => setToken(e.target.value)}
+                          className="sync-otp-input"
+                        />
+                        {typeof navigator !== 'undefined' &&
+                          typeof navigator.clipboard?.readText ===
+                            'function' && (
+                            <button
+                              type="button"
+                              className="paste-clipboard-btn"
+                              onClick={() => {
+                                void handlePasteClipboard()
+                              }}
+                              title="Paste from clipboard"
+                              aria-label="Paste from clipboard"
+                            >
+                              📋 Paste
+                            </button>
+                          )}
+                      </div>
                     </div>
                     <div className="sync-auth-buttons">
                       <button
                         type="submit"
                         className="primary-button"
-                        disabled={loading}
+                        disabled={loading || !token.trim()}
                       >
                         {loading ? 'Verifying…' : 'Verify & sync →'}
                       </button>
                       <button
                         type="button"
                         className="text-button"
-                        onClick={() => setIsOtpSent(false)}
+                        disabled={loading}
+                        onClick={() => {
+                          void handleSendLink()
+                        }}
+                      >
+                        Resend link
+                      </button>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => {
+                          setIsOtpSent(false)
+                          setToken('')
+                          setSyncStatusMsg(null)
+                        }}
                       >
                         Use different email
                       </button>
@@ -1530,6 +1632,61 @@ function ConnectionPill({
       <i className="pill-dot" aria-hidden="true" />
       <span>{label}</span>
     </button>
+  )
+}
+
+function RedirectAuthNotice({
+  message,
+  onDismiss,
+  onCopySessionLink,
+}: {
+  message: string | null
+  onDismiss: () => void
+  onCopySessionLink?: () => Promise<boolean> | boolean
+}) {
+  const [copied, setCopied] = useState(false)
+  if (!message) return null
+
+  const handleCopy = async () => {
+    if (onCopySessionLink) {
+      const res = await onCopySessionLink()
+      if (res) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2500)
+      }
+    }
+  }
+
+  return (
+    <div className="redirect-auth-banner" role="status">
+      <span className="banner-icon" aria-hidden="true">
+        💡
+      </span>
+      <div className="banner-content">
+        <p>{message}</p>
+        {onCopySessionLink && (
+          <button
+            type="button"
+            className="banner-action-btn"
+            onClick={() => {
+              void handleCopy()
+            }}
+          >
+            {copied
+              ? 'Link copied ✓'
+              : '📋 Copy sign-in link for Home Screen app'}
+          </button>
+        )}
+      </div>
+      <button
+        type="button"
+        className="banner-dismiss-btn"
+        onClick={onDismiss}
+        aria-label="Dismiss message"
+      >
+        ✕
+      </button>
+    </div>
   )
 }
 
@@ -1614,6 +1771,16 @@ export function App({
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
+  const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
+    () => {
+      if (services.auth.consumeRedirectAuth?.()) {
+        if (!isStandalone()) {
+          return 'Signed in in your browser! To sync your Home Screen app on iOS, tap "Copy sign-in link", then open the app and paste it in.'
+        }
+      }
+      return null
+    },
+  )
 
   const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
   const [editingCard, setEditingCard] = useState<StudyCard | null>(null)
@@ -1790,6 +1957,19 @@ export function App({
     },
     [onUpdateCards, services.clock, services.ids],
   )
+
+  const handleCopySessionLink = useCallback(async () => {
+    const link = services.auth.getSessionLink?.()
+    if (!link || typeof navigator === 'undefined' || !navigator.clipboard) {
+      return false
+    }
+    try {
+      await navigator.clipboard.writeText(link)
+      return true
+    } catch {
+      return false
+    }
+  }, [services.auth])
 
   useEffect(() => {
     return services.auth.onAuthStateChange((user) => {
@@ -2235,6 +2415,11 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
+          />
           <section className="welcome-hero">
             <div className="hero-copy">
               <img
@@ -2393,6 +2578,11 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
+          />
           <section className="create-layout">
             <div className="create-sidebar">
               <header>
@@ -2775,6 +2965,11 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
+          />
           <section className="deck-layout">
             <header className="deck-header-row">
               <h1>Manage deck</h1>
@@ -3109,6 +3304,11 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
+          />
           <section className="complete-card">
             <div className="complete-mascot-frame" aria-hidden="true">
               <img src={celebrateUrl} alt="" className="complete-mascot-img" />
@@ -3189,6 +3389,11 @@ export function App({
             />
           </div>
         </nav>
+        <RedirectAuthNotice
+          message={redirectAuthBanner}
+          onDismiss={() => setRedirectAuthBanner(null)}
+          onCopySessionLink={handleCopySessionLink}
+        />
         <div
           className="review-progress-track"
           role="progressbar"
