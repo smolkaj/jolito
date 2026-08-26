@@ -501,6 +501,85 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('ahor')
   })
 
+  it('selects existing text when tabbing between fields in the card creation view', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText<HTMLTextAreaElement>(/spanish/i)
+    const englishInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/^english$/i)
+    const contextInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/additional context/i)
+
+    // 1. Select an autocomplete suggestion
+    await user.type(spanishInput, 'ahor')
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Enter}')
+
+    expect(spanishInput).toHaveValue('ahorita')
+    expect(englishInput).toHaveValue('right now / in a bit')
+
+    // 2. Tab into English field -> all text is selected and overwritten on typing
+    await user.tab()
+    expect(englishInput).toHaveFocus()
+    expect(englishInput.selectionStart).toBe(0)
+    expect(englishInput.selectionEnd).toBe('right now / in a bit'.length)
+
+    await user.keyboard('soon')
+    expect(englishInput).toHaveValue('soon')
+
+    // 3. Tab through reverse card fields to context
+    await user.tab() // Bidirectional checkbox
+    await user.tab() // Customize reverse card summary
+    await user.tab() // Reverse prompt input
+    await user.tab() // Reverse answer input
+    await user.tab() // Context textarea
+    expect(contextInput).toHaveFocus()
+    expect(contextInput.selectionStart).toBe(0)
+    expect(contextInput.selectionEnd).toBe(
+      'Iconic Mexican time nuance: right now, soon, or never.'.length,
+    )
+  })
+
+  it('selects existing text when focusing fields in the deck edit card modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = createStudyCards(
+      {
+        spanish: 'el aguacate',
+        english: 'the avocado',
+        context: 'culinary nuance',
+        bidirectional: false,
+      },
+      'note-1',
+      1000,
+    )
+    const services = createTestServices({ cards })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('row', { name: /card: el aguacate/i }))
+
+    const promptInput = screen.getByLabelText<HTMLTextAreaElement>(
+      /mexican spanish \(prompt\)/i,
+    )
+    const answerInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/english \(answer\)/i)
+
+    expect(promptInput).toHaveFocus()
+    expect(promptInput.selectionStart).toBe(0)
+    expect(promptInput.selectionEnd).toBe('el aguacate'.length)
+
+    await user.tab()
+    if (!answerInput.matches(':focus')) {
+      await user.tab()
+    }
+    expect(answerInput).toHaveFocus()
+    expect(answerInput.selectionStart).toBe(0)
+    expect(answerInput.selectionEnd).toBe('the avocado'.length)
+  })
+
   it('renders clean study view without pictures, positions prompt audio beside prompt, and replays expected answer after reveal', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
