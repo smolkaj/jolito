@@ -87,6 +87,76 @@ test('brand mascot logo preserves opaque body fill and transparent negative spac
   expect(pixelData!.bg[3]).toBe(0)
 })
 
+test('apple-touch-icon and PWA app icons provide fully opaque brand paper background for iOS and mobile home screens', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  // Verify apple-touch-icon link element in HTML head
+  const appleTouchIconLink = page.locator('link[rel="apple-touch-icon"]')
+  await expect(appleTouchIconLink).toHaveAttribute(
+    'href',
+    '/apple-touch-icon.png',
+  )
+
+  // Verify apple-touch-icon image has opaque paper background (#fdf5f8) with no transparent corners
+  const iconPixelData = await page.evaluate(async () => {
+    const img = new Image()
+    img.src = '/apple-touch-icon.png'
+    await new Promise((res, rej) => {
+      img.onload = res
+      img.onerror = rej
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = img.naturalWidth
+    canvas.height = img.naturalHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0)
+
+    const getPixel = (x: number, y: number) => {
+      const p = ctx.getImageData(x, y, 1, 1).data
+      return [p[0], p[1], p[2], p[3]]
+    }
+
+    return {
+      width: img.naturalWidth,
+      height: img.naturalHeight,
+      topLeft: getPixel(0, 0),
+      topRight: getPixel(img.naturalWidth - 1, 0),
+      bottomLeft: getPixel(0, img.naturalHeight - 1),
+      bottomRight: getPixel(img.naturalWidth - 1, img.naturalHeight - 1),
+      center: getPixel(
+        Math.floor(img.naturalWidth / 2),
+        Math.floor(img.naturalHeight / 2),
+      ),
+    }
+  })
+
+  expect(iconPixelData).not.toBeNull()
+  expect(iconPixelData!.width).toBe(180)
+  expect(iconPixelData!.height).toBe(180)
+
+  // Corners must be fully opaque #fdf5f8 (R: 253, G: 245, B: 248, A: 255)
+  for (const corner of [
+    iconPixelData!.topLeft,
+    iconPixelData!.topRight,
+    iconPixelData!.bottomLeft,
+    iconPixelData!.bottomRight,
+  ]) {
+    expect(corner[3]).toBe(255) // Opaque alpha
+    expect(corner[0]).toBe(253) // #fd
+    expect(corner[1]).toBe(245) // #f5
+    expect(corner[2]).toBe(248) // #f8
+  }
+
+  // Center eye must be white (#ffffff)
+  expect(iconPixelData!.center[3]).toBe(255)
+  expect(iconPixelData!.center[0]).toBeGreaterThan(250)
+  expect(iconPixelData!.center[1]).toBeGreaterThan(250)
+  expect(iconPixelData!.center[2]).toBeGreaterThan(250)
+})
+
 test('creates and reviews both directions with the keyboard', async ({
   page,
 }) => {
