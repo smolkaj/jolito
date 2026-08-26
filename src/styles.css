@@ -1363,6 +1363,10 @@ summary:focus-visible {
   .save-button-check {
     animation: none;
   }
+
+  .review-progress-bar {
+    transition: none;
+  }
 }
 
 /* Review Page */
@@ -1370,149 +1374,22 @@ summary:focus-visible {
   background: var(--paper);
 }
 
-/* Review Queue Status Badge (Tactile SRS Queue Beads) */
-.review-queue-badge {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  height: 32px;
-  padding: 0 14px;
-  background: var(--card);
-  border: 1.5px solid var(--line);
+/* Review Session Progress Hairline */
+.review-progress-track {
+  width: min(1080px, 100%);
+  height: 3px;
+  margin: 16px auto 0;
+  background: var(--line-light);
   border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  z-index: 5;
-  white-space: nowrap;
-  max-width: calc(100% - 360px);
-  user-select: none;
-  transition: transform 180ms var(--ease-spring);
+  overflow: hidden;
+  position: relative;
 }
 
-.queue-beads-track {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.queue-bead {
-  width: 9px;
-  height: 9px;
+.review-progress-bar {
+  height: 100%;
+  background: var(--rosa);
   border-radius: 999px;
-  border: 1.5px solid var(--line);
-  flex-shrink: 0;
-  box-shadow: 1px 1px 0 rgba(18, 24, 21, 0.18);
-  transition:
-    transform 220ms var(--ease-spring),
-    background 180ms ease,
-    box-shadow 220ms var(--ease-spring);
-}
-
-.queue-bead.is-current {
-  transform: scale(1.35);
-  box-shadow:
-    0 0 0 1.5px var(--card),
-    0 0 0 3px var(--line),
-    var(--shadow-sm);
-}
-
-.queue-bead.is-new {
-  background: var(--maya);
-  border-radius: 999px;
-}
-
-.queue-bead.is-learn {
-  background: var(--tezontle);
-  border-radius: 2px;
-  transform: rotate(45deg);
-  width: 8px;
-  height: 8px;
-}
-
-.queue-bead.is-learn.is-current {
-  transform: rotate(45deg) scale(1.35);
-}
-
-.queue-bead.is-due {
-  background: var(--verde);
-  border-radius: 999px;
-}
-
-.queue-compact-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.compact-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.compact-chip i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.compact-chip.is-new {
-  color: var(--maya-dark);
-}
-.compact-chip.is-new i {
-  background: var(--maya);
-}
-
-.compact-chip.is-learn {
-  color: var(--tezontle-dark);
-}
-.compact-chip.is-learn i {
-  background: var(--tezontle);
-  border-radius: 2px;
-  transform: rotate(45deg);
-}
-
-.compact-chip.is-due {
-  color: var(--verde-dark);
-}
-.compact-chip.is-due i {
-  background: var(--verde);
-}
-
-.compact-label {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.queue-text-label {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink-soft);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.queue-count-num {
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.queue-count-suffix {
-  color: var(--ink-muted);
-  font-weight: 600;
+  transition: width 280ms var(--ease-spring);
 }
 
 /* Study Card - Clean, High-Signal Focus */
@@ -2287,20 +2164,12 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  .review-queue-badge {
-    position: absolute;
-    top: 66px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: calc(100% - 32px);
-    height: 32px;
-    padding: 0 10px;
-    justify-content: center;
+  .review-progress-track {
+    margin-top: 10px;
   }
 
   .study-card {
-    margin-top: 52px;
+    margin-top: 24px;
   }
 
   .study-prompt {

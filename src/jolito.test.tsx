@@ -349,9 +349,9 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
-      /4\s*new.*0\s*learn.*0\s*due/,
-    )
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '4 cards remaining')
 
     // Navigate back to welcome
     act(() => {
@@ -370,9 +370,9 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
-      /4\s*new.*0\s*learn.*0\s*due/,
-    )
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '4 cards remaining')
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation and context on selection', async () => {
@@ -1060,51 +1060,44 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
-    // Initial state: 4 new cards in queue with tactile beads
-    const badge = screen.getByLabelText('Session progress')
-    expect(badge).toHaveTextContent(/4\s*cards left/)
-    expect(badge).toHaveTextContent(/4\s*new.*0\s*learn.*0\s*due/)
-    const initialBeads = badge.querySelectorAll('.queue-bead')
-    expect(initialBeads).toHaveLength(4)
-    expect(initialBeads[0]).toHaveClass('is-new', 'is-current')
-    expect(initialBeads[1]).toHaveClass('is-new')
+    // Initial state: 4 cards in queue, 0% progress
+    const progress = screen.getByRole('progressbar', {
+      name: 'Session progress',
+    })
+    expect(progress).toHaveAttribute('aria-valuenow', '0')
+    expect(progress).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    const bar = progress.querySelector('.review-progress-bar') as HTMLElement
+    expect(bar).toHaveStyle({ width: '0%' })
 
     // Card 1: fail with Again (1) -> moves to learn queue (requeued at end)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
-    expect(badge).toHaveTextContent(/4\s*cards left/)
-    expect(badge.querySelector('.queue-retry-chip')).toBeNull()
-    expect(badge).toHaveTextContent(/3\s*new.*1\s*learn.*0\s*due/)
-    const requeuedBeads = badge.querySelectorAll('.queue-bead')
-    expect(requeuedBeads).toHaveLength(4)
-    expect(requeuedBeads[0]).toHaveClass('is-new', 'is-current')
-    expect(requeuedBeads[3]).toHaveClass('is-learn')
+    expect(progress).toHaveAttribute('aria-valuenow', '0')
+    expect(progress).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    expect(bar).toHaveStyle({ width: '0%' })
 
-    // Card 2: pass with Easy (4) -> graduates out of session
+    // Card 2: pass with Easy (4) -> graduates out of session (1/4 completed = 25%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(badge).toHaveTextContent(/3\s*cards left/)
-    expect(badge).toHaveTextContent(/2\s*new.*1\s*learn.*0\s*due/)
-    expect(badge.querySelectorAll('.queue-bead')).toHaveLength(3)
+    expect(progress).toHaveAttribute('aria-valuenow', '25')
+    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
+    expect(bar).toHaveStyle({ width: '25%' })
 
-    // Card 3: pass with Easy (4) -> graduates out of session
+    // Card 3: pass with Easy (4) -> graduates out of session (2/4 completed = 50%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(badge).toHaveTextContent(/2\s*cards left/)
-    expect(badge).toHaveTextContent(/1\s*new.*1\s*learn.*0\s*due/)
-    expect(badge.querySelectorAll('.queue-bead')).toHaveLength(2)
+    expect(progress).toHaveAttribute('aria-valuenow', '50')
+    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(bar).toHaveStyle({ width: '50%' })
 
-    // Card 4: pass with Easy (4) -> graduates out of session
+    // Card 4: pass with Easy (4) -> graduates out of session (3/4 completed = 75%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    // Now only Card 1 (learning retry) remains
-    expect(badge).toHaveTextContent(/1\s*card left/)
-    expect(badge).toHaveTextContent(/0\s*new.*1\s*learn.*0\s*due/)
-    const remainingBeads = badge.querySelectorAll('.queue-bead')
-    expect(remainingBeads).toHaveLength(1)
-    expect(remainingBeads[0]).toHaveClass('is-learn', 'is-current')
+    expect(progress).toHaveAttribute('aria-valuenow', '75')
+    expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
+    expect(bar).toHaveStyle({ width: '75%' })
 
-    // Card 1 retry: pass with Good (3) -> graduates learning card
+    // Card 1 retry: pass with Good (3) -> graduates learning card (4/4 completed = 100%)
     await user.keyboard('{Enter}')
     await user.keyboard('3')
 
@@ -1112,39 +1105,6 @@ describe('Jolito', () => {
     expect(
       await screen.findByRole('heading', { name: '¡Hecho!' }),
     ).toBeInTheDocument()
-  })
-
-  it('renders compact summary pill when review queue exceeds 6 cards', async () => {
-    const user = userEvent.setup({ delay: null })
-    const services = createTestServices()
-    // Populate 12 due cards
-    const extraCards = Array.from({ length: 12 }, (_, i) => ({
-      id: `bulk-card-${i}`,
-      noteId: `bulk-note-${i}`,
-      prompt: `prompt-${i}`,
-      answer: `answer-${i}`,
-      direction: 'es-en' as const,
-      context: '',
-      scene: 'conversation' as const,
-      schedule: {
-        state: 'new' as const,
-        dueAt: 0,
-        intervalDays: 0,
-        easeFactor: 2.5,
-        reviews: 0,
-        lapses: 0,
-      },
-    }))
-    services.cards.save(extraCards)
-    render(<App services={services} />)
-
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
-
-    const badge = screen.getByLabelText('Session progress')
-    expect(badge.querySelector('.queue-compact-pill')).toBeInTheDocument()
-    expect(badge.querySelector('.queue-beads-track')).not.toBeInTheDocument()
-    expect(badge).toHaveTextContent(/12\s*cards left/)
-    expect(badge).toHaveTextContent(/12\s*new/)
   })
 
   it('renders the Jolito brand vector mark in the header', () => {
@@ -1902,9 +1862,9 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: 'palta fresca' }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
-      /3\s*cards left/,
-    )
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '3 cards remaining')
   })
 
   it('opens edit modal via "e" keyboard shortcut during study session', async () => {

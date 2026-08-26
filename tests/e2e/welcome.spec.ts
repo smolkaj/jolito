@@ -325,7 +325,9 @@ test('top navigation pills have consistent vertical height across views', async 
 
   // 3. Study / Review view
   await page.goto('/#/study')
-  const reviewBadge = await page.locator('.review-queue-badge').boundingBox()
+  const reviewProgress = await page
+    .locator('.review-progress-track')
+    .boundingBox()
   const reviewNewCardBtn = await page
     .locator('.nav-actions .text-button')
     .first()
@@ -333,7 +335,7 @@ test('top navigation pills have consistent vertical height across views', async 
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  expect(reviewBadge?.height).toBeCloseTo(32, 1)
+  expect(reviewProgress?.height).toBeCloseTo(3, 1)
   expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
