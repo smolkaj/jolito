@@ -33,7 +33,3 @@ enable_confirmations = false
 otp_length = 6
 otp_expiry = 3600
 
-[auth.email.template.magic_link]
-subject = "Your Jolito sign-in code"
-content_path = "./supabase/templates/magic-link.html"
-
