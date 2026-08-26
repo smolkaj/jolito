@@ -81,6 +81,26 @@ For hosted Supabase projects, Auth URL settings (`Site URL` and `Redirect URLs`)
 
 Alternatively, `npm run setup:domain` automatically provisions these Auth URL settings when `SUPABASE_ACCESS_TOKEN` is set.
 
+#### Supabase Email Template Configuration (Remote)
+
+To support seamless 6-digit OTP code entry (especially for iOS Home Screen PWAs where magic links open in Mobile Safari):
+
+1. Open **Supabase Dashboard** > **Authentication** > **Email Templates** > **Magic Link**.
+2. Update the template body to include `{{ .Token }}` (see [`supabase/templates/magic-link.html`](../supabase/templates/magic-link.html)):
+   ```html
+   <h2>Your Jolito sign-in code</h2>
+   <p>Enter this 6-digit code in Jolito to sign in:</p>
+   <p
+     style="font-size: 32px; font-weight: 700; letter-spacing: 4px; font-family: monospace; color: #008779;"
+   >
+     {{ .Token }}
+   </p>
+   <p>
+     Or follow this link to log in automatically:
+     <a href="{{ .ConfirmationURL }}">Log In</a>
+   </p>
+   ```
+
 ## Cloudflare deployment
 
 The [production app](https://joli.to) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:

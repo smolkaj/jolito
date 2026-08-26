@@ -472,32 +472,32 @@ function SaveCardAuthModal({
             className="save-card-auth-form"
           >
             <p className="save-card-otp-notice">
-              Enter the 6-digit code sent to <strong>{email.trim()}</strong>
+              Enter the 6-digit code or paste the link sent to{' '}
+              <strong>{email.trim()}</strong>
             </p>
             <div className="sync-pwa-guidance save-card-pwa-guidance">
               <span className="pwa-guidance-icon" aria-hidden="true">
                 📱
               </span>
               <p>
-                <strong>Home Screen app on iOS?</strong> Enter your 6-digit code
-                above (iOS opens email links in Safari).
+                <strong>Home Screen app on iOS?</strong> If your email has a
+                6-digit code, enter it below. If it only has a link, long-press
+                the link in your email, select <strong>Copy Link</strong>, and
+                paste it below.
               </p>
             </div>
             <div className="save-card-field">
               <label htmlFor="save-card-otp" className="visually-hidden">
-                Verification code
+                Verification code or sign-in link
               </label>
               <input
                 id="save-card-otp"
                 type="text"
                 required
                 autoFocus
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={6}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="123456"
+                placeholder="123456 or paste sign-in link"
                 autoComplete="one-time-code"
                 className="save-card-otp-input"
               />
@@ -1427,30 +1427,30 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Enter the 6-digit verification code sent to{' '}
-                      <strong>{email}</strong>:
+                      Enter the 6-digit verification code or paste the link sent
+                      to <strong>{email}</strong>:
                     </p>
                     <div className="sync-pwa-guidance">
                       <span className="pwa-guidance-icon" aria-hidden="true">
                         📱
                       </span>
                       <p>
-                        <strong>Home Screen app on iOS?</strong> iOS opens email
-                        links in Safari. Enter your 6-digit code below to sign
-                        in directly inside this app.
+                        <strong>Home Screen app on iOS?</strong> If your email
+                        has a 6-digit code, enter it below. If it only has a
+                        link, long-press the link in your email, select{' '}
+                        <strong>Copy Link</strong>, and paste it below.
                       </p>
                     </div>
                     <div className="field-group">
-                      <label htmlFor="sync-otp">Verification code</label>
+                      <label htmlFor="sync-otp">
+                        Verification code or sign-in link
+                      </label>
                       <input
                         id="sync-otp"
                         type="text"
                         required
                         autoFocus
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
-                        placeholder="123456"
+                        placeholder="123456 or paste sign-in link"
                         autoComplete="one-time-code"
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
@@ -1551,17 +1551,46 @@ function ConnectionPill({
 function RedirectAuthNotice({
   message,
   onDismiss,
+  onCopySessionLink,
 }: {
   message: string | null
   onDismiss: () => void
+  onCopySessionLink?: () => Promise<boolean> | boolean
 }) {
+  const [copied, setCopied] = useState(false)
   if (!message) return null
+
+  const handleCopy = async () => {
+    if (onCopySessionLink) {
+      const res = await onCopySessionLink()
+      if (res) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2500)
+      }
+    }
+  }
+
   return (
     <div className="redirect-auth-banner" role="status">
       <span className="banner-icon" aria-hidden="true">
         💡
       </span>
-      <p>{message}</p>
+      <div className="banner-content">
+        <p>{message}</p>
+        {onCopySessionLink && (
+          <button
+            type="button"
+            className="banner-action-btn"
+            onClick={() => {
+              void handleCopy()
+            }}
+          >
+            {copied
+              ? 'Link copied ✓'
+              : '📋 Copy sign-in link for Home Screen app'}
+          </button>
+        )}
+      </div>
       <button
         type="button"
         className="banner-dismiss-btn"
@@ -1858,6 +1887,19 @@ export function App({
     },
     [onUpdateCards, services.clock, services.ids],
   )
+
+  const handleCopySessionLink = useCallback(async () => {
+    const link = services.auth.getSessionLink?.()
+    if (!link || typeof navigator === 'undefined' || !navigator.clipboard) {
+      return false
+    }
+    try {
+      await navigator.clipboard.writeText(link)
+      return true
+    } catch {
+      return false
+    }
+  }, [services.auth])
 
   useEffect(() => {
     return services.auth.onAuthStateChange((user) => {
@@ -2302,6 +2344,7 @@ export function App({
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
           />
           <section className="welcome-hero">
             <div className="hero-copy">
@@ -2462,6 +2505,7 @@ export function App({
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
           />
           <section className="create-layout">
             <div className="create-sidebar">
@@ -2849,6 +2893,7 @@ export function App({
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
           />
           <section className="deck-layout">
             <header className="deck-header-row">
@@ -3208,6 +3253,7 @@ export function App({
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
+            onCopySessionLink={handleCopySessionLink}
           />
           <section className="complete-card">
             <div className="complete-mascot-frame" aria-hidden="true">
@@ -3361,6 +3407,7 @@ export function App({
         <RedirectAuthNotice
           message={redirectAuthBanner}
           onDismiss={() => setRedirectAuthBanner(null)}
+          onCopySessionLink={handleCopySessionLink}
         />
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
           <div className="study-prompt-wrap">

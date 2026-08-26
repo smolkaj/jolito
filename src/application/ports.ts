@@ -48,6 +48,7 @@ export type AuthService = {
   isConfigured?(): boolean
   wasRedirectAuth?(): boolean
   consumeRedirectAuth?(): boolean
+  getSessionLink?(): string | null
   sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }>

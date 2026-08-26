@@ -20,6 +20,7 @@ describe('SupabaseAuthService', () => {
 
   beforeEach(() => {
     mockStorage = {}
+    window.location.hash = ''
     vi.restoreAllMocks()
   })
 
@@ -387,5 +388,86 @@ describe('SupabaseAuthService', () => {
     const res = await service.verifyOtp('test@example.com', '111222')
     expect(res.success).toBe(false)
     expect(res.error).toContain('If you tapped the email link in Safari')
+  })
+
+  it('exports session link for PWA transfer when authenticated', () => {
+    const fakePayload = {
+      sub: 'usr-export-1',
+      email: 'export@example.com',
+    }
+    const fakeToken = `header.${btoa(JSON.stringify(fakePayload))}.signature`
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      accessToken: fakeToken,
+      refreshToken: 'rt-export',
+      expiresAt: Date.now() + 100000,
+      user: { id: 'usr-export-1', email: 'export@example.com' },
+    })
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const link = service.getSessionLink()
+    expect(link).toContain('#access_token=')
+    expect(link).toContain('refresh_token=rt-export')
+  })
+
+  it('verifies pasted session redirect URL in verifyOtp and logs user in', async () => {
+    const fakePayload = {
+      sub: 'usr-pasted-url',
+      email: 'pasted@example.com',
+    }
+    const fakeToken = `header.${btoa(JSON.stringify(fakePayload))}.signature`
+    const pastedUrl = `https://joli.to/#access_token=${fakeToken}&refresh_token=rt-pasted&expires_in=3600`
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const res = await service.verifyOtp('', pastedUrl)
+    expect(res.success).toBe(true)
+
+    const user = await service.getUser()
+    expect(user?.id).toBe('usr-pasted-url')
+    expect(user?.email).toBe('pasted@example.com')
+  })
+
+  it('verifies pasted email magic link with token parameter in verifyOtp', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'tok-magic',
+          refresh_token: 'ref-magic',
+          expires_in: 3600,
+          user: { id: 'usr-magic', email: 'magic@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const emailLink =
+      'https://example.supabase.co/auth/v1/verify?token=pkce_abc123&type=magiclink&redirect_to=https://joli.to'
+    const res = await service.verifyOtp('magic@example.com', emailLink)
+    expect(res.success).toBe(true)
+
+    const callArgs = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody = JSON.parse(callArgs[1].body) as {
+      token: string
+      type: string
+    }
+    expect(parsedBody.token).toBe('pkce_abc123')
   })
 })

@@ -3025,9 +3025,35 @@ kbd {
   animation: slideUp 0.2s var(--ease-spring);
 }
 
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
 .redirect-auth-banner p {
   margin: 0;
   flex: 1;
+  min-width: 240px;
+}
+
+.banner-action-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  white-space: nowrap;
+  background: #ffffff;
+  border: 1.5px solid var(--turquesa-dark);
+  color: var(--turquesa-dark);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.banner-action-btn:hover {
+  background: var(--turquesa-soft);
 }
 
 .redirect-auth-banner .banner-icon {

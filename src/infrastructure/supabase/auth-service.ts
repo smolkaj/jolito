@@ -46,6 +46,40 @@ export class SupabaseAuthService implements AuthService {
     return occurred
   }
 
+  getSessionLink(): string | null {
+    const session = this.currentUser ? this.loadStoredSession() : null
+    if (!session) return null
+    return `${getCanonicalOrigin()}/#access_token=${session.accessToken}&refresh_token=${session.refreshToken}&expires_in=3600`
+  }
+
+  private parseJwtUser(
+    accessToken: string,
+    fallbackEmail = '',
+  ): AuthUser | null {
+    try {
+      const parts = accessToken.split('.')
+      if (parts.length < 2 || !parts[1]) return null
+      const base64Url = parts[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const pad = base64.length % 4
+      const padded = pad ? base64 + '='.repeat(4 - pad) : base64
+      const binary = atob(padded)
+      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+      const jsonStr = new TextDecoder().decode(bytes)
+      const parsedPayload: unknown = JSON.parse(jsonStr)
+
+      const validation = jwtPayloadSchema.safeParse(parsedPayload)
+      if (!validation.success) return null
+
+      return {
+        id: validation.data.sub,
+        email: validation.data.email || fallbackEmail,
+      }
+    } catch {
+      return null
+    }
+  }
+
   private processAuthRedirect(): AuthUser | null {
     if (typeof window === 'undefined' || !window.location) return null
     try {
@@ -72,26 +106,8 @@ export class SupabaseAuthService implements AuthService {
 
       if (!accessToken) return null
 
-      // Safe Base64URL and UTF-8 decoding of JWT payload
-      const parts = accessToken.split('.')
-      if (parts.length < 2) return null
-      const base64Url = parts[1]
-      if (!base64Url) return null
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const pad = base64.length % 4
-      const padded = pad ? base64 + '='.repeat(4 - pad) : base64
-      const binary = atob(padded)
-      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
-      const jsonStr = new TextDecoder().decode(bytes)
-      const parsedPayload: unknown = JSON.parse(jsonStr)
-
-      const validation = jwtPayloadSchema.safeParse(parsedPayload)
-      if (!validation.success) return null
-
-      const user: AuthUser = {
-        id: validation.data.sub,
-        email: validation.data.email || '',
-      }
+      const user = this.parseJwtUser(accessToken)
+      if (!user) return null
 
       const session: StoredSession = {
         accessToken,
@@ -118,10 +134,7 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
-  private loadStoredUser(): AuthUser | null {
-    const redirectUser = this.processAuthRedirect()
-    if (redirectUser) return redirectUser
-
+  private loadStoredSession(): StoredSession | null {
     try {
       const raw = this.storage.getItem?.(STORAGE_KEY)
       if (!raw) return null
@@ -130,10 +143,18 @@ export class SupabaseAuthService implements AuthService {
         this.storage.removeItem?.(STORAGE_KEY)
         return null
       }
-      return parsed.user
+      return parsed
     } catch {
       return null
     }
+  }
+
+  private loadStoredUser(): AuthUser | null {
+    const redirectUser = this.processAuthRedirect()
+    if (redirectUser) return redirectUser
+
+    const session = this.loadStoredSession()
+    return session?.user ?? null
   }
 
   private saveSession(session: StoredSession): void {
@@ -241,12 +262,39 @@ export class SupabaseAuthService implements AuthService {
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
     const cleanEmail = email.trim()
-    const cleanToken = token.replace(/\s+|-/g, '').trim()
+    const rawToken = token.trim()
 
-    if (!cleanEmail || !cleanToken) {
+    if (!rawToken) {
       return {
         success: false,
-        error: 'Please enter your email and verification code.',
+        error:
+          'Please enter your verification code or paste your sign-in link.',
+      }
+    }
+
+    // 1. Check if rawToken is a pasted session fragment / URL containing access_token
+    if (rawToken.includes('access_token=')) {
+      const hashStr = rawToken.includes('#')
+        ? rawToken.split('#')[1]
+        : rawToken.includes('?')
+          ? rawToken.split('?')[1]
+          : rawToken
+      const params = new URLSearchParams(hashStr)
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token') || ''
+      const expiresIn = Number(params.get('expires_in')) || 3600
+
+      if (accessToken) {
+        const user = this.parseJwtUser(accessToken, cleanEmail)
+        if (user) {
+          this.saveSession({
+            accessToken,
+            refreshToken,
+            expiresAt: Date.now() + expiresIn * 1000,
+            user,
+          })
+          return { success: true }
+        }
       }
     }
 
@@ -257,9 +305,78 @@ export class SupabaseAuthService implements AuthService {
       }
     }
 
-    // Try types: 'email', 'signup', 'magiclink'
+    // 2. Check if rawToken is a magic link URL containing token or token_hash
+    let candidateToken = rawToken.replace(/\s+|-/g, '')
+    let candidateType: string | undefined
+
+    if (rawToken.includes('token=') || rawToken.includes('token_hash=')) {
+      try {
+        const urlStr = rawToken.startsWith('http')
+          ? rawToken
+          : `https://${rawToken}`
+        const parsedUrl = new URL(urlStr)
+        const tokenHashParam =
+          parsedUrl.searchParams.get('token_hash') ||
+          parsedUrl.searchParams.get('token')
+        const typeParam = parsedUrl.searchParams.get('type')
+        if (tokenHashParam) {
+          candidateToken = tokenHashParam
+          if (typeParam) candidateType = typeParam
+        }
+      } catch {
+        // Fall back to candidateToken
+      }
+    }
+
+    // 3. If a token_hash was extracted from a link URL, try token_hash verification
+    if (candidateType || candidateToken.length > 20) {
+      for (const otpType of [candidateType || 'magiclink', 'email', 'signup']) {
+        try {
+          const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
+            method: 'POST',
+            headers: {
+              apikey: this.supabaseAnonKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token_hash: candidateToken,
+              token: candidateToken,
+              email: cleanEmail || undefined,
+              type: otpType,
+            }),
+          })
+
+          if (res.ok) {
+            const data = (await res.json()) as {
+              access_token: string
+              refresh_token: string
+              expires_in: number
+              user: { id: string; email?: string }
+            }
+
+            const user: AuthUser = {
+              id: data.user.id,
+              email: data.user.email || cleanEmail,
+            }
+
+            this.saveSession({
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token,
+              expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
+              user,
+            })
+
+            return { success: true }
+          }
+        } catch {
+          // Continue to next type
+        }
+      }
+    }
+
+    // 4. Standard 6-digit OTP code verification
     const types = ['email', 'signup', 'magiclink']
-    let lastError = 'Invalid or expired code.'
+    let lastError = 'Invalid or expired code or link.'
 
     for (const otpType of types) {
       try {
@@ -271,7 +388,7 @@ export class SupabaseAuthService implements AuthService {
           },
           body: JSON.stringify({
             email: cleanEmail,
-            token: cleanToken,
+            token: candidateToken,
             type: otpType,
           }),
         })
@@ -312,7 +429,7 @@ export class SupabaseAuthService implements AuthService {
 
         if (/expired|invalid/i.test(rawError)) {
           lastError =
-            'Invalid or expired code. If you tapped the email link in Safari, that code was already used. Please request a new code and enter it directly here.'
+            'Invalid or expired code or link. If you tapped the email link in Safari, copy your sign-in link from Safari or request a new code.'
         } else {
           lastError = rawError
         }
@@ -322,7 +439,7 @@ export class SupabaseAuthService implements AuthService {
           error:
             err instanceof Error
               ? err.message
-              : 'Network error during code verification.',
+              : 'Network error during verification.',
         }
       }
     }

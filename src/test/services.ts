@@ -91,6 +91,11 @@ export class MockAuthService implements AuthService {
     return val
   }
 
+  getSessionLink(): string | null {
+    if (!this.user) return null
+    return `https://joli.to/#access_token=mock-token-${this.user.id}&refresh_token=mock-refresh`
+  }
+
   getUser(): Promise<AuthUser | null> {
     return Promise.resolve(this.user)
   }
@@ -112,8 +117,16 @@ export class MockAuthService implements AuthService {
     email: string,
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
-    if (token === '123456') {
-      this.user = { id: 'mock-user-1', email }
+    const clean = token.replace(/\s+|-/g, '').trim()
+    if (
+      clean === '123456' ||
+      clean.includes('access_token=') ||
+      clean.includes('token=')
+    ) {
+      this.user = {
+        id: 'mock-user-1',
+        email: email.trim() || 'learner@example.com',
+      }
       this.listeners.forEach((l) => l(this.user))
       return Promise.resolve({ success: true })
     }

@@ -901,6 +901,14 @@ describe('Jolito', () => {
     })
     services.mockAuth.redirectAuthOccurred = true
 
+    // Stub clipboard
+    const writeTextSpy = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextSpy },
+      configurable: true,
+      writable: true,
+    })
+
     render(<App services={services} />)
 
     const banner = await screen.findByText(
@@ -908,11 +916,46 @@ describe('Jolito', () => {
     )
     expect(banner).toBeInTheDocument()
 
+    const copyBtn = screen.getByRole('button', {
+      name: /copy sign-in link for home screen app/i,
+    })
+    expect(copyBtn).toBeInTheDocument()
+    await user.click(copyBtn)
+    expect(writeTextSpy).toHaveBeenCalledWith(
+      expect.stringContaining('access_token='),
+    )
+    expect(await screen.findByText(/link copied/i)).toBeInTheDocument()
+
     const dismissBtn = screen.getByRole('button', { name: /dismiss message/i })
     await user.click(dismissBtn)
     expect(
       screen.queryByText(/Signed in to Jolito in your browser!/i),
     ).not.toBeInTheDocument()
+  })
+
+  it('allows signing in by pasting email magic link URL into sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pasted-learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+
+    const tokenInput = screen.getByLabelText(
+      /verification code or sign-in link/i,
+    )
+    await user.type(
+      tokenInput,
+      'https://example.supabase.co/auth/v1/verify?token=pkce_secret123&type=magiclink',
+    )
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    expect(
+      await screen.findByText(/deck synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
