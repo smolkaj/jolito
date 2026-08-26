@@ -3537,9 +3537,14 @@ kbd {
   height: 28px;
   min-width: 28px;
   min-height: 28px;
-  padding: 4px;
-  border-radius: 8px;
+  padding: 0;
+  border-radius: 50%;
   flex-shrink: 0;
+}
+
+.field-label-row .audio-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .delete-card-preview-card {
