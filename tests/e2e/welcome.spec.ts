@@ -361,15 +361,13 @@ test('top navigation pills have consistent vertical height across views', async 
   expect(deckFilterPill?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
 
-  // 5. Complete view action pills (consistently sized 50px pills)
+  // 5. Complete view action pills (consistently sized 50px pills: Create card & Back home)
   await page.goto('/#/complete')
   const completeButtons = page.locator('.complete-actions button')
-  await expect(completeButtons).toHaveCount(3)
+  await expect(completeButtons).toHaveCount(2)
   const completeCreateBtn = await completeButtons.nth(0).boundingBox()
-  const completeManageBtn = await completeButtons.nth(1).boundingBox()
-  const completeHomeBtn = await completeButtons.nth(2).boundingBox()
+  const completeHomeBtn = await completeButtons.nth(1).boundingBox()
   expect(completeCreateBtn?.height).toBeGreaterThanOrEqual(48)
-  expect(completeManageBtn?.height).toBe(completeCreateBtn?.height)
   expect(completeHomeBtn?.height).toBe(completeCreateBtn?.height)
 
   // 6. Accessibility check
