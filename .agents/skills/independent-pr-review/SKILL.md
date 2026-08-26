@@ -15,6 +15,7 @@ Use **Author or orchestrator** when preparing a PR or coordinating its review. U
 - Give each reviewer only the PR URL. The description, diff, and repository must provide the rationale and evidence needed to review it.
 - Resolve the base and head commit SHAs from the PR before reviewing and confirm neither has changed before reporting a verdict. A verdict applies only to that exact pair.
 - Report **blocking** findings separately from **advisory** observations. A finding is blocking when resolving it would materially improve correctness, clarity, simplicity, readability, maintainability, or long-term health. Advisory observations are preferences or polish with no material code-health impact; authors must not dismiss substantive improvements as optional merely because the code works.
+- Each concept should have one obvious source of truth and execution path. Treat competing authorities, unsynchronized copies, inconsistent invariants or terminology, and incomplete migrations as blockers.
 - Any change to the PR base or head invalidates prior approval. Repeat the required gates and use fresh reviewers until the current pair has zero blocking findings.
 - Never merge without the user's explicit approval.
 
