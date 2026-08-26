@@ -941,11 +941,11 @@ describe('Jolito', () => {
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    expect(await screen.findByText(/sign-in link sent/i)).toBeInTheDocument()
+    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
 
-    // Enter OTP
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
+    // Enter link / token
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
+    await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /verify & sync/i }))
 
     expect(
@@ -953,6 +953,124 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Signed in')).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
+  })
+
+  it('displays iOS Home Screen guidance and allows resending link in sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pwa-learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    expect(
+      await screen.findByText(/Home Screen app on iOS\?/i),
+    ).toBeInTheDocument()
+
+    const resendBtn = screen.getByRole('button', { name: /resend link/i })
+    expect(resendBtn).toBeInTheDocument()
+    await user.click(resendBtn)
+    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
+  })
+
+  it('displays and dismisses redirect auth notification banner when signed in via email redirect', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices({
+      user: { id: 'usr-redirect', email: 'safari-user@example.com' },
+    })
+    services.mockAuth.redirectAuthOccurred = true
+
+    // Stub clipboard
+    const writeTextSpy = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextSpy },
+      configurable: true,
+      writable: true,
+    })
+
+    render(<App services={services} />)
+
+    const banner = await screen.findByText(/Signed in in your browser!/i)
+    expect(banner).toBeInTheDocument()
+
+    const copyBtn = screen.getByRole('button', {
+      name: /copy sign-in link for home screen app/i,
+    })
+    expect(copyBtn).toBeInTheDocument()
+    await user.click(copyBtn)
+    expect(writeTextSpy).toHaveBeenCalledWith(
+      expect.stringContaining('access_token='),
+    )
+    expect(await screen.findByText(/link copied/i)).toBeInTheDocument()
+
+    const dismissBtn = screen.getByRole('button', { name: /dismiss message/i })
+    await user.click(dismissBtn)
+    expect(
+      screen.queryByText(/Signed in in your browser!/i),
+    ).not.toBeInTheDocument()
+  })
+
+  it('allows signing in by pasting email magic link URL into sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pasted-learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    await user.type(
+      tokenInput,
+      'https://example.supabase.co/auth/v1/verify?token=pkce_secret123&type=magiclink',
+    )
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    expect(
+      await screen.findByText(/deck synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
+  })
+
+  it('allows filling verification token via paste from clipboard button in sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+
+    // Stub clipboard readText
+    const readTextSpy = vi
+      .fn()
+      .mockResolvedValue(
+        'https://example.supabase.co/auth/v1/verify?token=pkce_clipboard123&type=magiclink',
+      )
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { readText: readTextSpy },
+      configurable: true,
+      writable: true,
+    })
+
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'clipboard-learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const pasteBtn = screen.getByRole('button', {
+      name: /paste from clipboard/i,
+    })
+    expect(pasteBtn).toBeInTheDocument()
+    await user.click(pasteBtn)
+
+    expect(readTextSpy).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    expect(
+      await screen.findByText(/deck synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
@@ -1318,9 +1436,9 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /continue with email/i }),
     )
 
-    // 4. Guest enters OTP code
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
+    // 4. Guest enters link / code
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    await user.type(tokenInput, '123456')
     await user.click(
       screen.getByRole('button', { name: /verify & save card/i }),
     )
@@ -1333,6 +1451,33 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('')
     expect(englishInput).toHaveValue('')
     expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('displays iOS Home Screen guidance and allows resending link in save card auth modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices({ cards: [] })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'chido')
+    await user.type(englishInput, 'cool')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pwa-creator@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /continue with email/i }),
+    )
+
+    expect(
+      await screen.findByText(/Home Screen app on iOS\?/i),
+    ).toBeInTheDocument()
+
+    const resendBtn = screen.getByRole('button', { name: /resend link/i })
+    expect(resendBtn).toBeInTheDocument()
+    await user.click(resendBtn)
   })
 
   it('preserves typed card input in create form if guest closes sign in modal without authenticating', async () => {
@@ -1422,8 +1567,8 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /continue with email/i }),
     )
 
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    await user.type(tokenInput, '123456')
     await user.click(
       screen.getByRole('button', { name: /verify & save card/i }),
     )

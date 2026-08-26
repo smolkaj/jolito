@@ -32,3 +32,4 @@ double_confirm_changes = true
 enable_confirmations = false
 otp_length = 6
 otp_expiry = 3600
+
