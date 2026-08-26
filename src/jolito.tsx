@@ -480,10 +480,10 @@ function SaveCardAuthModal({
                 📱
               </span>
               <p>
-                <strong>Home Screen app on iOS?</strong> If your email has a
-                6-digit code, enter it below. If it only has a link, long-press
-                the link in your email, select <strong>Copy Link</strong>, and
-                paste it below.
+                <strong>Home Screen app on iOS?</strong> Long-press the button
+                in your email and tap <strong>Copy Link</strong>, or open the
+                link in Safari and copy your sign-in link there. Paste it below
+                to sign in.
               </p>
             </div>
             <div className="save-card-field">
@@ -1435,10 +1435,10 @@ function SyncModal({
                         📱
                       </span>
                       <p>
-                        <strong>Home Screen app on iOS?</strong> If your email
-                        has a 6-digit code, enter it below. If it only has a
-                        link, long-press the link in your email, select{' '}
-                        <strong>Copy Link</strong>, and paste it below.
+                        <strong>Home Screen app on iOS?</strong> Long-press the
+                        button in your email and tap <strong>Copy Link</strong>,
+                        or open the link in Safari and copy your sign-in link
+                        there. Paste it below to sign in.
                       </p>
                     </div>
                     <div className="field-group">
@@ -1685,7 +1685,7 @@ export function App({
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
         if (!isStandalone()) {
-          return 'Signed in to Jolito in your browser! If you also use Jolito from your Home Screen on iOS, open the Home Screen app and enter a 6-digit code to sync your deck there too.'
+          return 'Signed in in your browser! To sync your Home Screen app on iOS, tap "Copy sign-in link", then open the app and paste it in.'
         }
       }
       return null

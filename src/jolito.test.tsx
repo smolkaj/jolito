@@ -911,9 +911,7 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    const banner = await screen.findByText(
-      /Signed in to Jolito in your browser!/i,
-    )
+    const banner = await screen.findByText(/Signed in in your browser!/i)
     expect(banner).toBeInTheDocument()
 
     const copyBtn = screen.getByRole('button', {
@@ -929,7 +927,7 @@ describe('Jolito', () => {
     const dismissBtn = screen.getByRole('button', { name: /dismiss message/i })
     await user.click(dismissBtn)
     expect(
-      screen.queryByText(/Signed in to Jolito in your browser!/i),
+      screen.queryByText(/Signed in in your browser!/i),
     ).not.toBeInTheDocument()
   })
 
