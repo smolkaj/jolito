@@ -1,5 +1,6 @@
 import {
   type ChangeEvent,
+  type FocusEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -36,6 +37,7 @@ import {
   deleteStudyCard,
   type Grade,
   type StudyCard,
+  type UpdateCardParams,
 } from './domain/card'
 import {
   filterDeckCards,
@@ -55,6 +57,16 @@ import {
   titleForView,
   viewFromHash,
 } from './navigation'
+
+function handleFocusSelect(
+  event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+) {
+  const target = event.currentTarget
+  target.select()
+  setTimeout(() => {
+    target.select()
+  }, 0)
+}
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -596,20 +608,21 @@ function EditCardModalInner({
 }: {
   card: StudyCard
   onClose: () => void
-  onSave: (
-    card: StudyCard,
-    updates: { prompt: string; answer: string; context: string },
-  ) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
   const [answer, setAnswer] = useState(card.answer)
   const [context, setContext] = useState(card.context ?? '')
+  const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isEsToEn = card.direction === 'es-en'
   const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
   const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
+
+  const isAlreadyNew =
+    card.schedule.state === 'new' && card.schedule.reviews === 0
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -628,6 +641,7 @@ function EditCardModalInner({
       prompt: trimmedPrompt,
       answer: trimmedAnswer,
       context: context.trim(),
+      resetProgress: isAlreadyNew ? false : resetProgress,
     })
   }
 
@@ -684,6 +698,7 @@ function EditCardModalInner({
               autoFocus
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Prompt text"
             />
           </div>
@@ -707,6 +722,7 @@ function EditCardModalInner({
               required
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Answer text"
             />
           </div>
@@ -718,9 +734,32 @@ function EditCardModalInner({
               rows={2}
               value={context}
               onChange={(e) => setContext(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Optional context, usage notes, or nuance"
             />
           </div>
+
+          <label
+            className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
+          >
+            <input
+              id="edit-reset-progress"
+              name="resetProgress"
+              type="checkbox"
+              checked={resetProgress && !isAlreadyNew}
+              disabled={isAlreadyNew}
+              onChange={(e) => setResetProgress(e.target.checked)}
+            />
+            <span className="toggle" aria-hidden="true" />
+            <div className="toggle-label-group">
+              <span className="toggle-title">Reset learning progress</span>
+              <span className="toggle-description">
+                {isAlreadyNew
+                  ? 'Card is already brand new (0 reviews)'
+                  : 'Treat as a new card and restart review history'}
+              </span>
+            </div>
+          </label>
 
           <div className="edit-modal-actions">
             <button
@@ -750,10 +789,7 @@ function EditCardModal({
   isOpen: boolean
   card: StudyCard | null
   onClose: () => void
-  onSave: (
-    card: StudyCard,
-    updates: { prompt: string; answer: string; context: string },
-  ) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
   useEffect(() => {
@@ -1716,6 +1752,9 @@ export function App({
   }, [])
 
   const [queue, setQueue] = useState<string[]>(initialResolved.queue)
+  const [sessionTotal, setSessionTotal] = useState<number>(
+    () => initialResolved.queue.length,
+  )
   const [reviewedCount, setReviewedCount] = useState(0)
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
@@ -1777,30 +1816,6 @@ export function App({
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
-  const cardMap = useMemo(
-    () => new Map(cards.map((card) => [card.id, card])),
-    [cards],
-  )
-
-  const { newCount, learnCount, reviewCount } = useMemo(() => {
-    let nextNew = 0
-    let nextLearn = 0
-    let nextReview = 0
-    for (const id of queue) {
-      const card = cardMap.get(id)
-      if (!card) continue
-      const state = card.schedule.state
-      if (state === 'new') nextNew++
-      else if (state === 'learning' || state === 'relearning') nextLearn++
-      else if (state === 'review') nextReview++
-    }
-    return {
-      newCount: nextNew,
-      learnCount: nextLearn,
-      reviewCount: nextReview,
-    }
-  }, [cardMap, queue])
-
   const cardsRef = useRef(cards)
   const viewRef = useRef(view)
   const authUserRef = useRef(authUser)
@@ -1841,18 +1856,16 @@ export function App({
   )
 
   const handleSaveEdit = useCallback(
-    (
-      card: StudyCard,
-      updates: { prompt: string; answer: string; context: string },
-    ) => {
-      const updated = updateStudyCard(card, updates)
+    (card: StudyCard, updates: UpdateCardParams) => {
+      const now = services.clock.now()
+      const updated = updateStudyCard(card, updates, now)
       const newCards = cardsRef.current.map((c) =>
         c.id === card.id ? updated : c,
       )
       onUpdateCards(newCards)
       setEditingCard(null)
     },
-    [onUpdateCards],
+    [onUpdateCards, services.clock],
   )
 
   const handleConfirmDelete = useCallback(
@@ -1865,6 +1878,12 @@ export function App({
       onUpdateCards(updatedCards)
       setQueue((prevQueue) => {
         const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
+        const deletedCount = prevQueue.length - nextQueue.length
+        if (deletedCount > 0) {
+          setSessionTotal((prev) =>
+            Math.max(nextQueue.length, prev - deletedCount),
+          )
+        }
         if (viewRef.current === 'review' && nextQueue.length === 0) {
           navigateTo('complete')
         }
@@ -2015,10 +2034,12 @@ export function App({
         setQueue((currentQueue) => {
           if (currentQueue.length > 0) return currentQueue
           const now = services.clock.now()
-          return cardsRef.current
+          const newQueue = cardsRef.current
             .filter((card) => isDue(card, now))
             .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
             .map(({ id }) => id)
+          setSessionTotal(newQueue.length)
+          return newQueue
         })
       }
     }
@@ -2221,6 +2242,7 @@ export function App({
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
     setQueue([])
+    setSessionTotal(0)
     setAnswer('')
     setRevealed(false)
   }
@@ -2234,6 +2256,7 @@ export function App({
         .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
         .map(({ id }) => id)
     setQueue(nextQueue)
+    setSessionTotal(nextQueue.length)
     setReviewedCount(0)
     setReferenceTime(now)
     setAnswer('')
@@ -2382,7 +2405,7 @@ export function App({
                 className="text-button"
                 onClick={() => navigateTo('deck')}
               >
-                Deck ({cards.length})
+                Manage deck
               </button>
               <ConnectionPill
                 authUser={authUser}
@@ -2426,7 +2449,7 @@ export function App({
                   className="secondary-button"
                   onClick={() => beginReview()}
                 >
-                  Practice {dueCount} due
+                  Practice
                 </button>
               </div>
             </div>
@@ -2540,11 +2563,13 @@ export function App({
                 className="text-button"
                 onClick={() => navigateTo('deck')}
               >
-                Deck ({cards.length})
+                Manage deck
               </button>
-              <button className="text-button" onClick={() => beginReview()}>
-                Review {dueCount}
-              </button>
+              {dueCount > 0 && (
+                <button className="text-button" onClick={() => beginReview()}>
+                  Practice
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -2675,6 +2700,7 @@ export function App({
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
+                  onFocus={handleFocusSelect}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
                   aria-controls="spanish-suggestions"
@@ -2758,7 +2784,20 @@ export function App({
                   required
                   value={englishInput}
                   onChange={onEnglishChange}
+                  onFocus={handleFocusSelect}
                   placeholder="English translation"
+                />
+              </div>
+              <div className="field-group">
+                <label htmlFor="context">Additional Context</label>
+                <textarea
+                  id="context"
+                  name="context"
+                  rows={2}
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
+                  onFocus={handleFocusSelect}
+                  placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
               <label className="toggle-row">
@@ -2784,6 +2823,7 @@ export function App({
                         name="reversePrompt"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
@@ -2796,23 +2836,13 @@ export function App({
                         name="reverseAnswer"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
                   </div>
                 </details>
               )}
-              <div className="field-group">
-                <label htmlFor="context">Additional Context</label>
-                <textarea
-                  id="context"
-                  name="context"
-                  rows={2}
-                  value={contextInput}
-                  onChange={(e) => setContextInput(e.target.value)}
-                  placeholder="Optional context, regional nuance, or memory hook"
-                />
-              </div>
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"
@@ -2924,15 +2954,9 @@ export function App({
               )}
               {dueCount > 0 && (
                 <button className="text-button" onClick={() => beginReview()}>
-                  Practice {dueCount} due
+                  Practice
                 </button>
               )}
-              <button
-                className="text-button"
-                onClick={() => setIsBackupOpen(true)}
-              >
-                Backup & Import
-              </button>
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -2948,7 +2972,7 @@ export function App({
           />
           <section className="deck-layout">
             <header className="deck-header-row">
-              <h1>Your deck</h1>
+              <h1>Manage deck</h1>
               <div className="deck-header-actions">
                 <button
                   type="button"
@@ -2959,33 +2983,6 @@ export function App({
                 </button>
               </div>
             </header>
-
-            <div className="deck-stats-strip" aria-label="Deck statistics">
-              <span className="deck-stat-chip">
-                <strong>{deckStats.total}</strong>{' '}
-                {deckStats.total === 1 ? 'card' : 'cards'}
-              </span>
-              <span
-                className={`deck-stat-chip ${deckStats.due > 0 ? 'is-due' : ''}`}
-              >
-                <strong>{deckStats.due}</strong> due
-              </span>
-              {deckStats.learningCount > 0 && (
-                <span className="deck-stat-chip is-learning">
-                  <strong>{deckStats.learningCount}</strong> learning
-                </span>
-              )}
-              {deckStats.newCount > 0 && (
-                <span className="deck-stat-chip is-new">
-                  <strong>{deckStats.newCount}</strong> new
-                </span>
-              )}
-              {deckStats.reviewCount > 0 && (
-                <span className="deck-stat-chip is-review">
-                  <strong>{deckStats.reviewCount}</strong> review
-                </span>
-              )}
-            </div>
 
             <div className="deck-toolbar">
               <div className="deck-search-wrap">
@@ -2998,6 +2995,7 @@ export function App({
                   placeholder="Search cards by Spanish, English, or notes…"
                   value={deckSearchQuery}
                   onChange={(e) => setDeckSearchQuery(e.target.value)}
+                  onFocus={handleFocusSelect}
                   aria-label="Search cards in deck"
                 />
               </div>
@@ -3013,6 +3011,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('all')}
                     aria-pressed={deckFilterState === 'all'}
+                    title="All cards in your deck regardless of review status"
                   >
                     All ({deckStats.total})
                   </button>
@@ -3021,6 +3020,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('due')}
                     aria-pressed={deckFilterState === 'due'}
+                    title="Cards ready to practice right now (new cards or scheduled reviews that are due)"
                   >
                     Due ({deckStats.due})
                   </button>
@@ -3029,6 +3029,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('new')}
                     aria-pressed={deckFilterState === 'new'}
+                    title="Unstudied cards that have not been practiced yet"
                   >
                     New ({deckStats.newCount})
                   </button>
@@ -3037,6 +3038,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('learning')}
                     aria-pressed={deckFilterState === 'learning'}
+                    title="Cards currently in short learning steps before graduating to long-term review"
                   >
                     Learning ({deckStats.learningCount})
                   </button>
@@ -3045,6 +3047,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('review')}
                     aria-pressed={deckFilterState === 'review'}
+                    title="Graduated cards scheduled for long-term spaced repetition (1+ days interval)"
                   >
                     Review ({deckStats.reviewCount})
                   </button>
@@ -3285,7 +3288,7 @@ export function App({
                 className="text-button"
                 onClick={() => navigateTo('deck')}
               >
-                Deck ({cards.length})
+                Manage deck
               </button>
               <button
                 className="text-button"
@@ -3328,9 +3331,9 @@ export function App({
                 className="secondary-button"
                 onClick={() => navigateTo('deck')}
               >
-                View deck ({cards.length})
+                Manage deck
               </button>
-              <button className="text-button" onClick={goHome}>
+              <button className="secondary-button" onClick={goHome}>
                 Back home
               </button>
             </div>
@@ -3362,84 +3365,21 @@ export function App({
 
   if (!currentCard) return null
 
+  const effectiveTotal = Math.max(sessionTotal, queue.length)
+  const completedInSession = Math.max(0, effectiveTotal - queue.length)
+  const progressPercentage =
+    effectiveTotal > 0
+      ? Math.min(100, Math.round((completedInSession / effectiveTotal) * 100))
+      : 0
+
   return (
     <>
       <main className="app-shell review-page">
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
-          <div className="review-queue-badge" aria-label="Session progress">
-            {queue.length <= 6 ? (
-              <div className="queue-beads-track" aria-hidden="true">
-                {queue.map((id, index) => {
-                  const card = cardMap.get(id)
-                  const state = card?.schedule.state ?? 'review'
-                  const isCurrent = index === 0
-                  const beadType =
-                    state === 'new'
-                      ? 'new'
-                      : state === 'learning' || state === 'relearning'
-                        ? 'learn'
-                        : 'due'
-                  return (
-                    <span
-                      key={`${id}-${index}`}
-                      className={`queue-bead is-${beadType} ${isCurrent ? 'is-current' : ''}`}
-                      title={
-                        beadType === 'learn'
-                          ? 'Retry card'
-                          : beadType === 'new'
-                            ? 'New card'
-                            : 'Review card'
-                      }
-                    />
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="queue-compact-pill" aria-hidden="true">
-                {newCount > 0 && (
-                  <span
-                    className="compact-chip is-new"
-                    title={`${newCount} new ${newCount === 1 ? 'card' : 'cards'}`}
-                  >
-                    <i />
-                    {newCount} <span className="compact-label">new</span>
-                  </span>
-                )}
-                {learnCount > 0 && (
-                  <span
-                    className="compact-chip is-learn"
-                    title={`${learnCount} learning ${learnCount === 1 ? 'card' : 'cards'}`}
-                  >
-                    <i />
-                    {learnCount} <span className="compact-label">learn</span>
-                  </span>
-                )}
-                {reviewCount > 0 && (
-                  <span
-                    className="compact-chip is-due"
-                    title={`${reviewCount} due ${reviewCount === 1 ? 'card' : 'cards'}`}
-                  >
-                    <i />
-                    {reviewCount} <span className="compact-label">due</span>
-                  </span>
-                )}
-              </div>
-            )}
-            <span className="queue-text-label" aria-hidden="true">
-              <span className="queue-count-num">{queue.length}</span>
-              <span className="queue-count-suffix">
-                {queue.length === 1 ? 'card' : 'cards'} left
-              </span>
-            </span>
-            <span className="sr-only">
-              {queue.length} {queue.length === 1 ? 'card' : 'cards'} remaining (
-              {newCount} new, {learnCount} learning, {reviewCount} due)
-            </span>
-          </div>
           <div className="nav-actions">
             <button className="text-button" onClick={() => navigateTo('deck')}>
-              Deck ({cards.length})
+              Manage deck
             </button>
             <button
               className="text-button"
@@ -3460,6 +3400,20 @@ export function App({
           onDismiss={() => setRedirectAuthBanner(null)}
           onCopySessionLink={handleCopySessionLink}
         />
+        <div
+          className="review-progress-track"
+          role="progressbar"
+          aria-label="Session progress"
+          aria-valuenow={progressPercentage}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`${queue.length} ${queue.length === 1 ? 'card' : 'cards'} remaining`}
+        >
+          <div
+            className="review-progress-bar"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
           <div className="study-prompt-wrap">
             <h1 className="study-prompt">{currentCard.prompt}</h1>

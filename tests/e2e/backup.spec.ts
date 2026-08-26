@@ -10,14 +10,14 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /deck \(4\)/i }).click()
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await page.getByRole('button', { name: /manage deck/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
+
   await expect(
     page.getByRole('heading', { name: /deck import & offline backup/i }),
   ).toBeVisible()
@@ -50,13 +50,12 @@ test('restores deck from backup JSON file and updates local storage', async ({
   page,
 }) => {
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   const backupData = {
     version: 1,
@@ -107,7 +106,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
 
   // Start review with the imported card
   await page
-    .getByRole('button', { name: /practice 1 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -121,10 +120,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.goto('/#/deck')
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
 
@@ -144,7 +140,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.keyboard.press('Escape')
 
   await page
-    .getByRole('button', { name: /practice 1 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -195,10 +191,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
   })
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   // Upload .apkg binary file
   await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
@@ -226,7 +219,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
 
   // Start review
   await page
-    .getByRole('button', { name: /practice 2 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()
@@ -248,7 +241,9 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   page,
 }) => {
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Verify list of cards
   const cardsList = page.getByRole('table', { name: /deck cards/i })
@@ -323,4 +318,92 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   ).not.toBeVisible()
   await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(3)
   await expect(page.getByText('el aguacate')).not.toBeVisible()
+})
+
+test('resets learning history to new card in deck manager edit modal with zero accessibility violations', async ({
+  page,
+}) => {
+  const now = Date.now()
+  const matureCard = {
+    id: 'mature-card-1',
+    noteId: 'note-1',
+    prompt: 'platicar',
+    answer: 'to chat',
+    direction: 'es-en',
+    context: 'Informal Mexican Spanish',
+    scene: 'conversation',
+    schedule: {
+      state: 'review',
+      dueAt: now + 86400000 * 14,
+      intervalDays: 14,
+      easeFactor: 2.6,
+      reviews: 6,
+      lapses: 1,
+    },
+  }
+
+  await page.addInitScript((card) => {
+    window.localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({ version: 1, cards: [card] }),
+    )
+  }, matureCard)
+
+  await page.goto('/#/deck')
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
+
+  const cardsList = page.getByRole('table', { name: /deck cards/i })
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(1)
+  await expect(cardsList.locator('.deck-stat-chip.is-review')).toBeVisible()
+
+  // Open edit modal
+  await cardsList.getByText('platicar').click()
+  await expect(
+    page.getByRole('heading', { name: /edit flashcard/i }),
+  ).toBeVisible()
+
+  const toggle = page.getByRole('checkbox', {
+    name: /reset learning progress/i,
+  })
+  await expect(toggle).toBeAttached()
+  await expect(toggle).toBeEnabled()
+  await expect(toggle).not.toBeChecked()
+  await expect(page.getByText('Reset learning progress')).toBeVisible()
+  await expect(
+    page.getByText('Treat as a new card and restart review history'),
+  ).toBeVisible()
+
+  // Verify accessibility with toggle
+  const editAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(editAxe.violations).toEqual([])
+
+  await page.screenshot({
+    path: 'test-results/deck-edit-reset-progress-modal.png',
+  })
+
+  // Toggle reset progress and save
+  await page.getByText('Reset learning progress').click()
+  await expect(toggle).toBeChecked()
+  await page.screenshot({
+    path: 'test-results/deck-edit-reset-progress-checked.png',
+  })
+
+  await page.getByRole('button', { name: /save changes/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /edit flashcard/i }),
+  ).not.toBeVisible()
+
+  // Verify filter pills and status chip changed to reflect reset new/due card
+  await expect(page.getByRole('button', { name: /new \(1\)/i })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /review \(0\)/i }),
+  ).toBeVisible()
+  await expect(cardsList.locator('.deck-stat-chip.is-due')).toBeVisible()
+  await expect(cardsList.locator('.deck-stat-chip.is-review')).not.toBeVisible()
+
+  await page.screenshot({ path: 'test-results/deck-after-reset-progress.png' })
 })
