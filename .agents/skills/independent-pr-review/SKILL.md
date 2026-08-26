@@ -13,9 +13,9 @@ Use **Author or orchestrator** when preparing a PR or coordinating its review. U
 
 - An independent reviewer is fresh, has not authored the change, and is strictly read-only. Reviewers may inspect code and trusted CI, but must not modify tracked files or Git/remote state: no edits, commits, pushes, comments, approvals, thread resolution, or merges.
 - Give each reviewer only the PR URL. The description, diff, and repository must provide the rationale and evidence needed to review it.
-- Resolve the base and head commit SHAs from the PR before reviewing and confirm the live head is unchanged before reporting a verdict. A verdict applies only to that head.
+- Resolve the base and head commit SHAs from the PR before reviewing and confirm neither has changed before reporting a verdict. A verdict applies only to that exact pair.
 - Report **blocking** findings separately from **advisory** observations. Blocking findings are defects, failed requirements or gates, or missing evidence that makes merging unsafe. Advisory observations are genuinely optional.
-- Any change to the PR head invalidates prior approval. Repeat the required gates and use fresh reviewers until the current head has zero blocking findings.
+- Any change to the PR base or head invalidates prior approval. Repeat the required gates and use fresh reviewers until the current pair has zero blocking findings.
 - Never merge without the user's explicit approval.
 
 ## Author or orchestrator
