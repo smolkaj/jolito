@@ -858,9 +858,9 @@ describe('Jolito', () => {
     // Enter email
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
 
-    expect(await screen.findByText(/sign-in link sent/i)).toBeInTheDocument()
+    expect(await screen.findByText(/sign-in code sent/i)).toBeInTheDocument()
 
     // Enter OTP
     const otpInput = screen.getByLabelText(/verification code/i)
@@ -872,6 +872,47 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Signed in')).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
+  })
+
+  it('displays iOS Home Screen guidance and allows resending code in sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pwa-learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+
+    expect(
+      await screen.findByText(/Home Screen app on iOS\?/i),
+    ).toBeInTheDocument()
+
+    const resendBtn = screen.getByRole('button', { name: /resend code/i })
+    expect(resendBtn).toBeInTheDocument()
+    await user.click(resendBtn)
+    expect(await screen.findByText(/sign-in code sent/i)).toBeInTheDocument()
+  })
+
+  it('displays and dismisses redirect auth notification banner when signed in via email redirect', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices({
+      user: { id: 'usr-redirect', email: 'safari-user@example.com' },
+    })
+    services.mockAuth.redirectAuthOccurred = true
+
+    render(<App services={services} />)
+
+    const banner = await screen.findByText(
+      /Signed in to Jolito in your browser!/i,
+    )
+    expect(banner).toBeInTheDocument()
+
+    const dismissBtn = screen.getByRole('button', { name: /dismiss message/i })
+    await user.click(dismissBtn)
+    expect(
+      screen.queryByText(/Signed in to Jolito in your browser!/i),
+    ).not.toBeInTheDocument()
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
@@ -1293,6 +1334,33 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('')
     expect(englishInput).toHaveValue('')
     expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('displays iOS Home Screen guidance and allows resending code in save card auth modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices({ cards: [] })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'chido')
+    await user.type(englishInput, 'cool')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pwa-creator@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /continue with email/i }),
+    )
+
+    expect(
+      await screen.findByText(/Home Screen app on iOS\?/i),
+    ).toBeInTheDocument()
+
+    const resendBtn = screen.getByRole('button', { name: /resend code/i })
+    expect(resendBtn).toBeInTheDocument()
+    await user.click(resendBtn)
   })
 
   it('preserves typed card input in create form if guest closes sign in modal without authenticating', async () => {

@@ -45,6 +45,7 @@ import {
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import type { SyncStatus } from './domain/sync'
+import { isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -341,8 +342,8 @@ function SaveCardAuthModal({
 
   if (!isOpen) return null
 
-  const handleSendLink = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSendLink = async (e?: FormEvent) => {
+    e?.preventDefault()
     if (!email.trim()) return
     setLoading(true)
     setStatusMsg(null)
@@ -354,17 +355,18 @@ function SaveCardAuthModal({
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Failed to send sign-in link.',
+        message: res.error || 'Failed to send sign-in code.',
       })
     }
   }
 
   const handleVerifyOtp = async (e: FormEvent) => {
     e.preventDefault()
-    if (!token.trim()) return
+    const cleanToken = token.replace(/\s+|-/g, '').trim()
+    if (!cleanToken) return
     setLoading(true)
     setStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), token.trim())
+    const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoading(false)
     if (res.success) {
       setStatusMsg({
@@ -456,10 +458,10 @@ function SaveCardAuthModal({
               className="primary-button save-card-main-cta"
               disabled={loading || !email.trim()}
             >
-              {loading ? 'Sending link…' : 'Continue with email →'}
+              {loading ? 'Sending code…' : 'Continue with email →'}
             </button>
             <p className="save-card-micro-hint">
-              100% free · No password needed
+              100% free · 6-digit code · No password needed
             </p>
           </form>
         ) : (
@@ -472,6 +474,15 @@ function SaveCardAuthModal({
             <p className="save-card-otp-notice">
               Enter the 6-digit code sent to <strong>{email.trim()}</strong>
             </p>
+            <div className="sync-pwa-guidance save-card-pwa-guidance">
+              <span className="pwa-guidance-icon" aria-hidden="true">
+                📱
+              </span>
+              <p>
+                <strong>Home Screen app on iOS?</strong> Enter your 6-digit code
+                above (iOS opens email links in Safari).
+              </p>
+            </div>
             <div className="save-card-field">
               <label htmlFor="save-card-otp" className="visually-hidden">
                 Verification code
@@ -498,17 +509,29 @@ function SaveCardAuthModal({
             >
               {loading ? 'Saving…' : 'Verify & save card ✓'}
             </button>
-            <button
-              type="button"
-              className="text-button change-email-btn"
-              onClick={() => {
-                setIsOtpSent(false)
-                setToken('')
-                setStatusMsg(null)
-              }}
-            >
-              ← Use a different email
-            </button>
+            <div className="save-card-auth-secondary-row">
+              <button
+                type="button"
+                className="text-button change-email-btn"
+                disabled={loading}
+                onClick={() => {
+                  void handleSendLink()
+                }}
+              >
+                Resend code
+              </button>
+              <button
+                type="button"
+                className="text-button change-email-btn"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setToken('')
+                  setStatusMsg(null)
+                }}
+              >
+                ← Use a different email
+              </button>
+            </div>
           </form>
         )}
       </div>
@@ -1190,8 +1213,8 @@ function SyncModal({
   if (!isOpen) return null
 
   // Auth handlers
-  const handleSendLink = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSendLink = async (e?: FormEvent) => {
+    e?.preventDefault()
     if (!email.trim()) return
     setLoading(true)
     setSyncStatusMsg(null)
@@ -1201,23 +1224,23 @@ function SyncModal({
       setIsOtpSent(true)
       setSyncStatusMsg({
         type: 'info',
-        message:
-          'Sign-in link sent! Click the link in your email to sign in automatically, or enter your code below.',
+        message: 'Sign-in code sent! Check your email for your 6-digit code.',
       })
     } else {
       setSyncStatusMsg({
         type: 'error',
-        message: res.error || 'Failed to send sign-in link.',
+        message: res.error || 'Failed to send sign-in code.',
       })
     }
   }
 
   const handleVerifyOtp = async (e: FormEvent) => {
     e.preventDefault()
-    if (!token.trim()) return
+    const cleanToken = token.replace(/\s+|-/g, '').trim()
+    if (!cleanToken) return
     setLoading(true)
     setSyncStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), token.trim())
+    const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoading(false)
     if (res.success) {
       setSyncStatusMsg({
@@ -1227,7 +1250,7 @@ function SyncModal({
     } else {
       setSyncStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid code.',
+        message: res.error || 'Invalid verification code.',
       })
     }
   }
@@ -1375,7 +1398,7 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Enter your email to receive a passwordless sign-in link.
+                      Enter your email to receive a passwordless sign-in code.
                     </p>
                     <div className="field-group">
                       <label htmlFor="sync-email">Email address</label>
@@ -1391,9 +1414,9 @@ function SyncModal({
                     <button
                       type="submit"
                       className="primary-button"
-                      disabled={loading}
+                      disabled={loading || !email.trim()}
                     >
-                      {loading ? 'Sending link…' : 'Send sign-in link →'}
+                      {loading ? 'Sending code…' : 'Send sign-in code →'}
                     </button>
                   </form>
                 ) : (
@@ -1404,10 +1427,19 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Click the confirmation link sent to{' '}
-                      <strong>{email}</strong> to sign in automatically, or
-                      enter your code:
+                      Enter the 6-digit verification code sent to{' '}
+                      <strong>{email}</strong>:
                     </p>
+                    <div className="sync-pwa-guidance">
+                      <span className="pwa-guidance-icon" aria-hidden="true">
+                        📱
+                      </span>
+                      <p>
+                        <strong>Home Screen app on iOS?</strong> iOS opens email
+                        links in Safari. Enter your 6-digit code below to sign
+                        in directly inside this app.
+                      </p>
+                    </div>
                     <div className="field-group">
                       <label htmlFor="sync-otp">Verification code</label>
                       <input
@@ -1415,23 +1447,42 @@ function SyncModal({
                         type="text"
                         required
                         autoFocus
-                        placeholder="e.g. 123456"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        placeholder="123456"
+                        autoComplete="one-time-code"
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
+                        className="sync-otp-input"
                       />
                     </div>
                     <div className="sync-auth-buttons">
                       <button
                         type="submit"
                         className="primary-button"
-                        disabled={loading}
+                        disabled={loading || !token.trim()}
                       >
                         {loading ? 'Verifying…' : 'Verify & sync →'}
                       </button>
                       <button
                         type="button"
                         className="text-button"
-                        onClick={() => setIsOtpSent(false)}
+                        disabled={loading}
+                        onClick={() => {
+                          void handleSendLink()
+                        }}
+                      >
+                        Resend code
+                      </button>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => {
+                          setIsOtpSent(false)
+                          setToken('')
+                          setSyncStatusMsg(null)
+                        }}
                       >
                         Use different email
                       </button>
@@ -1494,6 +1545,32 @@ function ConnectionPill({
       <i className="pill-dot" aria-hidden="true" />
       <span>{label}</span>
     </button>
+  )
+}
+
+function RedirectAuthNotice({
+  message,
+  onDismiss,
+}: {
+  message: string | null
+  onDismiss: () => void
+}) {
+  if (!message) return null
+  return (
+    <div className="redirect-auth-banner" role="status">
+      <span className="banner-icon" aria-hidden="true">
+        💡
+      </span>
+      <p>{message}</p>
+      <button
+        type="button"
+        className="banner-dismiss-btn"
+        onClick={onDismiss}
+        aria-label="Dismiss message"
+      >
+        ✕
+      </button>
+    </div>
   )
 }
 
@@ -1575,6 +1652,16 @@ export function App({
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
+  const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
+    () => {
+      if (services.auth.consumeRedirectAuth?.()) {
+        if (!isStandalone()) {
+          return 'Signed in to Jolito in your browser! If you also use Jolito from your Home Screen on iOS, open the Home Screen app and enter a 6-digit code to sync your deck there too.'
+        }
+      }
+      return null
+    },
+  )
 
   const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
   const [editingCard, setEditingCard] = useState<StudyCard | null>(null)
@@ -2212,6 +2299,10 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+          />
           <section className="welcome-hero">
             <div className="hero-copy">
               <img
@@ -2368,6 +2459,10 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+          />
           <section className="create-layout">
             <div className="create-sidebar">
               <header>
@@ -2751,6 +2846,10 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+          />
           <section className="deck-layout">
             <header className="deck-header-row">
               <h1>Your deck</h1>
@@ -3106,6 +3205,10 @@ export function App({
               />
             </div>
           </nav>
+          <RedirectAuthNotice
+            message={redirectAuthBanner}
+            onDismiss={() => setRedirectAuthBanner(null)}
+          />
           <section className="complete-card">
             <div className="complete-mascot-frame" aria-hidden="true">
               <img src={celebrateUrl} alt="" className="complete-mascot-img" />
@@ -3255,6 +3358,10 @@ export function App({
             />
           </div>
         </nav>
+        <RedirectAuthNotice
+          message={redirectAuthBanner}
+          onDismiss={() => setRedirectAuthBanner(null)}
+        />
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
           <div className="study-prompt-wrap">
             <h1 className="study-prompt">{currentCard.prompt}</h1>

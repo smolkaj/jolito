@@ -311,4 +311,81 @@ describe('SupabaseAuthService', () => {
     expect(user).toBeNull()
     expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/')
   })
+
+  it('tracks and consumes redirect auth state', () => {
+    const fakePayload = {
+      sub: 'usr-redirect-101',
+      email: 'pwa-user@example.com',
+    }
+    const fakeToken = `header.${btoa(JSON.stringify(fakePayload))}.signature`
+    window.location.hash = `#access_token=${fakeToken}&expires_in=3600`
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    expect(service.wasRedirectAuth()).toBe(true)
+    expect(service.consumeRedirectAuth()).toBe(true)
+    expect(service.consumeRedirectAuth()).toBe(false)
+    expect(service.wasRedirectAuth()).toBe(false)
+  })
+
+  it('sanitizes formatted token with spaces or dashes during verifyOtp', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'clean-token',
+          refresh_token: 'clean-refresh',
+          expires_in: 3600,
+          user: { id: 'usr-clean', email: 'clean@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const res = await service.verifyOtp(' clean@example.com ', ' 123-456 ')
+    expect(res.success).toBe(true)
+
+    const callArgs = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody = JSON.parse(callArgs[1].body) as {
+      email: string
+      token: string
+    }
+    expect(parsedBody.email).toBe('clean@example.com')
+    expect(parsedBody.token).toBe('123456')
+  })
+
+  it('provides actionable guidance when OTP is expired or invalid', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: () =>
+          Promise.resolve({
+            message: 'Token has expired or is invalid',
+          }),
+      }),
+    )
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const res = await service.verifyOtp('test@example.com', '111222')
+    expect(res.success).toBe(false)
+    expect(res.error).toContain('If you tapped the email link in Safari')
+  })
 })

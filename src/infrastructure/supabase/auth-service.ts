@@ -19,6 +19,7 @@ const STORAGE_KEY = 'jolito-auth-session-v1'
 export class SupabaseAuthService implements AuthService {
   private listeners: Set<(user: AuthUser | null) => void> = new Set()
   private currentUser: AuthUser | null = null
+  private redirectAuthOccurred = false
 
   constructor(
     private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
@@ -33,6 +34,16 @@ export class SupabaseAuthService implements AuthService {
 
   isConfigured(): boolean {
     return Boolean(this.supabaseUrl && this.supabaseAnonKey)
+  }
+
+  wasRedirectAuth(): boolean {
+    return this.redirectAuthOccurred
+  }
+
+  consumeRedirectAuth(): boolean {
+    const occurred = this.redirectAuthOccurred
+    this.redirectAuthOccurred = false
+    return occurred
   }
 
   private processAuthRedirect(): AuthUser | null {
@@ -89,6 +100,7 @@ export class SupabaseAuthService implements AuthService {
         user,
       }
 
+      this.redirectAuthOccurred = true
       this.saveSession(session)
 
       // Clean the URL hash so tokens are removed from browser address bar
@@ -165,6 +177,14 @@ export class SupabaseAuthService implements AuthService {
   async sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
+    const cleanEmail = email.trim()
+    if (!cleanEmail) {
+      return {
+        success: false,
+        error: 'Please enter your email address.',
+      }
+    }
+
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return {
         success: false,
@@ -184,7 +204,7 @@ export class SupabaseAuthService implements AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
+          email: cleanEmail,
           create_user: true,
           email_redirect_to: redirectUrl,
         }),
@@ -220,6 +240,16 @@ export class SupabaseAuthService implements AuthService {
     email: string,
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
+    const cleanEmail = email.trim()
+    const cleanToken = token.replace(/\s+|-/g, '').trim()
+
+    if (!cleanEmail || !cleanToken) {
+      return {
+        success: false,
+        error: 'Please enter your email and verification code.',
+      }
+    }
+
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return {
         success: false,
@@ -240,8 +270,8 @@ export class SupabaseAuthService implements AuthService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email,
-            token,
+            email: cleanEmail,
+            token: cleanToken,
             type: otpType,
           }),
         })
@@ -256,7 +286,7 @@ export class SupabaseAuthService implements AuthService {
 
           const user: AuthUser = {
             id: data.user.id,
-            email: data.user.email || email,
+            email: data.user.email || cleanEmail,
           }
 
           this.saveSession({
@@ -274,11 +304,18 @@ export class SupabaseAuthService implements AuthService {
           error_description?: string
           message?: string
         }
-        lastError =
+        const rawError =
           errorData.msg ||
           errorData.error_description ||
           errorData.message ||
           lastError
+
+        if (/expired|invalid/i.test(rawError)) {
+          lastError =
+            'Invalid or expired code. If you tapped the email link in Safari, that code was already used. Please request a new code and enter it directly here.'
+        } else {
+          lastError = rawError
+        }
       } catch (err) {
         return {
           success: false,

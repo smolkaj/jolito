@@ -74,10 +74,21 @@ export class MockSoundPlayer implements SoundPlayer {
 export class MockAuthService implements AuthService {
   public user: AuthUser | null = null
   public configured = true
+  public redirectAuthOccurred = false
   private listeners = new Set<(user: AuthUser | null) => void>()
 
   isConfigured(): boolean {
     return this.configured
+  }
+
+  wasRedirectAuth(): boolean {
+    return this.redirectAuthOccurred
+  }
+
+  consumeRedirectAuth(): boolean {
+    const val = this.redirectAuthOccurred
+    this.redirectAuthOccurred = false
+    return val
   }
 
   getUser(): Promise<AuthUser | null> {
