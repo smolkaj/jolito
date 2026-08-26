@@ -387,7 +387,7 @@ describe('SupabaseAuthService', () => {
 
     const res = await service.verifyOtp('test@example.com', '111222')
     expect(res.success).toBe(false)
-    expect(res.error).toContain('If you tapped the email link in Safari')
+    expect(res.error).toContain('If you opened the link in Safari')
   })
 
   it('exports session link for PWA transfer when authenticated', () => {

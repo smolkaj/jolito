@@ -268,8 +268,7 @@ export class SupabaseAuthService implements AuthService {
     if (!rawToken) {
       return {
         success: false,
-        error:
-          'Please enter your verification code or paste your sign-in link.',
+        error: 'Please paste your sign-in link.',
       }
     }
 
@@ -375,9 +374,9 @@ export class SupabaseAuthService implements AuthService {
       }
     }
 
-    // 4. Standard 6-digit OTP code verification
+    // 4. Verification attempt
     const types = ['email', 'signup', 'magiclink']
-    let lastError = 'Invalid or expired code or link.'
+    let lastError = 'Invalid or expired sign-in link.'
 
     for (const otpType of types) {
       try {
@@ -430,7 +429,7 @@ export class SupabaseAuthService implements AuthService {
 
         if (/expired|invalid/i.test(rawError)) {
           lastError =
-            'Invalid or expired code or link. If you tapped the email link in Safari, copy your sign-in link from Safari or request a new code.'
+            'Invalid or expired sign-in link. If you opened the link in Safari, copy your sign-in link from Safari or request a new email.'
         } else {
           lastError = rawError
         }

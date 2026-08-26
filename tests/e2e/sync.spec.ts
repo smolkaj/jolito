@@ -76,7 +76,7 @@ test('canonicalizes non-canonical production host to joli.to preserving auth has
   )
 })
 
-test('renders iOS Home Screen guidance and 6-digit verification code input with zero WCAG violations', async ({
+test('renders iOS Home Screen guidance and sign-in link input with zero WCAG violations', async ({
   page,
 }) => {
   // Inject mock fetch to simulate Supabase OTP auth responses

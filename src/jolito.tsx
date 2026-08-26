@@ -355,7 +355,7 @@ function SaveCardAuthModal({
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Failed to send sign-in code.',
+        message: res.error || 'Failed to send sign-in link.',
       })
     }
   }
@@ -386,7 +386,7 @@ function SaveCardAuthModal({
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid verification code or link.',
+        message: res.error || 'Invalid sign-in link.',
       })
     }
   }
@@ -467,10 +467,10 @@ function SaveCardAuthModal({
               className="primary-button save-card-main-cta"
               disabled={loading || !email.trim()}
             >
-              {loading ? 'Sending code…' : 'Continue with email →'}
+              {loading ? 'Sending link…' : 'Continue with email →'}
             </button>
             <p className="save-card-micro-hint">
-              We’ll send a passwordless sign-in code to your email.
+              We’ll send a passwordless sign-in link to your email.
             </p>
           </form>
         ) : (
@@ -481,8 +481,7 @@ function SaveCardAuthModal({
             className="save-card-auth-form"
           >
             <p className="save-card-otp-notice">
-              Enter the 6-digit code or paste the link sent to{' '}
-              <strong>{email.trim()}</strong>
+              Paste the sign-in link sent to <strong>{email.trim()}</strong>
             </p>
             <div className="sync-pwa-guidance save-card-pwa-guidance">
               <span className="pwa-guidance-icon" aria-hidden="true">
@@ -497,7 +496,7 @@ function SaveCardAuthModal({
             </div>
             <div className="save-card-field">
               <label htmlFor="save-card-otp" className="visually-hidden">
-                Verification code or sign-in link
+                Sign-in link
               </label>
               <div className="otp-input-wrap">
                 <input
@@ -507,7 +506,7 @@ function SaveCardAuthModal({
                   autoFocus
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  placeholder="123456 or paste sign-in link"
+                  placeholder="Paste your sign-in link"
                   autoComplete="one-time-code"
                   className="save-card-otp-input"
                 />
@@ -543,7 +542,7 @@ function SaveCardAuthModal({
                   void handleSendLink()
                 }}
               >
-                Resend code
+                Resend link
               </button>
               <button
                 type="button"
@@ -1249,12 +1248,12 @@ function SyncModal({
       setIsOtpSent(true)
       setSyncStatusMsg({
         type: 'info',
-        message: 'Sign-in code sent! Check your email for your 6-digit code.',
+        message: 'Sign-in link sent! Check your email.',
       })
     } else {
       setSyncStatusMsg({
         type: 'error',
-        message: res.error || 'Failed to send sign-in code.',
+        message: res.error || 'Failed to send sign-in link.',
       })
     }
   }
@@ -1288,7 +1287,7 @@ function SyncModal({
     } else {
       setSyncStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid verification code or link.',
+        message: res.error || 'Invalid sign-in link.',
       })
     }
   }
@@ -1436,7 +1435,7 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Enter your email to receive a passwordless sign-in code.
+                      Enter your email to receive a passwordless sign-in link.
                     </p>
                     <div className="field-group">
                       <label htmlFor="sync-email">Email address</label>
@@ -1454,7 +1453,7 @@ function SyncModal({
                       className="primary-button"
                       disabled={loading || !email.trim()}
                     >
-                      {loading ? 'Sending code…' : 'Send sign-in code →'}
+                      {loading ? 'Sending link…' : 'Send sign-in link →'}
                     </button>
                   </form>
                 ) : (
@@ -1465,8 +1464,7 @@ function SyncModal({
                     className="sync-auth-form"
                   >
                     <p className="sync-explanation">
-                      Enter the 6-digit verification code or paste the link sent
-                      to <strong>{email}</strong>:
+                      Paste the sign-in link sent to <strong>{email}</strong>:
                     </p>
                     <div className="sync-pwa-guidance">
                       <span className="pwa-guidance-icon" aria-hidden="true">
@@ -1480,16 +1478,14 @@ function SyncModal({
                       </p>
                     </div>
                     <div className="field-group">
-                      <label htmlFor="sync-otp">
-                        Verification code or sign-in link
-                      </label>
+                      <label htmlFor="sync-otp">Sign-in link</label>
                       <div className="otp-input-wrap">
                         <input
                           id="sync-otp"
                           type="text"
                           required
                           autoFocus
-                          placeholder="123456 or paste sign-in link"
+                          placeholder="Paste your sign-in link"
                           autoComplete="one-time-code"
                           value={token}
                           onChange={(e) => setToken(e.target.value)}
@@ -1528,7 +1524,7 @@ function SyncModal({
                           void handleSendLink()
                         }}
                       >
-                        Resend code
+                        Resend link
                       </button>
                       <button
                         type="button"

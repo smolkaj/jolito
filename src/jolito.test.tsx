@@ -858,13 +858,13 @@ describe('Jolito', () => {
     // Enter email
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    expect(await screen.findByText(/sign-in code sent/i)).toBeInTheDocument()
+    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
 
-    // Enter OTP
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
+    // Enter link / token
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
+    await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /verify & sync/i }))
 
     expect(
@@ -874,7 +874,7 @@ describe('Jolito', () => {
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
   })
 
-  it('displays iOS Home Screen guidance and allows resending code in sync modal', async () => {
+  it('displays iOS Home Screen guidance and allows resending link in sync modal', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
@@ -882,16 +882,16 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pwa-learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
       await screen.findByText(/Home Screen app on iOS\?/i),
     ).toBeInTheDocument()
 
-    const resendBtn = screen.getByRole('button', { name: /resend code/i })
+    const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
     await user.click(resendBtn)
-    expect(await screen.findByText(/sign-in code sent/i)).toBeInTheDocument()
+    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
   })
 
   it('displays and dismisses redirect auth notification banner when signed in via email redirect', async () => {
@@ -939,11 +939,9 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pasted-learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    const tokenInput = screen.getByLabelText(
-      /verification code or sign-in link/i,
-    )
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(
       tokenInput,
       'https://example.supabase.co/auth/v1/verify?token=pkce_secret123&type=magiclink',
@@ -977,7 +975,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'clipboard-learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     const pasteBtn = screen.getByRole('button', {
       name: /paste from clipboard/i,
@@ -1398,9 +1396,9 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /continue with email/i }),
     )
 
-    // 4. Guest enters OTP code
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
+    // 4. Guest enters link / code
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    await user.type(tokenInput, '123456')
     await user.click(
       screen.getByRole('button', { name: /verify & save card/i }),
     )
@@ -1415,7 +1413,7 @@ describe('Jolito', () => {
     expect(services.memoryCards.saved).toHaveLength(2)
   })
 
-  it('displays iOS Home Screen guidance and allows resending code in save card auth modal', async () => {
+  it('displays iOS Home Screen guidance and allows resending link in save card auth modal', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
     render(<App services={services} />)
@@ -1437,7 +1435,7 @@ describe('Jolito', () => {
       await screen.findByText(/Home Screen app on iOS\?/i),
     ).toBeInTheDocument()
 
-    const resendBtn = screen.getByRole('button', { name: /resend code/i })
+    const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
     await user.click(resendBtn)
   })
@@ -1529,8 +1527,8 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /continue with email/i }),
     )
 
-    const otpInput = screen.getByLabelText(/verification code/i)
-    await user.type(otpInput, '123456')
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    await user.type(tokenInput, '123456')
     await user.click(
       screen.getByRole('button', { name: /verify & save card/i }),
     )
