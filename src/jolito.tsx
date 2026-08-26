@@ -2816,6 +2816,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('all')}
                     aria-pressed={deckFilterState === 'all'}
+                    title="All cards in your deck regardless of review status"
                   >
                     All ({deckStats.total})
                   </button>
@@ -2824,6 +2825,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('due')}
                     aria-pressed={deckFilterState === 'due'}
+                    title="Cards ready to practice right now (new cards or scheduled reviews that are due)"
                   >
                     Due ({deckStats.due})
                   </button>
@@ -2832,6 +2834,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('new')}
                     aria-pressed={deckFilterState === 'new'}
+                    title="Unstudied cards that have not been practiced yet"
                   >
                     New ({deckStats.newCount})
                   </button>
@@ -2840,6 +2843,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('learning')}
                     aria-pressed={deckFilterState === 'learning'}
+                    title="Cards currently in short learning steps before graduating to long-term review"
                   >
                     Learning ({deckStats.learningCount})
                   </button>
@@ -2848,6 +2852,7 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('review')}
                     aria-pressed={deckFilterState === 'review'}
+                    title="Graduated cards scheduled for long-term spaced repetition (1+ days interval)"
                   >
                     Review ({deckStats.reviewCount})
                   </button>

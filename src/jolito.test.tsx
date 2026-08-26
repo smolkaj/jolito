@@ -1453,15 +1453,30 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /all \(4\)/i })).toHaveAttribute(
+      'title',
+      'All cards in your deck regardless of review status',
+    )
+    expect(screen.getByRole('button', { name: /due \(4\)/i })).toHaveAttribute(
+      'title',
+      'Cards ready to practice right now (new cards or scheduled reviews that are due)',
+    )
+    expect(screen.getByRole('button', { name: /new \(4\)/i })).toHaveAttribute(
+      'title',
+      'Unstudied cards that have not been practiced yet',
+    )
     expect(
-      screen.getByRole('button', { name: /all \(4\)/i }),
-    ).toBeInTheDocument()
+      screen.getByRole('button', { name: /learning \(0\)/i }),
+    ).toHaveAttribute(
+      'title',
+      'Cards currently in short learning steps before graduating to long-term review',
+    )
     expect(
-      screen.getByRole('button', { name: /due \(4\)/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /new \(4\)/i }),
-    ).toBeInTheDocument()
+      screen.getByRole('button', { name: /review \(0\)/i }),
+    ).toHaveAttribute(
+      'title',
+      'Graduated cards scheduled for long-term spaced repetition (1+ days interval)',
+    )
 
     // 4 starter cards are shown
     const cardItems = screen.getAllByRole('row', { name: /card:/i })
