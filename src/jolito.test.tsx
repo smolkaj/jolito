@@ -1615,27 +1615,28 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /all \(4\)/i })).toHaveAttribute(
       'title',
-      'All cards in your deck regardless of review status',
+      'All cards in your deck',
     )
-    expect(screen.getByRole('button', { name: /due \(4\)/i })).toHaveAttribute(
+    expect(
+      screen.getByRole('button', { name: /due now \(4\)/i }),
+    ).toHaveAttribute(
       'title',
-      'Cards ready to practice right now (new cards or scheduled reviews that are due)',
+      'Cards ready to practice right now (unstudied cards + due reviews)',
     )
-    expect(screen.getByRole('button', { name: /new \(4\)/i })).toHaveAttribute(
-      'title',
-      'Unstudied cards that have not been practiced yet',
-    )
+    expect(
+      screen.getByRole('button', { name: /unstudied \(4\)/i }),
+    ).toHaveAttribute('title', "Cards you haven't practiced yet")
     expect(
       screen.getByRole('button', { name: /learning \(0\)/i }),
     ).toHaveAttribute(
       'title',
-      'Cards currently in short learning steps before graduating to long-term review',
+      'Cards you are currently acquiring in short repetition steps',
     )
     expect(
-      screen.getByRole('button', { name: /review \(0\)/i }),
+      screen.getByRole('button', { name: /mastered \(0\)/i }),
     ).toHaveAttribute(
       'title',
-      'Graduated cards scheduled for long-term spaced repetition (1+ days interval)',
+      'Graduated cards scheduled for long-term memory retention (1+ days)',
     )
 
     // 4 starter cards are shown
@@ -1653,8 +1654,8 @@ describe('Jolito', () => {
     await user.clear(searchInput)
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
 
-    // Filter by state pill "Review" (0 cards in review state initially)
-    await user.click(screen.getByRole('button', { name: /review \(0\)/i }))
+    // Filter by state pill "Mastered" (0 cards in review/mastered state initially)
+    await user.click(screen.getByRole('button', { name: /mastered \(0\)/i }))
     expect(screen.queryAllByRole('row', { name: /card:/i })).toHaveLength(0)
     expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
 
@@ -1776,9 +1777,9 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
-    // Initially shows Review state pill in filter and Due in 14d chip in table
+    // Initially shows Mastered state pill in filter and Due in 14d chip in table
     expect(
-      screen.getByRole('button', { name: /review \(1\)/i }),
+      screen.getByRole('button', { name: /mastered \(1\)/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Due in 14d')).toBeInTheDocument()
 
@@ -1810,12 +1811,12 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: /edit flashcard/i }),
     ).not.toBeInTheDocument()
 
-    // Filter pills reflect New (1) and Review (0)
+    // Filter pills reflect Unstudied (1) and Mastered (0)
     expect(
-      screen.getByRole('button', { name: /new \(1\)/i }),
+      screen.getByRole('button', { name: /unstudied \(1\)/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /review \(0\)/i }),
+      screen.getByRole('button', { name: /mastered \(0\)/i }),
     ).toBeInTheDocument()
 
     // Saved card in storage has reset schedule
