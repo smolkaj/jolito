@@ -100,27 +100,40 @@ html {
   min-width: 320px;
   background: var(--paper);
   scroll-behavior: smooth;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--ink);
   background: var(--paper);
   line-height: 1.5;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 button,
 input,
-textarea {
+textarea,
+select,
+summary,
+a {
   font: inherit;
+  touch-action: manipulation;
 }
 
 button,
 summary {
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:focus-visible,
@@ -146,7 +159,11 @@ summary:focus-visible {
 /* Base App Shell Layout */
 .app-shell {
   min-height: 100vh;
-  padding: 16px clamp(20px, 5vw, 80px) 40px;
+  min-height: 100dvh;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-right: max(clamp(20px, 5vw, 80px), env(safe-area-inset-right));
+  padding-bottom: max(40px, env(safe-area-inset-bottom));
+  padding-left: max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   position: relative;
@@ -951,7 +968,7 @@ summary:focus-visible {
 .field-group textarea#context {
   min-height: 64px;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -1256,7 +1273,7 @@ summary:focus-visible {
 .compact-fields input {
   margin-top: 6px;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .save-button {
@@ -2064,7 +2081,10 @@ kbd {
 
 @media (max-width: 680px) {
   .app-shell {
-    padding: 12px 16px 28px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
   }
 
   .nav-actions {
@@ -3157,7 +3177,7 @@ kbd {
   border: 2px solid var(--line);
   border-radius: 14px;
   background: var(--card);
-  font-size: 15px;
+  font-size: 16px;
   box-shadow: var(--shadow-sm);
   transition:
     border-color 150ms ease,
