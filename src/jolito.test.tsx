@@ -1107,7 +1107,6 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-
   it('renders the Jolito brand vector mark in the header', () => {
     const services = createTestServices()
     render(<App services={services} />)
