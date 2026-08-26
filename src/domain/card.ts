@@ -68,6 +68,7 @@ export const updateCardSchema = z.object({
   prompt: z.string().trim().min(1).optional(),
   answer: z.string().trim().min(1).optional(),
   context: z.string().optional(),
+  resetProgress: z.boolean().optional(),
 })
 
 export type Grade = z.infer<typeof gradeSchema>
@@ -104,6 +105,17 @@ export function chooseScene(...text: string[]): Scene {
   )
 }
 
+export function createNewReviewSchedule(now: number): ReviewSchedule {
+  return {
+    state: 'new',
+    dueAt: now,
+    intervalDays: 0,
+    easeFactor: INITIAL_EASE_FACTOR,
+    reviews: 0,
+    lapses: 0,
+  }
+}
+
 export function createStudyCards(
   note: NewNote,
   noteId: string,
@@ -115,14 +127,7 @@ export function createStudyCards(
 
   const context = note.context.trim()
   const scene = chooseScene(spanish, english, context)
-  const newSchedule = (): ReviewSchedule => ({
-    state: 'new',
-    dueAt: now,
-    intervalDays: 0,
-    easeFactor: INITIAL_EASE_FACTOR,
-    reviews: 0,
-    lapses: 0,
-  })
+  const newSchedule = (): ReviewSchedule => createNewReviewSchedule(now)
   const cards: StudyCard[] = [
     {
       id: `${noteId}:es-en`,
@@ -392,9 +397,17 @@ export function intervalLabel(card: StudyCard, grade: Grade): string {
   return days === 1 ? '1 day' : `${days} days`
 }
 
+export function resetCardProgress(card: StudyCard, now: number): StudyCard {
+  return {
+    ...card,
+    schedule: createNewReviewSchedule(now),
+  }
+}
+
 export function updateStudyCard(
   existing: StudyCard,
   updates: UpdateCardParams,
+  now: number = Date.now(),
 ): StudyCard {
   const parsed = updateCardSchema.parse(updates)
   const prompt =
@@ -404,6 +417,9 @@ export function updateStudyCard(
   const context =
     parsed.context !== undefined ? parsed.context.trim() : existing.context
   const scene = chooseScene(prompt, answer, context)
+  const schedule = parsed.resetProgress
+    ? createNewReviewSchedule(now)
+    : existing.schedule
 
   return {
     ...existing,
@@ -411,6 +427,7 @@ export function updateStudyCard(
     answer,
     context,
     scene,
+    schedule,
   }
 }
 
