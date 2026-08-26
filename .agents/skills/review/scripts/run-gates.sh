@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Jolito Read-Only Quality Gates Runner
+# Read-Only Quality Gates Runner
 # Usage: ./run-gates.sh [--e2e]
 
 RUN_E2E=false
@@ -10,7 +10,7 @@ if [[ "${1:-}" == "--e2e" ]]; then
 fi
 
 echo "========================================="
-echo " Jolito Quality Gates Check"
+echo " Quality Gates Execution"
 echo "========================================="
 
 echo ""

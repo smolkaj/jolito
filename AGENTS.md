@@ -20,27 +20,7 @@ git worktree remove ../jolito-<task> && git worktree prune
 
 # Independent review loop
 
-Every PR must be reviewed by a fresh, independent read-only agent instance and iterated to fixpoint (zero blocking issues) before merge.
-
-## Review rules
-
-1. **Strict separation:** The reviewer is read-only. It must not edit files, stage changes, push commits, or merge.
-2. **Self-documenting PRs:** The reviewer receives **only** the PR, and no additional context
-3. **PR narrative structure:** PRs must lead with big-picture wins, clearly contrast the world before vs. after, and name the next steps toward the north star.
-4. **Vigilance against cognitive debt & ambient magic:** Reviewers must actively evaluate cognitive overhead, readability, and long-term evolvability. Flag ambient "magic" (e.g. hidden runtime interceptors, complex build-time code gen, uninspectable background state) and dual/divergent architectures (e.g. static-only mechanisms that cannot scale to dynamic user assets). Favor explicit, testable TypeScript in domain/infrastructure ports over invisible framework machinery.
-
-## Findings taxonomy
-
-- **Blocking:** Correctness bugs, invariant violations, ambient magic / untestable hidden state, architectural divergence, missing/failing tests, missing docs for behavioral changes, or quality gate failures. Must be resolved before merge.
-- **Advisory:** Optional style or non-critical cleanups.
-
-## Review loop to fixpoint
-
-1. Author passes all gates (`npm run check`, `npm run audit:prod`, and `npm run test:e2e` with visual verification for UI changes).
-2. Author opens PR and invokes read-only reviewer using the cross-agent review skill (`.agents/skills/review`, callable as `/review` across `agy`, `claude`, and `codex`) with only PR description, diff, and docs.
-3. Reviewer records base/head commit SHAs and reports findings.
-4. If blocking issues exist, author resolves them, reruns checks, pushes, and requests re-review on the new head SHA.
-5. Record reviewer session ID, commit SHAs, and outcome in the PR comment/description before merge.
+Every PR must be reviewed by fresh, independent read-only reviewer instances running in parallel and iterated to fixpoint (zero blocking issues) before merge. Follow the review skill ([`.agents/skills/review`](.agents/skills/review), callable as `/review` across `agy`, `claude`, and `codex`).
 
 # Philosophy
 

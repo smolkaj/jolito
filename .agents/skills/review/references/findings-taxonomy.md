@@ -1,4 +1,4 @@
-# Review Findings Taxonomy & Severity Guide
+# Universal Review Findings Taxonomy & Severity Guide
 
 Every issue reported during a review must be categorized into one of two tiers: **Blocking** or **Advisory**.
 
@@ -8,45 +8,40 @@ Every issue reported during a review must be categorized into one of two tiers: 
 
 A blocking issue represents any defect, invariant violation, or quality gate failure that threatens software correctness, maintainability, accessibility, or security. The author must resolve all blocking issues before the PR can be approved.
 
-### Examples of Blocking Issues
+### Criteria for Blocking Issues
 
-1. **Quality Gate Failure:**
-   - `npm run check` fails (lint error, typecheck error, test failure, coverage < 95%, or build failure).
-   - `npm run audit:prod` reports high-severity security vulnerabilities.
-   - `npm run test:e2e` fails for user-facing workflows.
+1. **Automated Quality Gate Failure:**
+   - Any failure in formatting, linting, typechecking, unit/integration/E2E test suites, build compilation, or security dependency audits.
 
-2. **Correctness & Logic Bugs:**
+2. **Correctness & Logic Defects:**
    - State synchronization bugs, race conditions, memory leaks, unhandled promise rejections.
-   - Broken calculations (e.g. spaced-repetition scheduling intervals, incorrect character diff computation).
+   - Algorithmic errors, incorrect calculations, or broken edge-case handling.
 
-3. **Invariant Violations:**
-   - **Offline:** Introducing a network dependency to core flashcard review, creation, or audio playback.
-   - **Accessibility:** Adding buttons without accessible names, removing visible focus indicators, or breaking keyboard navigation (`Enter`, `1`–`4`, `Space`).
-   - **Silent Failures:** Swallowing exceptions with empty catch blocks or returning fallback values that mask errors.
-   - **Boundary Validation:** Ingesting external or stored JSON without validating via Zod schema.
-   - **Data Migrations:** Changing local storage format without an automated migration path for existing decks.
+3. **Engineering Invariant Violations:**
+   - **Silent Failures:** Swallowing errors, returning fallback values that hide failures, or missing structured error handling.
+   - **Boundary Validation:** Ingesting external or persisted payloads without runtime schema validation.
+   - **Data Migrations:** Changing persistent data representations without an explicit, tested migration path.
+   - **Accessibility:** Breaking keyboard navigation, omitting accessible names/labels, or introducing WCAG AA violations.
 
 4. **Architecture & Boundary Violations:**
-   - `src/domain` importing React, DOM, or infrastructure packages.
-   - `src/application` importing UI components or concrete infrastructure implementations.
-   - UI code parsing raw persistence layers instead of calling application use-cases.
+   - Core domain logic depending directly on UI or concrete infrastructure modules.
+   - UI code parsing raw persistence layers or directly invoking third-party SDKs without application ports.
 
-5. **Ambient Magic & Dual Systems:**
-   - Uninspectable global singletons or hidden runtime interceptors.
-   - Hardcoded static assets implemented in a way that cannot support dynamic user-generated cards.
+5. **Ambient Magic & Untestable Coupling:**
+   - Global mutable singletons, invisible runtime monkey-patching, or untestable hidden background state.
 
-6. **Missing Documentation / Tests:**
-   - Adding new domain rules or application workflows without accompanying tests.
-   - Significant behavioral, configuration, or architectural changes without updating `docs/` or `README.md`.
+6. **Missing Tests or Documentation:**
+   - Adding new application workflows or complex logic without automated tests.
+   - Behavioral, configuration, or architectural changes without updating documentation.
 
 ---
 
 ## 💡 Advisory Observations (Non-Blocking)
 
-Advisory observations are optional suggestions for code polish, readability enhancements, or minor naming improvements. They do not block approval.
+Advisory observations are optional recommendations for code polish, minor readability enhancements, or future follow-ups. They do not block approval.
 
 ### Examples of Advisory Observations
 
 - Suggesting a slightly clearer local variable name or comment clarification.
-- Pointing out a minor styling consistency improvement that does not violate design invariants.
-- Proposing a non-critical refactoring or follow-up optimization ticket for the roadmap.
+- Minor styling polish that does not affect accessibility or layout stability.
+- Proposing a non-critical refactoring or performance optimization for future iterations.

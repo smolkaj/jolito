@@ -1,0 +1,48 @@
+# Universal Engineering Principles & Quality Reference
+
+This guide details the core principles evaluated during independent code reviews across any modern software project.
+
+---
+
+## 1. Simplicity & Cognitive Overhead
+
+- **Simplicity Above All:** Every layer of indirection, wrapper function, abstraction, or "just-in-case" parameter must justify its existence. When in doubt, leave it out.
+- **Reject Ambient Magic:** Avoid hidden runtime interceptors, implicit global state, or monkey-patching that obscures data flow.
+- **Inspectable & Testable Ports:** Prefer explicit, injected dependencies and testable ports over invisible framework machinery.
+- **Churn is Free:** Never leave dead code, redundant helpers, deprecated parameters, or stale call sites behind. Mechanical refactoring is cheap.
+
+---
+
+## 2. Architecture & Layer Boundaries
+
+- **Unidirectional Dependency Flow:**
+  - **Core / Domain:** Pure business logic and domain models; zero dependencies on UI, frameworks, or concrete infrastructure.
+  - **Application / Use Cases:** Orchestrates domain workflows via declared interfaces/ports; no coupling to UI or concrete adapters.
+  - **Infrastructure / Adapters:** Concrete implementations (database, network, file system, external APIs); implements application ports.
+  - **UI / Presentation:** Renders state and invokes application use cases; does not parse raw storage or call external APIs directly.
+- **No Dual / Divergent Systems:** Avoid static-only shortcuts that will require a second, divergent mechanism for dynamic or user-generated data later.
+
+---
+
+## 3. Correctness, Safety & Invariants
+
+- **Never Fail Silently:** Prefer compile-time constraints. Fail fast and loudly at runtime with structured, actionable errors rather than fallback defaults, swallowed exceptions, or empty catch blocks.
+- **Runtime Boundary Validation:** TypeScript types disappear at runtime. Untrusted input crossing system boundaries (local storage, database, network APIs, user files, AI payloads) must be validated with runtime schemas (e.g. Zod).
+- **Data Evolution & Migrations:** Whenever persistent data structures or schemas change, an explicit, tested migration path is required. Existing user data must never be silently corrupted or lost.
+- **Concurrency & State Safety:** Prevent race conditions, stale closures, unhandled promise rejections, and memory leaks.
+
+---
+
+## 4. Quality, Verification & Test Design
+
+- **Test-First & DAMP:** Write the test before the code. Three clear, readable, standalone test bodies beat one clever parameterized helper with deep indirection (Descriptive And Meaningful Phrases).
+- **Comprehensive Coverage:** Core domain and application logic must maintain high statement, branch, and function coverage with both positive and negative/edge-case assertions.
+- **Automated Quality Gates:** All automated checks (`format:check`, `lint`, `typecheck`, `test:coverage`, `build`, `audit:prod`) must pass without warnings or errors.
+
+---
+
+## 5. Accessibility & User Experience (for UI Changes)
+
+- **Keyboard-First & Operable:** Every primary workflow and interactive element must be 100% operable without a mouse (`Enter`, `Space`, `Tab`, `Arrow` keys, `Escape`).
+- **Semantic HTML & WCAG Compliance:** Interactive elements use proper semantic elements or explicit ARIA roles/labels. Contrast ratios, focus management, and accessible live regions must meet WCAG 2.1 AA.
+- **Visual Stability:** UI interactions should not introduce layout shifts, unexpected re-renders, or visual clipping.
