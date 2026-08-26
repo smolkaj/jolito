@@ -2123,12 +2123,14 @@ kbd {
     font-size: 16px;
   }
 
-  .hero-actions {
+  .hero-actions,
+  .complete-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .hero-actions button {
+  .hero-actions button,
+  .complete-actions button {
     width: 100%;
   }
 

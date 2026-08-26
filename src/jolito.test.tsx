@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
@@ -337,6 +337,21 @@ describe('Jolito', () => {
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+
+    const actions = document.querySelector('.complete-actions') as HTMLElement
+    expect(actions).toBeInTheDocument()
+    const createBtn = within(actions).getByRole('button', {
+      name: /create a card/i,
+    })
+    const manageBtn = within(actions).getByRole('button', {
+      name: /manage deck/i,
+    })
+    const homeBtn = within(actions).getByRole('button', {
+      name: /back home/i,
+    })
+    expect(createBtn).toHaveClass('primary-button')
+    expect(manageBtn).toHaveClass('secondary-button')
+    expect(homeBtn).toHaveClass('secondary-button')
   })
 
   it('resumes an in-progress review queue when navigating back and forward', async () => {
