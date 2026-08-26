@@ -3127,12 +3127,6 @@ export function App({
               >
                 Create a card <span aria-hidden="true">→</span>
               </button>
-              <button
-                className="secondary-button"
-                onClick={() => navigateTo('deck')}
-              >
-                Manage deck
-              </button>
               <button className="secondary-button" onClick={goHome}>
                 Back home
               </button>

@@ -343,15 +343,14 @@ describe('Jolito', () => {
     const createBtn = within(actions).getByRole('button', {
       name: /create a card/i,
     })
-    const manageBtn = within(actions).getByRole('button', {
-      name: /manage deck/i,
-    })
     const homeBtn = within(actions).getByRole('button', {
       name: /back home/i,
     })
     expect(createBtn).toHaveClass('primary-button')
-    expect(manageBtn).toHaveClass('secondary-button')
     expect(homeBtn).toHaveClass('secondary-button')
+    expect(
+      within(actions).queryByRole('button', { name: /manage deck/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('resumes an in-progress review queue when navigating back and forward', async () => {
