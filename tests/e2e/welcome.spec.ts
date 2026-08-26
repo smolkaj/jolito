@@ -485,6 +485,16 @@ test('allows guests to practice example deck immediately and explore card creato
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
 
+  await expect(
+    page.locator('.create-visual .sample-card-es .sample-phrase'),
+  ).toHaveClass(/is-placeholder/)
+  await expect(
+    page.locator('.create-visual .sample-card-en .sample-phrase'),
+  ).toHaveClass(/is-placeholder/)
+  await page.screenshot({
+    path: 'test-results/create-card-placeholders-dimmed.png',
+  })
+
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)
 
