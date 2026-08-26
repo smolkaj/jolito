@@ -2797,6 +2797,38 @@ kbd {
   letter-spacing: 0.15em;
   font-family: var(--font-mono);
   font-weight: 700;
+  width: 100%;
+}
+
+.otp-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.paste-clipboard-btn {
+  position: absolute;
+  right: 8px;
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+
+.paste-clipboard-btn:hover {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
 }
 
 .save-card-gate-banner {

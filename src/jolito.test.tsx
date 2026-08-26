@@ -956,6 +956,44 @@ describe('Jolito', () => {
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
+  it('allows filling verification token via paste from clipboard button in sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+
+    // Stub clipboard readText
+    const readTextSpy = vi
+      .fn()
+      .mockResolvedValue(
+        'https://example.supabase.co/auth/v1/verify?token=pkce_clipboard123&type=magiclink',
+      )
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { readText: readTextSpy },
+      configurable: true,
+      writable: true,
+    })
+
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'clipboard-learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in code/i }))
+
+    const pasteBtn = screen.getByRole('button', {
+      name: /paste from clipboard/i,
+    })
+    expect(pasteBtn).toBeInTheDocument()
+    await user.click(pasteBtn)
+
+    expect(readTextSpy).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    expect(
+      await screen.findByText(/deck synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
+  })
+
   it('allows signed in user to manually trigger sync now', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({

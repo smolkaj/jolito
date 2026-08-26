@@ -360,23 +360,33 @@ function SaveCardAuthModal({
     }
   }
 
-  const handleVerifyOtp = async (e: FormEvent) => {
-    e.preventDefault()
-    const cleanToken = token.replace(/\s+|-/g, '').trim()
+  const handlePasteClipboard = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+      try {
+        const text = await navigator.clipboard.readText()
+        if (text) {
+          setToken(text.trim())
+        }
+      } catch {
+        // clipboard access denied/unavailable
+      }
+    }
+  }
+
+  const handleVerifyOtp = async (e?: FormEvent) => {
+    e?.preventDefault()
+    const cleanToken = token.trim()
     if (!cleanToken) return
     setLoading(true)
     setStatusMsg(null)
     const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoading(false)
     if (res.success) {
-      setStatusMsg({
-        type: 'success',
-        message: 'Signed in! Saving card…',
-      })
+      onClose()
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid verification code.',
+        message: res.error || 'Invalid verification code or link.',
       })
     }
   }
@@ -385,10 +395,10 @@ function SaveCardAuthModal({
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
         className="modal-content save-card-auth-modal"
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="save-card-auth-title"
-        onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
@@ -448,8 +458,7 @@ function SaveCardAuthModal({
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                autoComplete="email"
+                placeholder="Enter your email to save card…"
                 className="save-card-email-input"
               />
             </div>
@@ -461,7 +470,7 @@ function SaveCardAuthModal({
               {loading ? 'Sending code…' : 'Continue with email →'}
             </button>
             <p className="save-card-micro-hint">
-              100% free · 6-digit code · No password needed
+              We’ll send a passwordless sign-in code to your email.
             </p>
           </form>
         ) : (
@@ -490,17 +499,33 @@ function SaveCardAuthModal({
               <label htmlFor="save-card-otp" className="visually-hidden">
                 Verification code or sign-in link
               </label>
-              <input
-                id="save-card-otp"
-                type="text"
-                required
-                autoFocus
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="123456 or paste sign-in link"
-                autoComplete="one-time-code"
-                className="save-card-otp-input"
-              />
+              <div className="otp-input-wrap">
+                <input
+                  id="save-card-otp"
+                  type="text"
+                  required
+                  autoFocus
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="123456 or paste sign-in link"
+                  autoComplete="one-time-code"
+                  className="save-card-otp-input"
+                />
+                {typeof navigator !== 'undefined' &&
+                  typeof navigator.clipboard?.readText === 'function' && (
+                    <button
+                      type="button"
+                      className="paste-clipboard-btn"
+                      onClick={() => {
+                        void handlePasteClipboard()
+                      }}
+                      title="Paste from clipboard"
+                      aria-label="Paste from clipboard"
+                    >
+                      📋 Paste
+                    </button>
+                  )}
+              </div>
             </div>
             <button
               type="submit"
@@ -1234,9 +1259,22 @@ function SyncModal({
     }
   }
 
-  const handleVerifyOtp = async (e: FormEvent) => {
-    e.preventDefault()
-    const cleanToken = token.replace(/\s+|-/g, '').trim()
+  const handlePasteClipboard = async () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+      try {
+        const text = await navigator.clipboard.readText()
+        if (text) {
+          setToken(text.trim())
+        }
+      } catch {
+        // clipboard access not permitted
+      }
+    }
+  }
+
+  const handleVerifyOtp = async (e?: FormEvent) => {
+    e?.preventDefault()
+    const cleanToken = token.trim()
     if (!cleanToken) return
     setLoading(true)
     setSyncStatusMsg(null)
@@ -1250,7 +1288,7 @@ function SyncModal({
     } else {
       setSyncStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid verification code.',
+        message: res.error || 'Invalid verification code or link.',
       })
     }
   }
@@ -1445,17 +1483,34 @@ function SyncModal({
                       <label htmlFor="sync-otp">
                         Verification code or sign-in link
                       </label>
-                      <input
-                        id="sync-otp"
-                        type="text"
-                        required
-                        autoFocus
-                        placeholder="123456 or paste sign-in link"
-                        autoComplete="one-time-code"
-                        value={token}
-                        onChange={(e) => setToken(e.target.value)}
-                        className="sync-otp-input"
-                      />
+                      <div className="otp-input-wrap">
+                        <input
+                          id="sync-otp"
+                          type="text"
+                          required
+                          autoFocus
+                          placeholder="123456 or paste sign-in link"
+                          autoComplete="one-time-code"
+                          value={token}
+                          onChange={(e) => setToken(e.target.value)}
+                          className="sync-otp-input"
+                        />
+                        {typeof navigator !== 'undefined' &&
+                          typeof navigator.clipboard?.readText ===
+                            'function' && (
+                            <button
+                              type="button"
+                              className="paste-clipboard-btn"
+                              onClick={() => {
+                                void handlePasteClipboard()
+                              }}
+                              title="Paste from clipboard"
+                              aria-label="Paste from clipboard"
+                            >
+                              📋 Paste
+                            </button>
+                          )}
+                      </div>
                     </div>
                     <div className="sync-auth-buttons">
                       <button
