@@ -10,14 +10,14 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /deck \(4\)/i }).click()
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await page.getByRole('button', { name: /manage deck/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
+
   await expect(
     page.getByRole('heading', { name: /deck import & offline backup/i }),
   ).toBeVisible()
@@ -50,13 +50,12 @@ test('restores deck from backup JSON file and updates local storage', async ({
   page,
 }) => {
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   const backupData = {
     version: 1,
@@ -107,7 +106,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
 
   // Start review with the imported card
   await page
-    .getByRole('button', { name: /practice 1 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -121,10 +120,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.goto('/#/deck')
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   const ankiContent = `#separator:tab\n#html:true\n¿Dónde está la estación?\tWhere is the station?\tTransit question`
 
@@ -144,7 +140,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.keyboard.press('Escape')
 
   await page
-    .getByRole('button', { name: /practice 1 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -195,10 +191,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
   })
 
   // Open Backup & Import modal
-  await page
-    .getByRole('button', { name: /backup & import/i })
-    .first()
-    .click()
+  await page.getByRole('button', { name: /backup & import/i }).click()
 
   // Upload .apkg binary file
   await page.getByLabel(/choose anki deck or backup file/i).setInputFiles({
@@ -226,7 +219,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
 
   // Start review
   await page
-    .getByRole('button', { name: /practice 2 due/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()
@@ -248,7 +241,9 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   page,
 }) => {
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   // Verify list of cards
   const cardsList = page.getByRole('table', { name: /deck cards/i })
@@ -355,7 +350,9 @@ test('resets learning history to new card in deck manager edit modal with zero a
   }, matureCard)
 
   await page.goto('/#/deck')
-  await expect(page.getByRole('heading', { name: /your deck/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
 
   const cardsList = page.getByRole('table', { name: /deck cards/i })
   await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(1)

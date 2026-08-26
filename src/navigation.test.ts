@@ -30,8 +30,9 @@ describe('navigation', () => {
 
   it('maps view names to descriptive document titles', () => {
     expect(titleForView('create')).toBe('Create Flashcard • Jolito')
-    expect(titleForView('review')).toBe('Study Session • Jolito')
-    expect(titleForView('deck')).toBe('Deck Manager • Jolito')
+    expect(titleForView('review')).toBe('Practice Session • Jolito')
+    expect(titleForView('deck')).toBe('Manage Deck • Jolito')
+
     expect(titleForView('complete')).toBe('¡Hecho! • Jolito')
     expect(titleForView('welcome')).toBe('Jolito — Mexican Spanish that sticks')
   })

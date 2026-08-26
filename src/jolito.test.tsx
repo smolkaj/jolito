@@ -57,7 +57,7 @@ describe('Jolito', () => {
       'Useful when getting around CDMX.',
     )
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /review \d+/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -129,7 +129,7 @@ describe('Jolito', () => {
     await user.type(screen.getByLabelText(/english/i), 'how cool')
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /review \d+/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
@@ -147,7 +147,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Card 1: fail with Again
     await user.keyboard('{Enter}')
@@ -200,7 +200,7 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /review \d+/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Type with missing inverted question mark, missing accents, and typo in restaurante
     await user.type(
@@ -263,7 +263,7 @@ describe('Jolito', () => {
     const user = userEvent.setup({ delay: null })
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByLabelText('Your answer')).toBeInTheDocument()
   })
 
@@ -345,7 +345,7 @@ describe('Jolito', () => {
     window.location.hash = ''
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
@@ -555,7 +555,7 @@ describe('Jolito', () => {
     const services = createTestServices({ cards })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     await user.click(screen.getByRole('row', { name: /card: el aguacate/i }))
 
     const promptInput = screen.getByLabelText<HTMLTextAreaElement>(
@@ -582,7 +582,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Prompt wrap contains heading and prompt audio button side by side
     const promptHeading = screen.getByRole('heading', { name: 'aguacate' })
@@ -664,7 +664,7 @@ describe('Jolito', () => {
     // Reset spoken list before starting review
     services.mockSpeaker.spoken = []
 
-    await user.click(screen.getByRole('button', { name: /practice 1 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -684,7 +684,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -713,15 +713,14 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.getByRole('heading', { name: /your deck/i }),
+      screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+
     expect(
       screen.getByRole('heading', { name: /deck import & offline backup/i }),
     ).toBeInTheDocument()
@@ -739,12 +738,10 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const backupFile = new File(
       [
@@ -799,12 +796,10 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -865,12 +860,10 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const ankiText = `#separator:tab\n#html:true\nel perro\tthe dog\nla casa\tthe house`
     const ankiFile = new File([ankiText], 'anki-spanish.txt', {
@@ -900,12 +893,10 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const corruptFile = new File([''], 'bad.txt', {
       type: 'text/plain',
@@ -1067,7 +1058,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Initial state: 4 new cards in queue with tactile beads
     const badge = screen.getByLabelText('Session progress')
@@ -1147,7 +1138,7 @@ describe('Jolito', () => {
     services.cards.save(extraCards)
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 12 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     const badge = screen.getByLabelText('Session progress')
     expect(badge.querySelector('.queue-compact-pill')).toBeInTheDocument()
@@ -1221,8 +1212,8 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
     expect(
-      screen.getByRole('button', { name: /review 0/i }),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: /^practice$/i }),
+    ).not.toBeInTheDocument()
 
     // 1. Create first card
     const spanishInput = screen.getByLabelText(/mexican spanish/i)
@@ -1249,9 +1240,9 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(contextInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
-    // 0 existing due + 2 bidirectional new = 2 due
+    // Practice button appears now that due cards exist
     expect(
-      screen.getByRole('button', { name: /review 2/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 2. Create second card in batch without needing to re-navigate or re-focus
@@ -1269,13 +1260,12 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('')
     expect(englishInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
-    // 2 due + 2 bidirectional new = 4 due
     expect(
-      screen.getByRole('button', { name: /review 4/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 3. Navigate to review and practice all due cards
-    await user.click(screen.getByRole('button', { name: /review 4/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
   })
 
@@ -1440,7 +1430,7 @@ describe('Jolito', () => {
 
     // 1. Guest explores welcome view with starter cards due (4 due)
     expect(
-      screen.getByRole('button', { name: /practice 4 due/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 2. Guest goes to Create screen and creates their first personal card
@@ -1488,7 +1478,7 @@ describe('Jolito', () => {
 
     // 7. Review button reflects only the 2 user cards
     expect(
-      screen.getByRole('button', { name: /review 2/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
   })
 
@@ -1498,10 +1488,10 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Navigate to Deck Manager
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     expect(
-      screen.getByRole('heading', { name: /your deck/i }),
+      screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
     const statsStrip = screen.getByLabelText('Deck statistics')
     expect(statsStrip).toHaveTextContent(/4\s*cards/)
@@ -1552,7 +1542,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Click card row directly to edit "aguacate"
     await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
@@ -1600,7 +1590,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
 
     expect(
@@ -1643,7 +1633,7 @@ describe('Jolito', () => {
     services.cards.save([cardWithHistory])
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Initially shows Review state pill in filter and Due in 14d chip in table
     expect(
@@ -1728,7 +1718,7 @@ describe('Jolito', () => {
     services.cards.save([cardWithHistory])
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(1\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     await user.click(screen.getByRole('row', { name: /card: platicar,/i }))
 
     const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
@@ -1751,7 +1741,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Select checkbox on "aguacate" card
     const checkbox = screen.getByRole('checkbox', {
@@ -1800,7 +1790,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Select 2 cards
     await user.click(
@@ -1836,7 +1826,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
     expect(rows).toHaveLength(4)
@@ -1865,7 +1855,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Start practice session
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -1916,7 +1906,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()

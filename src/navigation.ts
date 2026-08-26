@@ -35,9 +35,10 @@ export function titleForView(view: View): string {
     case 'create':
       return 'Create Flashcard • Jolito'
     case 'review':
-      return 'Study Session • Jolito'
+      return 'Practice Session • Jolito'
     case 'deck':
-      return 'Deck Manager • Jolito'
+      return 'Manage Deck • Jolito'
+
     case 'complete':
       return '¡Hecho! • Jolito'
     case 'welcome':
