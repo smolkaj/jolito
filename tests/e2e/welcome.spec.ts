@@ -636,3 +636,20 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
   await expect(spanishInput).toHaveValue('chido')
   await expect(englishInput).toHaveValue('cool')
 })
+
+test('configures mobile viewport and touch action defaults for iOS standalone ergonomics', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const viewportMeta = page.locator('meta[name="viewport"]')
+  await expect(viewportMeta).toHaveAttribute(
+    'content',
+    'width=device-width, initial-scale=1.0, viewport-fit=cover',
+  )
+
+  const touchAction = await page.evaluate(() => {
+    return window.getComputedStyle(document.documentElement).touchAction
+  })
+  expect(touchAction).toBe('manipulation')
+})
