@@ -59,7 +59,11 @@ import {
 function handleFocusSelect(
   event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
 ) {
-  event.currentTarget.select()
+  const target = event.currentTarget
+  target.select()
+  setTimeout(() => {
+    target.select()
+  }, 0)
 }
 
 const gradeLabels: Record<Grade, string> = {
@@ -2583,6 +2587,18 @@ export function App({
                   placeholder="English translation"
                 />
               </div>
+              <div className="field-group">
+                <label htmlFor="context">Additional Context</label>
+                <textarea
+                  id="context"
+                  name="context"
+                  rows={2}
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
+                  onFocus={handleFocusSelect}
+                  placeholder="Optional context, regional nuance, or memory hook"
+                />
+              </div>
               <label className="toggle-row">
                 <input
                   name="bidirectional"
@@ -2626,18 +2642,6 @@ export function App({
                   </div>
                 </details>
               )}
-              <div className="field-group">
-                <label htmlFor="context">Additional Context</label>
-                <textarea
-                  id="context"
-                  name="context"
-                  rows={2}
-                  value={contextInput}
-                  onChange={(e) => setContextInput(e.target.value)}
-                  onFocus={handleFocusSelect}
-                  placeholder="Optional context, regional nuance, or memory hook"
-                />
-              </div>
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"

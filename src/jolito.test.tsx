@@ -530,12 +530,8 @@ describe('Jolito', () => {
     await user.keyboard('soon')
     expect(englishInput).toHaveValue('soon')
 
-    // 3. Tab through reverse card fields to context
-    await user.tab() // Bidirectional checkbox
-    await user.tab() // Customize reverse card summary
-    await user.tab() // Reverse prompt input
-    await user.tab() // Reverse answer input
-    await user.tab() // Context textarea
+    // 3. Tab directly into Context field -> all text is selected
+    await user.tab()
     expect(contextInput).toHaveFocus()
     expect(contextInput.selectionStart).toBe(0)
     expect(contextInput.selectionEnd).toBe(
