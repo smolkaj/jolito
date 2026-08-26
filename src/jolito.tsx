@@ -3133,7 +3133,7 @@ export function App({
               >
                 Manage deck
               </button>
-              <button className="text-button" onClick={goHome}>
+              <button className="secondary-button" onClick={goHome}>
                 Back home
               </button>
             </div>
