@@ -21,7 +21,7 @@ Use **Author or orchestrator** when preparing a PR or coordinating its review. U
 ## Author or orchestrator
 
 1. Make the PR self-documenting. Lead with the big-picture win, contrast before and after, explain the next step toward the north star, and include risks and verification.
-2. Before formal review, run the repository's required gates and take one deliberate hindsight pass: knowing the finished diff, would you choose a simpler design? Change it only when the result is materially clearer; avoid refactoring theatre.
+2. Before each formal review round, inspect the finished diff for missed reuse, needless complexity, quality problems, and avoidable inefficiency. Fix worthwhile issues, then apply a restraint check: keep only changes that make the code clearer and easier to evolve. Run the repository's required gates after the simplification pass.
 3. Launch a fresh independent reviewer and give it only the PR URL. Do not change the branch while review is in progress. Add parallel reviewers only when the actual risk warrants another perspective; do not assign a fixed quota or divide responsibility for the whole change.
 4. Consolidate their findings without hiding disagreements. Decide each observation on the evidence; resolve every blocker, rerun the gates, update the PR, and start a new review round with fresh instances.
 5. At fixpoint, add a concise PR record containing the base/head SHAs, reviewer identifiers, gates actually run, and outcome.
@@ -31,7 +31,7 @@ Do not count author self-review as independent review. Track every blocker until
 ## Independent reviewer
 
 1. Read the PR description, commits, full diff, repository instructions, and the surrounding code or documentation needed to understand the change. Verify claims rather than trusting the narrative.
-2. Review the whole change according to its real risks. Consider correctness, security, data compatibility, failure behavior, architecture and cognitive cost (especially hidden state, ambient magic, or divergent mechanisms), test and documentation sufficiency, and—when user-facing—accessibility and rendered behavior. Do not manufacture findings to fill categories.
+2. Review the whole change according to its real risks. Consider correctness, security, data compatibility, failure behavior, missed reuse or avoidable inefficiency, architecture and cognitive cost (especially hidden state, ambient magic, or divergent mechanisms), test and documentation sufficiency, and—when user-facing—accessibility and rendered behavior. Do not manufacture findings to fill categories.
 3. Verify the relevant required checks from trusted CI. Distinguish results you observed from claims in the PR description. If local execution is necessary, do not execute untrusted PR code outside an isolated, credential-free environment. UI changes require visual inspection; DOM assertions alone are not visual verification.
 4. Put findings first, ordered by severity. For each, cite the file and line, explain the concrete consequence, and propose a direction for remediation. Then list open questions and advisory observations. If there are no findings, say so plainly.
 5. End with the reviewed base/head SHAs and a verdict: `APPROVED` only when the current head has zero blocking findings; otherwise `CHANGES REQUESTED`.
