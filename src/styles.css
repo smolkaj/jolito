@@ -873,11 +873,13 @@ summary:focus-visible {
   line-height: 1.2;
 }
 
+.sample-card .sample-card-body .sample-phrase.is-placeholder,
+.create-visual .sample-phrase.is-placeholder,
 .sample-phrase.is-placeholder {
   color: var(--ink-faint);
   font-style: italic;
   font-weight: 500;
-  opacity: 0.75;
+  opacity: 0.55;
 }
 
 .create-card-context-preview {
