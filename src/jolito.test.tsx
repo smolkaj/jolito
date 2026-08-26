@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
 import { createStudyCards } from './domain/card'
+import { starterCards } from './application/starter-cards'
 import { createTestServices } from './test/services'
 
 class SpeechSynthesisUtteranceMock {
@@ -56,7 +57,7 @@ describe('Jolito', () => {
       'Useful when getting around CDMX.',
     )
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /review \d+/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -128,7 +129,7 @@ describe('Jolito', () => {
     await user.type(screen.getByLabelText(/english/i), 'how cool')
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /review \d+/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
@@ -146,7 +147,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Card 1: fail with Again
     await user.keyboard('{Enter}')
@@ -199,7 +200,7 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /review \d+/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Type with missing inverted question mark, missing accents, and typo in restaurante
     await user.type(
@@ -262,7 +263,7 @@ describe('Jolito', () => {
     const user = userEvent.setup({ delay: null })
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByLabelText('Your answer')).toBeInTheDocument()
   })
 
@@ -336,6 +337,21 @@ describe('Jolito', () => {
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+
+    const actions = document.querySelector('.complete-actions') as HTMLElement
+    expect(actions).toBeInTheDocument()
+    const createBtn = within(actions).getByRole('button', {
+      name: /create a card/i,
+    })
+    const manageBtn = within(actions).getByRole('button', {
+      name: /manage deck/i,
+    })
+    const homeBtn = within(actions).getByRole('button', {
+      name: /back home/i,
+    })
+    expect(createBtn).toHaveClass('primary-button')
+    expect(manageBtn).toHaveClass('secondary-button')
+    expect(homeBtn).toHaveClass('secondary-button')
   })
 
   it('resumes an in-progress review queue when navigating back and forward', async () => {
@@ -344,13 +360,13 @@ describe('Jolito', () => {
     window.location.hash = ''
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
-      /4\s*new.*0\s*learn.*0\s*due/,
-    )
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '4 cards remaining')
 
     // Navigate back to welcome
     act(() => {
@@ -369,9 +385,9 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
-      /4\s*new.*0\s*learn.*0\s*due/,
-    )
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '4 cards remaining')
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation and context on selection', async () => {
@@ -501,12 +517,87 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('ahor')
   })
 
+  it('selects existing text when tabbing between fields in the card creation view', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText<HTMLTextAreaElement>(/spanish/i)
+    const englishInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/^english$/i)
+    const contextInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/additional context/i)
+
+    // 1. Select an autocomplete suggestion
+    await user.type(spanishInput, 'ahor')
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Enter}')
+
+    expect(spanishInput).toHaveValue('ahorita')
+    expect(englishInput).toHaveValue('right now / in a bit')
+
+    // 2. Tab into English field -> all text is selected and overwritten on typing
+    await user.tab()
+    expect(englishInput).toHaveFocus()
+    expect(englishInput.selectionStart).toBe(0)
+    expect(englishInput.selectionEnd).toBe('right now / in a bit'.length)
+
+    await user.keyboard('soon')
+    expect(englishInput).toHaveValue('soon')
+
+    // 3. Tab directly into Context field -> all text is selected
+    await user.tab()
+    expect(contextInput).toHaveFocus()
+    expect(contextInput.selectionStart).toBe(0)
+    expect(contextInput.selectionEnd).toBe(
+      'Iconic Mexican time nuance: right now, soon, or never.'.length,
+    )
+  })
+
+  it('selects existing text when focusing fields in the deck edit card modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = createStudyCards(
+      {
+        spanish: 'el aguacate',
+        english: 'the avocado',
+        context: 'culinary nuance',
+        bidirectional: false,
+      },
+      'note-1',
+      1000,
+    )
+    const services = createTestServices({ cards })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('row', { name: /card: el aguacate/i }))
+
+    const promptInput = screen.getByLabelText<HTMLTextAreaElement>(
+      /mexican spanish \(prompt\)/i,
+    )
+    const answerInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/english \(answer\)/i)
+
+    expect(promptInput).toHaveFocus()
+    expect(promptInput.selectionStart).toBe(0)
+    expect(promptInput.selectionEnd).toBe('el aguacate'.length)
+
+    await user.tab()
+    if (!answerInput.matches(':focus')) {
+      await user.tab()
+    }
+    expect(answerInput).toHaveFocus()
+    expect(answerInput.selectionStart).toBe(0)
+    expect(answerInput.selectionEnd).toBe('the avocado'.length)
+  })
+
   it('renders clean study view without pictures, positions prompt audio beside prompt, and replays expected answer after reveal', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Prompt wrap contains heading and prompt audio button side by side
     const promptHeading = screen.getByRole('heading', { name: 'aguacate' })
@@ -588,7 +679,7 @@ describe('Jolito', () => {
     // Reset spoken list before starting review
     services.mockSpeaker.spoken = []
 
-    await user.click(screen.getByRole('button', { name: /practice 1 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -608,7 +699,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -637,15 +728,14 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.getByRole('heading', { name: /your deck/i }),
+      screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+
     expect(
       screen.getByRole('heading', { name: /deck import & offline backup/i }),
     ).toBeInTheDocument()
@@ -663,12 +753,10 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const backupFile = new File(
       [
@@ -723,12 +811,10 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const mergeRadio = screen.getByLabelText(/merge/i)
     await user.click(mergeRadio)
@@ -789,12 +875,10 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const ankiText = `#separator:tab\n#html:true\nel perro\tthe dog\nla casa\tthe house`
     const ankiFile = new File([ankiText], 'anki-spanish.txt', {
@@ -824,12 +908,10 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Open Backup & Import modal
-    await user.click(
-      screen.getAllByRole('button', { name: /backup & import/i })[0]!,
-    )
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
 
     const corruptFile = new File([''], 'bad.txt', {
       type: 'text/plain',
@@ -991,53 +1073,46 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
-    // Initial state: 4 new cards in queue with tactile beads
-    const badge = screen.getByLabelText('Session progress')
-    expect(badge).toHaveTextContent(/4\s*cards left/)
-    expect(badge).toHaveTextContent(/4\s*new.*0\s*learn.*0\s*due/)
-    const initialBeads = badge.querySelectorAll('.queue-bead')
-    expect(initialBeads).toHaveLength(4)
-    expect(initialBeads[0]).toHaveClass('is-new', 'is-current')
-    expect(initialBeads[1]).toHaveClass('is-new')
+    // Initial state: 4 cards in queue, 0% progress
+    const progress = screen.getByRole('progressbar', {
+      name: 'Session progress',
+    })
+    expect(progress).toHaveAttribute('aria-valuenow', '0')
+    expect(progress).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    const bar = progress.querySelector('.review-progress-bar') as HTMLElement
+    expect(bar).toHaveStyle({ width: '0%' })
 
     // Card 1: fail with Again (1) -> moves to learn queue (requeued at end)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
-    expect(badge).toHaveTextContent(/4\s*cards left/)
-    expect(badge.querySelector('.queue-retry-chip')).toBeNull()
-    expect(badge).toHaveTextContent(/3\s*new.*1\s*learn.*0\s*due/)
-    const requeuedBeads = badge.querySelectorAll('.queue-bead')
-    expect(requeuedBeads).toHaveLength(4)
-    expect(requeuedBeads[0]).toHaveClass('is-new', 'is-current')
-    expect(requeuedBeads[3]).toHaveClass('is-learn')
+    expect(progress).toHaveAttribute('aria-valuenow', '0')
+    expect(progress).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    expect(bar).toHaveStyle({ width: '0%' })
 
-    // Card 2: pass with Easy (4) -> graduates out of session
+    // Card 2: pass with Easy (4) -> graduates out of session (1/4 completed = 25%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(badge).toHaveTextContent(/3\s*cards left/)
-    expect(badge).toHaveTextContent(/2\s*new.*1\s*learn.*0\s*due/)
-    expect(badge.querySelectorAll('.queue-bead')).toHaveLength(3)
+    expect(progress).toHaveAttribute('aria-valuenow', '25')
+    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
+    expect(bar).toHaveStyle({ width: '25%' })
 
-    // Card 3: pass with Easy (4) -> graduates out of session
+    // Card 3: pass with Easy (4) -> graduates out of session (2/4 completed = 50%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(badge).toHaveTextContent(/2\s*cards left/)
-    expect(badge).toHaveTextContent(/1\s*new.*1\s*learn.*0\s*due/)
-    expect(badge.querySelectorAll('.queue-bead')).toHaveLength(2)
+    expect(progress).toHaveAttribute('aria-valuenow', '50')
+    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(bar).toHaveStyle({ width: '50%' })
 
-    // Card 4: pass with Easy (4) -> graduates out of session
+    // Card 4: pass with Easy (4) -> graduates out of session (3/4 completed = 75%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    // Now only Card 1 (learning retry) remains
-    expect(badge).toHaveTextContent(/1\s*card left/)
-    expect(badge).toHaveTextContent(/0\s*new.*1\s*learn.*0\s*due/)
-    const remainingBeads = badge.querySelectorAll('.queue-bead')
-    expect(remainingBeads).toHaveLength(1)
-    expect(remainingBeads[0]).toHaveClass('is-learn', 'is-current')
+    expect(progress).toHaveAttribute('aria-valuenow', '75')
+    expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
+    expect(bar).toHaveStyle({ width: '75%' })
 
-    // Card 1 retry: pass with Good (3) -> graduates learning card
+    // Card 1 retry: pass with Good (3) -> graduates learning card (4/4 completed = 100%)
     await user.keyboard('{Enter}')
     await user.keyboard('3')
 
@@ -1045,39 +1120,6 @@ describe('Jolito', () => {
     expect(
       await screen.findByRole('heading', { name: '¡Hecho!' }),
     ).toBeInTheDocument()
-  })
-
-  it('renders compact summary pill when review queue exceeds 6 cards', async () => {
-    const user = userEvent.setup({ delay: null })
-    const services = createTestServices()
-    // Populate 12 due cards
-    const extraCards = Array.from({ length: 12 }, (_, i) => ({
-      id: `bulk-card-${i}`,
-      noteId: `bulk-note-${i}`,
-      prompt: `prompt-${i}`,
-      answer: `answer-${i}`,
-      direction: 'es-en' as const,
-      context: '',
-      scene: 'conversation' as const,
-      schedule: {
-        state: 'new' as const,
-        dueAt: 0,
-        intervalDays: 0,
-        easeFactor: 2.5,
-        reviews: 0,
-        lapses: 0,
-      },
-    }))
-    services.cards.save(extraCards)
-    render(<App services={services} />)
-
-    await user.click(screen.getByRole('button', { name: /practice 12 due/i }))
-
-    const badge = screen.getByLabelText('Session progress')
-    expect(badge.querySelector('.queue-compact-pill')).toBeInTheDocument()
-    expect(badge.querySelector('.queue-beads-track')).not.toBeInTheDocument()
-    expect(badge).toHaveTextContent(/12\s*cards left/)
-    expect(badge).toHaveTextContent(/12\s*new/)
   })
 
   it('renders the Jolito brand vector mark in the header', () => {
@@ -1145,8 +1187,8 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
     expect(
-      screen.getByRole('button', { name: /review 0/i }),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: /^practice$/i }),
+    ).not.toBeInTheDocument()
 
     // 1. Create first card
     const spanishInput = screen.getByLabelText(/mexican spanish/i)
@@ -1173,9 +1215,9 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(contextInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
-    // 0 existing due + 2 bidirectional new = 2 due
+    // Practice button appears now that due cards exist
     expect(
-      screen.getByRole('button', { name: /review 2/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 2. Create second card in batch without needing to re-navigate or re-focus
@@ -1193,13 +1235,12 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('')
     expect(englishInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
-    // 2 due + 2 bidirectional new = 4 due
     expect(
-      screen.getByRole('button', { name: /review 4/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 3. Navigate to review and practice all due cards
-    await user.click(screen.getByRole('button', { name: /review 4/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
   })
 
@@ -1364,7 +1405,7 @@ describe('Jolito', () => {
 
     // 1. Guest explores welcome view with starter cards due (4 due)
     expect(
-      screen.getByRole('button', { name: /practice 4 due/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 2. Guest goes to Create screen and creates their first personal card
@@ -1412,7 +1453,7 @@ describe('Jolito', () => {
 
     // 7. Review button reflects only the 2 user cards
     expect(
-      screen.getByRole('button', { name: /review 2/i }),
+      screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
   })
 
@@ -1422,14 +1463,35 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Navigate to Deck Manager
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     expect(
-      screen.getByRole('heading', { name: /your deck/i }),
+      screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
-    const statsStrip = screen.getByLabelText('Deck statistics')
-    expect(statsStrip).toHaveTextContent(/4\s*cards/)
-    expect(statsStrip).toHaveTextContent(/4\s*due/)
+    expect(screen.getByRole('button', { name: /all \(4\)/i })).toHaveAttribute(
+      'title',
+      'All cards in your deck regardless of review status',
+    )
+    expect(screen.getByRole('button', { name: /due \(4\)/i })).toHaveAttribute(
+      'title',
+      'Cards ready to practice right now (new cards or scheduled reviews that are due)',
+    )
+    expect(screen.getByRole('button', { name: /new \(4\)/i })).toHaveAttribute(
+      'title',
+      'Unstudied cards that have not been practiced yet',
+    )
+    expect(
+      screen.getByRole('button', { name: /learning \(0\)/i }),
+    ).toHaveAttribute(
+      'title',
+      'Cards currently in short learning steps before graduating to long-term review',
+    )
+    expect(
+      screen.getByRole('button', { name: /review \(0\)/i }),
+    ).toHaveAttribute(
+      'title',
+      'Graduated cards scheduled for long-term spaced repetition (1+ days interval)',
+    )
 
     // 4 starter cards are shown
     const cardItems = screen.getAllByRole('row', { name: /card:/i })
@@ -1476,7 +1538,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Click card row directly to edit "aguacate"
     await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
@@ -1519,12 +1581,163 @@ describe('Jolito', () => {
     ).toBe(true)
   })
 
+  it('disables reset learning progress toggle for brand new cards in edit modal', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
+
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
+    ).toBeInTheDocument()
+
+    const toggle = screen.getByRole('checkbox', {
+      name: /reset learning progress/i,
+    })
+    expect(toggle).toBeDisabled()
+    expect(
+      screen.getByText('Card is already brand new (0 reviews)'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }))
+  })
+
+  it('resets learning history to brand new card when reset progress is toggled in edit modal', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({
+      cards: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+    const cardWithHistory = {
+      ...starterCards[0]!,
+      id: 'custom-card-1',
+      noteId: 'note-custom-1',
+      prompt: 'platicar',
+      answer: 'to chat',
+      context: 'Informal Mexican Spanish',
+      schedule: {
+        state: 'review' as const,
+        dueAt: services.clock.now() + 86400000 * 14,
+        intervalDays: 14,
+        easeFactor: 2.6,
+        reviews: 6,
+        lapses: 1,
+      },
+    }
+    services.cards.save([cardWithHistory])
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+    // Initially shows Review state pill in filter and Due in 14d chip in table
+    expect(
+      screen.getByRole('button', { name: /review \(1\)/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Due in 14d')).toBeInTheDocument()
+
+    // Click card row to edit
+    await user.click(screen.getByRole('row', { name: /card: platicar,/i }))
+
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
+    ).toBeInTheDocument()
+
+    const toggle = screen.getByRole('checkbox', {
+      name: /reset learning progress/i,
+    })
+    expect(toggle).not.toBeDisabled()
+    expect(toggle).not.toBeChecked()
+    expect(
+      screen.getByText('Treat as a new card and restart review history'),
+    ).toBeInTheDocument()
+
+    // Toggle reset progress
+    await user.click(toggle)
+    expect(toggle).toBeChecked()
+
+    // Save changes
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    // Modal closed
+    expect(
+      screen.queryByRole('heading', { name: /edit flashcard/i }),
+    ).not.toBeInTheDocument()
+
+    // Filter pills reflect New (1) and Review (0)
+    expect(
+      screen.getByRole('button', { name: /new \(1\)/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /review \(0\)/i }),
+    ).toBeInTheDocument()
+
+    // Saved card in storage has reset schedule
+    const savedCard = services.memoryCards.saved?.find(
+      (c) => c.id === 'custom-card-1',
+    )
+    expect(savedCard).toBeDefined()
+    expect(savedCard!.schedule).toEqual({
+      state: 'new',
+      dueAt: services.clock.now(),
+      intervalDays: 0,
+      easeFactor: 2.5,
+      reviews: 0,
+      lapses: 0,
+    })
+  })
+
+  it('preserves learning schedule when saving edit without toggling reset progress', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({
+      cards: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+    const initialDueAt = services.clock.now() + 86400000 * 14
+    const cardWithHistory = {
+      ...starterCards[0]!,
+      id: 'custom-card-2',
+      noteId: 'note-custom-2',
+      prompt: 'platicar',
+      answer: 'to chat',
+      context: 'Informal Mexican Spanish',
+      schedule: {
+        state: 'review' as const,
+        dueAt: initialDueAt,
+        intervalDays: 14,
+        easeFactor: 2.6,
+        reviews: 6,
+        lapses: 1,
+      },
+    }
+    services.cards.save([cardWithHistory])
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('row', { name: /card: platicar,/i }))
+
+    const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    await user.clear(promptInput)
+    await user.type(promptInput, 'charlar')
+
+    // Don't toggle reset progress - just save
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    const savedCard = services.memoryCards.saved?.find(
+      (c) => c.id === 'custom-card-2',
+    )
+    expect(savedCard).toBeDefined()
+    expect(savedCard!.prompt).toBe('charlar')
+    expect(savedCard!.schedule).toEqual(cardWithHistory.schedule)
+  })
+
   it('deletes card in deck manager after checkbox selection and confirmation modal', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Select checkbox on "aguacate" card
     const checkbox = screen.getByRole('checkbox', {
@@ -1573,7 +1786,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     // Select 2 cards
     await user.click(
@@ -1609,7 +1822,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /deck \(4\)/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
     expect(rows).toHaveLength(4)
@@ -1638,7 +1851,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Start practice session
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -1679,9 +1892,9 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: 'palta fresca' }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Session progress')).toHaveTextContent(
-      /3\s*cards left/,
-    )
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '3 cards remaining')
   })
 
   it('opens edit modal via "e" keyboard shortcut during study session', async () => {
@@ -1689,7 +1902,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /practice 4 due/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()

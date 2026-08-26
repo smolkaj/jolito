@@ -113,7 +113,7 @@ test('creates and reviews both directions with the keyboard', async ({
   await page.getByLabel(/spanish/i).fill('¿Dónde está el metro?')
   await page.getByLabel(/english/i).fill('Where is the metro?')
   await page.getByRole('button', { name: /save card/i }).click()
-  await page.getByRole('button', { name: /review 2/i }).click()
+  await page.getByRole('button', { name: /^practice$/i }).click()
 
   await expect(
     page.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -175,7 +175,7 @@ test('supports browser back and forward navigation across views', async ({
 
   // Navigate to Study from Welcome
   await page.goBack()
-  await page.getByRole('button', { name: /practice 4 due/i }).click()
+  await page.getByRole('button', { name: /^practice$/i }).click()
   await expect(page.getByLabel('Your answer')).toBeVisible()
   expect(page.url()).toContain('#/study')
 
@@ -290,6 +290,12 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
     page.getByRole('listbox', { name: /spanish suggestions/i }),
   ).not.toBeVisible()
 
+  // 4. Tab into English field -> auto-selects text and allows instant overwrite
+  await page.keyboard.press('Tab')
+  await expect(page.getByLabel(/english/i)).toBeFocused()
+  await page.keyboard.type('awesome')
+  await expect(page.getByLabel(/english/i)).toHaveValue('awesome')
+
   // Verify WCAG compliance
   const resultsFinal = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -319,7 +325,9 @@ test('top navigation pills have consistent vertical height across views', async 
 
   // 3. Study / Review view
   await page.goto('/#/study')
-  const reviewBadge = await page.locator('.review-queue-badge').boundingBox()
+  const reviewProgress = await page
+    .locator('.review-progress-track')
+    .boundingBox()
   const reviewNewCardBtn = await page
     .locator('.nav-actions .text-button')
     .first()
@@ -327,7 +335,7 @@ test('top navigation pills have consistent vertical height across views', async 
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  expect(reviewBadge?.height).toBeCloseTo(32, 1)
+  expect(reviewProgress?.height).toBeCloseTo(3, 1)
   expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
@@ -340,10 +348,6 @@ test('top navigation pills have consistent vertical height across views', async 
   const deckSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  const deckStatChip = await page
-    .locator('.deck-stats-strip .deck-stat-chip')
-    .first()
-    .boundingBox()
   const deckFilterPill = await page
     .locator('.deck-filter-pills .deck-filter-pill')
     .first()
@@ -354,11 +358,21 @@ test('top navigation pills have consistent vertical height across views', async 
 
   expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
-  expect(deckStatChip?.height).toBeCloseTo(32, 1)
   expect(deckFilterPill?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
 
-  // 5. Accessibility check
+  // 5. Complete view action pills (consistently sized 50px pills)
+  await page.goto('/#/complete')
+  const completeButtons = page.locator('.complete-actions button')
+  await expect(completeButtons).toHaveCount(3)
+  const completeCreateBtn = await completeButtons.nth(0).boundingBox()
+  const completeManageBtn = await completeButtons.nth(1).boundingBox()
+  const completeHomeBtn = await completeButtons.nth(2).boundingBox()
+  expect(completeCreateBtn?.height).toBeGreaterThanOrEqual(48)
+  expect(completeManageBtn?.height).toBe(completeCreateBtn?.height)
+  expect(completeHomeBtn?.height).toBe(completeCreateBtn?.height)
+
+  // 6. Accessibility check
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -385,7 +399,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: /review 4/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)
@@ -409,7 +423,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(spanishInput).toHaveValue('')
   await expect(englishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /review 2/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
@@ -424,10 +438,10 @@ test('supports rapid batch card creation while remaining in create view', async 
   ).toBeVisible()
   await expect(spanishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /review 4/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 3. Start review from top navbar
-  await page.getByRole('button', { name: /review 4/i }).click()
+  await page.getByRole('button', { name: /^practice$/i }).click()
   await expect(page.getByRole('heading', { name: 'chido' })).toBeVisible()
 
   const results = await new AxeBuilder({ page })
@@ -442,10 +456,8 @@ test('allows guests to practice example deck immediately and explore card creato
   await page.goto('/')
 
   // 1. Practice example starter cards immediately as a guest
-  await expect(
-    page.getByRole('button', { name: /practice 4 due/i }),
-  ).toBeVisible()
-  await page.getByRole('button', { name: /practice 4 due/i }).click()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await page.getByRole('button', { name: /^practice$/i }).click()
 
   // Card 1: aguacate -> avocado
   await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
@@ -480,6 +492,16 @@ test('allows guests to practice example deck immediately and explore card creato
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
+
+  await expect(
+    page.locator('.create-visual .sample-card-es .sample-phrase'),
+  ).toHaveClass(/is-placeholder/)
+  await expect(
+    page.locator('.create-visual .sample-card-en .sample-phrase'),
+  ).toHaveClass(/is-placeholder/)
+  await page.screenshot({
+    path: 'test-results/create-card-placeholders-dimmed.png',
+  })
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)

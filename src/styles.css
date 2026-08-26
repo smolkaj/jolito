@@ -873,11 +873,13 @@ summary:focus-visible {
   line-height: 1.2;
 }
 
+.sample-card .sample-card-body .sample-phrase.is-placeholder,
+.create-visual .sample-phrase.is-placeholder,
 .sample-phrase.is-placeholder {
   color: var(--ink-faint);
   font-style: italic;
   font-weight: 500;
-  opacity: 0.75;
+  opacity: 0.55;
 }
 
 .create-card-context-preview {
@@ -1160,6 +1162,7 @@ summary:focus-visible {
   border: 2px solid var(--line);
   border-radius: 999px;
   background: #cbd5e1;
+  pointer-events: none;
   transition: background 160ms var(--ease-spring);
 }
 
@@ -1189,6 +1192,38 @@ summary:focus-visible {
 .toggle-row input:focus-visible + .toggle {
   outline: 3px solid var(--rosa);
   outline-offset: 3px;
+}
+
+.toggle-row:has(input:disabled),
+.toggle-row.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  background: var(--paper-subtle) !important;
+}
+
+.toggle-row input:disabled + .toggle {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.toggle-label-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toggle-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.toggle-description {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
 }
 
 .form-details {
@@ -1328,6 +1363,10 @@ summary:focus-visible {
   .save-button-check {
     animation: none;
   }
+
+  .review-progress-bar {
+    transition: none;
+  }
 }
 
 /* Review Page */
@@ -1335,149 +1374,22 @@ summary:focus-visible {
   background: var(--paper);
 }
 
-/* Review Queue Status Badge (Tactile SRS Queue Beads) */
-.review-queue-badge {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  height: 32px;
-  padding: 0 14px;
-  background: var(--card);
-  border: 1.5px solid var(--line);
+/* Review Session Progress Hairline */
+.review-progress-track {
+  width: min(1080px, 100%);
+  height: 3px;
+  margin: 16px auto 0;
+  background: var(--line-light);
   border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  z-index: 5;
-  white-space: nowrap;
-  max-width: calc(100% - 360px);
-  user-select: none;
-  transition: transform 180ms var(--ease-spring);
+  overflow: hidden;
+  position: relative;
 }
 
-.queue-beads-track {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.queue-bead {
-  width: 9px;
-  height: 9px;
+.review-progress-bar {
+  height: 100%;
+  background: var(--rosa);
   border-radius: 999px;
-  border: 1.5px solid var(--line);
-  flex-shrink: 0;
-  box-shadow: 1px 1px 0 rgba(18, 24, 21, 0.18);
-  transition:
-    transform 220ms var(--ease-spring),
-    background 180ms ease,
-    box-shadow 220ms var(--ease-spring);
-}
-
-.queue-bead.is-current {
-  transform: scale(1.35);
-  box-shadow:
-    0 0 0 1.5px var(--card),
-    0 0 0 3px var(--line),
-    var(--shadow-sm);
-}
-
-.queue-bead.is-new {
-  background: var(--maya);
-  border-radius: 999px;
-}
-
-.queue-bead.is-learn {
-  background: var(--tezontle);
-  border-radius: 2px;
-  transform: rotate(45deg);
-  width: 8px;
-  height: 8px;
-}
-
-.queue-bead.is-learn.is-current {
-  transform: rotate(45deg) scale(1.35);
-}
-
-.queue-bead.is-due {
-  background: var(--verde);
-  border-radius: 999px;
-}
-
-.queue-compact-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.compact-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.compact-chip i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.compact-chip.is-new {
-  color: var(--maya-dark);
-}
-.compact-chip.is-new i {
-  background: var(--maya);
-}
-
-.compact-chip.is-learn {
-  color: var(--tezontle-dark);
-}
-.compact-chip.is-learn i {
-  background: var(--tezontle);
-  border-radius: 2px;
-  transform: rotate(45deg);
-}
-
-.compact-chip.is-due {
-  color: var(--verde-dark);
-}
-.compact-chip.is-due i {
-  background: var(--verde);
-}
-
-.compact-label {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.queue-text-label {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink-soft);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.queue-count-num {
-  font-weight: 800;
-  color: var(--ink);
-}
-
-.queue-count-suffix {
-  color: var(--ink-muted);
-  font-weight: 600;
+  transition: width 280ms var(--ease-spring);
 }
 
 /* Study Card - Clean, High-Signal Focus */
@@ -2211,12 +2123,14 @@ kbd {
     font-size: 16px;
   }
 
-  .hero-actions {
+  .hero-actions,
+  .complete-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .hero-actions button {
+  .hero-actions button,
+  .complete-actions button {
     width: 100%;
   }
 
@@ -2252,20 +2166,12 @@ kbd {
     grid-template-columns: 1fr;
   }
 
-  .review-queue-badge {
-    position: absolute;
-    top: 66px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: max-content;
-    max-width: calc(100% - 32px);
-    height: 32px;
-    padding: 0 10px;
-    justify-content: center;
+  .review-progress-track {
+    margin-top: 10px;
   }
 
   .study-card {
-    margin-top: 52px;
+    margin-top: 24px;
   }
 
   .study-prompt {
@@ -3032,13 +2938,6 @@ kbd {
   box-shadow: var(--shadow-sm);
 }
 
-.deck-stats-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .deck-stat-chip {
   display: inline-flex;
   align-items: center;
@@ -3436,7 +3335,12 @@ kbd {
 }
 
 /* Edit, Delete & Backup Modal Styles */
-.edit-card-modal,
+.edit-card-modal {
+  width: min(560px, 100%);
+  padding: clamp(20px, 3.5vw, 28px);
+  gap: 14px;
+}
+
 .delete-card-modal {
   width: min(560px, 100%);
 }
@@ -3450,7 +3354,28 @@ kbd {
 .edit-card-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+}
+
+.edit-card-form .field-group {
+  margin-bottom: 0;
+}
+
+.edit-card-form .field-group textarea {
+  margin-top: 4px;
+  min-height: 52px;
+  padding: 10px 14px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.edit-card-form .field-group textarea#edit-context {
+  min-height: 46px;
+  font-size: 13.5px;
+}
+
+.edit-card-form .field-label-row {
+  margin-bottom: 4px;
 }
 
 .field-label-row {
@@ -3476,9 +3401,14 @@ kbd {
   height: 28px;
   min-width: 28px;
   min-height: 28px;
-  padding: 4px;
-  border-radius: 8px;
+  padding: 0;
+  border-radius: 50%;
   flex-shrink: 0;
+}
+
+.field-label-row .audio-button svg {
+  width: 14px;
+  height: 14px;
 }
 
 .delete-card-preview-card {
@@ -3544,6 +3474,11 @@ kbd {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-muted);
+}
+
+.edit-card-toggle-row {
+  margin-top: 4px;
+  margin-bottom: 2px;
 }
 
 .edit-modal-actions,
