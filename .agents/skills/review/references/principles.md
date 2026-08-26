@@ -41,8 +41,18 @@ This guide details the core principles evaluated during independent code reviews
 
 ---
 
-## 5. Accessibility & User Experience (for UI Changes)
+## 5. Accessibility & Operability (for UI Changes)
 
 - **Keyboard-First & Operable:** Every primary workflow and interactive element must be 100% operable without a mouse (`Enter`, `Space`, `Tab`, `Arrow` keys, `Escape`).
-- **Semantic HTML & WCAG Compliance:** Interactive elements use proper semantic elements or explicit ARIA roles/labels. Contrast ratios, focus management, and accessible live regions must meet WCAG 2.1 AA.
+- **Semantic HTML & WCAG Compliance:** Interactive elements use proper semantic elements or explicit ARIA roles/labels. Contrast ratios (minimum 4.5:1 for normal text, 3:1 for large text/icons), focus rings, and accessible live regions must meet WCAG 2.1 AA.
 - **Visual Stability:** UI interactions should not introduce layout shifts, unexpected re-renders, or visual clipping.
+
+---
+
+## 6. UI Design, Aesthetics & Cleanliness (for UI Changes)
+
+- **Restraint & "No Gimmicks" (Less, but better):** Avoid superfluous badges, decorative fluff, loud icons, or redundant buttons. Good design solves problems silently.
+- **Design System & Token Discipline:** Use consistent design tokens for spacing, padding, typographic scales, border radii, color palettes, and component heights (e.g. strict height parity across controls). Avoid arbitrary one-off pixel values.
+- **Visual Hierarchy & Scannability:** Make the primary call-to-action immediately obvious. Use intentional whitespace to group related controls and give the interface breathing room.
+- **Self-Explanatory Affordances:** UI interactions, states, and icons must be intuitive and self-explanatory without needing paragraphs of explanatory hint copy.
+- **Tactile Polish & Micro-Interactions:** Micro-interactions (hover, active, focus, reveal) should be crisp, purposeful, and snappy (< 150ms) with zero layout shifting.

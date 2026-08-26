@@ -12,7 +12,7 @@ Evaluate the PR for long-term evolvability, layer boundary integrity, cognitive 
 
 ### Review Checklist
 
-- [ ] Are layer boundaries respected (e.g. core/domain independent of UI/infrastructure)?
+- [ ] Are layer boundaries respected (e.g. core domain independent of UI/infrastructure)?
 - [ ] Are dependencies injected via ports/interfaces rather than coupled directly?
 - [ ] Is there any ambient "magic" (invisible runtime monkey-patching, uninspectable background singletons)?
 - [ ] Does every abstraction, wrapper, or generic parameter justify its existence?
@@ -96,11 +96,11 @@ Provide your findings categorized into Blocking vs Advisory with exact file path
 
 ---
 
-## ♿ Perspective 4: Accessibility, UX & Visual Integrity Reviewer _(UI Changes)_
+## ♿ Perspective 4: Accessibility & Operability Reviewer _(UI Changes)_
 
 ### Persona Mission
 
-Verify that UI modifications maintain 100% keyboard accessibility, screen reader friendliness, layout stability, and visual clarity.
+Verify that UI modifications maintain 100% keyboard accessibility, screen reader friendliness, and WCAG compliance.
 
 ### Review Checklist
 
@@ -109,17 +109,47 @@ Verify that UI modifications maintain 100% keyboard accessibility, screen reader
 - [ ] Are semantic elements and accessible names/ARIA attributes properly configured (WCAG 2.1 AA)?
 - [ ] Are color contrast ratios (text, interactive icons, focus rings) compliant with WCAG 2.1 AA?
 - [ ] Do dynamic UI state updates communicate via accessible live regions (`role="status"`)?
-- [ ] Is layout stability preserved without jarring layout shifts or clipping?
 
 ### Prompt Template for Subagent
 
 ```markdown
-You are an independent, strictly read-only Accessibility & UX Reviewer.
+You are an independent, strictly read-only Accessibility & Operability Reviewer.
 Evaluate the PR diff and codebase against:
 
 1. Keyboard accessibility and focus management.
 2. WCAG 2.1 AA compliance (semantics, accessible names, and color contrast).
-3. Layout stability and visual styling integrity.
+3. Screen reader operability and live region announcements.
+
+Provide your findings categorized into Blocking vs Advisory with exact file paths, line numbers, and rationale.
+```
+
+---
+
+## 🎨 Perspective 5: UI Design, Aesthetics & Cleanliness Reviewer _(UI Changes)_
+
+### Persona Mission
+
+Evaluate user-facing modifications for visual restraint, cohesive design language, typography and spacing rhythm, intuitive hierarchy, and absence of gimmicks.
+
+### Review Checklist
+
+- [ ] **Restraint & No Gimmicks:** Are gratuitous badges, noisy status banners, or decorative fluff eliminated?
+- [ ] **Design Token Discipline:** Are spacing, padding, typographic scales, border radii, and control heights aligned with design system tokens (avoiding magic pixel numbers)?
+- [ ] **Visual Hierarchy & Whitespace:** Is the primary action immediately apparent? Does intentional whitespace guide the eye?
+- [ ] **Self-Explanatory Affordances:** Are buttons, inputs, and states obvious without requiring manual hint paragraphs?
+- [ ] **Tactile Polish & Motion:** Are micro-interactions snappy, subtle, and purposeful with zero jarring layout shifts?
+
+### Prompt Template for Subagent
+
+```markdown
+You are an independent, strictly read-only UI Design, Aesthetics & Cleanliness Reviewer.
+Evaluate the PR diff and codebase against:
+
+1. Visual restraint and absence of gimmicks or unnecessary clutter ("less, but better").
+2. Design system token discipline (consistent spacing, typography, radii, and control heights).
+3. Visual hierarchy, scannability, and whitespace usage.
+4. Self-explanatory affordances without excessive helper copy.
+5. Tactile feedback, motion subtlety, and zero layout shift.
 
 Provide your findings categorized into Blocking vs Advisory with exact file paths, line numbers, and rationale.
 ```

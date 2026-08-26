@@ -1,11 +1,11 @@
 ---
 name: review
-description: Conduct an independent, read-only code review of a pull request, branch, or git diff using specialized parallel review perspectives (architecture, correctness/safety, quality/testing, accessibility/UX).
+description: Conduct an independent, read-only code review of a pull request, branch, or git diff using specialized parallel review perspectives (architecture, correctness/safety, quality/testing, accessibility/operability, UI design/cleanliness).
 ---
 
 # Multi-Perspective Independent Code Review
 
-This skill orchestrates a rigorous, read-only code review using **specialized parallel review perspectives**. By evaluating a change through distinct, concurrent lenses, the review catches architecture drift, subtle correctness bugs, test omissions, and accessibility regressions.
+This skill orchestrates a rigorous, read-only code review using **specialized parallel review perspectives**. By evaluating a change through distinct, concurrent lenses, the review catches architecture drift, subtle correctness bugs, test omissions, accessibility flaws, and visual/design regressions.
 
 ## Core Invariants
 
@@ -38,35 +38,35 @@ git diff "$BASE_SHA..$HEAD_SHA"
 
 ### Step 2: Launch Parallel Review Perspectives
 
-Evaluate the PR across the following 4 specialized perspectives concurrently (e.g. by spawning parallel subagents or executing dedicated review passes):
+Evaluate the PR across up to 5 specialized perspectives concurrently (perspectives 4 and 5 run whenever UI or user-facing interactions are modified):
 
 ```text
-                        ┌─────────────────────────────────────────┐
-                        │          PR Description & Diff          │
-                        └────────────────────┬────────────────────┘
-                                             │
-             ┌───────────────────┬───────────┴───────┬───────────────────┐
-             ▼                   ▼                   ▼                   ▼
-    ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-    │ 1. Architecture │ │ 2. Correctness  │ │ 3. Quality &    │ │ 4. Accessibility│
-    │   & Simplicity  │ │    & Safety     │ │    Automation   │ │    & UX (if UI) │
-    └────────┬────────┘ └────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-             │                   │                   │                   │
-             └───────────────────┼───────────────────┴───────────────────┘
-                                 ▼
-                        ┌─────────────────┐
-                        │ Synthesis Stage │
-                        │ (Lead Reviewer) │
-                        └────────┬────────┘
-                                 ▼
-                        ┌─────────────────┐
-                        │ Verdict & Trail │
-                        └─────────────────┘
+                             ┌─────────────────────────────────────────┐
+                             │          PR Description & Diff          │
+                             └────────────────────┬────────────────────┘
+                                                  │
+       ┌───────────────────┬──────────────────────┼──────────────────────┬───────────────────┐
+       ▼                   ▼                      ▼                      ▼                   ▼
+┌─────────────┐     ┌─────────────┐        ┌─────────────┐        ┌─────────────┐     ┌─────────────┐
+│1.Architecture│    │2.Correctness│        │3.Quality &  │        │4.Accessi-   │     │5.UI Design &│
+│ & Simplicity│     │  & Safety   │        │  Automation │        │  bility (UI)│     │  Cleanliness│
+└──────┬──────┘     └──────┬──────┘        └──────┬──────┘        └──────┬──────┘     └──────┬──────┘
+       │                   │                      │                      │                   │
+       └───────────────────┴──────────────────────┼──────────────────────┴───────────────────┘
+                                                  ▼
+                                         ┌─────────────────┐
+                                         │ Synthesis Stage │
+                                         │ (Lead Reviewer) │
+                                         └────────┬────────┘
+                                                  ▼
+                                         ┌─────────────────┐
+                                         │ Verdict & Trail │
+                                         └─────────────────┘
 ```
 
 #### Perspective 1: Architecture, Modularity & Simplicity
 
-- **Layer & Boundary Integrity:** Explicit dependency flow between domain/business logic, application orchestration, and infrastructure adapters.
+- **Layer & Boundary Integrity:** Explicit dependency flow between domain logic, application orchestration, and infrastructure adapters.
 - **Simplicity Above All:** Eliminate unnecessary indirection, dead code, unused parameters, or speculative abstractions.
 - **Anti-Magic & Inspectability:** Flag hidden runtime interceptors, uninspectable background singletons, or implicit side-effects.
 
@@ -74,7 +74,7 @@ Evaluate the PR across the following 4 specialized perspectives concurrently (e.
 
 - **Logic & Edge Cases:** Algorithmic correctness, off-by-one errors, state synchronization, and race conditions.
 - **Fail Fast & Loudly:** Structured errors and explicit handling; no swallowed exceptions or silent fallbacks.
-- **Runtime Boundary Validation:** Untrusted input from storage, network, files, or AI must be validated at runtime (e.g. schemas).
+- **Runtime Boundary Validation:** Untrusted input from storage, network, files, or AI must be validated at runtime (e.g. Zod schemas).
 - **Data Evolution & Migrations:** Explicit, tested migrations when persistence formats or schemas evolve.
 - **Security:** Input sanitization, injection prevention, and credential hygiene.
 
@@ -89,11 +89,19 @@ Evaluate the PR across the following 4 specialized perspectives concurrently (e.
 - **Test Design:** DAMP (Descriptive And Meaningful Phrases) test structure over clever parameterized helpers.
 - **Coverage & Edge Cases:** High coverage across core domain and application logic with both positive and negative assertions.
 
-#### Perspective 4: Accessibility, UX & Visual Integrity _(Required for UI changes)_
+#### Perspective 4: Accessibility & Operability _(Required for UI changes)_
 
 - **Keyboard-First:** 100% operable via keyboard alone (`Enter`, `Tab`, `Space`, `Arrow` keys, `Escape`).
-- **Semantic & Accessible Markup:** Visible focus indicators, correct ARIA roles/labels, accessible live regions, and WCAG AA compliance.
-- **Visual Stability & Layout:** No jarring layout shifts, robust responsive behavior, and clear visual hierarchy.
+- **Semantic & Accessible Markup:** Visible focus indicators, correct ARIA roles/labels, accessible live regions, and WCAG 2.1 AA compliance.
+- **Screen Reader Parity:** Dynamic updates announced clearly without redundant speech stutter.
+
+#### Perspective 5: UI Design, Aesthetics & Cleanliness _(Required for UI changes)_
+
+- **Restraint & No Gimmicks:** Zero visual clutter, decorative junk, or superfluous status badges; embraces "less, but better".
+- **Design System Coherence:** Strict adherence to design tokens (spacing rhythm, typographic scales, border radii, color palette, control height parity).
+- **Visual Hierarchy & Whitespace:** Immediate scannability, clear primary actions, and purposeful whitespace grouping.
+- **Self-Explanatory Affordances:** Clean, intuitive interactions without requiring walls of helper text.
+- **Tactile Polish:** Subtle, purposeful micro-interactions and transitions with zero layout shift.
 
 _Consult [references/reviewer-personas.md](./references/reviewer-personas.md) for detailed checklists and prompt templates for each perspective._
 
@@ -109,9 +117,10 @@ Consolidate findings across all parallel reviews and categorize every finding in
   - Invariant or architectural boundary violations.
   - Unvalidated external boundaries or missing data migration paths.
   - Accessibility flaws or broken keyboard navigation in modified UI.
+  - Visual hierarchy breakdown, severe design token drift, or layout shifts.
   - Missing tests for new behavior or domain coverage drops.
 - **💡 Advisory (Non-blocking suggestions):**
-  - Minor naming improvements, optional refactoring opportunities, or non-critical documentation polish.
+  - Minor naming improvements, optional refactoring opportunities, subtle spacing polish, or non-critical documentation tweaks.
 
 _Consult [references/findings-taxonomy.md](./references/findings-taxonomy.md) for classification rules._
 
@@ -126,7 +135,7 @@ Deliver the consolidated review report in the following markdown schema:
 
 - **Base Commit SHA:** `<base-sha>`
 - **Head Commit SHA:** `<head-sha>`
-- **Review Mode:** Parallel Multi-Perspective (`architecture`, `correctness`, `quality`, `accessibility`)
+- **Review Mode:** Parallel Multi-Perspective (`architecture`, `correctness`, `quality`, `accessibility`, `ui-design`)
 - **Verdict:** `APPROVED` | `CHANGES REQUESTED`
 
 ---
@@ -158,10 +167,15 @@ Deliver the consolidated review report in the following markdown schema:
 - **Status:** [PASS / CONCERNS]
 - **Observations:** <summary of test quality, DAMP design, coverage, and edge cases>
 
-### ♿ Accessibility & UX (UI Changes)
+### ♿ Accessibility & Operability (UI Changes)
 
 - **Status:** [PASS / CONCERNS / N/A]
-- **Observations:** <summary of keyboard navigation, ARIA/WCAG compliance, and layout stability>
+- **Observations:** <summary of keyboard navigation, ARIA/WCAG compliance, and focus management>
+
+### 🎨 UI Design, Aesthetics & Cleanliness (UI Changes)
+
+- **Status:** [PASS / CONCERNS / N/A]
+- **Observations:** <summary of visual restraint, design system coherence, hierarchy, and polish>
 
 ---
 
@@ -172,7 +186,7 @@ Deliver the consolidated review report in the following markdown schema:
 _(If none, state "None. Zero blocking issues found.")_
 
 1. **`[File Path:Line Number]`**: Issue description.
-   - **Perspective:** Architecture / Correctness / Quality / Accessibility
+   - **Perspective:** Architecture / Correctness / Quality / Accessibility / UI Design
    - **Impact:** Why this blocks merge.
    - **Remediation:** Actionable fix instructions.
 
@@ -193,7 +207,7 @@ _(If none, state "None.")_
 
 - **Base Commit SHA:** `<base-sha>`
 - **Head Commit SHA:** `<head-sha>`
-- **Reviewer Perspectives:** Architecture, Correctness/Safety, Quality/Gates, Accessibility/UX
+- **Reviewer Perspectives:** Architecture, Correctness/Safety, Quality/Gates, Accessibility/Operability, UI Design/Cleanliness
 - **Outcome:** APPROVED (0 blocking issues)
 ```
 ````
