@@ -1,5 +1,6 @@
 import {
   type ChangeEvent,
+  type FocusEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -54,6 +55,16 @@ import {
   titleForView,
   viewFromHash,
 } from './navigation'
+
+function handleFocusSelect(
+  event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+) {
+  const target = event.currentTarget
+  target.select()
+  setTimeout(() => {
+    target.select()
+  }, 0)
+}
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -637,6 +648,7 @@ function EditCardModalInner({
               autoFocus
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Prompt text"
             />
           </div>
@@ -660,6 +672,7 @@ function EditCardModalInner({
               required
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Answer text"
             />
           </div>
@@ -671,6 +684,7 @@ function EditCardModalInner({
               rows={2}
               value={context}
               onChange={(e) => setContext(e.target.value)}
+              onFocus={handleFocusSelect}
               placeholder="Optional context, usage notes, or nuance"
             />
           </div>
@@ -2485,6 +2499,7 @@ export function App({
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
+                  onFocus={handleFocusSelect}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
                   aria-controls="spanish-suggestions"
@@ -2568,7 +2583,20 @@ export function App({
                   required
                   value={englishInput}
                   onChange={onEnglishChange}
+                  onFocus={handleFocusSelect}
                   placeholder="English translation"
+                />
+              </div>
+              <div className="field-group">
+                <label htmlFor="context">Additional Context</label>
+                <textarea
+                  id="context"
+                  name="context"
+                  rows={2}
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
+                  onFocus={handleFocusSelect}
+                  placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
               <label className="toggle-row">
@@ -2594,6 +2622,7 @@ export function App({
                         name="reversePrompt"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
@@ -2606,23 +2635,13 @@ export function App({
                         name="reverseAnswer"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
                   </div>
                 </details>
               )}
-              <div className="field-group">
-                <label htmlFor="context">Additional Context</label>
-                <textarea
-                  id="context"
-                  name="context"
-                  rows={2}
-                  value={contextInput}
-                  onChange={(e) => setContextInput(e.target.value)}
-                  placeholder="Optional context, regional nuance, or memory hook"
-                />
-              </div>
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"
@@ -2803,6 +2822,7 @@ export function App({
                   placeholder="Search cards by Spanish, English, or notes…"
                   value={deckSearchQuery}
                   onChange={(e) => setDeckSearchQuery(e.target.value)}
+                  onFocus={handleFocusSelect}
                   aria-label="Search cards in deck"
                 />
               </div>
