@@ -327,10 +327,8 @@ describe('SupabaseAuthService', () => {
       fakeStorage,
     )
 
-    expect(service.wasRedirectAuth()).toBe(true)
     expect(service.consumeRedirectAuth()).toBe(true)
     expect(service.consumeRedirectAuth()).toBe(false)
-    expect(service.wasRedirectAuth()).toBe(false)
   })
 
   it('sanitizes formatted token with spaces or dashes during verifyOtp', async () => {

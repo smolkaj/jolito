@@ -36,10 +36,6 @@ export class SupabaseAuthService implements AuthService {
     return Boolean(this.supabaseUrl && this.supabaseAnonKey)
   }
 
-  wasRedirectAuth(): boolean {
-    return this.redirectAuthOccurred
-  }
-
   consumeRedirectAuth(): boolean {
     const occurred = this.redirectAuthOccurred
     this.redirectAuthOccurred = false

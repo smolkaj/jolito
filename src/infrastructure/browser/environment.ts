@@ -22,27 +22,3 @@ export function isStandalone(
   )
   return standaloneMedia || iosStandalone
 }
-
-/**
- * Detects whether the current device is iOS / iPadOS.
- */
-export function isIOS(
-  customNavigator?: {
-    userAgent?: string
-    maxTouchPoints?: number
-    platform?: string
-  } | null,
-): boolean {
-  const nav =
-    customNavigator === undefined
-      ? typeof navigator !== 'undefined'
-        ? navigator
-        : null
-      : customNavigator
-  if (!nav) return false
-
-  const ua = nav.userAgent || ''
-  const isIosUa = /iPad|iPhone|iPod/.test(ua)
-  const isIpadOs = nav.platform === 'MacIntel' && (nav.maxTouchPoints || 0) > 1
-  return isIosUa || isIpadOs
-}

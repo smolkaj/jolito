@@ -46,7 +46,6 @@ export type AuthUser = {
 export type AuthService = {
   getUser(): Promise<AuthUser | null>
   isConfigured?(): boolean
-  wasRedirectAuth?(): boolean
   consumeRedirectAuth?(): boolean
   getSessionLink?(): string | null
   sendMagicLink(

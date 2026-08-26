@@ -81,10 +81,6 @@ export class MockAuthService implements AuthService {
     return this.configured
   }
 
-  wasRedirectAuth(): boolean {
-    return this.redirectAuthOccurred
-  }
-
   consumeRedirectAuth(): boolean {
     const val = this.redirectAuthOccurred
     this.redirectAuthOccurred = false
