@@ -37,7 +37,7 @@ Every PR must be reviewed by a fresh, independent read-only agent instance and i
 ## Review loop to fixpoint
 
 1. Author passes all gates (`npm run check`, `npm run audit:prod`, and `npm run test:e2e` with visual verification for UI changes).
-2. Author opens PR and invokes read-only reviewer with only PR description, diff, and docs.
+2. Author opens PR and invokes read-only reviewer using the cross-agent review skill (`.agents/skills/review`, callable as `/review` across `agy`, `claude`, and `codex`) with only PR description, diff, and docs.
 3. Reviewer records base/head commit SHAs and reports findings.
 4. If blocking issues exist, author resolves them, reruns checks, pushes, and requests re-review on the new head SHA.
 5. Record reviewer session ID, commit SHAs, and outcome in the PR comment/description before merge.
