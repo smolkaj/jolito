@@ -1504,7 +1504,11 @@ summary:focus-visible {
   .sync-button-check,
   .export-button.is-exported,
   .export-button-exported,
-  .export-button-check {
+  .export-button-check,
+  .resend-link-button.is-sent,
+  .resend-button-sent,
+  .resend-button-check,
+  .paste-input-btn.is-pasted {
     animation: none;
   }
 
@@ -2945,11 +2949,81 @@ kbd {
   border-color: var(--line);
 }
 
+.paste-input-btn.is-pasted {
+  background: var(--verde-soft, #eaf3ed);
+  color: var(--verde-dark);
+  border-color: var(--verde);
+  animation: saveButtonPop 250ms var(--ease-spring);
+}
+
 .sync-auth-buttons {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.resend-link-button {
+  transition: all 180ms var(--ease-spring);
+}
+
+.resend-link-button span {
+  margin-left: 0;
+  line-height: inherit;
+  font-size: inherit;
+  transition: none;
+}
+
+.resend-link-button:hover span {
+  transform: none;
+}
+
+.resend-link-button.is-sent {
+  background: var(--verde);
+  color: #ffffff;
+  border-color: var(--verde-dark);
+  box-shadow: 3px 3px 0 var(--verde-dark);
+  animation: saveButtonPop 320ms var(--ease-spring);
+}
+
+.resend-link-button.is-sent:hover {
+  background: var(--verde-dark);
+  box-shadow: 4px 4px 0 var(--ink);
+  transform: translate(-1px, -1px);
+}
+
+.resend-link-button.is-sent:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--verde-dark);
+}
+
+.resend-button-sent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  animation: saveTextFade 200ms ease-out;
+}
+
+.resend-button-check {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 800;
+  flex-shrink: 0;
+  animation: saveCheckmarkBounce 350ms var(--ease-spring);
+}
+
+.resend-button-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.resend-text-button.is-sent {
+  color: var(--verde-dark);
+  font-weight: 700;
 }
 
 .sync-sent-pane {

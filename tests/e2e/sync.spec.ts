@@ -123,10 +123,16 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     ).toBeVisible()
     await expect(page.getByLabel(/sign-in link/i)).not.toBeVisible()
 
-    // Capture screenshot of standard browser email confirmation
+    // Click resend link and verify inline checkmark animation without status banner
+    const resendBtn = page.locator('.resend-link-button')
+    await resendBtn.click()
+    await expect(resendBtn).toHaveClass(/is-sent/)
+    await expect(resendBtn).toContainText(/link sent!/i)
+    await expect(page.locator('.status-banner')).toHaveCount(0)
+
+    // Capture screenshot of standard browser email confirmation with animated resend button
     await page.screenshot({
       path: 'test-results/sync-modal-sent-step.png',
-      animations: 'disabled',
     })
 
     // Toggle paste link manually
