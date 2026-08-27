@@ -1317,10 +1317,12 @@ function SyncModal({
   const [showPasteLink, setShowPasteLink] = useState(
     () => isStandalone() && isIOS(),
   )
-  const [loading, setLoading] = useState(false)
   const [isSynced, setIsSynced] = useState(false)
   const [isLinkResent, setIsLinkResent] = useState(false)
   const [isPasted, setIsPasted] = useState(false)
+  const [loadingAction, setLoadingAction] = useState<
+    'send' | 'verify' | 'sync' | 'signout' | null
+  >(null)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
@@ -1329,6 +1331,7 @@ function SyncModal({
   const resendTimerRef = useRef<number | null>(null)
   const pastedTimerRef = useRef<number | null>(null)
 
+  const loading = loadingAction !== null
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
 
   useEffect(() => {
@@ -1371,10 +1374,10 @@ function SyncModal({
   const handleSendLink = async (isResend = false, e?: FormEvent) => {
     e?.preventDefault()
     if (!email.trim()) return
-    setLoading(true)
+    setLoadingAction('send')
     setStatusMsg(null)
     const res = await auth.sendMagicLink(email.trim())
-    setLoading(false)
+    setLoadingAction(null)
     if (res.success) {
       setIsOtpSent(true)
       if (isResend) {
@@ -1420,10 +1423,10 @@ function SyncModal({
     e?.preventDefault()
     const cleanToken = token.trim()
     if (!cleanToken) return
-    setLoading(true)
+    setLoadingAction('verify')
     setStatusMsg(null)
     const res = await auth.verifyOtp(email.trim(), cleanToken)
-    setLoading(false)
+    setLoadingAction(null)
     if (res.success) {
       if (onSaveLocally) {
         onClose()
@@ -1443,7 +1446,7 @@ function SyncModal({
 
   const handleSyncNow = async () => {
     if (!user) return
-    setLoading(true)
+    setLoadingAction('sync')
     setStatusMsg(null)
     const res = await syncDeckWithCloud({
       localCards: cards,
@@ -1453,7 +1456,7 @@ function SyncModal({
       onCardsUpdated: (newCards, newDeletedIds) =>
         onUpdateCards(newCards, false, newDeletedIds),
     })
-    setLoading(false)
+    setLoadingAction(null)
     if (res.success) {
       setIsSynced(true)
       if (syncedTimerRef.current !== null) {
@@ -1487,7 +1490,9 @@ function SyncModal({
     setIsSynced(false)
     setIsLinkResent(false)
     setIsPasted(false)
+    setLoadingAction('signout')
     await auth.signOut()
+    setLoadingAction(null)
     setIsOtpSent(false)
     setToken('')
     setStatusMsg(null)
@@ -1556,7 +1561,6 @@ function SyncModal({
                 <p className="account-email">{user.email}</p>
               </div>
             </div>
-
             <div className="sync-actions-row">
               <button
                 type="button"
@@ -1577,21 +1581,23 @@ function SyncModal({
                   <>
                     <SyncSpinnerIcon
                       size={15}
-                      className={loading ? 'is-spinning' : ''}
+                      className={loadingAction === 'sync' ? 'is-spinning' : ''}
                     />
-                    <span>{loading ? 'Syncing…' : 'Sync now'}</span>
+                    <span>
+                      {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
+                    </span>
                   </>
                 )}
               </button>
               <button
                 type="button"
-                className="text-button sign-out-button"
+                className="secondary-button sign-out-button"
                 onClick={() => {
                   void handleSignOut()
                 }}
                 disabled={loading}
               >
-                Sign out
+                {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
               </button>
             </div>
           </div>
@@ -1619,7 +1625,9 @@ function SyncModal({
               className="primary-button"
               disabled={loading || !email.trim()}
             >
-              {loading ? 'Sending link…' : 'Send sign-in link →'}
+              {loadingAction === 'send'
+                ? 'Sending link…'
+                : 'Send sign-in link →'}
             </button>
           </form>
         ) : !showPasteLink ? (
@@ -1628,7 +1636,7 @@ function SyncModal({
               Click the sign-in link sent to <strong>{email.trim()}</strong> to
               connect your account.
             </p>
-            <div className="sync-auth-buttons">
+            <div className="sync-sent-actions">
               <button
                 type="button"
                 className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
@@ -1645,30 +1653,35 @@ function SyncModal({
                     <span className="resend-button-text">Link sent!</span>
                   </span>
                 ) : (
-                  <span>Resend link</span>
+                  <span>
+                    {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
+                  </span>
                 )}
               </button>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => {
-                  setIsOtpSent(false)
-                  setShowPasteLink(isStandalone() && isIOS())
-                  setToken('')
-                  setStatusMsg(null)
-                }}
-              >
-                Use different email
-              </button>
-            </div>
-            <div className="sync-manual-link-row">
-              <button
-                type="button"
-                className="text-button sync-manual-link-btn"
-                onClick={() => setShowPasteLink(true)}
-              >
-                Paste sign-in link manually
-              </button>
+              <div className="sync-sent-sub-actions">
+                <button
+                  type="button"
+                  className="modal-link-btn"
+                  onClick={() => {
+                    setIsOtpSent(false)
+                    setShowPasteLink(isStandalone() && isIOS())
+                    setToken('')
+                    setStatusMsg(null)
+                  }}
+                >
+                  Use different email
+                </button>
+                <span className="sync-sub-action-dot" aria-hidden="true">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className="modal-link-btn"
+                  onClick={() => setShowPasteLink(true)}
+                >
+                  Paste sign-in link manually
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -1726,36 +1739,47 @@ function SyncModal({
                 </span>
               )}
             </div>
-            <div className="sync-auth-buttons">
+            <div className="sync-sent-actions">
               <button
                 type="submit"
                 className="primary-button"
                 disabled={loading || !token.trim()}
               >
-                {loading ? 'Signing in…' : 'Sign in & sync →'}
+                {loadingAction === 'verify'
+                  ? 'Signing in…'
+                  : 'Sign in & sync →'}
               </button>
-              <button
-                type="button"
-                className={`text-button resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
-                disabled={loading}
-                onClick={() => {
-                  void handleSendLink(true)
-                }}
-              >
-                {isLinkResent ? 'Link sent! ✓' : 'Resend link'}
-              </button>
-              <button
-                type="button"
-                className="text-button"
-                onClick={() => {
-                  setIsOtpSent(false)
-                  setShowPasteLink(isStandalone() && isIOS())
-                  setToken('')
-                  setStatusMsg(null)
-                }}
-              >
-                Use different email
-              </button>
+              <div className="sync-sent-sub-actions">
+                <button
+                  type="button"
+                  className={`modal-link-btn resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
+                  disabled={loading}
+                  onClick={() => {
+                    void handleSendLink(true)
+                  }}
+                >
+                  {isLinkResent
+                    ? 'Link sent! ✓'
+                    : loadingAction === 'send'
+                      ? 'Resending…'
+                      : 'Resend link'}
+                </button>
+                <span className="sync-sub-action-dot" aria-hidden="true">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className="modal-link-btn"
+                  onClick={() => {
+                    setIsOtpSent(false)
+                    setShowPasteLink(isStandalone() && isIOS())
+                    setToken('')
+                    setStatusMsg(null)
+                  }}
+                >
+                  Use different email
+                </button>
+              </div>
             </div>
           </form>
         )}

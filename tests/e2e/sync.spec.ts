@@ -25,14 +25,12 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   expect(bgColor).not.toBe('rgba(0, 0, 0, 0)')
   expect(bgColor).not.toBe('transparent')
 
-  // Check auth form or preview notice is displayed
-  const emailInput = page.getByLabel(/email address/i)
-  const previewNotice = page.getByRole('heading', {
+  // Check preview notice or email form is displayed depending on backend config
+  const previewHeading = page.getByRole('heading', {
     name: /cloud sync is disabled in this preview/i,
   })
-  expect(
-    (await emailInput.isVisible()) || (await previewNotice.isVisible()),
-  ).toBe(true)
+  const emailInput = page.getByLabel(/email address/i)
+  await expect(previewHeading.or(emailInput)).toBeVisible()
 
   // Save screenshot for autonomous visual inspection
   await page.screenshot({
@@ -228,8 +226,19 @@ test('renders iOS redirect auth notification banner with zero WCAG violations an
 test('renders signed-in cloud sync account view with zero WCAG violations', async ({
   page,
 }) => {
-  // Seed signed-in session in localStorage before page load
+  // Seed signed-in session in localStorage before page load and mock auth fetch
   await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      if (url.includes('/auth/v1/otp') || url.includes('/auth/v1/logout')) {
+        return new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+      return originalFetch(input, init)
+    }
     const session = {
       accessToken:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItMTIzIiwiZW1haWwiOiJsZWFybmVyQGV4YW1wbGUuY29tIn0.mockSignature',
@@ -265,7 +274,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     animations: 'disabled',
   })
 
-  // Zero WCAG violations
+  // Zero WCAG violations in signed-in state
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -288,4 +297,64 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
   expect(animatedResults.violations).toEqual([])
+
+  // Click sign out
+  const signOutBtn = page.getByRole('button', { name: /sign out/i })
+  await signOutBtn.click()
+
+  // If email input is shown (or if unconfigured preview notice is shown)
+  const emailInput = page.getByLabel(/email address/i)
+  if (await emailInput.isVisible()) {
+    await emailInput.fill('learner@example.com')
+
+    // Send link
+    await page.getByRole('button', { name: /send sign-in link/i }).click()
+
+    // Verify sent screen has clean explanation, Resend link button, and sub-actions
+    await expect(
+      page.getByText(/Click the sign-in link sent to/i),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /resend link/i }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /use different email/i }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /paste sign-in link manually/i }),
+    ).toBeVisible()
+
+    // Capture screenshot of sent confirmation
+    await page.screenshot({
+      path: 'test-results/sync-modal-sent-step.png',
+      animations: 'disabled',
+    })
+
+    // Verify zero WCAG violations on sent screen
+    const sentResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze()
+    expect(sentResults.violations).toEqual([])
+
+    // Toggle paste link manually
+    await page
+      .getByRole('button', { name: /paste sign-in link manually/i })
+      .click()
+    await expect(page.getByLabel(/sign-in link/i)).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: /sign in & sync/i }),
+    ).toBeVisible()
+
+    // Capture screenshot of paste form
+    await page.screenshot({
+      path: 'test-results/sync-modal-link-step.png',
+      animations: 'disabled',
+    })
+  } else {
+    // Check accessibility of unconfigured state after sign-out
+    const postSignOutResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze()
+    expect(postSignOutResults.violations).toEqual([])
+  }
 })

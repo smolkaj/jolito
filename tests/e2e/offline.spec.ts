@@ -27,10 +27,12 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   await page.reload()
   await page.locator('html[data-offline-ready="true"]').waitFor()
 
-  // Track any failed network requests while offline
+  // Track any failed app asset requests while offline
   const failedRequests: string[] = []
   page.on('requestfailed', (req) => {
-    failedRequests.push(req.url())
+    if (!req.url().includes('supabase.co')) {
+      failedRequests.push(req.url())
+    }
   })
 
   // Disconnect network completely
