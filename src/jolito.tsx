@@ -47,7 +47,7 @@ import {
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import type { SyncStatus } from './domain/sync'
-import { isStandalone } from './infrastructure/browser/environment'
+import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -1233,6 +1233,9 @@ function SyncModal({
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
+  const [showPasteLink, setShowPasteLink] = useState(
+    () => isStandalone() && isIOS(),
+  )
   const [loading, setLoading] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -1477,6 +1480,46 @@ function SyncModal({
               {loading ? 'Sending link…' : 'Send sign-in link →'}
             </button>
           </form>
+        ) : !showPasteLink ? (
+          <div className="sync-sent-pane">
+            <p className="sync-explanation">
+              Click the sign-in link sent to <strong>{email.trim()}</strong> to
+              connect your account.
+            </p>
+            <div className="sync-auth-buttons">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={loading}
+                onClick={() => {
+                  void handleSendLink()
+                }}
+              >
+                Resend link
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setShowPasteLink(isStandalone() && isIOS())
+                  setToken('')
+                  setStatusMsg(null)
+                }}
+              >
+                Use different email
+              </button>
+            </div>
+            <div className="sync-manual-link-row">
+              <button
+                type="button"
+                className="text-button sync-manual-link-btn"
+                onClick={() => setShowPasteLink(true)}
+              >
+                Paste sign-in link manually
+              </button>
+            </div>
+          </div>
         ) : (
           <form
             onSubmit={(e) => {
@@ -1487,45 +1530,41 @@ function SyncModal({
             <p className="sync-explanation">
               Paste the sign-in link sent to <strong>{email.trim()}</strong>:
             </p>
-            <div className="sync-pwa-guidance">
-              <span className="pwa-guidance-icon" aria-hidden="true">
-                <PhoneLinkIcon size={16} />
-              </span>
-              <p>
-                <strong>Home Screen app on iOS?</strong> Long-press the button
-                in your email and tap <strong>Copy Link</strong>.
-              </p>
-            </div>
             <div className="field-group">
               <label htmlFor="sync-otp">Sign-in link</label>
-              <div className="otp-input-wrap">
+              <div className="link-input-wrap">
                 <input
                   id="sync-otp"
                   type="text"
                   required
                   autoFocus
-                  placeholder="Paste your sign-in link"
+                  placeholder="Paste sign-in link"
                   autoComplete="one-time-code"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="sync-otp-input"
+                  className="link-input"
                 />
                 {typeof navigator !== 'undefined' &&
                   typeof navigator.clipboard?.readText === 'function' && (
                     <button
                       type="button"
-                      className="paste-clipboard-btn"
+                      className="paste-input-btn"
                       onClick={() => {
                         void handlePasteClipboard()
                       }}
                       title="Paste from clipboard"
                       aria-label="Paste from clipboard"
                     >
-                      <ClipboardIcon size={14} />
+                      <ClipboardIcon size={12} />
                       <span>Paste</span>
                     </button>
                   )}
               </div>
+              {isIOS() && (
+                <span className="field-hint">
+                  Long-press the button in your email and tap Copy Link.
+                </span>
+              )}
             </div>
             <div className="sync-auth-buttons">
               <button
@@ -1533,7 +1572,7 @@ function SyncModal({
                 className="primary-button"
                 disabled={loading || !token.trim()}
               >
-                {loading ? 'Verifying…' : 'Verify & sync →'}
+                {loading ? 'Signing in…' : 'Sign in & sync →'}
               </button>
               <button
                 type="button"
@@ -1550,6 +1589,7 @@ function SyncModal({
                 className="text-button"
                 onClick={() => {
                   setIsOtpSent(false)
+                  setShowPasteLink(isStandalone() && isIOS())
                   setToken('')
                   setStatusMsg(null)
                 }}
@@ -1631,6 +1671,16 @@ function RedirectAuthNotice({
   onCopySessionLink?: () => Promise<boolean> | boolean
 }) {
   const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [])
+
   if (!message) return null
 
   const handleCopy = async () => {
@@ -1638,41 +1688,81 @@ function RedirectAuthNotice({
       const res = await onCopySessionLink()
       if (res) {
         setCopied(true)
-        setTimeout(() => setCopied(false), 2500)
+        if (timerRef.current) {
+          clearTimeout(timerRef.current)
+        }
+        timerRef.current = setTimeout(() => {
+          setCopied(false)
+          timerRef.current = null
+        }, 2500)
       }
     }
   }
 
   return (
-    <div className="redirect-auth-banner" role="status">
-      <span className="banner-icon" aria-hidden="true">
-        💡
-      </span>
-      <div className="banner-content">
-        <p>{message}</p>
+    <aside className="redirect-auth-banner" role="status" aria-live="polite">
+      <p className="banner-text">{message}</p>
+      <div className="banner-actions">
         {onCopySessionLink && (
           <button
             type="button"
-            className="banner-action-btn"
+            className={`banner-action-btn ${copied ? 'is-copied' : ''}`}
             onClick={() => {
               void handleCopy()
             }}
           >
-            {copied
-              ? 'Link copied ✓'
-              : '📋 Copy sign-in link for Home Screen app'}
+            {copied ? (
+              <>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="13"
+                  height="13"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"
+                  />
+                </svg>
+                <span>Copied ✓</span>
+              </>
+            ) : (
+              <>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="13"
+                  height="13"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"
+                  />
+                </svg>
+                <span>Copy sign-in link</span>
+              </>
+            )}
           </button>
         )}
+        <button
+          type="button"
+          className="banner-dismiss-btn"
+          onClick={onDismiss}
+          aria-label="Dismiss message"
+        >
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
+            />
+          </svg>
+        </button>
       </div>
-      <button
-        type="button"
-        className="banner-dismiss-btn"
-        onClick={onDismiss}
-        aria-label="Dismiss message"
-      >
-        ✕
-      </button>
-    </div>
+    </aside>
   )
 }
 
@@ -1759,8 +1849,8 @@ export function App({
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
-        if (!isStandalone()) {
-          return 'Signed in in your browser! To sync your Home Screen app on iOS, tap "Copy sign-in link", then open the app and paste it in.'
+        if (!isStandalone() && isIOS()) {
+          return 'Signed in! Using the Home Screen app?'
         }
       }
       return null

@@ -95,13 +95,13 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
       }
       return originalFetch(input, init)
     }
+    // Set mock env in window if needed
+    window.localStorage.setItem('e2e-sync-test', 'true')
   })
 
-  // Set Supabase env in window to enable auth form in e2e
   await page.goto('/')
 
-  // If sync backend is unconfigured in test Vite environment, test DOM elements structure
-  const signInBtn = page.getByRole('button', { name: /sign in/i })
+  const signInBtn = page.getByRole('button', { name: /sign in|tap to sync/i })
   await signInBtn.click()
 
   // Verify modal is open
@@ -109,11 +109,112 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
 
+  // If unconfigured preview notice is shown in local test environment, verify modal accessibility
+  const emailInput = page.getByLabel(/email address/i)
+  if (await emailInput.isVisible()) {
+    await emailInput.fill('pwa-learner@example.com')
+    await page.getByRole('button', { name: /send sign-in link/i }).click()
+
+    // On standard browser, verify clean confirmation screen without paste input
+    await expect(
+      page.getByText(/Click the sign-in link sent to/i),
+    ).toBeVisible()
+    await expect(page.getByLabel(/sign-in link/i)).not.toBeVisible()
+
+    // Capture screenshot of standard browser email confirmation
+    await page.screenshot({
+      path: 'test-results/sync-modal-sent-step.png',
+      animations: 'disabled',
+    })
+
+    // Toggle paste link manually
+    const pasteToggle = page.getByRole('button', {
+      name: /paste sign-in link manually/i,
+    })
+    await pasteToggle.click()
+    await expect(page.getByLabel(/sign-in link/i)).toBeVisible()
+
+    // Capture screenshot of link entry step
+    await page.screenshot({
+      path: 'test-results/sync-modal-link-step.png',
+      animations: 'disabled',
+    })
+  } else {
+    // Capture screenshot of modal in unconfigured state
+    await page.screenshot({
+      path: 'test-results/sync-modal-preview.png',
+      animations: 'disabled',
+    })
+  }
+
   // Check accessibility
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
   expect(results.violations).toEqual([])
+})
+
+test('renders iOS redirect auth notification banner with zero WCAG violations and allows copying link', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  // Simulate iOS Safari userAgent and hash fragment redirect
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+    })
+    const fakeToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItMTIzIiwiZW1haWwiOiJzYWZhcmktZDJlQGV4YW1wbGUuY29tIn0.mock'
+    window.location.hash = `#access_token=${fakeToken}&refresh_token=mock-refresh&expires_in=3600`
+  })
+
+  // Test on iPhone SE viewport (375px) to ensure no clipping or horizontal overflow on narrow screens
+  await page.setViewportSize({ width: 375, height: 667 })
+  await page.goto('/')
+
+  // Verify banner is visible on mobile
+  const banner = page
+    .getByRole('status')
+    .filter({ hasText: /signed in! using the home screen app\?/i })
+  await expect(banner).toBeVisible()
+
+  // Verify no horizontal overflow on mobile iPhone SE
+  const mobileDims = await page.evaluate(() => {
+    const doc = document.documentElement
+    return { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth }
+  })
+  expect(mobileDims.scrollWidth).toBe(mobileDims.clientWidth)
+
+  // Capture screenshot of the banner on iPhone SE
+  await page.screenshot({
+    path: 'test-results/redirect-auth-banner-iphone.png',
+    animations: 'disabled',
+  })
+
+  // Check accessibility of banner on mobile
+  const mobileResults = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(mobileResults.violations).toEqual([])
+
+  // Click copy link button and verify visual feedback
+  const copyBtn = page.getByRole('button', { name: /copy sign-in link/i })
+  await copyBtn.click()
+  await expect(page.getByText(/copied ✓/i)).toBeVisible()
+
+  // Test on desktop viewport
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.screenshot({
+    path: 'test-results/redirect-auth-banner-ios.png',
+    animations: 'disabled',
+  })
+
+  // Dismiss banner
+  const dismissBtn = page.getByRole('button', { name: /dismiss message/i })
+  await dismissBtn.click()
+  await expect(banner).not.toBeVisible()
 })
 
 test('renders signed-in cloud sync account view with zero WCAG violations', async ({
