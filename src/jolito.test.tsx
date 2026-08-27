@@ -1095,7 +1095,7 @@ describe('Jolito', () => {
     // Enter link / token
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
     expect(
       await screen.findByText(/deck synchronized with cloud/i),
@@ -1115,7 +1115,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
-      await screen.findByText(/Home Screen app on iOS\?/i),
+      await screen.findByText(/On iOS\? Long-press the button in your email/i),
     ).toBeInTheDocument()
 
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
@@ -1124,14 +1124,19 @@ describe('Jolito', () => {
     expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
   })
 
-  it('displays and dismisses redirect auth notification banner when signed in via email redirect', async () => {
+  it('displays and dismisses redirect auth notification banner when signed in via email redirect on iOS', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({
       user: { id: 'usr-redirect', email: 'safari-user@example.com' },
     })
     services.mockAuth.redirectAuthOccurred = true
 
-    // Stub clipboard
+    // Stub iOS userAgent & clipboard
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+      writable: true,
+    })
     const writeTextSpy = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: writeTextSpy },
@@ -1141,23 +1146,25 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    const banner = await screen.findByText(/Signed in in your browser!/i)
+    const banner = await screen.findByText(
+      /Signed in! Using the Home Screen app\?/i,
+    )
     expect(banner).toBeInTheDocument()
 
     const copyBtn = screen.getByRole('button', {
-      name: /copy sign-in link for home screen app/i,
+      name: /copy sign-in link/i,
     })
     expect(copyBtn).toBeInTheDocument()
     await user.click(copyBtn)
     expect(writeTextSpy).toHaveBeenCalledWith(
       expect.stringContaining('access_token='),
     )
-    expect(await screen.findByText(/link copied/i)).toBeInTheDocument()
+    expect(await screen.findByText(/copied ✓/i)).toBeInTheDocument()
 
     const dismissBtn = screen.getByRole('button', { name: /dismiss message/i })
     await user.click(dismissBtn)
     expect(
-      screen.queryByText(/Signed in in your browser!/i),
+      screen.queryByText(/Signed in! Using the Home Screen app\?/i),
     ).not.toBeInTheDocument()
   })
 
@@ -1176,7 +1183,7 @@ describe('Jolito', () => {
       tokenInput,
       'https://example.supabase.co/auth/v1/verify?token=pkce_secret123&type=magiclink',
     )
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
     expect(
       await screen.findByText(/deck synchronized with cloud/i),
@@ -1200,7 +1207,7 @@ describe('Jolito', () => {
       tokenInput,
       'https://xwqjelkfdcfzyxxblvhp.supabase.co/auth/v1/verify?token=45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b&type=magiclink&redirect_to=https://joli.to/',
     )
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
     expect(
       await screen.findByText(/deck synchronized with cloud/i),
@@ -1238,7 +1245,7 @@ describe('Jolito', () => {
     await user.click(pasteBtn)
 
     expect(readTextSpy).toHaveBeenCalledTimes(1)
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
     expect(
       await screen.findByText(/deck synchronized with cloud/i),
@@ -1755,7 +1762,7 @@ describe('Jolito', () => {
     // 4. Guest enters link / code
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
     // 5. Verification succeeds -> pending card is automatically saved!
     expect(
@@ -1784,7 +1791,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
-      await screen.findByText(/Home Screen app on iOS\?/i),
+      await screen.findByText(/On iOS\? Long-press the button in your email/i),
     ).toBeInTheDocument()
 
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
@@ -1880,7 +1887,7 @@ describe('Jolito', () => {
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
-    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
     // 4. Modal closes and card is saved
     expect(
