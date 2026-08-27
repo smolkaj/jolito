@@ -554,6 +554,47 @@ describe('Jolito', () => {
     )
   })
 
+  it('disables autocapitalization on card creation and edit text fields for mobile keyboards', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // 1. Check card creation fields
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    const contextInput = screen.getByLabelText(/additional context/i)
+
+    expect(spanishInput).toHaveAttribute('autocapitalize', 'none')
+    expect(englishInput).toHaveAttribute('autocapitalize', 'none')
+    expect(contextInput).toHaveAttribute('autocapitalize', 'none')
+
+    // Check reverse card fields when customized
+    await user.click(
+      screen.getByText('Customize reverse card', { selector: 'summary' }),
+    )
+    const reversePrompt = screen.getByLabelText(/reverse prompt/i)
+    const reverseAnswer = screen.getByLabelText(/reverse answer/i)
+    expect(reversePrompt).toHaveAttribute('autocapitalize', 'none')
+    expect(reverseAnswer).toHaveAttribute('autocapitalize', 'none')
+
+    // 2. Check study review answer field
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    const studyAnswerInput = screen.getByLabelText('Your answer')
+    expect(studyAnswerInput).toHaveAttribute('autocapitalize', 'none')
+
+    // 3. Check edit card modal fields
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('row', { name: /card: aguacate/i }))
+    const editPrompt = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    const editAnswer = screen.getByLabelText(/english \(answer\)/i)
+    const editContext = screen.getByLabelText(/additional context/i)
+
+    expect(editPrompt).toHaveAttribute('autocapitalize', 'none')
+    expect(editAnswer).toHaveAttribute('autocapitalize', 'none')
+    expect(editContext).toHaveAttribute('autocapitalize', 'none')
+  })
+
   it('selects existing text when focusing fields in the deck edit card modal', async () => {
     const user = userEvent.setup({ delay: null })
     const cards = createStudyCards(
