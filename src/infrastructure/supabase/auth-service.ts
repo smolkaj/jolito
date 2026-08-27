@@ -7,19 +7,29 @@ const jwtPayloadSchema = z.object({
   email: z.string().optional(),
 })
 
-interface StoredSession {
-  accessToken: string
-  refreshToken: string
-  expiresAt: number
-  user: AuthUser
-}
+const storedSessionSchema = z.object({
+  accessToken: z.string().min(1),
+  refreshToken: z.string().default(''),
+  expiresAt: z.number().default(() => Date.now() + 3600 * 1000),
+  user: z.object({
+    id: z.string().min(1),
+    email: z.string().optional().default(''),
+  }),
+})
+
+type StoredSession = z.infer<typeof storedSessionSchema>
 
 const STORAGE_KEY = 'jolito-auth-session-v1'
+const REFRESH_MARGIN_MS = 5 * 60 * 1000 // 5 minutes before expiry
 
 export class SupabaseAuthService implements AuthService {
   private listeners: Set<(user: AuthUser | null) => void> = new Set()
   private currentUser: AuthUser | null = null
   private redirectAuthOccurred = false
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null
+  private inFlightRefresh: Promise<string | null> | null = null
+  private boundVisibilityHandler: (() => void) | null = null
+  private boundOnlineHandler: (() => void) | null = null
 
   constructor(
     private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
@@ -30,6 +40,8 @@ export class SupabaseAuthService implements AuthService {
       : ({} as Storage),
   ) {
     this.currentUser = this.loadStoredUser()
+    this.setupLifecycleListeners()
+    this.scheduleNextRefresh()
   }
 
   isConfigured(): boolean {
@@ -46,7 +58,11 @@ export class SupabaseAuthService implements AuthService {
     const session = this.currentUser ? this.loadStoredSession() : null
     if (!session) return null
     const origin = getCanonicalOrigin() ?? 'https://joli.to'
-    return `${origin}/#access_token=${session.accessToken}&refresh_token=${session.refreshToken}&expires_in=3600`
+    const remainingSeconds = Math.max(
+      60,
+      Math.floor((session.expiresAt - Date.now()) / 1000),
+    )
+    return `${origin}/#access_token=${session.accessToken}&refresh_token=${session.refreshToken}&expires_in=${remainingSeconds}`
   }
 
   private parseJwtUser(
@@ -135,12 +151,13 @@ export class SupabaseAuthService implements AuthService {
     try {
       const raw = this.storage.getItem?.(STORAGE_KEY)
       if (!raw) return null
-      const parsed = JSON.parse(raw) as StoredSession
-      if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+      const parsed: unknown = JSON.parse(raw)
+      const validation = storedSessionSchema.safeParse(parsed)
+      if (!validation.success) {
         this.storage.removeItem?.(STORAGE_KEY)
         return null
       }
-      return parsed
+      return validation.data
     } catch {
       return null
     }
@@ -154,14 +171,133 @@ export class SupabaseAuthService implements AuthService {
     return session?.user ?? null
   }
 
+  private scheduleNextRefresh(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer)
+      this.refreshTimer = null
+    }
+
+    const session = this.loadStoredSession()
+    if (
+      !session ||
+      !session.refreshToken ||
+      !this.supabaseUrl ||
+      !this.supabaseAnonKey
+    ) {
+      return
+    }
+
+    const now = Date.now()
+    const delayMs = Math.max(0, session.expiresAt - now - REFRESH_MARGIN_MS)
+    const safeDelayMs = Math.min(delayMs, 2147483647)
+
+    this.refreshTimer = setTimeout(() => {
+      void this.refreshSession().then(() => {
+        this.scheduleNextRefresh()
+      })
+    }, safeDelayMs)
+  }
+
+  async refreshSession(): Promise<string | null> {
+    if (this.inFlightRefresh) {
+      return this.inFlightRefresh
+    }
+
+    const session = this.loadStoredSession()
+    if (!session || !session.refreshToken) {
+      return session?.accessToken || null
+    }
+
+    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+      return session.accessToken || null
+    }
+
+    this.inFlightRefresh = (async () => {
+      try {
+        const res = await fetch(
+          `${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: this.supabaseAnonKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              refresh_token: session.refreshToken,
+            }),
+          },
+        )
+
+        if (!res.ok) {
+          // If server rejected the refresh token (e.g. 400 invalid grant / expired refresh token)
+          if (
+            res.status === 400 ||
+            res.status === 401 ||
+            res.status === 403 ||
+            res.status === 422
+          ) {
+            this.clearSession()
+            return null
+          }
+          // Server error (5xx) or rate limit: preserve session for offline resilience
+          return session.accessToken || null
+        }
+
+        const data = (await res.json()) as {
+          access_token?: string
+          refresh_token?: string
+          expires_in?: number
+          user?: { id?: string; email?: string }
+        }
+
+        if (!data.access_token || !data.refresh_token) {
+          return session.accessToken || null
+        }
+
+        const updatedUser: AuthUser = {
+          id: data.user?.id || session.user.id,
+          email: data.user?.email ?? session.user.email,
+        }
+
+        const newSession: StoredSession = {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
+          user: updatedUser,
+        }
+
+        this.saveSession(newSession)
+        return newSession.accessToken
+      } catch {
+        // Network failure (offline, timeout, DNS): preserve session for offline use
+        return session.accessToken || null
+      } finally {
+        this.inFlightRefresh = null
+      }
+    })()
+
+    return this.inFlightRefresh
+  }
+
   private saveSession(session: StoredSession): void {
     try {
       this.storage.setItem?.(STORAGE_KEY, JSON.stringify(session))
       this.currentUser = session.user
+      this.scheduleNextRefresh()
       this.notifyListeners()
     } catch {
       // Storage full or unavailable
     }
+  }
+
+  private clearSession(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer)
+      this.refreshTimer = null
+    }
+    this.storage.removeItem?.(STORAGE_KEY)
+    this.currentUser = null
+    this.notifyListeners()
   }
 
   private notifyListeners(): void {
@@ -178,18 +314,32 @@ export class SupabaseAuthService implements AuthService {
     if (!this.currentUser) {
       this.currentUser = this.loadStoredUser()
     }
+
+    const session = this.loadStoredSession()
+    if (
+      session &&
+      session.refreshToken &&
+      session.expiresAt - Date.now() < 60 * 1000
+    ) {
+      void this.refreshSession()
+    }
+
     return Promise.resolve(this.currentUser)
   }
 
-  getAccessToken(): string | null {
-    try {
-      const raw = this.storage.getItem?.(STORAGE_KEY)
-      if (!raw) return null
-      const parsed = JSON.parse(raw) as StoredSession
-      return parsed.accessToken || null
-    } catch {
-      return null
+  async getAccessToken(): Promise<string | null> {
+    const session = this.loadStoredSession()
+    if (!session) return null
+
+    const isExpiringSoon = session.expiresAt - Date.now() < 60 * 1000
+    if (isExpiringSoon && session.refreshToken) {
+      const refreshedToken = await this.refreshSession()
+      if (refreshedToken) {
+        return refreshedToken
+      }
     }
+
+    return session.accessToken || null
   }
 
   async sendMagicLink(
@@ -448,7 +598,8 @@ export class SupabaseAuthService implements AuthService {
 
   async signOut(): Promise<void> {
     try {
-      const token = this.getAccessToken()
+      const session = this.loadStoredSession()
+      const token = session?.accessToken
       if (token && this.supabaseUrl && this.supabaseAnonKey) {
         await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
           method: 'POST',
@@ -459,9 +610,7 @@ export class SupabaseAuthService implements AuthService {
         }).catch(() => {})
       }
     } finally {
-      this.storage.removeItem?.(STORAGE_KEY)
-      this.currentUser = null
-      this.notifyListeners()
+      this.clearSession()
     }
   }
 
@@ -470,6 +619,62 @@ export class SupabaseAuthService implements AuthService {
     callback(this.currentUser)
     return () => {
       this.listeners.delete(callback)
+    }
+  }
+
+  private setupLifecycleListeners(): void {
+    if (typeof window === 'undefined') return
+
+    this.boundVisibilityHandler = () => {
+      if (
+        typeof document !== 'undefined' &&
+        document.visibilityState === 'visible'
+      ) {
+        const session = this.loadStoredSession()
+        if (session && session.expiresAt - Date.now() < REFRESH_MARGIN_MS) {
+          void this.refreshSession()
+        }
+      }
+    }
+
+    this.boundOnlineHandler = () => {
+      const session = this.loadStoredSession()
+      if (session && session.expiresAt - Date.now() < REFRESH_MARGIN_MS) {
+        void this.refreshSession()
+      }
+    }
+
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', this.boundVisibilityHandler)
+    }
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('online', this.boundOnlineHandler)
+    }
+  }
+
+  destroy(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer)
+      this.refreshTimer = null
+    }
+    if (
+      typeof document !== 'undefined' &&
+      document.removeEventListener &&
+      this.boundVisibilityHandler
+    ) {
+      document.removeEventListener(
+        'visibilitychange',
+        this.boundVisibilityHandler,
+      )
+      this.boundVisibilityHandler = null
+    }
+    if (
+      typeof window !== 'undefined' &&
+      window.removeEventListener &&
+      this.boundOnlineHandler
+    ) {
+      window.removeEventListener('online', this.boundOnlineHandler)
+      this.boundOnlineHandler = null
     }
   }
 }

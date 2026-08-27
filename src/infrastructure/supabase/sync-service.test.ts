@@ -23,7 +23,7 @@ const mockCard: StudyCard = {
 
 describe('SupabaseSyncService', () => {
   const mockAuthService: Partial<SupabaseAuthService> = {
-    getAccessToken: () => 'valid-jwt-token',
+    getAccessToken: () => Promise.resolve('valid-jwt-token'),
   }
 
   beforeEach(() => {
@@ -205,7 +205,8 @@ describe('SupabaseSyncService', () => {
 
     expect(pushFetchMock).toHaveBeenCalled()
     const firstCall = pushFetchMock.mock.calls[0] as
-      [string, { body?: string }] | undefined
+      | [string, { body?: string }]
+      | undefined
     const bodyStr = firstCall?.[1]?.body ?? '{}'
     const callBody = JSON.parse(bodyStr) as {
       data: { cards: StudyCard[]; deletedCardIds: string[] }
@@ -213,5 +214,86 @@ describe('SupabaseSyncService', () => {
     expect(callBody.data.cards).toHaveLength(1)
     expect(callBody.data.cards[0]?.id).toBe('c2:es-en')
     expect(callBody.data.deletedCardIds).toEqual(['c1:es-en'])
+  })
+
+  it('retries pullDeck on 401 when refreshSession provides a fresh token', async () => {
+    const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
+    const authWithRefresh: Partial<SupabaseAuthService> = {
+      getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
+      refreshSession: refreshSpy,
+    }
+
+    const service = new SupabaseSyncService(
+      authWithRefresh as SupabaseAuthService,
+      'https://example.supabase.co',
+      'anon-key',
+      'device-a',
+    )
+
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              user_id: 'usr-1',
+              updated_at: '2026-08-23T12:00:00.000Z',
+              data: {
+                version: 1,
+                app: 'jolito',
+                updatedAt: '2026-08-23T12:00:00.000Z',
+                deviceId: 'dev-remote',
+                cards: [mockCard],
+              },
+            },
+          ]),
+      })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const res = await service.pullDeck({ id: 'usr-1', email: 'u@example.com' })
+    expect(res.success).toBe(true)
+    expect(refreshSpy).toHaveBeenCalledTimes(1)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(res.cards).toHaveLength(1)
+  })
+
+  it('retries pushDeck on 401 when refreshSession provides a fresh token', async () => {
+    const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
+    const authWithRefresh: Partial<SupabaseAuthService> = {
+      getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
+      refreshSession: refreshSpy,
+    }
+
+    const service = new SupabaseSyncService(
+      authWithRefresh as SupabaseAuthService,
+      'https://example.supabase.co',
+      'anon-key',
+      'device-a',
+    )
+
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({}),
+      })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const res = await service.pushDeck([mockCard], {
+      id: 'usr-1',
+      email: 'u@example.com',
+    })
+    expect(res.success).toBe(true)
+    expect(refreshSpy).toHaveBeenCalledTimes(1)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
 })

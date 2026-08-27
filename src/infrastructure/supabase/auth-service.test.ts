@@ -43,15 +43,187 @@ describe('SupabaseAuthService', () => {
     )
     const user = await service.getUser()
     expect(user?.email).toBe('test@example.com')
-    expect(service.getAccessToken()).toBe('token-abc')
+    expect(await service.getAccessToken()).toBe('token-abc')
   })
 
-  it('clears expired session from storage', async () => {
+  it('refreshes expired session on getAccessToken when refresh_token exists', async () => {
     mockStorage['jolito-auth-session-v1'] = JSON.stringify({
       accessToken: 'token-old',
-      refreshToken: 'refresh-old',
+      refreshToken: 'refresh-valid',
+      expiresAt: Date.now() - 5000,
+      user: { id: 'u1', email: 'learner@example.com' },
+    })
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'token-fresh',
+          refresh_token: 'refresh-fresh',
+          expires_in: 3600,
+          user: { id: 'u1', email: 'learner@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const token = await service.getAccessToken()
+    expect(token).toBe('token-fresh')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://example.supabase.co/auth/v1/token?grant_type=refresh_token',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ refresh_token: 'refresh-valid' }),
+      }),
+    )
+
+    const rawStored = mockStorage['jolito-auth-session-v1']
+    expect(rawStored).toBeDefined()
+    const stored = JSON.parse(rawStored || '{}') as {
+      accessToken: string
+      refreshToken: string
+    }
+    expect(stored.accessToken).toBe('token-fresh')
+    expect(stored.refreshToken).toBe('refresh-fresh')
+  })
+
+  it('clears expired session when refresh token is rejected with 400 by backend', async () => {
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      accessToken: 'token-old',
+      refreshToken: 'refresh-revoked',
       expiresAt: Date.now() - 5000,
       user: { id: 'u1', email: 'old@example.com' },
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ error: 'invalid_grant' }),
+      }),
+    )
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const token = await service.refreshSession()
+    expect(token).toBeNull()
+    expect(await service.getUser()).toBeNull()
+    expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+  })
+
+  it('preserves stored user when refresh network fails offline', async () => {
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      accessToken: 'token-old',
+      refreshToken: 'refresh-offline',
+      expiresAt: Date.now() - 5000,
+      user: { id: 'u1', email: 'offline@example.com' },
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('Network disconnected')),
+    )
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const user = await service.getUser()
+    expect(user?.email).toBe('offline@example.com')
+    expect(mockStorage['jolito-auth-session-v1']).toBeDefined()
+  })
+
+  it('deduplicates concurrent refreshSession requests', async () => {
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      accessToken: 'token-old',
+      refreshToken: 'refresh-concurrent',
+      expiresAt: Date.now() - 5000,
+      user: { id: 'u1', email: 'concurrent@example.com' },
+    })
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'token-shared',
+          refresh_token: 'refresh-shared',
+          expires_in: 3600,
+          user: { id: 'u1', email: 'concurrent@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const [t1, t2] = await Promise.all([
+      service.refreshSession(),
+      service.getAccessToken(),
+    ])
+
+    expect(t1).toBe('token-shared')
+    expect(t2).toBe('token-shared')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes expiring session on visibilitychange and online events', async () => {
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      accessToken: 'token-old',
+      refreshToken: 'refresh-event',
+      expiresAt: Date.now() + 1000, // within 5 minute margin
+      user: { id: 'u-ev', email: 'event@example.com' },
+    })
+
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'token-fresh-event',
+          refresh_token: 'refresh-fresh-event',
+          expires_in: 3600,
+          user: { id: 'u-ev', email: 'event@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    // Simulate tab visibility event
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('online'))
+
+    // Allow async refresh promises to resolve
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(fetchSpy).toHaveBeenCalled()
+    service.destroy()
+  })
+
+  it('clears corrupted session data failing schema validation', async () => {
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      corrupt: true,
     })
 
     const service = new SupabaseAuthService(
@@ -59,8 +231,29 @@ describe('SupabaseAuthService', () => {
       'anon-key',
       fakeStorage,
     )
+
     const user = await service.getUser()
     expect(user).toBeNull()
+    expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+  })
+
+  it('cleans up refresh timers and listeners on destroy and signOut', async () => {
+    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+      accessToken: 'token-1',
+      refreshToken: 'refresh-1',
+      expiresAt: Date.now() + 100000,
+      user: { id: 'u1', email: 'test@example.com' },
+    })
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    service.destroy()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    await service.signOut()
     expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
   })
 
@@ -204,7 +397,7 @@ describe('SupabaseAuthService', () => {
     const user = await service.getUser()
     expect(user?.id).toBe('usr-redirect-99')
     expect(user?.email).toBe('redirect-user@example.com')
-    expect(service.getAccessToken()).toBe(fakeToken)
+    expect(await service.getAccessToken()).toBe(fakeToken)
     expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/')
   })
 
