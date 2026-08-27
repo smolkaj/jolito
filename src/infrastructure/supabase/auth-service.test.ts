@@ -92,7 +92,7 @@ describe('SupabaseAuthService', () => {
     expect(stored.refreshToken).toBe('refresh-fresh')
   })
 
-  it('clears expired session when refresh token is rejected with 400 by backend', async () => {
+  it('clears expired session and returns null from getAccessToken when refresh token is rejected with 400 by backend', async () => {
     mockStorage['jolito-auth-session-v1'] = JSON.stringify({
       accessToken: 'token-old',
       refreshToken: 'refresh-revoked',
@@ -115,13 +115,14 @@ describe('SupabaseAuthService', () => {
       fakeStorage,
     )
 
-    const token = await service.refreshSession()
+    const token = await service.getAccessToken()
     expect(token).toBeNull()
     expect(await service.getUser()).toBeNull()
     expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+    service.destroy()
   })
 
-  it('preserves stored user when refresh network fails offline', async () => {
+  it('preserves stored user and uses retry backoff when refresh fails offline', async () => {
     mockStorage['jolito-auth-session-v1'] = JSON.stringify({
       accessToken: 'token-old',
       refreshToken: 'refresh-offline',
@@ -129,10 +130,10 @@ describe('SupabaseAuthService', () => {
       user: { id: 'u1', email: 'offline@example.com' },
     })
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('Network disconnected')),
-    )
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValue(new Error('Network disconnected'))
+    vi.stubGlobal('fetch', fetchSpy)
 
     const service = new SupabaseAuthService(
       'https://example.supabase.co',
@@ -143,6 +144,9 @@ describe('SupabaseAuthService', () => {
     const user = await service.getUser()
     expect(user?.email).toBe('offline@example.com')
     expect(mockStorage['jolito-auth-session-v1']).toBeDefined()
+    // It should not spin loop; only the initial refresh was triggered
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    service.destroy()
   })
 
   it('deduplicates concurrent refreshSession requests', async () => {

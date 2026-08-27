@@ -17,10 +17,23 @@ const storedSessionSchema = z.object({
   }),
 })
 
+const supabaseTokenResponseSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().min(1),
+  expires_in: z.number().optional().default(3600),
+  user: z
+    .object({
+      id: z.string().min(1),
+      email: z.string().optional(),
+    })
+    .optional(),
+})
+
 type StoredSession = z.infer<typeof storedSessionSchema>
 
 const STORAGE_KEY = 'jolito-auth-session-v1'
 const REFRESH_MARGIN_MS = 5 * 60 * 1000 // 5 minutes before expiry
+const RETRY_BACKOFF_MS = 60 * 1000 // 1 minute retry backoff if offline
 
 export class SupabaseAuthService implements AuthService {
   private listeners: Set<(user: AuthUser | null) => void> = new Set()
@@ -188,13 +201,23 @@ export class SupabaseAuthService implements AuthService {
     }
 
     const now = Date.now()
-    const delayMs = Math.max(0, session.expiresAt - now - REFRESH_MARGIN_MS)
+    const timeUntilExpiry = session.expiresAt - now
+    const isExpiringSoon = timeUntilExpiry <= REFRESH_MARGIN_MS
+
+    if (isExpiringSoon) {
+      // Trigger a refresh now, but schedule next retry with backoff if refresh fails
+      void this.refreshSession()
+      this.refreshTimer = setTimeout(() => {
+        this.scheduleNextRefresh()
+      }, RETRY_BACKOFF_MS)
+      return
+    }
+
+    const delayMs = timeUntilExpiry - REFRESH_MARGIN_MS
     const safeDelayMs = Math.min(delayMs, 2147483647)
 
     this.refreshTimer = setTimeout(() => {
-      void this.refreshSession().then(() => {
-        this.scheduleNextRefresh()
-      })
+      this.scheduleNextRefresh()
     }, safeDelayMs)
   }
 
@@ -243,17 +266,14 @@ export class SupabaseAuthService implements AuthService {
           return session.accessToken || null
         }
 
-        const data = (await res.json()) as {
-          access_token?: string
-          refresh_token?: string
-          expires_in?: number
-          user?: { id?: string; email?: string }
-        }
+        const rawData: unknown = await res.json().catch(() => null)
+        const parseResult = supabaseTokenResponseSchema.safeParse(rawData)
 
-        if (!data.access_token || !data.refresh_token) {
+        if (!parseResult.success) {
           return session.accessToken || null
         }
 
+        const data = parseResult.data
         const updatedUser: AuthUser = {
           id: data.user?.id || session.user.id,
           email: data.user?.email ?? session.user.email,
@@ -262,7 +282,7 @@ export class SupabaseAuthService implements AuthService {
         const newSession: StoredSession = {
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
-          expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
+          expiresAt: Date.now() + data.expires_in * 1000,
           user: updatedUser,
         }
 
@@ -319,7 +339,7 @@ export class SupabaseAuthService implements AuthService {
     if (
       session &&
       session.refreshToken &&
-      session.expiresAt - Date.now() < 60 * 1000
+      session.expiresAt - Date.now() < REFRESH_MARGIN_MS
     ) {
       void this.refreshSession()
     }
@@ -331,12 +351,14 @@ export class SupabaseAuthService implements AuthService {
     const session = this.loadStoredSession()
     if (!session) return null
 
-    const isExpiringSoon = session.expiresAt - Date.now() < 60 * 1000
+    const isExpiringSoon = session.expiresAt - Date.now() < REFRESH_MARGIN_MS
     if (isExpiringSoon && session.refreshToken) {
       const refreshedToken = await this.refreshSession()
       if (refreshedToken) {
         return refreshedToken
       }
+      // If refreshSession cleared the session on 400/401, return null
+      return this.loadStoredSession()?.accessToken ?? null
     }
 
     return session.accessToken || null
