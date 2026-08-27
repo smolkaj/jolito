@@ -61,11 +61,7 @@ import {
 function handleFocusSelect(
   event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
 ) {
-  const target = event.currentTarget
-  target.select()
-  setTimeout(() => {
-    target.select()
-  }, 0)
+  event.currentTarget.select()
 }
 
 const gradeLabels: Record<Grade, string> = {
@@ -1837,6 +1833,7 @@ export function App({
   const [createPlaying, setCreatePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
@@ -2328,6 +2325,32 @@ export function App({
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 
+  const dismissSuggestions = useCallback(() => {
+    setSuggestions([])
+    setActiveSuggestionIndex(-1)
+  }, [])
+
+  useEffect(() => {
+    if (suggestions.length === 0) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (
+        target instanceof Node &&
+        (suggestionsRef.current?.contains(target) ||
+          spanishInputRef.current?.contains(target))
+      ) {
+        return
+      }
+      dismissSuggestions()
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [suggestions.length, dismissSuggestions])
+
   const applySuggestion = useCallback((entry: LexiconEntry) => {
     setSpanishInput(entry.spanish)
     setEnglishInput(entry.english)
@@ -2373,6 +2396,17 @@ export function App({
     [services.assistant, spanishInput],
   )
 
+  const onSpanishBlur = useCallback(
+    (event: React.FocusEvent<HTMLTextAreaElement>) => {
+      const related = event.relatedTarget
+      if (related && suggestionsRef.current?.contains(related)) {
+        return
+      }
+      dismissSuggestions()
+    },
+    [dismissSuggestions],
+  )
+
   const onSpanishKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
       if (suggestions.length === 0) return
@@ -2391,11 +2425,10 @@ export function App({
           applySuggestion(suggestions[activeSuggestionIndex])
         }
       } else if (event.key === 'Escape') {
-        setSuggestions([])
-        setActiveSuggestionIndex(-1)
+        dismissSuggestions()
       }
     },
-    [activeSuggestionIndex, applySuggestion, suggestions],
+    [activeSuggestionIndex, applySuggestion, dismissSuggestions, suggestions],
   )
 
   const openSyncModal = useCallback(() => {
@@ -2755,9 +2788,11 @@ export function App({
                   autoFocus
                   required
                   autoCapitalize="none"
+                  enterKeyHint="next"
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
+                  onBlur={onSpanishBlur}
                   onFocus={handleFocusSelect}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
@@ -2790,45 +2825,67 @@ export function App({
                   </div>
                 )}
                 {suggestions.length > 0 && (
-                  <ul
-                    className="suggestions-listbox"
-                    role="listbox"
-                    id="spanish-suggestions"
-                    aria-label="Mexican Spanish suggestions"
-                  >
-                    {suggestions.map((item, index) => (
-                      <li
-                        key={item.spanish}
-                        id={`suggestion-${index}`}
-                        role="option"
-                        aria-selected={activeSuggestionIndex === index}
-                        className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          applySuggestion(item)
-                        }}
+                  <div className="suggestions-container" ref={suggestionsRef}>
+                    <div className="suggestions-header">
+                      <span className="suggestions-header-label">
+                        Suggestions
+                      </span>
+                      <button
+                        type="button"
+                        className="suggestions-dismiss-button"
+                        tabIndex={-1}
+                        onClick={dismissSuggestions}
+                        aria-label="Dismiss suggestions"
                       >
-                        <div className="suggestion-head">
-                          <span className="suggestion-spanish">
-                            {item.spanish}
+                        Dismiss <span aria-hidden="true">✕</span>
+                      </button>
+                    </div>
+                    <ul
+                      className="suggestions-listbox"
+                      role="listbox"
+                      id="spanish-suggestions"
+                      aria-label="Mexican Spanish suggestions"
+                    >
+                      {suggestions.map((item, index) => (
+                        <li
+                          key={item.spanish}
+                          id={`suggestion-${index}`}
+                          role="option"
+                          aria-selected={activeSuggestionIndex === index}
+                          className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
+                          onPointerDown={(e) => {
+                            e.preventDefault()
+                            applySuggestion(item)
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            applySuggestion(item)
+                          }}
+                        >
+                          <div className="suggestion-head">
+                            <span className="suggestion-spanish">
+                              {item.spanish}
+                            </span>
+                            {item.tag && (
+                              <span
+                                className={`suggestion-tag tag-${item.tag}`}
+                              >
+                                {item.tag}
+                              </span>
+                            )}
+                          </div>
+                          <span className="suggestion-english">
+                            {item.english}
                           </span>
-                          {item.tag && (
-                            <span className={`suggestion-tag tag-${item.tag}`}>
-                              {item.tag}
+                          {item.context && (
+                            <span className="suggestion-context">
+                              {item.context}
                             </span>
                           )}
-                        </div>
-                        <span className="suggestion-english">
-                          {item.english}
-                        </span>
-                        {item.context && (
-                          <span className="suggestion-context">
-                            {item.context}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
               <div className="field-group">
@@ -2841,9 +2898,13 @@ export function App({
                   rows={2}
                   required
                   autoCapitalize="none"
+                  enterKeyHint="next"
                   value={englishInput}
                   onChange={onEnglishChange}
-                  onFocus={handleFocusSelect}
+                  onFocus={(e) => {
+                    handleFocusSelect(e)
+                    dismissSuggestions()
+                  }}
                   placeholder="English translation"
                 />
               </div>
@@ -2854,9 +2915,13 @@ export function App({
                   name="context"
                   rows={2}
                   autoCapitalize="none"
+                  enterKeyHint="done"
                   value={contextInput}
                   onChange={(e) => setContextInput(e.target.value)}
-                  onFocus={handleFocusSelect}
+                  onFocus={(e) => {
+                    handleFocusSelect(e)
+                    dismissSuggestions()
+                  }}
                   placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
@@ -2882,9 +2947,13 @@ export function App({
                         id="reverse-prompt"
                         name="reversePrompt"
                         autoCapitalize="none"
+                        enterKeyHint="next"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
-                        onFocus={handleFocusSelect}
+                        onFocus={(e) => {
+                          handleFocusSelect(e)
+                          dismissSuggestions()
+                        }}
                         placeholder="Optional"
                       />
                     </div>
@@ -2896,9 +2965,13 @@ export function App({
                         id="reverse-answer"
                         name="reverseAnswer"
                         autoCapitalize="none"
+                        enterKeyHint="done"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
-                        onFocus={handleFocusSelect}
+                        onFocus={(e) => {
+                          handleFocusSelect(e)
+                          dismissSuggestions()
+                        }}
                         placeholder="Optional"
                       />
                     </div>
