@@ -1563,6 +1563,7 @@ export function App({
   const sampleTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
+  const suggestionsBlurTimerRef = useRef<number | null>(null)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -1900,6 +1901,9 @@ export function App({
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
       }
+      if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+      }
     }
   }, [])
 
@@ -2051,6 +2055,10 @@ export function App({
   }
 
   const dismissSuggestions = useCallback(() => {
+    if (suggestionsBlurTimerRef.current !== null) {
+      window.clearTimeout(suggestionsBlurTimerRef.current)
+      suggestionsBlurTimerRef.current = null
+    }
     setSuggestions([])
     setActiveSuggestionIndex(-1)
   }, [])
@@ -2077,6 +2085,10 @@ export function App({
   }, [suggestions.length, dismissSuggestions])
 
   const applySuggestion = useCallback((entry: LexiconEntry) => {
+    if (suggestionsBlurTimerRef.current !== null) {
+      window.clearTimeout(suggestionsBlurTimerRef.current)
+      suggestionsBlurTimerRef.current = null
+    }
     setSpanishInput(entry.spanish)
     setEnglishInput(entry.english)
     if (entry.context) {
@@ -2089,6 +2101,10 @@ export function App({
 
   const onSpanishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
+      if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+        suggestionsBlurTimerRef.current = null
+      }
       const val = event.target.value
       setSpanishInput(val)
       if (val.trim().length >= 2) {
@@ -2127,7 +2143,16 @@ export function App({
       if (related && suggestionsRef.current?.contains(related)) {
         return
       }
-      dismissSuggestions()
+      // Defer suggestion dismissal so synchronous blur/focus transitions
+      // (such as iOS Safari keyboard accessory arrows jumping to adjacent fields)
+      // are not aborted by mid-event DOM unmounting.
+      if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+      }
+      suggestionsBlurTimerRef.current = window.setTimeout(() => {
+        dismissSuggestions()
+        suggestionsBlurTimerRef.current = null
+      }, 0)
     },
     [dismissSuggestions],
   )
@@ -2517,7 +2542,13 @@ export function App({
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
                   onBlur={onSpanishBlur}
-                  onFocus={handleFocusSelect}
+                  onFocus={(e) => {
+                    if (suggestionsBlurTimerRef.current !== null) {
+                      window.clearTimeout(suggestionsBlurTimerRef.current)
+                      suggestionsBlurTimerRef.current = null
+                    }
+                    handleFocusSelect(e)
+                  }}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
                   aria-controls="spanish-suggestions"
@@ -2534,6 +2565,9 @@ export function App({
                     <button
                       type="button"
                       className="typo-chip"
+                      onPointerDown={(e) => {
+                        e.preventDefault()
+                      }}
                       onClick={() => applySuggestion(didYouMean)}
                     >
                       <strong>{didYouMean.spanish}</strong>
@@ -2558,6 +2592,9 @@ export function App({
                         type="button"
                         className="suggestions-dismiss-button"
                         tabIndex={-1}
+                        onPointerDown={(e) => {
+                          e.preventDefault()
+                        }}
                         onClick={dismissSuggestions}
                         aria-label="Dismiss suggestions"
                       >
