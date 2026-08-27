@@ -138,7 +138,9 @@ export class MockAuthService implements AuthService {
     if (
       clean === '123456' ||
       clean.includes('access_token=') ||
-      clean.includes('token=')
+      clean.includes('token=') ||
+      clean.includes('token_hash=') ||
+      clean.length > 20
     ) {
       this.user = {
         id: 'mock-user-1',
