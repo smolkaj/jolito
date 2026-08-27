@@ -295,16 +295,16 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   height: var(--pill-height);
   min-height: var(--pill-height);
   max-height: var(--pill-height);
   box-sizing: border-box;
-  padding: 0 14px;
+  padding: 0 12px;
   border: 1.5px solid var(--line);
   border-radius: var(--pill-radius);
   background: var(--card);
-  color: var(--ink-soft);
+  color: var(--ink);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -317,8 +317,90 @@ summary:focus-visible {
   text-decoration: none;
 }
 
-.connection-pill:hover {
+.connection-pill .pill-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.connection-pill .pill-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Signed out (Demo/Starter) - Clean neutral card with dark ink */
+.connection-pill.is-signed-out,
+.connection-pill.is-local {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.connection-pill.is-signed-out:hover,
+.connection-pill.is-local:hover {
   background: var(--turquesa-soft);
+  border-color: var(--line);
+  color: var(--ink);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* Synced (Signed in & online) - Oaxacan Mint Green tint */
+.connection-pill.is-synced {
+  background: var(--turquesa-soft);
+  border-color: var(--turquesa-border);
+  color: var(--turquesa-dark);
+}
+
+.connection-pill.is-synced:hover {
+  background: #d8eadf;
+  border-color: var(--line);
+  color: var(--ink);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* Syncing - Active Mint Green tint with rotating icon */
+.connection-pill.is-syncing {
+  background: var(--turquesa-soft);
+  border-color: var(--turquesa-deep);
+  color: var(--turquesa-dark);
+}
+
+.connection-pill.is-syncing .pill-icon svg,
+.sync-spinner.is-spinning,
+.icon-sync-spinner.is-spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Offline (Network disconnected) - Warm Marigold / Cempasúchil tint */
+.connection-pill.is-offline {
+  background: var(--cempasuchil-soft);
+  border-color: var(--cempasuchil);
+  color: var(--cempasuchil-dark);
+}
+
+.connection-pill.is-offline:hover {
+  background: #fdf0d8;
+  border-color: var(--line);
+  color: var(--ink);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* Sync issue / Error - Tezontle Red tint */
+.connection-pill.is-error {
+  background: var(--tezontle-soft);
+  border-color: var(--tezontle);
+  color: var(--tezontle-dark);
+}
+
+.connection-pill.is-error:hover {
+  background: #fde2e2;
   border-color: var(--line);
   color: var(--ink);
   transform: translate(-1px, -1px);
@@ -335,50 +417,12 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-.connection-pill .pill-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: inline-block;
-}
-
-/* Local only (Signed out) - Muted slate ring */
-.connection-pill.is-local .pill-dot {
-  background: transparent;
-  border: 1.5px solid var(--ink-soft);
-}
-
-/* Synced (Signed in & online) - Pulsing green */
-.connection-pill.is-synced .pill-dot {
-  background: var(--turquesa-dark);
-  box-shadow: 0 0 0 2px rgba(27, 77, 62, 0.25);
-  animation: pulse-dot 2.5s infinite;
-}
-
-/* Syncing - Active pulse */
-.connection-pill.is-syncing .pill-dot {
-  background: var(--turquesa);
-  box-shadow: 0 0 0 2px rgba(42, 122, 99, 0.3);
-  animation: pulse-dot 1s infinite;
-}
-
-/* Offline (Network disconnected or sync issue) - Amber */
-.connection-pill.is-offline .pill-dot {
-  background: var(--cempasuchil);
-  box-shadow: 0 0 0 2px var(--cempasuchil-glow);
-  animation: none;
-}
-
-@keyframes pulse-dot {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 2px rgba(27, 77, 62, 0.25);
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-  50% {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px rgba(27, 77, 62, 0.12);
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -2200,14 +2244,7 @@ kbd {
   }
 
   .connection-pill {
-    max-width: 100px;
-    flex-shrink: 1;
-  }
-
-  .connection-pill span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .review-page .nav-actions .text-button + .text-button,
@@ -2667,9 +2704,9 @@ kbd {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1.5px solid var(--line-subtle);
+  border: 1.5px solid var(--turquesa-border);
   border-radius: 14px;
-  background: var(--paper-subtle);
+  background: var(--turquesa-soft);
 }
 
 .account-avatar {
@@ -2681,8 +2718,9 @@ kbd {
   border: 2px solid var(--line);
   border-radius: 50%;
   background: var(--card);
-  font-size: 16px;
+  color: var(--turquesa-dark);
   box-shadow: 2px 2px 0 var(--ink);
+  flex-shrink: 0;
 }
 
 .account-details {
@@ -2712,6 +2750,12 @@ kbd {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.sync-now-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sync-auth-pane {
@@ -2756,7 +2800,9 @@ kbd {
 }
 
 .sync-pwa-guidance .pwa-guidance-icon {
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  color: var(--ink-soft);
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -2821,7 +2867,9 @@ kbd {
 }
 
 .sync-notice-card .notice-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  color: var(--ink);
 }
 
 .sync-notice-card h4 {
