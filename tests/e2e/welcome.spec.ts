@@ -492,6 +492,126 @@ test('all pills and badges have consistent heights across views and within the s
   expect(results.violations).toEqual([])
 })
 
+test('enforces universal geometric invariants across all pill, chip, and badge elements in all views', async ({
+  page,
+}) => {
+  const views = [
+    { name: 'Welcome', path: '/' },
+    { name: 'Create', path: '/#/create' },
+    { name: 'Study', path: '/#/study' },
+    { name: 'Deck', path: '/#/deck' },
+    { name: 'Complete', path: '/#/complete' },
+  ]
+
+  for (const v of views) {
+    await page.goto(v.path)
+
+    // If on deck view, select cards to test batch actions as well
+    if (v.name === 'Deck') {
+      const selectAll = page.getByRole('checkbox', {
+        name: /select all cards/i,
+      })
+      if (await selectAll.isVisible()) {
+        await selectAll.click()
+      }
+    }
+
+    // Evaluate all pill/chip elements rendered in this view
+    const pillMeasurements = await page.evaluate(() => {
+      const pillSelectors = [
+        '.connection-pill',
+        '.text-button',
+        '.deck-filter-pill',
+        '.deck-stat-chip',
+        '.deck-direction-badge',
+        '.stat-pill',
+        '.sample-listen-hint',
+        '.diff-badge',
+        '.deck-header-pill',
+        '.deck-header-actions .secondary-button',
+        '.batch-delete-btn',
+        '.deck-clear-selection-btn',
+      ]
+      const elements = Array.from(
+        document.querySelectorAll<HTMLElement>(pillSelectors.join(', ')),
+      )
+
+      return elements.map((el) => {
+        const computed = window.getComputedStyle(el)
+        const rect = el.getBoundingClientRect()
+        const height =
+          el.offsetHeight || parseFloat(computed.height) || rect.height
+        return {
+          className: el.className,
+          tagName: el.tagName,
+          height: Math.round(height * 10) / 10,
+          boxSizing: computed.boxSizing,
+        }
+      })
+    })
+
+    for (const pill of pillMeasurements) {
+      // Every pill must match either 32px (standard) or 24px (compact)
+      const isStandardPill = Math.abs(pill.height - 32) <= 1
+      const isCompactPill = Math.abs(pill.height - 24) <= 1
+      expect(
+        isStandardPill || isCompactPill,
+        `Pill <${pill.tagName} class="${pill.className}"> on ${v.name} view must be either 32px or 24px, got ${pill.height}px`,
+      ).toBe(true)
+
+      expect(
+        pill.boxSizing,
+        `Pill <${pill.tagName} class="${pill.className}"> on ${v.name} view must have box-sizing: border-box`,
+      ).toBe('border-box')
+    }
+
+    // Check sibling alignment in flex rows
+    const flexRowInvariants = await page.evaluate(() => {
+      const containerSelectors = [
+        '.nav-actions',
+        '.deck-filter-pills',
+        '.deck-batch-actions',
+        '.deck-card-row',
+      ]
+      const results: { container: string; heights: number[] }[] = []
+
+      for (const sel of containerSelectors) {
+        const containers = Array.from(document.querySelectorAll(sel))
+        for (const container of containers) {
+          const pills = Array.from(
+            container.querySelectorAll<HTMLElement>(
+              '.connection-pill, .text-button, .deck-filter-pill, .deck-stat-chip, .deck-direction-badge, .batch-delete-btn, .deck-clear-selection-btn',
+            ),
+          )
+
+          if (pills.length > 1) {
+            const heights = pills.map(
+              (p) =>
+                p.offsetHeight || parseFloat(window.getComputedStyle(p).height),
+            )
+            results.push({ container: sel, heights })
+          }
+        }
+      }
+      return results
+    })
+
+    for (const row of flexRowInvariants) {
+      if (row.container === '.deck-card-row') {
+        // Table row contains direction badge (24px) and status chip (24px)
+        for (const h of row.heights) {
+          expect(h).toBeCloseTo(24, 1)
+        }
+      } else {
+        // Nav actions / Filter pills / Batch actions contain 32px pills
+        for (const h of row.heights) {
+          expect(h).toBeCloseTo(32, 1)
+        }
+      }
+    }
+  }
+})
+
 test('supports rapid batch card creation while remaining in create view', async ({
   page,
 }) => {
