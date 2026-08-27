@@ -2799,9 +2799,8 @@ kbd {
 }
 
 .sync-actions-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
@@ -2816,7 +2815,6 @@ kbd {
   border-radius: var(--pill-radius);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
 }
 
 .sync-actions-row .sync-now-button {
@@ -2883,6 +2881,12 @@ kbd {
   padding: 0 14px;
 }
 
+.sync-actions-row .sign-out-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .sync-auth-pane {
   display: flex;
   flex-direction: column;
@@ -2897,9 +2901,9 @@ kbd {
 
 .sync-explanation {
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--ink-soft);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .sync-micro-hint {
@@ -2954,13 +2958,6 @@ kbd {
   color: var(--verde-dark);
   border-color: var(--verde);
   animation: saveButtonPop 250ms var(--ease-spring);
-}
-
-.sync-auth-buttons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .resend-link-button {
@@ -3029,29 +3026,58 @@ kbd {
 .sync-sent-pane {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.sync-manual-link-row {
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line-subtle);
+.sync-sent-actions {
   display: flex;
-  justify-content: flex-start;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.sync-manual-link-btn {
-  font-size: 12px;
-  color: var(--ink-muted);
-  padding: 0;
+.sync-sent-actions .secondary-button,
+.sync-sent-actions .primary-button {
+  width: 100%;
+}
+
+.sync-sent-sub-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.modal-link-btn {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
   cursor: pointer;
+  text-decoration: none;
+  transition: color 0.14s ease;
+  line-height: 1.3;
+}
+
+.modal-link-btn:hover {
+  color: var(--ink);
   text-decoration: underline;
   text-underline-offset: 3px;
-  transition: color 0.15s ease;
 }
 
-.sync-manual-link-btn:hover {
-  color: var(--ink);
+.modal-link-btn:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.sync-sub-action-dot {
+  color: var(--line-subtle);
+  font-size: 12px;
+  user-select: none;
 }
 
 .sync-notice-card {

@@ -13,8 +13,13 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4187',
+    command:
+      'VITE_SUPABASE_URL=https://mock.supabase.co VITE_SUPABASE_ANON_KEY=mock-key npm run build && npm run preview -- --host 127.0.0.1 --port 4187',
     url: 'http://127.0.0.1:4187',
     reuseExistingServer: !process.env.CI,
+    env: {
+      VITE_SUPABASE_URL: 'https://mock.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'mock-key',
+    },
   },
 })
