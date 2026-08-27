@@ -373,15 +373,28 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   expect(resultsFinal.violations).toEqual([])
 })
 
-test('top navigation pills have consistent vertical height across views', async ({
+test('all pills and badges have consistent heights across views and within the same line', async ({
   page,
 }) => {
-  // 1. Welcome view
+  // 1. Welcome view: connection pill and sample card listen hint pills
   await page.goto('/')
   const welcomePill = await page.locator('.connection-pill').boundingBox()
   expect(welcomePill?.height).toBeCloseTo(32, 1)
 
-  // 2. Create view
+  const sampleListenHints = page.locator('.sample-listen-hint')
+  const sampleHintCount = await sampleListenHints.count()
+  expect(sampleHintCount).toBeGreaterThan(0)
+  for (let i = 0; i < sampleHintCount; i++) {
+    const hintHeight = await sampleListenHints.nth(i).evaluate((el) => {
+      return (
+        (el as HTMLElement).offsetHeight ||
+        parseFloat(window.getComputedStyle(el).height)
+      )
+    })
+    expect(hintHeight).toBeCloseTo(24, 1)
+  }
+
+  // 2. Create view: top nav text-button and connection-pill (same line)
   await page.goto('/#/create')
   const createReviewBtn = await page
     .locator('.nav-actions .text-button')
@@ -393,7 +406,7 @@ test('top navigation pills have consistent vertical height across views', async 
   expect(createReviewBtn?.height).toBeCloseTo(32, 1)
   expect(createSyncPill?.height).toBeCloseTo(32, 1)
 
-  // 3. Study / Review view
+  // 3. Study / Review view: top nav pills and progress track
   await page.goto('/#/study')
   const reviewProgress = await page
     .locator('.review-progress-track')
@@ -409,7 +422,7 @@ test('top navigation pills have consistent vertical height across views', async 
   expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
-  // 4. Deck view pills
+  // 4. Deck view: header actions, toolbar filter pills, batch actions, and table row pills
   await page.goto('/#/deck')
   const deckNewCardBtn = await page
     .locator('.nav-actions .text-button')
@@ -418,18 +431,50 @@ test('top navigation pills have consistent vertical height across views', async 
   const deckSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  const deckFilterPill = await page
-    .locator('.deck-filter-pills .deck-filter-pill')
-    .first()
-    .boundingBox()
+  const deckFilterPills = page.locator('.deck-filter-pills .deck-filter-pill')
   const deckBackupBtn = await page
     .locator('.deck-header-actions .secondary-button')
     .boundingBox()
 
   expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
-  expect(deckFilterPill?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
+
+  // Verify all filter pills have identical 32px height on the toolbar line
+  const filterCount = await deckFilterPills.count()
+  expect(filterCount).toBe(5)
+  for (let i = 0; i < filterCount; i++) {
+    const filterBox = await deckFilterPills.nth(i).boundingBox()
+    expect(filterBox?.height).toBeCloseTo(32, 1)
+  }
+
+  // Select all cards to reveal batch action pills on the same toolbar line
+  await page.getByRole('checkbox', { name: /select all cards/i }).click()
+  const batchDeleteBtn = await page.locator('.batch-delete-btn').boundingBox()
+  const clearSelectionBtn = await page
+    .locator('.deck-clear-selection-btn')
+    .boundingBox()
+  const firstFilterPill = await deckFilterPills.first().boundingBox()
+
+  expect(batchDeleteBtn?.height).toBeCloseTo(32, 1)
+  expect(clearSelectionBtn?.height).toBeCloseTo(32, 1)
+  expect(batchDeleteBtn?.height).toBe(firstFilterPill?.height)
+  expect(clearSelectionBtn?.height).toBe(firstFilterPill?.height)
+
+  // Verify table rows: Direction badge and Status chip in the SAME row/line have identical 24px height
+  const cardRows = page.locator('.deck-card-row')
+  const cardRowCount = await cardRows.count()
+  expect(cardRowCount).toBeGreaterThan(0)
+  for (let i = 0; i < cardRowCount; i++) {
+    const row = cardRows.nth(i)
+    const dirBadge = await row.locator('.deck-direction-badge').boundingBox()
+    const statusChip = await row
+      .locator('.deck-stat-chip.is-mini')
+      .boundingBox()
+    expect(dirBadge?.height).toBeCloseTo(24, 1)
+    expect(statusChip?.height).toBeCloseTo(24, 1)
+    expect(dirBadge?.height).toBe(statusChip?.height)
+  }
 
   // 5. Complete view action pills (consistently sized 50px pills: Create card & Back home)
   await page.goto('/#/complete')

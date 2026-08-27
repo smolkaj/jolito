@@ -289,8 +289,12 @@ summary:focus-visible {
 .connection-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
@@ -299,6 +303,7 @@ summary:focus-visible {
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
+  line-height: 1;
   letter-spacing: -0.1px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -375,8 +380,12 @@ summary:focus-visible {
 .text-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
@@ -385,6 +394,7 @@ summary:focus-visible {
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1;
   letter-spacing: -0.1px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -405,14 +415,22 @@ summary:focus-visible {
 }
 
 .text-button b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 20px;
-  padding: 1px 6px;
+  height: 18px;
+  min-height: 18px;
+  max-height: 18px;
+  box-sizing: border-box;
+  padding: 0 6px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   color: var(--card);
   background: var(--rosa-dark);
   font-size: 11px;
   font-weight: 800;
+  line-height: 1;
   text-align: center;
 }
 
@@ -808,12 +826,18 @@ summary:focus-visible {
 .sample-listen-hint {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 4px 10px;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  box-sizing: border-box;
+  padding: 0 10px;
   border-radius: 999px;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
   letter-spacing: normal;
   transition: all 140ms ease;
 }
@@ -1701,12 +1725,20 @@ kbd {
 }
 
 .diff-badge {
-  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  box-sizing: border-box;
+  padding: 0 10px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   font-size: 11px;
   font-weight: 800;
   font-family: var(--font-mono);
+  line-height: 1;
   letter-spacing: 0.4px;
   box-shadow: 1px 1px 0 var(--ink);
 }
@@ -2152,8 +2184,12 @@ kbd {
   .connection-pill,
   .text-button {
     height: 32px;
+    min-height: 32px;
+    max-height: 32px;
+    box-sizing: border-box;
     padding: 0 8px;
     font-size: 11px;
+    line-height: 1;
     gap: 4px;
     white-space: nowrap;
   }
@@ -2415,14 +2451,19 @@ kbd {
 .stat-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   background: var(--paper-subtle);
   font-size: 13px;
   font-weight: 600;
+  line-height: 1;
   color: var(--ink);
   white-space: nowrap;
 }
@@ -2934,6 +2975,7 @@ kbd {
 .deck-stat-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 32px;
   min-height: 32px;
@@ -2956,6 +2998,7 @@ kbd {
   padding: 0 8px;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .deck-stat-chip strong {
@@ -3045,6 +3088,8 @@ kbd {
 .deck-filter-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 32px;
   min-height: 32px;
   max-height: 32px;
@@ -3080,6 +3125,8 @@ kbd {
   flex-wrap: wrap;
 }
 
+.deck-batch-actions .danger-button.batch-delete-btn,
+.deck-batch-actions .batch-delete-btn,
 .batch-delete-btn {
   display: inline-flex;
   align-items: center;
@@ -3102,16 +3149,21 @@ kbd {
   transition: all 120ms ease;
 }
 
+.deck-batch-actions .danger-button.batch-delete-btn:hover,
+.deck-batch-actions .batch-delete-btn:hover,
 .batch-delete-btn:hover {
   background: #7f1d1d;
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
+.deck-batch-actions .secondary-button.deck-clear-selection-btn,
+.deck-batch-actions .deck-clear-selection-btn,
 .deck-clear-selection-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   height: 32px;
   min-height: 32px;
   max-height: 32px;
@@ -3128,6 +3180,8 @@ kbd {
   transition: all 120ms ease;
 }
 
+.deck-batch-actions .secondary-button.deck-clear-selection-btn:hover,
+.deck-batch-actions .deck-clear-selection-btn:hover,
 .deck-clear-selection-btn:hover {
   border-color: var(--line);
   color: var(--ink);
@@ -3217,23 +3271,28 @@ kbd {
 .deck-direction-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   height: 24px;
   min-height: 24px;
-  padding: 0 8px;
+  max-height: 24px;
   box-sizing: border-box;
+  padding: 0 8px;
   border-radius: 999px;
   background: var(--paper-subtle);
   border: 1.5px solid var(--line-subtle);
   font-size: 11px;
   font-weight: 800;
+  line-height: 1;
   letter-spacing: 0.3px;
   color: var(--ink);
   white-space: nowrap;
 }
 
-.deck-direction-badge svg {
+.deck-direction-badge svg,
+.deck-direction-badge .flag-icon {
   flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .deck-card-row .col-phrase {
