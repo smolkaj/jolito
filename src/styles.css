@@ -1498,7 +1498,13 @@ summary:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .save-button.is-saved,
   .save-button-saved,
-  .save-button-check {
+  .save-button-check,
+  .sync-now-button.is-synced,
+  .sync-button-synced,
+  .sync-button-check,
+  .export-button.is-exported,
+  .export-button-exported,
+  .export-button-check {
     animation: none;
   }
 
@@ -2545,6 +2551,54 @@ kbd {
 
 .export-button {
   align-self: flex-start;
+  transition: all 180ms var(--ease-spring);
+}
+
+.export-button span {
+  margin-left: 0;
+  line-height: inherit;
+  font-size: inherit;
+  transition: none;
+}
+
+.export-button:hover span {
+  transform: none;
+}
+
+.export-button.is-exported {
+  background: var(--verde);
+  color: #ffffff;
+  border-color: var(--verde-dark);
+  box-shadow: 4px 4px 0 var(--verde-dark);
+  animation: saveButtonPop 320ms var(--ease-spring);
+}
+
+.export-button.is-exported:hover {
+  background: var(--verde-dark);
+  box-shadow: 6px 6px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+.export-button.is-exported:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--verde-dark);
+}
+
+.export-button-exported {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  animation: saveTextFade 200ms ease-out;
+}
+
+.export-button-check {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
+  animation: saveCheckmarkBounce 350ms var(--ease-spring);
 }
 
 .import-mode-selector {
@@ -2764,6 +2818,61 @@ kbd {
 .sync-actions-row .sync-now-button {
   padding: 0 16px;
   gap: 8px;
+  transition: all 180ms var(--ease-spring);
+}
+
+.sync-now-button span {
+  margin-left: 0;
+  line-height: inherit;
+  font-size: inherit;
+  transition: none;
+}
+
+.sync-now-button:hover span {
+  transform: none;
+}
+
+.sync-now-button.is-synced {
+  background: var(--verde);
+  color: #ffffff;
+  border-color: var(--verde-dark);
+  box-shadow: 4px 4px 0 var(--verde-dark);
+  animation: saveButtonPop 320ms var(--ease-spring);
+}
+
+.sync-now-button.is-synced:hover {
+  background: var(--verde-dark);
+  box-shadow: 6px 6px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+.sync-now-button.is-synced:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--verde-dark);
+}
+
+.sync-button-synced {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  animation: saveTextFade 200ms ease-out;
+}
+
+.sync-button-check {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
+  animation: saveCheckmarkBounce 350ms var(--ease-spring);
+}
+
+.sync-button-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .sync-actions-row .sign-out-button {

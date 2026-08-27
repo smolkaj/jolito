@@ -995,15 +995,29 @@ function DeckBackupModalInner({
       | undefined
   } | null>(null)
   const [isParsingImport, setIsParsingImport] = useState(false)
+  const [isExported, setIsExported] = useState(false)
+  const exportedTimerRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (exportedTimerRef.current !== null) {
+        window.clearTimeout(exportedTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleExport = () => {
     const backup = createDeckBackup(cards, clock)
     downloadJsonFile(backup.filename, backup.json)
-    setBackupStatus({
-      type: 'success',
-      message: `Deck exported: ${cards.length} cards saved to ${backup.filename}.`,
-    })
+    setIsExported(true)
+    if (exportedTimerRef.current !== null) {
+      window.clearTimeout(exportedTimerRef.current)
+    }
+    exportedTimerRef.current = window.setTimeout(() => {
+      setIsExported(false)
+      exportedTimerRef.current = null
+    }, 2500)
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1143,11 +1157,25 @@ function DeckBackupModalInner({
             </div>
             <button
               type="button"
-              className="primary-button export-button"
+              className={`primary-button export-button ${isExported ? 'is-exported' : ''}`}
               onClick={handleExport}
             >
-              Export backup (JSON) <span aria-hidden="true">↓</span>
+              {isExported ? (
+                <span className="export-button-exported">
+                  <span className="export-button-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span className="export-button-text">Exported backup</span>
+                </span>
+              ) : (
+                <>
+                  Export backup (JSON) <span aria-hidden="true">↓</span>
+                </>
+              )}
             </button>
+            <div className="sr-only" role="status" aria-live="polite">
+              {isExported ? `Deck exported: ${cards.length} cards saved.` : ''}
+            </div>
           </div>
 
           <div className="backup-section import-section">
@@ -1290,12 +1318,22 @@ function SyncModal({
     () => isStandalone() && isIOS(),
   )
   const [loading, setLoading] = useState(false)
+  const [isSynced, setIsSynced] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
   } | null>(null)
+  const syncedTimerRef = useRef<number | null>(null)
 
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
+
+  useEffect(() => {
+    return () => {
+      if (syncedTimerRef.current !== null) {
+        window.clearTimeout(syncedTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     return auth.onAuthStateChange((currentUser) => {
@@ -1393,10 +1431,14 @@ function SyncModal({
     })
     setLoading(false)
     if (res.success) {
-      setStatusMsg({
-        type: 'success',
-        message: 'Deck successfully synchronized with cloud.',
-      })
+      setIsSynced(true)
+      if (syncedTimerRef.current !== null) {
+        window.clearTimeout(syncedTimerRef.current)
+      }
+      syncedTimerRef.current = window.setTimeout(() => {
+        setIsSynced(false)
+        syncedTimerRef.current = null
+      }, 2500)
     } else {
       setStatusMsg({
         type: 'error',
@@ -1406,6 +1448,11 @@ function SyncModal({
   }
 
   const handleSignOut = async () => {
+    if (syncedTimerRef.current !== null) {
+      window.clearTimeout(syncedTimerRef.current)
+      syncedTimerRef.current = null
+    }
+    setIsSynced(false)
     await auth.signOut()
     setIsOtpSent(false)
     setToken('')
@@ -1482,17 +1529,28 @@ function SyncModal({
             <div className="sync-actions-row">
               <button
                 type="button"
-                className="primary-button sync-now-button"
+                className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
                 onClick={() => {
                   void handleSyncNow()
                 }}
                 disabled={loading}
               >
-                <SyncSpinnerIcon
-                  size={15}
-                  className={loading ? 'is-spinning' : ''}
-                />
-                <span>{loading ? 'Syncing…' : 'Sync now'}</span>
+                {isSynced ? (
+                  <span className="sync-button-synced">
+                    <span className="sync-button-check" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span className="sync-button-text">Synced!</span>
+                  </span>
+                ) : (
+                  <>
+                    <SyncSpinnerIcon
+                      size={15}
+                      className={loading ? 'is-spinning' : ''}
+                    />
+                    <span>{loading ? 'Syncing…' : 'Sync now'}</span>
+                  </>
+                )}
               </button>
               <button
                 type="button"
@@ -1504,6 +1562,9 @@ function SyncModal({
               >
                 Sign out
               </button>
+            </div>
+            <div className="sr-only" role="status" aria-live="polite">
+              {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
             </div>
           </div>
         ) : !isOtpSent ? (

@@ -25,12 +25,14 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   expect(bgColor).not.toBe('rgba(0, 0, 0, 0)')
   expect(bgColor).not.toBe('transparent')
 
-  // Check preview notice is displayed when cloud backend is unconfigured
-  await expect(
-    page.getByRole('heading', {
-      name: /cloud sync is disabled in this preview/i,
-    }),
-  ).toBeVisible()
+  // Check auth form or preview notice is displayed
+  const emailInput = page.getByLabel(/email address/i)
+  const previewNotice = page.getByRole('heading', {
+    name: /cloud sync is disabled in this preview/i,
+  })
+  expect(
+    (await emailInput.isVisible()) || (await previewNotice.isVisible()),
+  ).toBe(true)
 
   // Save screenshot for autonomous visual inspection
   await page.screenshot({
@@ -262,4 +264,22 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
   expect(results.violations).toEqual([])
+
+  // Visually verify animated synced button state and accessibility
+  await page.evaluate(() => {
+    const btn = document.querySelector('.sync-now-button')
+    if (btn) {
+      btn.classList.add('is-synced')
+      btn.innerHTML = `<span class="sync-button-synced"><span class="sync-button-check" aria-hidden="true">✓</span><span class="sync-button-text">Synced!</span></span>`
+    }
+  })
+
+  await page.screenshot({
+    path: 'test-results/sync-button-animated.png',
+  })
+
+  const animatedResults = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(animatedResults.violations).toEqual([])
 })

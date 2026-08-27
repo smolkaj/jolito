@@ -904,6 +904,8 @@ describe('Jolito', () => {
     await user.click(exportBtn)
 
     expect(screen.getByRole('status')).toHaveTextContent(/deck exported/i)
+    expect(exportBtn).toHaveClass('is-exported')
+    expect(screen.getByText('Exported backup')).toBeInTheDocument()
   })
 
   it('imports backup JSON in replace mode and updates cards and storage', async () => {
@@ -1324,6 +1326,8 @@ describe('Jolito', () => {
     expect(
       await screen.findByText(/deck successfully synchronized with cloud/i),
     ).toBeInTheDocument()
+    expect(syncNowBtn).toHaveClass('is-synced')
+    expect(screen.getByText('Synced!')).toBeInTheDocument()
     expect(services.mockSync.syncedCount).toBeGreaterThan(0)
   })
 
