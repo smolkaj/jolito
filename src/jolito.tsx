@@ -1319,11 +1319,15 @@ function SyncModal({
   )
   const [loading, setLoading] = useState(false)
   const [isSynced, setIsSynced] = useState(false)
+  const [isLinkResent, setIsLinkResent] = useState(false)
+  const [isPasted, setIsPasted] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
   } | null>(null)
   const syncedTimerRef = useRef<number | null>(null)
+  const resendTimerRef = useRef<number | null>(null)
+  const pastedTimerRef = useRef<number | null>(null)
 
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
 
@@ -1331,6 +1335,12 @@ function SyncModal({
     return () => {
       if (syncedTimerRef.current !== null) {
         window.clearTimeout(syncedTimerRef.current)
+      }
+      if (resendTimerRef.current !== null) {
+        window.clearTimeout(resendTimerRef.current)
+      }
+      if (pastedTimerRef.current !== null) {
+        window.clearTimeout(pastedTimerRef.current)
       }
     }
   }, [])
@@ -1358,7 +1368,7 @@ function SyncModal({
 
   if (!isOpen) return null
 
-  const handleSendLink = async (e?: FormEvent) => {
+  const handleSendLink = async (isResend = false, e?: FormEvent) => {
     e?.preventDefault()
     if (!email.trim()) return
     setLoading(true)
@@ -1367,10 +1377,16 @@ function SyncModal({
     setLoading(false)
     if (res.success) {
       setIsOtpSent(true)
-      setStatusMsg({
-        type: 'info',
-        message: 'Check your email for your sign-in link.',
-      })
+      if (isResend) {
+        setIsLinkResent(true)
+        if (resendTimerRef.current !== null) {
+          window.clearTimeout(resendTimerRef.current)
+        }
+        resendTimerRef.current = window.setTimeout(() => {
+          setIsLinkResent(false)
+          resendTimerRef.current = null
+        }, 2500)
+      }
     } else {
       setStatusMsg({
         type: 'error',
@@ -1385,6 +1401,14 @@ function SyncModal({
         const text = await navigator.clipboard.readText()
         if (text) {
           setToken(text.trim())
+          setIsPasted(true)
+          if (pastedTimerRef.current !== null) {
+            window.clearTimeout(pastedTimerRef.current)
+          }
+          pastedTimerRef.current = window.setTimeout(() => {
+            setIsPasted(false)
+            pastedTimerRef.current = null
+          }, 1500)
         }
       } catch {
         // clipboard access not permitted
@@ -1452,14 +1476,21 @@ function SyncModal({
       window.clearTimeout(syncedTimerRef.current)
       syncedTimerRef.current = null
     }
+    if (resendTimerRef.current !== null) {
+      window.clearTimeout(resendTimerRef.current)
+      resendTimerRef.current = null
+    }
+    if (pastedTimerRef.current !== null) {
+      window.clearTimeout(pastedTimerRef.current)
+      pastedTimerRef.current = null
+    }
     setIsSynced(false)
+    setIsLinkResent(false)
+    setIsPasted(false)
     await auth.signOut()
     setIsOtpSent(false)
     setToken('')
-    setStatusMsg({
-      type: 'info',
-      message: 'Signed out. Cards remain safely stored on this device.',
-    })
+    setStatusMsg(null)
   }
 
   return (
@@ -1563,14 +1594,11 @@ function SyncModal({
                 Sign out
               </button>
             </div>
-            <div className="sr-only" role="status" aria-live="polite">
-              {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
-            </div>
           </div>
         ) : !isOtpSent ? (
           <form
             onSubmit={(e) => {
-              void handleSendLink(e)
+              void handleSendLink(false, e)
             }}
             className="sync-auth-form"
           >
@@ -1603,13 +1631,22 @@ function SyncModal({
             <div className="sync-auth-buttons">
               <button
                 type="button"
-                className="secondary-button"
+                className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
                 disabled={loading}
                 onClick={() => {
-                  void handleSendLink()
+                  void handleSendLink(true)
                 }}
               >
-                Resend link
+                {isLinkResent ? (
+                  <span className="resend-button-sent">
+                    <span className="resend-button-check" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span className="resend-button-text">Link sent!</span>
+                  </span>
+                ) : (
+                  <span>Resend link</span>
+                )}
               </button>
               <button
                 type="button"
@@ -1662,15 +1699,24 @@ function SyncModal({
                   typeof navigator.clipboard?.readText === 'function' && (
                     <button
                       type="button"
-                      className="paste-input-btn"
+                      className={`paste-input-btn ${isPasted ? 'is-pasted' : ''}`}
                       onClick={() => {
                         void handlePasteClipboard()
                       }}
                       title="Paste from clipboard"
                       aria-label="Paste from clipboard"
                     >
-                      <ClipboardIcon size={12} />
-                      <span>Paste</span>
+                      {isPasted ? (
+                        <>
+                          <span aria-hidden="true">✓</span>
+                          <span>Pasted</span>
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardIcon size={12} />
+                          <span>Paste</span>
+                        </>
+                      )}
                     </button>
                   )}
               </div>
@@ -1690,13 +1736,13 @@ function SyncModal({
               </button>
               <button
                 type="button"
-                className="text-button"
+                className={`text-button resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
                 disabled={loading}
                 onClick={() => {
-                  void handleSendLink()
+                  void handleSendLink(true)
                 }}
               >
-                Resend link
+                {isLinkResent ? 'Link sent! ✓' : 'Resend link'}
               </button>
               <button
                 type="button"
@@ -1713,6 +1759,11 @@ function SyncModal({
             </div>
           </form>
         )}
+        <div className="sr-only" role="status" aria-live="polite">
+          {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
+          {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
+          {isPasted ? 'Pasted link from clipboard.' : ''}
+        </div>
       </div>
     </div>
   )

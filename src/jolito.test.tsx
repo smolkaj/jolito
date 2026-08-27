@@ -1102,9 +1102,8 @@ describe('Jolito', () => {
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/Click the sign-in link sent to/i),
+      await screen.findByText(/Click the sign-in link sent to/i),
     ).toBeInTheDocument()
 
     // On standard desktop browser, no paste input is shown by default
@@ -1161,7 +1160,8 @@ describe('Jolito', () => {
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
     await user.click(resendBtn)
-    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
+    expect(resendBtn).toHaveClass('is-sent')
+    expect(screen.getByText(/Link sent!/i)).toBeInTheDocument()
   })
 
   it('displays and dismisses redirect auth notification banner when signed in via email redirect on iOS', async () => {
@@ -1301,6 +1301,8 @@ describe('Jolito', () => {
     expect(pasteBtn).toBeInTheDocument()
     await user.click(pasteBtn)
 
+    expect(pasteBtn).toHaveClass('is-pasted')
+    expect(screen.getByText('Pasted')).toBeInTheDocument()
     expect(readTextSpy).toHaveBeenCalledTimes(1)
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
@@ -1489,6 +1491,69 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /sign out/i }))
 
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
+    expect(
+      screen.queryByText(/Cards remain safely stored on this device/i),
+    ).not.toBeInTheDocument()
+  })
+
+  it('animates resend link button with checkmark feedback without status banner', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    expect(
+      await screen.findByText(/Click the sign-in link sent to/i),
+    ).toBeInTheDocument()
+
+    const resendBtn = screen.getByRole('button', { name: /resend link/i })
+    await user.click(resendBtn)
+
+    expect(resendBtn).toHaveClass('is-sent')
+    expect(screen.getByText('Link sent!')).toBeInTheDocument()
+    expect(
+      screen.getByText(/sign-in link sent to learner@example\.com/i),
+    ).toBeInTheDocument()
+    expect(document.querySelector('.status-banner')).toBeNull()
+  })
+
+  it('animates paste button when pasting OTP link from clipboard', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        readText: vi
+          .fn()
+          .mockResolvedValue('https://joli.to/#access_token=token123'),
+      },
+      configurable: true,
+      writable: true,
+    })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'learner@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
+
+    const pasteBtn = screen.getByRole('button', {
+      name: /paste from clipboard/i,
+    })
+    await user.click(pasteBtn)
+
+    expect(pasteBtn).toHaveClass('is-pasted')
+    expect(screen.getByText('Pasted')).toBeInTheDocument()
+    expect(screen.getByLabelText(/sign-in link/i)).toHaveValue(
+      'https://joli.to/#access_token=token123',
+    )
   })
 
   it('closes sync modal via close button and Escape key', async () => {
@@ -1875,7 +1940,8 @@ describe('Jolito', () => {
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
     await user.click(resendBtn)
-    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
+    expect(resendBtn).toHaveClass('is-sent')
+    expect(screen.getByText(/Link sent!/i)).toBeInTheDocument()
   })
 
   it('preserves typed card input in create form if guest closes sign in modal without authenticating', async () => {
