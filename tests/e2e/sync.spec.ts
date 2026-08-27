@@ -25,23 +25,12 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   expect(bgColor).not.toBe('rgba(0, 0, 0, 0)')
   expect(bgColor).not.toBe('transparent')
 
-<<<<<<< HEAD
-  // Check auth form or preview notice is displayed
-  const emailInput = page.getByLabel(/email address/i)
-  const previewNotice = page.getByRole('heading', {
-    name: /cloud sync is disabled in this preview/i,
-  })
-  expect(
-    (await emailInput.isVisible()) || (await previewNotice.isVisible()),
-  ).toBe(true)
-=======
   // Check preview notice or email form is displayed depending on backend config
   const previewHeading = page.getByRole('heading', {
     name: /cloud sync is disabled in this preview/i,
   })
   const emailInput = page.getByLabel(/email address/i)
   await expect(previewHeading.or(emailInput)).toBeVisible()
->>>>>>> 770e0e6 (Polish Cloud Sync sent state layout and button hierarchy)
 
   // Save screenshot for autonomous visual inspection
   await page.screenshot({
@@ -368,5 +357,4 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
       .analyze()
     expect(postSignOutResults.violations).toEqual([])
   }
->>>>>>> 770e0e6 (Polish Cloud Sync sent state layout and button hierarchy)
 })
