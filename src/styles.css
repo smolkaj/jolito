@@ -102,6 +102,7 @@ html {
   scroll-behavior: smooth;
   touch-action: manipulation;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -115,6 +116,7 @@ body {
   line-height: 1.5;
   touch-action: manipulation;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -2133,34 +2135,56 @@ kbd {
     padding-right: max(16px, env(safe-area-inset-right));
     padding-bottom: max(28px, env(safe-area-inset-bottom));
     padding-left: max(16px, env(safe-area-inset-left));
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    padding: 0;
+    gap: 6px;
   }
 
   .nav-actions {
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    min-width: 0;
   }
 
   .connection-pill,
   .text-button {
     height: 32px;
-    padding: 0 10px;
+    padding: 0 8px;
     font-size: 11px;
-    gap: 6px;
+    gap: 4px;
+    white-space: nowrap;
   }
 
-  .topbar {
-    padding: 0;
+  .connection-pill {
+    max-width: 100px;
+    flex-shrink: 1;
+  }
+
+  .connection-pill span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .review-page .nav-actions .text-button + .text-button,
+  .complete-page .nav-actions .text-button + .text-button {
+    display: none;
   }
 
   .brand {
-    font-size: 26px;
-    gap: 10px;
-    padding: 4px 8px;
-    margin-left: -8px;
+    font-size: 22px;
+    gap: 6px;
+    padding: 4px 6px;
+    margin-left: -6px;
+    flex-shrink: 0;
   }
 
   .brand-mark {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 
   .welcome-page {
@@ -2203,13 +2227,7 @@ kbd {
   }
 
   .hero-visual {
-    position: absolute;
-    right: -140px;
-    bottom: -200px;
-    width: 380px;
-    opacity: 0.16;
-    transform: scale(0.68);
-    pointer-events: none;
+    display: none;
   }
 
   .create-layout {
