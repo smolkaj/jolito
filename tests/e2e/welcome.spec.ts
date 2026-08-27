@@ -618,7 +618,7 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
     page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
   await expect(
-    page.getByText(/replicate your cards and progress across devices automatically/i),
+    page.getByText(/sync your deck across all your devices/i),
   ).toBeVisible()
 
   await page.screenshot({

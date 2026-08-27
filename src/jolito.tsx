@@ -1126,7 +1126,7 @@ function SyncModal({
           <div className="modal-header-copy">
             <h2 id="sync-modal-title">Cloud sync</h2>
             <p className="modal-subtitle">
-              Replicate your cards and progress across devices automatically.
+              Sync your deck across all your devices.
             </p>
           </div>
           <button
@@ -1155,9 +1155,7 @@ function SyncModal({
             </span>
             <h4>Cloud sync is disabled in this preview</h4>
             <p>
-              Multi-device cloud synchronization is disabled in this preview
-              deployment. Your flashcards, audio, and spaced-repetition
-              schedules remain 100% functional and safely stored on this device.
+              Flashcards and progress remain safely stored on this device.
             </p>
             {onSaveLocally && (
               <button
@@ -1230,9 +1228,6 @@ function SyncModal({
             >
               {loading ? 'Sending link…' : 'Send sign-in link →'}
             </button>
-            <p className="sync-micro-hint">
-              We’ll send a passwordless sign-in link to your email.
-            </p>
           </form>
         ) : (
           <form
@@ -1250,9 +1245,7 @@ function SyncModal({
               </span>
               <p>
                 <strong>Home Screen app on iOS?</strong> Long-press the button in
-                your email and tap <strong>Copy Link</strong>, or open the link
-                in Safari and copy your sign-in link there. Paste it below to
-                sign in.
+                your email and tap <strong>Copy Link</strong>.
               </p>
             </div>
             <div className="field-group">

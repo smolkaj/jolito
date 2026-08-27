@@ -1402,7 +1402,7 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/replicate your cards and progress across devices automatically/i),
+      screen.getByText(/sync your deck across all your devices/i),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
 
