@@ -1317,9 +1317,9 @@ function SyncModal({
   const [showPasteLink, setShowPasteLink] = useState(
     () => isStandalone() && isIOS(),
   )
-  const [isSynced, setIsSynced] = useState(false)
-  const [isLinkResent, setIsLinkResent] = useState(false)
-  const [isPasted, setIsPasted] = useState(false)
+  const [transientFeedback, setTransientFeedback] = useState<
+    'synced' | 'resent' | 'pasted' | null
+  >(null)
   const [loadingAction, setLoadingAction] = useState<
     'send' | 'verify' | 'sync' | 'signout' | null
   >(null)
@@ -1327,25 +1327,40 @@ function SyncModal({
     type: 'success' | 'error' | 'info'
     message: string
   } | null>(null)
-  const syncedTimerRef = useRef<number | null>(null)
-  const resendTimerRef = useRef<number | null>(null)
-  const pastedTimerRef = useRef<number | null>(null)
+
+  const feedbackTimerRef = useRef<number | null>(null)
+  const pasteInputRef = useRef<HTMLInputElement | null>(null)
 
   const loading = loadingAction !== null
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
+  const isSynced = transientFeedback === 'synced'
+  const isLinkResent = transientFeedback === 'resent'
+  const isPasted = transientFeedback === 'pasted'
+
+  const triggerTransientFeedback = (
+    feedback: 'synced' | 'resent' | 'pasted',
+    durationMs = 2500,
+  ) => {
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current)
+    }
+    setTransientFeedback(feedback)
+    feedbackTimerRef.current = window.setTimeout(() => {
+      setTransientFeedback(null)
+      feedbackTimerRef.current = null
+    }, durationMs)
+  }
+
+  const clearTransientFeedback = () => {
+    if (feedbackTimerRef.current !== null) {
+      window.clearTimeout(feedbackTimerRef.current)
+      feedbackTimerRef.current = null
+    }
+    setTransientFeedback(null)
+  }
 
   useEffect(() => {
-    return () => {
-      if (syncedTimerRef.current !== null) {
-        window.clearTimeout(syncedTimerRef.current)
-      }
-      if (resendTimerRef.current !== null) {
-        window.clearTimeout(resendTimerRef.current)
-      }
-      if (pastedTimerRef.current !== null) {
-        window.clearTimeout(pastedTimerRef.current)
-      }
-    }
+    return () => clearTransientFeedback()
   }, [])
 
   useEffect(() => {
@@ -1381,14 +1396,7 @@ function SyncModal({
     if (res.success) {
       setIsOtpSent(true)
       if (isResend) {
-        setIsLinkResent(true)
-        if (resendTimerRef.current !== null) {
-          window.clearTimeout(resendTimerRef.current)
-        }
-        resendTimerRef.current = window.setTimeout(() => {
-          setIsLinkResent(false)
-          resendTimerRef.current = null
-        }, 2500)
+        triggerTransientFeedback('resent', 2500)
       }
     } else {
       setStatusMsg({
@@ -1404,14 +1412,7 @@ function SyncModal({
         const text = await navigator.clipboard.readText()
         if (text) {
           setToken(text.trim())
-          setIsPasted(true)
-          if (pastedTimerRef.current !== null) {
-            window.clearTimeout(pastedTimerRef.current)
-          }
-          pastedTimerRef.current = window.setTimeout(() => {
-            setIsPasted(false)
-            pastedTimerRef.current = null
-          }, 1500)
+          triggerTransientFeedback('pasted', 1500)
         }
       } catch {
         // clipboard access not permitted
@@ -1458,14 +1459,7 @@ function SyncModal({
     })
     setLoadingAction(null)
     if (res.success) {
-      setIsSynced(true)
-      if (syncedTimerRef.current !== null) {
-        window.clearTimeout(syncedTimerRef.current)
-      }
-      syncedTimerRef.current = window.setTimeout(() => {
-        setIsSynced(false)
-        syncedTimerRef.current = null
-      }, 2500)
+      triggerTransientFeedback('synced', 2500)
     } else {
       setStatusMsg({
         type: 'error',
@@ -1475,21 +1469,7 @@ function SyncModal({
   }
 
   const handleSignOut = async () => {
-    if (syncedTimerRef.current !== null) {
-      window.clearTimeout(syncedTimerRef.current)
-      syncedTimerRef.current = null
-    }
-    if (resendTimerRef.current !== null) {
-      window.clearTimeout(resendTimerRef.current)
-      resendTimerRef.current = null
-    }
-    if (pastedTimerRef.current !== null) {
-      window.clearTimeout(pastedTimerRef.current)
-      pastedTimerRef.current = null
-    }
-    setIsSynced(false)
-    setIsLinkResent(false)
-    setIsPasted(false)
+    clearTransientFeedback()
     setLoadingAction('signout')
     await auth.signOut()
     setLoadingAction(null)
@@ -1561,6 +1541,7 @@ function SyncModal({
                 <p className="account-email">{user.email}</p>
               </div>
             </div>
+
             <div className="sync-actions-row">
               <button
                 type="button"
@@ -1669,7 +1650,7 @@ function SyncModal({
                     setStatusMsg(null)
                   }}
                 >
-                  Use different email
+                  Change email
                 </button>
                 <span className="sync-sub-action-dot" aria-hidden="true">
                   ·
@@ -1677,9 +1658,12 @@ function SyncModal({
                 <button
                   type="button"
                   className="modal-link-btn"
-                  onClick={() => setShowPasteLink(true)}
+                  onClick={() => {
+                    setShowPasteLink(true)
+                    setTimeout(() => pasteInputRef.current?.focus(), 0)
+                  }}
                 >
-                  Paste sign-in link manually
+                  Paste link manually
                 </button>
               </div>
             </div>
@@ -1698,6 +1682,7 @@ function SyncModal({
               <label htmlFor="sync-otp">Sign-in link</label>
               <div className="link-input-wrap">
                 <input
+                  ref={pasteInputRef}
                   id="sync-otp"
                   type="text"
                   required
@@ -1735,7 +1720,7 @@ function SyncModal({
               </div>
               {isIOS() && (
                 <span className="field-hint">
-                  Long-press the button in your email and tap Copy Link.
+                  Long-press the link in your email to copy.
                 </span>
               )}
             </div>
@@ -1777,7 +1762,7 @@ function SyncModal({
                     setStatusMsg(null)
                   }}
                 >
-                  Use different email
+                  Change email
                 </button>
               </div>
             </div>
