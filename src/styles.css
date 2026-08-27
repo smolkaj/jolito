@@ -318,8 +318,8 @@ summary:focus-visible {
 }
 
 .connection-pill .pill-icon {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -327,8 +327,8 @@ summary:focus-visible {
 }
 
 .connection-pill .pill-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   display: block;
 }
 

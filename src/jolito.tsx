@@ -245,7 +245,7 @@ function AudioButton({
 
 export function CloudCheckIcon({
   className = '',
-  size = 14,
+  size = 15,
   ariaHidden = true,
 }: {
   className?: string
@@ -265,15 +265,15 @@ export function CloudCheckIcon({
       strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-      <path d="m9 13.5 2 2 4-4" />
+      <path d="M19 17.5H7A4.5 4.5 0 0 1 6.5 9a5.5 5.5 0 0 1 10.4-1.8A4.2 4.2 0 0 1 20 11.2a4 4 0 0 1-1 6.3" />
+      <path d="m8.5 13 2.5 2.5 5.5-5.5" />
     </svg>
   )
 }
 
 export function UserIcon({
   className = '',
-  size = 14,
+  size = 15,
   ariaHidden = true,
 }: {
   className?: string
@@ -293,15 +293,15 @@ export function UserIcon({
       strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <circle cx="12" cy="7.5" r="4" />
-      <path d="M20 21a8 8 0 0 0-16 0" />
+      <circle cx="12" cy="7.5" r="3.75" />
+      <path d="M19.5 20.5a7.5 7.5 0 0 0-15 0" />
     </svg>
   )
 }
 
 export function SyncSpinnerIcon({
   className = '',
-  size = 14,
+  size = 15,
   ariaHidden = true,
 }: {
   className?: string
@@ -321,9 +321,9 @@ export function SyncSpinnerIcon({
       strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M21 12a9 9 0 0 0-15.5-6.36L3 8" />
       <path d="M3 3v5h5" />
-      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M3 12a9 9 0 0 0 15.5 6.36L21 16" />
       <path d="M21 21v-5h-5" />
     </svg>
   )
@@ -331,7 +331,7 @@ export function SyncSpinnerIcon({
 
 export function CloudOffIcon({
   className = '',
-  size = 14,
+  size = 15,
   ariaHidden = true,
 }: {
   className?: string
@@ -351,15 +351,16 @@ export function CloudOffIcon({
       strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <path d="M22.6 16.5A5 5 0 0 0 18 10h-1.3a8 8 0 0 0-7-6M5.1 5.1A8 8 0 0 0 3.4 9.7a5 5 0 0 0 3.3 8.3H19" />
-      <line x1="2" y1="2" x2="22" y2="22" />
+      <path d="M2 2l20 20" />
+      <path d="M8.8 3.5A5.5 5.5 0 0 1 16.9 7.2 4.2 4.2 0 0 1 20 11.2a4 4 0 0 1-2.1 3.5" />
+      <path d="M5.5 9.8A4.5 4.5 0 0 0 7 17.5h8.5" />
     </svg>
   )
 }
 
 export function SyncAlertIcon({
   className = '',
-  size = 14,
+  size = 15,
   ariaHidden = true,
 }: {
   className?: string
@@ -379,9 +380,9 @@ export function SyncAlertIcon({
       strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <path d="m12 3 9.5 16.5a1.5 1.5 0 0 1-1.3 2.25H3.8a1.5 1.5 0 0 1-1.3-2.25L12 3Z" />
-      <path d="M12 9v4.5" />
-      <path d="M12 17h.01" />
+      <path d="m12 3.5 9 15.5a1.2 1.2 0 0 1-1.04 1.8H4.04A1.2 1.2 0 0 1 3 19L12 3.5Z" />
+      <path d="M12 9v4" />
+      <circle cx="12" cy="16.5" r="0.75" fill="currentColor" />
     </svg>
   )
 }
