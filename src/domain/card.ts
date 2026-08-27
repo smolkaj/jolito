@@ -53,6 +53,7 @@ export const studyCardSchema = z.object({
 export const studyCardCollectionSchema = z.object({
   version: z.literal(1),
   cards: z.array(studyCardSchema),
+  deletedCardIds: z.array(z.string()).default([]),
 })
 
 export const newNoteSchema = z.object({

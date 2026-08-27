@@ -25,9 +25,15 @@ const parseJson = (value: string | null): unknown => {
   }
 }
 
-const restoreCurrent = (raw: unknown): StudyCard[] | null => {
+const restoreCurrent = (
+  raw: unknown,
+): { cards: StudyCard[]; deletedCardIds: string[] } | null => {
   const result = studyCardCollectionSchema.safeParse(raw)
-  return result.success ? result.data.cards : null
+  if (!result.success) return null
+  return {
+    cards: result.data.cards,
+    deletedCardIds: result.data.deletedCardIds,
+  }
 }
 
 const restoreLegacy = (raw: unknown): StudyCard[] | null => {
@@ -69,33 +75,55 @@ const restoreLegacy = (raw: unknown): StudyCard[] | null => {
 }
 
 export class LocalStorageCardRepository implements CardRepository {
+  private deletedCardIds: string[] = []
+
   constructor(private readonly storage: StorageLike = window.localStorage) {}
+
+  getDeletedCardIds(): string[] {
+    return [...this.deletedCardIds]
+  }
 
   load(fallback: StudyCard[]): StudyCard[] {
     const parsedCurrent = parseJson(this.storage.getItem(STORAGE_KEY))
     const current = restoreCurrent(parsedCurrent)
-    if (current) return current
+    if (current) {
+      this.deletedCardIds = current.deletedCardIds
+      return current.cards
+    }
 
     const parsedLegacyStorage = parseJson(
       this.storage.getItem(LEGACY_STORAGE_KEY),
     )
     const legacyCurrent = restoreCurrent(parsedLegacyStorage)
     if (legacyCurrent) {
-      this.save(legacyCurrent)
-      return legacyCurrent
+      this.deletedCardIds = legacyCurrent.deletedCardIds
+      this.save(legacyCurrent.cards, legacyCurrent.deletedCardIds)
+      return legacyCurrent.cards
     }
 
     const parsedLegacy = parseJson(this.storage.getItem(LEGACY_KEY))
     const legacy = restoreLegacy(parsedLegacy)
     if (legacy) {
-      this.save(legacy)
+      this.deletedCardIds = []
+      this.save(legacy, [])
       return legacy
     }
 
+    this.deletedCardIds = []
     return fallback
   }
 
-  save(cards: StudyCard[]): void {
-    this.storage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, cards }))
+  save(cards: StudyCard[], deletedCardIds?: string[]): void {
+    if (deletedCardIds !== undefined) {
+      this.deletedCardIds = [...deletedCardIds]
+    }
+    this.storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        cards,
+        deletedCardIds: this.deletedCardIds,
+      }),
+    )
   }
 }

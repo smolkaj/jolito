@@ -12,7 +12,8 @@ export type IdGenerator = {
 
 export type CardRepository = {
   load(fallback: StudyCard[]): StudyCard[]
-  save(cards: StudyCard[]): void
+  getDeletedCardIds(): string[]
+  save(cards: StudyCard[], deletedCardIds?: string[]): void
 }
 
 export type Speaker = {
@@ -62,15 +63,24 @@ export type AuthService = {
 export type SyncResult = {
   success: boolean
   cards?: StudyCard[] | undefined
+  deletedCardIds?: string[] | undefined
   error?: string | undefined
   syncedAt?: number | undefined
 }
 
 export type SyncService = {
   getStatus(): SyncStatus
-  pushDeck(cards: StudyCard[], user: AuthUser): Promise<SyncResult>
+  pushDeck(
+    cards: StudyCard[],
+    user: AuthUser,
+    deletedCardIds?: string[],
+  ): Promise<SyncResult>
   pullDeck(user: AuthUser): Promise<SyncResult>
-  syncDeck(localCards: StudyCard[], user: AuthUser): Promise<SyncResult>
+  syncDeck(
+    localCards: StudyCard[],
+    user: AuthUser,
+    localDeletedIds?: string[],
+  ): Promise<SyncResult>
 }
 
 export type AppServices = {
