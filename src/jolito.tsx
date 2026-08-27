@@ -271,7 +271,7 @@ export function CloudCheckIcon({
   )
 }
 
-export function CloudUploadIcon({
+export function UserIcon({
   className = '',
   size = 14,
   ariaHidden = true,
@@ -282,7 +282,7 @@ export function CloudUploadIcon({
 }) {
   return (
     <svg
-      className={`icon-cloud-upload ${className}`.trim()}
+      className={`icon-user ${className}`.trim()}
       viewBox="0 0 24 24"
       width={size}
       height={size}
@@ -293,8 +293,8 @@ export function CloudUploadIcon({
       strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-      <path d="M12 15V9.5m-2.5 2.5 2.5-2.5 2.5 2.5" />
+      <circle cx="12" cy="7.5" r="4" />
+      <path d="M20 21a8 8 0 0 0-16 0" />
     </svg>
   )
 }
@@ -1580,7 +1580,7 @@ function ConnectionPill({
   let stateClass = 'is-signed-out'
   let label = 'Sign in'
   let ariaLabel = 'Not signed in. Tap to sign in and sync your deck.'
-  let icon = <CloudUploadIcon />
+  let icon = <UserIcon />
 
   if (!isOnline) {
     stateClass = 'is-offline'

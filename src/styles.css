@@ -333,15 +333,13 @@ summary:focus-visible {
 }
 
 /* Signed out (Demo/Starter) - Clean neutral card with dark ink */
-.connection-pill.is-signed-out,
-.connection-pill.is-local {
+.connection-pill.is-signed-out {
   background: var(--card);
   border-color: var(--line);
   color: var(--ink);
 }
 
-.connection-pill.is-signed-out:hover,
-.connection-pill.is-local:hover {
+.connection-pill.is-signed-out:hover {
   background: var(--turquesa-soft);
   border-color: var(--line);
   color: var(--ink);
