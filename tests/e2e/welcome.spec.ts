@@ -653,3 +653,45 @@ test('configures mobile viewport and touch action defaults for iOS standalone er
   })
   expect(touchAction).toBe('manipulation')
 })
+
+test('ensures zero horizontal or vertical overflow across mobile and desktop viewports', async ({
+  page,
+}) => {
+  const viewports = [
+    { name: 'iPhone SE (375x667)', width: 375, height: 667 },
+    { name: 'iPhone 14 (390x844)', width: 390, height: 844 },
+    { name: 'iPhone Pro Max (430x932)', width: 430, height: 932 },
+    { name: 'Desktop (1280x800)', width: 1280, height: 800 },
+  ]
+
+  for (const vp of viewports) {
+    await page.setViewportSize({ width: vp.width, height: vp.height })
+
+    for (const testPage of ['welcome', 'deck', 'review']) {
+      await page.goto('/')
+      if (testPage === 'deck') {
+        await page.getByRole('button', { name: /manage deck/i }).click()
+      } else if (testPage === 'review') {
+        await page.getByRole('button', { name: /^practice$/i }).click()
+      }
+
+      const dims = await page.evaluate(() => {
+        const doc = document.documentElement
+        return {
+          docScrollWidth: doc.scrollWidth,
+          docClientWidth: doc.clientWidth,
+          docScrollHeight: doc.scrollHeight,
+          docClientHeight: doc.clientHeight,
+        }
+      })
+      expect(
+        dims.docScrollWidth,
+        `${testPage} on ${vp.name} horizontal overflow`,
+      ).toBe(dims.docClientWidth)
+      expect(
+        dims.docScrollHeight,
+        `${testPage} on ${vp.name} vertical overflow`,
+      ).toBe(dims.docClientHeight)
+    }
+  }
+})
