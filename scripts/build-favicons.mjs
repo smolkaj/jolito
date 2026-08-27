@@ -62,13 +62,13 @@ async function buildRasters() {
   }
 
   // 2. App launcher & Home screen icons (iOS apple-touch-icon, Android/PWA icons)
-  // iOS renders transparent touch icons with a black background; maskable icons
-  // require a solid background and safe-zone padding (~72% scale).
+  // iOS renders transparent touch icons with a black background; we use solid
+  // Jolito Paper (#fdf5f8) with prominent 88% scale for bold native appearance.
   const appIcons = [
-    { name: 'apple-touch-icon.png', size: 180, scale: 0.72 },
-    { name: 'icon-192.png', size: 192, scale: 0.72 },
-    { name: 'icon-512.png', size: 512, scale: 0.72 },
-    { name: 'icon-512-maskable.png', size: 512, scale: 0.72 },
+    { name: 'apple-touch-icon.png', size: 180, scale: 0.88 },
+    { name: 'icon-192.png', size: 192, scale: 0.88 },
+    { name: 'icon-512.png', size: 512, scale: 0.88 },
+    { name: 'icon-512-maskable.png', size: 512, scale: 0.8 },
   ]
 
   for (const item of appIcons) {
