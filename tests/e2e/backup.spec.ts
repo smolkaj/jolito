@@ -32,17 +32,21 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 
   // Export JSON backup
   const downloadPromise = page.waitForEvent('download')
-  await page.getByRole('button', { name: /export backup \(json\)/i }).click()
+  const exportBtn = page.locator('.export-button')
+  await exportBtn.click()
   const download = await downloadPromise
 
   expect(download.suggestedFilename()).toMatch(
     /^jolito-deck-\d{4}-\d{2}-\d{2}\.json$/,
   )
 
+  await expect(exportBtn).toHaveClass(/is-exported/)
+  await expect(exportBtn).toContainText(/exported backup/i)
   await expect(page.getByRole('status')).toContainText(/deck exported/i)
+  await expect(page.locator('.status-banner')).toHaveCount(0)
 
-  // Save screenshot for autonomous visual inspection
-  await page.screenshot({ path: 'test-results/deck-manager.png' })
+  // Save screenshot of animated export button for autonomous visual verification
+  await page.screenshot({ path: 'test-results/deck-export-animated.png' })
   await page.keyboard.press('Escape')
 })
 
