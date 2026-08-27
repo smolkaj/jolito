@@ -2747,10 +2747,27 @@ kbd {
   gap: 12px;
 }
 
-.sync-now-button {
+.sync-actions-row .sync-now-button,
+.sync-actions-row .sign-out-button {
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
+  box-sizing: border-box;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: var(--pill-radius);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+}
+
+.sync-actions-row .sync-now-button {
+  padding: 0 16px;
   gap: 8px;
+}
+
+.sync-actions-row .sign-out-button {
+  padding: 0 14px;
 }
 
 .sync-auth-pane {
@@ -3621,12 +3638,25 @@ kbd {
   margin-top: 8px;
 }
 
+.edit-modal-actions .primary-button,
 .edit-modal-actions .secondary-button,
+.delete-modal-actions .danger-button,
 .delete-modal-actions .secondary-button {
   min-height: 40px;
-  padding: 8px 18px;
+  height: 40px;
+  max-height: 40px;
+  box-sizing: border-box;
+  padding: 0 18px;
   font-size: 14px;
   border-radius: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-modal-actions .secondary-button,
+.delete-modal-actions .secondary-button {
   background: var(--card);
   color: var(--ink);
   border: 2px solid var(--line);
