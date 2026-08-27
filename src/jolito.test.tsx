@@ -1088,7 +1088,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     expect(
       screen.getByRole('heading', {
         name: /^cloud sync$/i,
@@ -1143,7 +1143,7 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pwa-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
@@ -1216,7 +1216,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pasted-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
@@ -1244,7 +1244,7 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pasted-magiclink@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
@@ -1284,7 +1284,7 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'clipboard-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
@@ -1315,7 +1315,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    await user.click(screen.getByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
@@ -1384,7 +1384,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // Trigger sync now via SyncModal
-    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    await user.click(screen.getByRole('button', { name: /synced/i }))
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
 
@@ -1448,7 +1448,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Open sync modal and trigger sync
-    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    await user.click(screen.getByRole('button', { name: /synced/i }))
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
 
@@ -1479,7 +1479,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    await user.click(screen.getByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
@@ -1492,7 +1492,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     expect(
       screen.getByRole('heading', {
         name: /^cloud sync$/i,
@@ -1508,7 +1508,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // Open again and close via Escape
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     expect(
       screen.getByRole('heading', {
         name: /^cloud sync$/i,
@@ -1528,21 +1528,21 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     expect(
-      screen.getByRole('button', { name: /local deck only/i }),
+      screen.getByRole('button', { name: /not signed in/i }),
     ).toBeInTheDocument()
 
     // Trigger offline event
     window.dispatchEvent(new Event('offline'))
     expect(
       await screen.findByRole('button', {
-        name: /offline\. changes saved locally/i,
+        name: /offline\. card changes are saved to this device/i,
       }),
     ).toBeInTheDocument()
 
     // Trigger online event
     window.dispatchEvent(new Event('online'))
     expect(
-      await screen.findByRole('button', { name: /local deck only/i }),
+      await screen.findByRole('button', { name: /not signed in/i }),
     ).toBeInTheDocument()
   })
 
@@ -1552,7 +1552,7 @@ describe('Jolito', () => {
     services.mockAuth.configured = false
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
     expect(
       screen.getByRole('heading', {
         name: /cloud sync is disabled in this preview/i,

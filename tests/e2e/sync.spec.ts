@@ -6,7 +6,7 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
 }) => {
   await page.goto('/')
 
-  await page.getByRole('button', { name: /tap to sync/i }).click()
+  await page.getByRole('button', { name: /sign in/i }).click()
   await expect(
     page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
@@ -101,8 +101,8 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
 
   await page.goto('/')
 
-  const tapToSync = page.getByRole('button', { name: /tap to sync/i })
-  await tapToSync.click()
+  const signInBtn = page.getByRole('button', { name: /sign in|tap to sync/i })
+  await signInBtn.click()
 
   // Verify modal is open
   await expect(
@@ -239,7 +239,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
 
   // Click connection pill
   const connectionPill = page.getByRole('button', {
-    name: /synced|learner@example\.com|tap to sync/i,
+    name: /synced|learner@example\.com|sign in/i,
   })
   await connectionPill.click()
 

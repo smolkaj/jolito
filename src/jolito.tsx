@@ -243,6 +243,233 @@ function AudioButton({
   )
 }
 
+export function CloudCheckIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-cloud-check ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+      <path d="m9 13.5 2 2 4-4" />
+    </svg>
+  )
+}
+
+export function UserIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-user ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <circle cx="12" cy="7.5" r="4" />
+      <path d="M20 21a8 8 0 0 0-16 0" />
+    </svg>
+  )
+}
+
+export function SyncSpinnerIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-sync-spinner ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M21 21v-5h-5" />
+    </svg>
+  )
+}
+
+export function CloudOffIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-cloud-off ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M22.6 16.5A5 5 0 0 0 18 10h-1.3a8 8 0 0 0-7-6M5.1 5.1A8 8 0 0 0 3.4 9.7a5 5 0 0 0 3.3 8.3H19" />
+      <line x1="2" y1="2" x2="22" y2="22" />
+    </svg>
+  )
+}
+
+export function SyncAlertIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-sync-alert ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="m12 3 9.5 16.5a1.5 1.5 0 0 1-1.3 2.25H3.8a1.5 1.5 0 0 1-1.3-2.25L12 3Z" />
+      <path d="M12 9v4.5" />
+      <path d="M12 17h.01" />
+    </svg>
+  )
+}
+
+export function ShieldIcon({
+  className = '',
+  size = 20,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-shield ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  )
+}
+
+export function PhoneLinkIcon({
+  className = '',
+  size = 16,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-phone-link ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <path d="M12 18h.01" />
+    </svg>
+  )
+}
+
+export function ClipboardIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-clipboard ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    </svg>
+  )
+}
+
 function renderDiffSegments(segments: DiffSegment[]) {
   return segments.map((seg, i) => {
     const isSpaceOnly = /^ +$/.test(seg.value)
@@ -1173,7 +1400,7 @@ function SyncModal({
         {!isBackendConfigured && !user ? (
           <div className="sync-notice-card">
             <span className="notice-icon" aria-hidden="true">
-              🛡️
+              <ShieldIcon size={22} />
             </span>
             <h4>Cloud sync is disabled in this preview</h4>
             <p>Flashcards and progress remain safely stored on this device.</p>
@@ -1191,7 +1418,7 @@ function SyncModal({
           <div className="sync-account-pane">
             <div className="account-info-card">
               <div className="account-avatar" aria-hidden="true">
-                ☁️
+                <CloudCheckIcon size={18} />
               </div>
               <div className="account-details">
                 <span className="account-badge">Signed in</span>
@@ -1208,7 +1435,11 @@ function SyncModal({
                 }}
                 disabled={loading}
               >
-                {loading ? 'Syncing…' : 'Sync now ⟳'}
+                <SyncSpinnerIcon
+                  size={15}
+                  className={loading ? 'is-spinning' : ''}
+                />
+                <span>{loading ? 'Syncing…' : 'Sync now'}</span>
               </button>
               <button
                 type="button"
@@ -1324,21 +1555,7 @@ function SyncModal({
                       title="Paste from clipboard"
                       aria-label="Paste from clipboard"
                     >
-                      <svg
-                        viewBox="0 0 16 16"
-                        width="12"
-                        height="12"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fill="currentColor"
-                          d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"
-                        />
-                        <path
-                          fill="currentColor"
-                          d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"
-                        />
-                      </svg>
+                      <ClipboardIcon size={12} />
                       <span>Paste</span>
                     </button>
                   )}
@@ -1400,27 +1617,32 @@ function ConnectionPill({
   isOnline,
   onClick,
 }: ConnectionPillProps) {
-  let stateClass = 'is-local'
-  let label = 'Local only · Tap to sync'
-  let ariaLabel = 'Local deck only. Tap to sync with cloud'
+  let stateClass = 'is-signed-out'
+  let label = 'Sign in'
+  let ariaLabel = 'Not signed in. Tap to sign in and sync your deck.'
+  let icon = <UserIcon />
 
   if (!isOnline) {
     stateClass = 'is-offline'
-    label = 'Offline · Saved locally'
-    ariaLabel = 'Offline. Changes saved locally'
+    label = 'Offline'
+    ariaLabel = 'Offline. Card changes are saved to this device.'
+    icon = <CloudOffIcon />
   } else if (authUser) {
     if (syncStatus === 'syncing') {
       stateClass = 'is-syncing'
       label = 'Syncing…'
-      ariaLabel = 'Synchronizing deck with cloud'
+      ariaLabel = 'Synchronizing deck with cloud…'
+      icon = <SyncSpinnerIcon />
     } else if (syncStatus === 'error') {
-      stateClass = 'is-offline'
-      label = 'Sync issue · Tap to retry'
-      ariaLabel = 'Sync issue. Tap to view status and retry'
+      stateClass = 'is-error'
+      label = 'Sync issue'
+      ariaLabel = 'Sync issue. Tap to view status and retry.'
+      icon = <SyncAlertIcon />
     } else {
       stateClass = 'is-synced'
-      label = 'Cloud synced ✓'
-      ariaLabel = 'Cloud synced with account'
+      label = 'Synced'
+      ariaLabel = 'Deck synced with cloud. Tap to manage sync.'
+      icon = <CloudCheckIcon />
     }
   }
 
@@ -1431,7 +1653,9 @@ function ConnectionPill({
       onClick={onClick}
       aria-label={ariaLabel}
     >
-      <i className="pill-dot" aria-hidden="true" />
+      <span className="pill-icon" aria-hidden="true">
+        {icon}
+      </span>
       <span>{label}</span>
     </button>
   )
