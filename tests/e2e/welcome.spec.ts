@@ -753,7 +753,7 @@ test('allows guests to practice example deck immediately and explore card creato
   await page.screenshot({ path: 'test-results/guest-create-exploration.png' })
 
   // 4. Open Sync Modal directly to inspect modal appearance
-  await page.getByRole('button', { name: /tap to sync/i }).click()
+  await page.getByRole('button', { name: /sign in/i }).click()
   await expect(
     page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
