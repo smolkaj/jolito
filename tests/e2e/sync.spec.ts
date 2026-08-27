@@ -33,7 +33,10 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   ).toBeVisible()
 
   // Save screenshot for autonomous visual inspection
-  await page.screenshot({ path: 'test-results/sync-modal.png' })
+  await page.screenshot({
+    path: 'test-results/sync-modal.png',
+    animations: 'disabled',
+  })
 
   // Close modal via Escape
   await page.keyboard.press('Escape')
@@ -107,6 +110,53 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
   ).toBeVisible()
 
   // Check accessibility
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
+test('renders signed-in cloud sync account view with zero WCAG violations', async ({
+  page,
+}) => {
+  // Seed signed-in session in localStorage before page load
+  await page.addInitScript(() => {
+    const session = {
+      accessToken:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItMTIzIiwiZW1haWwiOiJsZWFybmVyQGV4YW1wbGUuY29tIn0.mockSignature',
+      refreshToken: 'mock-refresh-token',
+      expiresAt: Date.now() + 86400000,
+      user: { id: 'usr-123', email: 'learner@example.com' },
+    }
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify(session),
+    )
+  })
+
+  await page.goto('/')
+
+  // Click connection pill
+  const connectionPill = page.getByRole('button', {
+    name: /synced|learner@example\.com|tap to sync/i,
+  })
+  await connectionPill.click()
+
+  // Verify modal is open and displays account email & action buttons
+  await expect(
+    page.getByRole('heading', { name: /^cloud sync$/i }),
+  ).toBeVisible()
+  await expect(page.getByText('learner@example.com')).toBeVisible()
+  await expect(page.getByRole('button', { name: /sync now/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible()
+
+  // Capture screenshot for visual verification
+  await page.screenshot({
+    path: 'test-results/sync-modal-signed-in.png',
+    animations: 'disabled',
+  })
+
+  // Zero WCAG violations
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()

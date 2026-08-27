@@ -2584,13 +2584,14 @@ kbd {
   font-family: var(--font-mono);
 }
 
-/* Unified Sync & Data Safety Modal Styles */
-.sync-modal,
-.data-safety-modal {
-  width: min(640px, 100%);
-  max-width: 640px;
-  padding: 22px 24px;
-  gap: 12px;
+/* ==========================================================================
+   Cloud Sync & Auth Modal
+   ========================================================================== */
+
+.sync-modal {
+  width: min(520px, 100%);
+  padding: 26px 28px 30px;
+  gap: 16px;
 }
 
 .modal-header-copy h2 {
@@ -2609,90 +2610,20 @@ kbd {
   line-height: 1.35;
 }
 
-.deck-stats-bar {
-  margin-top: -2px;
-}
-
-.modal-sections-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.safety-section {
-  padding: 12px 14px;
-  border: 1.5px solid var(--line-subtle);
-  border-radius: 14px;
-  background: var(--paper-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.section-title-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.section-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.section-title-row h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.section-caption {
-  margin: 1px 0 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-  line-height: 1.35;
-}
-
-.backup-subcard {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1.5px solid var(--line-subtle);
-  border-radius: 12px;
-  background: var(--card);
-}
-
-.backup-subcard h4 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.backup-subcard p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--ink-soft);
-  line-height: 1.35;
-}
-
 .sync-account-pane {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .account-info-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 12px 14px;
   border: 1.5px solid var(--line-subtle);
-  border-radius: 12px;
-  background: var(--card);
+  border-radius: 14px;
+  background: var(--paper-subtle);
 }
 
 .account-avatar {
@@ -2703,7 +2634,7 @@ kbd {
   justify-content: center;
   border: 2px solid var(--line);
   border-radius: 50%;
-  background: var(--paper-subtle);
+  background: var(--card);
   font-size: 16px;
   box-shadow: 2px 2px 0 var(--ink);
 }
@@ -2724,53 +2655,56 @@ kbd {
 
 .account-email {
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--ink);
+  word-break: break-all;
 }
 
 .sync-actions-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sync-auth-pane {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sync-auth-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .sync-explanation {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-soft);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-.sync-auth-buttons {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.sync-micro-hint {
+  font-size: 12px;
+  color: var(--ink-muted);
+  text-align: center;
+  margin: -4px 0 0;
+  line-height: 1.35;
 }
 
 .sync-pwa-guidance {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   background: var(--paper-subtle);
   border: 1.5px solid var(--line-subtle);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--ink-soft);
   text-align: left;
 }
@@ -2786,9 +2720,9 @@ kbd {
 }
 
 .sync-otp-input {
-  letter-spacing: 0.15em;
+  letter-spacing: 0.05em;
   font-family: var(--font-mono);
-  font-weight: 700;
+  font-weight: 600;
   width: 100%;
 }
 
@@ -2823,33 +2757,21 @@ kbd {
   border-color: var(--line);
 }
 
-.save-card-gate-banner {
+.sync-auth-buttons {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1.5px solid var(--turquesa-dark);
-  border-radius: 12px;
-  background: var(--card);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.4;
-}
-
-.save-card-gate-banner .gate-icon {
-  font-size: 16px;
-  flex-shrink: 0;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .sync-notice-card {
-  padding: 10px 12px;
+  padding: 14px 16px;
   border: 1.5px solid var(--line-subtle);
-  border-radius: 12px;
-  background: var(--card);
+  border-radius: 14px;
+  background: var(--paper-subtle);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
 }
 
 .sync-notice-card .notice-icon {
@@ -2858,177 +2780,16 @@ kbd {
 
 .sync-notice-card h4 {
   margin: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .sync-notice-card p {
   margin: 0;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--ink-soft);
-  line-height: 1.35;
-}
-
-/* ==========================================================================
-   Save Card Auth Modal (Ultra-Minimalist, Featherlight Design)
-   ========================================================================== */
-
-.save-card-auth-modal {
-  width: min(440px, 100%);
-  padding: clamp(28px, 5vw, 36px) clamp(22px, 4vw, 30px);
-  gap: 20px;
-  border-radius: 24px;
-  border: 2.5px solid var(--line);
-  box-shadow:
-    5px 5px 0 var(--line),
-    0 16px 36px -6px rgba(18, 24, 21, 0.12);
-  background: var(--card);
-  text-align: center;
-  position: relative;
-}
-
-.save-card-close-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-}
-
-.save-card-hero-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-}
-
-.save-card-hero-header h2 {
-  font-family: var(--font-serif);
-  font-size: clamp(22px, 4.5vw, 26px);
-  font-weight: 800;
-  letter-spacing: -0.6px;
-  color: var(--ink);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.save-card-subtitle {
-  font-size: 14px;
-  color: var(--ink-soft);
-  margin: 0;
   line-height: 1.4;
-  max-width: 320px;
-}
-
-/* Action Area */
-.save-card-action-container,
-.save-card-auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-
-.save-card-field {
-  width: 100%;
-}
-
-.save-card-email-input {
-  width: 100%;
-  height: 52px;
-  padding: 0 18px;
-  font-size: 16px;
-  border: 2px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-  color: var(--ink);
-  outline: none;
-  transition:
-    border-color 140ms ease,
-    box-shadow 140ms ease;
-  text-align: center;
-}
-
-.save-card-email-input::placeholder {
-  color: var(--ink-faint);
-  font-weight: 400;
-}
-
-.save-card-email-input:focus {
-  border-color: var(--rosa);
-  box-shadow: 0 0 0 3px var(--rosa-glow);
-}
-
-.save-card-otp-notice {
-  font-size: 14px;
-  color: var(--ink-soft);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.save-card-otp-input {
-  width: 100%;
-  height: 56px;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 0.3em;
-  text-align: center;
-  border: 2px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-  color: var(--ink);
-  outline: none;
-  transition:
-    border-color 140ms ease,
-    box-shadow 140ms ease;
-}
-
-.save-card-otp-input:focus {
-  border-color: var(--rosa);
-  box-shadow: 0 0 0 3px var(--rosa-glow);
-}
-
-.save-card-main-cta {
-  width: 100%;
-  height: 52px;
-  font-size: 16px;
-  font-weight: 700;
-  border-radius: 14px;
-  letter-spacing: -0.2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.save-card-micro-hint {
-  font-size: 12px;
-  color: var(--ink-muted);
-  text-align: center;
-  margin: 0;
-  line-height: 1.35;
-}
-
-.change-email-btn {
-  font-size: 13px;
-  color: var(--ink-muted);
-  align-self: center;
-  padding: 4px 8px;
-}
-
-.change-email-btn:hover {
-  color: var(--ink);
-}
-
-.save-card-pwa-guidance {
-  margin: -2px 0 2px;
-}
-
-.save-card-auth-secondary-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
 }
 
 .redirect-auth-banner {

@@ -314,263 +314,6 @@ interface PendingCardParams {
   reverseAnswer: string
 }
 
-function SaveCardAuthModal({
-  isOpen,
-  onClose,
-  auth,
-  onSaveLocally,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  auth: AuthService
-  onSaveLocally?: () => void
-}) {
-  const [email, setEmail] = useState('')
-  const [token, setToken] = useState('')
-  const [isOtpSent, setIsOtpSent] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [statusMsg, setStatusMsg] = useState<{
-    type: 'success' | 'error' | 'info'
-    message: string
-  } | null>(null)
-
-  const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
-  const handleSendLink = async (e?: FormEvent) => {
-    e?.preventDefault()
-    if (!email.trim()) return
-    setLoading(true)
-    setStatusMsg(null)
-    const res = await auth.sendMagicLink(email.trim())
-    setLoading(false)
-    if (res.success) {
-      setIsOtpSent(true)
-      setStatusMsg(null)
-    } else {
-      setStatusMsg({
-        type: 'error',
-        message: res.error || 'Failed to send sign-in link.',
-      })
-    }
-  }
-
-  const handlePasteClipboard = async () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
-      try {
-        const text = await navigator.clipboard.readText()
-        if (text) {
-          setToken(text.trim())
-        }
-      } catch {
-        // clipboard access denied/unavailable
-      }
-    }
-  }
-
-  const handleVerifyOtp = async (e?: FormEvent) => {
-    e?.preventDefault()
-    const cleanToken = token.trim()
-    if (!cleanToken) return
-    setLoading(true)
-    setStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), cleanToken)
-    setLoading(false)
-    if (res.success) {
-      onClose()
-    } else {
-      setStatusMsg({
-        type: 'error',
-        message: res.error || 'Invalid sign-in link.',
-      })
-    }
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content save-card-auth-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="save-card-auth-title"
-      >
-        <button
-          type="button"
-          className="modal-close save-card-close-btn"
-          onClick={onClose}
-          aria-label="Close dialog"
-        >
-          ✕
-        </button>
-
-        <div className="save-card-hero-header">
-          <h2 id="save-card-auth-title">Save your flashcard</h2>
-          <p className="save-card-subtitle">
-            Free cloud sync across all your devices.
-          </p>
-        </div>
-
-        {statusMsg && (
-          <div
-            className={`status-banner status-${statusMsg.type}`}
-            role={statusMsg.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{statusMsg.message}</p>
-          </div>
-        )}
-
-        {!isBackendConfigured ? (
-          <div className="save-card-action-container">
-            {onSaveLocally && (
-              <button
-                type="button"
-                className="primary-button save-card-main-cta"
-                onClick={onSaveLocally}
-              >
-                Save card to this device →
-              </button>
-            )}
-            <p className="save-card-micro-hint">
-              Cloud sync disabled in preview · Saved safely in this browser
-            </p>
-          </div>
-        ) : !isOtpSent ? (
-          <form
-            onSubmit={(e) => {
-              void handleSendLink(e)
-            }}
-            className="save-card-auth-form"
-          >
-            <div className="save-card-field">
-              <label htmlFor="save-card-email" className="visually-hidden">
-                Email address
-              </label>
-              <input
-                id="save-card-email"
-                type="email"
-                required
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email to save card…"
-                className="save-card-email-input"
-              />
-            </div>
-            <button
-              type="submit"
-              className="primary-button save-card-main-cta"
-              disabled={loading || !email.trim()}
-            >
-              {loading ? 'Sending link…' : 'Continue with email →'}
-            </button>
-            <p className="save-card-micro-hint">
-              We’ll send a passwordless sign-in link to your email.
-            </p>
-          </form>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              void handleVerifyOtp(e)
-            }}
-            className="save-card-auth-form"
-          >
-            <p className="save-card-otp-notice">
-              Paste the sign-in link sent to <strong>{email.trim()}</strong>
-            </p>
-            <div className="sync-pwa-guidance save-card-pwa-guidance">
-              <span className="pwa-guidance-icon" aria-hidden="true">
-                📱
-              </span>
-              <p>
-                <strong>Home Screen app on iOS?</strong> Long-press the button
-                in your email and tap <strong>Copy Link</strong>, or open the
-                link in Safari and copy your sign-in link there. Paste it below
-                to sign in.
-              </p>
-            </div>
-            <div className="save-card-field">
-              <label htmlFor="save-card-otp" className="visually-hidden">
-                Sign-in link
-              </label>
-              <div className="otp-input-wrap">
-                <input
-                  id="save-card-otp"
-                  type="text"
-                  required
-                  autoFocus
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  placeholder="Paste your sign-in link"
-                  autoComplete="one-time-code"
-                  className="save-card-otp-input"
-                />
-                {typeof navigator !== 'undefined' &&
-                  typeof navigator.clipboard?.readText === 'function' && (
-                    <button
-                      type="button"
-                      className="paste-clipboard-btn"
-                      onClick={() => {
-                        void handlePasteClipboard()
-                      }}
-                      title="Paste from clipboard"
-                      aria-label="Paste from clipboard"
-                    >
-                      📋 Paste
-                    </button>
-                  )}
-              </div>
-            </div>
-            <button
-              type="submit"
-              className="primary-button save-card-main-cta"
-              disabled={loading || !token.trim()}
-            >
-              {loading ? 'Saving…' : 'Verify & save card ✓'}
-            </button>
-            <div className="save-card-auth-secondary-row">
-              <button
-                type="button"
-                className="text-button change-email-btn"
-                disabled={loading}
-                onClick={() => {
-                  void handleSendLink()
-                }}
-              >
-                Resend link
-              </button>
-              <button
-                type="button"
-                className="text-button change-email-btn"
-                onClick={() => {
-                  setIsOtpSent(false)
-                  setToken('')
-                  setStatusMsg(null)
-                }}
-              >
-                ← Use a different email
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function getCardScheduleBadge(
   card: StudyCard,
   now: number,
@@ -1244,6 +987,7 @@ function SyncModal({
   onUpdateCards,
   auth,
   sync,
+  onSaveLocally,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -1256,14 +1000,14 @@ function SyncModal({
   ) => void
   auth: AuthService
   sync: SyncService
+  onSaveLocally?: (() => void) | undefined
 }) {
-  // Auth & Cloud Sync state
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [syncStatusMsg, setSyncStatusMsg] = useState<{
+  const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
   } | null>(null)
@@ -1273,8 +1017,11 @@ function SyncModal({
   useEffect(() => {
     return auth.onAuthStateChange((currentUser) => {
       setUser(currentUser)
+      if (currentUser && onSaveLocally) {
+        onClose()
+      }
     })
-  }, [auth])
+  }, [auth, onClose, onSaveLocally])
 
   useEffect(() => {
     if (!isOpen) return
@@ -1290,22 +1037,21 @@ function SyncModal({
 
   if (!isOpen) return null
 
-  // Auth handlers
   const handleSendLink = async (e?: FormEvent) => {
     e?.preventDefault()
     if (!email.trim()) return
     setLoading(true)
-    setSyncStatusMsg(null)
+    setStatusMsg(null)
     const res = await auth.sendMagicLink(email.trim())
     setLoading(false)
     if (res.success) {
       setIsOtpSent(true)
-      setSyncStatusMsg({
+      setStatusMsg({
         type: 'info',
-        message: 'Sign-in link sent! Check your email.',
+        message: 'Check your email for your sign-in link.',
       })
     } else {
-      setSyncStatusMsg({
+      setStatusMsg({
         type: 'error',
         message: res.error || 'Failed to send sign-in link.',
       })
@@ -1330,16 +1076,20 @@ function SyncModal({
     const cleanToken = token.trim()
     if (!cleanToken) return
     setLoading(true)
-    setSyncStatusMsg(null)
+    setStatusMsg(null)
     const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoading(false)
     if (res.success) {
-      setSyncStatusMsg({
-        type: 'success',
-        message: 'Signed in! Deck synchronized with cloud.',
-      })
+      if (onSaveLocally) {
+        onClose()
+      } else {
+        setStatusMsg({
+          type: 'success',
+          message: 'Signed in! Deck synchronized with cloud.',
+        })
+      }
     } else {
-      setSyncStatusMsg({
+      setStatusMsg({
         type: 'error',
         message: res.error || 'Invalid sign-in link.',
       })
@@ -1349,7 +1099,7 @@ function SyncModal({
   const handleSyncNow = async () => {
     if (!user) return
     setLoading(true)
-    setSyncStatusMsg(null)
+    setStatusMsg(null)
     const res = await syncDeckWithCloud({
       localCards: cards,
       localDeletedIds: deletedCardIds,
@@ -1360,12 +1110,12 @@ function SyncModal({
     })
     setLoading(false)
     if (res.success) {
-      setSyncStatusMsg({
+      setStatusMsg({
         type: 'success',
-        message: `Deck successfully synchronized with cloud.`,
+        message: 'Deck successfully synchronized with cloud.',
       })
     } else {
-      setSyncStatusMsg({
+      setStatusMsg({
         type: 'error',
         message: res.error || 'Failed to sync with cloud.',
       })
@@ -1376,7 +1126,7 @@ function SyncModal({
     await auth.signOut()
     setIsOtpSent(false)
     setToken('')
-    setSyncStatusMsg({
+    setStatusMsg({
       type: 'info',
       message: 'Signed out. Cards remain safely stored on this device.',
     })
@@ -1385,7 +1135,7 @@ function SyncModal({
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className="modal-content sync-modal data-safety-modal"
+        className="modal-content sync-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="sync-modal-title"
@@ -1395,7 +1145,7 @@ function SyncModal({
           <div className="modal-header-copy">
             <h2 id="sync-modal-title">Cloud sync</h2>
             <p className="modal-subtitle">
-              Replicate your cards and progress across devices automatically.
+              Sync your deck across all your devices.
             </p>
           </div>
           <button
@@ -1408,198 +1158,175 @@ function SyncModal({
           </button>
         </div>
 
-        <div className="modal-sections-stack">
-          {/* Section: Multi-Device Cloud Sync */}
-          <section className="safety-section cloud-sync-section">
-            <div className="section-title-row">
-              <span className="section-icon" aria-hidden="true">
+        {statusMsg && (
+          <div
+            className={`status-banner status-${statusMsg.type}`}
+            role={statusMsg.type === 'error' ? 'alert' : 'status'}
+          >
+            <p>{statusMsg.message}</p>
+          </div>
+        )}
+
+        {!isBackendConfigured && !user ? (
+          <div className="sync-notice-card">
+            <span className="notice-icon" aria-hidden="true">
+              🛡️
+            </span>
+            <h4>Cloud sync is disabled in this preview</h4>
+            <p>Flashcards and progress remain safely stored on this device.</p>
+            {onSaveLocally && (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={onSaveLocally}
+              >
+                Save card to this device →
+              </button>
+            )}
+          </div>
+        ) : user ? (
+          <div className="sync-account-pane">
+            <div className="account-info-card">
+              <div className="account-avatar" aria-hidden="true">
                 ☁️
-              </span>
-              <div>
-                <h3>Multi-device cloud sync</h3>
-                <p className="section-caption">
-                  Automatic background synchronization for your phones, tablets,
-                  and laptops.
-                </p>
+              </div>
+              <div className="account-details">
+                <span className="account-badge">Signed in</span>
+                <p className="account-email">{user.email}</p>
               </div>
             </div>
 
-            {syncStatusMsg && (
-              <div
-                className={`status-banner status-${syncStatusMsg.type}`}
-                role={syncStatusMsg.type === 'error' ? 'alert' : 'status'}
+            <div className="sync-actions-row">
+              <button
+                type="button"
+                className="primary-button sync-now-button"
+                onClick={() => {
+                  void handleSyncNow()
+                }}
+                disabled={loading}
               >
-                <p>{syncStatusMsg.message}</p>
-              </div>
-            )}
-
-            {!isBackendConfigured ? (
-              <div className="sync-notice-card">
-                <span className="notice-icon" aria-hidden="true">
-                  🛡️
-                </span>
-                <h4>Cloud sync is disabled in this preview</h4>
-                <p>
-                  Multi-device cloud synchronization is disabled in this preview
-                  deployment. Your flashcards, audio, and spaced-repetition
-                  schedules remain 100% functional and safely stored on this
-                  device.
-                </p>
-              </div>
-            ) : user ? (
-              <div className="sync-account-pane">
-                <div className="account-info-card">
-                  <div className="account-avatar" aria-hidden="true">
-                    ☁️
-                  </div>
-                  <div className="account-details">
-                    <span className="account-badge">Signed in</span>
-                    <p className="account-email">{user.email}</p>
-                  </div>
-                </div>
-
-                <div className="sync-actions-row">
-                  <button
-                    type="button"
-                    className="primary-button sync-now-button"
-                    onClick={() => {
-                      void handleSyncNow()
-                    }}
-                    disabled={loading}
-                  >
-                    {loading ? 'Syncing…' : 'Sync now ⟳'}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-button sign-out-button"
-                    onClick={() => {
-                      void handleSignOut()
-                    }}
-                    disabled={loading}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="sync-auth-pane">
-                {!isOtpSent ? (
-                  <form
-                    onSubmit={(e) => {
-                      void handleSendLink(e)
-                    }}
-                    className="sync-auth-form"
-                  >
-                    <p className="sync-explanation">
-                      Enter your email to receive a passwordless sign-in link.
-                    </p>
-                    <div className="field-group">
-                      <label htmlFor="sync-email">Email address</label>
-                      <input
-                        id="sync-email"
-                        type="email"
-                        required
-                        placeholder="learner@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
-                    </div>
+                {loading ? 'Syncing…' : 'Sync now ⟳'}
+              </button>
+              <button
+                type="button"
+                className="text-button sign-out-button"
+                onClick={() => {
+                  void handleSignOut()
+                }}
+                disabled={loading}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        ) : !isOtpSent ? (
+          <form
+            onSubmit={(e) => {
+              void handleSendLink(e)
+            }}
+            className="sync-auth-form"
+          >
+            <div className="field-group">
+              <label htmlFor="sync-email">Email address</label>
+              <input
+                id="sync-email"
+                type="email"
+                required
+                autoFocus
+                placeholder="learner@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loading || !email.trim()}
+            >
+              {loading ? 'Sending link…' : 'Send sign-in link →'}
+            </button>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              void handleVerifyOtp(e)
+            }}
+            className="sync-auth-form"
+          >
+            <p className="sync-explanation">
+              Paste the sign-in link sent to <strong>{email.trim()}</strong>:
+            </p>
+            <div className="sync-pwa-guidance">
+              <span className="pwa-guidance-icon" aria-hidden="true">
+                📱
+              </span>
+              <p>
+                <strong>Home Screen app on iOS?</strong> Long-press the button
+                in your email and tap <strong>Copy Link</strong>.
+              </p>
+            </div>
+            <div className="field-group">
+              <label htmlFor="sync-otp">Sign-in link</label>
+              <div className="otp-input-wrap">
+                <input
+                  id="sync-otp"
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Paste your sign-in link"
+                  autoComplete="one-time-code"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className="sync-otp-input"
+                />
+                {typeof navigator !== 'undefined' &&
+                  typeof navigator.clipboard?.readText === 'function' && (
                     <button
-                      type="submit"
-                      className="primary-button"
-                      disabled={loading || !email.trim()}
+                      type="button"
+                      className="paste-clipboard-btn"
+                      onClick={() => {
+                        void handlePasteClipboard()
+                      }}
+                      title="Paste from clipboard"
+                      aria-label="Paste from clipboard"
                     >
-                      {loading ? 'Sending link…' : 'Send sign-in link →'}
+                      📋 Paste
                     </button>
-                  </form>
-                ) : (
-                  <form
-                    onSubmit={(e) => {
-                      void handleVerifyOtp(e)
-                    }}
-                    className="sync-auth-form"
-                  >
-                    <p className="sync-explanation">
-                      Paste the sign-in link sent to <strong>{email}</strong>:
-                    </p>
-                    <div className="sync-pwa-guidance">
-                      <span className="pwa-guidance-icon" aria-hidden="true">
-                        📱
-                      </span>
-                      <p>
-                        <strong>Home Screen app on iOS?</strong> Long-press the
-                        button in your email and tap <strong>Copy Link</strong>,
-                        or open the link in Safari and copy your sign-in link
-                        there. Paste it below to sign in.
-                      </p>
-                    </div>
-                    <div className="field-group">
-                      <label htmlFor="sync-otp">Sign-in link</label>
-                      <div className="otp-input-wrap">
-                        <input
-                          id="sync-otp"
-                          type="text"
-                          required
-                          autoFocus
-                          placeholder="Paste your sign-in link"
-                          autoComplete="one-time-code"
-                          value={token}
-                          onChange={(e) => setToken(e.target.value)}
-                          className="sync-otp-input"
-                        />
-                        {typeof navigator !== 'undefined' &&
-                          typeof navigator.clipboard?.readText ===
-                            'function' && (
-                            <button
-                              type="button"
-                              className="paste-clipboard-btn"
-                              onClick={() => {
-                                void handlePasteClipboard()
-                              }}
-                              title="Paste from clipboard"
-                              aria-label="Paste from clipboard"
-                            >
-                              📋 Paste
-                            </button>
-                          )}
-                      </div>
-                    </div>
-                    <div className="sync-auth-buttons">
-                      <button
-                        type="submit"
-                        className="primary-button"
-                        disabled={loading || !token.trim()}
-                      >
-                        {loading ? 'Verifying…' : 'Verify & sync →'}
-                      </button>
-                      <button
-                        type="button"
-                        className="text-button"
-                        disabled={loading}
-                        onClick={() => {
-                          void handleSendLink()
-                        }}
-                      >
-                        Resend link
-                      </button>
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={() => {
-                          setIsOtpSent(false)
-                          setToken('')
-                          setSyncStatusMsg(null)
-                        }}
-                      >
-                        Use different email
-                      </button>
-                    </div>
-                  </form>
-                )}
+                  )}
               </div>
-            )}
-          </section>
-        </div>
+            </div>
+            <div className="sync-auth-buttons">
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={loading || !token.trim()}
+              >
+                {loading ? 'Verifying…' : 'Verify & sync →'}
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={loading}
+                onClick={() => {
+                  void handleSendLink()
+                }}
+              >
+                Resend link
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setToken('')
+                  setStatusMsg(null)
+                }}
+              >
+                Use different email
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )
@@ -1790,7 +1517,6 @@ export function App({
   const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
-  const [isSaveCardAuthOpen, setIsSaveCardAuthOpen] = useState(false)
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
@@ -2022,7 +1748,6 @@ export function App({
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
           saveCardFromParams(pending)
-          setIsSaveCardAuthOpen(false)
         } else {
           const userCards = filterOutStarterCards(cardsRef.current)
           const deletedIds = Array.from(deletedCardIdsRef.current)
@@ -2438,10 +2163,6 @@ export function App({
 
   const closeSyncModal = useCallback(() => {
     setIsSyncOpen(false)
-  }, [])
-
-  const closeSaveCardAuthModal = useCallback(() => {
-    setIsSaveCardAuthOpen(false)
     setPendingCard(null)
     pendingCardRef.current = null
   }, [])
@@ -2449,8 +2170,10 @@ export function App({
   const handleSavePendingLocally = useCallback(() => {
     if (pendingCardRef.current) {
       saveCardFromParams(pendingCardRef.current)
+      pendingCardRef.current = null
+      setPendingCard(null)
     }
-    setIsSaveCardAuthOpen(false)
+    setIsSyncOpen(false)
   }, [saveCardFromParams])
 
   function createCard(event: FormEvent<HTMLFormElement>) {
@@ -2476,7 +2199,7 @@ export function App({
     if (!authUserRef.current) {
       setPendingCard(cardParams)
       pendingCardRef.current = cardParams
-      setIsSaveCardAuthOpen(true)
+      setIsSyncOpen(true)
       return
     }
 
@@ -2624,6 +2347,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3008,12 +2732,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-        />
-        <SaveCardAuthModal
-          isOpen={isSaveCardAuthOpen}
-          onClose={closeSaveCardAuthModal}
-          auth={services.auth}
-          onSaveLocally={handleSavePendingLocally}
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3398,6 +3117,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3480,6 +3200,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3672,6 +3393,7 @@ export function App({
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}
+        onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
       />
       <EditCardModal
         isOpen={editingCard !== null}
