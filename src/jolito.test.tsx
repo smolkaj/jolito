@@ -1092,6 +1092,151 @@ describe('Jolito', () => {
     expect(services.mockSync.syncedCount).toBeGreaterThan(0)
   })
 
+  it('does not resurrect deleted cards when deleting and then syncing with cloud', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = [
+      ...createStudyCards(
+        {
+          spanish: 'zapato',
+          english: 'shoe',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-1',
+        1000,
+      ),
+      ...createStudyCards(
+        {
+          spanish: 'sombrero',
+          english: 'hat',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-2',
+        1000,
+      ),
+    ]
+
+    const services = createTestServices({
+      cards,
+      remoteCards: cards,
+      remoteDeletedCardIds: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    render(<App services={services} />)
+
+    // Navigate to deck manager
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
+
+    // Select and delete "zapato" card
+    const checkbox = screen.getByRole('checkbox', {
+      name: /select card zapato/i,
+    })
+    await user.click(checkbox)
+
+    const batchDeleteBtn = screen.getByRole('button', {
+      name: /delete selected \(1\)/i,
+    })
+    await user.click(batchDeleteBtn)
+    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+    // Card 1 is deleted locally
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+    expect(
+      screen.queryByRole('row', { name: /card: zapato/i }),
+    ).not.toBeInTheDocument()
+
+    // Trigger sync now via SyncModal
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
+    await user.click(syncNowBtn)
+
+    expect(
+      await screen.findByText(/deck successfully synchronized with cloud/i),
+    ).toBeInTheDocument()
+
+    // Close sync modal with Escape
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    // Verify deleted card has NOT reappeared in deck manager!
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+    expect(
+      screen.queryByRole('row', { name: /card: zapato/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('row', { name: /card: sombrero/i }),
+    ).toBeInTheDocument()
+
+    // Verify remote and local repository states
+    expect(services.mockSync.remoteCards).toHaveLength(1)
+    expect(services.mockSync.remoteCards[0]?.id).toBe('note-2:es-en')
+    expect(services.mockSync.remoteDeletedCardIds).toContain('note-1:es-en')
+    expect(services.memoryCards.load([])).toHaveLength(1)
+    expect(services.memoryCards.getDeletedCardIds()).toContain('note-1:es-en')
+  })
+
+  it('removes cards deleted on another device when syncing', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = [
+      ...createStudyCards(
+        {
+          spanish: 'zapato',
+          english: 'shoe',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-1',
+        1000,
+      ),
+      ...createStudyCards(
+        {
+          spanish: 'sombrero',
+          english: 'hat',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-2',
+        1000,
+      ),
+    ]
+
+    const card2 = cards[1]!
+    const services = createTestServices({
+      cards,
+      remoteCards: [card2],
+      remoteDeletedCardIds: ['note-1:es-en'],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    render(<App services={services} />)
+
+    // Open sync modal and trigger sync
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
+    await user.click(syncNowBtn)
+
+    expect(
+      await screen.findByText(/deck successfully synchronized with cloud/i),
+    ).toBeInTheDocument()
+
+    // Close sync modal
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    // Navigate to deck manager
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+    // Card 1 was deleted on remote, so it must not be in local deck
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+    expect(
+      screen.queryByRole('row', { name: /card: zapato/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('row', { name: /card: sombrero/i }),
+    ).toBeInTheDocument()
+  })
+
   it('allows signed in user to sign out and returns to auth form', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({

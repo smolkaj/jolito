@@ -39,8 +39,25 @@ const cardB: StudyCard = {
 }
 
 describe('deckSyncPayloadSchema', () => {
-  it('validates a valid deck sync payload', () => {
+  it('validates a valid deck sync payload with deletedCardIds', () => {
     const payload = {
+      version: 1,
+      app: 'jolito',
+      updatedAt: '2026-08-23T12:00:00.000Z',
+      deviceId: 'device-123',
+      cards: [cardA, cardB],
+      deletedCardIds: ['card-c:es-en'],
+    }
+
+    const parsed = deckSyncPayloadSchema.safeParse(payload)
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.deletedCardIds).toEqual(['card-c:es-en'])
+    }
+  })
+
+  it('defaults deletedCardIds to empty array when omitted for backwards compatibility', () => {
+    const legacyPayload = {
       version: 1,
       app: 'jolito',
       updatedAt: '2026-08-23T12:00:00.000Z',
@@ -48,8 +65,11 @@ describe('deckSyncPayloadSchema', () => {
       cards: [cardA, cardB],
     }
 
-    const parsed = deckSyncPayloadSchema.safeParse(payload)
+    const parsed = deckSyncPayloadSchema.safeParse(legacyPayload)
     expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.deletedCardIds).toEqual([])
+    }
   })
 
   it('rejects invalid payload without proper metadata', () => {
@@ -68,10 +88,61 @@ describe('reconcileStudyCards', () => {
     const local = [cardA]
     const remote = [cardB]
 
-    const merged = reconcileStudyCards(local, remote)
-    expect(merged).toHaveLength(2)
-    expect(merged.some((c) => c.id === 'card-a:es-en')).toBe(true)
-    expect(merged.some((c) => c.id === 'card-b:es-en')).toBe(true)
+    const result = reconcileStudyCards(local, remote)
+    expect(result.cards).toHaveLength(2)
+    expect(result.cards.some((c) => c.id === 'card-a:es-en')).toBe(true)
+    expect(result.cards.some((c) => c.id === 'card-b:es-en')).toBe(true)
+    expect(result.deletedCardIds).toEqual([])
+  })
+
+  it('excludes locally deleted cards and prevents remote copies from reappearing', () => {
+    const localCards: StudyCard[] = []
+    const remoteCards = [cardA, cardB]
+    const localDeletedIds = ['card-a:es-en']
+
+    const result = reconcileStudyCards(
+      localCards,
+      remoteCards,
+      localDeletedIds,
+      [],
+    )
+    expect(result.cards).toHaveLength(1)
+    expect(result.cards[0]?.id).toBe('card-b:es-en')
+    expect(result.deletedCardIds).toContain('card-a:es-en')
+  })
+
+  it('excludes remotely deleted cards from local deck on sync', () => {
+    const localCards = [cardA, cardB]
+    const remoteCards = [cardB]
+    const remoteDeletedIds = ['card-a:es-en']
+
+    const result = reconcileStudyCards(
+      localCards,
+      remoteCards,
+      [],
+      remoteDeletedIds,
+    )
+    expect(result.cards).toHaveLength(1)
+    expect(result.cards[0]?.id).toBe('card-b:es-en')
+    expect(result.deletedCardIds).toContain('card-a:es-en')
+  })
+
+  it('unions deleted card IDs across local and remote', () => {
+    const localCards: StudyCard[] = []
+    const remoteCards: StudyCard[] = []
+    const localDeletedIds = ['card-a:es-en']
+    const remoteDeletedIds = ['card-b:es-en']
+
+    const result = reconcileStudyCards(
+      localCards,
+      remoteCards,
+      localDeletedIds,
+      remoteDeletedIds,
+    )
+    expect(result.cards).toHaveLength(0)
+    expect(result.deletedCardIds).toEqual(
+      expect.arrayContaining(['card-a:es-en', 'card-b:es-en']),
+    )
   })
 
   it('favors card with higher review count when reviewed on one device', () => {
@@ -94,10 +165,10 @@ describe('reconcileStudyCards', () => {
       },
     }
 
-    const merged = reconcileStudyCards([localCardA], [remoteCardA])
-    expect(merged).toHaveLength(1)
-    expect(merged[0]?.schedule.reviews).toBe(3)
-    expect(merged[0]?.schedule.state).toBe('review')
+    const result = reconcileStudyCards([localCardA], [remoteCardA])
+    expect(result.cards).toHaveLength(1)
+    expect(result.cards[0]?.schedule.reviews).toBe(3)
+    expect(result.cards[0]?.schedule.state).toBe('review')
   })
 
   it('favors remote card when remote has higher reviews or progression', () => {
@@ -112,9 +183,9 @@ describe('reconcileStudyCards', () => {
       },
     }
 
-    const merged = reconcileStudyCards([localCardA], [remoteCardA])
-    expect(merged).toHaveLength(1)
-    expect(merged[0]?.schedule.reviews).toBe(2)
+    const result = reconcileStudyCards([localCardA], [remoteCardA])
+    expect(result.cards).toHaveLength(1)
+    expect(result.cards[0]?.schedule.reviews).toBe(2)
   })
 
   it('favors card with review state over new state when reviews are tied', () => {
@@ -127,11 +198,11 @@ describe('reconcileStudyCards', () => {
       schedule: { ...cardA.schedule, state: 'learning' as const, reviews: 0 },
     }
 
-    const merged = reconcileStudyCards([localNew], [remoteLearning])
-    expect(merged[0]?.schedule.state).toBe('learning')
+    const result = reconcileStudyCards([localNew], [remoteLearning])
+    expect(result.cards[0]?.schedule.state).toBe('learning')
 
-    const mergedReverse = reconcileStudyCards([remoteLearning], [localNew])
-    expect(mergedReverse[0]?.schedule.state).toBe('learning')
+    const resultReverse = reconcileStudyCards([remoteLearning], [localNew])
+    expect(resultReverse.cards[0]?.schedule.state).toBe('learning')
   })
 
   it('favors card with more lapses or later due date when reviews are tied', () => {
@@ -144,14 +215,14 @@ describe('reconcileStudyCards', () => {
       schedule: { ...cardA.schedule, reviews: 1, lapses: 0 },
     }
 
-    const merged = reconcileStudyCards([localLapsed], [remoteNoLapse])
-    expect(merged[0]?.schedule.lapses).toBe(1)
+    const result = reconcileStudyCards([localLapsed], [remoteNoLapse])
+    expect(result.cards[0]?.schedule.lapses).toBe(1)
 
-    const mergedRemoteLapse = reconcileStudyCards(
+    const resultRemoteLapse = reconcileStudyCards(
       [remoteNoLapse],
       [localLapsed],
     )
-    expect(mergedRemoteLapse[0]?.schedule.lapses).toBe(1)
+    expect(resultRemoteLapse.cards[0]?.schedule.lapses).toBe(1)
 
     const localDueLater = {
       ...cardA,
@@ -161,16 +232,16 @@ describe('reconcileStudyCards', () => {
       ...cardA,
       schedule: { ...cardA.schedule, reviews: 1, lapses: 1, dueAt: 5000 },
     }
-    const mergedDueLocal = reconcileStudyCards(
+    const resultDueLocal = reconcileStudyCards(
       [localDueLater],
       [remoteDueEarlier],
     )
-    expect(mergedDueLocal[0]?.schedule.dueAt).toBe(9000)
+    expect(resultDueLocal.cards[0]?.schedule.dueAt).toBe(9000)
 
-    const mergedDueRemote = reconcileStudyCards(
+    const resultDueRemote = reconcileStudyCards(
       [remoteDueEarlier],
       [localDueLater],
     )
-    expect(mergedDueRemote[0]?.schedule.dueAt).toBe(9000)
+    expect(resultDueRemote.cards[0]?.schedule.dueAt).toBe(9000)
   })
 })

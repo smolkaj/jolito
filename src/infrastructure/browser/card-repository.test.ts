@@ -16,20 +16,22 @@ const fallback = createStudyCards(
 describe('LocalStorageCardRepository', () => {
   beforeEach(() => localStorage.clear())
 
-  it('round-trips the versioned collection with Zod schema validation', () => {
+  it('round-trips the versioned collection with Zod schema validation and deletedCardIds', () => {
     const repo = new LocalStorageCardRepository(localStorage)
-    repo.save(fallback)
+    repo.save(fallback, ['deleted-id-1', 'deleted-id-2'])
     expect(repo.load([])).toEqual(fallback)
-    expect(localStorage.getItem('jolito-library-v1')).toContain('Hola')
+    expect(repo.getDeletedCardIds()).toEqual(['deleted-id-1', 'deleted-id-2'])
+    expect(localStorage.getItem('jolito-library-v1')).toContain('deleted-id-1')
   })
 
-  it('migrates cards from ritmo-library-v1 seamlessly', () => {
+  it('migrates cards from ritmo-library-v1 seamlessly and initializes empty deletedCardIds', () => {
     const repo = new LocalStorageCardRepository(localStorage)
     localStorage.setItem(
       'ritmo-library-v1',
       JSON.stringify({ version: 1, cards: fallback }),
     )
     expect(repo.load([])).toEqual(fallback)
+    expect(repo.getDeletedCardIds()).toEqual([])
     expect(localStorage.getItem('jolito-library-v1')).toContain('Hola')
   })
 
@@ -52,6 +54,7 @@ describe('LocalStorageCardRepository', () => {
       context: '',
       schedule: { dueAt: 0 },
     })
+    expect(repo.getDeletedCardIds()).toEqual([])
     expect(localStorage.getItem('jolito-library-v1')).toContain('¿Qué onda?')
   })
 
@@ -61,5 +64,6 @@ describe('LocalStorageCardRepository', () => {
     localStorage.setItem('ritmo-library-v1', '{nope')
     localStorage.setItem('ritmo-cards', JSON.stringify([{ prompt: 3 }]))
     expect(repo.load(fallback)).toBe(fallback)
+    expect(repo.getDeletedCardIds()).toEqual([])
   })
 })

@@ -50,7 +50,7 @@ describe('syncDeckWithCloud', () => {
     expect(onCardsUpdated).not.toHaveBeenCalled()
   })
 
-  it('executes sync and notifies when remote deck provides updated cards', async () => {
+  it('executes sync and notifies when remote deck provides updated cards and deletedCardIds', async () => {
     const updatedCard: StudyCard = {
       ...mockCard,
       prompt: '¡Hola!',
@@ -58,6 +58,7 @@ describe('syncDeckWithCloud', () => {
     const syncDeckMock = vi.fn().mockResolvedValue({
       success: true,
       cards: [updatedCard],
+      deletedCardIds: ['deleted-id-1'],
       syncedAt: 123456789,
     })
     const syncService: SyncService = {
@@ -70,14 +71,17 @@ describe('syncDeckWithCloud', () => {
 
     const result = await syncDeckWithCloud({
       localCards: [mockCard],
+      localDeletedIds: ['deleted-id-1'],
       user: testUser,
       syncService,
       onCardsUpdated,
     })
 
     expect(result.success).toBe(true)
-    expect(syncDeckMock).toHaveBeenCalledWith([mockCard], testUser)
-    expect(onCardsUpdated).toHaveBeenCalledWith([updatedCard])
+    expect(syncDeckMock).toHaveBeenCalledWith([mockCard], testUser, [
+      'deleted-id-1',
+    ])
+    expect(onCardsUpdated).toHaveBeenCalledWith([updatedCard], ['deleted-id-1'])
   })
 
   it('returns failure result without modifying cards when cloud sync fails', async () => {

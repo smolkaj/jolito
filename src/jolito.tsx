@@ -931,6 +931,7 @@ function DeleteCardsModal({
 function DeckBackupModalInner({
   onClose,
   cards,
+  deletedCardIds = [],
   onUpdateCards,
   clock,
   user,
@@ -938,7 +939,12 @@ function DeckBackupModalInner({
 }: {
   onClose: () => void
   cards: StudyCard[]
-  onUpdateCards: (newCards: StudyCard[]) => void
+  deletedCardIds?: string[]
+  onUpdateCards: (
+    newCards: StudyCard[],
+    syncToCloud?: boolean,
+    newDeletedCardIds?: string[],
+  ) => void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -1045,9 +1051,11 @@ function DeckBackupModalInner({
       if (user) {
         void syncDeckWithCloud({
           localCards: result.cards,
+          localDeletedIds: deletedCardIds,
           user,
           syncService: sync,
-          onCardsUpdated: onUpdateCards,
+          onCardsUpdated: (newCards, newDeletedIds) =>
+            onUpdateCards(newCards, false, newDeletedIds),
         })
       }
     } else {
@@ -1215,7 +1223,12 @@ function DeckBackupModal(props: {
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  onUpdateCards: (newCards: StudyCard[]) => void
+  deletedCardIds?: string[]
+  onUpdateCards: (
+    newCards: StudyCard[],
+    syncToCloud?: boolean,
+    newDeletedCardIds?: string[],
+  ) => void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -1228,6 +1241,7 @@ function SyncModal({
   isOpen,
   onClose,
   cards,
+  deletedCardIds = [],
   onUpdateCards,
   auth,
   sync,
@@ -1235,7 +1249,12 @@ function SyncModal({
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  onUpdateCards: (newCards: StudyCard[]) => void
+  deletedCardIds?: string[]
+  onUpdateCards: (
+    newCards: StudyCard[],
+    syncToCloud?: boolean,
+    newDeletedCardIds?: string[],
+  ) => void
   auth: AuthService
   sync: SyncService
 }) {
@@ -1334,9 +1353,11 @@ function SyncModal({
     setSyncStatusMsg(null)
     const res = await syncDeckWithCloud({
       localCards: cards,
+      localDeletedIds: deletedCardIds,
       user,
       syncService: sync,
-      onCardsUpdated: onUpdateCards,
+      onCardsUpdated: (newCards, newDeletedIds) =>
+        onUpdateCards(newCards, false, newDeletedIds),
     })
     setLoading(false)
     if (res.success) {
@@ -1790,6 +1811,9 @@ export function App({
   )
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
   const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+  const [deletedCardIds, setDeletedCardIds] = useState<string[]>(() =>
+    services.cards.getDeletedCardIds(),
+  )
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
@@ -1820,18 +1844,33 @@ export function App({
   const viewRef = useRef(view)
   const authUserRef = useRef(authUser)
   const pendingCardRef = useRef(pendingCard)
+  const deletedCardIdsRef = useRef<Set<string>>(new Set(deletedCardIds))
 
   useEffect(() => {
     cardsRef.current = cards
     viewRef.current = view
     authUserRef.current = authUser
     pendingCardRef.current = pendingCard
+    deletedCardIdsRef.current = new Set(deletedCardIds)
   })
 
   const onUpdateCards = useCallback(
-    (newCards: StudyCard[], syncToCloud = true) => {
+    (
+      newCards: StudyCard[],
+      syncToCloud = true,
+      newDeletedCardIds?: string[],
+    ) => {
+      if (newDeletedCardIds !== undefined) {
+        deletedCardIdsRef.current = new Set(newDeletedCardIds)
+      }
+      for (const card of newCards) {
+        deletedCardIdsRef.current.delete(card.id)
+      }
+      const deletedIdsArray = Array.from(deletedCardIdsRef.current)
+
       setCards(newCards)
-      services.cards.save(newCards)
+      setDeletedCardIds(deletedIdsArray)
+      services.cards.save(newCards, deletedIdsArray)
       const now = services.clock.now()
       setReferenceTime(now)
       setQueue((currentQueue) => {
@@ -1845,7 +1884,7 @@ export function App({
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
         void services.sync
-          .syncDeck(newCards, authUserRef.current)
+          .syncDeck(newCards, authUserRef.current, deletedIdsArray)
           .then((res) => {
             if (res.success) setSyncStatus('synced')
             else setSyncStatus('error')
@@ -1875,7 +1914,11 @@ export function App({
       for (const id of idsToDelete) {
         updatedCards = deleteStudyCard(updatedCards, id)
       }
-      onUpdateCards(updatedCards)
+      for (const id of idsToDelete) {
+        deletedCardIdsRef.current.add(id)
+      }
+      const updatedDeletedIds = Array.from(deletedCardIdsRef.current)
+      onUpdateCards(updatedCards, true, updatedDeletedIds)
       setQueue((prevQueue) => {
         const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
         const deletedCount = prevQueue.length - nextQueue.length
@@ -1982,11 +2025,14 @@ export function App({
           setIsSaveCardAuthOpen(false)
         } else {
           const userCards = filterOutStarterCards(cardsRef.current)
+          const deletedIds = Array.from(deletedCardIdsRef.current)
           void syncDeckWithCloud({
             localCards: userCards,
+            localDeletedIds: deletedIds,
             user,
             syncService: services.sync,
-            onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
+            onCardsUpdated: (newCards, newDeletedIds) =>
+              onUpdateCards(newCards, false, newDeletedIds),
           }).then((res) => {
             if (res.success) setSyncStatus('synced')
           })
@@ -2002,11 +2048,18 @@ export function App({
       if (authUserRef.current) {
         setSyncStatus('syncing')
         const userCards = filterOutStarterCards(cardsRef.current)
+        const deletedIds = Array.from(deletedCardIdsRef.current)
         void services.sync
-          .syncDeck(userCards, authUserRef.current)
+          .syncDeck(userCards, authUserRef.current, deletedIds)
           .then((res) => {
-            if (res.success) setSyncStatus('synced')
-            else setSyncStatus('error')
+            if (res.success) {
+              setSyncStatus('synced')
+              if (res.cards) {
+                onUpdateCards(res.cards, false, res.deletedCardIds)
+              }
+            } else {
+              setSyncStatus('error')
+            }
           })
       }
     }
@@ -2017,7 +2070,7 @@ export function App({
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
     }
-  }, [services.sync])
+  }, [onUpdateCards, services.sync])
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()
@@ -2126,8 +2179,8 @@ export function App({
   }, [])
 
   useEffect(() => {
-    services.cards.save(cards)
-  }, [cards, services.cards])
+    services.cards.save(cards, deletedCardIds)
+  }, [cards, deletedCardIds, services.cards])
 
   const currentCardId = currentCard?.id
   const currentPrompt = currentCard?.prompt
@@ -2531,6 +2584,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -2869,6 +2923,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -3246,6 +3301,7 @@ export function App({
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           clock={services.clock}
           user={authUser}
@@ -3256,6 +3312,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -3337,6 +3394,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -3527,6 +3585,7 @@ export function App({
         isOpen={isSyncOpen}
         onClose={closeSyncModal}
         cards={cards}
+        deletedCardIds={deletedCardIds}
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}

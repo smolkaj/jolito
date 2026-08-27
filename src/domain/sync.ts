@@ -7,6 +7,7 @@ export const deckSyncPayloadSchema = z.object({
   updatedAt: z.string(),
   deviceId: z.string(),
   cards: z.array(studyCardSchema),
+  deletedCardIds: z.array(z.string()).default([]),
 })
 
 export type DeckSyncPayload = z.infer<typeof deckSyncPayloadSchema>
@@ -14,22 +15,39 @@ export type DeckSyncPayload = z.infer<typeof deckSyncPayloadSchema>
 export type SyncStatus =
   'idle' | 'syncing' | 'synced' | 'offline' | 'error' | 'unauthenticated'
 
+export interface ReconciledDeck {
+  cards: StudyCard[]
+  deletedCardIds: string[]
+}
+
 /**
- * Deterministically reconciles two sets of study cards from different devices.
- * - All unique card IDs from both sets are preserved.
+ * Deterministically reconciles two sets of study cards and deletion tombstones from different devices.
+ * - Any card ID present in either local or remote deletedCardIds is excluded.
+ * - All remaining unique card IDs from both sets are preserved.
  * - For matching IDs, favors the card with higher study progression (more reviews,
  *   active review state over new, or later due date).
+ * - Combined deletedCardIds includes the union of tombstones from both sets.
  */
 export function reconcileStudyCards(
   localCards: StudyCard[],
   remoteCards: StudyCard[],
-): StudyCard[] {
+  localDeletedIds: string[] = [],
+  remoteDeletedIds: string[] = [],
+): ReconciledDeck {
+  const allDeletedIds = new Set<string>([
+    ...localDeletedIds,
+    ...remoteDeletedIds,
+  ])
+
+  const activeLocal = localCards.filter((card) => !allDeletedIds.has(card.id))
+  const activeRemote = remoteCards.filter((card) => !allDeletedIds.has(card.id))
+
   const remoteMap = new Map<string, StudyCard>(
-    remoteCards.map((card) => [card.id, card]),
+    activeRemote.map((card) => [card.id, card]),
   )
   const reconciled: StudyCard[] = []
 
-  for (const local of localCards) {
+  for (const local of activeLocal) {
     const remote = remoteMap.get(local.id)
     if (!remote) {
       reconciled.push(local)
@@ -44,7 +62,10 @@ export function reconcileStudyCards(
     reconciled.push(remainingRemote)
   }
 
-  return reconciled
+  return {
+    cards: reconciled,
+    deletedCardIds: Array.from(allDeletedIds),
+  }
 }
 
 function reconcileSingleCard(local: StudyCard, remote: StudyCard): StudyCard {
