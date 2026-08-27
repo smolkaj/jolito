@@ -572,6 +572,7 @@ test('enforces universal geometric invariants across all pill, chip, and badge e
         '.deck-filter-pills',
         '.deck-batch-actions',
         '.deck-card-row',
+        '.sync-actions-row',
       ]
       const results: { container: string; heights: number[] }[] = []
 
@@ -580,7 +581,7 @@ test('enforces universal geometric invariants across all pill, chip, and badge e
         for (const container of containers) {
           const pills = Array.from(
             container.querySelectorAll<HTMLElement>(
-              '.connection-pill, .text-button, .deck-filter-pill, .deck-stat-chip, .deck-direction-badge, .batch-delete-btn, .deck-clear-selection-btn',
+              '.connection-pill, .text-button, .deck-filter-pill, .deck-stat-chip, .deck-direction-badge, .batch-delete-btn, .deck-clear-selection-btn, .sync-now-button, .sign-out-button',
             ),
           )
 
@@ -603,13 +604,60 @@ test('enforces universal geometric invariants across all pill, chip, and badge e
           expect(h).toBeCloseTo(24, 1)
         }
       } else {
-        // Nav actions / Filter pills / Batch actions contain 32px pills
+        // Nav actions / Filter pills / Batch actions / Sync actions contain 32px pills
         for (const h of row.heights) {
           expect(h).toBeCloseTo(32, 1)
         }
       }
     }
   }
+
+  // 6. Test Modals: Signed-in Cloud Sync Modal (Sync now & Sign out pills on the same line)
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify({
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh',
+        expiresAt: Date.now() + 3600000,
+        user: { id: 'usr-modal-test', email: 'modal-tester@example.com' },
+      }),
+    )
+  })
+  await page.goto('/')
+  await page.locator('.connection-pill').click()
+  await expect(page.locator('.sync-modal')).toBeVisible()
+
+  const syncNowHeight = await page
+    .locator('.sync-now-button')
+    .evaluate((el: HTMLElement) => el.offsetHeight)
+  const signOutHeight = await page
+    .locator('.sign-out-button')
+    .evaluate((el: HTMLElement) => el.offsetHeight)
+
+  expect(syncNowHeight).toBeCloseTo(32, 1)
+  expect(signOutHeight).toBeCloseTo(32, 1)
+  expect(syncNowHeight).toBe(signOutHeight)
+
+  // Close sync modal
+  await page.locator('.sync-modal .modal-close').click()
+  await expect(page.locator('.sync-modal')).not.toBeVisible()
+
+  // 7. Test Modals: Edit Card Modal action buttons on the same line
+  await page.goto('/#/deck')
+  await page.locator('.deck-card-row').first().click()
+  await expect(page.locator('.edit-card-modal')).toBeVisible()
+
+  const editCancelHeight = await page
+    .locator('.edit-modal-actions .secondary-button')
+    .evaluate((el: HTMLElement) => el.offsetHeight)
+  const editSaveHeight = await page
+    .locator('.edit-modal-actions .primary-button')
+    .evaluate((el: HTMLElement) => el.offsetHeight)
+
+  expect(editCancelHeight).toBeCloseTo(40, 1)
+  expect(editSaveHeight).toBeCloseTo(40, 1)
+  expect(editCancelHeight).toBe(editSaveHeight)
 })
 
 test('supports rapid batch card creation while remaining in create view', async ({
