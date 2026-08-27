@@ -516,6 +516,74 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('ahor')
   })
 
+  it('closes suggestion overlay when clicking the dismiss button without modifying input', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Click the explicit Dismiss button
+    await user.click(
+      screen.getByRole('button', { name: /dismiss suggestions/i }),
+    )
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
+  })
+
+  it('closes suggestion overlay when tapping outside the input and suggestions container', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Tap outside (e.g. on the heading)
+    await user.click(screen.getByRole('heading', { name: /new flashcard/i }))
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
+  })
+
+  it('closes suggestion overlay when focusing or tabbing directly into the English field', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Tab directly into English field without selecting a suggestion
+    await user.tab()
+    expect(englishInput).toHaveFocus()
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('selects existing text when tabbing between fields in the card creation view', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
