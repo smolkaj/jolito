@@ -69,6 +69,11 @@
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-snap: cubic-bezier(0.2, 0, 0, 1);
 
+  /* Component Sizing & Pill Invariants */
+  --pill-height: 32px;
+  --pill-height-sm: 24px;
+  --pill-radius: 999px;
+
   /* Typography (Bricolage Grotesque: CDMX Modernist & Rhythm) */
   --font-serif:
     'Bricolage Grotesque', system-ui, -apple-system, BlinkMacSystemFont,
@@ -291,13 +296,13 @@ summary:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: var(--card);
   color: var(--ink-soft);
   font-family: inherit;
@@ -382,13 +387,13 @@ summary:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   color: var(--ink);
   background: var(--card);
   font-family: inherit;
@@ -425,7 +430,7 @@ summary:focus-visible {
   box-sizing: border-box;
   padding: 0 6px;
   border: 1.5px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   color: var(--card);
   background: var(--rosa-dark);
   font-size: 11px;
@@ -453,7 +458,7 @@ summary:focus-visible {
   align-items: center;
   justify-content: center;
   border: 2px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.2px;
@@ -828,12 +833,12 @@ summary:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
+  height: var(--pill-height-sm);
+  min-height: var(--pill-height-sm);
+  max-height: var(--pill-height-sm);
   box-sizing: border-box;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
@@ -1251,7 +1256,7 @@ summary:focus-visible {
   height: 24px;
   flex: 0 0 44px;
   border: 2px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: #cbd5e1;
   pointer-events: none;
   transition: background 160ms var(--ease-spring);
@@ -1471,7 +1476,7 @@ summary:focus-visible {
   height: 3px;
   margin: 16px auto 0;
   background: var(--line-light);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   overflow: hidden;
   position: relative;
 }
@@ -1479,7 +1484,7 @@ summary:focus-visible {
 .review-progress-bar {
   height: 100%;
   background: var(--rosa);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   transition: width 280ms var(--ease-spring);
 }
 
@@ -1728,13 +1733,13 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
+  height: var(--pill-height-sm);
+  min-height: var(--pill-height-sm);
+  max-height: var(--pill-height-sm);
   box-sizing: border-box;
   padding: 0 10px;
   border: 1.5px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 11px;
   font-weight: 800;
   font-family: var(--font-mono);
@@ -2183,9 +2188,9 @@ kbd {
 
   .connection-pill,
   .text-button {
-    height: 32px;
-    min-height: 32px;
-    max-height: 32px;
+    height: var(--pill-height);
+    min-height: var(--pill-height);
+    max-height: var(--pill-height);
     box-sizing: border-box;
     padding: 0 8px;
     font-size: 11px;
@@ -2453,13 +2458,13 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: var(--paper-subtle);
   font-size: 13px;
   font-weight: 600;
@@ -2949,12 +2954,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -2977,12 +2982,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 13px;
   font-weight: 600;
   line-height: 1;
@@ -2992,9 +2997,9 @@ kbd {
 }
 
 .deck-stat-chip.is-mini {
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
+  height: var(--pill-height-sm);
+  min-height: var(--pill-height-sm);
+  max-height: var(--pill-height-sm);
   padding: 0 8px;
   font-size: 11px;
   font-weight: 700;
@@ -3090,13 +3095,13 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 14px;
   border: 1.5px solid var(--line-subtle);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: var(--card);
   font-size: 13px;
   font-weight: 700;
@@ -3132,12 +3137,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 14px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -3164,12 +3169,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 32px;
-  min-height: 32px;
-  max-height: 32px;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
   box-sizing: border-box;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -3273,12 +3278,12 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 24px;
-  min-height: 24px;
-  max-height: 24px;
+  height: var(--pill-height-sm);
+  min-height: var(--pill-height-sm);
+  max-height: var(--pill-height-sm);
   box-sizing: border-box;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: var(--paper-subtle);
   border: 1.5px solid var(--line-subtle);
   font-size: 11px;
