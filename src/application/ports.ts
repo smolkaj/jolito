@@ -49,6 +49,8 @@ export type AuthService = {
   isConfigured?(): boolean
   consumeRedirectAuth?(): boolean
   getSessionLink?(): string | null
+  getAccessToken?(): Promise<string | null> | string | null
+  refreshSession?(): Promise<string | null>
   sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }>
@@ -58,6 +60,7 @@ export type AuthService = {
   ): Promise<{ success: boolean; error?: string | undefined }>
   signOut(): Promise<void>
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void
+  destroy?(): void
 }
 
 export type SyncResult = {

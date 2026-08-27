@@ -39,8 +39,8 @@ export class SupabaseSyncService implements SyncService {
     return this.status
   }
 
-  private getAuthHeaders(): Record<string, string> | null {
-    const token = this.authService.getAccessToken()
+  private async getAuthHeaders(): Promise<Record<string, string> | null> {
+    const token = (await this.authService.getAccessToken?.()) ?? null
     if (!token || !this.supabaseAnonKey) {
       return null
     }
@@ -56,14 +56,25 @@ export class SupabaseSyncService implements SyncService {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
-    const headers = this.getAuthHeaders()
+    let headers = await this.getAuthHeaders()
     if (!headers) {
       return { success: false, error: 'Sign in to access your cloud deck.' }
     }
 
     try {
       const fetchUrl = `${this.supabaseUrl}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}&select=*`
-      const res = await fetch(fetchUrl, { headers })
+      let res = await fetch(fetchUrl, { headers })
+
+      if (res.status === 401 && this.authService.refreshSession) {
+        const refreshedToken = await this.authService.refreshSession()
+        if (refreshedToken) {
+          headers = {
+            ...headers,
+            Authorization: `Bearer ${refreshedToken}`,
+          }
+          res = await fetch(fetchUrl, { headers })
+        }
+      }
 
       if (!res.ok) {
         return {
@@ -121,7 +132,7 @@ export class SupabaseSyncService implements SyncService {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
-    const headers = this.getAuthHeaders()
+    let headers = await this.getAuthHeaders()
     if (!headers) {
       return { success: false, error: 'Sign in to sync your deck.' }
     }
@@ -137,23 +148,42 @@ export class SupabaseSyncService implements SyncService {
         deletedCardIds,
       }
 
-      const res = await fetch(
-        `${this.supabaseUrl}/rest/v1/decks?on_conflict=user_id`,
-        {
-          method: 'POST',
-          headers: {
-            ...headers,
-            Prefer: 'resolution=merge-duplicates',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            updated_at: nowIso,
-            device_id: this.deviceId,
-            version: 1,
-            data: payload,
-          }),
+      const postBody = JSON.stringify({
+        user_id: user.id,
+        updated_at: nowIso,
+        device_id: this.deviceId,
+        version: 1,
+        data: payload,
+      })
+
+      const postUrl = `${this.supabaseUrl}/rest/v1/decks?on_conflict=user_id`
+      let res = await fetch(postUrl, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          Prefer: 'resolution=merge-duplicates',
         },
-      )
+        body: postBody,
+      })
+
+      if (res.status === 401 && this.authService.refreshSession) {
+        const refreshedToken = await this.authService.refreshSession()
+        if (refreshedToken) {
+          headers = {
+            ...headers,
+            Authorization: `Bearer ${refreshedToken}`,
+          }
+          res = await fetch(postUrl, {
+            method: 'POST',
+            headers: {
+              ...headers,
+              Prefer: 'resolution=merge-duplicates',
+            },
+            body: postBody,
+          })
+        }
+      }
+
       if (!res.ok) {
         return {
           success: false,

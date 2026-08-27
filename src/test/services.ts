@@ -109,6 +109,14 @@ export class MockAuthService implements AuthService {
     return Promise.resolve(this.user)
   }
 
+  getAccessToken(): Promise<string | null> {
+    return Promise.resolve(this.user ? `mock-token-${this.user.id}` : null)
+  }
+
+  refreshSession(): Promise<string | null> {
+    return Promise.resolve(this.user ? `mock-token-${this.user.id}` : null)
+  }
+
   sendMagicLink(
     email: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
