@@ -1401,6 +1401,16 @@ function RedirectAuthNotice({
   onCopySessionLink?: () => Promise<boolean> | boolean
 }) {
   const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [])
+
   if (!message) return null
 
   const handleCopy = async () => {
@@ -1408,7 +1418,13 @@ function RedirectAuthNotice({
       const res = await onCopySessionLink()
       if (res) {
         setCopied(true)
-        setTimeout(() => setCopied(false), 2500)
+        if (timerRef.current) {
+          clearTimeout(timerRef.current)
+        }
+        timerRef.current = setTimeout(() => {
+          setCopied(false)
+          timerRef.current = null
+        }, 2500)
       }
     }
   }

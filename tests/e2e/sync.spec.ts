@@ -153,30 +153,46 @@ test('renders iOS redirect auth notification banner with zero WCAG violations an
     window.location.hash = `#access_token=${fakeToken}&refresh_token=mock-refresh&expires_in=3600`
   })
 
+  // Test on iPhone SE viewport (375px) to ensure no clipping or horizontal overflow on narrow screens
+  await page.setViewportSize({ width: 375, height: 667 })
   await page.goto('/')
 
-  // Verify banner is visible
+  // Verify banner is visible on mobile
   const banner = page
     .getByRole('status')
     .filter({ hasText: /signed in! using the home screen app\?/i })
   await expect(banner).toBeVisible()
 
-  // Capture screenshot of the banner
+  // Verify no horizontal overflow on mobile iPhone SE
+  const mobileDims = await page.evaluate(() => {
+    const doc = document.documentElement
+    return { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth }
+  })
+  expect(mobileDims.scrollWidth).toBe(mobileDims.clientWidth)
+
+  // Capture screenshot of the banner on iPhone SE
   await page.screenshot({
-    path: 'test-results/redirect-auth-banner-ios.png',
+    path: 'test-results/redirect-auth-banner-iphone.png',
     animations: 'disabled',
   })
 
-  // Check accessibility of banner
-  const results = await new AxeBuilder({ page })
+  // Check accessibility of banner on mobile
+  const mobileResults = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
-  expect(results.violations).toEqual([])
+  expect(mobileResults.violations).toEqual([])
 
   // Click copy link button and verify visual feedback
   const copyBtn = page.getByRole('button', { name: /copy sign-in link/i })
   await copyBtn.click()
   await expect(page.getByText(/copied ✓/i)).toBeVisible()
+
+  // Test on desktop viewport
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.screenshot({
+    path: 'test-results/redirect-auth-banner-ios.png',
+    animations: 'disabled',
+  })
 
   // Dismiss banner
   const dismissBtn = page.getByRole('button', { name: /dismiss message/i })
