@@ -31,6 +31,16 @@ const supabaseTokenResponseSchema = z.object({
 
 type StoredSession = z.infer<typeof storedSessionSchema>
 
+const authSessionResponseSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().optional().default(''),
+  expires_in: z.number().optional().default(3600),
+  user: z.object({
+    id: z.string().min(1),
+    email: z.string().optional(),
+  }),
+})
+
 const STORAGE_KEY = 'jolito-auth-session-v1'
 const REFRESH_MARGIN_MS = 5 * 60 * 1000 // 5 minutes before expiry
 const RETRY_BACKOFF_MS = 60 * 1000 // 1 minute retry backoff if offline
@@ -431,13 +441,23 @@ export class SupabaseAuthService implements AuthService {
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
     const cleanEmail = email.trim()
-    const rawToken = token.trim()
+    let rawToken = token.trim()
 
     if (!rawToken) {
       return {
         success: false,
         error: 'Please paste your sign-in link.',
       }
+    }
+
+    if (rawToken.startsWith('<') && rawToken.endsWith('>')) {
+      rawToken = rawToken.slice(1, -1).trim()
+    }
+    if (
+      (rawToken.startsWith('"') && rawToken.endsWith('"')) ||
+      (rawToken.startsWith("'") && rawToken.endsWith("'"))
+    ) {
+      rawToken = rawToken.slice(1, -1).trim()
     }
 
     // 1. Check if rawToken is a pasted session fragment / URL containing access_token
@@ -496,9 +516,20 @@ export class SupabaseAuthService implements AuthService {
       }
     }
 
-    // 3. If a token_hash was extracted from a link URL, try token_hash verification
+    // 3. If candidate is a token_hash (from email link or hash token), verify via token_hash
     if (candidateType || candidateToken.length > 20) {
-      for (const otpType of [candidateType || 'magiclink', 'email', 'signup']) {
+      const hashTypes = Array.from(
+        new Set([
+          candidateType,
+          'magiclink',
+          'email',
+          'signup',
+          'recovery',
+          'invite',
+        ]),
+      ).filter((t): t is string => Boolean(t))
+
+      for (const otpType of hashTypes) {
         try {
           const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
             method: 'POST',
@@ -508,33 +539,29 @@ export class SupabaseAuthService implements AuthService {
             },
             body: JSON.stringify({
               token_hash: candidateToken,
-              token: candidateToken,
-              email: cleanEmail || undefined,
               type: otpType,
             }),
           })
 
           if (res.ok) {
-            const data = (await res.json()) as {
-              access_token: string
-              refresh_token: string
-              expires_in: number
-              user: { id: string; email?: string }
+            const rawJson: unknown = await res.json()
+            const parsed = authSessionResponseSchema.safeParse(rawJson)
+            if (parsed.success) {
+              const data = parsed.data
+              const user: AuthUser = {
+                id: data.user.id,
+                email: data.user.email || cleanEmail,
+              }
+
+              this.saveSession({
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token,
+                expiresAt: Date.now() + data.expires_in * 1000,
+                user,
+              })
+
+              return { success: true }
             }
-
-            const user: AuthUser = {
-              id: data.user.id,
-              email: data.user.email || cleanEmail,
-            }
-
-            this.saveSession({
-              accessToken: data.access_token,
-              refreshToken: data.refresh_token,
-              expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
-              user,
-            })
-
-            return { success: true }
           }
         } catch {
           // Continue to next type
@@ -542,8 +569,10 @@ export class SupabaseAuthService implements AuthService {
       }
     }
 
-    // 4. Verification attempt
-    const types = ['email', 'signup', 'magiclink']
+    // 4. Verification attempt for OTP codes (or fallback if token_hash verification didn't match)
+    const types = Array.from(
+      new Set([candidateType, 'email', 'signup', 'magiclink']),
+    ).filter((t): t is string => Boolean(t))
     let lastError = 'Invalid or expired sign-in link.'
 
     for (const otpType of types) {
@@ -562,26 +591,24 @@ export class SupabaseAuthService implements AuthService {
         })
 
         if (res.ok) {
-          const data = (await res.json()) as {
-            access_token: string
-            refresh_token: string
-            expires_in: number
-            user: { id: string; email?: string }
+          const rawJson: unknown = await res.json()
+          const parsed = authSessionResponseSchema.safeParse(rawJson)
+          if (parsed.success) {
+            const data = parsed.data
+            const user: AuthUser = {
+              id: data.user.id,
+              email: data.user.email || cleanEmail,
+            }
+
+            this.saveSession({
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token,
+              expiresAt: Date.now() + data.expires_in * 1000,
+              user,
+            })
+
+            return { success: true }
           }
-
-          const user: AuthUser = {
-            id: data.user.id,
-            email: data.user.email || cleanEmail,
-          }
-
-          this.saveSession({
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            expiresAt: Date.now() + (data.expires_in || 3600) * 1000,
-            user,
-          })
-
-          return { success: true }
         }
 
         const errorData = (await res.json().catch(() => ({}))) as {
