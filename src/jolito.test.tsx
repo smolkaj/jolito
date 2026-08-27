@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
@@ -582,6 +589,36 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('listbox', { name: /spanish suggestions/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('defers suggestion overlay dismissal on blur to allow uninterrupted focus transitions', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Simulate blur event on the Spanish input
+    fireEvent.blur(spanishInput)
+
+    // Overlay is still in DOM synchronously during blur event to prevent aborting focus transitions
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Wait for the deferred blur cleanup timer
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+      ).not.toBeInTheDocument()
+    })
+    expect(spanishInput).toHaveValue('ahor')
   })
 
   it('selects existing text when tabbing between fields in the card creation view', async () => {
