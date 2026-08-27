@@ -1006,6 +1006,9 @@ function SyncModal({
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
+  const [showPasteLink, setShowPasteLink] = useState(
+    () => isStandalone() && isIOS(),
+  )
   const [loading, setLoading] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -1246,6 +1249,46 @@ function SyncModal({
               {loading ? 'Sending link…' : 'Send sign-in link →'}
             </button>
           </form>
+        ) : !showPasteLink ? (
+          <div className="sync-sent-pane">
+            <p className="sync-explanation">
+              Click the sign-in link sent to <strong>{email.trim()}</strong> to
+              connect your account.
+            </p>
+            <div className="sync-auth-buttons">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={loading}
+                onClick={() => {
+                  void handleSendLink()
+                }}
+              >
+                Resend link
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setShowPasteLink(isStandalone() && isIOS())
+                  setToken('')
+                  setStatusMsg(null)
+                }}
+              >
+                Use different email
+              </button>
+            </div>
+            <div className="sync-manual-link-row">
+              <button
+                type="button"
+                className="text-button sync-manual-link-btn"
+                onClick={() => setShowPasteLink(true)}
+              >
+                Paste sign-in link manually
+              </button>
+            </div>
+          </div>
         ) : (
           <form
             onSubmit={(e) => {
@@ -1300,9 +1343,11 @@ function SyncModal({
                     </button>
                   )}
               </div>
-              <span className="field-hint">
-                On iOS? Long-press the button in your email and tap Copy Link.
-              </span>
+              {isIOS() && (
+                <span className="field-hint">
+                  Long-press the button in your email and tap Copy Link.
+                </span>
+              )}
             </div>
             <div className="sync-auth-buttons">
               <button
@@ -1327,6 +1372,7 @@ function SyncModal({
                 className="text-button"
                 onClick={() => {
                   setIsOtpSent(false)
+                  setShowPasteLink(isStandalone() && isIOS())
                   setToken('')
                   setStatusMsg(null)
                 }}

@@ -2782,6 +2782,34 @@ kbd {
   flex-wrap: wrap;
 }
 
+.sync-sent-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sync-manual-link-row {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line-subtle);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.sync-manual-link-btn {
+  font-size: 12px;
+  color: var(--ink-muted);
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.sync-manual-link-btn:hover {
+  color: var(--ink);
+}
+
 .sync-notice-card {
   padding: 14px 16px;
   border: 1.5px solid var(--line-subtle);

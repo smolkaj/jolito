@@ -26,6 +26,16 @@ beforeEach(() => {
   window.location.hash = ''
   localStorage.clear()
   vi.clearAllMocks()
+  Object.defineProperty(navigator, 'userAgent', {
+    configurable: true,
+    value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+    writable: true,
+  })
+  Object.defineProperty(navigator, 'standalone', {
+    configurable: true,
+    value: false,
+    writable: true,
+  })
   Object.defineProperty(window, 'speechSynthesis', {
     configurable: true,
     value: speech,
@@ -1091,6 +1101,17 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Click the sign-in link sent to/i),
+    ).toBeInTheDocument()
+
+    // On standard desktop browser, no paste input is shown by default
+    expect(screen.queryByLabelText(/^sign-in link$/i)).not.toBeInTheDocument()
+
+    // User can manually toggle paste link input if desired
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
 
     // Enter link / token
     const tokenInput = screen.getByLabelText(/sign-in link/i)
@@ -1104,9 +1125,22 @@ describe('Jolito', () => {
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
   })
 
-  it('displays iOS Home Screen guidance and allows resending link in sync modal', async () => {
+  it('displays iOS Home Screen guidance and allows resending link in sync modal in iOS standalone PWA', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
+
+    // Stub iOS standalone PWA
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+      writable: true,
+    })
+    Object.defineProperty(navigator, 'standalone', {
+      value: true,
+      configurable: true,
+      writable: true,
+    })
+
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /tap to sync/i }))
@@ -1114,9 +1148,13 @@ describe('Jolito', () => {
     await user.type(emailInput, 'pwa-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
+    // In iOS standalone mode, paste input and hint are directly visible
     expect(
-      await screen.findByText(/On iOS\? Long-press the button in your email/i),
+      await screen.findByText(
+        /Long-press the button in your email and tap Copy Link/i,
+      ),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText(/^sign-in link$/i)).toBeInTheDocument()
 
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
@@ -1134,6 +1172,11 @@ describe('Jolito', () => {
     // Stub iOS userAgent & clipboard
     Object.defineProperty(navigator, 'userAgent', {
       value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+      writable: true,
+    })
+    Object.defineProperty(navigator, 'standalone', {
+      value: false,
       configurable: true,
       writable: true,
     })
@@ -1178,6 +1221,10 @@ describe('Jolito', () => {
     await user.type(emailInput, 'pasted-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
+
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(
       tokenInput,
@@ -1201,6 +1248,10 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pasted-magiclink@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(
@@ -1237,6 +1288,10 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'clipboard-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
 
     const pasteBtn = screen.getByRole('button', {
       name: /paste from clipboard/i,
@@ -1759,7 +1814,10 @@ describe('Jolito', () => {
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    // 4. Guest enters link / code
+    // 4. Guest toggles paste input and enters link / code
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
@@ -1774,9 +1832,22 @@ describe('Jolito', () => {
     expect(services.memoryCards.saved).toHaveLength(2)
   })
 
-  it('displays iOS Home Screen guidance and allows resending link in save card auth modal', async () => {
+  it('displays iOS Home Screen guidance and allows resending link in save card auth modal in iOS standalone PWA', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
+
+    // Stub iOS standalone PWA
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+      writable: true,
+    })
+    Object.defineProperty(navigator, 'standalone', {
+      value: true,
+      configurable: true,
+      writable: true,
+    })
+
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -1791,8 +1862,11 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
-      await screen.findByText(/On iOS\? Long-press the button in your email/i),
+      await screen.findByText(
+        /Long-press the button in your email and tap Copy Link/i,
+      ),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText(/^sign-in link$/i)).toBeInTheDocument()
 
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
@@ -1884,6 +1958,10 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await user.click(
+      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+    )
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')

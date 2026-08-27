@@ -115,6 +115,23 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await emailInput.fill('pwa-learner@example.com')
     await page.getByRole('button', { name: /send sign-in link/i }).click()
 
+    // On standard browser, verify clean confirmation screen without paste input
+    await expect(
+      page.getByText(/Click the sign-in link sent to/i),
+    ).toBeVisible()
+    await expect(page.getByLabel(/sign-in link/i)).not.toBeVisible()
+
+    // Capture screenshot of standard browser email confirmation
+    await page.screenshot({
+      path: 'test-results/sync-modal-sent-step.png',
+      animations: 'disabled',
+    })
+
+    // Toggle paste link manually
+    const pasteToggle = page.getByRole('button', {
+      name: /paste sign-in link manually/i,
+    })
+    await pasteToggle.click()
     await expect(page.getByLabel(/sign-in link/i)).toBeVisible()
 
     // Capture screenshot of link entry step
