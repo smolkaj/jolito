@@ -631,7 +631,7 @@ describe('SupabaseAuthService', () => {
     expect(user?.email).toBe('pasted@example.com')
   })
 
-  it('verifies pasted email magic link with token parameter in verifyOtp', async () => {
+  it('verifies pasted Supabase email verify URL with token parameter as token_hash', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
@@ -645,14 +645,63 @@ describe('SupabaseAuthService', () => {
     vi.stubGlobal('fetch', fetchSpy)
 
     const service = new SupabaseAuthService(
+      'https://xwqjelkfdcfzyxxblvhp.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const emailLink =
+      'https://xwqjelkfdcfzyxxblvhp.supabase.co/auth/v1/verify?token=45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b&type=magiclink&redirect_to=https://joli.to/'
+    const res = await service.verifyOtp('', emailLink)
+    expect(res.success).toBe(true)
+
+    const callArgs = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; headers: Record<string, string>; body: string },
+    ]
+    expect(callArgs[0]).toBe(
+      'https://xwqjelkfdcfzyxxblvhp.supabase.co/auth/v1/verify',
+    )
+    const parsedBody = JSON.parse(callArgs[1].body) as {
+      token_hash?: string
+      token?: string
+      email?: string
+      type?: string
+    }
+    expect(parsedBody.token_hash).toBe(
+      '45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b',
+    )
+    expect(parsedBody.type).toBe('magiclink')
+    expect(parsedBody.token).toBeUndefined()
+    expect(parsedBody.email).toBeUndefined()
+
+    const user = await service.getUser()
+    expect(user?.id).toBe('usr-magic')
+    expect(user?.email).toBe('magic@example.com')
+  })
+
+  it('verifies pasted magic link with token_hash query parameter', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'tok-hash',
+          refresh_token: 'ref-hash',
+          expires_in: 3600,
+          user: { id: 'usr-hash', email: 'hash@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
       'https://example.supabase.co',
       'anon-key',
       fakeStorage,
     )
 
     const emailLink =
-      'https://example.supabase.co/auth/v1/verify?token=pkce_abc123&type=magiclink&redirect_to=https://joli.to'
-    const res = await service.verifyOtp('magic@example.com', emailLink)
+      'https://example.supabase.co/auth/v1/verify?token_hash=45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b&type=email&redirect_to=https://joli.to'
+    const res = await service.verifyOtp('hash@example.com', emailLink)
     expect(res.success).toBe(true)
 
     const callArgs = fetchSpy.mock.calls[0] as [
@@ -660,9 +709,84 @@ describe('SupabaseAuthService', () => {
       { method: string; body: string },
     ]
     const parsedBody = JSON.parse(callArgs[1].body) as {
-      token: string
-      type: string
+      token_hash?: string
+      type?: string
     }
-    expect(parsedBody.token).toBe('pkce_abc123')
+    expect(parsedBody.token_hash).toBe(
+      '45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b',
+    )
+    expect(parsedBody.type).toBe('email')
+  })
+
+  it('verifies pasted 64-character token hash directly without email', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'tok-direct',
+          refresh_token: 'ref-direct',
+          expires_in: 3600,
+          user: { id: 'usr-direct', email: 'direct@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const rawHash = '45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b'
+    const res = await service.verifyOtp('', rawHash)
+    expect(res.success).toBe(true)
+
+    const callArgs = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody = JSON.parse(callArgs[1].body) as {
+      token_hash?: string
+      type?: string
+    }
+    expect(parsedBody.token_hash).toBe(rawHash)
+    expect(parsedBody.type).toBe('magiclink')
+  })
+
+  it('verifies pasted magic link wrapped in angle brackets or quotes', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'tok-bracket',
+          refresh_token: 'ref-bracket',
+          expires_in: 3600,
+          user: { id: 'usr-bracket', email: 'bracket@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const bracketLink =
+      '<https://example.supabase.co/auth/v1/verify?token=45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b&type=magiclink&redirect_to=https://joli.to/>'
+    const res = await service.verifyOtp('', bracketLink)
+    expect(res.success).toBe(true)
+
+    const callArgs = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody = JSON.parse(callArgs[1].body) as {
+      token_hash?: string
+      type?: string
+    }
+    expect(parsedBody.token_hash).toBe(
+      '45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b',
+    )
   })
 })

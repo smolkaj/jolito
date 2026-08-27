@@ -1147,6 +1147,30 @@ describe('Jolito', () => {
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
+  it('allows pasting full Supabase email verify URL with token parameter into sync modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /tap to sync/i }))
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'pasted-magiclink@example.com')
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    await user.type(
+      tokenInput,
+      'https://xwqjelkfdcfzyxxblvhp.supabase.co/auth/v1/verify?token=45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b&type=magiclink&redirect_to=https://joli.to/',
+    )
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
+
+    expect(
+      await screen.findByText(/deck synchronized with cloud/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
+  })
+
   it('allows filling verification token via paste from clipboard button in sync modal', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
