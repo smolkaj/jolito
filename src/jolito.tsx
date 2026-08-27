@@ -61,11 +61,7 @@ import {
 function handleFocusSelect(
   event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
 ) {
-  const target = event.currentTarget
-  target.select()
-  setTimeout(() => {
-    target.select()
-  }, 0)
+  event.currentTarget.select()
 }
 
 const gradeLabels: Record<Grade, string> = {
@@ -439,6 +435,7 @@ function EditCardModalInner({
               rows={2}
               required
               autoFocus
+              autoCapitalize="none"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onFocus={handleFocusSelect}
@@ -463,6 +460,7 @@ function EditCardModalInner({
               id="edit-answer"
               rows={2}
               required
+              autoCapitalize="none"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               onFocus={handleFocusSelect}
@@ -475,6 +473,7 @@ function EditCardModalInner({
             <textarea
               id="edit-context"
               rows={2}
+              autoCapitalize="none"
               value={context}
               onChange={(e) => setContext(e.target.value)}
               onFocus={handleFocusSelect}
@@ -674,6 +673,7 @@ function DeleteCardsModal({
 function DeckBackupModalInner({
   onClose,
   cards,
+  deletedCardIds = [],
   onUpdateCards,
   clock,
   user,
@@ -681,7 +681,12 @@ function DeckBackupModalInner({
 }: {
   onClose: () => void
   cards: StudyCard[]
-  onUpdateCards: (newCards: StudyCard[]) => void
+  deletedCardIds?: string[]
+  onUpdateCards: (
+    newCards: StudyCard[],
+    syncToCloud?: boolean,
+    newDeletedCardIds?: string[],
+  ) => void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -788,9 +793,11 @@ function DeckBackupModalInner({
       if (user) {
         void syncDeckWithCloud({
           localCards: result.cards,
+          localDeletedIds: deletedCardIds,
           user,
           syncService: sync,
-          onCardsUpdated: onUpdateCards,
+          onCardsUpdated: (newCards, newDeletedIds) =>
+            onUpdateCards(newCards, false, newDeletedIds),
         })
       }
     } else {
@@ -958,7 +965,12 @@ function DeckBackupModal(props: {
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  onUpdateCards: (newCards: StudyCard[]) => void
+  deletedCardIds?: string[]
+  onUpdateCards: (
+    newCards: StudyCard[],
+    syncToCloud?: boolean,
+    newDeletedCardIds?: string[],
+  ) => void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -971,6 +983,7 @@ function SyncModal({
   isOpen,
   onClose,
   cards,
+  deletedCardIds = [],
   onUpdateCards,
   auth,
   sync,
@@ -979,7 +992,12 @@ function SyncModal({
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  onUpdateCards: (newCards: StudyCard[]) => void
+  deletedCardIds?: string[]
+  onUpdateCards: (
+    newCards: StudyCard[],
+    syncToCloud?: boolean,
+    newDeletedCardIds?: string[],
+  ) => void
   auth: AuthService
   sync: SyncService
   onSaveLocally?: (() => void) | undefined
@@ -1084,9 +1102,11 @@ function SyncModal({
     setStatusMsg(null)
     const res = await syncDeckWithCloud({
       localCards: cards,
+      localDeletedIds: deletedCardIds,
       user,
       syncService: sync,
-      onCardsUpdated: onUpdateCards,
+      onCardsUpdated: (newCards, newDeletedIds) =>
+        onUpdateCards(newCards, false, newDeletedIds),
     })
     setLoading(false)
     if (res.success) {
@@ -1516,6 +1536,9 @@ export function App({
   )
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
   const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+  const [deletedCardIds, setDeletedCardIds] = useState<string[]>(() =>
+    services.cards.getDeletedCardIds(),
+  )
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
@@ -1536,6 +1559,7 @@ export function App({
   const [createPlaying, setCreatePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
@@ -1546,18 +1570,33 @@ export function App({
   const viewRef = useRef(view)
   const authUserRef = useRef(authUser)
   const pendingCardRef = useRef(pendingCard)
+  const deletedCardIdsRef = useRef<Set<string>>(new Set(deletedCardIds))
 
   useEffect(() => {
     cardsRef.current = cards
     viewRef.current = view
     authUserRef.current = authUser
     pendingCardRef.current = pendingCard
+    deletedCardIdsRef.current = new Set(deletedCardIds)
   })
 
   const onUpdateCards = useCallback(
-    (newCards: StudyCard[], syncToCloud = true) => {
+    (
+      newCards: StudyCard[],
+      syncToCloud = true,
+      newDeletedCardIds?: string[],
+    ) => {
+      if (newDeletedCardIds !== undefined) {
+        deletedCardIdsRef.current = new Set(newDeletedCardIds)
+      }
+      for (const card of newCards) {
+        deletedCardIdsRef.current.delete(card.id)
+      }
+      const deletedIdsArray = Array.from(deletedCardIdsRef.current)
+
       setCards(newCards)
-      services.cards.save(newCards)
+      setDeletedCardIds(deletedIdsArray)
+      services.cards.save(newCards, deletedIdsArray)
       const now = services.clock.now()
       setReferenceTime(now)
       setQueue((currentQueue) => {
@@ -1571,7 +1610,7 @@ export function App({
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
         void services.sync
-          .syncDeck(newCards, authUserRef.current)
+          .syncDeck(newCards, authUserRef.current, deletedIdsArray)
           .then((res) => {
             if (res.success) setSyncStatus('synced')
             else setSyncStatus('error')
@@ -1601,7 +1640,11 @@ export function App({
       for (const id of idsToDelete) {
         updatedCards = deleteStudyCard(updatedCards, id)
       }
-      onUpdateCards(updatedCards)
+      for (const id of idsToDelete) {
+        deletedCardIdsRef.current.add(id)
+      }
+      const updatedDeletedIds = Array.from(deletedCardIdsRef.current)
+      onUpdateCards(updatedCards, true, updatedDeletedIds)
       setQueue((prevQueue) => {
         const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
         const deletedCount = prevQueue.length - nextQueue.length
@@ -1707,11 +1750,14 @@ export function App({
           saveCardFromParams(pending)
         } else {
           const userCards = filterOutStarterCards(cardsRef.current)
+          const deletedIds = Array.from(deletedCardIdsRef.current)
           void syncDeckWithCloud({
             localCards: userCards,
+            localDeletedIds: deletedIds,
             user,
             syncService: services.sync,
-            onCardsUpdated: (newCards) => onUpdateCards(newCards, false),
+            onCardsUpdated: (newCards, newDeletedIds) =>
+              onUpdateCards(newCards, false, newDeletedIds),
           }).then((res) => {
             if (res.success) setSyncStatus('synced')
           })
@@ -1727,11 +1773,18 @@ export function App({
       if (authUserRef.current) {
         setSyncStatus('syncing')
         const userCards = filterOutStarterCards(cardsRef.current)
+        const deletedIds = Array.from(deletedCardIdsRef.current)
         void services.sync
-          .syncDeck(userCards, authUserRef.current)
+          .syncDeck(userCards, authUserRef.current, deletedIds)
           .then((res) => {
-            if (res.success) setSyncStatus('synced')
-            else setSyncStatus('error')
+            if (res.success) {
+              setSyncStatus('synced')
+              if (res.cards) {
+                onUpdateCards(res.cards, false, res.deletedCardIds)
+              }
+            } else {
+              setSyncStatus('error')
+            }
           })
       }
     }
@@ -1742,7 +1795,7 @@ export function App({
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
     }
-  }, [services.sync])
+  }, [onUpdateCards, services.sync])
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()
@@ -1851,8 +1904,8 @@ export function App({
   }, [])
 
   useEffect(() => {
-    services.cards.save(cards)
-  }, [cards, services.cards])
+    services.cards.save(cards, deletedCardIds)
+  }, [cards, deletedCardIds, services.cards])
 
   const currentCardId = currentCard?.id
   const currentPrompt = currentCard?.prompt
@@ -1997,6 +2050,32 @@ export function App({
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 
+  const dismissSuggestions = useCallback(() => {
+    setSuggestions([])
+    setActiveSuggestionIndex(-1)
+  }, [])
+
+  useEffect(() => {
+    if (suggestions.length === 0) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (
+        target instanceof Node &&
+        (suggestionsRef.current?.contains(target) ||
+          spanishInputRef.current?.contains(target))
+      ) {
+        return
+      }
+      dismissSuggestions()
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [suggestions.length, dismissSuggestions])
+
   const applySuggestion = useCallback((entry: LexiconEntry) => {
     setSpanishInput(entry.spanish)
     setEnglishInput(entry.english)
@@ -2042,6 +2121,17 @@ export function App({
     [services.assistant, spanishInput],
   )
 
+  const onSpanishBlur = useCallback(
+    (event: React.FocusEvent<HTMLTextAreaElement>) => {
+      const related = event.relatedTarget
+      if (related && suggestionsRef.current?.contains(related)) {
+        return
+      }
+      dismissSuggestions()
+    },
+    [dismissSuggestions],
+  )
+
   const onSpanishKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
       if (suggestions.length === 0) return
@@ -2060,11 +2150,10 @@ export function App({
           applySuggestion(suggestions[activeSuggestionIndex])
         }
       } else if (event.key === 'Escape') {
-        setSuggestions([])
-        setActiveSuggestionIndex(-1)
+        dismissSuggestions()
       }
     },
-    [activeSuggestionIndex, applySuggestion, suggestions],
+    [activeSuggestionIndex, applySuggestion, dismissSuggestions, suggestions],
   )
 
   const openSyncModal = useCallback(() => {
@@ -2254,6 +2343,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -2421,9 +2511,12 @@ export function App({
                   rows={2}
                   autoFocus
                   required
+                  autoCapitalize="none"
+                  enterKeyHint="next"
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
+                  onBlur={onSpanishBlur}
                   onFocus={handleFocusSelect}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
@@ -2456,45 +2549,67 @@ export function App({
                   </div>
                 )}
                 {suggestions.length > 0 && (
-                  <ul
-                    className="suggestions-listbox"
-                    role="listbox"
-                    id="spanish-suggestions"
-                    aria-label="Mexican Spanish suggestions"
-                  >
-                    {suggestions.map((item, index) => (
-                      <li
-                        key={item.spanish}
-                        id={`suggestion-${index}`}
-                        role="option"
-                        aria-selected={activeSuggestionIndex === index}
-                        className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          applySuggestion(item)
-                        }}
+                  <div className="suggestions-container" ref={suggestionsRef}>
+                    <div className="suggestions-header">
+                      <span className="suggestions-header-label">
+                        Suggestions
+                      </span>
+                      <button
+                        type="button"
+                        className="suggestions-dismiss-button"
+                        tabIndex={-1}
+                        onClick={dismissSuggestions}
+                        aria-label="Dismiss suggestions"
                       >
-                        <div className="suggestion-head">
-                          <span className="suggestion-spanish">
-                            {item.spanish}
+                        Dismiss <span aria-hidden="true">✕</span>
+                      </button>
+                    </div>
+                    <ul
+                      className="suggestions-listbox"
+                      role="listbox"
+                      id="spanish-suggestions"
+                      aria-label="Mexican Spanish suggestions"
+                    >
+                      {suggestions.map((item, index) => (
+                        <li
+                          key={item.spanish}
+                          id={`suggestion-${index}`}
+                          role="option"
+                          aria-selected={activeSuggestionIndex === index}
+                          className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
+                          onPointerDown={(e) => {
+                            e.preventDefault()
+                            applySuggestion(item)
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            applySuggestion(item)
+                          }}
+                        >
+                          <div className="suggestion-head">
+                            <span className="suggestion-spanish">
+                              {item.spanish}
+                            </span>
+                            {item.tag && (
+                              <span
+                                className={`suggestion-tag tag-${item.tag}`}
+                              >
+                                {item.tag}
+                              </span>
+                            )}
+                          </div>
+                          <span className="suggestion-english">
+                            {item.english}
                           </span>
-                          {item.tag && (
-                            <span className={`suggestion-tag tag-${item.tag}`}>
-                              {item.tag}
+                          {item.context && (
+                            <span className="suggestion-context">
+                              {item.context}
                             </span>
                           )}
-                        </div>
-                        <span className="suggestion-english">
-                          {item.english}
-                        </span>
-                        {item.context && (
-                          <span className="suggestion-context">
-                            {item.context}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
               <div className="field-group">
@@ -2506,9 +2621,14 @@ export function App({
                   name="english"
                   rows={2}
                   required
+                  autoCapitalize="none"
+                  enterKeyHint="next"
                   value={englishInput}
                   onChange={onEnglishChange}
-                  onFocus={handleFocusSelect}
+                  onFocus={(e) => {
+                    handleFocusSelect(e)
+                    dismissSuggestions()
+                  }}
                   placeholder="English translation"
                 />
               </div>
@@ -2518,9 +2638,14 @@ export function App({
                   id="context"
                   name="context"
                   rows={2}
+                  autoCapitalize="none"
+                  enterKeyHint="done"
                   value={contextInput}
                   onChange={(e) => setContextInput(e.target.value)}
-                  onFocus={handleFocusSelect}
+                  onFocus={(e) => {
+                    handleFocusSelect(e)
+                    dismissSuggestions()
+                  }}
                   placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
@@ -2545,9 +2670,14 @@ export function App({
                       <input
                         id="reverse-prompt"
                         name="reversePrompt"
+                        autoCapitalize="none"
+                        enterKeyHint="next"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
-                        onFocus={handleFocusSelect}
+                        onFocus={(e) => {
+                          handleFocusSelect(e)
+                          dismissSuggestions()
+                        }}
                         placeholder="Optional"
                       />
                     </div>
@@ -2558,9 +2688,14 @@ export function App({
                       <input
                         id="reverse-answer"
                         name="reverseAnswer"
+                        autoCapitalize="none"
+                        enterKeyHint="done"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
-                        onFocus={handleFocusSelect}
+                        onFocus={(e) => {
+                          handleFocusSelect(e)
+                          dismissSuggestions()
+                        }}
                         placeholder="Optional"
                       />
                     </div>
@@ -2593,6 +2728,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -2716,6 +2852,7 @@ export function App({
                   onChange={(e) => setDeckSearchQuery(e.target.value)}
                   onFocus={handleFocusSelect}
                   aria-label="Search cards in deck"
+                  autoCapitalize="none"
                 />
               </div>
 
@@ -2965,6 +3102,7 @@ export function App({
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           clock={services.clock}
           user={authUser}
@@ -2975,6 +3113,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -3057,6 +3196,7 @@ export function App({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
@@ -3171,6 +3311,7 @@ export function App({
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder="Type your answer…"
                 autoComplete="off"
+                autoCapitalize="none"
               />
               <button className="reveal-button" type="submit">
                 Reveal answer <kbd>Enter</kbd>
@@ -3248,6 +3389,7 @@ export function App({
         isOpen={isSyncOpen}
         onClose={closeSyncModal}
         cards={cards}
+        deletedCardIds={deletedCardIds}
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}

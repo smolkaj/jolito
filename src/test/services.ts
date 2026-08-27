@@ -35,16 +35,29 @@ export class SequentialIds implements IdGenerator {
 
 export class MemoryCardRepository implements CardRepository {
   public saved: StudyCard[] | null = null
+  public deletedCardIds: string[] = []
 
-  constructor(private cards: StudyCard[] | null = null) {}
+  constructor(
+    private cards: StudyCard[] | null = null,
+    deletedCardIds: string[] = [],
+  ) {
+    this.deletedCardIds = [...deletedCardIds]
+  }
+
+  getDeletedCardIds(): string[] {
+    return [...this.deletedCardIds]
+  }
 
   load(fallback: StudyCard[]): StudyCard[] {
     return this.cards ?? fallback
   }
 
-  save(cards: StudyCard[]): void {
+  save(cards: StudyCard[], deletedCardIds?: string[]): void {
     this.saved = cards
     this.cards = cards
+    if (deletedCardIds !== undefined) {
+      this.deletedCardIds = [...deletedCardIds]
+    }
   }
 }
 
@@ -150,18 +163,25 @@ export class MockAuthService implements AuthService {
 export class MockSyncService implements SyncService {
   public status: SyncStatus = 'idle'
   public remoteCards: StudyCard[] = []
+  public remoteDeletedCardIds: string[] = []
   public syncedCount = 0
 
   getStatus(): SyncStatus {
     return this.status
   }
 
-  pushDeck(cards: StudyCard[], user: AuthUser): Promise<SyncResult> {
+  pushDeck(
+    cards: StudyCard[],
+    user: AuthUser,
+    deletedCardIds: string[] = [],
+  ): Promise<SyncResult> {
     void user
     this.remoteCards = cards.map((c) => ({ ...c }))
+    this.remoteDeletedCardIds = [...deletedCardIds]
     return Promise.resolve({
       success: true,
       cards: this.remoteCards.map((c) => ({ ...c })),
+      deletedCardIds: [...this.remoteDeletedCardIds],
       syncedAt: Date.now(),
     })
   }
@@ -171,18 +191,31 @@ export class MockSyncService implements SyncService {
     return Promise.resolve({
       success: true,
       cards: this.remoteCards.map((c) => ({ ...c })),
+      deletedCardIds: [...this.remoteDeletedCardIds],
     })
   }
 
-  syncDeck(localCards: StudyCard[], user: AuthUser): Promise<SyncResult> {
+  syncDeck(
+    localCards: StudyCard[],
+    user: AuthUser,
+    localDeletedIds: string[] = [],
+  ): Promise<SyncResult> {
     void user
     this.status = 'syncing'
     this.syncedCount++
-    this.remoteCards = reconcileStudyCards(localCards, this.remoteCards)
+    const reconciled = reconcileStudyCards(
+      localCards,
+      this.remoteCards,
+      localDeletedIds,
+      this.remoteDeletedCardIds,
+    )
+    this.remoteCards = reconciled.cards.map((c) => ({ ...c }))
+    this.remoteDeletedCardIds = [...reconciled.deletedCardIds]
     this.status = 'synced'
     return Promise.resolve({
       success: true,
       cards: this.remoteCards.map((c) => ({ ...c })),
+      deletedCardIds: [...this.remoteDeletedCardIds],
       syncedAt: Date.now(),
     })
   }
@@ -192,6 +225,9 @@ export const TEST_LEXICON: LexiconEntry[] = SEED_LEXICON
 
 export function createTestServices(options?: {
   cards?: StudyCard[] | null
+  deletedCardIds?: string[]
+  remoteCards?: StudyCard[]
+  remoteDeletedCardIds?: string[]
   clockTime?: number
   speakerSupported?: boolean
   assistant?: CardAssistant
@@ -206,7 +242,10 @@ export function createTestServices(options?: {
   mockAuth: MockAuthService
   mockSync: MockSyncService
 } {
-  const memoryCards = new MemoryCardRepository(options?.cards ?? null)
+  const memoryCards = new MemoryCardRepository(
+    options?.cards ?? null,
+    options?.deletedCardIds ?? [],
+  )
   const mockSpeaker = new MockSpeaker()
   if (options?.speakerSupported !== undefined) {
     mockSpeaker.isSupported = options.speakerSupported
@@ -220,6 +259,12 @@ export function createTestServices(options?: {
     mockAuth.user = options.user
   }
   const mockSync = new MockSyncService()
+  if (options?.remoteCards) {
+    mockSync.remoteCards = options.remoteCards.map((c) => ({ ...c }))
+  }
+  if (options?.remoteDeletedCardIds) {
+    mockSync.remoteDeletedCardIds = [...options.remoteDeletedCardIds]
+  }
 
   return {
     cards: memoryCards,

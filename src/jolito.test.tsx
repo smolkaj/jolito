@@ -516,6 +516,74 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveValue('ahor')
   })
 
+  it('closes suggestion overlay when clicking the dismiss button without modifying input', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Click the explicit Dismiss button
+    await user.click(
+      screen.getByRole('button', { name: /dismiss suggestions/i }),
+    )
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
+  })
+
+  it('closes suggestion overlay when tapping outside the input and suggestions container', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Tap outside (e.g. on the heading)
+    await user.click(screen.getByRole('heading', { name: /new flashcard/i }))
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
+  })
+
+  it('closes suggestion overlay when focusing or tabbing directly into the English field', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Tab directly into English field without selecting a suggestion
+    await user.tab()
+    expect(englishInput).toHaveFocus()
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('selects existing text when tabbing between fields in the card creation view', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
@@ -552,6 +620,50 @@ describe('Jolito', () => {
     expect(contextInput.selectionEnd).toBe(
       'Iconic Mexican time nuance: right now, soon, or never.'.length,
     )
+  })
+
+  it('disables autocapitalization on card creation and edit text fields for mobile keyboards', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // 1. Check card creation fields
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    const contextInput = screen.getByLabelText(/additional context/i)
+
+    expect(spanishInput).toHaveAttribute('autocapitalize', 'none')
+    expect(englishInput).toHaveAttribute('autocapitalize', 'none')
+    expect(contextInput).toHaveAttribute('autocapitalize', 'none')
+
+    // Check reverse card fields when customized
+    await user.click(
+      screen.getByText('Customize reverse card', { selector: 'summary' }),
+    )
+    const reversePrompt = screen.getByLabelText(/reverse prompt/i)
+    const reverseAnswer = screen.getByLabelText(/reverse answer/i)
+    expect(reversePrompt).toHaveAttribute('autocapitalize', 'none')
+    expect(reverseAnswer).toHaveAttribute('autocapitalize', 'none')
+
+    // 2. Check study review answer field
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    const studyAnswerInput = screen.getByLabelText('Your answer')
+    expect(studyAnswerInput).toHaveAttribute('autocapitalize', 'none')
+
+    // 3. Check edit card modal fields
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    const deckSearchInput = screen.getByLabelText(/search cards in deck/i)
+    expect(deckSearchInput).toHaveAttribute('autocapitalize', 'none')
+
+    await user.click(screen.getByRole('row', { name: /card: aguacate/i }))
+    const editPrompt = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    const editAnswer = screen.getByLabelText(/english \(answer\)/i)
+    const editContext = screen.getByLabelText(/additional context/i)
+
+    expect(editPrompt).toHaveAttribute('autocapitalize', 'none')
+    expect(editAnswer).toHaveAttribute('autocapitalize', 'none')
+    expect(editContext).toHaveAttribute('autocapitalize', 'none')
   })
 
   it('selects existing text when focusing fields in the deck edit card modal', async () => {
@@ -1090,6 +1202,151 @@ describe('Jolito', () => {
       await screen.findByText(/deck successfully synchronized with cloud/i),
     ).toBeInTheDocument()
     expect(services.mockSync.syncedCount).toBeGreaterThan(0)
+  })
+
+  it('does not resurrect deleted cards when deleting and then syncing with cloud', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = [
+      ...createStudyCards(
+        {
+          spanish: 'zapato',
+          english: 'shoe',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-1',
+        1000,
+      ),
+      ...createStudyCards(
+        {
+          spanish: 'sombrero',
+          english: 'hat',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-2',
+        1000,
+      ),
+    ]
+
+    const services = createTestServices({
+      cards,
+      remoteCards: cards,
+      remoteDeletedCardIds: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    render(<App services={services} />)
+
+    // Navigate to deck manager
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
+
+    // Select and delete "zapato" card
+    const checkbox = screen.getByRole('checkbox', {
+      name: /select card zapato/i,
+    })
+    await user.click(checkbox)
+
+    const batchDeleteBtn = screen.getByRole('button', {
+      name: /delete selected \(1\)/i,
+    })
+    await user.click(batchDeleteBtn)
+    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+    // Card 1 is deleted locally
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+    expect(
+      screen.queryByRole('row', { name: /card: zapato/i }),
+    ).not.toBeInTheDocument()
+
+    // Trigger sync now via SyncModal
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
+    await user.click(syncNowBtn)
+
+    expect(
+      await screen.findByText(/deck successfully synchronized with cloud/i),
+    ).toBeInTheDocument()
+
+    // Close sync modal with Escape
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    // Verify deleted card has NOT reappeared in deck manager!
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+    expect(
+      screen.queryByRole('row', { name: /card: zapato/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('row', { name: /card: sombrero/i }),
+    ).toBeInTheDocument()
+
+    // Verify remote and local repository states
+    expect(services.mockSync.remoteCards).toHaveLength(1)
+    expect(services.mockSync.remoteCards[0]?.id).toBe('note-2:es-en')
+    expect(services.mockSync.remoteDeletedCardIds).toContain('note-1:es-en')
+    expect(services.memoryCards.load([])).toHaveLength(1)
+    expect(services.memoryCards.getDeletedCardIds()).toContain('note-1:es-en')
+  })
+
+  it('removes cards deleted on another device when syncing', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = [
+      ...createStudyCards(
+        {
+          spanish: 'zapato',
+          english: 'shoe',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-1',
+        1000,
+      ),
+      ...createStudyCards(
+        {
+          spanish: 'sombrero',
+          english: 'hat',
+          context: 'clothing',
+          bidirectional: false,
+        },
+        'note-2',
+        1000,
+      ),
+    ]
+
+    const card2 = cards[1]!
+    const services = createTestServices({
+      cards,
+      remoteCards: [card2],
+      remoteDeletedCardIds: ['note-1:es-en'],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    render(<App services={services} />)
+
+    // Open sync modal and trigger sync
+    await user.click(screen.getByRole('button', { name: /cloud synced/i }))
+    const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
+    await user.click(syncNowBtn)
+
+    expect(
+      await screen.findByText(/deck successfully synchronized with cloud/i),
+    ).toBeInTheDocument()
+
+    // Close sync modal
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    // Navigate to deck manager
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+    // Card 1 was deleted on remote, so it must not be in local deck
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+    expect(
+      screen.queryByRole('row', { name: /card: zapato/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('row', { name: /card: sombrero/i }),
+    ).toBeInTheDocument()
   })
 
   it('allows signed in user to sign out and returns to auth form', async () => {

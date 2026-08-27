@@ -79,12 +79,12 @@ export class SupabaseSyncService implements SyncService {
       }>
 
       if (!rows || rows.length === 0) {
-        return { success: true, cards: [] }
+        return { success: true, cards: [], deletedCardIds: [] }
       }
 
       const first = rows[0]
       if (!first) {
-        return { success: true, cards: [] }
+        return { success: true, cards: [], deletedCardIds: [] }
       }
 
       const parseResult = deckSyncPayloadSchema.safeParse(first.data)
@@ -98,6 +98,7 @@ export class SupabaseSyncService implements SyncService {
       return {
         success: true,
         cards: parseResult.data.cards,
+        deletedCardIds: parseResult.data.deletedCardIds,
         syncedAt: new Date(first.updated_at).getTime(),
       }
     } catch (err) {
@@ -111,7 +112,11 @@ export class SupabaseSyncService implements SyncService {
     }
   }
 
-  async pushDeck(cards: StudyCard[], user: AuthUser): Promise<SyncResult> {
+  async pushDeck(
+    cards: StudyCard[],
+    user: AuthUser,
+    deletedCardIds: string[] = [],
+  ): Promise<SyncResult> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
@@ -129,6 +134,7 @@ export class SupabaseSyncService implements SyncService {
         updatedAt: nowIso,
         deviceId: this.deviceId,
         cards,
+        deletedCardIds,
       }
 
       const res = await fetch(
@@ -158,6 +164,7 @@ export class SupabaseSyncService implements SyncService {
       return {
         success: true,
         cards,
+        deletedCardIds,
         syncedAt: new Date(nowIso).getTime(),
       }
     } catch (err) {
@@ -169,7 +176,11 @@ export class SupabaseSyncService implements SyncService {
     }
   }
 
-  async syncDeck(localCards: StudyCard[], user: AuthUser): Promise<SyncResult> {
+  async syncDeck(
+    localCards: StudyCard[],
+    user: AuthUser,
+    localDeletedIds: string[] = [],
+  ): Promise<SyncResult> {
     this.status = 'syncing'
 
     const pullRes = await this.pullDeck(user)
@@ -179,9 +190,19 @@ export class SupabaseSyncService implements SyncService {
     }
 
     const remoteCards = pullRes.cards || []
-    const merged = reconcileStudyCards(localCards, remoteCards)
+    const remoteDeletedIds = pullRes.deletedCardIds || []
+    const reconciliation = reconcileStudyCards(
+      localCards,
+      remoteCards,
+      localDeletedIds,
+      remoteDeletedIds,
+    )
 
-    const pushRes = await this.pushDeck(merged, user)
+    const pushRes = await this.pushDeck(
+      reconciliation.cards,
+      user,
+      reconciliation.deletedCardIds,
+    )
     if (!pushRes.success) {
       this.status = 'error'
       return pushRes
@@ -190,7 +211,8 @@ export class SupabaseSyncService implements SyncService {
     this.status = 'synced'
     return {
       success: true,
-      cards: merged,
+      cards: reconciliation.cards,
+      deletedCardIds: reconciliation.deletedCardIds,
       syncedAt: pushRes.syncedAt,
     }
   }

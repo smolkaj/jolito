@@ -143,4 +143,75 @@ describe('SupabaseSyncService', () => {
     expect(res.cards).toHaveLength(2)
     expect(service.getStatus()).toBe('synced')
   })
+
+  it('excludes locally deleted cards when syncing with remote deck', async () => {
+    const service = new SupabaseSyncService(
+      mockAuthService as SupabaseAuthService,
+      'https://example.supabase.co',
+      'anon-key',
+      'device-a',
+    )
+
+    const remoteCard2: StudyCard = {
+      ...mockCard,
+      id: 'c2:es-en',
+      prompt: 'adiós',
+      answer: 'goodbye',
+    }
+
+    const pushFetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    })
+
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        // Pull remote cards containing c1 and c2
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                user_id: 'usr-1',
+                updated_at: '2026-08-23T12:00:00.000Z',
+                data: {
+                  version: 1,
+                  app: 'jolito',
+                  updatedAt: '2026-08-23T12:00:00.000Z',
+                  deviceId: 'dev-remote',
+                  cards: [mockCard, remoteCard2],
+                  deletedCardIds: [],
+                },
+              },
+            ]),
+        })
+        // Push merged result
+        .mockImplementationOnce(pushFetchMock),
+    )
+
+    // User deleted mockCard (c1:es-en), only passes remoteCard2 in localCards and ['c1:es-en'] in localDeletedIds
+    const res = await service.syncDeck(
+      [remoteCard2],
+      { id: 'usr-1', email: 'u@example.com' },
+      ['c1:es-en'],
+    )
+
+    expect(res.success).toBe(true)
+    expect(res.cards).toHaveLength(1)
+    expect(res.cards?.[0]?.id).toBe('c2:es-en')
+    expect(res.deletedCardIds).toContain('c1:es-en')
+
+    expect(pushFetchMock).toHaveBeenCalled()
+    const firstCall = pushFetchMock.mock.calls[0] as
+      [string, { body?: string }] | undefined
+    const bodyStr = firstCall?.[1]?.body ?? '{}'
+    const callBody = JSON.parse(bodyStr) as {
+      data: { cards: StudyCard[]; deletedCardIds: string[] }
+    }
+    expect(callBody.data.cards).toHaveLength(1)
+    expect(callBody.data.cards[0]?.id).toBe('c2:es-en')
+    expect(callBody.data.deletedCardIds).toEqual(['c1:es-en'])
+  })
 })
