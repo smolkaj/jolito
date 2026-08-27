@@ -696,6 +696,7 @@ function EditCardModalInner({
               rows={2}
               required
               autoFocus
+              autoCapitalize="none"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onFocus={handleFocusSelect}
@@ -720,6 +721,7 @@ function EditCardModalInner({
               id="edit-answer"
               rows={2}
               required
+              autoCapitalize="none"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               onFocus={handleFocusSelect}
@@ -732,6 +734,7 @@ function EditCardModalInner({
             <textarea
               id="edit-context"
               rows={2}
+              autoCapitalize="none"
               value={context}
               onChange={(e) => setContext(e.target.value)}
               onFocus={handleFocusSelect}
@@ -2751,6 +2754,7 @@ export function App({
                   rows={2}
                   autoFocus
                   required
+                  autoCapitalize="none"
                   value={spanishInput}
                   onChange={onSpanishChange}
                   onKeyDown={onSpanishKeyDown}
@@ -2836,6 +2840,7 @@ export function App({
                   name="english"
                   rows={2}
                   required
+                  autoCapitalize="none"
                   value={englishInput}
                   onChange={onEnglishChange}
                   onFocus={handleFocusSelect}
@@ -2848,6 +2853,7 @@ export function App({
                   id="context"
                   name="context"
                   rows={2}
+                  autoCapitalize="none"
                   value={contextInput}
                   onChange={(e) => setContextInput(e.target.value)}
                   onFocus={handleFocusSelect}
@@ -2875,6 +2881,7 @@ export function App({
                       <input
                         id="reverse-prompt"
                         name="reversePrompt"
+                        autoCapitalize="none"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
                         onFocus={handleFocusSelect}
@@ -2888,6 +2895,7 @@ export function App({
                       <input
                         id="reverse-answer"
                         name="reverseAnswer"
+                        autoCapitalize="none"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
                         onFocus={handleFocusSelect}
@@ -3052,6 +3060,7 @@ export function App({
                   onChange={(e) => setDeckSearchQuery(e.target.value)}
                   onFocus={handleFocusSelect}
                   aria-label="Search cards in deck"
+                  autoCapitalize="none"
                 />
               </div>
 
@@ -3508,6 +3517,7 @@ export function App({
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder="Type your answer…"
                 autoComplete="off"
+                autoCapitalize="none"
               />
               <button className="reveal-button" type="submit">
                 Reveal answer <kbd>Enter</kbd>
