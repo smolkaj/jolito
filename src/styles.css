@@ -107,7 +107,6 @@ html {
   scroll-behavior: smooth;
   touch-action: manipulation;
   overscroll-behavior-y: none;
-  overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -121,8 +120,6 @@ body {
   line-height: 1.5;
   touch-action: manipulation;
   overscroll-behavior-y: none;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 button,
@@ -2224,7 +2221,6 @@ kbd {
     padding-right: max(16px, env(safe-area-inset-right));
     padding-bottom: max(28px, env(safe-area-inset-bottom));
     padding-left: max(16px, env(safe-area-inset-left));
-    overflow-x: hidden;
   }
 
   .topbar {
@@ -2392,6 +2388,12 @@ kbd {
   .complete-mascot-img {
     width: 140px;
     height: 140px;
+  }
+}
+
+@media (max-width: 360px) {
+  .nav-actions .text-button + .text-button {
+    display: none;
   }
 }
 
