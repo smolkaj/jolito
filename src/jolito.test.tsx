@@ -585,6 +585,9 @@ describe('Jolito', () => {
 
     // 3. Check edit card modal fields
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    const deckSearchInput = screen.getByLabelText(/search cards in deck/i)
+    expect(deckSearchInput).toHaveAttribute('autocapitalize', 'none')
+
     await user.click(screen.getByRole('row', { name: /card: aguacate/i }))
     const editPrompt = screen.getByLabelText(/mexican spanish \(prompt\)/i)
     const editAnswer = screen.getByLabelText(/english \(answer\)/i)
