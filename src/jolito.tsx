@@ -318,7 +318,6 @@ interface PendingCardParams {
   reverseAnswer: string
 }
 
-
 function getCardScheduleBadge(
   card: StudyCard,
   now: number,
@@ -1154,9 +1153,7 @@ function SyncModal({
               🛡️
             </span>
             <h4>Cloud sync is disabled in this preview</h4>
-            <p>
-              Flashcards and progress remain safely stored on this device.
-            </p>
+            <p>Flashcards and progress remain safely stored on this device.</p>
             {onSaveLocally && (
               <button
                 type="button"
@@ -1244,8 +1241,8 @@ function SyncModal({
                 📱
               </span>
               <p>
-                <strong>Home Screen app on iOS?</strong> Long-press the button in
-                your email and tap <strong>Copy Link</strong>.
+                <strong>Home Screen app on iOS?</strong> Long-press the button
+                in your email and tap <strong>Copy Link</strong>.
               </p>
             </div>
             <div className="field-group">
@@ -2260,9 +2257,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          onSaveLocally={
-            pendingCard ? handleSavePendingLocally : undefined
-          }
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2601,9 +2596,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          onSaveLocally={
-            pendingCard ? handleSavePendingLocally : undefined
-          }
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2985,9 +2978,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          onSaveLocally={
-            pendingCard ? handleSavePendingLocally : undefined
-          }
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3069,9 +3060,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
-          onSaveLocally={
-            pendingCard ? handleSavePendingLocally : undefined
-          }
+          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3262,9 +3251,7 @@ export function App({
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}
-        onSaveLocally={
-          pendingCard ? handleSavePendingLocally : undefined
-        }
+        onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
       />
       <EditCardModal
         isOpen={editingCard !== null}

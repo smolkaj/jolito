@@ -1432,16 +1432,12 @@ describe('Jolito', () => {
     // 3. Guest enters email and requests link
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(
-      screen.getByRole('button', { name: /send sign-in link/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     // 4. Guest enters link / code
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
-    await user.click(
-      screen.getByRole('button', { name: /verify & sync/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
 
     // 5. Verification succeeds -> pending card is automatically saved!
     expect(
@@ -1467,9 +1463,7 @@ describe('Jolito', () => {
 
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pwa-creator@example.com')
-    await user.click(
-      screen.getByRole('button', { name: /send sign-in link/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
       await screen.findByText(/Home Screen app on iOS\?/i),
@@ -1564,15 +1558,11 @@ describe('Jolito', () => {
     // 3. Guest signs in
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(
-      screen.getByRole('button', { name: /send sign-in link/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
-    await user.click(
-      screen.getByRole('button', { name: /verify & sync/i }),
-    )
+    await user.click(screen.getByRole('button', { name: /verify & sync/i }))
 
     // 4. Modal closes and card is saved
     expect(

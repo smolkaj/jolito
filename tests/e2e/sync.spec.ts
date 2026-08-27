@@ -128,13 +128,18 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
       expiresAt: Date.now() + 86400000,
       user: { id: 'usr-123', email: 'learner@example.com' },
     }
-    window.localStorage.setItem('jolito-auth-session-v1', JSON.stringify(session))
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify(session),
+    )
   })
 
   await page.goto('/')
 
   // Click connection pill
-  const connectionPill = page.getByRole('button', { name: /synced|learner@example\.com|tap to sync/i })
+  const connectionPill = page.getByRole('button', {
+    name: /synced|learner@example\.com|tap to sync/i,
+  })
   await connectionPill.click()
 
   // Verify modal is open and displays account email & action buttons
@@ -157,4 +162,3 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     .analyze()
   expect(results.violations).toEqual([])
 })
-
