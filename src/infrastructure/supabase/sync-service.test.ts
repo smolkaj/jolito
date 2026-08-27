@@ -205,8 +205,7 @@ describe('SupabaseSyncService', () => {
 
     expect(pushFetchMock).toHaveBeenCalled()
     const firstCall = pushFetchMock.mock.calls[0] as
-      | [string, { body?: string }]
-      | undefined
+      [string, { body?: string }] | undefined
     const bodyStr = firstCall?.[1]?.body ?? '{}'
     const callBody = JSON.parse(bodyStr) as {
       data: { cards: StudyCard[]; deletedCardIds: string[] }
