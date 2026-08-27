@@ -258,15 +258,67 @@ export function CloudCheckIcon({
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       aria-hidden={ariaHidden}
     >
-      <path d="M19 17.5H7A4.5 4.5 0 0 1 6.5 9a5.5 5.5 0 0 1 10.4-1.8A4.2 4.2 0 0 1 20 11.2a4 4 0 0 1-1 6.3" />
-      <path d="m8.5 13 2.5 2.5 5.5-5.5" />
+      <path
+        d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+        fill="currentColor"
+      />
+      <path
+        d="m7.8 13.5 2.8 2.8 5.6-5.6"
+        fill="none"
+        stroke="var(--turquesa-soft, #eaf3ed)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function CloudCheckSticker({
+  size = 60,
+  className = '',
+}: {
+  size?: number
+  className?: string
+}) {
+  return (
+    <svg
+      className={`cloud-check-sticker ${className}`.trim()}
+      viewBox="0 0 64 48"
+      width={size}
+      height={(size * 48) / 64}
+      aria-hidden="true"
+    >
+      {/* Soft sticker drop shadow */}
+      <path
+        d="M51.5 24C49.8 15.6 42.4 9.5 33.5 9.5c-7 0-13.1 3.9-16.1 9.8C7.6 20 2 26.2 2 33.7 2 41.6 8.5 48 16.5 48h35c6.6 0 12-5.4 12-12 0-6.3-4.9-11.4-11.2-11.9z"
+        fill="rgba(18, 24, 21, 0.08)"
+        transform="translate(2, 3)"
+      />
+      {/* Cloud sticker body - Vibrant Oaxacan Turquesa */}
+      <path
+        d="M51.5 21C49.8 12.6 42.4 6.5 33.5 6.5c-7 0-13.1 3.9-16.1 9.8C7.6 17 2 23.2 2 30.7 2 38.6 8.5 45 16.5 45h35c6.6 0 12-5.4 12-12 0-6.3-4.9-11.4-11.2-11.9z"
+        fill="#2a7a63"
+      />
+      {/* Subtle organic upper highlight */}
+      <path
+        d="M33.5 8.5c6.2 0 11.6 3.8 13.8 9.5"
+        fill="none"
+        stroke="#5ab69c"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      {/* Bold Crisp White Checkmark */}
+      <path
+        d="M22 28.5l7.5 7.5 15-15"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
@@ -1417,11 +1469,11 @@ function SyncModal({
           </div>
         ) : user ? (
           <div className="sync-account-pane">
-            <div className="account-info-card">
-              <div className="account-avatar" aria-hidden="true">
-                <CloudCheckIcon size={18} />
+            <div className="sync-account-hero">
+              <div className="sync-cloud-sticker-wrap" aria-hidden="true">
+                <CloudCheckSticker size={58} />
               </div>
-              <div className="account-details">
+              <div className="sync-account-details">
                 <span className="account-badge">Signed in</span>
                 <p className="account-email">{user.email}</p>
               </div>

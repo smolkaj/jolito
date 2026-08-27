@@ -2694,53 +2694,50 @@ kbd {
 .sync-account-pane {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.account-info-card {
+.sync-account-hero {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1.5px solid var(--turquesa-border);
-  border-radius: 14px;
-  background: var(--turquesa-soft);
+  gap: 16px;
+  padding: 6px 2px;
 }
 
-.account-avatar {
-  width: 36px;
-  height: 36px;
+.sync-cloud-sticker-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--line);
-  border-radius: 50%;
-  background: var(--card);
-  color: var(--turquesa-dark);
-  box-shadow: 2px 2px 0 var(--ink);
   flex-shrink: 0;
 }
 
-.account-details {
+.sync-cloud-sticker-wrap .cloud-check-sticker {
+  display: block;
+  overflow: visible;
+}
+
+.sync-account-details {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .account-badge {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   color: var(--turquesa-dark);
 }
 
 .account-email {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 700;
   color: var(--ink);
   word-break: break-all;
+  line-height: 1.3;
 }
 
 .sync-actions-row {
