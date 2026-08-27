@@ -615,13 +615,16 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
 
   // Sign in modal MUST open asking the user to log in!
   await expect(
-    page.getByRole('heading', { name: /save your flashcard/i }),
+    page.getByRole('heading', { name: /^cloud sync$/i }),
   ).toBeVisible()
   await expect(
-    page.getByText(/free cloud sync across all your devices/i),
+    page.getByText(/replicate your cards and progress across devices automatically/i),
   ).toBeVisible()
 
-  await page.screenshot({ path: 'test-results/save-card-auth-modal.png' })
+  await page.screenshot({
+    path: 'test-results/save-card-auth-modal.png',
+    animations: 'disabled',
+  })
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -631,7 +634,7 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
   // Modal can be dismissed with Escape and preserves form inputs
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('heading', { name: /save your flashcard/i }),
+    page.getByRole('heading', { name: /^cloud sync$/i }),
   ).not.toBeVisible()
   await expect(spanishInput).toHaveValue('chido')
   await expect(englishInput).toHaveValue('cool')

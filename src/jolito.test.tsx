@@ -1399,10 +1399,10 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
     expect(
-      screen.getByRole('heading', { name: /save your flashcard/i }),
+      screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/free cloud sync across all your devices/i),
+      screen.getByText(/replicate your cards and progress across devices automatically/i),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
 
@@ -1424,28 +1424,28 @@ describe('Jolito', () => {
     await user.type(englishInput, 'cool')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // 2. Sign-in modal opens with focused save card heading
+    // 2. Sign-in modal opens with focused cloud sync heading
     expect(
-      screen.getByRole('heading', { name: /save your flashcard/i }),
+      screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
 
     // 3. Guest enters email and requests link
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
     await user.click(
-      screen.getByRole('button', { name: /continue with email/i }),
+      screen.getByRole('button', { name: /send sign-in link/i }),
     )
 
     // 4. Guest enters link / code
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
     await user.click(
-      screen.getByRole('button', { name: /verify & save card/i }),
+      screen.getByRole('button', { name: /verify & sync/i }),
     )
 
     // 5. Verification succeeds -> pending card is automatically saved!
     expect(
-      screen.queryByRole('heading', { name: /save your flashcard/i }),
+      screen.queryByRole('heading', { name: /^cloud sync$/i }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
     expect(spanishInput).toHaveValue('')
@@ -1468,7 +1468,7 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pwa-creator@example.com')
     await user.click(
-      screen.getByRole('button', { name: /continue with email/i }),
+      screen.getByRole('button', { name: /send sign-in link/i }),
     )
 
     expect(
@@ -1478,6 +1478,7 @@ describe('Jolito', () => {
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
     await user.click(resendBtn)
+    expect(await screen.findByText(/check your email/i)).toBeInTheDocument()
   })
 
   it('preserves typed card input in create form if guest closes sign in modal without authenticating', async () => {
@@ -1494,7 +1495,7 @@ describe('Jolito', () => {
 
     // Modal is open
     expect(
-      screen.getByRole('heading', { name: /save your flashcard/i }),
+      screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
 
     // Guest presses Escape to dismiss modal
@@ -1502,7 +1503,7 @@ describe('Jolito', () => {
 
     // Modal is closed, but typed input is preserved in form!
     expect(
-      screen.queryByRole('heading', { name: /save your flashcard/i }),
+      screen.queryByRole('heading', { name: /^cloud sync$/i }),
     ).not.toBeInTheDocument()
     expect(spanishInput).toHaveValue('popote')
     expect(englishInput).toHaveValue('straw')
@@ -1523,10 +1524,10 @@ describe('Jolito', () => {
 
     // Modal opens asking to sign in and showing preview notice
     expect(
-      screen.getByRole('heading', { name: /save your flashcard/i }),
+      screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/cloud sync disabled in preview/i),
+      screen.getByText(/cloud sync is disabled in this preview/i),
     ).toBeInTheDocument()
 
     // User clicks save locally in preview
@@ -1535,7 +1536,7 @@ describe('Jolito', () => {
     )
 
     expect(
-      screen.queryByRole('heading', { name: /save your flashcard/i }),
+      screen.queryByRole('heading', { name: /^cloud sync$/i }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “orale”/i)
     expect(services.memoryCards.saved).toHaveLength(2)
@@ -1564,18 +1565,18 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
     await user.click(
-      screen.getByRole('button', { name: /continue with email/i }),
+      screen.getByRole('button', { name: /send sign-in link/i }),
     )
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
     await user.click(
-      screen.getByRole('button', { name: /verify & save card/i }),
+      screen.getByRole('button', { name: /verify & sync/i }),
     )
 
     // 4. Modal closes and card is saved
     expect(
-      screen.queryByRole('heading', { name: /save your flashcard/i }),
+      screen.queryByRole('heading', { name: /^cloud sync$/i }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
 
