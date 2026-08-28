@@ -12,12 +12,13 @@ Jolito pairs Anki's spaced-repetition efficiency with Duolingo's warmth, visual 
 
 ---
 
-## 1. Text & Copy: Less is More
+## 1. Information Density & Signal-to-Noise: Less is More
 
-- **Question every word & number:** Ask _"Do we need this on screen at all?"_ Just because state tracks a metric does not mean the user needs to see it. If an exact number does not change the learner's immediate decision, omit it.
-- **No parenthetical clutter:** Never stuff counts or auxiliary metadata into primary action labels (e.g., avoid `Practice (4)` or `Deck (12)`). Keep CTAs clean, confident, and dimensionally stable.
-- **High information density:** Keep required text punchy and concise (1–3 words). Never use multi-sentence instructions where a clear affordance suffices.
-- **Self-explanatory affordances:** The default UI should guide intuitively without persistent instructional banners or redundant inline helper copy. Subtle tooltips and hover shortcuts are welcome for progressive disclosure.
+- **Earned placement (State is not UI):** Having data in state is never a justification to render it. If removing a metric, count, or auxiliary label leaves the primary workflow crystal clear, eliminate it.
+- **Action purity (Intent over inventory):** Primary buttons and triggers express pure user intent (`Start practice`, `Manage deck`). Never pollute action verbs with auxiliary counts, status qualifiers, or parenthetical metadata.
+- **Calm confidence over anxious annotation:** Resist the urge to narrate every state change or edge condition. Let intuitive affordances speak for themselves.
+- **Ruthless brevity:** When text is necessary, use 1–3 punchy words. Never use sentences where a word suffices.
+- **Discreet progressive disclosure:** Subtle tooltips and hover shortcuts are welcome for secondary aids because they stay hidden until needed without cluttering the canvas.
 - **Learner-focused voice:** Calm, unpretentious feedback (`¡Hecho!` over `Session completed successfully`).
 
 ---
@@ -30,10 +31,11 @@ Jolito pairs Anki's spaced-repetition efficiency with Duolingo's warmth, visual 
 
 ---
 
-## 3. Interactions: Morphing, Physics & Muscle Memory
+## 3. Interactions: Morphing, Physics & Dimensional Stability
 
 - **In-place state morphing:** Animate and morph the interacting element directly (e.g., `ConnectionPill` shifting states or buttons morphing to inputs) rather than spawning disconnected dialogs or separate form fields.
-- **Mechanical tactility & stability:** Physical button depression (`translate(2px, 2px)` on `:active`) paired with crisp 2D hard shadows. Never let dynamic counts cause button widths or primary layouts to shift/jitter. Transitions settle with spring physics (`--ease-spring`).
+- **Dimensional stability:** Dynamic state changes (varying counts, loading states) must never cause button widths or primary layouts to shift or jitter. Surfaces should feel physically anchored.
+- **Mechanical tactility:** Physical button depression (`translate(2px, 2px)` on `:active`) paired with crisp 2D hard shadows. Transitions settle with spring physics (`--ease-spring`).
 - **Zero-latency keyboard flow:** Active inputs autofocus immediately; keycaps (`↵`, `1`–`4`, `Space`, `E`) teach shortcuts passively with zero required mouse movement.
 - **Adaptive typography:** Text sizes scale dynamically with character length so short phrases stay bold and long sentences remain balanced.
 
