@@ -2527,6 +2527,12 @@ export function App({
     view,
   ])
 
+  useEffect(() => {
+    if (view === 'review' && editingCard === null && !revealed) {
+      responseInput.current?.focus()
+    }
+  }, [editingCard, revealed, view])
+
   const grade = useCallback(
     (gradeValue: Grade) => {
       if (!currentCard) return
@@ -2610,9 +2616,7 @@ export function App({
 
       if (
         (event.key === 'e' || event.key === 'E') &&
-        !isInputActive &&
-        !event.ctrlKey &&
-        !event.metaKey
+        (!isInputActive || event.ctrlKey || event.metaKey)
       ) {
         event.preventDefault()
         setEditingCard(currentCard)
@@ -4043,8 +4047,17 @@ export function App({
           </div>
 
           <p className="keyboard-hint">
-            <kbd>Enter</kbd> reveal · <kbd>1–4</kbd> rate · <kbd>e</kbd> edit ·{' '}
-            <kbd>⌃ Space</kbd> replay audio
+            {!revealed ? (
+              <>
+                <kbd>Enter</kbd> reveal · <kbd>⌃ E</kbd> edit ·{' '}
+                <kbd>⌃ Space</kbd> replay audio
+              </>
+            ) : (
+              <>
+                <kbd>1–4</kbd> rate · <kbd>e</kbd> edit · <kbd>Space</kbd>{' '}
+                replay audio
+              </>
+            )}
           </p>
         </section>
       </main>

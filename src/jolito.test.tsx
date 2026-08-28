@@ -2631,7 +2631,7 @@ describe('Jolito', () => {
     ).toHaveAttribute('aria-valuetext', '3 cards remaining')
   })
 
-  it('opens edit modal via "e" keyboard shortcut during study session', async () => {
+  it('opens edit modal via Ctrl+E when input is active and "e" when revealed during study session', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -2641,10 +2641,39 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
 
-    // Blur input or reveal answer to press 'e'
-    await user.keyboard('{Enter}')
+    // 1. Text input is active. Typing 'e' should type into the field, not open modal
+    const answerInput = screen.getByLabelText('Your answer')
+    expect(answerInput).toHaveFocus()
     await user.keyboard('e')
+    expect(answerInput).toHaveValue('e')
+    expect(
+      screen.queryByRole('heading', { name: /edit flashcard/i }),
+    ).not.toBeInTheDocument()
 
+    // Keyboard hint shows Ctrl+E when unrevealed
+    expect(screen.getByText(/⌃ E/i)).toBeInTheDocument()
+
+    // 2. Pressing Ctrl+E while input is focused opens edit modal
+    await user.keyboard('{Control>}e{/Control}')
+    expect(
+      screen.getByRole('heading', { name: /edit flashcard/i }),
+    ).toBeInTheDocument()
+
+    // Close edit modal
+    await user.keyboard('{Escape}')
+    expect(
+      screen.queryByRole('heading', { name: /edit flashcard/i }),
+    ).not.toBeInTheDocument()
+
+    // 3. Reveal answer
+    await user.keyboard('{Enter}')
+    expect(screen.getByText('You wrote')).toBeVisible()
+
+    // Keyboard hint updates to simple 'e' when revealed
+    expect(screen.getByText(/1–4/i)).toBeInTheDocument()
+
+    // 4. Pressing bare 'e' when revealed opens edit modal
+    await user.keyboard('e')
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
