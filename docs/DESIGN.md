@@ -4,6 +4,16 @@ Jolito is a sensory language practice tool, not a database or administrative das
 
 ---
 
+## 0. North Star & Guiding Vision
+
+Jolito pairs Anki's proven spaced-repetition efficiency with Duolingo's warmth, visual engagement, and friction-free flow:
+
+- **Ear-first & production-focused:** Spoken Mexican Spanish audio and active typed recall before reveal—never passive recognition.
+- **Rhythmic flow state:** Daily practice feels like a calm, tactile rhythm, not clearing an inbox or maintaining a database.
+- **Multimodal reinforcement:** Written text, native audio, and contextual visuals reinforce the exact same memory path.
+
+---
+
 ## 1. Text & Copy: Less is More
 
 - **Question every word:** Before adding a label, header, or description, ask: _"Do we need text here at all?"_ If layout, icon, spatial position, or state makes the intent obvious, eliminate the text.
