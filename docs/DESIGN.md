@@ -1,79 +1,82 @@
 # Visual & Interaction Design Principles
 
-Jolito is a tactile sensory practice tool, not an administrative database. Default coding agent instincts (stuffing counts into action buttons, nesting card borders, popping modals, auto-filling personal fields, rendering study counters) are strictly prohibited.
+Jolito blends Anki's spaced-repetition efficiency with Duolingo's warmth, beauty, and friction-free flow. It is a tactile sensory practice tool, not an administrative database.
+
+These guiding principles are not a rigid checklist, but a compass for exercising design judgment. When designing UI and interactions, use them to guide default instincts toward simplicity, calm, and flow.
 
 ---
 
-## 1. Action Purity (Anti-Data-Spilling)
+## 1. Action Purity: Intent Over Inventory
 
-- **Verbs, not scoreboards:** Buttons state pure intent (`Practice`, `Manage`). Never stuff counts, queues, or metadata into action labels (use `Practice`, never `Practice (4)`).
-- **State is not UI:** Having data in state is never a justification to render it. If removing a metric leaves the workflow clear, eliminate it.
-
----
-
-## 2. De-Framing (No "Boxes in Boxes")
-
-- **Zero nested containers:** Strictly avoid nesting cards inside framed boxes inside outlined panels.
-- **Structure via whitespace:** Group elements using whitespace, typographic scale, and subtle surface tints (`--paper`, `--paper-subtle`, `--card`)—never stacked border lines.
+- **Buttons express verbs, not scoreboards:** Primary action triggers feel most confident when they state pure user intent (`Practice`, `Manage deck`, `Create card`).
+- **Resist data-spilling:** Having a metric or count in state is not a reason to attach it to an action label (e.g. `Practice` rather than `Practice (4)`).
+- **Separate triggers from stats:** Quantitative metrics belong on dedicated reference surfaces, not hitchhiking onto primary interaction buttons where they add clutter and cause layout jitter.
 
 ---
 
-## 3. Morphing Over Spawning
+## 2. De-Framing: Whitespace Over Borders
 
-- **Transform in place:** Animate and morph the clicked element directly (e.g., button expanding into an inline input, pill shifting state).
-- **No popups:** Never spawn detached modals, floating dialogs, separate form overlays, or toast alerts.
-
----
-
-## 4. Zero Superfluous Text (Less is More)
-
-- **1–3 words max:** If an affordance or icon is clear, omit text entirely. Never use a sentence where a word suffices (`¡Hecho!`, not `Session completed successfully`).
-- **No state narration:** Do not narrate obvious transitions or append anxious explanatory labels.
+- **Avoid "boxes in boxes in boxes":** Stacking borders and nested containers creates visual claustrophobia.
+- **Structure through tone and scale:** Differentiate hierarchy using generous whitespace, typographic weight, and subtle surface tints (`--paper`, `--paper-subtle`, `--card`) before reaching for another border outline.
+- **Let the card breathe:** Keep the canvas open and centered on the active language content.
 
 ---
 
-## 5. Ambient Flow Over Administration
+## 3. Spatial Continuity: Morphing Over Interruptions
 
-- **Zero in-session counters:** Never display remaining-card counts, queue stats, or bead meters during study.
-- **Peripheral progress:** Track session advancement exclusively via the 3px hairline progress bar.
-
----
-
-## 6. Assist, Don't Hijack
-
-- **Pair proposals only:** AI autocomplete suggests translation pairs (`es` ↔ `en`) to eliminate mechanical typing friction.
-- **Preserve learner territory:** Never auto-fill or overwrite **Additional Context** or personal memory notes.
+- **Transform in place:** When an action changes state, morph the interacting element directly (e.g., a button expanding into an inline input, or a status pill shifting tint) to preserve visual context.
+- **Minimize modal friction:** Prefer seamless in-place transitions over spawning detached dialogs, separate form overlays, or floating toast notifications.
 
 ---
 
-## 7. Nuanced Diffing & Learner Authority
+## 4. Subtractive Copy: Trust the Affordances
 
-- **Diff informs, never grades:** Visual comparisons highlight exact matches (calm green), accents/diacritics (marigold warning), and typos (soft red).
-- **Absolute learner authority:** The system never grades for the user. Spaced-repetition intervals are selected manually on grade chiclets (`1`–`4`).
+- **Less is more:** Before adding a label, helper note, or explanatory banner, ask whether the spatial position, icon, or state already makes the purpose obvious.
+- **Punchy and unpretentious:** When words are needed, keep them concise and direct (1–3 words). Favor calm, encouraging phrasing (`¡Hecho!` over `Session completed successfully`).
+- **Progressive disclosure:** Keep secondary aids and keyboard hints hidden in subtle tooltips or hover states so the default view remains uncluttered.
 
 ---
 
-## 8. Geometric Invariants & Mechanical Tactility
+## 5. Ambient Flow: Orientation Over Administration
 
-- **Strict pill geometry:**
-  - Primary buttons / pills: `height: 32px` (`--pill-height`), `border-radius: 999px` (`--pill-radius`).
-  - Row chips / compact pills: `height: 24px` (`--pill-height-sm`), `border-radius: 999px`.
-- **Zero layout jitter:** Fixed heights and `box-sizing: border-box` across rows. Dynamic content or loading states must never cause layout shift.
-- **Physical tactility:** Crisp 2D hard offset shadows (`--shadow-md: 3px 3px 0 rgba(18, 24, 21, 0.18)`), solid hairlines (`--line: #121815`), and physical depression on click (`:active { transform: translate(2px, 2px); }`).
+- **Study is rhythm, not inbox processing:** Active practice should feel tactile, auditory, and focused on recall—not like managing a queue.
+- **Quiet peripheral cues:** Use subtle, ambient signals (such as the 3px hairline progress bar) rather than in-session card counters, queue beads, or category meters during study.
+
+---
+
+## 6. Assist, Don't Presume: Learner Sovereignty
+
+- **Eliminate mechanical friction:** AI autocomplete and suggestions should speed up repetitive tasks like finding translations, diacritics, and audio.
+- **Preserve personal territory:** Never presume to author the learner's personal context, idioms, or memory notes. The learner authors; the system assists.
+
+---
+
+## 7. Nuanced Feedback: Inform, Don't Judge
+
+- **Multi-tiered visual diffs:** Answer comparison gently illuminates exact matches (calm green), diacritics and accents (marigold notice), and typos (soft red) without binary harshness.
+- **Learner authority:** Diffing provides clear visual feedback to inform the user, but the learner retains 100% authority over their self-grading (`1`–`4`).
+
+---
+
+## 8. Tactility & Geometric Invariants
+
+- **Grounded physical feel:** Crisp 2D offset shadows (`--shadow-md`), solid hairlines (`--line`), and physical depression on click (`:active { transform: translate(2px, 2px); }`) give interfaces a satisfying, mechanical weight.
+- **Geometric consistency:** Shared pill tokens (`--pill-height: 32px`, `--pill-height-sm: 24px`, `--pill-radius: 999px`) keep rows, badges, and controls aligned across views with zero layout jitter.
+- **Adaptive resilience:** Typography scales smoothly with phrase length (`.is-medium`, `.is-long`) so short idioms stay bold while paragraph-length colloquial phrases remain legible.
 
 ---
 
 ## 9. Living Design Tokens ([`src/styles.css`](../src/styles.css))
 
-| Token / Pillar           | Value                                           | Semantic Application                                            |
-| ------------------------ | ----------------------------------------------- | --------------------------------------------------------------- |
-| **Rosa Mexicano**        | `--rosa: #e4007c`                               | Brand mark, primary CTA, Spanish card accent                    |
-| **Oaxaca Mint**          | `--turquesa: #b7d3c2`                           | Sync success, English card accent, exact diff match             |
-| **Tezontle Red**         | `--tezontle: #d32f2f`                           | Grade 1 (Again), sync errors, typo diffs                        |
-| **Cempasúchil Marigold** | `--cempasuchil: #f59e0b`                        | Grade 2 (Hard), offline status, accent/diacritic nuance diffs   |
-| **Mayan Blue**           | `--maya: #0284c7`                               | Grade 3 (Good), informational cues                              |
-| **Jade Green**           | `--verde: #15803d`                              | Grade 4 (Easy) chiclet                                          |
-| **Surfaces & Ink**       | `--paper: #fdf5f8`, `--ink: #121815`            | Warm paper canvas and obsidian ink typography                   |
-| **Chroma-Brutalism**     | `--line: #121815`, `--shadow-md: 3px 3px 0 ...` | Solid hairlines, hard 2D offset shadows, `--pill-radius: 999px` |
-| **Typography**           | Bricolage Grotesque (`--font-sans`)             | CDMX modernist character with tight display letter-spacing      |
-| **Motion**               | Spring curves (`--ease-spring`)                 | Snappy tactile transitions matching mechanical keystrokes       |
+| Pillar                   | Expression                                      | Semantic Role                                                    |
+| ------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
+| **Rosa Mexicano**        | `--rosa: #e4007c`                               | Brand mark, primary CTA, Spanish card accent.                    |
+| **Oaxaca Mint**          | `--turquesa: #b7d3c2`                           | Sync success, English card accent, exact diff match.             |
+| **Tezontle Red**         | `--tezontle: #d32f2f`                           | Grade 1 (Again), sync errors, typo diffs.                        |
+| **Cempasúchil Marigold** | `--cempasuchil: #f59e0b`                        | Grade 2 (Hard), offline status, accent/diacritic nuance diffs.   |
+| **Mayan Blue**           | `--maya: #0284c7`                               | Grade 3 (Good), informational cues.                              |
+| **Jade Green**           | `--verde: #15803d`                              | Grade 4 (Easy) chiclet.                                          |
+| **Surfaces & Ink**       | `--paper: #fdf5f8`, `--ink: #121815`            | Warm paper canvas with obsidian ink hierarchy.                   |
+| **Chroma-Brutalism**     | `--line: #121815`, `--shadow-md: 3px 3px 0 ...` | Solid hairlines, hard 2D offset shadows, `--pill-radius: 999px`. |
+| **Typography**           | Bricolage Grotesque (`--font-sans`)             | Modernist CDMX character with natural rhythm.                    |
+| **Motion**               | Spring curves (`--ease-spring`)                 | Snappy tactile transitions matching mechanical keystrokes.       |
