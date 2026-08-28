@@ -6,6 +6,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -89,13 +90,18 @@ function ModalDialog({
   children: ReactNode
 }) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
   const previousFocusRef = useRef<HTMLElement | null>(
     document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null,
   )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  useLayoutEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) return
     const previousFocus = previousFocusRef.current
@@ -107,21 +113,15 @@ function ModalDialog({
     const focusableElements = () =>
       Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
 
-    const focusFrame = window.requestAnimationFrame(() => {
-      const initialFocus = dialog.querySelector<HTMLElement>(
-        '[data-modal-initial-focus]',
-      )
-      if (initialFocus) {
-        initialFocus.focus()
-      } else if (!dialog.contains(document.activeElement)) {
-        ;(focusableElements()[0] ?? dialog).focus()
-      }
-    })
+    const initialFocus = dialog.querySelector<HTMLElement>(
+      '[data-modal-initial-focus]',
+    )
+    ;(initialFocus ?? focusableElements()[0] ?? dialog).focus()
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (event.key !== 'Tab') return
@@ -146,20 +146,22 @@ function ModalDialog({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.cancelAnimationFrame(focusFrame)
       window.removeEventListener('keydown', handleKeyDown)
       if (main instanceof HTMLElement) main.inert = mainWasInert
-      if (previousFocus?.isConnected) {
-        previousFocus.focus()
-      } else {
-        window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (document.querySelector('[role="dialog"][aria-modal="true"]')) {
+          return
+        }
+        if (previousFocus?.isConnected) {
+          previousFocus.focus()
+        } else {
           document
             .querySelector<HTMLElement>('[data-modal-focus-fallback]')
             ?.focus()
-        })
-      }
+        }
+      })
     }
-  }, [onClose])
+  }, [])
 
   return (
     <div
@@ -830,7 +832,6 @@ function EditCardModalInner({
             id="edit-prompt"
             rows={2}
             required
-            autoFocus
             data-modal-initial-focus
             autoCapitalize="none"
             value={prompt}
@@ -1652,7 +1653,6 @@ function SyncModal({
               id="sync-email"
               type="email"
               required
-              autoFocus
               data-modal-initial-focus
               placeholder="learner@example.com"
               value={email}
