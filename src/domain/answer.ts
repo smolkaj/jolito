@@ -17,6 +17,14 @@ export const stripDiacritics = (text: string): string =>
 export const stripPunctuation = (text: string): string =>
   text.replace(/[^\p{L}\p{M}\p{N}]/gu, '')
 
+/** Replace common OS-level typographic substitutions with ASCII equivalents. */
+export const normalizeTypography = (text: string): string =>
+  text
+    .replace(/\u2026/g, '...')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+
 export const baseNormalize = (text: string): string =>
   stripPunctuation(stripDiacritics(text.toLocaleLowerCase()))
 
@@ -46,8 +54,8 @@ export function compareAnswer(
   typed: string,
   expected: string,
 ): AnswerComparison {
-  const tTrim = typed.trim()
-  const eTrim = expected.trim()
+  const tTrim = normalizeTypography(typed.trim())
+  const eTrim = normalizeTypography(expected.trim())
 
   if (tTrim === eTrim) {
     return {

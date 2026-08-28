@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { compareAnswer } from './answer'
+import { compareAnswer, normalizeTypography } from './answer'
 
 describe('compareAnswer (character-level LCS diff)', () => {
   it('recognizes exact matches', () => {
@@ -149,4 +149,55 @@ describe('compareAnswer (character-level LCS diff)', () => {
       ),
     )
   })
+
+  it('treats macOS typographic ellipsis as three dots', () => {
+    const result = compareAnswer('it works well to\u2026', 'it works well to...')
+    expect(result.isExact).toBe(true)
+  })
+
+  it('treats macOS smart quotes as plain quotes', () => {
+    const single = compareAnswer(
+      '\u2018it works\u2019',
+      "'it works'",
+    )
+    expect(single.isExact).toBe(true)
+
+    const double = compareAnswer(
+      '\u201Cit works\u201D',
+      '"it works"',
+    )
+    expect(double.isExact).toBe(true)
+  })
+
+  it('treats macOS en/em dashes as hyphens', () => {
+    const enDash = compareAnswer('well\u2013known', 'well-known')
+    expect(enDash.isExact).toBe(true)
+
+    const emDash = compareAnswer('stop\u2014go', 'stop-go')
+    expect(emDash.isExact).toBe(true)
+  })
 })
+
+describe('normalizeTypography', () => {
+  it('replaces ellipsis with three dots', () => {
+    expect(normalizeTypography('wait\u2026')).toBe('wait...')
+  })
+
+  it('replaces smart single quotes with ASCII apostrophe', () => {
+    expect(normalizeTypography('\u2018hello\u2019')).toBe("'hello'")
+  })
+
+  it('replaces smart double quotes with ASCII double quote', () => {
+    expect(normalizeTypography('\u201Chi\u201D')).toBe('"hi"')
+  })
+
+  it('replaces en-dash and em-dash with hyphen', () => {
+    expect(normalizeTypography('a\u2013b')).toBe('a-b')
+    expect(normalizeTypography('a\u2014b')).toBe('a-b')
+  })
+
+  it('leaves plain ASCII text unchanged', () => {
+    expect(normalizeTypography('hello world...')).toBe('hello world...')
+  })
+})
+
