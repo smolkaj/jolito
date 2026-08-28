@@ -1234,6 +1234,11 @@ test('aligns study card quick actions with card container and supports keyboard 
 
   await page.screenshot({ path: 'test-results/study-unrevealed-aligned.png' })
 
+  const unrevealedAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(unrevealedAxe.violations).toEqual([])
+
   // 2. Typing 'e' types into the field without opening edit modal
   await page.keyboard.type('el')
   await expect(answerInput).toHaveValue('el')
@@ -1285,14 +1290,15 @@ test('aligns study card quick actions with card container and supports keyboard 
   await page.waitForTimeout(250)
   await page.screenshot({ path: 'test-results/study-revealed-aligned.png' })
 
-  const unrevealedAxe = await new AxeBuilder({ page })
+  const revealedAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
-  expect(unrevealedAxe.violations).toEqual([])
+  expect(revealedAxe.violations).toEqual([])
 
   // 5. Bare 'e' shortcut opens edit modal when revealed
   await page.keyboard.press('e')
   await expect(editModal).toBeVisible()
+  await page.waitForTimeout(250)
 
   const editModalAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -1301,9 +1307,4 @@ test('aligns study card quick actions with card container and supports keyboard 
 
   await page.keyboard.press('Escape')
   await expect(editModal).not.toBeVisible()
-
-  const revealedAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
-  expect(revealedAxe.violations).toEqual([])
 })

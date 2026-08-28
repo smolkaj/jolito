@@ -1958,7 +1958,7 @@ kbd {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   transition: color 180ms ease;
 }
 
@@ -2042,7 +2042,6 @@ kbd {
 
 .grade-buttons .grade-again small {
   color: #ffffff;
-  opacity: 0.9;
 }
 
 .grade-buttons .grade-again:hover {
@@ -2059,7 +2058,6 @@ kbd {
 
 .grade-buttons .grade-hard small {
   color: var(--ink);
-  opacity: 0.85;
 }
 
 .grade-buttons .grade-hard:hover {
@@ -2067,11 +2065,6 @@ kbd {
   color: var(--ink);
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 var(--cempasuchil-dark);
-}
-
-.grade-buttons .grade-hard:hover small {
-  color: var(--ink);
-  opacity: 0.9;
 }
 
 .grade-buttons .grade-good {
@@ -2082,7 +2075,6 @@ kbd {
 
 .grade-buttons .grade-good small {
   color: #ffffff;
-  opacity: 0.9;
 }
 
 .grade-buttons .grade-good:hover {
@@ -2099,7 +2091,6 @@ kbd {
 
 .grade-buttons .grade-easy small {
   color: #ffffff;
-  opacity: 0.9;
 }
 
 .grade-buttons .grade-easy:hover {
