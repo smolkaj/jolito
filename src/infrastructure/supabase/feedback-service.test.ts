@@ -36,7 +36,6 @@ describe('SupabaseFeedbackService', () => {
 
     const result = await service.submitFeedback(
       {
-        category: 'suggestion',
         message: '   ',
       },
       mockUser,
@@ -50,7 +49,7 @@ describe('SupabaseFeedbackService', () => {
   it('requires backend configuration', async () => {
     const service = new SupabaseFeedbackService(mockAuth, '', '')
     const result = await service.submitFeedback(
-      { category: 'bug', message: 'Something broke' },
+      { message: 'Something broke' },
       mockUser,
     )
 
@@ -67,7 +66,7 @@ describe('SupabaseFeedbackService', () => {
     )
 
     const result = await service.submitFeedback(
-      { category: 'bug', message: 'Something broke' },
+      { message: 'Something broke' },
       mockUser,
     )
 
@@ -90,7 +89,6 @@ describe('SupabaseFeedbackService', () => {
 
     const result = await service.submitFeedback(
       {
-        category: 'spanish',
         message: 'Add nuance note for "ahorita"',
         context: { route: '#/study' },
       },
@@ -109,7 +107,6 @@ describe('SupabaseFeedbackService', () => {
         body: JSON.stringify({
           user_id: 'user-456',
           email: 'learner@example.com',
-          category: 'spanish',
           message: 'Add nuance note for "ahorita"',
           context: { route: '#/study' },
         }),
@@ -134,7 +131,7 @@ describe('SupabaseFeedbackService', () => {
     )
 
     const result = await service.submitFeedback(
-      { category: 'suggestion', message: 'Great app!' },
+      { message: 'Great app!' },
       mockUser,
     )
 
@@ -155,7 +152,7 @@ describe('SupabaseFeedbackService', () => {
     )
 
     const result = await service.submitFeedback(
-      { category: 'other', message: 'Test feedback' },
+      { message: 'Test feedback' },
       mockUser,
     )
 
@@ -173,7 +170,7 @@ describe('SupabaseFeedbackService', () => {
     )
 
     const result = await service.submitFeedback(
-      { category: 'other', message: 'Test feedback' },
+      { message: 'Test feedback' },
       mockUser,
     )
 

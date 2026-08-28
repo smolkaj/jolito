@@ -62,7 +62,6 @@ export class SupabaseFeedbackService implements FeedbackService {
     const payload = {
       user_id: user.id,
       email: user.email,
-      category: validation.data.category,
       message: validation.data.message,
       context: validation.data.context ?? {},
     }

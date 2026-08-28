@@ -4146,63 +4146,23 @@ kbd {
   gap: 18px;
 }
 
+.feedback-encouragement {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
 .feedback-field-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.feedback-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: 0.2px;
-}
-
-.feedback-category-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.feedback-category-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: var(--pill-radius);
-  border: 1.5px solid var(--line);
-  background: var(--paper-subtle);
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: all 120ms ease;
-}
-
-.feedback-category-pill:hover {
-  background: var(--card);
-  color: var(--ink);
-  border-color: var(--line-subtle);
-}
-
-.feedback-category-pill.is-selected {
-  background: var(--card);
-  border-color: var(--ink);
-  color: var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
-  font-weight: 700;
-}
-
-.feedback-category-pill:focus-visible {
-  outline: 2px solid var(--rosa);
-  outline-offset: 2px;
-}
-
 .feedback-textarea {
   width: 100%;
   box-sizing: border-box;
-  min-height: 100px;
+  min-height: 120px;
   padding: 12px 14px;
   font-family: inherit;
   font-size: 14.5px;
@@ -4238,28 +4198,6 @@ kbd {
   background: var(--paper-subtle);
   border: 1px solid var(--line);
   color: var(--ink);
-}
-
-.feedback-diagnostics-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.feedback-checkbox-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
-.feedback-checkbox-label input[type='checkbox'] {
-  accent-color: var(--rosa);
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
 }
 
 .feedback-error-banner {

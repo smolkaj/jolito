@@ -3120,7 +3120,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('allows authenticated user to select category, type message, and submit feedback', async () => {
+  it('allows authenticated user to type free-form feedback and submit', async () => {
     const user = userEvent.setup()
     const authUser = {
       id: 'student-123',
@@ -3138,15 +3138,13 @@ describe('Jolito', () => {
     expect(
       screen.getByText(/sending as student@example\.com/i),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /have an idea, spotted a bug or typo, or want to share a mexican spanish nuance\? we’d love to hear from you!/i,
+      ),
+    ).toBeInTheDocument()
 
-    // Select "Spanish nuance" category
-    const spanishPill = screen.getByRole('radio', {
-      name: /spanish nuance/i,
-    })
-    await user.click(spanishPill)
-    expect(spanishPill).toHaveClass('is-selected')
-
-    const messageInput = screen.getByLabelText(/your message/i)
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
     await user.type(
       messageInput,
       'In CDMX, people also say "chido" instead of "padre".',
@@ -3161,9 +3159,6 @@ describe('Jolito', () => {
     expect(services.mockFeedback.submissions[0]!.user.email).toBe(
       'student@example.com',
     )
-    expect(services.mockFeedback.submissions[0]!.submission.category).toBe(
-      'spanish',
-    )
     expect(services.mockFeedback.submissions[0]!.submission.message).toBe(
       'In CDMX, people also say "chido" instead of "padre".',
     )
@@ -3176,7 +3171,7 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /¡muchas gracias!/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/your feedback has been received/i),
+      screen.getByText(/your note has been received/i),
     ).toBeInTheDocument()
 
     // Close modal with Done button
@@ -3209,7 +3204,7 @@ describe('Jolito', () => {
 
     // Reopen, type and submit with Ctrl+Enter
     await user.click(screen.getByRole('button', { name: /^feedback$/i }))
-    const messageInput = screen.getByLabelText(/your message/i)
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
     await user.type(messageInput, 'Dark mode would be awesome.')
     fireEvent.keyDown(messageInput, { key: 'Enter', ctrlKey: true })
 
@@ -3232,7 +3227,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: /^feedback$/i }))
-    const messageInput = screen.getByLabelText(/your message/i)
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
     await user.type(messageInput, 'Some feedback')
     await user.click(screen.getByRole('button', { name: /send feedback/i }))
 

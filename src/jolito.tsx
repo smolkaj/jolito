@@ -24,11 +24,6 @@ import type {
   SyncService,
 } from './application/ports'
 import {
-  FEEDBACK_CATEGORY_LABELS,
-  FEEDBACK_CATEGORY_PLACEHOLDERS,
-  type FeedbackCategory,
-} from './domain/feedback'
-import {
   filterOutStarterCards,
   starterCards,
 } from './application/starter-cards'
@@ -1885,13 +1880,6 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
   )
 }
 
-const FEEDBACK_CATEGORIES: FeedbackCategory[] = [
-  'suggestion',
-  'bug',
-  'spanish',
-  'other',
-]
-
 function FeedbackModalInner({
   onClose,
   user,
@@ -1903,9 +1891,7 @@ function FeedbackModalInner({
   feedbackService: FeedbackService
   currentView: View
 }) {
-  const [category, setCategory] = useState<FeedbackCategory>('suggestion')
   const [message, setMessage] = useState('')
-  const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -1926,23 +1912,13 @@ function FeedbackModalInner({
     setIsSubmitting(true)
     setError(null)
 
-    const context: Record<string, unknown> = {}
-    if (includeDiagnostics && typeof window !== 'undefined') {
-      context.view = currentView
-      context.url = window.location.hash || window.location.pathname
-      context.userAgent =
-        typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
-      context.online =
-        typeof navigator !== 'undefined' ? navigator.onLine : true
-      context.screen = `${window.innerWidth}x${window.innerHeight}`
-    }
-
     try {
       const result = await feedbackService.submitFeedback(
         {
-          category,
           message: trimmed,
-          context,
+          context: {
+            view: currentView,
+          },
         },
         user,
       )
@@ -1981,7 +1957,7 @@ function FeedbackModalInner({
             </h2>
             <p className="modal-subtitle">
               {isSuccess
-                ? 'Your feedback has been received.'
+                ? 'Your note has been received.'
                 : `Sending as ${user.email}`}
             </p>
           </div>
@@ -1998,8 +1974,7 @@ function FeedbackModalInner({
         {isSuccess ? (
           <div className="feedback-success-state">
             <p className="feedback-success-message">
-              Thank you for testing Jolito and sharing your thoughts! We read
-              every note to make the app better for your Spanish learning.
+              Thank you for helping make Jolito better! We read every note.
             </p>
             <div className="feedback-modal-actions">
               <button
@@ -2014,51 +1989,29 @@ function FeedbackModalInner({
           </div>
         ) : (
           <form className="feedback-form" onSubmit={handleSubmit}>
-            <div className="feedback-field-group">
-              <label className="feedback-label">Category</label>
-              <div
-                className="feedback-category-pills"
-                role="radiogroup"
-                aria-label="Feedback category"
-              >
-                {FEEDBACK_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    role="radio"
-                    aria-checked={category === cat}
-                    className={`feedback-category-pill ${
-                      category === cat ? 'is-selected' : ''
-                    }`}
-                    onClick={() => {
-                      setCategory(cat)
-                      setError(null)
-                    }}
-                  >
-                    {FEEDBACK_CATEGORY_LABELS[cat]}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <p className="feedback-encouragement">
+              Have an idea, spotted a bug or typo, or want to share a Mexican
+              Spanish nuance? We’d love to hear from you!
+            </p>
 
             <div className="feedback-field-group">
               <label
                 htmlFor="feedback-message-input"
-                className="feedback-label"
+                className="sr-only"
               >
-                Your message
+                Your feedback
               </label>
               <textarea
                 ref={textareaRef}
                 id="feedback-message-input"
                 className="feedback-textarea"
-                rows={4}
+                rows={5}
                 value={message}
                 onChange={(e) => {
                   setMessage(e.target.value)
                   setError(null)
                 }}
-                placeholder={FEEDBACK_CATEGORY_PLACEHOLDERS[category]}
+                placeholder="What’s on your mind?"
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                     e.preventDefault()
@@ -2070,19 +2023,6 @@ function FeedbackModalInner({
                 Tip: Press <kbd>⌘</kbd>+<kbd>Enter</kbd> (or <kbd>Ctrl</kbd>+
                 <kbd>Enter</kbd>) to send.
               </p>
-            </div>
-
-            <div className="feedback-diagnostics-row">
-              <label className="feedback-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={includeDiagnostics}
-                  onChange={(e) => setIncludeDiagnostics(e.target.checked)}
-                />
-                <span>
-                  Include basic device info (browser, screen size, page)
-                </span>
-              </label>
             </div>
 
             {error && (

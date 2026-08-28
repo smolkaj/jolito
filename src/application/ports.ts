@@ -1,12 +1,9 @@
 import type { StudyCard } from '../domain/card'
-import type {
-  FeedbackCategory,
-  FeedbackSubmission,
-} from '../domain/feedback'
+import type { FeedbackSubmission } from '../domain/feedback'
 import type { AutocompleteSuggestion, LexiconEntry } from '../domain/lexicon'
 import type { SyncStatus } from '../domain/sync'
 
-export type { FeedbackCategory, FeedbackSubmission }
+export type { FeedbackSubmission }
 
 export type Clock = {
   now(): number
