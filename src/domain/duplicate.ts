@@ -1,4 +1,4 @@
-import { chooseScene, type Direction, type StudyCard } from './card'
+import type { Direction, StudyCard } from './card'
 import { normalizeForSearch } from './lexicon'
 
 /**
@@ -71,7 +71,7 @@ export function findDuplicateNoteCards(
   })
 
   let englishDuplicates: StudyCard[] = []
-  if (options.bidirectional || options.english.trim()) {
+  if (options.bidirectional && options.english.trim()) {
     englishDuplicates = findDuplicateCards(cards, {
       prompt: options.english,
       direction: 'en-es',
@@ -112,91 +112,4 @@ export function getDuplicateGroups(
   }
 
   return duplicatesOnly
-}
-
-export interface MergeCardsResult {
-  cards: StudyCard[]
-  updatedCount: number
-  newCount: number
-}
-
-/**
- * Merges incoming cards into existing cards.
- * If an incoming card matches an existing card's ID or its normalized prompt key,
- * it updates the card's content (prompt, answer, context, scene) while preserving
- * the user's earned review schedule (state, interval, ease factor, reviews, lapses, due date).
- */
-export function mergeCardsPreservingProgress(
-  existing: StudyCard[],
-  incoming: StudyCard[],
-): MergeCardsResult {
-  const merged: StudyCard[] = []
-  const consumedIncomingIndexes = new Set<number>()
-  let updatedCount = 0
-
-  // First, map existing cards and check if any incoming card matches by ID or prompt key
-  for (const existingCard of existing) {
-    const existingKey = normalizeCardKey(
-      existingCard.prompt,
-      existingCard.direction,
-    )
-
-    let matchedIncomingIndex = -1
-    // Prioritize exact ID match first
-    for (let i = 0; i < incoming.length; i++) {
-      if (consumedIncomingIndexes.has(i)) continue
-      const inc = incoming[i]!
-      if (inc.id === existingCard.id) {
-        matchedIncomingIndex = i
-        break
-      }
-    }
-
-    // If not matched by ID, try prompt key match
-    if (matchedIncomingIndex === -1) {
-      for (let i = 0; i < incoming.length; i++) {
-        if (consumedIncomingIndexes.has(i)) continue
-        const inc = incoming[i]!
-        if (
-          normalizeCardKey(inc.prompt, inc.direction) === existingKey &&
-          inc.direction === existingCard.direction
-        ) {
-          matchedIncomingIndex = i
-          break
-        }
-      }
-    }
-
-    if (matchedIncomingIndex !== -1) {
-      consumedIncomingIndexes.add(matchedIncomingIndex)
-      const inc = incoming[matchedIncomingIndex]!
-      const scene = chooseScene(inc.prompt, inc.answer, inc.context)
-      merged.push({
-        ...existingCard,
-        prompt: inc.prompt,
-        answer: inc.answer,
-        context: inc.context,
-        scene,
-        // preserve existingCard.schedule
-      })
-      updatedCount++
-    } else {
-      merged.push(existingCard)
-    }
-  }
-
-  // Next, append all remaining incoming cards that were not matched
-  let newCount = 0
-  for (let i = 0; i < incoming.length; i++) {
-    if (!consumedIncomingIndexes.has(i)) {
-      merged.push(incoming[i]!)
-      newCount++
-    }
-  }
-
-  return {
-    cards: merged,
-    updatedCount,
-    newCount,
-  }
 }

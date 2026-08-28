@@ -3625,7 +3625,8 @@ export function App({
                   >
                     Mastered ({deckStats.reviewCount})
                   </button>
-                  {(deckStats.duplicatesCount ?? 0) > 0 && (
+                  {((deckStats.duplicatesCount ?? 0) > 0 ||
+                    deckFilterState === 'duplicates') && (
                     <button
                       type="button"
                       className={`deck-filter-pill ${deckFilterState === 'duplicates' ? 'is-active' : ''}`}
@@ -3633,7 +3634,7 @@ export function App({
                       aria-pressed={deckFilterState === 'duplicates'}
                       title="Cards sharing the same prompt in the same direction"
                     >
-                      Duplicates ({deckStats.duplicatesCount})
+                      Duplicates ({deckStats.duplicatesCount ?? 0})
                     </button>
                   )}
                 </div>

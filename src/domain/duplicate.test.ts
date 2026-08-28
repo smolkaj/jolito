@@ -4,7 +4,6 @@ import {
   findDuplicateCards,
   findDuplicateNoteCards,
   getDuplicateGroups,
-  mergeCardsPreservingProgress,
   normalizeCardKey,
 } from './duplicate'
 
@@ -124,7 +123,7 @@ describe('domain/duplicate', () => {
     })
     const cards = [card1, card2]
 
-    it('identifies duplicate Spanish and English cards for a new note candidate', () => {
+    it('identifies duplicate Spanish and English cards for a bidirectional note candidate', () => {
       const result = findDuplicateNoteCards(cards, {
         spanish: '¡Ahorita!',
         english: 'Right now',
@@ -134,6 +133,16 @@ describe('domain/duplicate', () => {
       expect(result.spanishDuplicates[0]?.id).toBe('note-1:es-en')
       expect(result.englishDuplicates).toHaveLength(1)
       expect(result.englishDuplicates[0]?.id).toBe('note-1:en-es')
+    })
+
+    it('does not check English prompt duplicates for unidirectional (es-en only) cards', () => {
+      const result = findDuplicateNoteCards(cards, {
+        spanish: 'nueva palabra',
+        english: 'Right now',
+        bidirectional: false,
+      })
+      expect(result.spanishDuplicates).toHaveLength(0)
+      expect(result.englishDuplicates).toHaveLength(0)
     })
 
     it('excludes matches from the same noteId when editing', () => {
@@ -176,101 +185,6 @@ describe('domain/duplicate', () => {
       expect(groups.size).toBe(1)
       expect(groups.get('es-en:chela')).toHaveLength(2)
       expect(groups.has('es-en:aguacate')).toBe(false)
-    })
-  })
-
-  describe('mergeCardsPreservingProgress', () => {
-    it('updates card content while preserving earned review schedule for duplicate prompts', () => {
-      const existingCard = makeCard({
-        id: 'existing-1:es-en',
-        noteId: 'existing-1',
-        prompt: '¡Qué padre!',
-        answer: 'Cool',
-        direction: 'es-en',
-        dueAt: 50000,
-        intervalDays: 14,
-        reviews: 5,
-      })
-
-      const incomingCard = makeCard({
-        id: 'anki-import-99:es-en',
-        noteId: 'anki-import-99',
-        prompt: 'Que padre',
-        answer: 'How cool / fantastic (Mexican Spanish)',
-        direction: 'es-en',
-        dueAt: 0,
-        intervalDays: 0,
-        reviews: 0,
-      })
-
-      const result = mergeCardsPreservingProgress(
-        [existingCard],
-        [incomingCard],
-      )
-
-      expect(result.updatedCount).toBe(1)
-      expect(result.newCount).toBe(0)
-      expect(result.cards).toHaveLength(1)
-      const mergedCard = result.cards[0]!
-      expect(mergedCard.id).toBe('existing-1:es-en')
-      expect(mergedCard.answer).toBe('How cool / fantastic (Mexican Spanish)')
-      expect(mergedCard.schedule.intervalDays).toBe(14)
-      expect(mergedCard.schedule.reviews).toBe(5)
-      expect(mergedCard.schedule.dueAt).toBe(50000)
-    })
-
-    it('updates card content when incoming card matches exact ID', () => {
-      const existingCard = makeCard({
-        id: 'c1:es-en',
-        noteId: 'c1',
-        prompt: 'chela',
-        answer: 'beer',
-        direction: 'es-en',
-        dueAt: 80000,
-        intervalDays: 7,
-        reviews: 3,
-      })
-      const incomingCard = makeCard({
-        id: 'c1:es-en',
-        noteId: 'c1',
-        prompt: 'cerveza',
-        answer: 'beer',
-        direction: 'es-en',
-      })
-
-      const result = mergeCardsPreservingProgress(
-        [existingCard],
-        [incomingCard],
-      )
-      expect(result.updatedCount).toBe(1)
-      expect(result.newCount).toBe(0)
-      expect(result.cards[0]?.prompt).toBe('cerveza')
-      expect(result.cards[0]?.schedule.intervalDays).toBe(7)
-    })
-
-    it('appends truly new cards that do not match existing keys or IDs', () => {
-      const existingCard = makeCard({
-        id: 'c1',
-        noteId: 'n1',
-        prompt: 'chela',
-        answer: 'beer',
-        direction: 'es-en',
-      })
-      const incomingCard = makeCard({
-        id: 'c2',
-        noteId: 'n2',
-        prompt: 'aguacate',
-        answer: 'avocado',
-        direction: 'es-en',
-      })
-
-      const result = mergeCardsPreservingProgress(
-        [existingCard],
-        [incomingCard],
-      )
-      expect(result.updatedCount).toBe(0)
-      expect(result.newCount).toBe(1)
-      expect(result.cards).toHaveLength(2)
     })
   })
 })

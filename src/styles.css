@@ -1206,6 +1206,7 @@ summary:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   padding: 10px 14px;
   background: var(--cempasuchil-soft);
   border: 1.5px solid var(--cempasuchil);
@@ -1294,6 +1295,7 @@ summary:focus-visible {
   border: 1px solid var(--cempasuchil);
   margin-left: 6px;
   vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* Edit Modal duplicate warning */
