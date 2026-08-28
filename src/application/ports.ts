@@ -1,6 +1,9 @@
 import type { StudyCard } from '../domain/card'
+import type { FeedbackSubmission } from '../domain/feedback'
 import type { AutocompleteSuggestion, LexiconEntry } from '../domain/lexicon'
 import type { SyncStatus } from '../domain/sync'
+
+export type { FeedbackSubmission }
 
 export type Clock = {
   now(): number
@@ -85,6 +88,18 @@ export type SyncService = {
   ): Promise<SyncResult>
 }
 
+export type FeedbackResult = {
+  success: boolean
+  error?: string | undefined
+}
+
+export type FeedbackService = {
+  submitFeedback(
+    submission: FeedbackSubmission,
+    user: AuthUser,
+  ): Promise<FeedbackResult>
+}
+
 export type AppServices = {
   clock: Clock
   ids: IdGenerator
@@ -94,4 +109,5 @@ export type AppServices = {
   assistant: CardAssistant
   auth: AuthService
   sync: SyncService
+  feedback: FeedbackService
 }

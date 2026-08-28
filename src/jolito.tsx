@@ -20,6 +20,7 @@ import type {
   AppServices,
   AuthService,
   AuthUser,
+  FeedbackService,
   SyncService,
 } from './application/ports'
 import {
@@ -1880,6 +1881,237 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
   )
 }
 
+function FeedbackModalInner({
+  onClose,
+  user,
+  feedbackService,
+  currentView,
+}: {
+  onClose: () => void
+  user: AuthUser
+  feedbackService: FeedbackService
+  currentView: View
+}) {
+  const [message, setMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = useState(false)
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (!isSuccess) {
+      textareaRef.current?.focus()
+    }
+  }, [isSuccess])
+
+  const handleSubmit = async (e?: FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = message.trim()
+    if (!trimmed || isSubmitting) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const result = await feedbackService.submitFeedback(
+        {
+          message: trimmed,
+          context: {
+            view: currentView,
+            version: '0.1.0',
+            userAgent:
+              typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            language:
+              typeof navigator !== 'undefined' ? navigator.language : null,
+            viewport:
+              typeof window !== 'undefined'
+                ? `${window.innerWidth}x${window.innerHeight}`
+                : null,
+            screen:
+              typeof window !== 'undefined' && window.screen
+                ? `${window.screen.width}x${window.screen.height}`
+                : null,
+            devicePixelRatio:
+              typeof window !== 'undefined' ? window.devicePixelRatio : null,
+            url: typeof window !== 'undefined' ? window.location.href : null,
+            online: typeof navigator !== 'undefined' ? navigator.onLine : null,
+          },
+        },
+        user,
+      )
+
+      if (result.success) {
+        setIsSuccess(true)
+      } else {
+        setError(result.error ?? 'Failed to send feedback. Please try again.')
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Network error sending feedback.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="modal-backdrop feedback-modal-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="modal-content feedback-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="feedback-modal-title">
+              {isSuccess ? '¡Muchas gracias!' : 'Share feedback'}
+            </h2>
+            <p className="modal-subtitle">
+              {isSuccess
+                ? 'Your note has been received.'
+                : `Sending as ${user.email}`}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close feedback dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {isSuccess ? (
+          <div className="feedback-success-state">
+            <p className="feedback-success-message">
+              Thank you for helping make Jolito better! We read every note.
+            </p>
+            <div className="feedback-modal-actions">
+              <button
+                type="button"
+                className="primary-button"
+                onClick={onClose}
+                autoFocus
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form
+            className="feedback-form"
+            onSubmit={(e) => {
+              void handleSubmit(e)
+            }}
+          >
+            <p className="feedback-encouragement">
+              Have an idea, spotted a bug or typo, or want to share a Mexican
+              Spanish nuance? We’d love to hear from you!
+            </p>
+
+            <div className="feedback-field-group">
+              <label htmlFor="feedback-message-input" className="sr-only">
+                Your feedback
+              </label>
+              <textarea
+                ref={textareaRef}
+                id="feedback-message-input"
+                className="feedback-textarea"
+                rows={5}
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.target.value)
+                  setError(null)
+                }}
+                placeholder="What’s on your mind?"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault()
+                    void handleSubmit()
+                  }
+                }}
+              />
+              <p className="feedback-hint">
+                Tip: Press <kbd>⌘</kbd>+<kbd>Enter</kbd> (or <kbd>Ctrl</kbd>+
+                <kbd>Enter</kbd>) to send.
+              </p>
+            </div>
+
+            {error && (
+              <div className="feedback-error-banner" role="alert">
+                {error}
+              </div>
+            )}
+
+            <div className="feedback-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={!message.trim() || isSubmitting}
+              >
+                {isSubmitting ? 'Sending…' : 'Send feedback'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function FeedbackModal({
+  isOpen,
+  onClose,
+  user,
+  feedbackService,
+  currentView,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  user: AuthUser | null
+  feedbackService: FeedbackService
+  currentView: View
+}) {
+  useEffect(() => {
+    if (!isOpen || !user) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, user, onClose])
+
+  if (!isOpen || !user) return null
+
+  return (
+    <FeedbackModalInner
+      onClose={onClose}
+      user={user}
+      feedbackService={feedbackService}
+      currentView={currentView}
+    />
+  )
+}
+
 interface ConnectionPillProps {
   authUser: AuthUser | null
   syncStatus: SyncStatus
@@ -2120,6 +2352,7 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
@@ -2623,7 +2856,9 @@ export function App({
         !currentCard ||
         editingCard !== null ||
         deletingCards !== null ||
-        isSyncOpen
+        isSyncOpen ||
+        isBackupOpen ||
+        isFeedbackOpen
       )
         return
 
@@ -2673,6 +2908,8 @@ export function App({
     editingCard,
     grade,
     isSyncOpen,
+    isBackupOpen,
+    isFeedbackOpen,
     playAudio,
     revealed,
     view,
@@ -2833,6 +3070,16 @@ export function App({
     pendingCardRef.current = null
   }, [])
 
+  const openFeedbackModal = useCallback(() => {
+    if (!authUser) return
+    setSuggestions([])
+    setIsFeedbackOpen(true)
+  }, [authUser])
+
+  const closeFeedbackModal = useCallback(() => {
+    setIsFeedbackOpen(false)
+  }, [])
+
   const handleSavePendingLocally = useCallback(() => {
     if (pendingCardRef.current) {
       saveCardFromParams(pendingCardRef.current)
@@ -2885,6 +3132,15 @@ export function App({
               >
                 Manage deck
               </button>
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3038,6 +3294,13 @@ export function App({
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+        />
       </>
     )
   }
@@ -3093,6 +3356,15 @@ export function App({
                   Practice
                 </button>
               ) : null}
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3486,6 +3758,13 @@ export function App({
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+        />
       </>
     )
   }
@@ -3559,6 +3838,15 @@ export function App({
                   Practice
                 </button>
               ) : null}
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3967,6 +4255,13 @@ export function App({
           onClose={() => setIsDemoDeckDismissed(true)}
           onSignIn={() => openSyncModal()}
         />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+        />
       </>
     )
   }
@@ -3990,6 +4285,15 @@ export function App({
               >
                 + New card
               </button>
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -4047,6 +4351,17 @@ export function App({
                 Back home
               </button>
             </div>
+            {authUser && (
+              <div className="complete-feedback-prompt">
+                <button
+                  type="button"
+                  className="complete-link-button"
+                  onClick={openFeedbackModal}
+                >
+                  Have feedback or found a bug?
+                </button>
+              </div>
+            )}
           </section>
         </main>
         <SyncModal
@@ -4072,6 +4387,13 @@ export function App({
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
+        />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
         />
       </>
     )
@@ -4100,6 +4422,15 @@ export function App({
             >
               + New card
             </button>
+            {authUser && (
+              <button
+                className="text-button"
+                type="button"
+                onClick={openFeedbackModal}
+              >
+                Feedback
+              </button>
+            )}
             <ConnectionPill
               authUser={authUser}
               syncStatus={syncStatus}
@@ -4279,6 +4610,13 @@ export function App({
         cards={deletingCards}
         onClose={() => setDeletingCards(null)}
         onConfirm={handleConfirmDelete}
+      />
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={closeFeedbackModal}
+        user={authUser}
+        feedbackService={services.feedback}
+        currentView={view}
       />
     </>
   )

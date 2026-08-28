@@ -3212,6 +3212,181 @@ describe('Jolito', () => {
     })
   })
 
+  it('does not display feedback button or completion prompt when user is not signed in', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices({ user: null, cards: [] })
+    render(<App services={services} />)
+
+    // 1. Welcome page topbar
+    expect(
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
+
+    // 2. Deck page topbar
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
+
+    // 3. Create page topbar
+    await user.click(screen.getByRole('button', { name: /create a card/i }))
+    expect(
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
+
+    // 4. Session complete screen
+    await user.click(screen.getByRole('button', { name: /jolito home/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: /have feedback or found a bug\?/i,
+      }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('allows authenticated user to type free-form feedback and submit', async () => {
+    const user = userEvent.setup()
+    const authUser = {
+      id: 'student-123',
+      email: 'student@example.com',
+    }
+    const services = createTestServices({ user: authUser })
+    render(<App services={services} />)
+
+    // Open feedback modal
+    await user.click(screen.getByRole('button', { name: /^feedback$/i }))
+
+    expect(
+      screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/sending as student@example\.com/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /have an idea, spotted a bug or typo, or want to share a mexican spanish nuance\? we’d love to hear from you!/i,
+      ),
+    ).toBeInTheDocument()
+
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
+    await user.type(
+      messageInput,
+      'In CDMX, people also say "chido" instead of "padre".',
+    )
+
+    // Submit feedback
+    const submitBtn = screen.getByRole('button', { name: /send feedback/i })
+    await user.click(submitBtn)
+
+    // Verified submission payload recorded in test service
+    expect(services.mockFeedback.submissions).toHaveLength(1)
+    expect(services.mockFeedback.submissions[0]!.user.email).toBe(
+      'student@example.com',
+    )
+    expect(services.mockFeedback.submissions[0]!.submission.message).toBe(
+      'In CDMX, people also say "chido" instead of "padre".',
+    )
+    expect(services.mockFeedback.submissions[0]!.submission.context?.view).toBe(
+      'welcome',
+    )
+
+    // Shows success state
+    expect(
+      screen.getByRole('heading', { name: /¡muchas gracias!/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/your note has been received/i)).toBeInTheDocument()
+
+    // Close modal with Done button
+    await user.click(screen.getByRole('button', { name: /done/i }))
+    expect(
+      screen.queryByRole('heading', { name: /¡muchas gracias!/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports closing feedback modal with Escape and submitting with Ctrl+Enter', async () => {
+    const user = userEvent.setup()
+    const authUser = {
+      id: 'student-123',
+      email: 'student@example.com',
+    }
+    const services = createTestServices({ user: authUser })
+    render(<App services={services} />)
+
+    // Open feedback modal
+    await user.click(screen.getByRole('button', { name: /^feedback$/i }))
+    expect(
+      screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
+
+    // Escape closes modal
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(
+      screen.queryByRole('heading', { name: /share feedback/i }),
+    ).not.toBeInTheDocument()
+
+    // Reopen, type and submit with Ctrl+Enter
+    await user.click(screen.getByRole('button', { name: /^feedback$/i }))
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
+    await user.type(messageInput, 'Dark mode would be awesome.')
+    fireEvent.keyDown(messageInput, { key: 'Enter', ctrlKey: true })
+
+    expect(services.mockFeedback.submissions).toHaveLength(1)
+    expect(services.mockFeedback.submissions[0]!.submission.message).toBe(
+      'Dark mode would be awesome.',
+    )
+  })
+
+  it('displays error banner when feedback submission fails', async () => {
+    const user = userEvent.setup()
+    const authUser = {
+      id: 'student-123',
+      email: 'student@example.com',
+    }
+    const services = createTestServices({ user: authUser })
+    services.mockFeedback.shouldSucceed = false
+    services.mockFeedback.errorMessage = 'Network connection timed out.'
+
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^feedback$/i }))
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
+    await user.type(messageInput, 'Some feedback')
+    await user.click(screen.getByRole('button', { name: /send feedback/i }))
+
+    expect(
+      screen.getByText(/network connection timed out\./i),
+    ).toBeInTheDocument()
+  })
+
+  it('provides feedback prompt on the session complete screen', async () => {
+    const user = userEvent.setup()
+    const authUser = {
+      id: 'student-123',
+      email: 'student@example.com',
+    }
+    const services = createTestServices({ user: authUser, cards: [] })
+    render(<App services={services} />)
+
+    // With 0 cards due, practice leads straight to complete view
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('heading', { name: /you’re caught up\./i }),
+    ).toBeInTheDocument()
+
+    const completeFeedbackBtn = screen.getByRole('button', {
+      name: /have feedback or found a bug\?/i,
+    })
+    expect(completeFeedbackBtn).toBeInTheDocument()
+    await user.click(completeFeedbackBtn)
+
+    expect(
+      screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
+  })
+
   it('pauses and resumes an active study session when navigating to deck management and back', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
