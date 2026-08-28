@@ -1,6 +1,6 @@
 # Visual & Interaction Design Principles
 
-Jolito blends Anki's spaced-repetition efficiency with Duolingo's warmth, beauty, and friction-free flow. It is a tactile sensory practice tool, not an administrative database.
+Jolito pairs rigorous spaced-repetition memory science with warmth, visual charm, and friction-free flow. It is a tactile sensory practice tool, not an administrative database.
 
 These guiding principles are not a rigid checklist, but a compass for exercising design judgment. When designing UI and interactions, use them to guide default instincts toward simplicity, calm, and flow.
 
