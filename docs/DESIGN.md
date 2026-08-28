@@ -11,8 +11,8 @@ These guiding principles are not a rigid checklist, but a compass for exercising
 Almost every major design improvement in Jolito's history has been a **subtraction**—removing intermediate container frames, stripping count badges from action buttons, eliminating administrative scoreboards during study, and replacing verbose copy with calm visual affordances.
 
 - **Default to omission:** Having data in state or room on the canvas is never a justification to render an element.
-- **The subtractive test:** Before adding a frame, badge, label, or counter, ask: _"If we leave this out, is the core learning loop faster, calmer, and clearer?"_ If yes, leave it out.
-- **Evolve by stripping away:** Great design here is rarely achieved by adding a layer; it is achieved by removing visual noise until only pure learning momentum remains.
+- **The subtractive test:** Before adding a frame, badge, label, or counter, ask: _"If we leave this out, is the core experience faster, calmer, and clearer?"_ If yes, leave it out.
+- **Evolve by stripping away:** Great design is rarely achieved by adding a layer; it is achieved by removing visual noise until only pure momentum remains.
 
 ---
 
@@ -28,7 +28,7 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 - **Avoid "boxes in boxes in boxes":** Stacking borders and nested containers creates visual claustrophobia.
 - **Structure through tone and scale:** Differentiate hierarchy using generous whitespace, typographic weight, and subtle surface tints (`--paper`, `--paper-subtle`, `--card`) before reaching for another border outline.
-- **Let the card breathe:** Keep the canvas open and centered on the active language content.
+- **Let content breathe:** Keep the canvas open, spacious, and focused directly on the primary interaction.
 
 ---
 
@@ -49,22 +49,22 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 ## 5. Ambient Flow: Orientation Over Administration
 
-- **Study is rhythm, not inbox processing:** Active practice should feel tactile, auditory, and focused on recall—not like managing a queue.
-- **Quiet peripheral cues:** Use subtle, ambient signals (such as the 3px hairline progress bar) rather than in-session card counters, queue beads, or category meters during study.
+- **Flow over tracking:** Protect active focus states from administrative overhead and scorecard anxiety.
+- **Quiet peripheral cues:** Use subtle, ambient signals (such as a 3px hairline progress bar) rather than disruptive in-flight counters, meters, or complex status gauges.
 
 ---
 
-## 6. Assist, Don't Presume: Learner Sovereignty
+## 6. Human Agency: Assist, Don't Presume
 
-- **Eliminate mechanical friction:** AI autocomplete and suggestions should speed up repetitive tasks like finding translations, diacritics, and audio.
-- **Preserve personal territory:** Never presume to author the learner's personal context, idioms, or memory notes. The learner authors; the system assists.
+- **Automate friction, not creativity:** AI and automated assistants should eliminate mechanical toil (lookups, translations, audio generation, formatting), never usurp the user's personal judgment or creative choices.
+- **Suggestions, not impositions:** Present helpful proposals without overwriting existing input or forcing automated content into personal, user-owned note spaces.
 
 ---
 
-## 7. Nuanced Feedback: Inform, Don't Judge
+## 7. Non-Judgmental Clarity: Inform, Don't Judge
 
-- **Multi-tiered visual diffs:** Answer comparison gently illuminates exact matches (calm green), diacritics and accents (marigold notice), and typos (soft red) without binary harshness.
-- **Learner authority:** Diffing provides clear visual feedback to inform the user, but the learner retains 100% authority over their self-grading (`1`–`4`).
+- **Nuance over binary verdicts:** When evaluating human input or complex states, illuminate subtle differences with multi-tiered diagnostic clarity (exact matches, close nuances, substantive errors) rather than punishing users with rigid binary right/wrong verdicts.
+- **The human holds authority:** The system provides clear diagnostic feedback to inform and assist, but ultimate evaluative authority and decision-making remains with the user.
 
 ---
 
@@ -75,7 +75,7 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 - **Token discipline over ad-hoc styling:** Always reuse established CSS custom properties (`--paper`, `--ink`, `--line`, `--shadow-md`, `--pill-height`). Never invent rogue hex codes, blurry drop-shadows, or custom padding scales.
 - **Grounded physical feel:** Crisp 2D offset shadows (`--shadow-md`), solid hairlines (`--line`), and physical depression on click (`:active { transform: translate(2px, 2px); }`) give interfaces a satisfying, mechanical weight.
 - **Shared pill geometry:** Strict pill tokens (`--pill-height: 32px`, `--pill-height-sm: 24px`, `--pill-radius: 999px`) keep rows, badges, and controls aligned across views with zero layout jitter.
-- **Adaptive resilience:** Typography scales smoothly with phrase length (`.is-medium`, `.is-long`) so short idioms stay bold while paragraph-length colloquial phrases remain legible.
+- **Adaptive resilience:** Typography scales smoothly with content length (`.is-medium`, `.is-long`) so short phrases stay bold while multi-line sentences remain legible without overflowing.
 
 ---
 
@@ -104,7 +104,7 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 | **Data Spilling** (`Practice (4)`, `Deck (12)`)                                                                | **Action Purity:** Pure verbs (`Practice`, `Manage deck`). Metrics belong in dedicated stat views.                                        |
 | **Nesting Frames** (Card inside container inside outline)                                                      | **De-Framing:** Whitespace, scale, and subtle surface tints (`--paper`, `--card`).                                                        |
 | **Popup Spawning** (Modal dialogs, toaster alerts)                                                             | **In-Place Morphing:** Animate and transform the clicked element directly.                                                                |
-| **Administrative Metering** (Queue beads, counters during study)                                               | **Ambient Flow:** Unobtrusive peripheral orientation (3px hairline bar).                                                                  |
-| **Over-Automation** (AI writing user's context/memory notes)                                                   | **Assist, Don't Presume:** AI provides translations/audio; the learner authors personal notes.                                            |
-| **Binary Judgment** (Red/green right vs wrong)                                                                 | **Nuanced Diffing:** Gentle character-level diffs; the learner retains 100% self-grading authority.                                       |
+| **Administrative Metering** (In-session scorecards, busy progress meters)                                      | **Ambient Flow:** Unobtrusive peripheral orientation (3px hairline bar).                                                                  |
+| **Over-Automation** (AI overwriting personal user notes)                                                       | **Human Agency:** AI provides translations/audio; the human authors personal notes.                                                       |
+| **Binary Judgment** (Rigid pass/fail grading)                                                                  | **Non-Judgmental Clarity:** Multi-tiered diagnostic nuance; user holds evaluation authority.                                              |
 | **Layout Jitter** (Buttons shifting width on count changes)                                                    | **Dimensional Stability:** Fixed pill heights (`32px` / `24px`) and robust flex alignments.                                               |
