@@ -95,6 +95,7 @@ export function getDuplicateGroups(
   const allGroups = new Map<string, StudyCard[]>()
 
   for (const card of cards) {
+    if (!normalizeForSearch(card.prompt).trim()) continue
     const key = normalizeCardKey(card.prompt, card.direction)
     const existing = allGroups.get(key)
     if (existing) {

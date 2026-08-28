@@ -3305,7 +3305,10 @@ export function App({
                 >
                   <div className="create-duplicate-info">
                     <span className="create-duplicate-badge">Card exists</span>
-                    <span className="create-duplicate-text">
+                    <span
+                      className="create-duplicate-text"
+                      title={`${duplicateCard.prompt} → ${duplicateCard.answer}`}
+                    >
                       <strong>{duplicateCard.prompt}</strong> →{' '}
                       {duplicateCard.answer}
                       <span className="create-duplicate-schedule">

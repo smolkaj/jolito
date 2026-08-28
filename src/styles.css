@@ -1293,7 +1293,6 @@ summary:focus-visible {
   background: #fef3c7;
   color: var(--cempasuchil-dark);
   border: 1px solid var(--cempasuchil);
-  margin-left: 6px;
   vertical-align: middle;
   flex-shrink: 0;
 }
