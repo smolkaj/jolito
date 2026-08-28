@@ -45,13 +45,4 @@ Stay read-only even if asked to fix an issue discovered during the review. Retur
 
 ## Design reviewer (for user-facing UI changes)
 
-When assigned a design review for a UI-touching PR, inspect the visual, interactive, and sensory experience against [docs/DESIGN.md](../../../docs/DESIGN.md):
-
-- **Subtractive test:** Can any container frame, badge, helper text, or count be eliminated to simplify the experience?
-- **Action purity:** Are buttons pure verbs (`Practice`, `Manage deck`) without data-spilling or parenthetical counts?
-- **De-framing:** Is hierarchy established through whitespace and subtle surface tints (`--paper`, `--card`) rather than nested border boxes?
-- **Spatial continuity:** Do state changes morph in place without spawning detached modals or toast alerts?
-- **Subtractive copy:** Is copy punchy (1–3 words), calm, and unpretentious (`¡Hecho!`), with secondary aids tucked into tooltips?
-- **Ambient flow:** Are focus states free of in-flight scorecards and counters, relying on quiet peripheral cues (3px hairline progress)?
-- **Human agency:** Does automation assist without presuming to overwrite personal user note fields?
-- **Visual coherence:** Do corner radii (`20px` / `16px` containers, `999px` pills), typography, and 3px 2D hard shadows match canonical tokens without ad-hoc styling?
+When assigned a design review for a UI-touching PR, inspect the visual, interactive, and sensory experience against [docs/DESIGN.md](../../../docs/DESIGN.md). Verify visual hierarchy, subtractive simplicity, spatial continuity, copy brevity, and token discipline. Report any design regressions as blocking findings.
