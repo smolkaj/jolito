@@ -984,3 +984,73 @@ test('enables vertical scrolling in deck manager when card list exceeds viewport
   // Save screenshot of scrolled bottom state
   await page.screenshot({ path: 'test-results/deck-scroll-bottom.png' })
 })
+
+test('aligns layout widths and container boundaries across desktop views', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  // 1. Deck View
+  await page.goto('/#/deck')
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
+
+  const deckAlign = await page.evaluate(() => {
+    const topbar = document.querySelector('.topbar')?.getBoundingClientRect()
+    const deckLayout = document
+      .querySelector('.deck-layout')
+      ?.getBoundingClientRect()
+    return {
+      topbarWidth: topbar?.width,
+      topbarLeft: topbar?.left,
+      topbarRight: topbar?.right,
+      layoutWidth: deckLayout?.width,
+      layoutLeft: deckLayout?.left,
+      layoutRight: deckLayout?.right,
+    }
+  })
+
+  expect(deckAlign.layoutWidth).toBe(1080)
+  expect(deckAlign.topbarWidth).toBe(1080)
+  expect(
+    Math.abs((deckAlign.topbarLeft ?? 0) - (deckAlign.layoutLeft ?? 0)),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs((deckAlign.topbarRight ?? 0) - (deckAlign.layoutRight ?? 0)),
+  ).toBeLessThanOrEqual(1)
+
+  await page.screenshot({ path: 'test-results/deck-aligned.png' })
+
+  // 2. Create View
+  await page.goto('/#/create')
+  await expect(
+    page.getByRole('heading', { name: /new flashcard/i }),
+  ).toBeVisible()
+
+  const createAlign = await page.evaluate(() => {
+    const topbar = document.querySelector('.topbar')?.getBoundingClientRect()
+    const createLayout = document
+      .querySelector('.create-layout')
+      ?.getBoundingClientRect()
+    return {
+      topbarWidth: topbar?.width,
+      topbarLeft: topbar?.left,
+      topbarRight: topbar?.right,
+      layoutWidth: createLayout?.width,
+      layoutLeft: createLayout?.left,
+      layoutRight: createLayout?.right,
+    }
+  })
+
+  expect(createAlign.layoutWidth).toBe(1080)
+  expect(createAlign.topbarWidth).toBe(1080)
+  expect(
+    Math.abs((createAlign.topbarLeft ?? 0) - (createAlign.layoutLeft ?? 0)),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs((createAlign.topbarRight ?? 0) - (createAlign.layoutRight ?? 0)),
+  ).toBeLessThanOrEqual(1)
+
+  await page.screenshot({ path: 'test-results/create-aligned.png' })
+})
