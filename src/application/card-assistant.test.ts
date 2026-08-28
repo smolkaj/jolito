@@ -123,14 +123,28 @@ describe('createCardAssistant', () => {
     expect(aTodaMadre?.english).toContain('awesome')
   })
 
-  it('loads remote dictionary JSON and expands the index dynamically', async () => {
+  it('loads remote dictionary JSON and companion lemma mapping dynamically', async () => {
     const customAssistant = new OfflineCardAssistant([])
     expect(customAssistant.suggest('reloj')).toHaveLength(0)
 
-    // Mock fetch for dictionary
     const originalFetch = globalThis.fetch
-    globalThis.fetch = (() =>
-      Promise.resolve({
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      const urlStr =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url
+      if (urlStr.includes('es-lemmas.json')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              tuvimos: 'tener',
+            }),
+        })
+      }
+      return Promise.resolve({
         ok: true,
         json: () =>
           Promise.resolve([
@@ -140,17 +154,30 @@ describe('createCardAssistant', () => {
               context: 'noun.',
               tag: 'basics',
             },
+            {
+              spanish: 'tener',
+              english: 'to have / to possess',
+              context: 'verb.',
+              tag: 'basics',
+            },
           ]),
-      })) as unknown as typeof fetch
+      })
+    }) as unknown as typeof fetch
 
     try {
       const loaded = await customAssistant.loadDictionary('/dict/es-en.json')
       expect(loaded).toBe(true)
-      expect(customAssistant.entryCount()).toBe(1)
+      expect(customAssistant.entryCount()).toBe(2)
+      expect(customAssistant.lemmaCount()).toBe(1)
       expect(customAssistant.suggest('reloj')).toHaveLength(1)
-      expect(customAssistant.translate('reloj', 'es')?.english).toBe(
-        'clock / watch',
-      )
+      expect(customAssistant.translate('watch', 'en')?.spanish).toBe('reloj')
+
+      // Conjugated verb suggests base lemma
+      const verbSuggestions = customAssistant.suggest('tuvimos', 'es')
+      expect(verbSuggestions).toHaveLength(1)
+      expect(verbSuggestions[0]?.spanish).toBe('tener')
+      expect(verbSuggestions[0]?.matchType).toBe('lemma')
+      expect(verbSuggestions[0]?.matchedForm).toBe('tuvimos')
 
       // Test subsequent call when already loaded
       const secondLoad =
@@ -226,6 +253,80 @@ describe('createCardAssistant', () => {
       const secondTry = await customAssistant.loadDictionary()
       expect(secondTry).toBe(true)
       expect(customAssistant.entryCount()).toBe(1)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('reuses in-flight promise for concurrent loadDictionary calls', async () => {
+    const customAssistant = new OfflineCardAssistant([])
+    const originalFetch = globalThis.fetch
+    let fetchCount = 0
+
+    globalThis.fetch = (() => {
+      fetchCount++
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              spanish: 'reloj',
+              english: 'clock / watch',
+              context: 'noun.',
+              tag: 'basics',
+            },
+          ]),
+      })
+    }) as unknown as typeof fetch
+
+    try {
+      const [r1, r2] = await Promise.all([
+        customAssistant.loadDictionary(),
+        customAssistant.loadDictionary(),
+      ])
+      expect(r1).toBe(true)
+      expect(r2).toBe(true)
+      expect(fetchCount).toBe(2) // 1 dict + 1 lemmas
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
+
+  it('successfully loads dictionary when lemma mapping fetch fails or is invalid', async () => {
+    const customAssistant = new OfflineCardAssistant([])
+    const originalFetch = globalThis.fetch
+
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      const urlStr =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url
+      if (urlStr.includes('es-lemmas.json')) {
+        return Promise.resolve({
+          ok: false,
+        })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              spanish: 'reloj',
+              english: 'clock / watch',
+              context: 'noun.',
+              tag: 'basics',
+            },
+          ]),
+      })
+    }) as unknown as typeof fetch
+
+    try {
+      const loaded = await customAssistant.loadDictionary()
+      expect(loaded).toBe(true)
+      expect(customAssistant.entryCount()).toBe(1)
+      expect(customAssistant.lemmaCount()).toBe(0)
     } finally {
       globalThis.fetch = originalFetch
     }

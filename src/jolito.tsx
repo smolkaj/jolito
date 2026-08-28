@@ -3175,6 +3175,11 @@ export function App({
                             <span className="suggestion-spanish">
                               {item.spanish}
                             </span>
+                            {item.matchType === 'lemma' && item.matchedForm && (
+                              <span className="suggestion-lemma-badge">
+                                from <em>{item.matchedForm}</em>
+                              </span>
+                            )}
                             {item.tag && (
                               <span
                                 className={`suggestion-tag tag-${item.tag}`}
