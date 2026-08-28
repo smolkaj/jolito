@@ -267,8 +267,11 @@ export class LexiconIndex {
     if (qLen >= 4) {
       const minBigrams = qLen >= 6 ? 2 : 1
       const counts = new Map<number, number>()
+      const queryBigrams = new Set<string>()
       for (let i = 0; i < qLen - 1; i++) {
-        const bg = query.slice(i, i + 2)
+        queryBigrams.add(query.slice(i, i + 2))
+      }
+      for (const bg of queryBigrams) {
         const list = bigramMap.get(bg)
         if (list) {
           for (const idx of list) {
@@ -278,7 +281,7 @@ export class LexiconIndex {
               const entry = this.entries[idx]
               if (entry) {
                 const terms = this.getTerms(entry, lang)
-                if (terms.some((t) => Math.abs(t.length - qLen) <= 2)) {
+                if (terms.some((t) => Math.abs(t.length - qLen) <= 3)) {
                   candidateIndices.add(idx)
                 }
               }
@@ -289,7 +292,7 @@ export class LexiconIndex {
     }
 
     if (candidateIndices.size === 0) {
-      for (let l = Math.max(1, qLen - 2); l <= qLen + 2; l++) {
+      for (let l = Math.max(1, qLen - 3); l <= qLen + 3; l++) {
         const list = lengthMap.get(l)
         if (list) {
           for (const idx of list) {

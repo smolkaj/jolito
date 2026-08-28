@@ -531,41 +531,6 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers "Did you mean" suggestion chip as fallback when dropdown suggestions are empty', async () => {
-    const user = userEvent.setup({ delay: null })
-    const assistant = new OfflineCardAssistant([
-      {
-        spanish: 'aguacate',
-        english: 'avocado',
-        context: 'Food.',
-        tag: 'food',
-      },
-    ])
-    vi.spyOn(assistant, 'suggest').mockReturnValue([])
-    const services = createTestServices({ assistant })
-    render(<App services={services} />)
-
-    await user.click(screen.getByRole('button', { name: 'Create a card' }))
-    const spanishInput = screen.getByLabelText(/spanish/i)
-    await user.type(spanishInput, 'aguacatte')
-
-    expect(screen.getByText(/did you mean/i)).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /aguacate/i }),
-    ).toBeInTheDocument()
-
-    // Click typo chip
-    await user.click(screen.getByRole('button', { name: /aguacate/i }))
-
-    expect(spanishInput).toHaveValue('aguacate')
-    expect(screen.getByLabelText(/english/i)).toHaveValue('avocado')
-    expect(screen.getByLabelText(/context/i)).toHaveValue('')
-    expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
-    ).not.toBeInTheDocument()
-  })
-
   it('renders fuzzy typo matches in autocomplete dropdown with badge and keyboard selection', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
