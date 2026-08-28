@@ -12,7 +12,7 @@ Use **Author or orchestrator** when preparing a PR or coordinating its review. U
 ## Non-negotiables
 
 - An independent reviewer is fresh, has not authored the change, and is strictly read-only. Reviewers may inspect code and trusted CI, but must not modify tracked files or Git/remote state: no edits, commits, pushes, comments, approvals, thread resolution, or merges.
-- Give each reviewer only the PR URL. The description, diff, and repository must provide the rationale and evidence needed to review it.
+- Give each reviewer only their assigned role and the PR URL. The description, diff, and repository must provide the rationale and evidence needed to review it.
 - Resolve the base and head commit SHAs from the PR before reviewing and confirm neither has changed before reporting a verdict. A verdict applies only to that exact pair.
 - Report **blocking** findings separately from **advisory** observations. A finding is blocking when resolving it would materially improve correctness, clarity, simplicity, readability, maintainability, visual coherence, or long-term health. Advisory observations are preferences or polish with no material code-health impact; authors must not dismiss substantive improvements as optional merely because the code works.
 - Each concept should have one obvious source of truth and execution path. Treat competing authorities, unsynchronized copies, inconsistent invariants or terminology, and incomplete migrations as blockers.
@@ -25,7 +25,7 @@ Use **Author or orchestrator** when preparing a PR or coordinating its review. U
 
 1. Make the PR self-documenting. Lead with the big-picture win, contrast before and after, explain the next step toward the north star, and include risks and verification.
 2. Before each formal review round, simplify the finished change. Seek reuse, directness, readability, and efficiency; remove needless indirection, duplication, dead code, obsolete paths, and stale or redundant comments. Keep comments that explain a non-obvious reason or invariant. Fix every material issue you find, then run the repository's required gates.
-3. Launch a fresh independent reviewer and give it only the PR URL. For user-facing changes, also launch a fresh design reviewer and give it only the PR URL. Do not change the branch while review is in progress.
+3. Launch a fresh reviewer with the **Independent reviewer** role and the PR URL. For user-facing changes, also launch a fresh reviewer with the **Design reviewer** role and the PR URL. Do not provide other change-specific context or change the branch while review is in progress.
 4. Consolidate findings without hiding disagreements. Resolve every blocker, rerun the gates, update the PR, and start a new review round with fresh reviewers. When challenging a blocker, follow the documented challenge-and-rereview path rather than changing the head.
 5. At fixpoint, add a concise PR record containing the base/head SHAs, reviewer identifiers and roles, gates actually run, outcome, and the rationale for any challenged finding that a fresh reviewer determined did not apply.
 
