@@ -2,7 +2,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { compareAnswer, normalizeTypography } from './answer'
 
-describe('compareAnswer (character-level LCS diff)', () => {
+describe('compareAnswer (character-level affine diff)', () => {
   it('recognizes exact matches', () => {
     const result = compareAnswer(
       '¿Dónde está el metro?',
@@ -102,9 +102,7 @@ describe('compareAnswer (character-level LCS diff)', () => {
     // Words with completely disjoint characters
     const disjoint = compareAnswer('cat', 'dog')
     expect(disjoint.isExact).toBe(false)
-    expect(disjoint.typedSegments).toEqual([
-      { value: 'cat', status: 'extra' },
-    ])
+    expect(disjoint.typedSegments).toEqual([{ value: 'cat', status: 'extra' }])
     expect(disjoint.expectedSegments).toEqual([
       { value: 'dog', status: 'missing' },
     ])
