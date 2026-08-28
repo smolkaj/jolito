@@ -175,6 +175,20 @@ test('short landscape keeps grading fixed while long review content scrolls', as
   await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
 
   await page.setViewportSize({ width: 568, height: 320 })
+  const promptViewport = page.locator('.study-prompt-wrap')
+  await expect(promptViewport).toHaveCSS('overflow-y', 'auto')
+  await expect(page.locator('.study-prompt')).toHaveCSS('white-space', 'normal')
+  const promptScroll = await promptViewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+    return {
+      clientHeight: element.clientHeight,
+      scrollHeight: element.scrollHeight,
+      scrollTop: element.scrollTop,
+    }
+  })
+  expect(promptScroll.scrollHeight).toBeGreaterThan(promptScroll.clientHeight)
+  expect(promptScroll.scrollTop).toBeGreaterThan(0)
+
   const compactContentBounds = await page
     .locator('.reveal-content')
     .boundingBox()

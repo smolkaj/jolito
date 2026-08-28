@@ -4252,15 +4252,12 @@ kbd {
   }
 
   .review-page .study-card.is-revealed .study-prompt-wrap {
-    max-height: 26px;
+    max-height: 44px;
   }
 
   .review-page .study-card.is-revealed .study-prompt {
-    overflow: hidden;
     font-size: 18px;
     line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .review-page .study-card.is-revealed .study-prompt-wrap .audio-button {
