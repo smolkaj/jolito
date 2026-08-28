@@ -1,48 +1,46 @@
 # Visual & Interaction Design Principles
 
-Jolito is a sensory language practice tool, not a database or administrative dashboard. Every screen, surface, and transition must earn its existence by reducing cognitive friction, training the ear and eye, and maintaining practice rhythm.
+Jolito pairs Anki's spaced-repetition efficiency with Duolingo's warmth, visual engagement, and friction-free flow. It is a sensory practice tool, not a database or administrative dashboard.
 
 ---
 
 ## 0. North Star & Guiding Vision
 
-Jolito pairs Anki's proven spaced-repetition efficiency with Duolingo's warmth, visual engagement, and friction-free flow:
-
 - **Ear-first & production-focused:** Spoken Mexican Spanish audio and active typed recall before reveal—never passive recognition.
 - **Rhythmic flow state:** Daily practice feels like a calm, tactile rhythm, not clearing an inbox or maintaining a database.
-- **Multimodal reinforcement:** Written text, native audio, and contextual visuals reinforce the exact same memory path.
+- **Multimodal reinforcement:** Written text, native audio, and contextual scene visuals reinforce the exact same memory path.
 
 ---
 
 ## 1. Text & Copy: Less is More
 
-- **Question every word:** Before adding a label, header, or description, ask: _"Do we need text here at all?"_ If layout, icon, spatial position, or state makes the intent obvious, eliminate the text.
-- **High information density:** When text is necessary, make it punchy, crisp, and direct (1–3 words). Never use multi-sentence instructions where a clear affordance suffices.
-- **Self-explanatory affordances:** The default UI should guide intuitively without persistent instructional banners or redundant inline helper copy. Subtle tooltips or hover shortcuts are welcome for progressive disclosure because they stay hidden until needed.
-- **Learner-focused voice:** Keep system messages calm, encouraging, and unpretentious (e.g., `¡Hecho!` over `Session completed successfully`).
+- **Question every word:** Ask _"Do we need text here at all?"_ before adding any label or header. If spatial layout, icon, or state conveys intent, omit the copy.
+- **High information density:** Keep required text punchy and concise (1–3 words). Never use multi-sentence instructions where a clear affordance suffices.
+- **Self-explanatory affordances:** The default UI should guide intuitively without persistent instructional banners or redundant inline helper copy. Subtle tooltips and hover shortcuts are welcome for progressive disclosure since they stay hidden until needed.
+- **Learner-focused voice:** Calm, unpretentious feedback (`¡Hecho!` over `Session completed successfully`).
 
 ---
 
 ## 2. Surfaces: De-Framing (No "Boxes in Boxes")
 
-- **Eliminate nested containers:** Strictly avoid Russian-nesting-doll layouts (e.g., a card inside a framed box inside an outlined panel). Compounding borders and nested frames create visual noise and claustrophobia.
-- **Structure through whitespace & contrast:** Group related elements using whitespace, typographic hierarchy, and subtle surface tints (`--paper`, `--paper-subtle`, `--card`) rather than stacking border outlines.
-- **Flat, open canvas:** Keep surfaces spacious and uncluttered. Let the language card and its multimodal content take center stage without competing framing elements.
+- **Eliminate nested containers:** Strictly avoid Russian-nesting-doll layouts (cards inside framed boxes inside outlined panels). Compounding borders and nested frames create visual noise and claustrophobia.
+- **Structure through whitespace & contrast:** Group related elements using whitespace, typographic scale, and subtle surface tints (`--paper`, `--paper-subtle`, `--card`) rather than stacked border outlines.
+- **Flat, open canvas:** Keep surfaces spacious, clean, and focused directly on study/authoring content.
 
 ---
 
 ## 3. Interactions: Morphing Over Spawning
 
-- **In-place state morphing:** When an action occurs, animate and morph the interacting element directly (e.g., a button morphs into an inline input, status, or progress indicator) rather than spawning disconnected popups, modal overlays, or extra form fields.
-- **Spatial continuity:** Preserve context across state changes. Elements should slide, expand, or settle using spring physics (`--ease-spring`) with zero layout jank or jarring jumps.
-- **Zero-latency keyboard flow:** The active input field must autofocus immediately. The full practice cycle (`Enter` to reveal, `1`–`4` to grade, `Space` for audio) must be 100% operable from the keyboard with no mouse reliance or focus loss.
+- **In-place state morphing:** Animate and morph the interacting element directly (e.g. morphing a button into an inline input/status) rather than spawning disconnected modal dialogs or new nested form fields.
+- **Spatial continuity:** Preserve visual context with spring physics (`--ease-spring`) without layout jank or jarring jumps.
+- **Zero-latency keyboard flow:** Inputs autofocus immediately; the full practice loop (`Enter`, `1`–`4`, `Space`) requires zero cursor movement or focus hunting.
 
 ---
 
 ## 4. Multimodal Cohesion (Zero Mere Decoration)
 
-- **Reinforce, don't distract:** Written text, native audio, and contextual illustrations must converge on the exact same linguistic meaning and cultural nuance.
-- **No filler media:** Never add decorative graphics, clip art, or sound effects that merely fill space or compete for learner attention. If an image or audio cue does not anchor memory, leave it out.
+- **Reinforce, don't distract:** Written text, native audio, and contextual illustrations must converge on the exact same linguistic concept.
+- **No filler media:** Never add decorative graphics or sound effects that merely fill space or compete for learner attention. If an image or audio cue does not anchor memory, leave it out.
 
 ---
 
