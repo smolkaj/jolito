@@ -323,7 +323,7 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /make the words you meet stick/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Jolito')).toBeInTheDocument()
+    expect(document.querySelector('.brand')).toBeInTheDocument()
     expect(
       screen.getByText('Create beautiful, spoken flashcards.', {
         exact: false,
@@ -1927,7 +1927,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    const brandElement = screen.getByText('Jolito', { selector: 'span' })
+    const brandElement = screen.getByText('Jolito', { selector: '.brand span' })
     expect(brandElement).toBeInTheDocument()
 
     const brandLogo =
@@ -2050,7 +2050,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // 1. Verify Brand component renders the vector JolitoMark
-    const brandElement = screen.getByText('Jolito').closest('.brand')
+    const brandElement = document.querySelector('.brand')
     expect(brandElement).toBeInTheDocument()
     const brandMark = brandElement?.querySelector('.brand-mark')
     expect(brandMark).toBeInTheDocument()
@@ -3299,18 +3299,18 @@ describe('Jolito', () => {
     const services = createTestServices({ user: null, cards: [] })
     render(<App services={services} />)
 
-    // 1. Welcome page topbar
+    // 1. Welcome page footer
     expect(
       screen.queryByRole('button', { name: /^feedback$/i }),
     ).not.toBeInTheDocument()
 
-    // 2. Deck page topbar
+    // 2. Deck page footer
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
       screen.queryByRole('button', { name: /^feedback$/i }),
     ).not.toBeInTheDocument()
 
-    // 3. Create page topbar
+    // 3. Create page footer
     await user.click(screen.getByRole('button', { name: /create a card/i }))
     expect(
       screen.queryByRole('button', { name: /^feedback$/i }),
@@ -3329,7 +3329,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('allows authenticated user to type free-form feedback and submit', async () => {
+  it('allows authenticated user to type free-form feedback and submit from footer', async () => {
     const user = userEvent.setup()
     const authUser = {
       id: 'student-123',
@@ -3338,7 +3338,7 @@ describe('Jolito', () => {
     const services = createTestServices({ user: authUser })
     render(<App services={services} />)
 
-    // Open feedback modal
+    // Open feedback modal from footer
     await user.click(screen.getByRole('button', { name: /^feedback$/i }))
 
     expect(
@@ -3386,6 +3386,38 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /¡muchas gracias!/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('supports opening feedback modal from sync modal', async () => {
+    const user = userEvent.setup()
+    const authUser = {
+      id: 'student-123',
+      email: 'student@example.com',
+    }
+    const services = createTestServices({ user: authUser })
+    render(<App services={services} />)
+
+    // Open sync / account modal via connection pill
+    await user.click(
+      screen.getByRole('button', { name: /deck synced with cloud/i }),
+    )
+    expect(
+      screen.getByRole('heading', { name: /cloud sync/i }),
+    ).toBeInTheDocument()
+
+    // Click feedback link inside account modal
+    const syncFeedbackBtn = screen.getByRole('button', {
+      name: /have feedback or spotted a nuance\? →/i,
+    })
+    await user.click(syncFeedbackBtn)
+
+    // Sync modal is closed, feedback modal is open
+    expect(
+      screen.queryByRole('heading', { name: /cloud sync/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
   })
 
   it('supports closing feedback modal with Escape', async () => {
