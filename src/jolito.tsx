@@ -1802,7 +1802,11 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
+    <div
+      className="modal-backdrop demo-deck-modal-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
         className="modal-content demo-deck-modal"
         role="dialog"
@@ -2056,6 +2060,7 @@ export function App({
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
   const [view, setView] = useState<View>(initialResolved.view)
+  const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -2064,6 +2069,7 @@ export function App({
   }, [view])
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
+    setIsDemoDeckDismissed(false)
     setView(nextView)
     if (typeof window === 'undefined') return
     const targetHash = hashForView(nextView)
@@ -2118,8 +2124,6 @@ export function App({
   )
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
-  const [hasDismissedDemoDeckModal, setHasDismissedDemoDeckModal] =
-    useState(false)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -2361,7 +2365,7 @@ export function App({
         })
         setSessionTotal(() => starterCards.filter((c) => isDue(c, now)).length)
         setReviewedCount(0)
-        setHasDismissedDemoDeckModal(false)
+        setIsDemoDeckDismissed(false)
       }
     })
   }, [
@@ -2409,6 +2413,7 @@ export function App({
 
   useEffect(() => {
     const onPopState = () => {
+      setIsDemoDeckDismissed(false)
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
       if (nextView === 'welcome') {
@@ -3475,25 +3480,6 @@ export function App({
               </div>
             </header>
 
-            {!authUser && (
-              <aside
-                className="deck-demo-banner"
-                role="note"
-                aria-label="Demo deck notice"
-              >
-                <span className="deck-demo-text">
-                  ✦ Demo deck (4 example cards)
-                </span>
-                <button
-                  type="button"
-                  className="deck-demo-action"
-                  onClick={() => openSyncModal()}
-                >
-                  Sign in to access your deck →
-                </button>
-              </aside>
-            )}
-
             <div className="deck-toolbar">
               <div className="deck-search-wrap">
                 <span className="deck-search-icon" aria-hidden="true">
@@ -3788,8 +3774,8 @@ export function App({
           onConfirm={handleConfirmDelete}
         />
         <DemoDeckModal
-          isOpen={!authUser && !hasDismissedDemoDeckModal}
-          onClose={() => setHasDismissedDemoDeckModal(true)}
+          isOpen={!authUser && !isDemoDeckDismissed}
+          onClose={() => setIsDemoDeckDismissed(true)}
           onSignIn={() => openSyncModal()}
         />
       </>
@@ -3836,15 +3822,31 @@ export function App({
               {authUser ? 'SESSION COMPLETE' : 'DEMO SESSION COMPLETE'}
             </p>
             <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
-            <p>
-              {authUser
-                ? reviewedCount > 0
+            {authUser ? (
+              <p>
+                {reviewedCount > 0
                   ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
-                  : 'Nothing is due right now. Add something from your day in CDMX?'
-                : reviewedCount > 0
-                  ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Sign in to build and sync your personal deck.`
-                  : 'You’re exploring demo cards. Sign in to create your personal deck.'}
-            </p>
+                  : 'Nothing is due right now. Add something from your day in CDMX?'}
+              </p>
+            ) : (
+              <div className="complete-copy">
+                <p>
+                  {reviewedCount > 0
+                    ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced.`
+                    : 'You’re exploring demo cards.'}
+                </p>
+                <p className="complete-subtext">
+                  <button
+                    type="button"
+                    className="complete-link-button"
+                    onClick={() => openSyncModal()}
+                  >
+                    Sign in
+                  </button>{' '}
+                  to create and sync your personal deck.
+                </p>
+              </div>
+            )}
             <div className="complete-actions">
               <button
                 className="primary-button"

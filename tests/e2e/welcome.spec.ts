@@ -1157,10 +1157,12 @@ test('displays lightweight demo deck modal and demo session complete screen with
   await page.getByRole('button', { name: /explore demo deck/i }).click()
   await expect(demoModal).not.toBeVisible()
 
-  // Banner remains visible in deck manager
-  await expect(
-    page.getByRole('note', { name: /demo deck notice/i }),
-  ).toBeVisible()
+  // Return to Deck Manager after visiting Create -> modal appears again
+  await page.getByRole('button', { name: /\+ new card/i }).click()
+  await page.getByRole('button', { name: /manage deck/i }).click()
+  await expect(demoModal).toBeVisible()
+  await page.getByRole('button', { name: /explore demo deck/i }).click()
+  await expect(demoModal).not.toBeVisible()
 
   // 2. Practice session to demo complete screen
   await page.goto('/')
@@ -1174,10 +1176,14 @@ test('displays lightweight demo deck modal and demo session complete screen with
   // Verify demo session complete view
   await expect(page.locator('.complete-card')).toBeVisible()
   await expect(page.getByText('DEMO SESSION COMPLETE')).toBeVisible()
+  await expect(page.getByText(/\d+ cards practiced\./i)).toBeVisible()
   await expect(
-    page.getByText(
-      /\d+ cards practiced.*Sign in to build and sync your personal deck/i,
-    ),
+    page.getByText(/to create and sync your personal deck\./i),
+  ).toBeVisible()
+  await expect(
+    page
+      .locator('.complete-subtext')
+      .getByRole('button', { name: /^sign in$/i }),
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: /create a card/i }),

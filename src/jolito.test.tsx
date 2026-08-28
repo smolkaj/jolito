@@ -2676,27 +2676,21 @@ describe('Jolito', () => {
       screen.queryByRole('dialog', { name: /^demo deck$/i }),
     ).not.toBeInTheDocument()
 
-    // 4. Banner remains visible in deck manager
+    // 4. Navigating away and returning to Deck Manager re-shows the modal
+    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.getByRole('note', { name: /demo deck notice/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/✦ Demo deck \(4 example cards\)/i),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /sign in to access your deck/i }),
+      screen.getByRole('dialog', { name: /^demo deck$/i }),
     ).toBeInTheDocument()
 
-    // 5. Click sign in from demo banner to open sync modal
-    await user.click(
-      screen.getByRole('button', { name: /sign in to access your deck/i }),
-    )
+    // 5. Click sign in from demo modal to open sync modal
+    await user.click(screen.getByRole('button', { name: /sign in to sync/i }))
     expect(
       screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
   })
 
-  it('displays demo session complete banner and sign-in action when guest finishes practice', async () => {
+  it('displays demo session complete banner with inline sign-in link and create action', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -2711,14 +2705,18 @@ describe('Jolito', () => {
 
     // Complete screen for guest
     expect(screen.getByText('DEMO SESSION COMPLETE')).toBeInTheDocument()
+    expect(screen.getByText(/2 cards practiced\./i)).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /create a card/i }),
+      screen.getByText(/to create and sync your personal deck\./i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^sign in$/i }),
     ).toBeInTheDocument()
 
-    // Clicking CTA navigates to create screen with guest sign-in CTA
-    await user.click(screen.getByRole('button', { name: /create a card/i }))
+    // Clicking inline Sign in link opens sync modal
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
     expect(
-      screen.getByRole('button', { name: /sign in to save/i }),
+      screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
   })
 
@@ -2749,10 +2747,10 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: 'Save card' }),
     ).toBeInTheDocument()
 
-    // 3. Deck Manager does not display demo banner
+    // 3. Deck Manager does not display demo modal for authenticated user
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.queryByRole('note', { name: /demo deck notice/i }),
+      screen.queryByRole('dialog', { name: /^demo deck$/i }),
     ).not.toBeInTheDocument()
   })
 

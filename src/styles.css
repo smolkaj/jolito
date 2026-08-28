@@ -2184,12 +2184,52 @@ kbd {
   font-size: clamp(44px, 5.5vw, 64px);
 }
 
-.complete-card > p:not(.eyebrow) {
+.complete-card > p:not(.eyebrow),
+.complete-copy {
   max-width: 440px;
   margin: 18px auto 30px;
   color: var(--ink-soft);
   font-size: 17px;
   line-height: 1.55;
+}
+
+.complete-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.complete-copy p {
+  margin: 0;
+}
+
+.complete-subtext {
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+.complete-link-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--rosa-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.complete-link-button:hover {
+  color: var(--rosa);
+}
+
+.complete-link-button:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .complete-actions {
@@ -2751,17 +2791,25 @@ kbd {
   font-family: var(--font-mono);
 }
 
-/* Demo Deck Modal (Lightweight & Unobtrusive) */
+/* Demo Deck Modal (Lightweight, Non-Obtrusive Overlay) */
+.demo-deck-modal-backdrop {
+  background: rgba(18, 24, 21, 0.16);
+  backdrop-filter: none;
+}
+
 .demo-deck-modal {
-  width: min(460px, 100%);
-  padding: 24px 26px 28px;
+  width: min(450px, 100%);
+  padding: 24px 26px 26px;
   gap: 16px;
+  box-shadow:
+    0 12px 36px -4px rgba(18, 24, 21, 0.22),
+    4px 4px 0 var(--ink);
 }
 
 .demo-deck-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .demo-deck-modal-desc {
@@ -3330,59 +3378,6 @@ kbd {
   border-color: var(--line);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
-}
-
-.deck-demo-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 12px 20px;
-  background: var(--cempasuchil-soft, #fef8ee);
-  border: 1.5px solid var(--cempasuchil, #f59e0b);
-  border-radius: 20px;
-  box-shadow: 3px 3px 0 var(--ink);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.deck-demo-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-}
-
-.deck-demo-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  background: var(--ink);
-  color: #ffffff;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--pill-radius);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ink);
-  transition: all 150ms var(--ease-spring);
-}
-
-.deck-demo-action:hover {
-  background: var(--rosa);
-  border-color: var(--ink);
-  color: #ffffff;
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
-}
-
-.deck-demo-action:focus-visible {
-  outline: 2.5px solid var(--rosa);
-  outline-offset: 2px;
 }
 
 .deck-stat-chip {
