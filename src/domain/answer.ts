@@ -1,4 +1,4 @@
-export type DiffStatus = 'match' | 'case' | 'extra' | 'missing' | 'accent'
+export type DiffStatus = 'match' | 'extra' | 'missing' | 'accent'
 
 export type DiffSegment = {
   value: string
@@ -49,7 +49,6 @@ const GAP_EXTEND_PENALTY = 0
 const NEG_INF = -1e9
 
 function matchScore(tChar: string, eChar: string): number {
-  if (tChar === eChar) return MATCH_SCORE_EXACT
   if (tChar.toLowerCase() === eChar.toLowerCase()) return MATCH_SCORE_EXACT
   const normT = baseNormalize(tChar)
   const normE = baseNormalize(eChar)
@@ -171,12 +170,9 @@ export function compareAnswer(
       const ec = eChars[j]!
       const score = matchScore(tc, ec)
 
-      if (tc === ec) {
+      if (tc.toLowerCase() === ec.toLowerCase()) {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'match' })
-      } else if (tc.toLowerCase() === ec.toLowerCase()) {
-        typedRaw.push({ value: tc, status: 'match' })
-        expectedRaw.push({ value: ec, status: 'case' })
       } else {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'accent' })

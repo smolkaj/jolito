@@ -1895,13 +1895,6 @@ kbd {
   color: var(--turquesa-dark);
 }
 
-/* Capitalization nuance in expected: uniform green with subtle 1.5px dashed underline */
-.diff-seg-case {
-  background: var(--turquesa-soft);
-  color: var(--turquesa-dark);
-  border-bottom: 1.5px dashed var(--turquesa-deep);
-}
-
 /* Accent nuance (diacritics / inverted marks): uniform green with warm marigold tone & subtle 1.5px dashed underline */
 .diff-seg-accent {
   background: var(--turquesa-soft);

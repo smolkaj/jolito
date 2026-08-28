@@ -46,7 +46,7 @@ describe('compareAnswer (character-level affine diff)', () => {
     ])
   })
 
-  it('tolerates capitalization nuances without fragmenting words', () => {
+  it('treats capitalization differences as case-insensitive matches without case diff indicators', () => {
     const result = compareAnswer('may be', 'Maybe')
     expect(result.isExact).toBe(false)
     expect(result.typedSegments).toEqual([
@@ -55,8 +55,25 @@ describe('compareAnswer (character-level affine diff)', () => {
       { value: 'be', status: 'match' },
     ])
     expect(result.expectedSegments).toEqual([
-      { value: 'M', status: 'case' },
-      { value: 'aybe', status: 'match' },
+      { value: 'Maybe', status: 'match' },
+    ])
+  })
+
+  it('treats casing variations across the entire string as matches', () => {
+    const result = compareAnswer('hola', 'Hola')
+    expect(result.isExact).toBe(false)
+    expect(result.typedSegments).toEqual([{ value: 'hola', status: 'match' }])
+    expect(result.expectedSegments).toEqual([
+      { value: 'Hola', status: 'match' },
+    ])
+
+    const allCaps = compareAnswer('HOLA MUNDO', 'hola mundo')
+    expect(allCaps.isExact).toBe(false)
+    expect(allCaps.typedSegments).toEqual([
+      { value: 'HOLA MUNDO', status: 'match' },
+    ])
+    expect(allCaps.expectedSegments).toEqual([
+      { value: 'hola mundo', status: 'match' },
     ])
   })
 
