@@ -2802,17 +2802,23 @@ kbd {
 }
 
 .demo-deck-modal {
-  width: min(460px, 100%);
-  padding: 24px 26px 26px;
-  gap: 20px;
+  width: min(560px, 100%);
+  padding: 28px 32px 28px;
+  gap: 22px;
   box-shadow:
     0 12px 36px -4px rgba(18, 24, 21, 0.22),
     4px 4px 0 var(--ink);
 }
 
+.demo-deck-modal .modal-subtitle {
+  font-size: 15.5px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
 .demo-deck-modal-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   align-items: center;
 }

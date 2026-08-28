@@ -1819,7 +1819,7 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
             <h2 id="demo-deck-modal-title">Demo deck</h2>
             <p className="modal-subtitle">
               You’re exploring 4 example flashcards. Sign in anytime to build,
-              edit, and sync your personal deck across all your devices.
+              edit, and sync your personal deck.
             </p>
           </div>
           <button
