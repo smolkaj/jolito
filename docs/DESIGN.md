@@ -6,6 +6,16 @@ These guiding principles are not a rigid checklist, but a compass for exercising
 
 ---
 
+## 0. The Prime Directive: Subtractive Design ("Less is More")
+
+Almost every major design improvement in Jolito's history has been a **subtraction**—removing intermediate container frames, stripping count badges from action buttons, eliminating administrative scoreboards during study, and replacing verbose copy with calm visual affordances.
+
+- **Default to omission:** Having data in state or room on the canvas is never a justification to render an element.
+- **The subtractive test:** Before adding a frame, badge, label, or counter, ask: _"If we leave this out, is the core learning loop faster, calmer, and clearer?"_ If yes, leave it out.
+- **Evolve by stripping away:** Great design here is rarely achieved by adding a layer; it is achieved by removing visual noise until only pure learning momentum remains.
+
+---
+
 ## 1. Action Purity: Intent Over Inventory
 
 - **Buttons express verbs, not scoreboards:** Primary action triggers feel most confident when they state pure user intent (`Practice`, `Manage deck`, `Create card`).
@@ -80,3 +90,17 @@ These guiding principles are not a rigid checklist, but a compass for exercising
 | **Chroma-Brutalism**     | `--line: #121815`, `--shadow-md: 3px 3px 0 ...` | Solid hairlines, hard 2D offset shadows, `--pill-radius: 999px`. |
 | **Typography**           | Bricolage Grotesque (`--font-sans`)             | Modernist CDMX character with natural rhythm.                    |
 | **Motion**               | Spring curves (`--ease-spring`)                 | Snappy tactile transitions matching mechanical keystrokes.       |
+
+---
+
+## 10. Common Pitfalls & Antidotes
+
+| Pitfall (Default Reflex)                                         | Antidote (The Jolito Way)                                                                           |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Data Spilling** (`Practice (4)`, `Deck (12)`)                  | **Action Purity:** Pure verbs (`Practice`, `Manage deck`). Metrics belong in dedicated stat views.  |
+| **Nesting Frames** (Card inside container inside outline)        | **De-Framing:** Whitespace, scale, and subtle surface tints (`--paper`, `--card`).                  |
+| **Popup Spawning** (Modal dialogs, toaster alerts)               | **In-Place Morphing:** Animate and transform the clicked element directly.                          |
+| **Administrative Metering** (Queue beads, counters during study) | **Ambient Flow:** Unobtrusive peripheral orientation (3px hairline bar).                            |
+| **Over-Automation** (AI writing user's context/memory notes)     | **Assist, Don't Presume:** AI provides translations/audio; the learner authors personal notes.      |
+| **Binary Judgment** (Red/green right vs wrong)                   | **Nuanced Diffing:** Gentle character-level diffs; the learner retains 100% self-grading authority. |
+| **Layout Jitter** (Buttons shifting width on count changes)      | **Dimensional Stability:** Fixed pill heights (`32px` / `24px`) and robust flex alignments.         |
