@@ -531,7 +531,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('detects typos in Spanish input and offers "Did you mean" suggestion chip', async () => {
+  it('renders fuzzy typo matches in autocomplete dropdown with badge and keyboard selection', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
@@ -540,18 +540,18 @@ describe('Jolito', () => {
     const spanishInput = screen.getByLabelText(/spanish/i)
     await user.type(spanishInput, 'aguacatte')
 
-    expect(screen.getByText(/did you mean/i)).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /aguacate/i }),
-    ).toBeInTheDocument()
+    const listbox = screen.getByRole('listbox', {
+      name: /spanish suggestions/i,
+    })
+    expect(listbox).toBeInTheDocument()
+    expect(within(listbox).getByText('aguacate')).toBeInTheDocument()
+    expect(within(listbox).getByText('typo match')).toBeInTheDocument()
 
-    // Click typo chip
-    await user.click(screen.getByRole('button', { name: /aguacate/i }))
+    // Navigate with keyboard and select
+    await user.keyboard('{ArrowDown}{Enter}')
 
     expect(spanishInput).toHaveValue('aguacate')
     expect(screen.getByLabelText(/english/i)).toHaveValue('avocado')
-    expect(screen.getByLabelText(/context/i)).toHaveValue('')
-    expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('listbox', { name: /spanish suggestions/i }),
     ).not.toBeInTheDocument()

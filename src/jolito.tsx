@@ -2016,7 +2016,6 @@ export function App({
   const [savedToast, setSavedToast] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([])
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
-  const [didYouMean, setDidYouMean] = useState<LexiconEntry | null>(null)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
@@ -2217,7 +2216,6 @@ export function App({
       setReversePromptInput('')
       setReverseAnswerInput('')
       setSuggestions([])
-      setDidYouMean(null)
       setActiveSuggestionIndex(-1)
       setPendingCard(null)
       pendingCardRef.current = null
@@ -2626,7 +2624,6 @@ export function App({
     setSpanishInput(entry.spanish)
     setEnglishInput(entry.english)
     setSuggestions([])
-    setDidYouMean(null)
     setActiveSuggestionIndex(-1)
   }, [])
 
@@ -2639,16 +2636,9 @@ export function App({
       const val = event.target.value
       setSpanishInput(val)
       if (val.trim().length >= 2) {
-        const matches = services.assistant.suggest(val, 'es', 5)
-        setSuggestions(matches)
-        setDidYouMean(
-          matches.length === 0
-            ? services.assistant.didYouMean(val, 'es')
-            : null,
-        )
+        setSuggestions(services.assistant.suggest(val, 'es', 5))
       } else {
         setSuggestions([])
-        setDidYouMean(null)
       }
       setActiveSuggestionIndex(-1)
     },
@@ -3107,29 +3097,6 @@ export function App({
                       : undefined
                   }
                 />
-                {didYouMean && (
-                  <div className="typo-suggestion" role="status">
-                    <span className="typo-label">Did you mean</span>
-                    <button
-                      type="button"
-                      className="typo-chip"
-                      onPointerDown={(e) => {
-                        e.preventDefault()
-                      }}
-                      onClick={() => applySuggestion(didYouMean)}
-                    >
-                      <strong>{didYouMean.spanish}</strong>
-                      <span className="typo-translation">
-                        {' '}
-                        ({didYouMean.english})
-                      </span>
-                      <span className="typo-arrow" aria-hidden="true">
-                        {' '}
-                        ↵
-                      </span>
-                    </button>
-                  </div>
-                )}
                 {suggestions.length > 0 && (
                   <div className="suggestions-container" ref={suggestionsRef}>
                     <div className="suggestions-header">
@@ -3166,10 +3133,6 @@ export function App({
                             e.preventDefault()
                             applySuggestion(item)
                           }}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            applySuggestion(item)
-                          }}
                         >
                           <div className="suggestion-head">
                             <span className="suggestion-spanish">
@@ -3178,6 +3141,11 @@ export function App({
                             {item.matchType === 'lemma' && item.matchedForm && (
                               <span className="suggestion-lemma-badge">
                                 from <em>{item.matchedForm}</em>
+                              </span>
+                            )}
+                            {item.matchType === 'fuzzy' && (
+                              <span className="suggestion-fuzzy-badge">
+                                typo match
                               </span>
                             )}
                             {item.tag && (

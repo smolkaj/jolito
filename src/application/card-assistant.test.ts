@@ -81,11 +81,12 @@ describe('createCardAssistant', () => {
     expect(suggestions[0]?.english).toContain('right now')
   })
 
-  it('detects typos with didYouMean', () => {
-    const typo = assistant.didYouMean('aguacatte')
-    expect(typo).not.toBeNull()
-    expect(typo?.spanish).toBe('aguacate')
-    expect(typo?.english).toBe('avocado')
+  it('provides fuzzy suggestions for typos with fuzzy matchType', () => {
+    const suggestions = assistant.suggest('aguacatte')
+    expect(suggestions.length).toBeGreaterThan(0)
+    expect(suggestions[0]?.spanish).toBe('aguacate')
+    expect(suggestions[0]?.english).toBe('avocado')
+    expect(suggestions[0]?.matchType).toBe('fuzzy')
   })
 
   it('translates known Spanish phrases with context', () => {

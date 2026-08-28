@@ -75,10 +75,6 @@ export class OfflineCardAssistant implements CardAssistant {
     return this.index.suggest(query, lang, limit)
   }
 
-  didYouMean(query: string, lang: 'es' | 'en' = 'es'): LexiconEntry | null {
-    return this.index.didYouMean(query, lang)
-  }
-
   translate(text: string, from: 'es' | 'en' = 'es'): LexiconEntry | null {
     return this.index.translate(text, from)
   }

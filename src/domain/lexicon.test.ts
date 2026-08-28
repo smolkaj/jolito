@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  damerauLevenshtein,
   extractGlossTerms,
   LexiconIndex,
   normalizeForSearch,
+  weightedSpanishDistance,
   type LexiconEntry,
 } from './lexicon'
 
@@ -81,17 +81,32 @@ describe('extractGlossTerms', () => {
   })
 })
 
-describe('damerauLevenshtein', () => {
-  it('computes accurate edit distances with transpositions', () => {
-    expect(damerauLevenshtein('', '')).toBe(0)
-    expect(damerauLevenshtein('', 'aguacate')).toBe(8)
-    expect(damerauLevenshtein('aguacate', '')).toBe(8)
-    expect(damerauLevenshtein('aguacate', 'aguacate')).toBe(0)
-    expect(damerauLevenshtein('aguacatte', 'aguacate')).toBe(1)
-    expect(damerauLevenshtein('agaucate', 'aguacate')).toBe(1) // transposition
-    expect(damerauLevenshtein('orale', 'órale')).toBe(1)
-    expect(damerauLevenshtein('chido', 'chdo')).toBe(1)
-    expect(damerauLevenshtein('completely', 'different')).toBeGreaterThan(4)
+describe('weightedSpanishDistance', () => {
+  it('computes distances and handles base edge cases', () => {
+    expect(weightedSpanishDistance('', '')).toBe(0)
+    expect(weightedSpanishDistance('', 'aguacate')).toBe(8)
+    expect(weightedSpanishDistance('aguacate', '')).toBe(8)
+    expect(weightedSpanishDistance('aguacate', 'aguacate')).toBe(0)
+    expect(weightedSpanishDistance('a', 'aguacate')).toBeGreaterThanOrEqual(3)
+  })
+
+  it('assigns lower distance to Spanish phonetic substitutions', () => {
+    // Silent h insertion/deletion (0.4 vs 1.0)
+    expect(weightedSpanishDistance('ablar', 'hablar')).toBeCloseTo(0.4, 1)
+    expect(weightedSpanishDistance('acer', 'hacer')).toBeCloseTo(0.4, 1)
+
+    // b/v homophones (0.4 vs 1.0)
+    expect(weightedSpanishDistance('havia', 'habia')).toBeCloseTo(0.4, 1)
+
+    // g/j homophones before e/i (0.4 vs 1.0)
+    expect(weightedSpanishDistance('elejir', 'elegir')).toBeCloseTo(0.4, 1)
+
+    // Double consonant reductions from English learners (0.4 vs 1.0)
+    expect(weightedSpanishDistance('aguacatte', 'aguacate')).toBeCloseTo(0.4, 1)
+    expect(weightedSpanishDistance('proffesor', 'profesor')).toBeCloseTo(0.4, 1)
+
+    // Transpositions
+    expect(weightedSpanishDistance('agaucate', 'aguacate')).toBeCloseTo(0.8, 1)
   })
 })
 
@@ -167,41 +182,27 @@ describe('LexiconIndex', () => {
       expect(results[0]?.spanish).toBe('qué padre')
     })
 
+    it('finds fuzzy suggestions when typos occur and assigns fuzzy matchType', () => {
+      const results = index.suggest('aguacatte', 'es')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0]?.spanish).toBe('aguacate')
+      expect(results[0]?.matchType).toBe('fuzzy')
+      expect(results[0]?.matchedForm).toBe('aguacatte')
+
+      const compoundFuzzy = index.suggest('no machnes', 'es')
+      expect(compoundFuzzy.length).toBeGreaterThan(0)
+      expect(compoundFuzzy[0]?.spanish).toBe('no manches')
+      expect(compoundFuzzy[0]?.matchType).toBe('fuzzy')
+
+      const enFuzzy = index.suggest('avocaddo', 'en')
+      expect(enFuzzy.length).toBeGreaterThan(0)
+      expect(enFuzzy[0]?.spanish).toBe('aguacate')
+      expect(enFuzzy[0]?.matchType).toBe('fuzzy')
+    })
+
     it('limits returned suggestions to requested limit', () => {
       const results = index.suggest('a', 'es', 1)
       expect(results.length).toBeLessThanOrEqual(1)
-    })
-  })
-
-  describe('didYouMean', () => {
-    it('returns null for short queries under 3 characters', () => {
-      expect(index.didYouMean('ag')).toBeNull()
-    })
-
-    it('returns null for exact matches and known lemmas in Spanish and English', () => {
-      expect(index.didYouMean('aguacate', 'es')).toBeNull()
-      expect(index.didYouMean('qué padre', 'es')).toBeNull()
-      expect(index.didYouMean('avocado', 'en')).toBeNull()
-      expect(index.didYouMean('tuvimos', 'es')).toBeNull() // known lemma form
-    })
-
-    it('returns fuzzy match for minor typos in Spanish and English', () => {
-      const typoResult = index.didYouMean('aguacatte')
-      expect(typoResult).not.toBeNull()
-      expect(typoResult?.spanish).toBe('aguacate')
-      expect(typoResult?.english).toBe('avocado')
-
-      const typoResult2 = index.didYouMean('no machnes')
-      expect(typoResult2).not.toBeNull()
-      expect(typoResult2?.spanish).toBe('no manches')
-
-      const typoEnResult = index.didYouMean('avocaddo', 'en')
-      expect(typoEnResult).not.toBeNull()
-      expect(typoEnResult?.spanish).toBe('aguacate')
-    })
-
-    it('returns null for completely unrelated words', () => {
-      expect(index.didYouMean('xyzabc123')).toBeNull()
     })
   })
 
