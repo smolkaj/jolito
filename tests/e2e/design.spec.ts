@@ -44,6 +44,17 @@ test('dialogs contain keyboard focus and restore it to the invoking control', as
   await expect(signInButton).toBeFocused()
 })
 
+test('destructive dialogs restore focus to a stable deck control when the invoking row is removed', async ({
+  page,
+}) => {
+  await page.goto('/#/deck')
+  const firstRow = page.getByRole('row', { name: /card: aguacate/i })
+  await firstRow.focus()
+  await page.keyboard.press('Delete')
+  await page.getByRole('button', { name: /^delete card$/i }).click()
+  await expect(page.getByLabel('Search cards in deck')).toBeFocused()
+})
+
 test('mobile deck rows keep the answer, status, and edit affordance visible', async ({
   page,
 }) => {
@@ -152,6 +163,7 @@ test('short landscape keeps grading fixed while long review content scrolls', as
   expect(gradeBounds).not.toBeNull()
   expect(gradeBounds!.y + gradeBounds!.height).toBeLessThanOrEqual(390)
   await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
+  await expect(page.locator('.diff-row').nth(1)).toBeInViewport({ ratio: 1 })
   await expect(page.locator('.reveal-content')).toHaveCSS('overflow-y', 'auto')
 
   await page.setViewportSize({ width: 667, height: 375 })
@@ -169,6 +181,7 @@ test('short landscape keeps grading fixed while long review content scrolls', as
   expect(compactContentBounds).not.toBeNull()
   expect(compactContentBounds!.height).toBeGreaterThanOrEqual(40)
   await expect(page.getByText('You wrote')).toBeInViewport()
+  await expect(page.locator('.diff-row').nth(1)).toBeInViewport({ ratio: 1 })
   await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
   await page.getByRole('button', { name: /edit card/i }).click()
   await expect(

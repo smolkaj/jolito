@@ -4250,6 +4250,44 @@ kbd {
   .review-page .grade-buttons {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .review-page .study-card.is-revealed .study-prompt-wrap {
+    max-height: 26px;
+  }
+
+  .review-page .study-card.is-revealed .study-prompt {
+    overflow: hidden;
+    font-size: 18px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .review-page .study-card.is-revealed .study-prompt-wrap .audio-button {
+    width: 26px;
+    height: 26px;
+    min-height: 26px;
+    margin-top: 0;
+  }
+
+  .review-page .study-card.is-revealed .prompt-meta {
+    display: none;
+  }
+
+  .review-page .diff-card {
+    padding: 8px 10px;
+  }
+
+  .review-page .diff-row {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .review-page .diff-text {
+    font-size: 16px;
+    line-height: 1.2;
+    letter-spacing: -0.2px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

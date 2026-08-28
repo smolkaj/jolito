@@ -108,7 +108,12 @@ function ModalDialog({
       Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
 
     const focusFrame = window.requestAnimationFrame(() => {
-      if (!dialog.contains(document.activeElement)) {
+      const initialFocus = dialog.querySelector<HTMLElement>(
+        '[data-modal-initial-focus]',
+      )
+      if (initialFocus) {
+        initialFocus.focus()
+      } else if (!dialog.contains(document.activeElement)) {
         ;(focusableElements()[0] ?? dialog).focus()
       }
     })
@@ -144,7 +149,15 @@ function ModalDialog({
       window.cancelAnimationFrame(focusFrame)
       window.removeEventListener('keydown', handleKeyDown)
       if (main instanceof HTMLElement) main.inert = mainWasInert
-      if (previousFocus?.isConnected) previousFocus.focus()
+      if (previousFocus?.isConnected) {
+        previousFocus.focus()
+      } else {
+        window.requestAnimationFrame(() => {
+          document
+            .querySelector<HTMLElement>('[data-modal-focus-fallback]')
+            ?.focus()
+        })
+      }
     }
   }, [onClose])
 
@@ -818,6 +831,7 @@ function EditCardModalInner({
             rows={2}
             required
             autoFocus
+            data-modal-initial-focus
             autoCapitalize="none"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -1639,6 +1653,7 @@ function SyncModal({
               type="email"
               required
               autoFocus
+              data-modal-initial-focus
               placeholder="learner@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -3447,6 +3462,7 @@ export function App({
                 <input
                   type="search"
                   className="deck-search-input"
+                  data-modal-focus-fallback
                   placeholder="Search cards by Spanish, English, or notes…"
                   value={deckSearchQuery}
                   onChange={(e) => setDeckSearchQuery(e.target.value)}
