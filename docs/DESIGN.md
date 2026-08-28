@@ -14,8 +14,9 @@ Jolito pairs Anki's spaced-repetition efficiency with Duolingo's warmth, visual 
 
 ## 1. Information Density & Signal-to-Noise: Less is More
 
-- **Earned placement (State is not UI):** Having data in state is never a justification to render it. If removing a metric, count, or auxiliary label leaves the primary workflow crystal clear, eliminate it.
+- **Earned placement (State is not UI):** Having data in state is never a justification to render it. If removing a metric, counter, or status badge leaves the primary workflow crystal clear, eliminate it.
 - **Action purity (Intent over inventory):** Primary buttons and triggers express pure user intent (`Start practice`, `Manage deck`). Never pollute action verbs with auxiliary counts, status qualifiers, or parenthetical metadata.
+- **Zero duplication:** Never repeat navigation actions within the same viewport (e.g., do not duplicate topbar links as bottom buttons).
 - **Calm confidence over anxious annotation:** Resist the urge to narrate every state change or edge condition. Let intuitive affordances speak for themselves.
 - **Ruthless brevity:** When text is necessary, use 1–3 punchy words. Never use sentences where a word suffices.
 - **Discreet progressive disclosure:** Subtle tooltips and hover shortcuts are welcome for secondary aids because they stay hidden until needed without cluttering the canvas.
@@ -31,13 +32,16 @@ Jolito pairs Anki's spaced-repetition efficiency with Duolingo's warmth, visual 
 
 ---
 
-## 3. Interactions: Morphing, Physics & Dimensional Stability
+## 3. Interactions: Morphing, Physics & Geometric Invariants
 
-- **In-place state morphing:** Animate and morph the interacting element directly (e.g., `ConnectionPill` shifting states or buttons morphing to inputs) rather than spawning disconnected dialogs or separate form fields.
-- **Dimensional stability:** Dynamic state changes (varying counts, loading states) must never cause button widths or primary layouts to shift or jitter. Surfaces should feel physically anchored.
+- **In-place state morphing:** Animate and morph the interacting element directly (e.g., `ConnectionPill` shifting states or buttons morphing to inputs) rather than spawning disconnected dialogs, floating toasts, or separate form fields.
+- **Strict geometric invariants:** All pill elements must strictly observe canonical tokens:
+  - Primary pills / buttons: `height: 32px` (`--pill-height`), `border-radius: 999px` (`--pill-radius`).
+  - Compact / table row chips: `height: 24px` (`--pill-height-sm`), `border-radius: 999px`.
+  - Elements sharing a row must share identical heights and `box-sizing: border-box`.
+- **Dimensional stability:** Dynamic state changes (varying counts, loading states) must never cause button widths or primary layouts to shift or jitter.
 - **Mechanical tactility:** Physical button depression (`translate(2px, 2px)` on `:active`) paired with crisp 2D hard shadows. Transitions settle with spring physics (`--ease-spring`).
 - **Zero-latency keyboard flow:** Active inputs autofocus immediately; keycaps (`↵`, `1`–`4`, `Space`, `E`) teach shortcuts passively with zero required mouse movement.
-- **Adaptive typography:** Text sizes scale dynamically with character length so short phrases stay bold and long sentences remain balanced.
 
 ---
 
@@ -48,9 +52,12 @@ Jolito pairs Anki's spaced-repetition efficiency with Duolingo's warmth, visual 
 
 ---
 
-## 5. Multimodal Cohesion & Sensory Cues
+## 5. Sensory Cues & Mobile Ergonomics
 
-- **Reinforce, don't distract:** Written text, native audio, and contextual illustrations must converge on the exact same linguistic concept.
+- **Ambient orientation over administration:** Use subtle peripheral signals (e.g., the 3px hairline progress bar) during study instead of cluttered queue meters, bead categories, or remaining-card counters.
+- **Assist, don't hijack:** AI suggestions populate translation pairs (`es` ↔ `en`) to eliminate mechanical typing friction, but leave **Additional Context** blank for the learner's personal memory notes.
+- **Mobile typing resilience:** Always set `autocapitalize="none"` on language recall inputs so mobile keyboards don't alter casing. Defer blur handlers so virtual keyboard accessory arrows don't unmount autocomplete mid-transition.
+- **Adaptive typography:** Text sizes scale dynamically with character length (`.is-medium`, `.is-long`) so multi-line phrases fit without overflowing and speaker icons anchor to the top line.
 - **Harmonic earcons:** Subtle Web Audio synthesis (reveal chime, harmonic 1–4 grade tones, completion fanfare) anchors rhythm without external audio assets.
 - **No filler media:** Never insert decorative clip art or sound effects that merely fill space.
 
