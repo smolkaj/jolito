@@ -1035,3 +1035,92 @@ test('aligns layout widths and container boundaries across desktop views', async
 
   await page.screenshot({ path: 'test-results/create-aligned.png' })
 })
+
+test('gracefully formats and displays cards with long prompts and answers', async ({
+  page,
+}) => {
+  const longSpanish =
+    'El otro día fui al tianguis de la esquina para comprar unos aguacates bien maduros y limones para preparar un guacamole delicioso.'
+  const longEnglish =
+    'The other day I went to the street market on the corner to buy some very ripe avocados and limes to prepare a delicious guacamole.'
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  // 1. Create View long preview
+  await page.goto('/#/create')
+  await expect(
+    page.getByRole('heading', { name: /new flashcard/i }),
+  ).toBeVisible()
+
+  await page.locator('#spanish').fill(longSpanish)
+  await page.locator('#english').fill(longEnglish)
+
+  const spanishPreview = page.locator('.sample-card-es .sample-phrase')
+  await expect(spanishPreview).toHaveClass(/is-long/)
+
+  // Verify preview does not overflow card container bounds
+  const previewOverflow = await page.evaluate(() => {
+    const card = document.querySelector('.sample-card-es')
+    const phrase = document.querySelector('.sample-card-es .sample-phrase')
+    const cardRect = card?.getBoundingClientRect()
+    const phraseRect = phrase?.getBoundingClientRect()
+    return {
+      cardBottom: cardRect?.bottom ?? 0,
+      phraseBottom: phraseRect?.bottom ?? 0,
+    }
+  })
+  expect(previewOverflow.phraseBottom).toBeLessThanOrEqual(
+    previewOverflow.cardBottom + 5,
+  )
+
+  await page.screenshot({ path: 'test-results/long-card-create-preview.png' })
+
+  // 2. Study View long prompt & diff
+  await page.evaluate(
+    ([prompt, answer]) => {
+      window.localStorage.setItem(
+        'jolito-library-v1',
+        JSON.stringify({
+          version: 1,
+          cards: [
+            {
+              id: 'long-card-study:es-en',
+              noteId: 'long-note-1',
+              prompt,
+              answer,
+              direction: 'es-en',
+              context: 'Casual storytelling in CDMX',
+              scene: 'conversation',
+              schedule: {
+                state: 'new',
+                dueAt: 0,
+                intervalDays: 0,
+                easeFactor: 2.5,
+                reviews: 0,
+                lapses: 0,
+              },
+            },
+          ],
+          deletedCardIds: [],
+        }),
+      )
+    },
+    [longSpanish, longEnglish],
+  )
+
+  await page.goto('/#/study')
+  await page.reload()
+  const studyPrompt = page.locator('.study-prompt')
+  await expect(studyPrompt).toBeVisible()
+  await expect(studyPrompt).toHaveClass(/is-long/)
+
+  await page.screenshot({ path: 'test-results/long-card-study-prompt.png' })
+
+  // Reveal answer with diff
+  await page.getByLabel('Your answer').fill('The other day I went to market.')
+  await page.getByLabel('Your answer').press('Enter')
+  await expect(page.getByText('You wrote')).toBeVisible()
+  await expect(page.getByText('Expected')).toBeVisible()
+
+  await page.screenshot({ path: 'test-results/long-card-study-diff.png' })
+})
