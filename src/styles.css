@@ -2252,7 +2252,7 @@ kbd {
 }
 
 /* Responsive Breakpoints */
-@media (max-height: 520px) and (min-width: 681px) {
+@media (max-height: 520px) {
   .review-page {
     height: 100dvh;
     min-height: 0;
@@ -2589,6 +2589,60 @@ kbd {
 @media (max-width: 360px) {
   .nav-actions .text-button + .text-button {
     display: none;
+  }
+}
+
+@media (max-height: 520px) and (max-width: 680px) {
+  .review-page {
+    padding-top: 6px;
+    padding-bottom: 8px;
+  }
+
+  .review-page .topbar {
+    padding-bottom: 2px;
+  }
+
+  .review-progress-track {
+    margin-top: 4px;
+  }
+
+  .review-page .study-card {
+    margin-top: 6px;
+  }
+
+  .review-page .study-prompt-wrap {
+    max-height: 52px;
+  }
+
+  .study-prompt.is-medium {
+    font-size: 21px;
+  }
+
+  .study-prompt.is-long {
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .prompt-meta {
+    margin: 2px auto 5px;
+  }
+
+  .review-page .reveal-panel {
+    margin-top: 5px;
+    padding: 8px 10px;
+  }
+
+  .grade-fieldset {
+    margin-top: 5px;
+    padding-top: 5px;
+  }
+
+  .grade-buttons {
+    gap: 6px;
+  }
+
+  .grade-buttons button {
+    padding: 5px 8px;
   }
 }
 
