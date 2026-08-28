@@ -3289,17 +3289,15 @@ describe('Jolito', () => {
     expect(services.mockFeedback.submissions[0]!.submission.message).toBe(
       'In CDMX, people also say "chido" instead of "padre".',
     )
-    expect(
-      services.mockFeedback.submissions[0]!.submission.context?.view,
-    ).toBe('welcome')
+    expect(services.mockFeedback.submissions[0]!.submission.context?.view).toBe(
+      'welcome',
+    )
 
     // Shows success state
     expect(
       screen.getByRole('heading', { name: /¡muchas gracias!/i }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(/your note has been received/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/your note has been received/i)).toBeInTheDocument()
 
     // Close modal with Done button
     await user.click(screen.getByRole('button', { name: /done/i }))
@@ -3795,4 +3793,3 @@ describe('Jolito', () => {
     )
   })
 })
-

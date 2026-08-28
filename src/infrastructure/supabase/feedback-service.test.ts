@@ -98,31 +98,38 @@ describe('SupabaseFeedbackService', () => {
     expect(result.success).toBe(true)
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://supabase.example.com/rest/v1/feedback',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          apikey: 'anon-key',
-          Authorization: 'Bearer mock-access-token',
-        }),
-        body: JSON.stringify({
-          user_id: 'user-456',
-          email: 'learner@example.com',
-          message: 'Add nuance note for "ahorita"',
-          context: { route: '#/study' },
-        }),
+      expect.anything(),
+    )
+    const callArgs = fetchSpy.mock.calls[0]
+    const callOptions = callArgs?.[1]
+    expect(callOptions?.method).toBe('POST')
+    expect(callOptions?.headers).toEqual({
+      'Content-Type': 'application/json',
+      apikey: 'anon-key',
+      Authorization: 'Bearer mock-access-token',
+      Prefer: 'return=minimal',
+    })
+    expect(callOptions?.body).toBe(
+      JSON.stringify({
+        user_id: 'user-456',
+        email: 'learner@example.com',
+        message: 'Add nuance note for "ahorita"',
+        context: { route: '#/study' },
       }),
     )
   })
 
   it('refreshes token and retries on 401 response', async () => {
     let callCount = 0
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
       callCount++
       if (callCount === 1) {
-        return new Response('Unauthorized', { status: 401 })
+        return Promise.resolve(new Response('Unauthorized', { status: 401 }))
       }
-      return new Response(null, { status: 201 })
+      return Promise.resolve(new Response(null, { status: 201 }))
     })
+
+    const refreshSpy = vi.spyOn(mockAuth, 'refreshSession')
 
     const service = new SupabaseFeedbackService(
       mockAuth,
@@ -136,7 +143,7 @@ describe('SupabaseFeedbackService', () => {
     )
 
     expect(result.success).toBe(true)
-    expect(mockAuth.refreshSession).toHaveBeenCalled()
+    expect(refreshSpy).toHaveBeenCalled()
     expect(callCount).toBe(2)
   })
 
@@ -161,7 +168,9 @@ describe('SupabaseFeedbackService', () => {
   })
 
   it('handles network failure gracefully', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Network offline'))
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(
+      new Error('Network offline'),
+    )
 
     const service = new SupabaseFeedbackService(
       mockAuth,

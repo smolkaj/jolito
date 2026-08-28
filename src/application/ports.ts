@@ -111,4 +111,3 @@ export type AppServices = {
   sync: SyncService
   feedback: FeedbackService
 }
-

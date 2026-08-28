@@ -1919,6 +1919,23 @@ function FeedbackModalInner({
           message: trimmed,
           context: {
             view: currentView,
+            version: '0.1.0',
+            userAgent:
+              typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            language:
+              typeof navigator !== 'undefined' ? navigator.language : null,
+            viewport:
+              typeof window !== 'undefined'
+                ? `${window.innerWidth}x${window.innerHeight}`
+                : null,
+            screen:
+              typeof window !== 'undefined' && window.screen
+                ? `${window.screen.width}x${window.screen.height}`
+                : null,
+            devicePixelRatio:
+              typeof window !== 'undefined' ? window.devicePixelRatio : null,
+            url: typeof window !== 'undefined' ? window.location.href : null,
+            online: typeof navigator !== 'undefined' ? navigator.onLine : null,
           },
         },
         user,
@@ -1989,17 +2006,19 @@ function FeedbackModalInner({
             </div>
           </div>
         ) : (
-          <form className="feedback-form" onSubmit={handleSubmit}>
+          <form
+            className="feedback-form"
+            onSubmit={(e) => {
+              void handleSubmit(e)
+            }}
+          >
             <p className="feedback-encouragement">
               Have an idea, spotted a bug or typo, or want to share a Mexican
               Spanish nuance? We’d love to hear from you!
             </p>
 
             <div className="feedback-field-group">
-              <label
-                htmlFor="feedback-message-input"
-                className="sr-only"
-              >
+              <label htmlFor="feedback-message-input" className="sr-only">
                 Your feedback
               </label>
               <textarea
@@ -2014,7 +2033,7 @@ function FeedbackModalInner({
                 }}
                 placeholder="What’s on your mind?"
                 onKeyDown={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault()
                     void handleSubmit()
                   }
