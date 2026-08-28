@@ -6,6 +6,9 @@ import type {
   CardRepository,
   Clock,
   Earcon,
+  FeedbackResult,
+  FeedbackService,
+  FeedbackSubmission,
   IdGenerator,
   SoundPlayer,
   Speaker,
@@ -231,6 +234,32 @@ export class MockSyncService implements SyncService {
   }
 }
 
+export class MockFeedbackService implements FeedbackService {
+  public submissions: Array<{
+    submission: FeedbackSubmission
+    user: AuthUser
+  }> = []
+  public shouldSucceed = true
+  public errorMessage = 'Failed to send feedback.'
+
+  submitFeedback(
+    submission: FeedbackSubmission,
+    user: AuthUser,
+  ): Promise<FeedbackResult> {
+    if (!this.shouldSucceed) {
+      return Promise.resolve({
+        success: false,
+        error: this.errorMessage,
+      })
+    }
+    this.submissions.push({
+      submission: { ...submission },
+      user: { ...user },
+    })
+    return Promise.resolve({ success: true })
+  }
+}
+
 export const TEST_LEXICON: LexiconEntry[] = SEED_LEXICON
 
 export function createTestServices(options?: {
@@ -251,6 +280,7 @@ export function createTestServices(options?: {
   assistant: CardAssistant
   mockAuth: MockAuthService
   mockSync: MockSyncService
+  mockFeedback: MockFeedbackService
 } {
   const memoryCards = new MemoryCardRepository(
     options?.cards ?? null,
@@ -275,6 +305,7 @@ export function createTestServices(options?: {
   if (options?.remoteDeletedCardIds) {
     mockSync.remoteDeletedCardIds = [...options.remoteDeletedCardIds]
   }
+  const mockFeedback = new MockFeedbackService()
 
   return {
     cards: memoryCards,
@@ -285,6 +316,7 @@ export function createTestServices(options?: {
     assistant,
     auth: mockAuth,
     sync: mockSync,
+    feedback: mockFeedback,
     memoryCards,
     mockSpeaker,
     mockSounds,
@@ -292,5 +324,7 @@ export function createTestServices(options?: {
     sequentialIds,
     mockAuth,
     mockSync,
+    mockFeedback,
   }
 }
+

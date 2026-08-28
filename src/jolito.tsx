@@ -20,8 +20,14 @@ import type {
   AppServices,
   AuthService,
   AuthUser,
+  FeedbackService,
   SyncService,
 } from './application/ports'
+import {
+  FEEDBACK_CATEGORY_LABELS,
+  FEEDBACK_CATEGORY_PLACEHOLDERS,
+  type FeedbackCategory,
+} from './domain/feedback'
 import {
   filterOutStarterCards,
   starterCards,
@@ -1879,6 +1885,306 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
   )
 }
 
+const FEEDBACK_CATEGORIES: FeedbackCategory[] = [
+  'suggestion',
+  'bug',
+  'spanish',
+  'other',
+]
+
+function FeedbackModalInner({
+  onClose,
+  user,
+  feedbackService,
+  currentView,
+  onOpenAuth,
+}: {
+  onClose: () => void
+  user: AuthUser | null
+  feedbackService: FeedbackService
+  currentView: View
+  onOpenAuth?: (() => void) | undefined
+}) {
+  const [category, setCategory] = useState<FeedbackCategory>('suggestion')
+  const [message, setMessage] = useState('')
+  const [includeDiagnostics, setIncludeDiagnostics] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSuccess, setIsSuccess] = useState(false)
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (user && !isSuccess) {
+      textareaRef.current?.focus()
+    }
+  }, [user, isSuccess])
+
+  const handleSubmit = async (e?: FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmed = message.trim()
+    if (!trimmed || isSubmitting || !user) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    const context: Record<string, unknown> = {}
+    if (includeDiagnostics && typeof window !== 'undefined') {
+      context.view = currentView
+      context.url = window.location.hash || window.location.pathname
+      context.userAgent =
+        typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+      context.online =
+        typeof navigator !== 'undefined' ? navigator.onLine : true
+      context.screen = `${window.innerWidth}x${window.innerHeight}`
+    }
+
+    try {
+      const result = await feedbackService.submitFeedback(
+        {
+          category,
+          message: trimmed,
+          context,
+        },
+        user,
+      )
+
+      if (result.success) {
+        setIsSuccess(true)
+      } else {
+        setError(result.error ?? 'Failed to send feedback. Please try again.')
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Network error sending feedback.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div
+      className="modal-backdrop feedback-modal-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="modal-content feedback-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="feedback-modal-title">
+              {isSuccess ? '¡Muchas gracias!' : 'Share feedback'}
+            </h2>
+            <p className="modal-subtitle">
+              {isSuccess
+                ? 'Your feedback has been received.'
+                : user
+                  ? `Sending as ${user.email}`
+                  : 'Sign in to send ideas, bugs, or Mexican Spanish notes.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close feedback dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {!user ? (
+          <div className="feedback-auth-required">
+            <p className="feedback-auth-copy">
+              Feedback is linked to your Jolito account so we can follow up on
+              suggestions and fix reported issues.
+            </p>
+            <div className="feedback-modal-actions">
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  onClose()
+                  onOpenAuth?.()
+                }}
+              >
+                Sign in to continue
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onClose}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : isSuccess ? (
+          <div className="feedback-success-state">
+            <p className="feedback-success-message">
+              Thank you for testing Jolito and sharing your thoughts! We read
+              every note to make the app better for your Spanish learning.
+            </p>
+            <div className="feedback-modal-actions">
+              <button
+                type="button"
+                className="primary-button"
+                onClick={onClose}
+                autoFocus
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form className="feedback-form" onSubmit={handleSubmit}>
+            <div className="feedback-field-group">
+              <label className="feedback-label">Category</label>
+              <div
+                className="feedback-category-pills"
+                role="radiogroup"
+                aria-label="Feedback category"
+              >
+                {FEEDBACK_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    role="radio"
+                    aria-checked={category === cat}
+                    className={`feedback-category-pill ${
+                      category === cat ? 'is-selected' : ''
+                    }`}
+                    onClick={() => {
+                      setCategory(cat)
+                      setError(null)
+                    }}
+                  >
+                    {FEEDBACK_CATEGORY_LABELS[cat]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="feedback-field-group">
+              <label
+                htmlFor="feedback-message-input"
+                className="feedback-label"
+              >
+                Your message
+              </label>
+              <textarea
+                ref={textareaRef}
+                id="feedback-message-input"
+                className="feedback-textarea"
+                rows={4}
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.target.value)
+                  setError(null)
+                }}
+                placeholder={FEEDBACK_CATEGORY_PLACEHOLDERS[category]}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault()
+                    void handleSubmit()
+                  }
+                }}
+              />
+              <p className="feedback-hint">
+                Tip: Press <kbd>⌘</kbd>+<kbd>Enter</kbd> (or <kbd>Ctrl</kbd>+
+                <kbd>Enter</kbd>) to send.
+              </p>
+            </div>
+
+            <div className="feedback-diagnostics-row">
+              <label className="feedback-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={includeDiagnostics}
+                  onChange={(e) => setIncludeDiagnostics(e.target.checked)}
+                />
+                <span>
+                  Include basic device info (browser, screen size, page)
+                </span>
+              </label>
+            </div>
+
+            {error && (
+              <div className="feedback-error-banner" role="alert">
+                {error}
+              </div>
+            )}
+
+            <div className="feedback-modal-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="primary-button"
+                disabled={!message.trim() || isSubmitting}
+              >
+                {isSubmitting ? 'Sending…' : 'Send feedback'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function FeedbackModal({
+  isOpen,
+  onClose,
+  user,
+  feedbackService,
+  currentView,
+  onOpenAuth,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  user: AuthUser | null
+  feedbackService: FeedbackService
+  currentView: View
+  onOpenAuth?: (() => void) | undefined
+}) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  return (
+    <FeedbackModalInner
+      onClose={onClose}
+      user={user}
+      feedbackService={feedbackService}
+      currentView={currentView}
+      onOpenAuth={onOpenAuth}
+    />
+  )
+}
+
 interface ConnectionPillProps {
   authUser: AuthUser | null
   syncStatus: SyncStatus
@@ -2119,6 +2425,7 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
@@ -2618,7 +2925,9 @@ export function App({
         !currentCard ||
         editingCard !== null ||
         deletingCards !== null ||
-        isSyncOpen
+        isSyncOpen ||
+        isBackupOpen ||
+        isFeedbackOpen
       )
         return
 
@@ -2668,6 +2977,8 @@ export function App({
     editingCard,
     grade,
     isSyncOpen,
+    isBackupOpen,
+    isFeedbackOpen,
     playAudio,
     revealed,
     view,
@@ -2830,6 +3141,15 @@ export function App({
     pendingCardRef.current = null
   }, [])
 
+  const openFeedbackModal = useCallback(() => {
+    setSuggestions([])
+    setIsFeedbackOpen(true)
+  }, [])
+
+  const closeFeedbackModal = useCallback(() => {
+    setIsFeedbackOpen(false)
+  }, [])
+
   const handleSavePendingLocally = useCallback(() => {
     if (pendingCardRef.current) {
       saveCardFromParams(pendingCardRef.current)
@@ -2881,6 +3201,13 @@ export function App({
                 onClick={() => navigateTo('deck')}
               >
                 Manage deck
+              </button>
+              <button
+                className="text-button"
+                type="button"
+                onClick={openFeedbackModal}
+              >
+                Feedback
               </button>
               <ConnectionPill
                 authUser={authUser}
@@ -3026,6 +3353,14 @@ export function App({
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+          onOpenAuth={openSyncModal}
+        />
       </>
     )
   }
@@ -3074,6 +3409,13 @@ export function App({
                   Practice
                 </button>
               )}
+              <button
+                className="text-button"
+                type="button"
+                onClick={openFeedbackModal}
+              >
+                Feedback
+              </button>
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3467,6 +3809,14 @@ export function App({
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+          onOpenAuth={openSyncModal}
+        />
       </>
     )
   }
@@ -3533,6 +3883,13 @@ export function App({
                   Practice
                 </button>
               )}
+              <button
+                className="text-button"
+                type="button"
+                onClick={openFeedbackModal}
+              >
+                Feedback
+              </button>
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3880,6 +4237,14 @@ export function App({
           onClose={() => setIsDemoDeckDismissed(true)}
           onSignIn={() => openSyncModal()}
         />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+          onOpenAuth={openSyncModal}
+        />
       </>
     )
   }
@@ -3902,6 +4267,13 @@ export function App({
                 onClick={() => navigateTo('create')}
               >
                 + New card
+              </button>
+              <button
+                className="text-button"
+                type="button"
+                onClick={openFeedbackModal}
+              >
+                Feedback
               </button>
               <ConnectionPill
                 authUser={authUser}
@@ -3960,6 +4332,15 @@ export function App({
                 Back home
               </button>
             </div>
+            <div className="complete-feedback-prompt">
+              <button
+                type="button"
+                className="complete-link-button"
+                onClick={openFeedbackModal}
+              >
+                Have feedback or found a bug?
+              </button>
+            </div>
           </section>
         </main>
         <SyncModal
@@ -3985,6 +4366,14 @@ export function App({
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
+        />
+        <FeedbackModal
+          isOpen={isFeedbackOpen}
+          onClose={closeFeedbackModal}
+          user={authUser}
+          feedbackService={services.feedback}
+          currentView={view}
+          onOpenAuth={openSyncModal}
         />
       </>
     )
@@ -4012,6 +4401,13 @@ export function App({
               onClick={() => navigateTo('create')}
             >
               + New card
+            </button>
+            <button
+              className="text-button"
+              type="button"
+              onClick={openFeedbackModal}
+            >
+              Feedback
             </button>
             <ConnectionPill
               authUser={authUser}
@@ -4192,6 +4588,14 @@ export function App({
         cards={deletingCards}
         onClose={() => setDeletingCards(null)}
         onConfirm={handleConfirmDelete}
+      />
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={closeFeedbackModal}
+        user={authUser}
+        feedbackService={services.feedback}
+        currentView={view}
+        onOpenAuth={openSyncModal}
       />
     </>
   )

@@ -1,6 +1,7 @@
 import type { AppServices, Clock, IdGenerator } from '../../application/ports'
 import { OfflineCardAssistant } from '../../application/card-assistant'
 import { SupabaseAuthService } from '../supabase/auth-service'
+import { SupabaseFeedbackService } from '../supabase/feedback-service'
 import { SupabaseSyncService } from '../supabase/sync-service'
 import { LocalStorageCardRepository } from './card-repository'
 import { LayeredNeuralSpeaker } from './neural-speaker'
@@ -37,6 +38,7 @@ export function createBrowserServices(): AppServices {
 
   const auth = new SupabaseAuthService()
   const sync = new SupabaseSyncService(auth)
+  const feedback = new SupabaseFeedbackService(auth)
 
   return {
     clock: new SystemClock(),
@@ -47,5 +49,7 @@ export function createBrowserServices(): AppServices {
     assistant,
     auth,
     sync,
+    feedback,
   }
 }
+
