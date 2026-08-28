@@ -1818,42 +1818,33 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
           <div className="modal-header-copy">
             <h2 id="demo-deck-modal-title">Demo deck</h2>
             <p className="modal-subtitle">
-              You’re exploring 4 example flashcards.
+              You’re exploring 4 example flashcards. Sign in anytime to build,
+              edit, and sync your personal deck across all your devices.
             </p>
           </div>
           <button
             type="button"
-            className="modal-close-btn"
+            className="modal-close"
             onClick={onClose}
-            aria-label="Close demo deck modal"
+            aria-label="Close dialog"
           >
-            ×
+            ✕
           </button>
         </div>
-        <div className="demo-deck-modal-body">
-          <p className="demo-deck-modal-desc">
-            Sign in anytime to build, edit, and sync your personal deck across
-            all your devices.
-          </p>
-          <div className="demo-deck-modal-actions">
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => {
-                onClose()
-                onSignIn()
-              }}
-            >
-              Sign in to sync <span aria-hidden="true">→</span>
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={onClose}
-            >
-              Explore demo deck
-            </button>
-          </div>
+        <div className="demo-deck-modal-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              onClose()
+              onSignIn()
+            }}
+          >
+            Sign in to sync <span aria-hidden="true">→</span>
+          </button>
+          <button type="button" className="secondary-button" onClick={onClose}>
+            Explore demo deck
+          </button>
         </div>
       </div>
     </div>

@@ -2802,25 +2802,12 @@ kbd {
 }
 
 .demo-deck-modal {
-  width: min(450px, 100%);
+  width: min(460px, 100%);
   padding: 24px 26px 26px;
-  gap: 16px;
+  gap: 20px;
   box-shadow:
     0 12px 36px -4px rgba(18, 24, 21, 0.22),
     4px 4px 0 var(--ink);
-}
-
-.demo-deck-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.demo-deck-modal-desc {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--ink-soft);
 }
 
 .demo-deck-modal-actions {
