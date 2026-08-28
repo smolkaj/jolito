@@ -99,6 +99,9 @@ test('short landscape practice keeps grading visible and removes management chro
   await expect(reviewNavigation.getByText('Manage deck')).toHaveCount(0)
   await expect(reviewNavigation.getByText('New card')).toHaveCount(0)
   await expect(reviewNavigation.getByText('Sign in')).toHaveCount(0)
+  await expect(
+    reviewNavigation.getByRole('button', { name: /edit card/i }),
+  ).toBeVisible()
   await expect(page.getByRole('button', { name: /delete card/i })).toHaveCount(
     0,
   )
@@ -167,6 +170,10 @@ test('short landscape keeps grading fixed while long review content scrolls', as
   expect(compactContentBounds!.height).toBeGreaterThanOrEqual(40)
   await expect(page.getByText('You wrote')).toBeInViewport()
   await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
+  await page.getByRole('button', { name: /edit card/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /edit flashcard/i }),
+  ).toBeVisible()
 })
 
 test('mobile keeps the tactile sample and live card preview available', async ({

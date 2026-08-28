@@ -3851,6 +3851,14 @@ export function App({
       <main className="app-shell review-page">
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
+          <button
+            type="button"
+            className="study-quick-btn review-edit-button"
+            aria-label={`Edit card: ${currentCard.prompt}`}
+            onClick={() => setEditingCard(currentCard)}
+          >
+            ✏️ Edit card
+          </button>
         </nav>
         <RedirectAuthNotice
           message={redirectAuthBanner}
@@ -3965,17 +3973,6 @@ export function App({
               </fieldset>
             </div>
           )}
-
-          <div className="study-card-quick-actions">
-            <button
-              type="button"
-              className="study-quick-btn edit-btn"
-              aria-label={`Edit card: ${currentCard.prompt}`}
-              onClick={() => setEditingCard(currentCard)}
-            >
-              ✏️ Edit card
-            </button>
-          </div>
 
           <p className="keyboard-hint">
             {revealed ? (

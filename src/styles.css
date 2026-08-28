@@ -2348,7 +2348,6 @@ kbd {
     padding: 8px 10px;
   }
 
-  .study-card-quick-actions,
   .keyboard-hint {
     display: none;
   }
@@ -4217,15 +4216,6 @@ kbd {
   box-shadow: 3px 3px 0 var(--ink);
 }
 
-/* Study Card In-Session Actions */
-.study-card-quick-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
-}
-
 .study-quick-btn {
   display: inline-flex;
   align-items: center;
@@ -4253,7 +4243,6 @@ kbd {
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
-  .review-page .study-card-quick-actions,
   .review-page .keyboard-hint {
     display: none;
   }
