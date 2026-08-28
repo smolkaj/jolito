@@ -87,6 +87,26 @@ async function main() {
   const welcomeImgBase64 = readFileSync(
     resolve(process.cwd(), 'assets/jolito-welcome.png'),
   ).toString('base64')
+  const fontBase64 = readFileSync(
+    resolve(
+      process.cwd(),
+      'public/fonts/bricolage-grotesque-normal-400-800-latin.woff2',
+    ),
+  ).toString('base64')
+
+  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="54" height="54" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#e4007c">
+    <rect x="3" y="6.5" width="11" height="4.5" rx="2.25" transform="rotate(-22 8.5 8.75)" />
+    <rect x="1" y="13.75" width="12" height="4.5" rx="2.25" />
+    <rect x="3" y="21" width="11" height="4.5" rx="2.25" transform="rotate(22 8.5 23.25)" />
+    <rect x="18" y="6.5" width="11" height="4.5" rx="2.25" transform="rotate(22 23.5 8.75)" />
+    <rect x="19" y="13.75" width="12" height="4.5" rx="2.25" />
+    <rect x="18" y="21" width="11" height="4.5" rx="2.25" transform="rotate(-22 23.5 23.25)" />
+  </g>
+  <circle cx="16" cy="16" r="6" fill="#121815" />
+  <circle cx="16" cy="16" r="4.2" fill="#f59e0b" />
+  <circle cx="16" cy="16" r="2.2" fill="#ffffff" />
+</svg>`
 
   const ogHtml = `<!DOCTYPE html>
 <html>
@@ -95,7 +115,7 @@ async function main() {
 <style>
   @font-face {
     font-family: 'Bricolage Grotesque';
-    src: url('/fonts/bricolage-grotesque-normal-400-800-latin.woff2') format('woff2');
+    src: url('data:font/woff2;base64,${fontBase64}') format('woff2');
     font-weight: 400 800;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -114,112 +134,111 @@ async function main() {
     height: 100%;
     background: #ffffff;
     border-radius: 36px;
-    border: 3px solid #f3d2df;
+    border: 3px solid #121815;
+    box-shadow: 6px 6px 0 #121815;
     display: flex;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 16px 48px rgba(194, 51, 99, 0.08);
+    padding: 54px 64px;
   }
   .left {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 60px 40px 60px 64px;
+    max-width: 590px;
     z-index: 2;
-    max-width: 720px;
   }
   .brand-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+  }
+  .brand-mark {
+    display: block;
+    flex-shrink: 0;
   }
   .brand-title {
     font-size: 54px;
     font-weight: 800;
-    color: #c23363;
-    letter-spacing: -0.03em;
+    color: #121815;
+    letter-spacing: -0.035em;
+    line-height: 1;
   }
   .brand-pill {
-    background: #fdf2f6;
-    color: #c23363;
-    border: 1.5px solid #fad2e1;
-    font-size: 16px;
-    font-weight: 700;
+    background: #fdf0f7;
+    color: #e4007c;
+    border: 2px solid #fad2e1;
+    font-size: 15px;
+    font-weight: 800;
     padding: 6px 14px;
     border-radius: 999px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
   }
-  .headline {
-    font-size: 38px;
-    font-weight: 800;
-    color: #2a2026;
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+  .main-copy {
     margin-top: 16px;
   }
+  .headline {
+    font-size: 54px;
+    font-weight: 800;
+    color: #121815;
+    line-height: 1.06;
+    letter-spacing: -0.03em;
+  }
+  .headline em {
+    font-style: normal;
+    color: #e4007c;
+  }
   .tagline {
-    font-size: 22px;
-    font-weight: 500;
-    color: #6b5b65;
-    line-height: 1.45;
-    margin-top: 14px;
-  }
-  .pills-row {
-    display: flex;
-    gap: 12px;
-    margin-top: 24px;
-    flex-wrap: nowrap;
-  }
-  .feature-pill {
-    background: #fdf5f8;
-    border: 2px solid #ebd0db;
-    padding: 8px 18px;
-    border-radius: 999px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #9e2951;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
+    font-size: 26px;
+    font-weight: 600;
+    color: #4b5a52;
+    line-height: 1.35;
+    margin-top: 18px;
+    letter-spacing: -0.01em;
+    max-width: 520px;
   }
   .bottom-row {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 14px;
   }
   .domain-badge {
-    background: #c23363;
+    background: #e4007c;
     color: #ffffff;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 800;
     padding: 12px 28px;
-    border-radius: 18px;
+    border-radius: 999px;
+    border: 2.5px solid #121815;
+    box-shadow: 3px 3px 0 #121815;
     letter-spacing: -0.01em;
-    box-shadow: 0 6px 16px rgba(194, 51, 99, 0.3);
   }
-  .sub-note {
-    font-size: 19px;
-    font-weight: 600;
-    color: #6b5b65;
+  .feature-tag {
+    background: #eaf3ed;
+    color: #234734;
+    border: 2px solid #9ec2ad;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 999px;
   }
   .right {
     position: absolute;
-    right: 20px;
-    bottom: -10px;
-    width: 440px;
-    height: 520px;
+    right: 14px;
+    bottom: -20px;
+    width: 490px;
+    height: 560px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
   }
   .mascot {
-    width: 420px;
+    width: 490px;
     height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 12px 24px rgba(194, 51, 99, 0.12));
+    filter: drop-shadow(0 14px 28px rgba(18, 24, 21, 0.1));
   }
 </style>
 </head>
@@ -228,20 +247,18 @@ async function main() {
     <div class="left">
       <div>
         <div class="brand-row">
+          ${logoSvg}
           <span class="brand-title">Jolito</span>
           <span class="brand-pill">Mexican Spanish</span>
         </div>
-        <h1 class="headline">Spoken Mexican Spanish at your rhythm.</h1>
-        <p class="tagline">Multimodal spaced repetition with natural audio, meaningful visuals, and active recall that make daily practice inviting.</p>
-        <div class="pills-row">
-          <div class="feature-pill">🔊 Native Audio</div>
-          <div class="feature-pill">🧠 Spaced Repetition</div>
-          <div class="feature-pill">⚡ 100% Offline PWA</div>
+        <div class="main-copy">
+          <h1 class="headline">Spoken Mexican Spanish that <em>sticks.</em></h1>
+          <p class="tagline">Beautiful flashcards with natural audio, practiced at your rhythm.</p>
         </div>
       </div>
       <div class="bottom-row">
         <div class="domain-badge">joli.to</div>
-        <div class="sub-note">Free • No Account Required • Installable PWA</div>
+        <span class="feature-tag">100% Free & Offline</span>
       </div>
     </div>
     <div class="right">
