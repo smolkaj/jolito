@@ -105,6 +105,10 @@ describe('weightedSpanishDistance', () => {
     expect(weightedSpanishDistance('aguacatte', 'aguacate')).toBeCloseTo(0.4, 1)
     expect(weightedSpanishDistance('proffesor', 'profesor')).toBeCloseTo(0.4, 1)
 
+    // y/l yeísmo substitution (0.5 vs 1.0)
+    expect(weightedSpanishDistance('yaya', 'yala')).toBeCloseTo(0.5, 1)
+    expect(weightedSpanishDistance('caye', 'calle')).toBeCloseTo(0.9, 1)
+
     // Transpositions
     expect(weightedSpanishDistance('agaucate', 'aguacate')).toBeCloseTo(0.8, 1)
   })
@@ -174,6 +178,92 @@ describe('LexiconIndex', () => {
       expect(results[0]?.spanish).toBe('tener')
       expect(results[0]?.matchType).toBe('lemma')
       expect(results[0]?.matchedForm).toBe('tuvimos')
+    })
+
+    it('prioritizes lemma resolution of inflections above prefix matches', () => {
+      const testIndex = new LexiconIndex(
+        [
+          {
+            spanish: 'tener',
+            english: 'to have',
+            context: 'Verb',
+            tag: 'basics',
+          },
+          { spanish: 'tenso', english: 'tense', context: 'Adj', tag: 'common' },
+          {
+            spanish: 'tengo hambre',
+            english: 'I am hungry',
+            context: 'Phrase',
+            tag: 'basics',
+          },
+        ],
+        {
+          tengo: 'tener',
+        },
+      )
+      const results = testIndex.suggest('tengo', 'es')
+      expect(results[0]?.spanish).toBe('tener')
+      expect(results[0]?.matchType).toBe('lemma')
+      expect(results[0]?.matchedForm).toBe('tengo')
+    })
+
+    it('supports multi-lemma mappings and preserves exact unaccented form priority on collision', () => {
+      const testIndex = new LexiconIndex(
+        [
+          {
+            spanish: 'venir',
+            english: 'to come',
+            context: 'Verb',
+            tag: 'basics',
+          },
+          {
+            spanish: 'vengar',
+            english: 'to avenge',
+            context: 'Verb',
+            tag: 'common',
+          },
+          { spanish: 'ser', english: 'to be', context: 'Verb', tag: 'basics' },
+          { spanish: 'ir', english: 'to go', context: 'Verb', tag: 'basics' },
+        ],
+        {
+          vengo: 'venir',
+          vengó: 'vengar',
+          fue: ['ser', 'ir'],
+        },
+      )
+      const vengoResults = testIndex.suggest('vengo', 'es')
+      expect(vengoResults[0]?.spanish).toBe('venir')
+      expect(vengoResults[0]?.matchType).toBe('lemma')
+      expect(vengoResults[1]?.spanish).toBe('vengar')
+      expect(vengoResults[1]?.matchType).toBe('lemma')
+
+      const fueResults = testIndex.suggest('fue', 'es')
+      expect(fueResults[0]?.spanish).toBe('ser')
+      expect(fueResults[1]?.spanish).toBe('ir')
+
+      // Reverse order: accented form added after unaccented
+      const testIndex2 = new LexiconIndex(
+        [
+          {
+            spanish: 'venir',
+            english: 'to come',
+            context: 'Verb',
+            tag: 'basics',
+          },
+          {
+            spanish: 'vengar',
+            english: 'to avenge',
+            context: 'Verb',
+            tag: 'common',
+          },
+        ],
+        {
+          vengó: 'vengar',
+          vengo: 'venir',
+        },
+      )
+      const res2 = testIndex2.suggest('vengo', 'es')
+      expect(res2[0]?.spanish).toBe('venir')
     })
 
     it('finds word-boundary matches in compound phrases', () => {

@@ -13,7 +13,7 @@ export class OfflineCardAssistant implements CardAssistant {
 
   constructor(
     entries: LexiconEntry[] = SEED_LEXICON,
-    lemmas: Record<string, string> = {},
+    lemmas: Record<string, string | string[]> = {},
   ) {
     this.index = new LexiconIndex(entries, lemmas)
   }
@@ -38,7 +38,7 @@ export class OfflineCardAssistant implements CardAssistant {
             try {
               const lemmasData = (await lemmasResp.json()) as Record<
                 string,
-                string
+                string | string[]
               >
               if (
                 lemmasData &&
@@ -90,7 +90,7 @@ export class OfflineCardAssistant implements CardAssistant {
 
 export function createCardAssistant(
   entries: LexiconEntry[] = [],
-  lemmas: Record<string, string> = {},
+  lemmas: Record<string, string | string[]> = {},
 ): CardAssistant {
   return new OfflineCardAssistant(entries, lemmas)
 }

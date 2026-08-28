@@ -149,9 +149,9 @@ CURATED_MEXICAN_ENTRIES = [
 ]
 
 META_GLOSS_PATTERN = re.compile(
-    r"^(first|second|third)-person"
-    r"|^(masculine|feminine)\s+(plural|singular)"
-    r"|^(plural|singular)\s+of"
+    r"^(?:first|second|third)-person"
+    r"|^(?:masculine|feminine)\s+(?:plural|singular)"
+    r"|^(?:plural|singular)\s+of"
     r"|^gerund\s+of"
     r"|^infinitive\s+of"
     r"|^participle\s+of"
@@ -159,17 +159,35 @@ META_GLOSS_PATTERN = re.compile(
     r"|^imperative\s+of"
     r"|^subjunctive\s+of"
     r"|^indicative\s+of"
-    r"|^synonym\s+of",
+    r"|^synonym\s+of"
+    r"|^senses relating to"
+    r"|^forms ad hoc"
+    r"|^alternative form of"
+    r"|^see also"
+    r"|^used to\b",
     re.IGNORECASE,
 )
 
 def clean_gloss_text(gloss):
-    # Remove parentheticals like (transitive), (botany), (slang)
-    cleaned = re.sub(r"\s*\(.*?\)\s*", " ", gloss).strip()
-    cleaned = re.sub(r"\s+", " ", cleaned)
-    if not cleaned:
-        cleaned = gloss.strip()
-    # If synonym list is excessively long, truncate to top 3
+    # Strip meta header prefixes like "Senses relating to ...;"
+    gloss = re.sub(r"^Senses relating to .*?[;:]\s*", "", gloss, flags=re.IGNORECASE)
+    # Strip leading / trailing meta notes
+    gloss = re.sub(r"^(?:In general|Especially|Specifically|Chiefly|Often|Usually|Used to|Forms ad hoc|See also)[,;:]\s*", "", gloss, flags=re.IGNORECASE)
+    # Remove properly matched parentheses iteratively
+    prev = ""
+    cleaned = gloss
+    while prev != cleaned:
+        prev = cleaned
+        cleaned = re.sub(r"\([^()]*\)", "", cleaned)
+    # Remove any dangling unmatched brackets or quotes
+    cleaned = cleaned.replace("(", "").replace(")", "").replace("[", "").replace("]", "").replace("”", "").replace("“", "").replace("\"", "")
+    # Clean whitespace and stray punctuation
+    cleaned = re.sub(r"\s*,\s*", ", ", cleaned)
+    cleaned = re.sub(r"\s*;\s*", "; ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" ,;:.")
+    # Filter meta strings
+    if not cleaned or re.match(r"^(Forms ad hoc|See also|Alternative form of|Synonym of)", cleaned, re.I):
+        return ""
     parts = [p.strip() for p in cleaned.split(",") if p.strip()]
     if len(parts) > 3:
         cleaned = ", ".join(parts[:3])
@@ -185,7 +203,7 @@ def main():
         freq_lines = resp.read().decode("utf-8").splitlines()
 
     top_words = {}
-    for rank, line in enumerate(freq_lines[:40000]):
+    for rank, line in enumerate(freq_lines[:45000]):
         parts = line.split()
         if parts:
             top_words[parts[0].lower()] = rank
@@ -218,28 +236,41 @@ def main():
             lemma_targets = []
             for s in senses:
                 s_tags = [t.lower() for t in s.get("tags", []) + s.get("raw_tags", [])]
-                if "form-of" in s_tags or "form_of" in s:
-                    if "form_of" in s and s["form_of"]:
-                        for f in s["form_of"]:
-                            if "word" in f:
-                                lemma_targets.append(f["word"].strip())
-                else:
+                has_form = "form-of" in s_tags or "form_of" in s
+                if "form_of" in s and s["form_of"]:
+                    for f in s["form_of"]:
+                        if "word" in f:
+                            lemma_targets.append(f["word"].strip())
+                for g in s.get("glosses", []):
+                    m = re.search(r"(?:first|second|third)-person .*? of ([a-záéíóúñü]+)", g, re.I)
+                    if m:
+                        lemma_targets.append(m.group(1).strip())
+                    m2 = re.search(r"(?:inflection|form|conjugation) of ([a-záéíóúñü]+)", g, re.I)
+                    if m2:
+                        lemma_targets.append(m2.group(1).strip())
+                if not has_form:
                     is_pure_form = False
 
+            if lemma_targets:
+                for target in lemma_targets:
+                    t_lower = target.lower()
+                    if t_lower != word_lower:
+                        if word_lower not in raw_inflections:
+                            raw_inflections[word_lower] = []
+                        if t_lower not in raw_inflections[word_lower]:
+                            raw_inflections[word_lower].append(t_lower)
+
             if is_pure_form:
-                if lemma_targets:
-                    for target in lemma_targets:
-                        t_lower = target.lower()
-                        if t_lower != word_lower:
-                            if word_lower not in raw_inflections:
-                                raw_inflections[word_lower] = []
-                            if t_lower not in raw_inflections[word_lower]:
-                                raw_inflections[word_lower].append(t_lower)
                 continue
 
             is_mexican = any("mexic" in t.lower() for s in senses for t in s.get("tags", []) + s.get("raw_tags", []))
             is_slang = any(t.lower() in ["slang", "colloquial", "informal"] for s in senses for t in s.get("tags", []) + s.get("raw_tags", []))
             is_idiom = any(t.lower() in ["idiom", "proverb", "phrase", "idiomatic"] for s in senses for t in s.get("tags", []) + s.get("raw_tags", []))
+            rank = top_words.get(word_lower, 99999)
+
+            # High-frequency core vocabulary shouldn't be tainted as slang because of a secondary sense
+            if rank < 2500 and not is_mexican:
+                is_slang = False
 
             # Filter: include top frequency words or any Mexican / slang / idiom expression
             if word_lower not in top_words and not is_mexican and not is_slang and not is_idiom:
@@ -276,7 +307,7 @@ def main():
                     lemmas[word_lower]["glosses"].extend(valid_glosses)
                     if is_mexican:
                         lemmas[word_lower]["is_mexican"] = True
-                    if is_slang:
+                    if is_slang and rank >= 2500:
                         lemmas[word_lower]["is_slang"] = True
                     if is_idiom:
                         lemmas[word_lower]["is_idiom"] = True
@@ -327,18 +358,25 @@ def main():
             "tag": tag,
         })
 
-    # Resolve inflections to known lemmas
+    # Resolve inflections to known lemmas, sorting by frequency in top_words
     lemma_map = {}
     for form, targets in raw_inflections.items():
-        if form in seen_spanish:
+        if form not in top_words and len(form) > 20:
             continue
-        # Only keep inflections in top frequency words to keep file compact
-        if form not in top_words:
+        valid_targets = [t for t in targets if t in seen_spanish and t != form]
+        if not valid_targets:
             continue
-        for target in targets:
-            if target in seen_spanish:
-                lemma_map[form] = target
-                break
+        # Sort targets so the highest frequency lemma (lowest rank number) is first
+        valid_targets.sort(key=lambda t: top_words.get(t, 999999))
+        if len(valid_targets) == 1:
+            lemma_map[form] = valid_targets[0]
+        else:
+            top_rank = top_words.get(valid_targets[0], 999999)
+            second_rank = top_words.get(valid_targets[1], 999999)
+            if second_rank < 2500:
+                lemma_map[form] = valid_targets[:2]
+            else:
+                lemma_map[form] = valid_targets[0]
 
     print(f"4. Writing {len(entries)} entries to {DICT_OUTPUT_PATH}...")
     dict_bytes = json.dumps(entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
