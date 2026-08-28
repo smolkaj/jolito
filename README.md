@@ -72,7 +72,7 @@ Mosh cannot carry the TCP port, so SSH provides the tunnel. Substitute a task wo
 ## Explore more
 
 - **[Product Vision](docs/PRODUCT_VISION.md):** Philosophy, core principles, and the target learner experience.
-- **[Design Principles](docs/DESIGN.md):** Visual and interaction philosophy, de-framing, copy minimalism, and living tokens.
+- **[Design Principles](docs/DESIGN.md):** Durable principles for visual hierarchy, interaction, copy, and inclusive design.
 - **[Roadmap](docs/ROADMAP.md):** Current progress, active tracks, and upcoming capabilities.
 - **[Architecture](docs/ARCHITECTURE.md):** Hexagonal domain structure, local-first storage, and clean abstractions.
 - **[Quality Guide](docs/QUALITY.md):** Test pyramid, accessibility invariants, and CI contracts.
