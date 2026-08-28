@@ -3306,7 +3306,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('supports closing feedback modal with Escape and submitting with Ctrl+Enter', async () => {
+  it('supports closing feedback modal with Escape', async () => {
     const user = userEvent.setup()
     const authUser = {
       id: 'student-123',
@@ -3326,17 +3326,6 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /share feedback/i }),
     ).not.toBeInTheDocument()
-
-    // Reopen, type and submit with Ctrl+Enter
-    await user.click(screen.getByRole('button', { name: /^feedback$/i }))
-    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
-    await user.type(messageInput, 'Dark mode would be awesome.')
-    fireEvent.keyDown(messageInput, { key: 'Enter', ctrlKey: true })
-
-    expect(services.mockFeedback.submissions).toHaveLength(1)
-    expect(services.mockFeedback.submissions[0]!.submission.message).toBe(
-      'Dark mode would be awesome.',
-    )
   })
 
   it('displays error banner when feedback submission fails', async () => {

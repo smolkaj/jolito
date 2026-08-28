@@ -2032,17 +2032,7 @@ function FeedbackModalInner({
                   setError(null)
                 }}
                 placeholder="What’s on your mind?"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault()
-                    void handleSubmit()
-                  }
-                }}
               />
-              <p className="feedback-hint">
-                Tip: Press <kbd>⌘</kbd>+<kbd>Enter</kbd> (or <kbd>Ctrl</kbd>+
-                <kbd>Enter</kbd>) to send.
-              </p>
             </div>
 
             {error && (
