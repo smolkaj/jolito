@@ -1476,22 +1476,45 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('allows signed in user to sign out and returns to auth form', async () => {
+  it('allows signed in user to sign out, clears local deck, and returns to demo state', async () => {
     const user = userEvent.setup({ delay: null })
+    const userCards = createStudyCards(
+      {
+        spanish: 'zapato',
+        english: 'shoe',
+        context: 'clothing',
+        bidirectional: false,
+      },
+      'note-user-1',
+      1000,
+    )
     const services = createTestServices({
+      cards: userCards,
       user: { id: 'usr-1', email: 'sync-user@example.com' },
     })
     render(<App services={services} />)
 
+    // Verify user is signed in with custom deck in storage
+    expect(services.memoryCards.load([])).toHaveLength(1)
+    expect(services.memoryCards.load([])[0]?.prompt).toBe('zapato')
+
+    // Open sync modal and click sign out
     await user.click(screen.getByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
 
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
-    expect(
-      screen.queryByText(/Cards remain safely stored on this device/i),
-    ).not.toBeInTheDocument()
+
+    // Local storage has been reset to starter cards and cleared of user cards & tombstones
+    const storedCards = services.memoryCards.load([])
+    expect(storedCards.every((c) => c.noteId.startsWith('starter-'))).toBe(true)
+    expect(storedCards.some((c) => c.prompt === 'zapato')).toBe(false)
+    expect(services.memoryCards.getDeletedCardIds()).toEqual([])
+
+    // Close sync modal and verify UI shows starter demo state with Sign in button
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
   it('animates resend link button with checkmark feedback without status banner', async () => {

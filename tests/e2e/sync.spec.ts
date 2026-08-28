@@ -302,6 +302,23 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   const signOutBtn = page.getByRole('button', { name: /sign out/i })
   await signOutBtn.click()
 
+  // Verify local storage is cleared of user data and reset to starter cards
+  const storedJson = await page.evaluate(() =>
+    window.localStorage.getItem('jolito-library-v1'),
+  )
+  expect(storedJson).not.toBeNull()
+  const stored = JSON.parse(storedJson!) as {
+    version: number
+    cards: Array<{ noteId?: string }>
+    deletedCardIds: string[]
+  }
+  expect(
+    stored.cards.every(
+      (c) => typeof c.noteId === 'string' && c.noteId.startsWith('starter-'),
+    ),
+  ).toBe(true)
+  expect(stored.deletedCardIds).toEqual([])
+
   // If email input is shown (or if unconfigured preview notice is shown)
   const emailInput = page.getByLabel(/email address/i)
   if (await emailInput.isVisible()) {
