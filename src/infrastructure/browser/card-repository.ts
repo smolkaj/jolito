@@ -69,6 +69,7 @@ const restoreLegacy = (raw: unknown): StudyCard[] | null => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: 0,
     })
   }
   return cards

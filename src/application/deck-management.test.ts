@@ -3,6 +3,7 @@ import { createStudyCards } from '../domain/card'
 import {
   filterDeckCards,
   getDeckStats,
+  sortDeckCards,
   type DeckStats,
 } from './deck-management'
 
@@ -227,6 +228,177 @@ describe('deck-management', () => {
         'aguacate',
         'Aguacate!',
       ])
+    })
+
+    it('sorts filtered cards by specified sort order', () => {
+      const result = filterDeckCards(cards, {
+        sortOrder: 'alpha-asc',
+        now,
+      })
+      expect(result.map((c) => c.prompt)).toEqual([
+        'aguacate',
+        'ahorita',
+        'chido',
+        '¿mande?',
+        '¡qué padre!',
+      ])
+    })
+  })
+
+  describe('sortDeckCards', () => {
+    const timeA = 1000
+    const timeB = 2000
+    const timeC = 3000
+
+    const testCards = [
+      {
+        ...cards[0]!,
+        prompt: 'zapato',
+        createdAt: timeA,
+      },
+      {
+        ...cards[1]!,
+        prompt: 'árbol',
+        createdAt: timeC,
+      },
+      {
+        ...cards[2]!,
+        prompt: 'bueno',
+        createdAt: timeB,
+      },
+    ]
+
+    it('sorts by creation date descending (newest first) by default', () => {
+      const sorted = sortDeckCards(testCards, 'created-desc')
+      expect(sorted.map((c) => c.prompt)).toEqual(['árbol', 'bueno', 'zapato'])
+    })
+
+    it('sorts by creation date ascending (oldest first)', () => {
+      const sorted = sortDeckCards(testCards, 'created-asc')
+      expect(sorted.map((c) => c.prompt)).toEqual(['zapato', 'bueno', 'árbol'])
+    })
+
+    it('sorts alphabetically ascending (A to Z)', () => {
+      const sorted = sortDeckCards(testCards, 'alpha-asc')
+      expect(sorted.map((c) => c.prompt)).toEqual(['árbol', 'bueno', 'zapato'])
+    })
+
+    it('sorts alphabetically descending (Z to A)', () => {
+      const sorted = sortDeckCards(testCards, 'alpha-desc')
+      expect(sorted.map((c) => c.prompt)).toEqual(['zapato', 'bueno', 'árbol'])
+    })
+
+    it('orders bidirectional card pairs es-en before en-es on same creation time or prompt', () => {
+      const pair = [
+        {
+          ...cards[0]!,
+          id: 'note-1:en-es',
+          noteId: 'note-1',
+          prompt: 'avocado',
+          direction: 'en-es' as const,
+          createdAt: timeA,
+        },
+        {
+          ...cards[0]!,
+          id: 'note-1:es-en',
+          noteId: 'note-1',
+          prompt: 'aguacate',
+          direction: 'es-en' as const,
+          createdAt: timeA,
+        },
+      ]
+
+      const sortedDesc = sortDeckCards(pair, 'created-desc')
+      expect(sortedDesc.map((c) => c.direction)).toEqual(['es-en', 'en-es'])
+
+      const sortedAsc = sortDeckCards(pair, 'created-asc')
+      expect(sortedAsc.map((c) => c.direction)).toEqual(['es-en', 'en-es'])
+
+      // Same creation time and different noteIds
+      const diffNotesSameTime = [
+        {
+          ...cards[0]!,
+          id: 'note-1:es-en',
+          noteId: 'note-1',
+          createdAt: timeA,
+        },
+        {
+          ...cards[1]!,
+          id: 'note-2:es-en',
+          noteId: 'note-2',
+          createdAt: timeA,
+        },
+      ]
+      expect(sortDeckCards(diffNotesSameTime, 'created-asc')).toHaveLength(2)
+      expect(sortDeckCards(diffNotesSameTime, 'created-desc')).toHaveLength(2)
+
+      // Pair in reverse order (en-es first, es-en second)
+      const reversePair = [
+        {
+          ...cards[0]!,
+          id: 'note-1:en-es',
+          noteId: 'note-1',
+          direction: 'en-es' as const,
+          createdAt: timeA,
+        },
+        {
+          ...cards[0]!,
+          id: 'note-1:es-en',
+          noteId: 'note-1',
+          direction: 'es-en' as const,
+          createdAt: timeA,
+        },
+      ]
+      expect(
+        sortDeckCards(reversePair, 'created-desc').map((c) => c.direction),
+      ).toEqual(['es-en', 'en-es'])
+      expect(
+        sortDeckCards(reversePair, 'created-asc').map((c) => c.direction),
+      ).toEqual(['es-en', 'en-es'])
+
+      // Same prompt with different directions
+      const samePromptDiffDir = [
+        {
+          ...cards[0]!,
+          id: 'note-1:en-es',
+          prompt: 'test',
+          direction: 'en-es' as const,
+        },
+        {
+          ...cards[0]!,
+          id: 'note-1:es-en',
+          prompt: 'test',
+          direction: 'es-en' as const,
+        },
+      ]
+      expect(
+        sortDeckCards(samePromptDiffDir, 'alpha-asc').map((c) => c.direction),
+      ).toEqual(['es-en', 'en-es'])
+      expect(
+        sortDeckCards(samePromptDiffDir, 'alpha-desc').map((c) => c.direction),
+      ).toEqual(['es-en', 'en-es'])
+
+      // Same prompt with same direction and different IDs
+      const samePromptSameDir = [
+        {
+          ...cards[0]!,
+          id: 'b-card',
+          prompt: 'test',
+          direction: 'es-en' as const,
+        },
+        {
+          ...cards[0]!,
+          id: 'a-card',
+          prompt: 'test',
+          direction: 'es-en' as const,
+        },
+      ]
+      expect(
+        sortDeckCards(samePromptSameDir, 'alpha-asc').map((c) => c.id),
+      ).toEqual(['a-card', 'b-card'])
+      expect(
+        sortDeckCards(samePromptSameDir, 'alpha-desc').map((c) => c.id),
+      ).toEqual(['a-card', 'b-card'])
     })
   })
 })

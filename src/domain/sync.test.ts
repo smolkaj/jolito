@@ -18,6 +18,7 @@ const cardA: StudyCard = {
     reviews: 0,
     lapses: 0,
   },
+  createdAt: 1000,
 }
 
 const cardB: StudyCard = {
@@ -36,6 +37,7 @@ const cardB: StudyCard = {
     reviews: 2,
     lapses: 0,
   },
+  createdAt: 2000,
 }
 
 describe('deckSyncPayloadSchema', () => {

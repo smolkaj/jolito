@@ -33,6 +33,7 @@ function makeCard(params: {
       reviews: params.reviews ?? 0,
       lapses: 0,
     },
+    createdAt: 0,
   }
 }
 

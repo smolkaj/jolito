@@ -452,6 +452,7 @@ export function parseAnkiText(content: string, now: number): ParseAnkiResult {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
 
     const parsedCard = studyCardSchema.safeParse(candidate)
@@ -661,6 +662,7 @@ export async function parseAnkiPackage(
         context,
         scene,
         schedule,
+        createdAt: cardIdNum > 1000000000000 ? cardIdNum : now,
       }
 
       const parsedCard = studyCardSchema.safeParse(cardCandidate)

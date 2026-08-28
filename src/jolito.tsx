@@ -46,6 +46,7 @@ import {
   filterDeckCards,
   getDeckStats,
   type DeckFilterState,
+  type DeckSortOrder,
 } from './application/deck-management'
 import {
   findDuplicateCards,
@@ -2352,6 +2353,8 @@ export function App({
   )
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
   const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+  const [deckSortOrder, setDeckSortOrder] =
+    useState<DeckSortOrder>('created-desc')
   const [deletedCardIds, setDeletedCardIds] = useState<string[]>(() =>
     services.cards.getDeletedCardIds(),
   )
@@ -2388,6 +2391,7 @@ export function App({
   const authUserRef = useRef(authUser)
   const pendingCardRef = useRef(pendingCard)
   const deletedCardIdsRef = useRef<Set<string>>(new Set(deletedCardIds))
+  const queueRef = useRef(queue)
 
   useEffect(() => {
     cardsRef.current = cards
@@ -2395,6 +2399,7 @@ export function App({
     authUserRef.current = authUser
     pendingCardRef.current = pendingCard
     deletedCardIdsRef.current = new Set(deletedCardIds)
+    queueRef.current = queue
   })
 
   const onUpdateCards = useCallback(
@@ -2417,8 +2422,21 @@ export function App({
       const now = services.clock.now()
       setReferenceTime(now)
       setQueue((currentQueue) => {
-        if (viewRef.current !== 'review') return currentQueue
-        return orderCardsForReview(newCards, now).map(({ id }) => id)
+        if (currentQueue.length > 0) {
+          const cardIdSet = new Set(newCards.map((c) => c.id))
+          const nextQueue = currentQueue.filter((id) => cardIdSet.has(id))
+          const removedCount = currentQueue.length - nextQueue.length
+          if (removedCount > 0) {
+            setSessionTotal((prev) =>
+              Math.max(nextQueue.length, prev - removedCount),
+            )
+          }
+          if (viewRef.current === 'review' && nextQueue.length === 0) {
+            navigateTo('complete')
+          }
+          return nextQueue
+        }
+        return currentQueue
       })
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
@@ -2430,7 +2448,7 @@ export function App({
           })
       }
     },
-    [services.cards, services.clock, services.sync],
+    [navigateTo, services.cards, services.clock, services.sync],
   )
 
   const handleSaveEdit = useCallback(
@@ -2458,19 +2476,6 @@ export function App({
       }
       const updatedDeletedIds = Array.from(deletedCardIdsRef.current)
       onUpdateCards(updatedCards, true, updatedDeletedIds)
-      setQueue((prevQueue) => {
-        const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
-        const deletedCount = prevQueue.length - nextQueue.length
-        if (deletedCount > 0) {
-          setSessionTotal((prev) =>
-            Math.max(nextQueue.length, prev - deletedCount),
-          )
-        }
-        if (viewRef.current === 'review' && nextQueue.length === 0) {
-          navigateTo('complete')
-        }
-        return nextQueue
-      })
       setSelectedCardIds((prev) => {
         const next = new Set(prev)
         for (const id of idsToDelete) {
@@ -2480,7 +2485,7 @@ export function App({
       })
       setDeletingCards(null)
     },
-    [navigateTo, onUpdateCards],
+    [onUpdateCards],
   )
 
   const deckStats = useMemo(
@@ -2493,9 +2498,10 @@ export function App({
       filterDeckCards(cards, {
         query: deckSearchQuery,
         stateFilter: deckFilterState,
+        sortOrder: deckSortOrder,
         now: referenceTime,
       }),
-    [cards, deckFilterState, deckSearchQuery, referenceTime],
+    [cards, deckFilterState, deckSearchQuery, deckSortOrder, referenceTime],
   )
 
   const duplicateCardIds = useMemo(
@@ -2663,15 +2669,14 @@ export function App({
         setAnswer('')
         setRevealed(false)
       } else if (nextView === 'review') {
-        setQueue((currentQueue) => {
-          if (currentQueue.length > 0) return currentQueue
+        if (queueRef.current.length === 0) {
           const now = services.clock.now()
           const newQueue = orderCardsForReview(cardsRef.current, now).map(
             ({ id }) => id,
           )
           setSessionTotal(newQueue.length)
-          return newQueue
-        })
+          setQueue(newQueue)
+        }
       }
     }
     window.addEventListener('popstate', onPopState)
@@ -2894,8 +2899,6 @@ export function App({
   function goHome() {
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
-    setQueue([])
-    setSessionTotal(0)
     setAnswer('')
     setRevealed(false)
   }
@@ -3157,12 +3160,21 @@ export function App({
                 >
                   Create a card <span aria-hidden="true">→</span>
                 </button>
-                <button
-                  className="secondary-button"
-                  onClick={() => beginReview()}
-                >
-                  Practice
-                </button>
+                {queue.length > 0 ? (
+                  <button
+                    className="secondary-button"
+                    onClick={() => navigateTo('review')}
+                  >
+                    Resume practice
+                  </button>
+                ) : (
+                  <button
+                    className="secondary-button"
+                    onClick={() => beginReview()}
+                  >
+                    Practice
+                  </button>
+                )}
               </div>
             </div>
             <div className="hero-visual">
@@ -3313,11 +3325,18 @@ export function App({
               >
                 Manage deck
               </button>
-              {dueCount > 0 && (
+              {queue.length > 0 ? (
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('review')}
+                >
+                  Resume
+                </button>
+              ) : dueCount > 0 ? (
                 <button className="text-button" onClick={() => beginReview()}>
                   Practice
                 </button>
-              )}
+              ) : null}
               {authUser && (
                 <button
                   className="text-button"
@@ -3788,11 +3807,18 @@ export function App({
                   + New card
                 </button>
               )}
-              {dueCount > 0 && (
+              {queue.length > 0 ? (
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('review')}
+                >
+                  Resume
+                </button>
+              ) : dueCount > 0 ? (
                 <button className="text-button" onClick={() => beginReview()}>
                   Practice
                 </button>
-              )}
+              ) : null}
               {authUser && (
                 <button
                   className="text-button"
@@ -3911,7 +3937,7 @@ export function App({
                   )}
                 </div>
 
-                {selectedCardIds.size > 0 && (
+                {selectedCardIds.size > 0 ? (
                   <div
                     className="deck-batch-actions"
                     aria-label="Batch card actions"
@@ -3935,6 +3961,31 @@ export function App({
                       Clear selection
                     </button>
                   </div>
+                ) : (
+                  cards.length > 0 && (
+                    <div className="deck-sort-wrap">
+                      <label
+                        htmlFor="deck-sort-select"
+                        className="deck-sort-label"
+                      >
+                        Sort
+                      </label>
+                      <select
+                        id="deck-sort-select"
+                        className="deck-sort-select"
+                        value={deckSortOrder}
+                        onChange={(e) =>
+                          setDeckSortOrder(e.target.value as DeckSortOrder)
+                        }
+                        aria-label="Sort cards"
+                      >
+                        <option value="created-desc">Newest first</option>
+                        <option value="created-asc">Oldest first</option>
+                        <option value="alpha-asc">Alphabetical (A–Z)</option>
+                        <option value="alpha-desc">Alphabetical (Z–A)</option>
+                      </select>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -3966,13 +4017,16 @@ export function App({
                       Import Anki / Backup
                     </button>
                   </div>
-                ) : deckSearchQuery.trim() || deckFilterState !== 'all' ? (
+                ) : deckSearchQuery.trim() ||
+                  deckFilterState !== 'all' ||
+                  deckSortOrder !== 'created-desc' ? (
                   <button
                     type="button"
                     className="secondary-button"
                     onClick={() => {
                       setDeckSearchQuery('')
                       setDeckFilterState('all')
+                      setDeckSortOrder('created-desc')
                     }}
                   >
                     Clear search & filters
@@ -4014,8 +4068,41 @@ export function App({
                   <div className="col-dir" role="columnheader">
                     Direction
                   </div>
-                  <div className="col-phrase col-prompt" role="columnheader">
-                    Prompt
+                  <div
+                    className="col-phrase col-prompt"
+                    role="columnheader"
+                    aria-sort={
+                      deckSortOrder === 'alpha-asc'
+                        ? 'ascending'
+                        : deckSortOrder === 'alpha-desc'
+                          ? 'descending'
+                          : 'none'
+                    }
+                  >
+                    <button
+                      type="button"
+                      className="deck-sort-header-btn"
+                      onClick={() => {
+                        setDeckSortOrder((current) => {
+                          if (current === 'alpha-asc') return 'alpha-desc'
+                          if (current === 'alpha-desc') return 'created-desc'
+                          return 'alpha-asc'
+                        })
+                      }}
+                      aria-label="Sort by prompt"
+                    >
+                      <span>Prompt</span>
+                      {deckSortOrder === 'alpha-asc' && (
+                        <span className="deck-sort-icon" aria-hidden="true">
+                          ↑
+                        </span>
+                      )}
+                      {deckSortOrder === 'alpha-desc' && (
+                        <span className="deck-sort-icon" aria-hidden="true">
+                          ↓
+                        </span>
+                      )}
+                    </button>
                   </div>
                   <div className="col-phrase col-answer" role="columnheader">
                     Answer
