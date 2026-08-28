@@ -61,14 +61,7 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 ---
 
-## 7. Non-Judgmental Clarity: Inform, Don't Judge
-
-- **Nuance over binary verdicts:** When evaluating human input or complex states, illuminate subtle differences with multi-tiered diagnostic clarity (exact matches, close nuances, substantive errors) rather than punishing users with rigid binary right/wrong verdicts.
-- **The human holds authority:** The system provides clear diagnostic feedback to inform and assist, but ultimate evaluative authority and decision-making remains with the user.
-
----
-
-## 8. Visual Coherence, Tactility & Geometric Invariants
+## 7. Visual Coherence, Tactility & Geometric Invariants
 
 - **Harmonic corner vocabulary:** Jolito pairs smooth, generous container radii (`20px` / `16px` for cards, dialogs, and banners) with full pills (`--pill-radius: 999px`) for interactive controls. Avoid introducing sharp `4px`/`8px` boxy corners or mixing conflicting corner scales.
 - **Consistent typographic rhythm:** Adjacent labels, status chips, and buttons must share uniform font sizes and line heights (`--font-sans`). Avoid ad-hoc font-size variations across neighboring elements.
@@ -79,7 +72,7 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 ---
 
-## 9. Living Design Tokens ([`src/styles.css`](../src/styles.css))
+## 8. Living Design Tokens ([`src/styles.css`](../src/styles.css))
 
 | Pillar                   | Expression                                      | Semantic Role                                                    |
 | ------------------------ | ----------------------------------------------- | ---------------------------------------------------------------- |
@@ -96,7 +89,7 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 ---
 
-## 10. Common Pitfalls & Antidotes
+## 9. Common Pitfalls & Antidotes
 
 | Pitfall (Default Reflex)                                                                                       | Antidote (The Jolito Way)                                                                                                                 |
 | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -106,5 +99,4 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 | **Popup Spawning** (Modal dialogs, toaster alerts)                                                             | **In-Place Morphing:** Animate and transform the clicked element directly.                                                                |
 | **Administrative Metering** (In-session scorecards, busy progress meters)                                      | **Ambient Flow:** Unobtrusive peripheral orientation (3px hairline bar).                                                                  |
 | **Over-Automation** (AI overwriting personal user notes)                                                       | **Human Agency:** AI provides translations/audio; the human authors personal notes.                                                       |
-| **Binary Judgment** (Rigid pass/fail grading)                                                                  | **Non-Judgmental Clarity:** Multi-tiered diagnostic nuance; user holds evaluation authority.                                              |
 | **Layout Jitter** (Buttons shifting width on count changes)                                                    | **Dimensional Stability:** Fixed pill heights (`32px` / `24px`) and robust flex alignments.                                               |
