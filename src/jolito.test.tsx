@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
 import { createStudyCards, type StudyCard } from './domain/card'
 import { starterCards } from './application/starter-cards'
+import { OfflineCardAssistant } from './application/card-assistant'
 import { createTestServices } from './test/services'
 
 class SpeechSynthesisUtteranceMock {
@@ -485,6 +486,46 @@ describe('Jolito', () => {
       'right now / in a bit',
     )
     expect(screen.getByLabelText(/context/i)).toHaveValue('')
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('resolves conjugated verb inputs to base lemma suggestions with origin badge', async () => {
+    const user = userEvent.setup({ delay: null })
+    const assistant = new OfflineCardAssistant(
+      [
+        {
+          spanish: 'tener',
+          english: 'to have / to possess',
+          context: 'Common verb.',
+          tag: 'basics',
+        },
+      ],
+      {
+        tuvimos: 'tener',
+      },
+    )
+    const services = createTestServices({ assistant })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'tuvimos')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('tener')).toBeInTheDocument()
+    expect(screen.getByText(/from/i)).toHaveTextContent('from tuvimos')
+
+    // Click suggestion item
+    await user.click(screen.getByText('tener'))
+
+    expect(spanishInput).toHaveValue('tener')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'to have / to possess',
+    )
     expect(
       screen.queryByRole('listbox', { name: /spanish suggestions/i }),
     ).not.toBeInTheDocument()

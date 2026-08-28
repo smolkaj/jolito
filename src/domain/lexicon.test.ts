@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   damerauLevenshtein,
+  extractGlossTerms,
   LexiconIndex,
   normalizeForSearch,
   type LexiconEntry,
@@ -21,7 +22,7 @@ const TEST_DICTIONARY: LexiconEntry[] = [
   },
   {
     spanish: 'qué padre',
-    english: 'how cool',
+    english: 'how cool / fantastic',
     context: 'Quintessential Mexican Spanish slang for something great.',
     tag: 'slang',
   },
@@ -43,6 +44,12 @@ const TEST_DICTIONARY: LexiconEntry[] = [
     context: 'Used when ordering food.',
     tag: 'food',
   },
+  {
+    spanish: 'tener',
+    english: 'to have / to possess',
+    context: 'Common verb.',
+    tag: 'basics',
+  },
 ]
 
 describe('normalizeForSearch', () => {
@@ -51,6 +58,26 @@ describe('normalizeForSearch', () => {
     expect(normalizeForSearch('¿Dónde está?')).toBe('donde esta')
     expect(normalizeForSearch('¡Órale!')).toBe('orale')
     expect(normalizeForSearch('  aguacate  ')).toBe('aguacate')
+  })
+})
+
+describe('extractGlossTerms', () => {
+  it('splits multi-gloss definitions on slashes, semicolons, and commas', () => {
+    const terms = extractGlossTerms(
+      'right now / in a minute; right away, pronto',
+    )
+    expect(terms).toContain('right now')
+    expect(terms).toContain('in a minute')
+    expect(terms).toContain('right away')
+    expect(terms).toContain('pronto')
+  })
+
+  it('extracts both full infinitive and bare verb forms for English verb glosses', () => {
+    const terms = extractGlossTerms('to speak / to talk')
+    expect(terms).toContain('to speak')
+    expect(terms).toContain('speak')
+    expect(terms).toContain('to talk')
+    expect(terms).toContain('talk')
   })
 })
 
@@ -69,16 +96,22 @@ describe('damerauLevenshtein', () => {
 })
 
 describe('LexiconIndex', () => {
-  const index = new LexiconIndex([
-    ...TEST_DICTIONARY,
-    // Duplicate entry to test deduplication in map
+  const index = new LexiconIndex(
+    [
+      ...TEST_DICTIONARY,
+      // Duplicate entry to test deduplication in map
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: 'Duplicate test.',
+        tag: 'food',
+      },
+    ],
     {
-      spanish: 'aguacate',
-      english: 'avocado',
-      context: 'Duplicate test.',
-      tag: 'food',
+      tuvimos: 'tener',
+      tengo: 'tener',
     },
-  ])
+  )
 
   describe('suggest', () => {
     it('returns empty array for empty or single-character query', () => {
@@ -105,11 +138,33 @@ describe('LexiconIndex', () => {
       expect(results[0]?.spanish).toBe('la cuenta, por favor')
     })
 
-    it('finds matches when searching in English', () => {
+    it('finds matches when searching in English using individual gloss terms', () => {
       const results = index.suggest('avocado', 'en')
       expect(results.length).toBeGreaterThan(0)
       expect(results[0]?.spanish).toBe('aguacate')
       expect(results[0]?.english).toBe('avocado')
+
+      const takeawayResults = index.suggest('takeaway', 'en')
+      expect(takeawayResults.length).toBeGreaterThan(0)
+      expect(takeawayResults[0]?.spanish).toBe('para llevar')
+
+      const minuteResults = index.suggest('minute', 'en')
+      expect(minuteResults.length).toBeGreaterThan(0)
+      expect(minuteResults[0]?.spanish).toBe('ahorita')
+    })
+
+    it('resolves Spanish inflections to their base lemmas with lemma matchType', () => {
+      const results = index.suggest('tuvimos', 'es')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0]?.spanish).toBe('tener')
+      expect(results[0]?.matchType).toBe('lemma')
+      expect(results[0]?.matchedForm).toBe('tuvimos')
+    })
+
+    it('finds word-boundary matches in compound phrases', () => {
+      const results = index.suggest('padre', 'es')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0]?.spanish).toBe('qué padre')
     })
 
     it('limits returned suggestions to requested limit', () => {
@@ -123,10 +178,11 @@ describe('LexiconIndex', () => {
       expect(index.didYouMean('ag')).toBeNull()
     })
 
-    it('returns null for exact matches in Spanish and English', () => {
+    it('returns null for exact matches and known lemmas in Spanish and English', () => {
       expect(index.didYouMean('aguacate', 'es')).toBeNull()
       expect(index.didYouMean('qué padre', 'es')).toBeNull()
       expect(index.didYouMean('avocado', 'en')).toBeNull()
+      expect(index.didYouMean('tuvimos', 'es')).toBeNull() // known lemma form
     })
 
     it('returns fuzzy match for minor typos in Spanish and English', () => {
@@ -162,10 +218,28 @@ describe('LexiconIndex', () => {
       expect(result?.context).toContain('Mexican cuisine')
     })
 
-    it('translates exact phrase from English to Spanish', () => {
+    it('translates exact phrase from English to Spanish across multi-term glosses', () => {
       const result = index.translate('avocado', 'en')
       expect(result).not.toBeNull()
       expect(result?.spanish).toBe('aguacate')
+
+      const takeaway = index.translate('takeaway', 'en')
+      expect(takeaway).not.toBeNull()
+      expect(takeaway?.spanish).toBe('para llevar')
+
+      const toGo = index.translate('to go', 'en')
+      expect(toGo).not.toBeNull()
+      expect(toGo?.spanish).toBe('para llevar')
+
+      const rightNow = index.translate('right now', 'en')
+      expect(rightNow).not.toBeNull()
+      expect(rightNow?.spanish).toBe('ahorita')
+    })
+
+    it('translates inflected Spanish forms to base lemma', () => {
+      const result = index.translate('tuvimos', 'es')
+      expect(result).not.toBeNull()
+      expect(result?.spanish).toBe('tener')
     })
 
     it('translates accent-insensitively', () => {
@@ -183,20 +257,38 @@ describe('LexiconIndex', () => {
     it('appends new entries and updates search maps dynamically', () => {
       const dynamicIndex = new LexiconIndex()
       expect(dynamicIndex.count()).toBe(0)
+      expect(dynamicIndex.lemmaCount()).toBe(0)
       expect(dynamicIndex.translate('antorcha', 'es')).toBeNull()
 
       dynamicIndex.addEntries([
         {
           spanish: 'antorcha',
-          english: 'torch',
+          english: 'torch / flare',
           context: 'noun.',
           tag: 'common',
         },
       ])
 
+      dynamicIndex.setLemmaMap({ antorchitas: 'antorcha' })
+
       expect(dynamicIndex.count()).toBe(1)
-      expect(dynamicIndex.translate('antorcha', 'es')?.english).toBe('torch')
+      expect(dynamicIndex.lemmaCount()).toBe(1)
+      expect(dynamicIndex.translate('antorcha', 'es')?.english).toContain(
+        'torch',
+      )
+      expect(dynamicIndex.translate('flare', 'en')?.spanish).toBe('antorcha')
+      expect(dynamicIndex.translate('antorchitas', 'es')?.spanish).toBe(
+        'antorcha',
+      )
       expect(dynamicIndex.suggest('antor')).toHaveLength(1)
+    })
+
+    it('gracefully handles lemma mapping to an unindexed target word', () => {
+      const indexWithDanglingLemma = new LexiconIndex([], {
+        fantasma: 'no_existe',
+      })
+      expect(indexWithDanglingLemma.suggest('fantasma', 'es')).toEqual([])
+      expect(indexWithDanglingLemma.translate('fantasma', 'es')).toBeNull()
     })
   })
 })

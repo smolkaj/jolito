@@ -11,20 +11,46 @@ export class OfflineCardAssistant implements CardAssistant {
   private isLoaded = false
   private loadPromise: Promise<boolean> | null = null
 
-  constructor(entries: LexiconEntry[] = SEED_LEXICON) {
-    this.index = new LexiconIndex(entries)
+  constructor(
+    entries: LexiconEntry[] = SEED_LEXICON,
+    lemmas: Record<string, string> = {},
+  ) {
+    this.index = new LexiconIndex(entries, lemmas)
   }
 
-  async loadDictionary(url = '/dict/es-en.json'): Promise<boolean> {
+  async loadDictionary(
+    url = '/dict/es-en.json',
+    lemmasUrl = '/dict/es-lemmas.json',
+  ): Promise<boolean> {
     if (this.isLoaded) return true
     if (this.loadPromise) return this.loadPromise
     this.loadPromise = (async () => {
       try {
-        const response = await fetch(url)
-        if (!response.ok) return false
-        const data = (await response.json()) as LexiconEntry[]
+        const [dictResp, lemmasResp] = await Promise.all([
+          fetch(url),
+          fetch(lemmasUrl).catch(() => null),
+        ])
+        if (!dictResp.ok) return false
+        const data = (await dictResp.json()) as LexiconEntry[]
         if (Array.isArray(data)) {
           this.index.addEntries(data)
+          if (lemmasResp && lemmasResp.ok) {
+            try {
+              const lemmasData = (await lemmasResp.json()) as Record<
+                string,
+                string
+              >
+              if (
+                lemmasData &&
+                typeof lemmasData === 'object' &&
+                !Array.isArray(lemmasData)
+              ) {
+                this.index.setLemmaMap(lemmasData)
+              }
+            } catch {
+              // Ignore lemma parsing error if missing or invalid
+            }
+          }
           this.isLoaded = true
           return true
         }
@@ -60,10 +86,15 @@ export class OfflineCardAssistant implements CardAssistant {
   entryCount(): number {
     return this.index.count()
   }
+
+  lemmaCount(): number {
+    return this.index.lemmaCount()
+  }
 }
 
 export function createCardAssistant(
   entries: LexiconEntry[] = [],
+  lemmas: Record<string, string> = {},
 ): CardAssistant {
-  return new OfflineCardAssistant(entries)
+  return new OfflineCardAssistant(entries, lemmas)
 }

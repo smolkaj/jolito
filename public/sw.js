@@ -19,6 +19,7 @@ const PWA_ASSETS = [
   `${scopePath}fonts/bricolage-grotesque-normal-400-800-latin.woff2`,
   `${scopePath}fonts/bricolage-grotesque-normal-400-800-latin-ext.woff2`,
   `${scopePath}dict/es-en.json`,
+  `${scopePath}dict/es-lemmas.json`,
   `${scopePath}audio/aguacate-es.mp3`,
   `${scopePath}audio/avocado-en.mp3`,
   `${scopePath}audio/que-padre-es.mp3`,
