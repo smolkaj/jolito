@@ -154,7 +154,7 @@ export class LexiconIndex {
   private entries: LexiconEntry[] = []
   private normalizedSpanishMap: Map<string, LexiconEntry> = new Map()
   private normalizedEnglishMap: Map<string, LexiconEntry> = new Map()
-  private lemmaMap: Map<string, string> = new Map()
+  private lemmaMap: Map<string, string[]> = new Map()
   private esBigramIndex: Map<string, number[]> = new Map()
   private enBigramIndex: Map<string, number[]> = new Map()
   private esLengthBuckets: Map<number, number[]> = new Map()
@@ -162,18 +162,35 @@ export class LexiconIndex {
 
   constructor(
     entries: LexiconEntry[] = [],
-    lemmas: Record<string, string> = {},
+    lemmas: Record<string, string | string[]> = {},
   ) {
     this.addEntries(entries)
     this.setLemmaMap(lemmas)
   }
 
-  setLemmaMap(lemmas: Record<string, string>): void {
+  setLemmaMap(lemmas: Record<string, string | string[]>): void {
     for (const [form, lemma] of Object.entries(lemmas)) {
       const normForm = normalizeForSearch(form)
-      const normLemma = normalizeForSearch(lemma)
-      if (normForm && normLemma) {
-        this.lemmaMap.set(normForm, normLemma)
+      if (!normForm) continue
+      const list = Array.isArray(lemma) ? lemma : [lemma]
+      const normList: string[] = []
+      for (const l of list) {
+        const normL = normalizeForSearch(l)
+        if (normL && !normList.includes(normL)) {
+          normList.push(normL)
+        }
+      }
+      if (normList.length === 0) continue
+
+      const existing = this.lemmaMap.get(normForm)
+      if (!existing) {
+        this.lemmaMap.set(normForm, normList)
+      } else {
+        const isExactMatch = form.toLowerCase() === normForm
+        const merged = isExactMatch
+          ? [...normList, ...existing.filter((t) => !normList.includes(t))]
+          : [...existing, ...normList.filter((t) => !existing.includes(t))]
+        this.lemmaMap.set(normForm, merged)
       }
     }
   }
@@ -339,25 +356,27 @@ export class LexiconIndex {
       }
     }
 
-    // 2. Prefix matches on headwords / terms
+    // 2. Lemma resolution (Spanish only - inflections of the query resolve immediately to base lemmas)
+    if (lang === 'es' && results.length < limit) {
+      const lemmaTargets = this.lemmaMap.get(normalized)
+      if (lemmaTargets) {
+        for (const lemmaTarget of lemmaTargets) {
+          const lemmaEntry = this.normalizedSpanishMap.get(lemmaTarget)
+          if (lemmaEntry && !seen.has(lemmaEntry.spanish)) {
+            addResult(lemmaEntry, 'lemma', query.trim())
+            if (results.length >= limit) return results
+          }
+        }
+      }
+    }
+
+    // 3. Prefix matches on headwords / terms
     for (const entry of this.entries) {
       if (seen.has(entry.spanish)) continue
       const terms = this.getTerms(entry, lang)
       if (terms.some((t) => t.startsWith(normalized))) {
         addResult(entry, 'prefix')
         if (results.length >= limit) return results
-      }
-    }
-
-    // 3. Lemma resolution (Spanish only)
-    if (lang === 'es' && results.length < limit) {
-      const lemmaTarget = this.lemmaMap.get(normalized)
-      if (lemmaTarget) {
-        const lemmaEntry = this.normalizedSpanishMap.get(lemmaTarget)
-        if (lemmaEntry && !seen.has(lemmaEntry.spanish)) {
-          addResult(lemmaEntry, 'lemma', query.trim())
-          if (results.length >= limit) return results
-        }
       }
     }
 
@@ -434,9 +453,12 @@ export class LexiconIndex {
       const exact = this.normalizedSpanishMap.get(normalized)
       if (exact) return exact
 
-      const lemmaTarget = this.lemmaMap.get(normalized)
-      if (lemmaTarget) {
-        return this.normalizedSpanishMap.get(lemmaTarget) ?? null
+      const lemmaTargets = this.lemmaMap.get(normalized)
+      if (lemmaTargets) {
+        for (const target of lemmaTargets) {
+          const lemmaEntry = this.normalizedSpanishMap.get(target)
+          if (lemmaEntry) return lemmaEntry
+        }
       }
       return null
     }
