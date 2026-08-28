@@ -196,17 +196,10 @@ test('creates and reviews both directions with the keyboard', async ({
   await expect(page.getByText('You wrote')).toBeVisible()
 
   await page.keyboard.press('4')
-  await expect(
-    page.getByRole('heading', { name: 'Where is the metro?' }),
-  ).toBeVisible()
 
-  // Complete second card to reach celebratory ¡Hecho! completion screen
-  await page.getByLabel('Your answer').fill('¿Dónde está el metro?')
-  await page.getByLabel('Your answer').press('Enter')
-  await page.keyboard.press('4')
-
+  // Reach celebratory ¡Hecho! completion screen (reverse direction card is staggered for day 2)
   await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
-  await expect(page.getByText(/2 cards practiced/i)).toBeVisible()
+  await expect(page.getByText(/1 card practiced/i)).toBeVisible()
   await expect(page.locator('.complete-mascot-frame')).toBeVisible()
   await expect(page.locator('.complete-mascot-img')).toBeVisible()
 
@@ -746,27 +739,15 @@ test('allows guests to practice example deck immediately and explore card creato
   await page.keyboard.press('Enter')
   await page.keyboard.press('4') // Easy
 
-  // Card 2: avocado -> aguacate
-  await expect(page.getByRole('heading', { name: 'avocado' })).toBeVisible()
-  await page.getByLabel('Your answer').fill('aguacate')
-  await page.keyboard.press('Enter')
-  await page.keyboard.press('4')
-
-  // Card 3: Qué padre -> How cool
-  await expect(page.getByRole('heading', { name: 'Qué padre' })).toBeVisible()
-  await page.getByLabel('Your answer').fill('How cool')
-  await page.keyboard.press('Enter')
-  await page.keyboard.press('4')
-
-  // Card 4: How cool -> Qué padre
-  await expect(page.getByRole('heading', { name: 'How cool' })).toBeVisible()
-  await page.getByLabel('Your answer').fill('Qué padre')
+  // Card 2: qué padre -> how cool
+  await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('how cool')
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 
   // 2. Reach celebratory session complete screen
   await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
-  await expect(page.getByText(/4 cards practiced/i)).toBeVisible()
+  await expect(page.getByText(/2 cards practiced/i)).toBeVisible()
 
   // 3. Guest explores create card screen
   await page.getByRole('button', { name: /create a card/i }).click()

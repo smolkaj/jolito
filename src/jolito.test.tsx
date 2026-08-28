@@ -88,14 +88,22 @@ describe('Jolito', () => {
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('the')
     expect(screen.getByText('Additional Context')).toBeInTheDocument()
 
+    // Pass card 1 (es-en) with Easy -> graduates.
+    // The reverse card (en-es) is staggered for day 2, so today's session finishes cleanly.
     await user.keyboard('4')
+
+    // Advance clock by 1 day to practice the reverse card on day 2
+    services.fixedClock.currentTime += 24 * 60 * 60 * 1000
+    await user.click(screen.getByRole('button', { name: /back home/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
     expect(
       screen.getByRole('heading', { name: 'Where can I find the metro?' }),
     ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Your answer'), 'No recuerdo')
     await user.keyboard('{Enter}')
-    await user.keyboard('1') // Again -> requeues card 2
+    await user.keyboard('1') // Again -> requeues card 2 in-session
 
     expect(
       screen.getByRole('heading', { name: 'Where can I find the metro?' }),
@@ -113,13 +121,14 @@ describe('Jolito', () => {
     await user.keyboard('4') // Easy -> graduates
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
+    expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
 
     expect(services.mockSounds.played).toEqual([
       'reveal',
       'easy',
+      'complete',
       'reveal',
       'again',
       'reveal',
@@ -130,6 +139,61 @@ describe('Jolito', () => {
     expect(services.memoryCards.saved?.[0]?.prompt).toBe(
       '¿Dónde está el metro?',
     )
+  })
+
+  it('buries same-note sibling cards when reviewing simultaneously due bidirectional cards', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    // Setup 2 bidirectional notes where all cards are due at now (e.g. imported or overdue)
+    const cards = [
+      ...createStudyCards(
+        { spanish: 'gato', english: 'cat', context: '', bidirectional: true },
+        'note-gato',
+        now,
+      ),
+      ...createStudyCards(
+        { spanish: 'perro', english: 'dog', context: '', bidirectional: true },
+        'note-perro',
+        now,
+      ),
+    ]
+    // Force reverse cards to be due at now as well
+    cards[1]!.schedule.dueAt = now
+    cards[3]!.schedule.dueAt = now
+
+    const services = createTestServices({ cards, clockTime: now })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    // First card: gato (es-en)
+    expect(screen.getByRole('heading', { name: 'gato' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4') // Pass with Easy -> buries gato:en-es until tomorrow
+
+    // Next card should be perro (es-en), NOT cat (en-es) or dog (en-es)
+    expect(screen.getByRole('heading', { name: 'perro' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4') // Pass with Easy -> buries perro:en-es until tomorrow
+
+    // Session is complete with 2 cards practiced today (recognition only!)
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+    expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
+
+    // On day 2, reverse production cards become due
+    services.fixedClock.currentTime += 24 * 60 * 60 * 1000
+    await user.click(screen.getByRole('button', { name: /back home/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    expect(screen.getByRole('heading', { name: 'cat' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    expect(screen.getByRole('heading', { name: 'dog' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
   })
 
   it('supports a one-way card and keeps review usable without speech synthesis', async () => {
@@ -166,19 +230,11 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
-    // Card 1: fail with Again
+    // Card 1 (aguacate): fail with Again -> requeued at end
     await user.keyboard('{Enter}')
     await user.keyboard('1')
 
-    // Advances to Card 2: pass with Easy
-    await user.keyboard('{Enter}')
-    await user.keyboard('4')
-
-    // Advances to Card 3: pass with Easy
-    await user.keyboard('{Enter}')
-    await user.keyboard('4')
-
-    // Advances to Card 4: pass with Easy
+    // Advances to Card 2 (qué padre): pass with Easy
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
@@ -195,7 +251,7 @@ describe('Jolito', () => {
     await user.keyboard('4')
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/5 cards practiced/i)).toBeInTheDocument()
+    expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
   })
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
@@ -1671,35 +1727,21 @@ describe('Jolito', () => {
     const bar = progress.querySelector('.review-progress-bar') as HTMLElement
     expect(bar).toHaveStyle({ width: '0%' })
 
-    // Card 1: fail with Again (1) -> moves to learn queue (requeued at end)
+    // Card 1: fail with Again (1) -> moves to learn queue (requeued at end), sibling is buried (-1 total)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
     expect(progress).toHaveAttribute('aria-valuenow', '0')
-    expect(progress).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
     expect(bar).toHaveStyle({ width: '0%' })
 
-    // Card 2: pass with Easy (4) -> graduates out of session (1/4 completed = 25%)
-    await user.keyboard('{Enter}')
-    await user.keyboard('4')
-    expect(progress).toHaveAttribute('aria-valuenow', '25')
-    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
-    expect(bar).toHaveStyle({ width: '25%' })
-
-    // Card 3: pass with Easy (4) -> graduates out of session (2/4 completed = 50%)
+    // Card 2: pass with Easy (4) -> graduates out of session, sibling is buried (1/2 completed = 50%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
     expect(progress).toHaveAttribute('aria-valuenow', '50')
-    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
     expect(bar).toHaveStyle({ width: '50%' })
 
-    // Card 4: pass with Easy (4) -> graduates out of session (3/4 completed = 75%)
-    await user.keyboard('{Enter}')
-    await user.keyboard('4')
-    expect(progress).toHaveAttribute('aria-valuenow', '75')
-    expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
-    expect(bar).toHaveStyle({ width: '75%' })
-
-    // Card 1 retry: pass with Good (3) -> graduates learning card (4/4 completed = 100%)
+    // Card 1 retry: pass with Good (3) -> graduates learning card (2/2 completed = 100%)
     await user.keyboard('{Enter}')
     await user.keyboard('3')
 
@@ -1828,7 +1870,7 @@ describe('Jolito', () => {
 
     // 3. Navigate to review and practice all due cards
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
-    expect(screen.getByRole('heading', { name: 'popote' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'chido' })).toBeInTheDocument()
   })
 
   it('renders vector brandmark in navigation and prominently displays the mascot on the homescreen', () => {
@@ -2515,11 +2557,13 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /^delete card$/i }))
 
-    // Queue moves directly to next card in queue ('avocado')
+    // Queue moves directly to next card in queue ('qué padre')
     expect(
       screen.queryByRole('heading', { name: 'palta fresca' }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'qué padre' }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toHaveAttribute('aria-valuetext', '3 cards remaining')

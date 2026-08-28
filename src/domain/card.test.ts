@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  burySiblingCards,
   chooseScene,
   createNewReviewSchedule,
   createStudyCards,
@@ -7,6 +8,7 @@ import {
   intervalLabel,
   isDue,
   nextIntervalDays,
+  orderCardsForReview,
   resetCardProgress,
   scheduleReview,
   shouldRequeueInSession,
@@ -19,7 +21,7 @@ const now = Date.UTC(2026, 7, 21)
 const DAY = 24 * 60 * 60 * 1000
 
 describe('createStudyCards', () => {
-  it('creates linked directions with independently editable reverse text and initial Anki schedule', () => {
+  it('creates linked directions with independently editable reverse text and staggered initial Anki schedule', () => {
     const cards = createStudyCards(
       {
         spanish: '  ¿Me lo pone para llevar? ',
@@ -55,6 +57,15 @@ describe('createStudyCards', () => {
       prompt: 'Could I get this to go?',
       answer: '¿Me lo puede poner para llevar?',
       direction: 'en-es',
+      scene: 'takeaway',
+      schedule: {
+        state: 'new',
+        dueAt: now + DAY,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
     })
   })
 
@@ -602,6 +613,146 @@ describe('Anki spaced repetition scheduling', () => {
       const remaining = deleteStudyCard(cards, 'non-existent')
       expect(remaining).toHaveLength(2)
       expect(remaining).toEqual(cards)
+    })
+  })
+
+  describe('orderCardsForReview', () => {
+    it('filters out non-due cards and sorts by direction (es-en first) and due date', () => {
+      const sampleCards = [
+        // es-en card due in the future (not due)
+        {
+          ...createStudyCards(
+            {
+              spanish: 'tres',
+              english: 'three',
+              context: '',
+              bidirectional: false,
+            },
+            'note-3',
+            now,
+          )[0]!,
+          schedule: {
+            ...createNewReviewSchedule(now),
+            dueAt: now + 1000,
+          },
+        },
+        // en-es card due now
+        {
+          ...createStudyCards(
+            {
+              spanish: 'dos',
+              english: 'two',
+              context: '',
+              bidirectional: false,
+            },
+            'note-2',
+            now,
+          )[0]!,
+          id: 'note-2:en-es',
+          direction: 'en-es' as const,
+          schedule: {
+            ...createNewReviewSchedule(now),
+            dueAt: now,
+          },
+        },
+        // es-en card due now
+        {
+          ...createStudyCards(
+            {
+              spanish: 'uno',
+              english: 'one',
+              context: '',
+              bidirectional: false,
+            },
+            'note-1',
+            now,
+          )[0]!,
+          schedule: {
+            ...createNewReviewSchedule(now),
+            dueAt: now,
+          },
+        },
+        // es-en card overdue
+        {
+          ...createStudyCards(
+            {
+              spanish: 'cero',
+              english: 'zero',
+              context: '',
+              bidirectional: false,
+            },
+            'note-0',
+            now,
+          )[0]!,
+          schedule: {
+            ...createNewReviewSchedule(now),
+            dueAt: now - 5000,
+          },
+        },
+      ]
+
+      const ordered = orderCardsForReview(sampleCards, now)
+
+      expect(ordered.map((c) => c.id)).toEqual([
+        'note-0:es-en', // es-en, overdue (-5000)
+        'note-1:es-en', // es-en, due now (0)
+        'note-2:en-es', // en-es, due now (0)
+      ])
+    })
+  })
+
+  describe('burySiblingCards', () => {
+    it('buries sibling cards sharing the same noteId when due today to now + DAY', () => {
+      const cards = [
+        ...createStudyCards(
+          { spanish: 'gato', english: 'cat', context: '', bidirectional: true },
+          'note-gato',
+          now,
+        ),
+        ...createStudyCards(
+          {
+            spanish: 'perro',
+            english: 'dog',
+            context: '',
+            bidirectional: true,
+          },
+          'note-perro',
+          now,
+        ),
+      ]
+      // Make reverse cards due at now as well (e.g. legacy or imported deck)
+      cards[1]!.schedule.dueAt = now
+      cards[3]!.schedule.dueAt = now
+
+      const reviewedCard = cards[0]! // gato:es-en
+      const result = burySiblingCards(cards, reviewedCard, now)
+
+      expect(result.buriedCardIds).toEqual(['note-gato:en-es'])
+      const buriedSibling = result.updatedCards.find(
+        (c) => c.id === 'note-gato:en-es',
+      )
+      expect(buriedSibling?.schedule.dueAt).toBe(now + DAY)
+
+      // Other notes are unaffected
+      const otherNote = result.updatedCards.find(
+        (c) => c.id === 'note-perro:en-es',
+      )
+      expect(otherNote?.schedule.dueAt).toBe(now)
+    })
+
+    it('does not bury siblings that are already scheduled in the future', () => {
+      const cards = createStudyCards(
+        { spanish: 'gato', english: 'cat', context: '', bidirectional: true },
+        'note-gato',
+        now,
+      )
+      // cards[1] is already dueAt: now + DAY (from createStudyCards)
+
+      const reviewedCard = cards[0]!
+      const result = burySiblingCards(cards, reviewedCard, now)
+
+      expect(result.buriedCardIds).toEqual([])
+      expect(result.updatedCards).toEqual(cards)
     })
   })
 })
