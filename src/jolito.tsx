@@ -2807,9 +2807,7 @@ export function App({
                   className="secondary-button"
                   onClick={() => beginReview()}
                 >
-                  {authUser && dueCount > 0
-                    ? `Practice (${dueCount})`
-                    : 'Practice'}
+                  Practice
                 </button>
               </div>
             </div>

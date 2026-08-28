@@ -2682,7 +2682,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('displays personalized practice count and Save card button when authenticated', async () => {
+  it('displays clean Practice button and Save card button when authenticated', async () => {
     const user = userEvent.setup()
     const customCard = createStudyCards(
       {
@@ -2700,10 +2700,8 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    // 1. Welcome view displays due count on Practice button
-    expect(
-      screen.getByRole('button', { name: 'Practice (1)' }),
-    ).toBeInTheDocument()
+    // 1. Welcome view displays clean Practice button
+    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
 
     // 2. Create view displays 'Save card' (not 'Sign in to save')
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
