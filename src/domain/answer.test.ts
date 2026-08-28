@@ -151,21 +151,18 @@ describe('compareAnswer (character-level LCS diff)', () => {
   })
 
   it('treats macOS typographic ellipsis as three dots', () => {
-    const result = compareAnswer('it works well to\u2026', 'it works well to...')
+    const result = compareAnswer(
+      'it works well to\u2026',
+      'it works well to...',
+    )
     expect(result.isExact).toBe(true)
   })
 
   it('treats macOS smart quotes as plain quotes', () => {
-    const single = compareAnswer(
-      '\u2018it works\u2019',
-      "'it works'",
-    )
+    const single = compareAnswer('\u2018it works\u2019', "'it works'")
     expect(single.isExact).toBe(true)
 
-    const double = compareAnswer(
-      '\u201Cit works\u201D',
-      '"it works"',
-    )
+    const double = compareAnswer('\u201Cit works\u201D', '"it works"')
     expect(double.isExact).toBe(true)
   })
 
@@ -200,4 +197,3 @@ describe('normalizeTypography', () => {
     expect(normalizeTypography('hello world...')).toBe('hello world...')
   })
 })
-
