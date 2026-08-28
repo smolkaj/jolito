@@ -2751,6 +2751,33 @@ kbd {
   font-family: var(--font-mono);
 }
 
+/* Demo Deck Modal (Lightweight & Unobtrusive) */
+.demo-deck-modal {
+  width: min(460px, 100%);
+  padding: 24px 26px 28px;
+  gap: 16px;
+}
+
+.demo-deck-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.demo-deck-modal-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.demo-deck-modal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* ==========================================================================
    Cloud Sync & Auth Modal
    ========================================================================== */

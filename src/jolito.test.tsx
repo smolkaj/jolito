@@ -2650,7 +2650,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('displays guest sign in to save button on create screen and demo banner on deck manager when logged out', async () => {
+  it('displays guest DemoDeckModal on deck manager and allows exploring or signing in', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -2661,8 +2661,22 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /sign in to save/i }),
     ).toBeInTheDocument()
 
-    // 2. Check Deck Manager as guest
+    // 2. Check Deck Manager as guest -> DemoDeckModal is open
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(
+      screen.getByRole('dialog', { name: /^demo deck$/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/You’re exploring 4 example flashcards/i),
+    ).toBeInTheDocument()
+
+    // 3. Dismiss demo modal via 'Explore demo deck'
+    await user.click(screen.getByRole('button', { name: /explore demo deck/i }))
+    expect(
+      screen.queryByRole('dialog', { name: /^demo deck$/i }),
+    ).not.toBeInTheDocument()
+
+    // 4. Banner remains visible in deck manager
     expect(
       screen.getByRole('note', { name: /demo deck notice/i }),
     ).toBeInTheDocument()
@@ -2673,12 +2687,38 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /sign in to access your deck/i }),
     ).toBeInTheDocument()
 
-    // 3. Click sign in from demo banner to open sync modal
+    // 5. Click sign in from demo banner to open sync modal
     await user.click(
       screen.getByRole('button', { name: /sign in to access your deck/i }),
     )
     expect(
       screen.getByRole('heading', { name: /^cloud sync$/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('displays demo session complete banner and sign-in action when guest finishes practice', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    // Finish 4 demo cards
+    for (let i = 0; i < 4; i++) {
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+    }
+
+    // Complete screen for guest
+    expect(screen.getByText('DEMO SESSION COMPLETE')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /create a card/i }),
+    ).toBeInTheDocument()
+
+    // Clicking CTA navigates to create screen with guest sign-in CTA
+    await user.click(screen.getByRole('button', { name: /create a card/i }))
+    expect(
+      screen.getByRole('button', { name: /sign in to save/i }),
     ).toBeInTheDocument()
   })
 

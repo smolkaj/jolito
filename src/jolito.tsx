@@ -1780,6 +1780,82 @@ function SyncModal({
   )
 }
 
+interface DemoDeckModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSignIn: () => void
+}
+
+function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="modal-content demo-deck-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="demo-deck-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="demo-deck-modal-title">Demo deck</h2>
+            <p className="modal-subtitle">
+              You’re exploring 4 example flashcards.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={onClose}
+            aria-label="Close demo deck modal"
+          >
+            ×
+          </button>
+        </div>
+        <div className="demo-deck-modal-body">
+          <p className="demo-deck-modal-desc">
+            Sign in anytime to build, edit, and sync your personal deck across
+            all your devices.
+          </p>
+          <div className="demo-deck-modal-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                onClose()
+                onSignIn()
+              }}
+            >
+              Sign in to sync <span aria-hidden="true">→</span>
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onClose}
+            >
+              Explore demo deck
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface ConnectionPillProps {
   authUser: AuthUser | null
   syncStatus: SyncStatus
@@ -2042,6 +2118,8 @@ export function App({
   )
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [hasDismissedDemoDeckModal, setHasDismissedDemoDeckModal] =
+    useState(false)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -2283,6 +2361,7 @@ export function App({
         })
         setSessionTotal(() => starterCards.filter((c) => isDue(c, now)).length)
         setReviewedCount(0)
+        setHasDismissedDemoDeckModal(false)
       }
     })
   }, [
@@ -3708,6 +3787,11 @@ export function App({
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
         />
+        <DemoDeckModal
+          isOpen={!authUser && !hasDismissedDemoDeckModal}
+          onClose={() => setHasDismissedDemoDeckModal(true)}
+          onSignIn={() => openSyncModal()}
+        />
       </>
     )
   }
@@ -3748,12 +3832,18 @@ export function App({
             <div className="complete-mascot-frame" aria-hidden="true">
               <img src={celebrateUrl} alt="" className="complete-mascot-img" />
             </div>
-            <p className="eyebrow">SESSION COMPLETE</p>
+            <p className="eyebrow">
+              {authUser ? 'SESSION COMPLETE' : 'DEMO SESSION COMPLETE'}
+            </p>
             <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
             <p>
-              {reviewedCount > 0
-                ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
-                : 'Nothing is due right now. Add something from your day in CDMX?'}
+              {authUser
+                ? reviewedCount > 0
+                  ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
+                  : 'Nothing is due right now. Add something from your day in CDMX?'
+                : reviewedCount > 0
+                  ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Sign in to build and sync your personal deck.`
+                  : 'You’re exploring demo cards. Sign in to create your personal deck.'}
             </p>
             <div className="complete-actions">
               <button
