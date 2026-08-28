@@ -9,7 +9,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
-import { createStudyCards } from './domain/card'
+import { createStudyCards, type StudyCard } from './domain/card'
 import { starterCards } from './application/starter-cards'
 import { createTestServices } from './test/services'
 
@@ -2654,5 +2654,110 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('note', { name: /demo deck notice/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('applies adaptive font scaling classes to study prompt and create preview based on text length', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+
+    // Seed with a long prompt card
+    const longPrompt =
+      'El otro día fui al tianguis de la esquina para comprar unos aguacates bien maduros y limones para preparar un guacamole delicioso.'
+    const mediumPrompt =
+      '¿Dónde puedo encontrar unos buenos tacos al pastor por aquí cerca?'
+    const shortPrompt = 'aguacate'
+
+    const longCard: StudyCard = {
+      id: 'test-long:es-en',
+      noteId: 'note-long',
+      prompt: longPrompt,
+      answer: 'Long answer translation',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: 0,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+    const mediumCard: StudyCard = {
+      id: 'test-med:es-en',
+      noteId: 'note-med',
+      prompt: mediumPrompt,
+      answer: 'Medium answer translation',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: 0,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+    const shortCard: StudyCard = {
+      id: 'test-short:es-en',
+      noteId: 'note-short',
+      prompt: shortPrompt,
+      answer: 'avocado',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: 0,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+
+    services.cards.load = () => [longCard, mediumCard, shortCard]
+
+    render(<App services={services} />)
+
+    // 1. Study view scaling
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    const studyHeading = screen.getByRole('heading', { name: longPrompt })
+    expect(studyHeading).toHaveClass('study-prompt', 'is-long')
+
+    // Reveal and move to medium card
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    const medHeading = screen.getByRole('heading', { name: mediumPrompt })
+    expect(medHeading).toHaveClass('study-prompt', 'is-medium')
+
+    // Reveal and move to short card
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    const shortHeading = screen.getByRole('heading', { name: shortPrompt })
+    expect(shortHeading).toHaveClass('study-prompt')
+    expect(shortHeading).not.toHaveClass('is-long')
+    expect(shortHeading).not.toHaveClass('is-medium')
+
+    // 2. Create view preview scaling
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
+
+    const spanishTextarea = screen.getByLabelText(/mexican spanish/i)
+    await user.type(spanishTextarea, 'Hola')
+    const previewEs = document.querySelector('.sample-card-es .sample-phrase')
+    expect(previewEs).not.toHaveClass('is-medium')
+    expect(previewEs).not.toHaveClass('is-long')
+
+    await user.clear(spanishTextarea)
+    await user.type(spanishTextarea, mediumPrompt)
+    expect(previewEs).toHaveClass('is-medium')
+
+    await user.clear(spanishTextarea)
+    await user.type(spanishTextarea, longPrompt)
+    expect(previewEs).toHaveClass('is-long')
   })
 })

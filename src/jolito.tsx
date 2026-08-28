@@ -2927,7 +2927,22 @@ export function App({
     )
   }
 
-  if (view === 'create')
+  if (view === 'create') {
+    const spanishTrimmed = spanishInput.trim()
+    const englishTrimmed = englishInput.trim()
+    const spanishPhraseSizeClass =
+      spanishTrimmed.length > 100
+        ? 'is-long'
+        : spanishTrimmed.length > 50
+          ? 'is-medium'
+          : ''
+    const englishPhraseSizeClass =
+      englishTrimmed.length > 100
+        ? 'is-long'
+        : englishTrimmed.length > 50
+          ? 'is-medium'
+          : ''
+
     return (
       <>
         <main className="app-shell create-page">
@@ -2982,8 +2997,8 @@ export function App({
                   onClick={() => onCreateCardClick('english')}
                   aria-label={
                     activeCreateSide === 'english'
-                      ? `Play pronunciation: ${englishInput.trim() || 'translation'}`
-                      : `Show translation${englishInput.trim() ? `: ${englishInput.trim()}` : ''}`
+                      ? `Play pronunciation: ${englishTrimmed || 'translation'}`
+                      : `Show translation${englishTrimmed ? `: ${englishTrimmed}` : ''}`
                   }
                 >
                   <div className="sample-card-header">
@@ -3001,9 +3016,9 @@ export function App({
                   </div>
                   <div className="sample-card-body">
                     <p
-                      className={`sample-phrase ${!englishInput.trim() ? 'is-placeholder' : ''}`}
+                      className={`sample-phrase ${!englishTrimmed ? 'is-placeholder' : ''} ${englishPhraseSizeClass}`.trim()}
                     >
-                      {englishInput.trim() || 'English translation…'}
+                      {englishTrimmed || 'English translation…'}
                     </p>
                     {contextInput.trim() && (
                       <p className="create-card-context-preview">
@@ -3027,8 +3042,8 @@ export function App({
                   onClick={() => onCreateCardClick('spanish')}
                   aria-label={
                     activeCreateSide === 'spanish'
-                      ? `Play pronunciation: ${spanishInput.trim() || 'phrase'}`
-                      : `Show phrase${spanishInput.trim() ? `: ${spanishInput.trim()}` : ''}`
+                      ? `Play pronunciation: ${spanishTrimmed || 'phrase'}`
+                      : `Show phrase${spanishTrimmed ? `: ${spanishTrimmed}` : ''}`
                   }
                 >
                   <div className="sample-card-header">
@@ -3046,9 +3061,9 @@ export function App({
                   </div>
                   <div className="sample-card-body">
                     <p
-                      className={`sample-phrase ${!spanishInput.trim() ? 'is-placeholder' : ''}`}
+                      className={`sample-phrase ${!spanishTrimmed ? 'is-placeholder' : ''} ${spanishPhraseSizeClass}`.trim()}
                     >
-                      {spanishInput.trim() || 'Palabra o frase…'}
+                      {spanishTrimmed || 'Palabra o frase…'}
                     </p>
                     {contextInput.trim() && (
                       <p className="create-card-context-preview">
@@ -3322,6 +3337,7 @@ export function App({
         />
       </>
     )
+  }
 
   if (view === 'deck') {
     const isAllSelected =
@@ -3863,7 +3879,11 @@ export function App({
         </div>
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
           <div className="study-prompt-wrap">
-            <h1 className="study-prompt">{currentCard.prompt}</h1>
+            <h1
+              className={`study-prompt ${currentCard.prompt.trim().length > 100 ? 'is-long' : currentCard.prompt.trim().length > 50 ? 'is-medium' : ''}`.trim()}
+            >
+              {currentCard.prompt}
+            </h1>
             <AudioButton
               prompt
               label="Play prompt audio"
