@@ -4126,7 +4126,6 @@ kbd {
   width: min(540px, 100%);
 }
 
-.feedback-auth-required,
 .feedback-success-state {
   display: flex;
   flex-direction: column;
@@ -4134,7 +4133,6 @@ kbd {
   padding: 8px 0;
 }
 
-.feedback-auth-copy,
 .feedback-success-message {
   font-size: 15px;
   line-height: 1.5;

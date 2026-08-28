@@ -1897,13 +1897,11 @@ function FeedbackModalInner({
   user,
   feedbackService,
   currentView,
-  onOpenAuth,
 }: {
   onClose: () => void
-  user: AuthUser | null
+  user: AuthUser
   feedbackService: FeedbackService
   currentView: View
-  onOpenAuth?: (() => void) | undefined
 }) {
   const [category, setCategory] = useState<FeedbackCategory>('suggestion')
   const [message, setMessage] = useState('')
@@ -1915,15 +1913,15 @@ function FeedbackModalInner({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (user && !isSuccess) {
+    if (!isSuccess) {
       textareaRef.current?.focus()
     }
-  }, [user, isSuccess])
+  }, [isSuccess])
 
   const handleSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault()
     const trimmed = message.trim()
-    if (!trimmed || isSubmitting || !user) return
+    if (!trimmed || isSubmitting) return
 
     setIsSubmitting(true)
     setError(null)
@@ -1984,9 +1982,7 @@ function FeedbackModalInner({
             <p className="modal-subtitle">
               {isSuccess
                 ? 'Your feedback has been received.'
-                : user
-                  ? `Sending as ${user.email}`
-                  : 'Sign in to send ideas, bugs, or Mexican Spanish notes.'}
+                : `Sending as ${user.email}`}
             </p>
           </div>
           <button
@@ -1999,33 +1995,7 @@ function FeedbackModalInner({
           </button>
         </div>
 
-        {!user ? (
-          <div className="feedback-auth-required">
-            <p className="feedback-auth-copy">
-              Feedback is linked to your Jolito account so we can follow up on
-              suggestions and fix reported issues.
-            </p>
-            <div className="feedback-modal-actions">
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => {
-                  onClose()
-                  onOpenAuth?.()
-                }}
-              >
-                Sign in to continue
-              </button>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : isSuccess ? (
+        {isSuccess ? (
           <div className="feedback-success-state">
             <p className="feedback-success-message">
               Thank you for testing Jolito and sharing your thoughts! We read
@@ -2151,17 +2121,15 @@ function FeedbackModal({
   user,
   feedbackService,
   currentView,
-  onOpenAuth,
 }: {
   isOpen: boolean
   onClose: () => void
   user: AuthUser | null
   feedbackService: FeedbackService
   currentView: View
-  onOpenAuth?: (() => void) | undefined
 }) {
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || !user) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -2170,9 +2138,9 @@ function FeedbackModal({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, user, onClose])
 
-  if (!isOpen) return null
+  if (!isOpen || !user) return null
 
   return (
     <FeedbackModalInner
@@ -2180,7 +2148,6 @@ function FeedbackModal({
       user={user}
       feedbackService={feedbackService}
       currentView={currentView}
-      onOpenAuth={onOpenAuth}
     />
   )
 }
@@ -3142,9 +3109,10 @@ export function App({
   }, [])
 
   const openFeedbackModal = useCallback(() => {
+    if (!authUser) return
     setSuggestions([])
     setIsFeedbackOpen(true)
-  }, [])
+  }, [authUser])
 
   const closeFeedbackModal = useCallback(() => {
     setIsFeedbackOpen(false)
@@ -3202,13 +3170,15 @@ export function App({
               >
                 Manage deck
               </button>
-              <button
-                className="text-button"
-                type="button"
-                onClick={openFeedbackModal}
-              >
-                Feedback
-              </button>
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3359,7 +3329,6 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
-          onOpenAuth={openSyncModal}
         />
       </>
     )
@@ -3409,13 +3378,15 @@ export function App({
                   Practice
                 </button>
               )}
-              <button
-                className="text-button"
-                type="button"
-                onClick={openFeedbackModal}
-              >
-                Feedback
-              </button>
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3815,7 +3786,6 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
-          onOpenAuth={openSyncModal}
         />
       </>
     )
@@ -3883,13 +3853,15 @@ export function App({
                   Practice
                 </button>
               )}
-              <button
-                className="text-button"
-                type="button"
-                onClick={openFeedbackModal}
-              >
-                Feedback
-              </button>
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -4243,7 +4215,6 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
-          onOpenAuth={openSyncModal}
         />
       </>
     )
@@ -4268,13 +4239,15 @@ export function App({
               >
                 + New card
               </button>
-              <button
-                className="text-button"
-                type="button"
-                onClick={openFeedbackModal}
-              >
-                Feedback
-              </button>
+              {authUser && (
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -4332,15 +4305,17 @@ export function App({
                 Back home
               </button>
             </div>
-            <div className="complete-feedback-prompt">
-              <button
-                type="button"
-                className="complete-link-button"
-                onClick={openFeedbackModal}
-              >
-                Have feedback or found a bug?
-              </button>
-            </div>
+            {authUser && (
+              <div className="complete-feedback-prompt">
+                <button
+                  type="button"
+                  className="complete-link-button"
+                  onClick={openFeedbackModal}
+                >
+                  Have feedback or found a bug?
+                </button>
+              </div>
+            )}
           </section>
         </main>
         <SyncModal
@@ -4373,7 +4348,6 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
-          onOpenAuth={openSyncModal}
         />
       </>
     )
@@ -4402,13 +4376,15 @@ export function App({
             >
               + New card
             </button>
-            <button
-              className="text-button"
-              type="button"
-              onClick={openFeedbackModal}
-            >
-              Feedback
-            </button>
+            {authUser && (
+              <button
+                className="text-button"
+                type="button"
+                onClick={openFeedbackModal}
+              >
+                Feedback
+              </button>
+            )}
             <ConnectionPill
               authUser={authUser}
               syncStatus={syncStatus}
@@ -4595,7 +4571,6 @@ export function App({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
-        onOpenAuth={openSyncModal}
       />
     </>
   )

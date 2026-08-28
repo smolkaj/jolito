@@ -3085,36 +3085,39 @@ describe('Jolito', () => {
     })
   })
 
-  it('prompts unauthenticated user to sign in when clicking Feedback in navigation', async () => {
+  it('does not display feedback button or completion prompt when user is not signed in', async () => {
     const user = userEvent.setup()
-    const services = createTestServices()
+    const services = createTestServices({ user: null, cards: [] })
     render(<App services={services} />)
 
-    // Click feedback in topbar
-    const feedbackBtn = screen.getByRole('button', { name: /^feedback$/i })
-    await user.click(feedbackBtn)
-
+    // 1. Welcome page topbar
     expect(
-      screen.getByRole('heading', { name: /share feedback/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        /feedback is linked to your jolito account so we can follow up/i,
-      ),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
 
-    // Click sign in to continue -> closes feedback modal and opens sync modal
-    const signInBtn = screen.getByRole('button', {
-      name: /sign in to continue/i,
-    })
-    await user.click(signInBtn)
-
+    // 2. Deck page topbar
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.queryByRole('heading', { name: /share feedback/i }),
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
+
+    // 3. Create page topbar
+    await user.click(screen.getByRole('button', { name: /create a card/i }))
+    expect(
+      screen.queryByRole('button', { name: /^feedback$/i }),
+    ).not.toBeInTheDocument()
+
+    // 4. Session complete screen
+    await user.click(screen.getByRole('button', { name: /jolito home/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.queryByRole('button', { name: /^feedback$/i }),
     ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /cloud sync/i }),
-    ).toBeInTheDocument()
+      screen.queryByRole('button', {
+        name: /have feedback or found a bug\?/i,
+      }),
+    ).not.toBeInTheDocument()
   })
 
   it('allows authenticated user to select category, type message, and submit feedback', async () => {
