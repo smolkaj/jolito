@@ -1200,6 +1200,110 @@ summary:focus-visible {
   margin-left: auto;
 }
 
+/* Duplicate card recognition notice in create card view */
+.create-duplicate-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--cempasuchil-soft);
+  border: 1.5px solid var(--cempasuchil);
+  border-radius: 12px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.create-duplicate-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.create-duplicate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #fef3c7;
+  color: var(--cempasuchil-dark);
+  border: 1px solid var(--cempasuchil);
+  border-radius: 6px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.create-duplicate-text {
+  font-size: 13px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.create-duplicate-text strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.create-duplicate-schedule {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.create-duplicate-action {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cempasuchil-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms ease;
+}
+
+.create-duplicate-action:hover,
+.create-duplicate-action:focus-visible {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* Duplicate badge in deck management list */
+.deck-card-duplicate-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: #fef3c7;
+  color: var(--cempasuchil-dark);
+  border: 1px solid var(--cempasuchil);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Edit Modal duplicate warning */
+.edit-duplicate-notice {
+  background: var(--cempasuchil-soft);
+  border-color: var(--cempasuchil);
+  color: var(--cempasuchil-dark);
+  margin-bottom: 12px;
+}
+
 .suggestion-tag {
   font-size: 10px;
   font-weight: 800;
