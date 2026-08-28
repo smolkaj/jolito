@@ -64,15 +64,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   await page.keyboard.press('Enter')
   await expect(page.getByText('MEXICAN SPANISH →')).toBeVisible()
 
-  // Rate first card as Easy
-  await page.getByRole('button', { name: /easy/i }).click()
-
-  // Review the reverse direction card
-  await expect(
-    page.getByRole('heading', { name: 'See you later' }),
-  ).toBeVisible()
-  await page.getByLabel('Your answer').fill('Nos vemos al rato')
-  await page.keyboard.press('Enter')
+  // Rate card as Easy -> completes session (reverse direction card is staggered for tomorrow)
   await page.getByRole('button', { name: /easy/i }).click()
 
   // 4. Verify completion view and celebration mascot artwork load offline
