@@ -51,9 +51,7 @@ test('mobile deck rows keep the answer, status, and edit affordance visible', as
   await page.goto('/#/deck')
 
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(
-    page.getByText(/you’re exploring 4 example cards/i),
-  ).toBeVisible()
+  await expect(page.getByText(/this deck lives on this device/i)).toBeVisible()
   await expect(page.getByRole('group', { name: 'Card views' })).toBeVisible()
   await expect(page.getByRole('button', { name: /ready now/i })).toBeVisible()
   await expect(page.getByRole('button', { name: /^new \(/i })).toBeVisible()
@@ -63,6 +61,23 @@ test('mobile deck rows keep the answer, status, and edit affordance visible', as
   await expect(firstRow.locator('.deck-answer-text')).toBeVisible()
   await expect(firstRow.locator('.deck-stat-chip')).toBeVisible()
   await expect(firstRow.locator('.deck-row-chevron')).toBeVisible()
+
+  await page.setViewportSize({ width: 768, height: 800 })
+  await expect(firstRow.locator('.deck-stat-chip')).toBeVisible()
+  await expect(firstRow.locator('.deck-row-chevron')).toBeVisible()
+
+  await page.evaluate(() => {
+    const stored = localStorage.getItem('jolito-library-v1')
+    if (!stored) throw new Error('Expected local guest deck')
+    const deck = JSON.parse(stored) as { cards: unknown[] }
+    localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({ ...deck, cards: deck.cards.slice(0, 1) }),
+    )
+  })
+  await page.reload()
+  await expect(page.getByText(/this deck lives on this device/i)).toBeVisible()
+  await expect(page.getByText(/4 example cards/i)).toHaveCount(0)
 })
 
 test('short landscape practice keeps grading visible and removes management chrome', async ({
@@ -87,6 +102,54 @@ test('short landscape practice keeps grading visible and removes management chro
   await expect(page.getByRole('button', { name: /delete card/i })).toHaveCount(
     0,
   )
+})
+
+test('short landscape keeps grading fixed while long review content scrolls', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.goto('/')
+  await page.evaluate(() => {
+    localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({
+        version: 1,
+        cards: [
+          {
+            id: 'long-landscape:es-en',
+            noteId: 'long-landscape',
+            prompt:
+              'El otro día fui al tianguis de la esquina para comprar unos aguacates bien maduros y limones para preparar un guacamole delicioso.',
+            answer:
+              'The other day I went to the street market on the corner to buy some very ripe avocados and limes to prepare a delicious guacamole.',
+            direction: 'es-en',
+            context:
+              'A long but legitimate memory note that should remain readable without displacing the primary grading action.',
+            scene: 'conversation',
+            schedule: {
+              state: 'new',
+              dueAt: 0,
+              intervalDays: 0,
+              easeFactor: 2.5,
+              reviews: 0,
+              lapses: 0,
+            },
+          },
+        ],
+        deletedCardIds: [],
+      }),
+    )
+  })
+  await page.goto('/#/review')
+  await page.reload()
+  await page.getByLabel('Your answer').fill('I went to the market.')
+  await page.keyboard.press('Enter')
+
+  const gradeBounds = await page.locator('.grade-buttons').boundingBox()
+  expect(gradeBounds).not.toBeNull()
+  expect(gradeBounds!.y + gradeBounds!.height).toBeLessThanOrEqual(390)
+  await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
+  await expect(page.locator('.reveal-content')).toHaveCSS('overflow-y', 'auto')
 })
 
 test('mobile keeps the tactile sample and live card preview available', async ({

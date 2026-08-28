@@ -2254,6 +2254,9 @@ kbd {
 /* Responsive Breakpoints */
 @media (max-height: 520px) and (min-width: 681px) {
   .review-page {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
     padding-top: 8px;
     padding-bottom: 12px;
   }
@@ -2275,21 +2278,53 @@ kbd {
     margin-top: 6px;
   }
 
-  .study-card {
+  .review-page .study-card {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
     margin-top: 10px;
   }
 
-  .study-prompt {
+  .review-page .study-prompt-wrap {
+    flex: 0 1 auto;
+    max-height: 84px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .study-prompt:not(.is-medium):not(.is-long) {
     font-size: 34px;
+  }
+
+  .study-prompt.is-medium {
+    font-size: 28px;
+  }
+
+  .study-prompt.is-long {
+    font-size: 22px;
+    line-height: 1.25;
   }
 
   .prompt-meta {
     margin: 4px auto 8px;
   }
 
-  .reveal-panel {
+  .review-page .reveal-panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
     margin-top: 8px;
     padding: 12px 16px;
+  }
+
+  .review-page .reveal-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .diff-exact-card {
@@ -3809,13 +3844,23 @@ kbd {
   }
 
   .deck-card-row {
-    grid-template-columns: 32px minmax(95px, 110px) 1fr 1fr;
+    grid-template-columns:
+      32px minmax(90px, 105px) minmax(0, 1fr) minmax(0, 1fr) auto
+      auto;
     gap: 8px;
     padding: 8px 10px;
   }
 
   .deck-card-row .col-status {
-    display: none;
+    display: flex;
+  }
+
+  .deck-card-row .deck-row-chevron {
+    display: inline-flex;
+    align-items: center;
+    color: var(--ink-muted);
+    font-size: 20px;
+    font-weight: 800;
   }
 }
 

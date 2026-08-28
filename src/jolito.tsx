@@ -3434,8 +3434,8 @@ export function App({
 
             {!authUser && (
               <p className="deck-demo-note">
-                You’re exploring 4 example cards. Sign in when you’re ready to
-                build and sync your own.
+                This deck lives on this device. Sign in to sync it across
+                devices.
               </p>
             )}
 

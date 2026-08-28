@@ -2640,7 +2640,7 @@ describe('Jolito', () => {
     // 2. Check Deck Manager as guest -> guidance is visible without interruption
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.getByText(/You’re exploring 4 example cards/i),
+      screen.getByText(/This deck lives on this device/i),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('dialog', { name: /^demo deck$/i }),

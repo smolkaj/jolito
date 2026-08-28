@@ -1125,9 +1125,7 @@ test('displays unobtrusive demo deck guidance and demo session complete screen w
   // 1. Deck Manager explains the example cards without interrupting the user
   await page.goto('/#/deck')
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(
-    page.getByText(/You’re exploring 4 example cards/i),
-  ).toBeVisible()
+  await expect(page.getByText(/This deck lives on this device/i)).toBeVisible()
 
   const deckAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
