@@ -45,6 +45,7 @@ import {
   filterDeckCards,
   getDeckStats,
   type DeckFilterState,
+  type DeckSortOrder,
 } from './application/deck-management'
 import {
   findDuplicateCards,
@@ -2138,6 +2139,8 @@ export function App({
   )
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
   const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+  const [deckSortOrder, setDeckSortOrder] =
+    useState<DeckSortOrder>('created-desc')
   const [deletedCardIds, setDeletedCardIds] = useState<string[]>(() =>
     services.cards.getDeletedCardIds(),
   )
@@ -2279,9 +2282,10 @@ export function App({
       filterDeckCards(cards, {
         query: deckSearchQuery,
         stateFilter: deckFilterState,
+        sortOrder: deckSortOrder,
         now: referenceTime,
       }),
-    [cards, deckFilterState, deckSearchQuery, referenceTime],
+    [cards, deckFilterState, deckSearchQuery, deckSortOrder, referenceTime],
   )
 
   const duplicateCardIds = useMemo(
@@ -3642,7 +3646,7 @@ export function App({
                   )}
                 </div>
 
-                {selectedCardIds.size > 0 && (
+                {selectedCardIds.size > 0 ? (
                   <div
                     className="deck-batch-actions"
                     aria-label="Batch card actions"
@@ -3666,6 +3670,31 @@ export function App({
                       Clear selection
                     </button>
                   </div>
+                ) : (
+                  cards.length > 0 && (
+                    <div className="deck-sort-wrap">
+                      <label
+                        htmlFor="deck-sort-select"
+                        className="deck-sort-label"
+                      >
+                        Sort
+                      </label>
+                      <select
+                        id="deck-sort-select"
+                        className="deck-sort-select"
+                        value={deckSortOrder}
+                        onChange={(e) =>
+                          setDeckSortOrder(e.target.value as DeckSortOrder)
+                        }
+                        aria-label="Sort cards"
+                      >
+                        <option value="created-desc">Newest first</option>
+                        <option value="created-asc">Oldest first</option>
+                        <option value="alpha-asc">Alphabetical (A–Z)</option>
+                        <option value="alpha-desc">Alphabetical (Z–A)</option>
+                      </select>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -3697,13 +3726,16 @@ export function App({
                       Import Anki / Backup
                     </button>
                   </div>
-                ) : deckSearchQuery.trim() || deckFilterState !== 'all' ? (
+                ) : deckSearchQuery.trim() ||
+                  deckFilterState !== 'all' ||
+                  deckSortOrder !== 'created-desc' ? (
                   <button
                     type="button"
                     className="secondary-button"
                     onClick={() => {
                       setDeckSearchQuery('')
                       setDeckFilterState('all')
+                      setDeckSortOrder('created-desc')
                     }}
                   >
                     Clear search & filters
@@ -3745,8 +3777,41 @@ export function App({
                   <div className="col-dir" role="columnheader">
                     Direction
                   </div>
-                  <div className="col-phrase col-prompt" role="columnheader">
-                    Prompt
+                  <div
+                    className="col-phrase col-prompt"
+                    role="columnheader"
+                    aria-sort={
+                      deckSortOrder === 'alpha-asc'
+                        ? 'ascending'
+                        : deckSortOrder === 'alpha-desc'
+                          ? 'descending'
+                          : 'none'
+                    }
+                  >
+                    <button
+                      type="button"
+                      className="deck-sort-header-btn"
+                      onClick={() => {
+                        setDeckSortOrder((current) => {
+                          if (current === 'alpha-asc') return 'alpha-desc'
+                          if (current === 'alpha-desc') return 'created-desc'
+                          return 'alpha-asc'
+                        })
+                      }}
+                      aria-label="Sort by prompt"
+                    >
+                      <span>Prompt</span>
+                      {deckSortOrder === 'alpha-asc' && (
+                        <span className="deck-sort-icon" aria-hidden="true">
+                          ↑
+                        </span>
+                      )}
+                      {deckSortOrder === 'alpha-desc' && (
+                        <span className="deck-sort-icon" aria-hidden="true">
+                          ↓
+                        </span>
+                      )}
+                    </button>
                   </div>
                   <div className="col-phrase col-answer" role="columnheader">
                     Answer

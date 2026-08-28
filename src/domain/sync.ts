@@ -72,44 +72,42 @@ function reconcileSingleCard(local: StudyCard, remote: StudyCard): StudyCard {
   const localSched = local.schedule
   const remoteSched = remote.schedule
 
+  let winner: StudyCard
   // 1. Higher review count wins (learner practiced more on that device)
   if (localSched.reviews > remoteSched.reviews) {
-    return local
-  }
-  if (remoteSched.reviews > localSched.reviews) {
-    return remote
-  }
-
-  // 2. Lapses count
-  if (localSched.lapses > remoteSched.lapses) {
-    return local
-  }
-  if (remoteSched.lapses > localSched.lapses) {
-    return remote
-  }
-
-  // 3. State progression: review/relearning/learning over new
-  const stateWeight: Record<StudyCard['schedule']['state'], number> = {
-    new: 0,
-    learning: 1,
-    relearning: 2,
-    review: 3,
-  }
-  if (stateWeight[localSched.state] > stateWeight[remoteSched.state]) {
-    return local
-  }
-  if (stateWeight[remoteSched.state] > stateWeight[localSched.state]) {
-    return remote
-  }
-
-  // 4. Later dueAt or interval
-  if (localSched.dueAt > remoteSched.dueAt) {
-    return local
-  }
-  if (remoteSched.dueAt > localSched.dueAt) {
-    return remote
+    winner = local
+  } else if (remoteSched.reviews > localSched.reviews) {
+    winner = remote
+  } else if (localSched.lapses > remoteSched.lapses) {
+    // 2. Lapses count
+    winner = local
+  } else if (remoteSched.lapses > localSched.lapses) {
+    winner = remote
+  } else {
+    // 3. State progression: review/relearning/learning over new
+    const stateWeight: Record<StudyCard['schedule']['state'], number> = {
+      new: 0,
+      learning: 1,
+      relearning: 2,
+      review: 3,
+    }
+    if (stateWeight[localSched.state] > stateWeight[remoteSched.state]) {
+      winner = local
+    } else if (stateWeight[remoteSched.state] > stateWeight[localSched.state]) {
+      winner = remote
+    } else if (localSched.dueAt > remoteSched.dueAt) {
+      // 4. Later dueAt or interval
+      winner = local
+    } else if (remoteSched.dueAt > localSched.dueAt) {
+      winner = remote
+    } else {
+      // 5. Default to remote if all scheduling metrics are tied
+      winner = remote
+    }
   }
 
-  // 5. Default to remote if all scheduling metrics are tied
-  return remote
+  return {
+    ...winner,
+    createdAt: winner.createdAt || local.createdAt || remote.createdAt || 0,
+  }
 }

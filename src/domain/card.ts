@@ -48,6 +48,7 @@ export const studyCardSchema = z.object({
   context: z.string(),
   scene: sceneSchema,
   schedule: reviewScheduleSchema,
+  createdAt: z.number().default(0),
 })
 
 export const studyCardCollectionSchema = z.object({
@@ -141,6 +142,7 @@ export function createStudyCards(
       context,
       scene,
       schedule: createNewReviewSchedule(now),
+      createdAt: now,
     },
   ]
 
@@ -154,6 +156,7 @@ export function createStudyCards(
       context,
       scene,
       schedule: createNewReviewSchedule(now, DAY),
+      createdAt: now,
     })
   }
 

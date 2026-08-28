@@ -4,9 +4,13 @@ import { getDuplicateGroups } from '../domain/duplicate'
 export type DeckFilterState =
   'all' | 'due' | 'new' | 'learning' | 'review' | 'duplicates'
 
+export type DeckSortOrder =
+  'created-desc' | 'created-asc' | 'alpha-asc' | 'alpha-desc'
+
 export interface FilterDeckOptions {
   query?: string
   stateFilter?: DeckFilterState
+  sortOrder?: DeckSortOrder
   now: number
 }
 
@@ -55,11 +59,83 @@ export function getDeckStats(cards: StudyCard[], now: number): DeckStats {
   }
 }
 
+function normalizeForAlphaSort(text: string): string {
+  return text.replace(/^[\p{P}\p{S}\s]+/u, '').trim()
+}
+
+function compareAlphabetical(left: string, right: string): number {
+  const normLeft = normalizeForAlphaSort(left)
+  const normRight = normalizeForAlphaSort(right)
+  const cmp = normLeft.localeCompare(normRight, 'es', {
+    sensitivity: 'base',
+    numeric: true,
+  })
+  if (cmp !== 0) return cmp
+  return left.localeCompare(right, 'es', {
+    sensitivity: 'base',
+    numeric: true,
+  })
+}
+
+export function sortDeckCards(
+  cards: StudyCard[],
+  sortOrder: DeckSortOrder = 'created-desc',
+): StudyCard[] {
+  const sorted = [...cards]
+  return sorted.sort((left, right) => {
+    switch (sortOrder) {
+      case 'created-desc': {
+        const diff = right.createdAt - left.createdAt
+        if (diff !== 0) return diff
+        if (
+          left.noteId === right.noteId &&
+          left.direction !== right.direction
+        ) {
+          return left.direction === 'es-en' ? -1 : 1
+        }
+        return 0
+      }
+      case 'created-asc': {
+        const diff = left.createdAt - right.createdAt
+        if (diff !== 0) return diff
+        if (
+          left.noteId === right.noteId &&
+          left.direction !== right.direction
+        ) {
+          return left.direction === 'es-en' ? -1 : 1
+        }
+        return 0
+      }
+      case 'alpha-asc': {
+        const cmp = compareAlphabetical(left.prompt, right.prompt)
+        if (cmp !== 0) return cmp
+        if (left.direction !== right.direction) {
+          return left.direction === 'es-en' ? -1 : 1
+        }
+        return left.id.localeCompare(right.id)
+      }
+      case 'alpha-desc': {
+        const cmp = compareAlphabetical(right.prompt, left.prompt)
+        if (cmp !== 0) return cmp
+        if (left.direction !== right.direction) {
+          return left.direction === 'es-en' ? -1 : 1
+        }
+        return left.id.localeCompare(right.id)
+      }
+    }
+  })
+}
+
 export function filterDeckCards(
   cards: StudyCard[],
   options: FilterDeckOptions,
 ): StudyCard[] {
-  const { query, stateFilter = 'all', now } = options
+  const {
+    query,
+    stateFilter = 'all',
+    sortOrder = 'created-desc',
+    now,
+  } = options
   const normalizedQuery = query?.trim().toLowerCase() ?? ''
 
   const duplicateCardIds =
@@ -71,7 +147,7 @@ export function filterDeckCards(
         )
       : null
 
-  return cards.filter((card) => {
+  const filtered = cards.filter((card) => {
     // 1. State filter check
     if (stateFilter === 'due' && !isDue(card, now)) {
       return false
@@ -105,4 +181,6 @@ export function filterDeckCards(
 
     return true
   })
+
+  return sortDeckCards(filtered, sortOrder)
 }

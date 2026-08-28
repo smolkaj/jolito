@@ -18,6 +18,7 @@ const sampleCard1: StudyCard = {
     reviews: 2,
     lapses: 0,
   },
+  createdAt: 1700000000000,
 }
 
 const sampleCard2: StudyCard = {
@@ -36,6 +37,7 @@ const sampleCard2: StudyCard = {
     reviews: 0,
     lapses: 0,
   },
+  createdAt: 1700000000000,
 }
 
 const sampleCard3: StudyCard = {
@@ -54,6 +56,7 @@ const sampleCard3: StudyCard = {
     reviews: 3,
     lapses: 0,
   },
+  createdAt: 1700500000000,
 }
 
 describe('parseDeckBackup', () => {
