@@ -28,9 +28,11 @@ import {
 } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
+  burySiblingCards,
   grades,
   intervalLabel,
   isDue,
+  orderCardsForReview,
   scheduleReview,
   shouldRequeueInSession,
   updateStudyCard,
@@ -1967,10 +1969,7 @@ export function App({
     const requested = viewFromHash(hash)
     if (requested === 'review') {
       const now = services.clock.now()
-      const due = initialCards
-        .filter((card) => isDue(card, now))
-        .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
-        .map(({ id }) => id)
+      const due = orderCardsForReview(initialCards, now).map(({ id }) => id)
       if (due.length === 0) {
         return { view: 'complete', queue: [] }
       }
@@ -2105,11 +2104,7 @@ export function App({
       setReferenceTime(now)
       setQueue((currentQueue) => {
         if (viewRef.current !== 'review') return currentQueue
-        const due = newCards
-          .filter((card) => isDue(card, now))
-          .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
-          .map(({ id }) => id)
-        return due
+        return orderCardsForReview(newCards, now).map(({ id }) => id)
       })
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
@@ -2346,10 +2341,9 @@ export function App({
         setQueue((currentQueue) => {
           if (currentQueue.length > 0) return currentQueue
           const now = services.clock.now()
-          const newQueue = cardsRef.current
-            .filter((card) => isDue(card, now))
-            .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
-            .map(({ id }) => id)
+          const newQueue = orderCardsForReview(cardsRef.current, now).map(
+            ({ id }) => id,
+          )
           setSessionTotal(newQueue.length)
           return newQueue
         })
@@ -2463,19 +2457,30 @@ export function App({
   const grade = useCallback(
     (gradeValue: Grade) => {
       if (!currentCard) return
+      const now = services.clock.now()
       services.sounds.play(gradeValue)
-      const reviewed = scheduleReview(
+      const reviewed = scheduleReview(currentCard, gradeValue, now)
+      const { updatedCards, buriedCardIds } = burySiblingCards(
+        cardsRef.current,
         currentCard,
-        gradeValue,
-        services.clock.now(),
+        now,
       )
-      setCards((current) =>
-        current.map((card) => (card.id === reviewed.id ? reviewed : card)),
+      const nextCards = updatedCards.map((card) =>
+        card.id === reviewed.id ? reviewed : card,
       )
+      setCards(nextCards)
       const requeue = shouldRequeueInSession(reviewed.schedule)
-      const nextQueue = requeue
-        ? [...queue.slice(1), currentCard.id]
-        : queue.slice(1)
+      const buriedSet = new Set(buriedCardIds)
+      const nextQueue = queue.slice(1).filter((id) => !buriedSet.has(id))
+
+      if (requeue) {
+        nextQueue.push(currentCard.id)
+      }
+      if (buriedCardIds.length > 0) {
+        setSessionTotal((prev) =>
+          Math.max(nextQueue.length, prev - buriedCardIds.length),
+        )
+      }
 
       setQueue(nextQueue)
       setReviewedCount((count) => count + 1)
@@ -2565,11 +2570,7 @@ export function App({
   function beginReview(cardIds?: string[]) {
     const now = services.clock.now()
     const nextQueue =
-      cardIds ??
-      cards
-        .filter((card) => isDue(card, now))
-        .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
-        .map(({ id }) => id)
+      cardIds ?? orderCardsForReview(cards, now).map(({ id }) => id)
     setQueue(nextQueue)
     setSessionTotal(nextQueue.length)
     setReviewedCount(0)

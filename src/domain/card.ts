@@ -82,8 +82,8 @@ export type StudyCardCollection = z.infer<typeof studyCardCollectionSchema>
 export type NewNote = z.infer<typeof newNoteSchema>
 export type UpdateCardParams = z.infer<typeof updateCardSchema>
 
-const DAY = 24 * 60 * 60 * 1000
-const MINUTE = 60 * 1000
+export const DAY = 24 * 60 * 60 * 1000
+export const MINUTE = 60 * 1000
 const MIN_EASE_FACTOR = 1.3
 const INITIAL_EASE_FACTOR = 2.5
 
@@ -106,10 +106,13 @@ export function chooseScene(...text: string[]): Scene {
   )
 }
 
-export function createNewReviewSchedule(now: number): ReviewSchedule {
+export function createNewReviewSchedule(
+  now: number,
+  offsetMs: number = 0,
+): ReviewSchedule {
   return {
     state: 'new',
-    dueAt: now,
+    dueAt: now + offsetMs,
     intervalDays: 0,
     easeFactor: INITIAL_EASE_FACTOR,
     reviews: 0,
@@ -128,7 +131,6 @@ export function createStudyCards(
 
   const context = note.context.trim()
   const scene = chooseScene(spanish, english, context)
-  const newSchedule = (): ReviewSchedule => createNewReviewSchedule(now)
   const cards: StudyCard[] = [
     {
       id: `${noteId}:es-en`,
@@ -138,7 +140,7 @@ export function createStudyCards(
       direction: 'es-en',
       context,
       scene,
-      schedule: newSchedule(),
+      schedule: createNewReviewSchedule(now),
     },
   ]
 
@@ -151,7 +153,7 @@ export function createStudyCards(
       direction: 'en-es',
       context,
       scene,
-      schedule: newSchedule(),
+      schedule: createNewReviewSchedule(now, DAY),
     })
   }
 
@@ -348,6 +350,49 @@ export function scheduleReview(
 
 export function isDue(card: StudyCard, now: number): boolean {
   return card.schedule.dueAt <= now
+}
+
+export function burySiblingCards(
+  cards: StudyCard[],
+  reviewedCard: StudyCard,
+  now: number,
+): { updatedCards: StudyCard[]; buriedCardIds: string[] } {
+  const buriedCardIds: string[] = []
+  const updatedCards = cards.map((card) => {
+    if (
+      card.noteId === reviewedCard.noteId &&
+      card.id !== reviewedCard.id &&
+      isDue(card, now)
+    ) {
+      buriedCardIds.push(card.id)
+      return {
+        ...card,
+        schedule: {
+          ...card.schedule,
+          dueAt: now + DAY,
+        },
+      }
+    }
+    return card
+  })
+  return { updatedCards, buriedCardIds }
+}
+
+export function orderCardsForReview(
+  cards: StudyCard[],
+  now: number,
+): StudyCard[] {
+  return cards
+    .filter((card) => isDue(card, now))
+    .sort((left, right) => {
+      if (left.direction !== right.direction) {
+        return left.direction === 'es-en' ? -1 : 1
+      }
+      if (left.schedule.dueAt !== right.schedule.dueAt) {
+        return left.schedule.dueAt - right.schedule.dueAt
+      }
+      return left.id.localeCompare(right.id)
+    })
 }
 
 export function intervalLabel(card: StudyCard, grade: Grade): string {
