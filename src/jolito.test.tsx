@@ -288,6 +288,33 @@ describe('Jolito', () => {
     expect(document.querySelector('.diff-seg-missing')).toHaveTextContent('u')
   })
 
+  it('renders casing differences as case-insensitive matches with no case indicators', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices({
+      cards: [],
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    await user.type(screen.getByLabelText(/spanish/i), 'Hola')
+    await user.type(screen.getByLabelText(/english/i), 'Hello')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    // Type with lowercase 'hello' when expected is 'Hello'
+    await user.type(screen.getByLabelText('Your answer'), 'hello')
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByText('You wrote')).toBeInTheDocument()
+    expect(screen.getByText('Expected')).toBeInTheDocument()
+    expect(document.querySelector('.diff-seg-case')).toBeNull()
+    const matchSegments = Array.from(
+      document.querySelectorAll('.diff-seg-match'),
+    ).map((el) => el.textContent)
+    expect(matchSegments).toEqual(['hello', 'Hello'])
+  })
+
   it('renders refined landing page copy and plays audio when clicking the sample cards', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
