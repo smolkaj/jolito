@@ -1529,7 +1529,7 @@ summary:focus-visible {
 
 /* Study Card - Clean, High-Signal Focus */
 .study-card {
-  width: min(640px, 100%);
+  width: min(560px, 100%);
   margin: clamp(28px, 4.5vh, 48px) auto 0;
   text-align: center;
   position: relative;
@@ -4025,6 +4025,11 @@ kbd {
   color: var(--tezontle-dark);
   background: var(--tezontle-soft);
   border-color: var(--tezontle);
+}
+
+.study-quick-btn:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

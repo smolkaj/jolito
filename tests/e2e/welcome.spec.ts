@@ -1194,3 +1194,115 @@ test('displays lightweight demo deck modal and demo session complete screen with
     .analyze()
   expect(completeAxe.violations).toEqual([])
 })
+
+test('aligns study card quick actions with card container and supports keyboard edit shortcuts', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/study')
+
+  const answerInput = page.getByLabel('Your answer')
+  await expect(answerInput).toBeVisible()
+  await expect(answerInput).toBeFocused()
+
+  // 1. Verify unrevealed quick actions alignment with answer input
+  const unrevealedAlign = await page.evaluate(() => {
+    const cardInput = document
+      .querySelector('.answer-input')
+      ?.getBoundingClientRect()
+    const quickActions = document
+      .querySelector('.study-card-quick-actions')
+      ?.getBoundingClientRect()
+    return {
+      cardRight: cardInput?.right,
+      cardLeft: cardInput?.left,
+      actionsRight: quickActions?.right,
+      actionsLeft: quickActions?.left,
+    }
+  })
+
+  expect(
+    Math.abs(
+      (unrevealedAlign.actionsRight ?? 0) - (unrevealedAlign.cardRight ?? 0),
+    ),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs(
+      (unrevealedAlign.actionsLeft ?? 0) - (unrevealedAlign.cardLeft ?? 0),
+    ),
+  ).toBeLessThanOrEqual(1)
+
+  await page.screenshot({ path: 'test-results/study-unrevealed-aligned.png' })
+
+  // 2. Typing 'e' types into the field without opening edit modal
+  await page.keyboard.type('el')
+  await expect(answerInput).toHaveValue('el')
+  await expect(
+    page.getByRole('heading', { name: /edit flashcard/i }),
+  ).not.toBeVisible()
+
+  // 3. Pressing Control+E opens edit modal from active input
+  await page.keyboard.press('Control+e')
+  const editModal = page.getByRole('dialog', { name: /edit flashcard/i })
+  await expect(editModal).toBeVisible()
+  await page.waitForTimeout(250)
+  await page.screenshot({ path: 'test-results/study-edit-modal-opened.png' })
+
+  // Close modal via Escape
+  await page.keyboard.press('Escape')
+  await expect(editModal).not.toBeVisible()
+  await expect(answerInput).toBeFocused()
+
+  // 4. Reveal answer and verify alignment with reveal panel
+  await page.keyboard.press('Enter')
+  const revealPanel = page.locator('.reveal-panel')
+  await expect(revealPanel).toBeVisible()
+
+  const revealedAlign = await page.evaluate(() => {
+    const panel = document
+      .querySelector('.reveal-panel')
+      ?.getBoundingClientRect()
+    const quickActions = document
+      .querySelector('.study-card-quick-actions')
+      ?.getBoundingClientRect()
+    return {
+      panelRight: panel?.right,
+      panelLeft: panel?.left,
+      actionsRight: quickActions?.right,
+      actionsLeft: quickActions?.left,
+    }
+  })
+
+  expect(
+    Math.abs(
+      (revealedAlign.actionsRight ?? 0) - (revealedAlign.panelRight ?? 0),
+    ),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs((revealedAlign.actionsLeft ?? 0) - (revealedAlign.panelLeft ?? 0)),
+  ).toBeLessThanOrEqual(1)
+
+  await page.screenshot({ path: 'test-results/study-revealed-aligned.png' })
+
+  const unrevealedAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(unrevealedAxe.violations).toEqual([])
+
+  // 5. Bare 'e' shortcut opens edit modal when revealed
+  await page.keyboard.press('e')
+  await expect(editModal).toBeVisible()
+
+  const editModalAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(editModalAxe.violations).toEqual([])
+
+  await page.keyboard.press('Escape')
+  await expect(editModal).not.toBeVisible()
+
+  const revealedAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(revealedAxe.violations).toEqual([])
+})
