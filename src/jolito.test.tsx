@@ -817,6 +817,7 @@ describe('Jolito', () => {
     expect(studyAnswerInput).toHaveAttribute('autocapitalize', 'none')
 
     // 3. Check edit card modal fields
+    await user.click(screen.getByRole('button', { name: /jolito home/i }))
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
     const deckSearchInput = screen.getByLabelText(/search cards in deck/i)
     expect(deckSearchInput).toHaveAttribute('autocapitalize', 'none')
@@ -2199,31 +2200,24 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /all \(4\)/i })).toHaveAttribute(
-      'title',
-      'All cards in your deck',
-    )
     expect(
-      screen.getByRole('button', { name: /due now \(4\)/i }),
-    ).toHaveAttribute(
-      'title',
-      'Cards ready to practice right now (unstudied cards + due reviews)',
-    )
+      screen.getByRole('group', { name: /card views/i }),
+    ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /unstudied \(4\)/i }),
-    ).toHaveAttribute('title', "Cards you haven't practiced yet")
+      screen.getByRole('button', { name: /all \(4\)/i }),
+    ).not.toHaveAttribute('title')
+    expect(
+      screen.getByRole('button', { name: /ready now \(4\)/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^new \(4\)/i }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /learning \(0\)/i }),
-    ).toHaveAttribute(
-      'title',
-      'Cards you are currently acquiring in short repetition steps',
-    )
+    ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /mastered \(0\)/i }),
-    ).toHaveAttribute(
-      'title',
-      'Graduated cards scheduled for long-term memory retention (1+ days)',
-    )
+      screen.getByRole('button', { name: /scheduled \(0\)/i }),
+    ).toBeInTheDocument()
 
     // 4 starter cards are shown
     const cardItems = screen.getAllByRole('row', { name: /card:/i })
@@ -2240,8 +2234,8 @@ describe('Jolito', () => {
     await user.clear(searchInput)
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
 
-    // Filter by state pill "Mastered" (0 cards in review/mastered state initially)
-    await user.click(screen.getByRole('button', { name: /mastered \(0\)/i }))
+    // Filter by the mutually exclusive scheduled state
+    await user.click(screen.getByRole('button', { name: /scheduled \(0\)/i }))
     expect(screen.queryAllByRole('row', { name: /card:/i })).toHaveLength(0)
     expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
 
@@ -2363,9 +2357,9 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
-    // Initially shows Mastered state pill in filter and Due in 14d chip in table
+    // Initially shows Scheduled state pill in filter and Due in 14d chip in table
     expect(
-      screen.getByRole('button', { name: /mastered \(1\)/i }),
+      screen.getByRole('button', { name: /scheduled \(1\)/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Due in 14d')).toBeInTheDocument()
 
@@ -2397,12 +2391,12 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: /edit flashcard/i }),
     ).not.toBeInTheDocument()
 
-    // Filter pills reflect Unstudied (1) and Mastered (0)
+    // Filter pills reflect New (1) and Scheduled (0)
     expect(
-      screen.getByRole('button', { name: /unstudied \(1\)/i }),
+      screen.getByRole('button', { name: /^new \(1\)/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /mastered \(0\)/i }),
+      screen.getByRole('button', { name: /scheduled \(0\)/i }),
     ).toBeInTheDocument()
 
     // Saved card in storage has reset schedule
@@ -2577,7 +2571,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('allows quick editing and deleting during an active study review session', async () => {
+  it('allows quick editing without exposing destructive deck management during review', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -2608,27 +2602,9 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: 'palta fresca' }),
     ).toBeInTheDocument()
 
-    // In-study quick delete
-    const deleteBtn = screen.getByRole('button', {
-      name: /delete card: palta fresca/i,
-    })
-    await user.click(deleteBtn)
-
     expect(
-      screen.getByRole('heading', { name: /delete flashcard\?/i }),
-    ).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
-
-    // Queue moves directly to next card in queue ('qué padre')
-    expect(
-      screen.queryByRole('heading', { name: 'palta fresca' }),
+      screen.queryByRole('button', { name: /delete card/i }),
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'qué padre' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '3 cards remaining')
   })
 
   it('opens edit modal via "e" keyboard shortcut during study session', async () => {
@@ -2650,7 +2626,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('displays guest DemoDeckModal on deck manager and allows exploring or signing in', async () => {
+  it('explains the guest demo deck inline and allows signing in', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
@@ -2661,30 +2637,17 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /sign in to save/i }),
     ).toBeInTheDocument()
 
-    // 2. Check Deck Manager as guest -> DemoDeckModal is open
+    // 2. Check Deck Manager as guest -> guidance is visible without interruption
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.getByRole('dialog', { name: /^demo deck$/i }),
+      screen.getByText(/You’re exploring 4 example cards/i),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(/You’re exploring 4 example flashcards/i),
-    ).toBeInTheDocument()
-
-    // 3. Dismiss demo modal via 'Explore demo deck'
-    await user.click(screen.getByRole('button', { name: /explore demo deck/i }))
     expect(
       screen.queryByRole('dialog', { name: /^demo deck$/i }),
     ).not.toBeInTheDocument()
 
-    // 4. Navigating away and returning to Deck Manager re-shows the modal
-    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
-    expect(
-      screen.getByRole('dialog', { name: /^demo deck$/i }),
-    ).toBeInTheDocument()
-
-    // 5. Click sign in from demo modal to open sync modal
-    await user.click(screen.getByRole('button', { name: /sign in to sync/i }))
+    // 3. Sign in remains available from the persistent navigation
+    await user.click(screen.getByRole('button', { name: /not signed in/i }))
     expect(
       screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
@@ -2841,8 +2804,8 @@ describe('Jolito', () => {
     expect(shortHeading).not.toHaveClass('is-medium')
 
     // 2. Create view preview scaling
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
-    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
+    await user.click(screen.getByRole('button', { name: /jolito home/i }))
+    await user.click(screen.getByRole('button', { name: /create a card/i }))
 
     const spanishTextarea = screen.getByLabelText(/mexican spanish/i)
     await user.type(spanishTextarea, 'Hola')

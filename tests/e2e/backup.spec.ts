@@ -1,16 +1,9 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import * as fflate from 'fflate'
 import initSqlJs from 'sql.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-
-async function dismissDemoModal(page: Page) {
-  const dismissBtn = page.getByRole('button', { name: /explore demo deck/i })
-  if (await dismissBtn.isVisible()) {
-    await dismissBtn.click()
-  }
-}
 
 test('opens deck manager without automatically detectable WCAG violations and exports deck JSON', async ({
   page,
@@ -18,7 +11,6 @@ test('opens deck manager without automatically detectable WCAG violations and ex
   await page.goto('/')
 
   await page.getByRole('button', { name: /manage deck/i }).click()
-  await dismissDemoModal(page)
   await expect(
     page.getByRole('heading', { name: /manage deck/i }),
   ).toBeVisible()
@@ -62,7 +54,6 @@ test('restores deck from backup JSON file and updates local storage', async ({
   page,
 }) => {
   await page.goto('/#/deck')
-  await dismissDemoModal(page)
   await expect(
     page.getByRole('heading', { name: /manage deck/i }),
   ).toBeVisible()
@@ -131,7 +122,6 @@ test('imports Anki text export deck and updates review cards', async ({
   page,
 }) => {
   await page.goto('/#/deck')
-  await dismissDemoModal(page)
 
   // Open Backup & Import modal
   await page.getByRole('button', { name: /backup & import/i }).click()
@@ -166,7 +156,6 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
   page,
 }) => {
   await page.goto('/#/deck')
-  await dismissDemoModal(page)
 
   // Generate a real binary .apkg SQLite package
   const wasmPath = path.resolve(
@@ -256,7 +245,6 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   page,
 }) => {
   await page.goto('/#/deck')
-  await dismissDemoModal(page)
   await expect(
     page.getByRole('heading', { name: /manage deck/i }),
   ).toBeVisible()
@@ -366,7 +354,6 @@ test('resets learning history to new card in deck manager edit modal with zero a
   }, matureCard)
 
   await page.goto('/#/deck')
-  await dismissDemoModal(page)
   await expect(
     page.getByRole('heading', { name: /manage deck/i }),
   ).toBeVisible()
@@ -414,12 +401,10 @@ test('resets learning history to new card in deck manager edit modal with zero a
     page.getByRole('heading', { name: /edit flashcard/i }),
   ).not.toBeVisible()
 
-  // Verify filter pills and status chip changed to reflect reset unstudied/due card
+  // Verify filter pills and status chip changed to reflect reset new/due card
+  await expect(page.getByRole('button', { name: /^new \(1\)/i })).toBeVisible()
   await expect(
-    page.getByRole('button', { name: /unstudied \(1\)/i }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /mastered \(0\)/i }),
+    page.getByRole('button', { name: /scheduled \(0\)/i }),
   ).toBeVisible()
   await expect(cardsList.locator('.deck-stat-chip.is-due')).toBeVisible()
   await expect(cardsList.locator('.deck-stat-chip.is-review')).not.toBeVisible()

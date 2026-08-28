@@ -400,21 +400,13 @@ test('all pills and badges have consistent heights across views and within the s
   expect(createReviewBtn?.height).toBeCloseTo(32, 1)
   expect(createSyncPill?.height).toBeCloseTo(32, 1)
 
-  // 3. Study / Review view: top nav pills and progress track
+  // 3. Study / Review view: distraction-free navigation and progress track
   await page.goto('/#/study')
   const reviewProgress = await page
     .locator('.review-progress-track')
     .boundingBox()
-  const reviewNewCardBtn = await page
-    .locator('.nav-actions .text-button')
-    .first()
-    .boundingBox()
-  const reviewSyncPill = await page
-    .locator('.nav-actions .connection-pill')
-    .boundingBox()
   expect(reviewProgress?.height).toBeCloseTo(3, 1)
-  expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
-  expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
+  await expect(page.locator('.nav-actions')).toHaveCount(0)
 
   // 4. Deck view: header actions, toolbar filter pills, batch actions, and table row pills
   await page.goto('/#/deck')
@@ -443,10 +435,6 @@ test('all pills and badges have consistent heights across views and within the s
   }
 
   // Select all cards to reveal batch action pills on the same toolbar line
-  const demoDismiss = page.getByRole('button', { name: /explore demo deck/i })
-  if (await demoDismiss.isVisible()) {
-    await demoDismiss.click()
-  }
   await page.getByRole('checkbox', { name: /select all cards/i }).click()
   const batchDeleteBtn = await page.locator('.batch-delete-btn').boundingBox()
   const clearSelectionBtn = await page
@@ -506,12 +494,6 @@ test('enforces universal geometric invariants across all pill, chip, and badge e
 
     // If on deck view, select cards to test batch actions as well
     if (v.name === 'Deck') {
-      const demoDismiss = page.getByRole('button', {
-        name: /explore demo deck/i,
-      })
-      if (await demoDismiss.isVisible()) {
-        await demoDismiss.click()
-      }
       const selectAll = page.getByRole('checkbox', {
         name: /select all cards/i,
       })
@@ -902,8 +884,9 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
         `${testPage} on ${vp.name} horizontal overflow`,
       ).toBe(dims.docClientWidth)
 
-      // Single-screen initial views should fit cleanly in viewport without unnecessary vertical scroll
-      if (testPage === 'welcome' || testPage === 'review') {
+      // Practice remains a single-screen interaction. The mobile welcome page
+      // intentionally scrolls so its tactile sample is not hidden.
+      if (testPage === 'review') {
         expect(
           dims.docScrollHeight,
           `${testPage} on ${vp.name} vertical overflow`,
@@ -1136,33 +1119,20 @@ test('gracefully formats and displays cards with long prompts and answers', asyn
   await page.screenshot({ path: 'test-results/long-card-study-diff.png' })
 })
 
-test('displays lightweight demo deck modal and demo session complete screen with zero WCAG violations', async ({
+test('displays unobtrusive demo deck guidance and demo session complete screen with zero WCAG violations', async ({
   page,
 }) => {
-  // 1. Deck Manager shows DemoDeckModal on first guest visit
+  // 1. Deck Manager explains the example cards without interrupting the user
   await page.goto('/#/deck')
-  const demoModal = page.getByRole('dialog', { name: /^demo deck$/i })
-  await expect(demoModal).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(
-    page.getByText(/You’re exploring 4 example flashcards/i),
+    page.getByText(/You’re exploring 4 example cards/i),
   ).toBeVisible()
 
-  // Verify modal accessibility
-  const modalAxe = await new AxeBuilder({ page })
+  const deckAxe = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
-  expect(modalAxe.violations).toEqual([])
-
-  // Dismiss demo modal
-  await page.getByRole('button', { name: /explore demo deck/i }).click()
-  await expect(demoModal).not.toBeVisible()
-
-  // Return to Deck Manager after visiting Create -> modal appears again
-  await page.getByRole('button', { name: /\+ new card/i }).click()
-  await page.getByRole('button', { name: /manage deck/i }).click()
-  await expect(demoModal).toBeVisible()
-  await page.getByRole('button', { name: /explore demo deck/i }).click()
-  await expect(demoModal).not.toBeVisible()
+  expect(deckAxe.violations).toEqual([])
 
   // 2. Practice session to demo complete screen
   await page.goto('/')

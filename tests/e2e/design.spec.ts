@@ -18,10 +18,7 @@ test('revealed practice has readable supporting text and zero detectable WCAG vi
     'font-size',
     '12px',
   )
-  await expect(page.locator('.grade-easy small')).toHaveCSS(
-    'font-size',
-    '12px',
-  )
+  await expect(page.locator('.grade-easy small')).toHaveCSS('font-size', '12px')
 })
 
 test('dialogs contain keyboard focus and restore it to the invoking control', async ({
@@ -54,7 +51,9 @@ test('mobile deck rows keep the answer, status, and edit affordance visible', as
   await page.goto('/#/deck')
 
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByText(/you’re exploring 4 example cards/i)).toBeVisible()
+  await expect(
+    page.getByText(/you’re exploring 4 example cards/i),
+  ).toBeVisible()
   await expect(page.getByRole('group', { name: 'Card views' })).toBeVisible()
   await expect(page.getByRole('button', { name: /ready now/i })).toBeVisible()
   await expect(page.getByRole('button', { name: /^new \(/i })).toBeVisible()
@@ -85,7 +84,9 @@ test('short landscape practice keeps grading visible and removes management chro
   await expect(reviewNavigation.getByText('Manage deck')).toHaveCount(0)
   await expect(reviewNavigation.getByText('New card')).toHaveCount(0)
   await expect(reviewNavigation.getByText('Sign in')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: /delete card/i })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /delete card/i })).toHaveCount(
+    0,
+  )
 })
 
 test('mobile keeps the tactile sample and live card preview available', async ({
@@ -96,6 +97,11 @@ test('mobile keeps the tactile sample and live card preview available', async ({
   await expect(page.locator('.hero-visual')).toBeVisible()
 
   await page.getByRole('button', { name: /^create a card$/i }).click()
+  const emptyCreateResults = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(emptyCreateResults.violations).toEqual([])
+
   await page.getByLabel('Mexican Spanish').fill('qué padre')
   await page.getByLabel('English').fill('how cool')
   await expect(page.locator('.create-visual')).toBeVisible()

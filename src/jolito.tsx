@@ -3,6 +3,7 @@ import {
   type FocusEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -64,6 +65,109 @@ function handleFocusSelect(
   event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
 ) {
   event.currentTarget.select()
+}
+
+const focusableSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'summary',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
+
+function ModalDialog({
+  labelledBy,
+  className,
+  onClose,
+  children,
+}: {
+  labelledBy: string
+  className: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  )
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    const previousFocus = previousFocusRef.current
+
+    const main = document.querySelector('main')
+    const mainWasInert = main instanceof HTMLElement ? main.inert : false
+    if (main instanceof HTMLElement) main.inert = true
+
+    const focusableElements = () =>
+      Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      if (!dialog.contains(document.activeElement)) {
+        ;(focusableElements()[0] ?? dialog).focus()
+      }
+    })
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const elements = focusableElements()
+      if (elements.length === 0) {
+        event.preventDefault()
+        dialog.focus()
+        return
+      }
+
+      const first = elements[0]!
+      const last = elements[elements.length - 1]!
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      window.removeEventListener('keydown', handleKeyDown)
+      if (main instanceof HTMLElement) main.inert = mainWasInert
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [onClose])
+
+  return (
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+      role="presentation"
+    >
+      <div
+        ref={dialogRef}
+        className={`modal-content ${className}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        tabIndex={-1}
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 const gradeLabels: Record<Grade, string> = {
@@ -667,139 +771,131 @@ function EditCardModalInner({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content edit-card-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-card-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="edit-card-modal-title">Edit flashcard</h2>
-            <p className="modal-subtitle">
-              Modify prompt, answer, or memory notes.
-            </p>
+    <ModalDialog
+      className="edit-card-modal"
+      labelledBy="edit-card-modal-title"
+      onClose={onClose}
+    >
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="edit-card-modal-title">Edit flashcard</h2>
+          <p className="modal-subtitle">
+            Modify prompt, answer, or memory notes.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+
+      {error && (
+        <div className="status-banner status-error" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="edit-card-form">
+        <div className="field-group">
+          <div className="field-label-row">
+            <label htmlFor="edit-prompt">
+              {isEsToEn ? <MexicoFlag /> : <UsFlag />}{' '}
+              {isEsToEn ? 'Mexican Spanish (Prompt)' : 'English (Prompt)'}
+            </label>
+            {prompt.trim() && (
+              <AudioButton
+                label="Play prompt preview"
+                onClick={() => onPlayAudio(prompt.trim(), promptLocale)}
+              />
+            )}
           </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
+          <textarea
+            id="edit-prompt"
+            rows={2}
+            required
+            autoFocus
+            autoCapitalize="none"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onFocus={handleFocusSelect}
+            placeholder="Prompt text"
+          />
         </div>
 
-        {error && (
-          <div className="status-banner status-error" role="alert">
-            <p>{error}</p>
+        <div className="field-group">
+          <div className="field-label-row">
+            <label htmlFor="edit-answer">
+              {isEsToEn ? <UsFlag /> : <MexicoFlag />}{' '}
+              {isEsToEn ? 'English (Answer)' : 'Mexican Spanish (Answer)'}
+            </label>
+            {answer.trim() && (
+              <AudioButton
+                label="Play answer preview"
+                onClick={() => onPlayAudio(answer.trim(), answerLocale)}
+              />
+            )}
           </div>
-        )}
+          <textarea
+            id="edit-answer"
+            rows={2}
+            required
+            autoCapitalize="none"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onFocus={handleFocusSelect}
+            placeholder="Answer text"
+          />
+        </div>
 
-        <form onSubmit={handleSubmit} className="edit-card-form">
-          <div className="field-group">
-            <div className="field-label-row">
-              <label htmlFor="edit-prompt">
-                {isEsToEn ? <MexicoFlag /> : <UsFlag />}{' '}
-                {isEsToEn ? 'Mexican Spanish (Prompt)' : 'English (Prompt)'}
-              </label>
-              {prompt.trim() && (
-                <AudioButton
-                  label="Play prompt preview"
-                  onClick={() => onPlayAudio(prompt.trim(), promptLocale)}
-                />
-              )}
-            </div>
-            <textarea
-              id="edit-prompt"
-              rows={2}
-              required
-              autoFocus
-              autoCapitalize="none"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onFocus={handleFocusSelect}
-              placeholder="Prompt text"
-            />
+        <div className="field-group">
+          <label htmlFor="edit-context">Additional Context</label>
+          <textarea
+            id="edit-context"
+            rows={2}
+            autoCapitalize="none"
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+            onFocus={handleFocusSelect}
+            placeholder="Optional context, usage notes, or nuance"
+          />
+        </div>
+
+        <label
+          className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
+        >
+          <input
+            id="edit-reset-progress"
+            name="resetProgress"
+            type="checkbox"
+            checked={resetProgress && !isAlreadyNew}
+            disabled={isAlreadyNew}
+            onChange={(e) => setResetProgress(e.target.checked)}
+          />
+          <span className="toggle" aria-hidden="true" />
+          <div className="toggle-label-group">
+            <span className="toggle-title">Reset learning progress</span>
+            <span className="toggle-description">
+              {isAlreadyNew
+                ? 'Card is already brand new (0 reviews)'
+                : 'Treat as a new card and restart review history'}
+            </span>
           </div>
+        </label>
 
-          <div className="field-group">
-            <div className="field-label-row">
-              <label htmlFor="edit-answer">
-                {isEsToEn ? <UsFlag /> : <MexicoFlag />}{' '}
-                {isEsToEn ? 'English (Answer)' : 'Mexican Spanish (Answer)'}
-              </label>
-              {answer.trim() && (
-                <AudioButton
-                  label="Play answer preview"
-                  onClick={() => onPlayAudio(answer.trim(), answerLocale)}
-                />
-              )}
-            </div>
-            <textarea
-              id="edit-answer"
-              rows={2}
-              required
-              autoCapitalize="none"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onFocus={handleFocusSelect}
-              placeholder="Answer text"
-            />
-          </div>
-
-          <div className="field-group">
-            <label htmlFor="edit-context">Additional Context</label>
-            <textarea
-              id="edit-context"
-              rows={2}
-              autoCapitalize="none"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              onFocus={handleFocusSelect}
-              placeholder="Optional context, usage notes, or nuance"
-            />
-          </div>
-
-          <label
-            className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
-          >
-            <input
-              id="edit-reset-progress"
-              name="resetProgress"
-              type="checkbox"
-              checked={resetProgress && !isAlreadyNew}
-              disabled={isAlreadyNew}
-              onChange={(e) => setResetProgress(e.target.checked)}
-            />
-            <span className="toggle" aria-hidden="true" />
-            <div className="toggle-label-group">
-              <span className="toggle-title">Reset learning progress</span>
-              <span className="toggle-description">
-                {isAlreadyNew
-                  ? 'Card is already brand new (0 reviews)'
-                  : 'Treat as a new card and restart review history'}
-              </span>
-            </div>
-          </label>
-
-          <div className="edit-modal-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="primary-button">
-              Save changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="edit-modal-actions">
+          <button type="button" className="secondary-button" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="primary-button">
+            Save changes
+          </button>
+        </div>
+      </form>
+    </ModalDialog>
   )
 }
 
@@ -816,18 +912,6 @@ function EditCardModal({
   onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
 }) {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
   if (!isOpen || !card) return null
 
   return (
@@ -852,103 +936,87 @@ function DeleteCardsModal({
   onClose: () => void
   onConfirm: (cards: StudyCard[]) => void
 }) {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
   if (!isOpen || !cards || cards.length === 0) return null
 
   const isSingle = cards.length === 1
   const singleCard = cards[0]!
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content delete-card-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-card-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="delete-card-modal-title">
-              {isSingle
-                ? 'Delete flashcard?'
-                : `Delete ${cards.length} flashcards?`}
-            </h2>
-            <p className="modal-subtitle">
-              {isSingle
-                ? 'This card will be removed from your deck and scheduled reviews.'
-                : 'These cards will be permanently removed from your deck and scheduled reviews.'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
+    <ModalDialog
+      className="delete-card-modal"
+      labelledBy="delete-card-modal-title"
+      onClose={onClose}
+    >
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="delete-card-modal-title">
+            {isSingle
+              ? 'Delete flashcard?'
+              : `Delete ${cards.length} flashcards?`}
+          </h2>
+          <p className="modal-subtitle">
+            {isSingle
+              ? 'This card will be removed from your deck and scheduled reviews.'
+              : 'These cards will be permanently removed from your deck and scheduled reviews.'}
+          </p>
         </div>
-
-        {isSingle ? (
-          <div className="delete-card-preview-card">
-            <p className="delete-card-prompt">
-              <strong>Prompt:</strong> {singleCard.prompt}
-            </p>
-            <p className="delete-card-answer">
-              <strong>Answer:</strong> {singleCard.answer}
-            </p>
-            {singleCard.context && (
-              <p className="delete-card-context">
-                <strong>Context:</strong> {singleCard.context}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="delete-cards-preview-list">
-            <p className="delete-cards-count-label">
-              Selected cards to delete ({cards.length}):
-            </p>
-            <ul className="delete-cards-summary-list">
-              {cards.slice(0, 5).map((c) => (
-                <li key={c.id}>
-                  <strong>{c.prompt}</strong> → {c.answer}
-                </li>
-              ))}
-              {cards.length > 5 && (
-                <li className="delete-cards-more">
-                  …and {cards.length - 5} more cards
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        <div className="delete-modal-actions">
-          <button type="button" className="secondary-button" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="danger-button"
-            onClick={() => onConfirm(cards)}
-          >
-            {isSingle ? 'Delete card' : `Delete ${cards.length} cards`}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
       </div>
-    </div>
+
+      {isSingle ? (
+        <div className="delete-card-preview-card">
+          <p className="delete-card-prompt">
+            <strong>Prompt:</strong> {singleCard.prompt}
+          </p>
+          <p className="delete-card-answer">
+            <strong>Answer:</strong> {singleCard.answer}
+          </p>
+          {singleCard.context && (
+            <p className="delete-card-context">
+              <strong>Context:</strong> {singleCard.context}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="delete-cards-preview-list">
+          <p className="delete-cards-count-label">
+            Selected cards to delete ({cards.length}):
+          </p>
+          <ul className="delete-cards-summary-list">
+            {cards.slice(0, 5).map((c) => (
+              <li key={c.id}>
+                <strong>{c.prompt}</strong> → {c.answer}
+              </li>
+            ))}
+            {cards.length > 5 && (
+              <li className="delete-cards-more">
+                …and {cards.length - 5} more cards
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      <div className="delete-modal-actions">
+        <button type="button" className="secondary-button" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="danger-button"
+          onClick={() => onConfirm(cards)}
+        >
+          {isSingle ? 'Delete card' : `Delete ${cards.length} cards`}
+        </button>
+      </div>
+    </ModalDialog>
   )
 }
 
@@ -973,14 +1041,6 @@ function DeckBackupModalInner({
   user: AuthUser | null
   sync: SyncService
 }) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
   const [mode, setMode] = useState<RestoreMode>('replace')
   const [backupStatus, setBackupStatus] = useState<{
     type: 'success' | 'error' | 'info'
@@ -1106,168 +1166,164 @@ function DeckBackupModalInner({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content backup-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="backup-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="backup-modal-title">Deck import & offline backup</h2>
-            <p className="modal-subtitle">
-              Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
-              offline JSON backups.
+    <ModalDialog
+      className="backup-modal"
+      labelledBy="backup-modal-title"
+      onClose={onClose}
+    >
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="backup-modal-title">Deck import & offline backup</h2>
+          <p className="modal-subtitle">
+            Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
+            offline JSON backups.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+
+      {backupStatus && (
+        <div
+          className={`status-banner status-${backupStatus.type}`}
+          role={backupStatus.type === 'error' ? 'alert' : 'status'}
+        >
+          <p>{backupStatus.message}</p>
+          {backupStatus.details && (
+            <ul className="status-details">
+              {backupStatus.details.map((detail, idx) => (
+                <li key={idx}>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div className="backup-sections">
+        <div className="backup-section export-section">
+          <div className="backup-section-header">
+            <h3>Export deck</h3>
+            <p>
+              Save all cards, schedules, notes, and study history to a JSON
+              file.
             </p>
           </div>
           <button
             type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
+            className={`primary-button export-button ${isExported ? 'is-exported' : ''}`}
+            onClick={handleExport}
           >
-            ✕
+            {isExported ? (
+              <span className="export-button-exported">
+                <span className="export-button-check" aria-hidden="true">
+                  ✓
+                </span>
+                <span className="export-button-text">Exported backup</span>
+              </span>
+            ) : (
+              <>
+                Export backup (JSON) <span aria-hidden="true">↓</span>
+              </>
+            )}
           </button>
+          <div className="sr-only" role="status" aria-live="polite">
+            {isExported ? `Deck exported: ${cards.length} cards saved.` : ''}
+          </div>
         </div>
 
-        {backupStatus && (
-          <div
-            className={`status-banner status-${backupStatus.type}`}
-            role={backupStatus.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{backupStatus.message}</p>
-            {backupStatus.details && (
-              <ul className="status-details">
-                {backupStatus.details.map((detail, idx) => (
-                  <li key={idx}>{detail}</li>
-                ))}
-              </ul>
-            )}
+        <div className="backup-section import-section">
+          <div className="backup-section-header">
+            <h3>Import Anki deck or backup</h3>
+            <p>
+              Load cards from an Anki package (.apkg), text export (.txt, .tsv,
+              .csv), or Jolito backup (.json).
+            </p>
           </div>
-        )}
 
-        <div className="backup-sections">
-          <div className="backup-section export-section">
-            <div className="backup-section-header">
-              <h3>Export deck</h3>
-              <p>
-                Save all cards, schedules, notes, and study history to a JSON
-                file.
-              </p>
-            </div>
+          <div
+            className="import-mode-selector"
+            role="radiogroup"
+            aria-label="Import mode"
+          >
+            <label
+              className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
+            >
+              <input
+                type="radio"
+                name="deckRestoreMode"
+                value="replace"
+                checked={mode === 'replace'}
+                onChange={() => setMode('replace')}
+              />
+              <span className="mode-label">
+                <strong>Restore</strong>
+                <small>Replace current deck</small>
+              </span>
+            </label>
+            <label
+              className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
+            >
+              <input
+                type="radio"
+                name="deckRestoreMode"
+                value="merge"
+                checked={mode === 'merge'}
+                onChange={() => setMode('merge')}
+              />
+              <span className="mode-label">
+                <strong>Merge</strong>
+                <small>Combine with current</small>
+              </span>
+            </label>
+          </div>
+
+          <div className="file-input-wrapper">
+            <label
+              htmlFor="deck-backup-file-input"
+              className="file-input-label"
+            >
+              Choose Anki deck or backup file
+            </label>
+            <input
+              id="deck-backup-file-input"
+              ref={fileInputRef}
+              type="file"
+              accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
+              className="backup-file-input"
+              onChange={(e) => {
+                void handleFileChange(e)
+              }}
+              aria-label="Choose Anki deck or backup file"
+            />
+          </div>
+
+          {selectedImportData && (
             <button
               type="button"
-              className={`primary-button export-button ${isExported ? 'is-exported' : ''}`}
-              onClick={handleExport}
+              className="secondary-button restore-confirm-button"
+              disabled={isParsingImport}
+              onClick={() => {
+                void handleRestore()
+              }}
             >
-              {isExported ? (
-                <span className="export-button-exported">
-                  <span className="export-button-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span className="export-button-text">Exported backup</span>
-                </span>
-              ) : (
-                <>
-                  Export backup (JSON) <span aria-hidden="true">↓</span>
-                </>
-              )}
+              {mode === 'replace'
+                ? selectedImportData.deckName
+                  ? `Import "${selectedImportData.deckName}" (Replace)`
+                  : 'Import deck (Replace current)'
+                : selectedImportData.deckName
+                  ? `Merge "${selectedImportData.deckName}" with library`
+                  : 'Merge deck with library'}
             </button>
-            <div className="sr-only" role="status" aria-live="polite">
-              {isExported ? `Deck exported: ${cards.length} cards saved.` : ''}
-            </div>
-          </div>
-
-          <div className="backup-section import-section">
-            <div className="backup-section-header">
-              <h3>Import Anki deck or backup</h3>
-              <p>
-                Load cards from an Anki package (.apkg), text export (.txt,
-                .tsv, .csv), or Jolito backup (.json).
-              </p>
-            </div>
-
-            <div
-              className="import-mode-selector"
-              role="radiogroup"
-              aria-label="Import mode"
-            >
-              <label
-                className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="deckRestoreMode"
-                  value="replace"
-                  checked={mode === 'replace'}
-                  onChange={() => setMode('replace')}
-                />
-                <span className="mode-label">
-                  <strong>Restore</strong>
-                  <small>Replace current deck</small>
-                </span>
-              </label>
-              <label
-                className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="deckRestoreMode"
-                  value="merge"
-                  checked={mode === 'merge'}
-                  onChange={() => setMode('merge')}
-                />
-                <span className="mode-label">
-                  <strong>Merge</strong>
-                  <small>Combine with current</small>
-                </span>
-              </label>
-            </div>
-
-            <div className="file-input-wrapper">
-              <label
-                htmlFor="deck-backup-file-input"
-                className="file-input-label"
-              >
-                Choose Anki deck or backup file
-              </label>
-              <input
-                id="deck-backup-file-input"
-                ref={fileInputRef}
-                type="file"
-                accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
-                className="backup-file-input"
-                onChange={(e) => {
-                  void handleFileChange(e)
-                }}
-                aria-label="Choose Anki deck or backup file"
-              />
-            </div>
-
-            {selectedImportData && (
-              <button
-                type="button"
-                className="secondary-button restore-confirm-button"
-                disabled={isParsingImport}
-                onClick={() => {
-                  void handleRestore()
-                }}
-              >
-                {mode === 'replace'
-                  ? selectedImportData.deckName
-                    ? `Import "${selectedImportData.deckName}" (Replace)`
-                    : 'Import deck (Replace current)'
-                  : selectedImportData.deckName
-                    ? `Merge "${selectedImportData.deckName}" with library`
-                    : 'Merge deck with library'}
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </ModalDialog>
   )
 }
 
@@ -1374,18 +1430,6 @@ function SyncModal({
     })
   }, [auth, onClose, onSaveLocally])
 
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
   if (!isOpen) return null
 
   const handleSendLink = async (isResend = false, e?: FormEvent) => {
@@ -1481,373 +1525,294 @@ function SyncModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content sync-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sync-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="sync-modal-title">Cloud sync</h2>
-            <p className="modal-subtitle">
-              Sync your deck across all your devices.
-            </p>
+    <ModalDialog
+      className="sync-modal"
+      labelledBy="sync-modal-title"
+      onClose={onClose}
+    >
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="sync-modal-title">Cloud sync</h2>
+          <p className="modal-subtitle">
+            Sync your deck across all your devices.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+
+      {statusMsg && (
+        <div
+          className={`status-banner status-${statusMsg.type}`}
+          role={statusMsg.type === 'error' ? 'alert' : 'status'}
+        >
+          <p>{statusMsg.message}</p>
+        </div>
+      )}
+
+      {!isBackendConfigured && !user ? (
+        <div className="sync-notice-card">
+          <span className="notice-icon" aria-hidden="true">
+            <ShieldIcon size={22} />
+          </span>
+          <h4>Cloud sync is disabled in this preview</h4>
+          <p>Flashcards and progress remain safely stored on this device.</p>
+          {onSaveLocally && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={onSaveLocally}
+            >
+              Save card to this device →
+            </button>
+          )}
+        </div>
+      ) : user ? (
+        <div className="sync-account-pane">
+          <div className="sync-account-hero">
+            <div className="sync-cloud-sticker-wrap" aria-hidden="true">
+              <CloudCheckSticker size={58} />
+            </div>
+            <div className="sync-account-details">
+              <span className="account-badge">Signed in</span>
+              <p className="account-email">{user.email}</p>
+            </div>
+          </div>
+
+          <div className="sync-actions-row">
+            <button
+              type="button"
+              className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
+              onClick={() => {
+                void handleSyncNow()
+              }}
+              disabled={loading}
+            >
+              {isSynced ? (
+                <span className="sync-button-synced">
+                  <span className="sync-button-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span className="sync-button-text">Synced!</span>
+                </span>
+              ) : (
+                <>
+                  <SyncSpinnerIcon
+                    size={15}
+                    className={loadingAction === 'sync' ? 'is-spinning' : ''}
+                  />
+                  <span>
+                    {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
+                  </span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="secondary-button sign-out-button"
+              onClick={() => {
+                void handleSignOut()
+              }}
+              disabled={loading}
+            >
+              {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
+            </button>
+          </div>
+        </div>
+      ) : !isOtpSent ? (
+        <form
+          onSubmit={(e) => {
+            void handleSendLink(false, e)
+          }}
+          className="sync-auth-form"
+        >
+          <div className="field-group">
+            <label htmlFor="sync-email">Email address</label>
+            <input
+              id="sync-email"
+              type="email"
+              required
+              autoFocus
+              placeholder="learner@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
+            type="submit"
+            className="primary-button"
+            disabled={loading || !email.trim()}
           >
-            ✕
+            {loadingAction === 'send' ? 'Sending link…' : 'Send sign-in link →'}
           </button>
-        </div>
-
-        {statusMsg && (
-          <div
-            className={`status-banner status-${statusMsg.type}`}
-            role={statusMsg.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{statusMsg.message}</p>
-          </div>
-        )}
-
-        {!isBackendConfigured && !user ? (
-          <div className="sync-notice-card">
-            <span className="notice-icon" aria-hidden="true">
-              <ShieldIcon size={22} />
-            </span>
-            <h4>Cloud sync is disabled in this preview</h4>
-            <p>Flashcards and progress remain safely stored on this device.</p>
-            {onSaveLocally && (
-              <button
-                type="button"
-                className="primary-button"
-                onClick={onSaveLocally}
-              >
-                Save card to this device →
-              </button>
-            )}
-          </div>
-        ) : user ? (
-          <div className="sync-account-pane">
-            <div className="sync-account-hero">
-              <div className="sync-cloud-sticker-wrap" aria-hidden="true">
-                <CloudCheckSticker size={58} />
-              </div>
-              <div className="sync-account-details">
-                <span className="account-badge">Signed in</span>
-                <p className="account-email">{user.email}</p>
-              </div>
-            </div>
-
-            <div className="sync-actions-row">
-              <button
-                type="button"
-                className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
-                onClick={() => {
-                  void handleSyncNow()
-                }}
-                disabled={loading}
-              >
-                {isSynced ? (
-                  <span className="sync-button-synced">
-                    <span className="sync-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="sync-button-text">Synced!</span>
+        </form>
+      ) : !showPasteLink ? (
+        <div className="sync-sent-pane">
+          <p className="sync-explanation">
+            Click the sign-in link sent to <strong>{email.trim()}</strong> to
+            connect your account.
+          </p>
+          <div className="sync-sent-actions">
+            <button
+              type="button"
+              className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
+              disabled={loading}
+              onClick={() => {
+                void handleSendLink(true)
+              }}
+            >
+              {isLinkResent ? (
+                <span className="resend-button-sent">
+                  <span className="resend-button-check" aria-hidden="true">
+                    ✓
                   </span>
-                ) : (
-                  <>
-                    <SyncSpinnerIcon
-                      size={15}
-                      className={loadingAction === 'sync' ? 'is-spinning' : ''}
-                    />
-                    <span>
-                      {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
-                    </span>
-                  </>
-                )}
-              </button>
+                  <span className="resend-button-text">Link sent!</span>
+                </span>
+              ) : (
+                <span>
+                  {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
+                </span>
+              )}
+            </button>
+            <div className="sync-sent-sub-actions">
               <button
                 type="button"
-                className="secondary-button sign-out-button"
+                className="modal-link-btn"
                 onClick={() => {
-                  void handleSignOut()
+                  setIsOtpSent(false)
+                  setShowPasteLink(isStandalone() && isIOS())
+                  setToken('')
+                  setStatusMsg(null)
                 }}
-                disabled={loading}
               >
-                {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
+                Change email
+              </button>
+              <span className="sync-sub-action-dot" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                className="modal-link-btn"
+                onClick={() => {
+                  setShowPasteLink(true)
+                  setTimeout(() => pasteInputRef.current?.focus(), 0)
+                }}
+              >
+                Paste link manually
               </button>
             </div>
           </div>
-        ) : !isOtpSent ? (
-          <form
-            onSubmit={(e) => {
-              void handleSendLink(false, e)
-            }}
-            className="sync-auth-form"
-          >
-            <div className="field-group">
-              <label htmlFor="sync-email">Email address</label>
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            void handleVerifyOtp(e)
+          }}
+          className="sync-auth-form"
+        >
+          <p className="sync-explanation">
+            Paste the sign-in link sent to <strong>{email.trim()}</strong>:
+          </p>
+          <div className="field-group">
+            <label htmlFor="sync-otp">Sign-in link</label>
+            <div className="link-input-wrap">
               <input
-                id="sync-email"
-                type="email"
+                ref={pasteInputRef}
+                id="sync-otp"
+                type="text"
                 required
                 autoFocus
-                placeholder="learner@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Paste sign-in link"
+                autoComplete="one-time-code"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                className="link-input"
               />
+              {typeof navigator !== 'undefined' &&
+                typeof navigator.clipboard?.readText === 'function' && (
+                  <button
+                    type="button"
+                    className={`paste-input-btn ${isPasted ? 'is-pasted' : ''}`}
+                    onClick={() => {
+                      void handlePasteClipboard()
+                    }}
+                    title="Paste from clipboard"
+                    aria-label="Paste from clipboard"
+                  >
+                    {isPasted ? (
+                      <>
+                        <span aria-hidden="true">✓</span>
+                        <span>Pasted</span>
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardIcon size={12} />
+                        <span>Paste</span>
+                      </>
+                    )}
+                  </button>
+                )}
             </div>
+            {isIOS() && (
+              <span className="field-hint">
+                Long-press the link in your email to copy.
+              </span>
+            )}
+          </div>
+          <div className="sync-sent-actions">
             <button
               type="submit"
               className="primary-button"
-              disabled={loading || !email.trim()}
+              disabled={loading || !token.trim()}
             >
-              {loadingAction === 'send'
-                ? 'Sending link…'
-                : 'Send sign-in link →'}
+              {loadingAction === 'verify' ? 'Signing in…' : 'Sign in & sync →'}
             </button>
-          </form>
-        ) : !showPasteLink ? (
-          <div className="sync-sent-pane">
-            <p className="sync-explanation">
-              Click the sign-in link sent to <strong>{email.trim()}</strong> to
-              connect your account.
-            </p>
-            <div className="sync-sent-actions">
+            <div className="sync-sent-sub-actions">
               <button
                 type="button"
-                className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
+                className={`modal-link-btn resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
                 disabled={loading}
                 onClick={() => {
                   void handleSendLink(true)
                 }}
               >
-                {isLinkResent ? (
-                  <span className="resend-button-sent">
-                    <span className="resend-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="resend-button-text">Link sent!</span>
-                  </span>
-                ) : (
-                  <span>
-                    {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
-                  </span>
-                )}
+                {isLinkResent
+                  ? 'Link sent! ✓'
+                  : loadingAction === 'send'
+                    ? 'Resending…'
+                    : 'Resend link'}
               </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setShowPasteLink(true)
-                    setTimeout(() => pasteInputRef.current?.focus(), 0)
-                  }}
-                >
-                  Paste link manually
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              void handleVerifyOtp(e)
-            }}
-            className="sync-auth-form"
-          >
-            <p className="sync-explanation">
-              Paste the sign-in link sent to <strong>{email.trim()}</strong>:
-            </p>
-            <div className="field-group">
-              <label htmlFor="sync-otp">Sign-in link</label>
-              <div className="link-input-wrap">
-                <input
-                  ref={pasteInputRef}
-                  id="sync-otp"
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="Paste sign-in link"
-                  autoComplete="one-time-code"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="link-input"
-                />
-                {typeof navigator !== 'undefined' &&
-                  typeof navigator.clipboard?.readText === 'function' && (
-                    <button
-                      type="button"
-                      className={`paste-input-btn ${isPasted ? 'is-pasted' : ''}`}
-                      onClick={() => {
-                        void handlePasteClipboard()
-                      }}
-                      title="Paste from clipboard"
-                      aria-label="Paste from clipboard"
-                    >
-                      {isPasted ? (
-                        <>
-                          <span aria-hidden="true">✓</span>
-                          <span>Pasted</span>
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardIcon size={12} />
-                          <span>Paste</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-              </div>
-              {isIOS() && (
-                <span className="field-hint">
-                  Long-press the link in your email to copy.
-                </span>
-              )}
-            </div>
-            <div className="sync-sent-actions">
+              <span className="sync-sub-action-dot" aria-hidden="true">
+                ·
+              </span>
               <button
-                type="submit"
-                className="primary-button"
-                disabled={loading || !token.trim()}
+                type="button"
+                className="modal-link-btn"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setShowPasteLink(isStandalone() && isIOS())
+                  setToken('')
+                  setStatusMsg(null)
+                }}
               >
-                {loadingAction === 'verify'
-                  ? 'Signing in…'
-                  : 'Sign in & sync →'}
+                Change email
               </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className={`modal-link-btn resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
-                  disabled={loading}
-                  onClick={() => {
-                    void handleSendLink(true)
-                  }}
-                >
-                  {isLinkResent
-                    ? 'Link sent! ✓'
-                    : loadingAction === 'send'
-                      ? 'Resending…'
-                      : 'Resend link'}
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-              </div>
             </div>
-          </form>
-        )}
-        <div className="sr-only" role="status" aria-live="polite">
-          {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
-          {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
-          {isPasted ? 'Pasted link from clipboard.' : ''}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface DemoDeckModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSignIn: () => void
-}
-
-function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
-  return (
-    <div
-      className="modal-backdrop demo-deck-modal-backdrop"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="modal-content demo-deck-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="demo-deck-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="demo-deck-modal-title">Demo deck</h2>
-            <p className="modal-subtitle">
-              You’re exploring 4 example flashcards. Sign in anytime to build,
-              edit, and sync your personal deck.
-            </p>
           </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="demo-deck-modal-actions">
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => {
-              onClose()
-              onSignIn()
-            }}
-          >
-            Sign in to sync <span aria-hidden="true">→</span>
-          </button>
-          <button type="button" className="secondary-button" onClick={onClose}>
-            Explore demo deck
-          </button>
-        </div>
+        </form>
+      )}
+      <div className="sr-only" role="status" aria-live="polite">
+        {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
+        {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
+        {isPasted ? 'Pasted link from clipboard.' : ''}
       </div>
-    </div>
+    </ModalDialog>
   )
 }
 
@@ -2051,7 +2016,6 @@ export function App({
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
   const [view, setView] = useState<View>(initialResolved.view)
-  const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -2060,7 +2024,6 @@ export function App({
   }, [view])
 
   const navigateTo = useCallback((nextView: View, replace = false) => {
-    setIsDemoDeckDismissed(false)
     setView(nextView)
     if (typeof window === 'undefined') return
     const targetHash = hashForView(nextView)
@@ -2356,7 +2319,6 @@ export function App({
         })
         setSessionTotal(() => starterCards.filter((c) => isDue(c, now)).length)
         setReviewedCount(0)
-        setIsDemoDeckDismissed(false)
       }
     })
   }, [
@@ -2404,7 +2366,6 @@ export function App({
 
   useEffect(() => {
     const onPopState = () => {
-      setIsDemoDeckDismissed(false)
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
       if (nextView === 'welcome') {
@@ -3471,6 +3432,13 @@ export function App({
               </div>
             </header>
 
+            {!authUser && (
+              <p className="deck-demo-note">
+                You’re exploring 4 example cards. Sign in when you’re ready to
+                build and sync your own.
+              </p>
+            )}
+
             <div className="deck-toolbar">
               <div className="deck-search-wrap">
                 <span className="deck-search-icon" aria-hidden="true">
@@ -3491,15 +3459,14 @@ export function App({
               <div className="deck-toolbar-controls">
                 <div
                   className="deck-filter-pills"
-                  role="radiogroup"
-                  aria-label="Filter cards by state"
+                  role="group"
+                  aria-label="Card views"
                 >
                   <button
                     type="button"
                     className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('all')}
                     aria-pressed={deckFilterState === 'all'}
-                    title="All cards in your deck"
                   >
                     All ({deckStats.total})
                   </button>
@@ -3508,25 +3475,22 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('due')}
                     aria-pressed={deckFilterState === 'due'}
-                    title="Cards ready to practice right now (unstudied cards + due reviews)"
                   >
-                    Due now ({deckStats.due})
+                    Ready now ({deckStats.due})
                   </button>
                   <button
                     type="button"
                     className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('new')}
                     aria-pressed={deckFilterState === 'new'}
-                    title="Cards you haven't practiced yet"
                   >
-                    Unstudied ({deckStats.newCount})
+                    New ({deckStats.newCount})
                   </button>
                   <button
                     type="button"
                     className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('learning')}
                     aria-pressed={deckFilterState === 'learning'}
-                    title="Cards you are currently acquiring in short repetition steps"
                   >
                     Learning ({deckStats.learningCount})
                   </button>
@@ -3535,9 +3499,8 @@ export function App({
                     className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
                     onClick={() => setDeckFilterState('review')}
                     aria-pressed={deckFilterState === 'review'}
-                    title="Graduated cards scheduled for long-term memory retention (1+ days)"
                   >
-                    Mastered ({deckStats.reviewCount})
+                    Scheduled ({deckStats.reviewCount})
                   </button>
                 </div>
 
@@ -3577,7 +3540,7 @@ export function App({
                     ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                     : cards.length === 0
                       ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                      : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered' }[deckFilterState]}” category right now.`}
+                      : `No cards in the “${{ all: 'all', due: 'ready now', new: 'new', learning: 'learning', review: 'scheduled' }[deckFilterState]}” view right now.`}
                 </p>
                 {cards.length === 0 ? (
                   <div className="deck-empty-actions">
@@ -3669,8 +3632,7 @@ export function App({
                       role="row"
                       tabIndex={0}
                       aria-selected={selectedCardIds.has(card.id)}
-                      aria-label={`Card: ${card.prompt}, answer: ${card.answer}. Click or press Enter to edit, Space to select.`}
-                      title="Click or press Enter to edit card"
+                      aria-label={`Card: ${card.prompt}, answer: ${card.answer}. Press Enter to edit, Space to select.`}
                       onClick={() => setEditingCard(card)}
                       onKeyDown={(e) => handleRowKeyDown(e, card)}
                     >
@@ -3723,6 +3685,9 @@ export function App({
                           {scheduleBadge.label}
                         </span>
                       </div>
+                      <span className="deck-row-chevron" aria-hidden="true">
+                        ›
+                      </span>
                     </div>
                   )
                 })}
@@ -3763,11 +3728,6 @@ export function App({
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
           onConfirm={handleConfirmDelete}
-        />
-        <DemoDeckModal
-          isOpen={!authUser && !isDemoDeckDismissed}
-          onClose={() => setIsDemoDeckDismissed(true)}
-          onSignIn={() => openSyncModal()}
         />
       </>
     )
@@ -3891,23 +3851,6 @@ export function App({
       <main className="app-shell review-page">
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
-          <div className="nav-actions">
-            <button className="text-button" onClick={() => navigateTo('deck')}>
-              Manage deck
-            </button>
-            <button
-              className="text-button"
-              onClick={() => navigateTo('create')}
-            >
-              + New card
-            </button>
-            <ConnectionPill
-              authUser={authUser}
-              syncStatus={syncStatus}
-              isOnline={isOnline}
-              onClick={() => openSyncModal()}
-            />
-          </div>
         </nav>
         <RedirectAuthNotice
           message={redirectAuthBanner}
@@ -4032,19 +3975,20 @@ export function App({
             >
               ✏️ Edit card
             </button>
-            <button
-              type="button"
-              className="study-quick-btn delete-btn"
-              aria-label={`Delete card: ${currentCard.prompt}`}
-              onClick={() => setDeletingCards([currentCard])}
-            >
-              🗑️ Delete card
-            </button>
           </div>
 
           <p className="keyboard-hint">
-            <kbd>Enter</kbd> reveal · <kbd>1–4</kbd> rate · <kbd>e</kbd> edit ·{' '}
-            <kbd>⌃ Space</kbd> replay audio
+            {revealed ? (
+              <>
+                <kbd>1–4</kbd> rate · <kbd>e</kbd> edit · <kbd>Space</kbd>{' '}
+                replay audio
+              </>
+            ) : (
+              <>
+                <kbd>Enter</kbd> reveal · <kbd>e</kbd> edit · <kbd>⌃ Space</kbd>{' '}
+                replay audio
+              </>
+            )}
           </p>
         </section>
       </main>
