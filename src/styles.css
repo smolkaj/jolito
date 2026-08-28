@@ -902,7 +902,7 @@ summary:focus-visible {
   grid-template-columns: 1fr 1fr;
   gap: clamp(24px, 5vw, 48px);
   align-items: start;
-  width: min(980px, 100%);
+  width: min(1080px, 100%);
   margin: clamp(16px, 3vh, 32px) auto 40px;
 }
 
@@ -3113,7 +3113,7 @@ kbd {
 }
 
 .redirect-auth-banner {
-  width: min(840px, 100%);
+  width: min(1080px, 100%);
   margin: 10px auto 0;
   display: flex;
   align-items: center;
@@ -3219,7 +3219,7 @@ kbd {
 }
 
 .deck-layout {
-  width: min(840px, 100%);
+  width: min(1080px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
