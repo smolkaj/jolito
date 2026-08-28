@@ -61,17 +61,86 @@ describe('compareAnswer (character-level LCS diff)', () => {
   })
 
   it('detects character typos within words', () => {
-    const result = compareAnswer('restuarante', 'restaurante')
+    const transposition = compareAnswer('restuarante', 'restaurante')
+    expect(transposition.isExact).toBe(false)
+    expect(transposition.typedSegments).toEqual([
+      { value: 'rest', status: 'match' },
+      { value: 'ua', status: 'extra' },
+      { value: 'rante', status: 'match' },
+    ])
+    expect(transposition.expectedSegments).toEqual([
+      { value: 'rest', status: 'match' },
+      { value: 'au', status: 'missing' },
+      { value: 'rante', status: 'match' },
+    ])
+
+    const missingChar = compareAnswer('resturante', 'restaurante')
+    expect(missingChar.isExact).toBe(false)
+    expect(missingChar.typedSegments).toEqual([
+      { value: 'resturante', status: 'match' },
+    ])
+    expect(missingChar.expectedSegments).toEqual([
+      { value: 'rest', status: 'match' },
+      { value: 'a', status: 'missing' },
+      { value: 'urante', status: 'match' },
+    ])
+  })
+
+  it('favors contiguous matches over fragmented single-character noise across words', () => {
+    // "apple" and "cherry" both contain "e", but matching the isolated "e" would fragment "cherry"
+    const result = compareAnswer('apple pie', 'cherry pie')
     expect(result.isExact).toBe(false)
     expect(result.typedSegments).toEqual([
-      { value: 'rest', status: 'match' },
-      { value: 'u', status: 'extra' },
-      { value: 'arante', status: 'match' },
+      { value: 'apple', status: 'extra' },
+      { value: ' pie', status: 'match' },
     ])
     expect(result.expectedSegments).toEqual([
-      { value: 'resta', status: 'match' },
-      { value: 'u', status: 'missing' },
-      { value: 'rante', status: 'match' },
+      { value: 'cherry', status: 'missing' },
+      { value: ' pie', status: 'match' },
+    ])
+
+    // Words with completely disjoint characters
+    const disjoint = compareAnswer('cat', 'dog')
+    expect(disjoint.isExact).toBe(false)
+    expect(disjoint.typedSegments).toEqual([
+      { value: 'cat', status: 'extra' },
+    ])
+    expect(disjoint.expectedSegments).toEqual([
+      { value: 'dog', status: 'missing' },
+    ])
+
+    // Words with shared morphological suffixes
+    const suffixMatch = compareAnswer('gato', 'perro')
+    expect(suffixMatch.isExact).toBe(false)
+    expect(suffixMatch.typedSegments).toEqual([
+      { value: 'gat', status: 'extra' },
+      { value: 'o', status: 'match' },
+    ])
+    expect(suffixMatch.expectedSegments).toEqual([
+      { value: 'perr', status: 'missing' },
+      { value: 'o', status: 'match' },
+    ])
+  })
+
+  it('disambiguates repeated words by aligning contiguous phrases', () => {
+    const trailingPhrase = compareAnswer('el gato', 'el perro y el gato')
+    expect(trailingPhrase.isExact).toBe(false)
+    expect(trailingPhrase.typedSegments).toEqual([
+      { value: 'el gato', status: 'match' },
+    ])
+    expect(trailingPhrase.expectedSegments).toEqual([
+      { value: 'el perro y ', status: 'missing' },
+      { value: 'el gato', status: 'match' },
+    ])
+
+    const leadingPhrase = compareAnswer('el perro', 'el perro y el gato')
+    expect(leadingPhrase.isExact).toBe(false)
+    expect(leadingPhrase.typedSegments).toEqual([
+      { value: 'el perro', status: 'match' },
+    ])
+    expect(leadingPhrase.expectedSegments).toEqual([
+      { value: 'el perro', status: 'match' },
+      { value: ' y el gato', status: 'missing' },
     ])
   })
 

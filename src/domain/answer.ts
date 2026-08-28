@@ -41,14 +41,25 @@ function groupSegments(segments: DiffSegment[]): DiffSegment[] {
   return result
 }
 
+const MATCH_SCORE_EXACT = 4
+const MATCH_SCORE_ACCENT = 3
+const CONTINUOUS_MATCH_BONUS = 4
+const GAP_OPEN_PENALTY = 5
+const GAP_EXTEND_PENALTY = 0
+const NEG_INF = -1e9
+
 function matchScore(tChar: string, eChar: string): number {
-  if (tChar === eChar) return 4
-  if (tChar.toLowerCase() === eChar.toLowerCase()) return 4
+  if (tChar === eChar) return MATCH_SCORE_EXACT
+  if (tChar.toLowerCase() === eChar.toLowerCase()) return MATCH_SCORE_EXACT
   const normT = baseNormalize(tChar)
   const normE = baseNormalize(eChar)
-  if (normT.length > 0 && normT === normE) return 3
+  if (normT.length > 0 && normT === normE) return MATCH_SCORE_ACCENT
   return 0
 }
+
+const STATE_MATCH = 0
+const STATE_EXTRA = 1
+const STATE_MISSING = 2
 
 export function compareAnswer(
   typed: string,
@@ -84,38 +95,82 @@ export function compareAnswer(
     }
   }
 
-  // Needleman-Wunsch / LCS Dynamic Programming
-  const dp = Array.from({ length: tChars.length + 1 }, () =>
-    Array<number>(eChars.length + 1).fill(0),
+  const N = tChars.length
+  const M = eChars.length
+
+  // Suffix Affine Dynamic Programming (Gotoh's algorithm with contiguous match bonus):
+  // M_score[i][j]: best alignment score from (i, j) to (N, M) starting with matching tChars[i] and eChars[j]
+  // X_score[i][j]: best alignment score starting with an extra char tChars[i]
+  // Y_score[i][j]: best alignment score starting with a missing char eChars[j]
+  const M_score = Array.from({ length: N + 1 }, () =>
+    Array<number>(M + 1).fill(NEG_INF),
+  )
+  const X_score = Array.from({ length: N + 1 }, () =>
+    Array<number>(M + 1).fill(NEG_INF),
+  )
+  const Y_score = Array.from({ length: N + 1 }, () =>
+    Array<number>(M + 1).fill(NEG_INF),
   )
 
-  for (let i = tChars.length - 1; i >= 0; i--) {
-    for (let j = eChars.length - 1; j >= 0; j--) {
-      const score = matchScore(tChars[i]!, eChars[j]!)
+  M_score[N]![M] = 0
+  X_score[N]![M] = 0
+  Y_score[N]![M] = 0
+
+  for (let i = N - 1; i >= 0; i--) {
+    X_score[i]![M] = -GAP_OPEN_PENALTY - (N - 1 - i) * GAP_EXTEND_PENALTY
+  }
+
+  for (let j = M - 1; j >= 0; j--) {
+    Y_score[N]![j] = -GAP_OPEN_PENALTY - (M - 1 - j) * GAP_EXTEND_PENALTY
+  }
+
+  for (let i = N - 1; i >= 0; i--) {
+    const tc = tChars[i]!
+    for (let j = M - 1; j >= 0; j--) {
+      const ec = eChars[j]!
+      const score = matchScore(tc, ec)
+
       if (score > 0) {
-        dp[i]![j] = Math.max(
-          dp[i + 1]![j + 1]! + score,
-          dp[i + 1]![j]!,
-          dp[i]![j + 1]!,
-        )
-      } else {
-        dp[i]![j] = Math.max(dp[i + 1]![j]!, dp[i]![j + 1]!)
+        const toM = M_score[i + 1]![j + 1]! + score + CONTINUOUS_MATCH_BONUS
+        const toX = X_score[i + 1]![j + 1]! + score
+        const toY = Y_score[i + 1]![j + 1]! + score
+        M_score[i]![j] = Math.max(toM, toX, toY)
       }
+
+      // X: extra character in typed (gap in expected)
+      const xToM = M_score[i + 1]![j]! - GAP_OPEN_PENALTY
+      const xToX = X_score[i + 1]![j]! - GAP_EXTEND_PENALTY
+      const xToY = Y_score[i + 1]![j]! - GAP_EXTEND_PENALTY
+      X_score[i]![j] = Math.max(xToM, xToX, xToY)
+
+      // Y: missing character in typed (gap in typed)
+      const yToM = M_score[i]![j + 1]! - GAP_OPEN_PENALTY
+      const yToY = Y_score[i]![j + 1]! - GAP_EXTEND_PENALTY
+      const yToX = X_score[i]![j + 1]! - GAP_EXTEND_PENALTY
+      Y_score[i]![j] = Math.max(yToM, yToY, yToX)
     }
   }
+
+  let i = 0
+  let j = 0
+  const maxStart = Math.max(M_score[0]![0]!, X_score[0]![0]!, Y_score[0]![0]!)
+
+  let state =
+    maxStart === M_score[0]![0]!
+      ? STATE_MATCH
+      : maxStart === X_score[0]![0]!
+        ? STATE_EXTRA
+        : STATE_MISSING
 
   const typedRaw: DiffSegment[] = []
   const expectedRaw: DiffSegment[] = []
 
-  let ti = 0
-  let ej = 0
+  while (i < N || j < M) {
+    if (state === STATE_MATCH && i < N && j < M) {
+      const tc = tChars[i]!
+      const ec = eChars[j]!
+      const score = matchScore(tc, ec)
 
-  while (ti < tChars.length && ej < eChars.length) {
-    const tc = tChars[ti]!
-    const ec = eChars[ej]!
-    const score = matchScore(tc, ec)
-
-    if (score > 0 && dp[ti]![ej] === dp[ti + 1]![ej + 1]! + score) {
       if (tc === ec) {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'match' })
@@ -126,25 +181,50 @@ export function compareAnswer(
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'accent' })
       }
-      ti++
-      ej++
-    } else if (dp[ti + 1]![ej]! >= dp[ti]![ej + 1]!) {
+
+      const toM = M_score[i + 1]![j + 1]! + score + CONTINUOUS_MATCH_BONUS
+      const toX = X_score[i + 1]![j + 1]! + score
+
+      if (M_score[i]![j] === toM) {
+        state = STATE_MATCH
+      } else if (M_score[i]![j] === toX) {
+        state = STATE_EXTRA
+      } else {
+        state = STATE_MISSING
+      }
+      i++
+      j++
+    } else if ((state === STATE_EXTRA || j >= M) && i < N) {
+      const tc = tChars[i]!
       typedRaw.push({ value: tc, status: 'extra' })
-      ti++
+
+      const toX = X_score[i + 1]![j]! - GAP_EXTEND_PENALTY
+      const toM = M_score[i + 1]![j]! - GAP_OPEN_PENALTY
+
+      if (X_score[i]![j] === toX) {
+        state = STATE_EXTRA
+      } else if (X_score[i]![j] === toM) {
+        state = STATE_MATCH
+      } else {
+        state = STATE_MISSING
+      }
+      i++
     } else {
+      const ec = eChars[j]!
       expectedRaw.push({ value: ec, status: 'missing' })
-      ej++
+
+      const toY = Y_score[i]![j + 1]! - GAP_EXTEND_PENALTY
+      const toM = M_score[i]![j + 1]! - GAP_OPEN_PENALTY
+
+      if (Y_score[i]![j] === toY) {
+        state = STATE_MISSING
+      } else if (Y_score[i]![j] === toM) {
+        state = STATE_MATCH
+      } else {
+        state = STATE_EXTRA
+      }
+      j++
     }
-  }
-
-  while (ti < tChars.length) {
-    typedRaw.push({ value: tChars[ti]!, status: 'extra' })
-    ti++
-  }
-
-  while (ej < eChars.length) {
-    expectedRaw.push({ value: eChars[ej]!, status: 'missing' })
-    ej++
   }
 
   const typedSegments = groupSegments(typedRaw)
