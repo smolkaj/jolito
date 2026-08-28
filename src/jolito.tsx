@@ -2177,6 +2177,7 @@ export function App({
   const authUserRef = useRef(authUser)
   const pendingCardRef = useRef(pendingCard)
   const deletedCardIdsRef = useRef<Set<string>>(new Set(deletedCardIds))
+  const queueRef = useRef(queue)
 
   useEffect(() => {
     cardsRef.current = cards
@@ -2184,6 +2185,7 @@ export function App({
     authUserRef.current = authUser
     pendingCardRef.current = pendingCard
     deletedCardIdsRef.current = new Set(deletedCardIds)
+    queueRef.current = queue
   })
 
   const onUpdateCards = useCallback(
@@ -2208,7 +2210,17 @@ export function App({
       setQueue((currentQueue) => {
         if (currentQueue.length > 0) {
           const cardIdSet = new Set(newCards.map((c) => c.id))
-          return currentQueue.filter((id) => cardIdSet.has(id))
+          const nextQueue = currentQueue.filter((id) => cardIdSet.has(id))
+          const removedCount = currentQueue.length - nextQueue.length
+          if (removedCount > 0) {
+            setSessionTotal((prev) =>
+              Math.max(nextQueue.length, prev - removedCount),
+            )
+          }
+          if (viewRef.current === 'review' && nextQueue.length === 0) {
+            navigateTo('complete')
+          }
+          return nextQueue
         }
         return currentQueue
       })
@@ -2222,7 +2234,7 @@ export function App({
           })
       }
     },
-    [services.cards, services.clock, services.sync],
+    [navigateTo, services.cards, services.clock, services.sync],
   )
 
   const handleSaveEdit = useCallback(
@@ -2250,19 +2262,6 @@ export function App({
       }
       const updatedDeletedIds = Array.from(deletedCardIdsRef.current)
       onUpdateCards(updatedCards, true, updatedDeletedIds)
-      setQueue((prevQueue) => {
-        const nextQueue = prevQueue.filter((id) => !idsToDelete.has(id))
-        const deletedCount = prevQueue.length - nextQueue.length
-        if (deletedCount > 0) {
-          setSessionTotal((prev) =>
-            Math.max(nextQueue.length, prev - deletedCount),
-          )
-        }
-        if (viewRef.current === 'review' && nextQueue.length === 0) {
-          navigateTo('complete')
-        }
-        return nextQueue
-      })
       setSelectedCardIds((prev) => {
         const next = new Set(prev)
         for (const id of idsToDelete) {
@@ -2272,7 +2271,7 @@ export function App({
       })
       setDeletingCards(null)
     },
-    [navigateTo, onUpdateCards],
+    [onUpdateCards],
   )
 
   const deckStats = useMemo(
@@ -2456,15 +2455,14 @@ export function App({
         setAnswer('')
         setRevealed(false)
       } else if (nextView === 'review') {
-        setQueue((currentQueue) => {
-          if (currentQueue.length > 0) return currentQueue
+        if (queueRef.current.length === 0) {
           const now = services.clock.now()
           const newQueue = orderCardsForReview(cardsRef.current, now).map(
             ({ id }) => id,
           )
           setSessionTotal(newQueue.length)
-          return newQueue
-        })
+          setQueue(newQueue)
+        }
       }
     }
     window.addEventListener('popstate', onPopState)

@@ -3234,6 +3234,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
     const cardB: StudyCard = {
       id: 'note-2:es-en',
@@ -3251,6 +3252,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
     const cardC: StudyCard = {
       id: 'note-3:es-en',
@@ -3268,6 +3270,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
 
     services.cards.load = () => [cardA, cardB, cardC]
@@ -3338,6 +3341,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
     const cardB: StudyCard = {
       id: 'note-2:es-en',
@@ -3355,6 +3359,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
 
     services.cards.load = () => [cardA, cardB]
@@ -3418,6 +3423,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
 
     services.cards.load = () => [cardA]
@@ -3467,6 +3473,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: now,
     }
 
     services.cards.load = () => [cardA]
@@ -3494,5 +3501,120 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: 'palabra actualizada' }),
     ).toBeInTheDocument()
+  })
+
+  it('adjusts sessionTotal and preserves progress percentage accuracy when deleting cards from deck view during an active study session', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    const now = 1_700_000_000_000
+    services.clock.now = () => now
+    services.auth.getUser = () =>
+      Promise.resolve({ id: 'u1', email: 'test@example.com' })
+
+    const cardA: StudyCard = {
+      id: 'note-1:es-en',
+      noteId: 'note-1',
+      prompt: 'card-1',
+      answer: 'one',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+    const cardB: StudyCard = {
+      id: 'note-2:es-en',
+      noteId: 'note-2',
+      prompt: 'card-2',
+      answer: 'two',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+    const cardC: StudyCard = {
+      id: 'note-3:es-en',
+      noteId: 'note-3',
+      prompt: 'card-3',
+      answer: 'three',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+
+    services.cards.load = () => [cardA, cardB, cardC]
+    render(<App services={services} />)
+
+    // Start practice with 3 cards
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(screen.getByRole('heading', { name: 'card-1' })).toBeInTheDocument()
+
+    // Answer card 1 with Easy (4) -> 1 completed out of 3 (33%)
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'card-2' })).toBeInTheDocument()
+
+    const progressBar = screen.getByRole('progressbar', {
+      name: /session progress/i,
+    })
+    expect(progressBar).toHaveAttribute('aria-valuenow', '33')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
+
+    // Navigate to deck and delete card-3 (which is in the queue)
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    const card3Checkbox = screen.getByRole('checkbox', {
+      name: /select card card-3/i,
+    })
+    await user.click(card3Checkbox)
+    await user.click(
+      screen.getByRole('button', { name: /delete selected \(1\)/i }),
+    )
+    // Confirm delete in modal
+    await user.click(
+      within(document.querySelector('.delete-card-modal')!).getByRole(
+        'button',
+        {
+          name: /^delete card$/i,
+        },
+      ),
+    )
+
+    // Resume review
+    await user.click(screen.getByRole('button', { name: /^resume$/i }))
+    expect(screen.getByRole('heading', { name: 'card-2' })).toBeInTheDocument()
+
+    // 1 completed out of 2 total -> 50%
+    const resumedProgressBar = screen.getByRole('progressbar', {
+      name: /session progress/i,
+    })
+    expect(resumedProgressBar).toHaveAttribute('aria-valuenow', '50')
+    expect(resumedProgressBar).toHaveAttribute(
+      'aria-valuetext',
+      '1 card remaining',
+    )
   })
 })
