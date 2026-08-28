@@ -3279,6 +3279,51 @@ kbd {
   box-shadow: var(--shadow-sm);
 }
 
+.deck-demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.deck-demo-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.deck-demo-action {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rosa-dark, #b51553);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.deck-demo-action:hover {
+  color: var(--rosa);
+}
+
+.deck-demo-action:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .deck-stat-chip {
   display: inline-flex;
   align-items: center;
