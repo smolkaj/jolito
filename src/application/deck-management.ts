@@ -1,6 +1,8 @@
 import { isDue, type StudyCard } from '../domain/card'
+import { getDuplicateGroups } from '../domain/duplicate'
 
-export type DeckFilterState = 'all' | 'due' | 'new' | 'learning' | 'review'
+export type DeckFilterState =
+  'all' | 'due' | 'new' | 'learning' | 'review' | 'duplicates'
 
 export interface FilterDeckOptions {
   query?: string
@@ -14,6 +16,7 @@ export interface DeckStats {
   newCount: number
   learningCount: number
   reviewCount: number
+  duplicatesCount?: number
 }
 
 export function getDeckStats(cards: StudyCard[], now: number): DeckStats {
@@ -36,12 +39,19 @@ export function getDeckStats(cards: StudyCard[], now: number): DeckStats {
     }
   }
 
+  const duplicateGroups = getDuplicateGroups(cards)
+  let duplicatesCount = 0
+  for (const group of duplicateGroups.values()) {
+    duplicatesCount += group.length
+  }
+
   return {
     total: cards.length,
     due,
     newCount,
     learningCount,
     reviewCount,
+    duplicatesCount,
   }
 }
 
@@ -51,6 +61,15 @@ export function filterDeckCards(
 ): StudyCard[] {
   const { query, stateFilter = 'all', now } = options
   const normalizedQuery = query?.trim().toLowerCase() ?? ''
+
+  const duplicateCardIds =
+    stateFilter === 'duplicates'
+      ? new Set(
+          Array.from(getDuplicateGroups(cards).values()).flatMap((group) =>
+            group.map((c) => c.id),
+          ),
+        )
+      : null
 
   return cards.filter((card) => {
     // 1. State filter check
@@ -68,6 +87,9 @@ export function filterDeckCards(
       return false
     }
     if (stateFilter === 'review' && card.schedule.state !== 'review') {
+      return false
+    }
+    if (stateFilter === 'duplicates' && !duplicateCardIds?.has(card.id)) {
       return false
     }
 

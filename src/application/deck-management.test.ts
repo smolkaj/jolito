@@ -117,6 +117,7 @@ describe('deck-management', () => {
         newCount: 1, // aguacate
         learningCount: 2, // ¿mande? (learning) + chido (relearning)
         reviewCount: 2, // ¡qué padre! + ahorita
+        duplicatesCount: 0,
       })
     })
 
@@ -128,6 +129,7 @@ describe('deck-management', () => {
         newCount: 0,
         learningCount: 0,
         reviewCount: 0,
+        duplicatesCount: 0,
       })
     })
   })
@@ -198,6 +200,33 @@ describe('deck-management', () => {
         now,
       })
       expect(result).toHaveLength(0)
+    })
+
+    it('filters by state: duplicates', () => {
+      const duplicateCard = createStudyCards(
+        {
+          spanish: 'Aguacate!',
+          english: 'avocado',
+          context: 'Duplicate of card 1',
+          bidirectional: false,
+        },
+        'note-duplicate-1',
+        now,
+      )[0]!
+
+      const cardsWithDuplicate = [...cards, duplicateCard]
+      const stats = getDeckStats(cardsWithDuplicate, now)
+      expect(stats.duplicatesCount).toBe(2)
+
+      const duplicateResults = filterDeckCards(cardsWithDuplicate, {
+        stateFilter: 'duplicates',
+        now,
+      })
+      expect(duplicateResults).toHaveLength(2)
+      expect(duplicateResults.map((c) => c.prompt)).toEqual([
+        'aguacate',
+        'Aguacate!',
+      ])
     })
   })
 })

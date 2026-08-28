@@ -46,6 +46,11 @@ import {
   getDeckStats,
   type DeckFilterState,
 } from './application/deck-management'
+import {
+  findDuplicateCards,
+  findDuplicateNoteCards,
+  getDuplicateGroups,
+} from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import type { SyncStatus } from './domain/sync'
@@ -623,11 +628,13 @@ function getCardScheduleBadge(
 
 function EditCardModalInner({
   card,
+  cards = [],
   onClose,
   onSave,
   onPlayAudio,
 }: {
   card: StudyCard
+  cards?: StudyCard[] | undefined
   onClose: () => void
   onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
@@ -644,6 +651,15 @@ function EditCardModalInner({
 
   const isAlreadyNew =
     card.schedule.state === 'new' && card.schedule.reviews === 0
+
+  const duplicateConflict = useMemo(() => {
+    const matches = findDuplicateCards(cards, {
+      prompt,
+      direction: card.direction,
+      excludeCardId: card.id,
+    })
+    return matches[0] ?? null
+  }, [cards, prompt, card.direction, card.id])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -695,6 +711,15 @@ function EditCardModalInner({
         {error && (
           <div className="status-banner status-error" role="alert">
             <p>{error}</p>
+          </div>
+        )}
+
+        {duplicateConflict && (
+          <div className="status-banner edit-duplicate-notice" role="status">
+            <p>
+              Duplicate prompt: <strong>{duplicateConflict.prompt}</strong>{' '}
+              already exists in your deck ({duplicateConflict.answer}).
+            </p>
           </div>
         )}
 
@@ -806,12 +831,14 @@ function EditCardModalInner({
 function EditCardModal({
   isOpen,
   card,
+  cards,
   onClose,
   onSave,
   onPlayAudio,
 }: {
   isOpen: boolean
   card: StudyCard | null
+  cards?: StudyCard[] | undefined
   onClose: () => void
   onSave: (card: StudyCard, updates: UpdateCardParams) => void
   onPlayAudio: (text: string, locale: string) => void
@@ -834,6 +861,7 @@ function EditCardModal({
     <EditCardModalInner
       key={card.id}
       card={card}
+      cards={cards}
       onClose={onClose}
       onSave={onSave}
       onPlayAudio={onPlayAudio}
@@ -2256,6 +2284,16 @@ export function App({
     [cards, deckFilterState, deckSearchQuery, referenceTime],
   )
 
+  const duplicateCardIds = useMemo(
+    () =>
+      new Set(
+        Array.from(getDuplicateGroups(cards).values()).flatMap((group) =>
+          group.map((c) => c.id),
+        ),
+      ),
+    [cards],
+  )
+
   const saveCardFromParams = useCallback(
     (params: {
       spanish: string
@@ -2977,6 +3015,7 @@ export function App({
         <EditCardModal
           isOpen={editingCard !== null}
           card={editingCard}
+          cards={cards}
           onClose={() => setEditingCard(null)}
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
@@ -3006,6 +3045,17 @@ export function App({
         : englishTrimmed.length > 50
           ? 'is-medium'
           : ''
+
+    const duplicateMatches = findDuplicateNoteCards(cards, {
+      spanish: spanishInput,
+      english: englishInput,
+      bidirectional,
+    })
+
+    const duplicateCard =
+      duplicateMatches.spanishDuplicates[0] ||
+      duplicateMatches.englishDuplicates[0] ||
+      null
 
     return (
       <>
@@ -3267,6 +3317,40 @@ export function App({
                   placeholder="English translation"
                 />
               </div>
+              {duplicateCard && (
+                <div
+                  className="create-duplicate-notice"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div className="create-duplicate-info">
+                    <span className="create-duplicate-badge">Card exists</span>
+                    <span
+                      className="create-duplicate-text"
+                      title={`${duplicateCard.prompt} → ${duplicateCard.answer}`}
+                    >
+                      <strong>{duplicateCard.prompt}</strong> →{' '}
+                      {duplicateCard.answer}
+                      <span className="create-duplicate-schedule">
+                        {' '}
+                        (
+                        {
+                          getCardScheduleBadge(duplicateCard, referenceTime)
+                            .label
+                        }
+                        )
+                      </span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-button create-duplicate-action"
+                    onClick={() => setEditingCard(duplicateCard)}
+                  >
+                    Edit existing card
+                  </button>
+                </div>
+              )}
               <div className="field-group">
                 <label htmlFor="context">Additional Context</label>
                 <textarea
@@ -3372,6 +3456,7 @@ export function App({
         <EditCardModal
           isOpen={editingCard !== null}
           card={editingCard}
+          cards={cards}
           onClose={() => setEditingCard(null)}
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
@@ -3543,6 +3628,18 @@ export function App({
                   >
                     Mastered ({deckStats.reviewCount})
                   </button>
+                  {((deckStats.duplicatesCount ?? 0) > 0 ||
+                    deckFilterState === 'duplicates') && (
+                    <button
+                      type="button"
+                      className={`deck-filter-pill ${deckFilterState === 'duplicates' ? 'is-active' : ''}`}
+                      onClick={() => setDeckFilterState('duplicates')}
+                      aria-pressed={deckFilterState === 'duplicates'}
+                      title="Cards sharing the same prompt in the same direction"
+                    >
+                      Duplicates ({deckStats.duplicatesCount ?? 0})
+                    </button>
+                  )}
                 </div>
 
                 {selectedCardIds.size > 0 && (
@@ -3581,7 +3678,7 @@ export function App({
                     ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                     : cards.length === 0
                       ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                      : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered' }[deckFilterState]}” category right now.`}
+                      : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
                 </p>
                 {cards.length === 0 ? (
                   <div className="deck-empty-actions">
@@ -3715,6 +3812,15 @@ export function App({
                       </div>
                       <div className="col-phrase col-prompt" role="cell">
                         <span className="deck-phrase-text">{card.prompt}</span>
+                        {duplicateCardIds.has(card.id) && (
+                          <span
+                            className="deck-card-duplicate-pill"
+                            title="Duplicate prompt in deck"
+                            aria-label="Duplicate card"
+                          >
+                            Duplicate
+                          </span>
+                        )}
                       </div>
                       <div className="col-phrase col-answer" role="cell">
                         <span className="deck-answer-text">{card.answer}</span>
@@ -3758,6 +3864,7 @@ export function App({
         <EditCardModal
           isOpen={editingCard !== null}
           card={editingCard}
+          cards={cards}
           onClose={() => setEditingCard(null)}
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
@@ -3868,6 +3975,7 @@ export function App({
         <EditCardModal
           isOpen={editingCard !== null}
           card={editingCard}
+          cards={cards}
           onClose={() => setEditingCard(null)}
           onSave={handleSaveEdit}
           onPlayAudio={playAudio}
@@ -4074,6 +4182,7 @@ export function App({
       <EditCardModal
         isOpen={editingCard !== null}
         card={editingCard}
+        cards={cards}
         onClose={() => setEditingCard(null)}
         onSave={handleSaveEdit}
         onPlayAudio={playAudio}

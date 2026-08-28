@@ -2914,4 +2914,174 @@ describe('Jolito', () => {
     await user.type(spanishTextarea, longPrompt)
     expect(previewEs).toHaveClass('is-long')
   })
+
+  describe('duplicate recognition e2e', () => {
+    it('displays duplicate notice in create view when entering an existing phrase and allows editing existing card', async () => {
+      const user = userEvent.setup({ delay: null })
+      const existingCard = createStudyCards(
+        {
+          spanish: 'aguacate',
+          english: 'avocado',
+          context: 'En el mercado',
+          bidirectional: false,
+        },
+        'note-existing',
+        1700000000000,
+      )[0]!
+
+      const services = createTestServices({
+        cards: [existingCard],
+        user: { id: 'usr-1', email: 'learner@example.com' },
+      })
+      render(<App services={services} />)
+
+      await user.click(screen.getByRole('button', { name: /create a card/i }))
+
+      // Initially no duplicate banner
+      expect(
+        document.querySelector('.create-duplicate-notice'),
+      ).not.toBeInTheDocument()
+
+      // Type a phrase with punctuation / casing that matches normalized existing card
+      const spanishInput = screen.getByLabelText(/mexican spanish/i)
+      await user.type(spanishInput, '¡Aguacate!')
+
+      // Duplicate notice appears
+      const notice = document.querySelector('.create-duplicate-notice')
+      expect(notice).toBeInTheDocument()
+      expect(notice).toHaveTextContent(/card exists/i)
+      expect(notice).toHaveTextContent(/aguacate/i)
+      expect(notice).toHaveTextContent(/avocado/i)
+
+      // Click "Edit existing card"
+      const editButton = screen.getByRole('button', {
+        name: /edit existing card/i,
+      })
+      await user.click(editButton)
+
+      // Modal opens
+      expect(
+        screen.getByRole('heading', { name: /edit flashcard/i }),
+      ).toBeInTheDocument()
+      expect(screen.getByDisplayValue('aguacate')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('avocado')).toBeInTheDocument()
+    })
+
+    it('shows duplicate warning inside EditCardModal when editing a prompt to clash with another card', async () => {
+      const user = userEvent.setup({ delay: null })
+      const card1 = createStudyCards(
+        {
+          spanish: 'aguacate',
+          english: 'avocado',
+          context: '',
+          bidirectional: false,
+        },
+        'note-1',
+        1700000000000,
+      )[0]!
+      const card2 = createStudyCards(
+        {
+          spanish: 'chela',
+          english: 'cold beer',
+          context: '',
+          bidirectional: false,
+        },
+        'note-2',
+        1700000000000,
+      )[0]!
+
+      const services = createTestServices({
+        cards: [card1, card2],
+        user: { id: 'usr-1', email: 'learner@example.com' },
+      })
+      render(<App services={services} />)
+
+      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+      // Click row for 'chela' to edit
+      const chelaRow = screen.getByLabelText(/card: chela/i)
+      await user.click(chelaRow)
+
+      expect(
+        screen.getByRole('heading', { name: /edit flashcard/i }),
+      ).toBeInTheDocument()
+      expect(
+        document.querySelector('.edit-duplicate-notice'),
+      ).not.toBeInTheDocument()
+
+      // Change prompt to 'aguacate' (clashing with card1)
+      const promptInput = screen.getByDisplayValue('chela')
+      await user.clear(promptInput)
+      await user.type(promptInput, '¡Aguacate!')
+
+      // Duplicate warning appears inside edit modal
+      const editNotice = document.querySelector('.edit-duplicate-notice')
+      expect(editNotice).toBeInTheDocument()
+      expect(editNotice).toHaveTextContent(/duplicate prompt/i)
+      expect(editNotice).toHaveTextContent(/aguacate/i)
+      expect(editNotice).toHaveTextContent(/avocado/i)
+    })
+
+    it('renders Duplicates filter pill in deck view and filters table to duplicate cards with duplicate badges', async () => {
+      const user = userEvent.setup({ delay: null })
+      const card1 = createStudyCards(
+        {
+          spanish: 'aguacate',
+          english: 'avocado',
+          context: '',
+          bidirectional: false,
+        },
+        'note-1',
+        1700000000000,
+      )[0]!
+      const card2 = createStudyCards(
+        {
+          spanish: 'Aguacate!',
+          english: 'avocado (duplicate)',
+          context: '',
+          bidirectional: false,
+        },
+        'note-2',
+        1700000000000,
+      )[0]!
+      const card3 = createStudyCards(
+        {
+          spanish: 'chido',
+          english: 'cool',
+          context: '',
+          bidirectional: false,
+        },
+        'note-3',
+        1700000000000,
+      )[0]!
+
+      const services = createTestServices({
+        cards: [card1, card2, card3],
+        user: { id: 'usr-1', email: 'learner@example.com' },
+      })
+      render(<App services={services} />)
+
+      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+      // Verify Duplicates (2) pill exists
+      const duplicatesPill = screen.getByRole('button', {
+        name: /duplicates \(2\)/i,
+      })
+      expect(duplicatesPill).toBeInTheDocument()
+
+      // Click Duplicates pill
+      await user.click(duplicatesPill)
+
+      // Only duplicate cards are shown
+      expect(screen.getByText('aguacate')).toBeInTheDocument()
+      expect(screen.getByText('Aguacate!')).toBeInTheDocument()
+      expect(screen.queryByText('chido')).not.toBeInTheDocument()
+
+      // Badges are present
+      const duplicateBadges = document.querySelectorAll(
+        '.deck-card-duplicate-pill',
+      )
+      expect(duplicateBadges).toHaveLength(2)
+    })
+  })
 })
