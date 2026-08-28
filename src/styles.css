@@ -2192,6 +2192,50 @@ kbd {
   line-height: 1.55;
 }
 
+.complete-copy {
+  max-width: 440px;
+  margin: 18px auto 30px;
+  color: var(--ink-soft);
+  font-size: 17px;
+  line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.complete-copy p {
+  margin: 0;
+}
+
+.complete-subtext {
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+.complete-link-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--rosa-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.complete-link-button:hover {
+  color: var(--rosa);
+}
+
+.complete-link-button:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .complete-actions {
   justify-content: center;
 }
@@ -2751,6 +2795,34 @@ kbd {
   font-family: var(--font-mono);
 }
 
+/* Demo Deck Modal (Lightweight, Non-Obtrusive Overlay) */
+.demo-deck-modal-backdrop {
+  background: rgba(18, 24, 21, 0.16);
+  backdrop-filter: none;
+}
+
+.demo-deck-modal {
+  width: min(560px, 100%);
+  padding: 28px 32px 28px;
+  gap: 22px;
+  box-shadow:
+    0 12px 36px -4px rgba(18, 24, 21, 0.22),
+    4px 4px 0 var(--ink);
+}
+
+.demo-deck-modal .modal-subtitle {
+  font-size: 15.5px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.demo-deck-modal-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 /* ==========================================================================
    Cloud Sync & Auth Modal
    ========================================================================== */
@@ -3303,51 +3375,6 @@ kbd {
   border-color: var(--line);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
-}
-
-.deck-demo-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 16px;
-  background: var(--card);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: 2px 2px 0 var(--ink);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.deck-demo-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-
-.deck-demo-action {
-  background: transparent;
-  border: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--rosa-dark, #b51553);
-  text-decoration: underline;
-  cursor: pointer;
-  transition: color 150ms ease;
-}
-
-.deck-demo-action:hover {
-  color: var(--rosa);
-}
-
-.deck-demo-action:focus-visible {
-  outline: 2px solid var(--rosa);
-  outline-offset: 2px;
-  border-radius: 4px;
 }
 
 .deck-stat-chip {
