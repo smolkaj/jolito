@@ -3211,4 +3211,288 @@ describe('Jolito', () => {
       expect(duplicateBadges).toHaveLength(2)
     })
   })
+
+  it('pauses and resumes an active study session when navigating to deck management and back', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    const now = 1_700_000_000_000
+    services.clock.now = () => now
+
+    const cardA: StudyCard = {
+      id: 'note-1:es-en',
+      noteId: 'note-1',
+      prompt: 'uno',
+      answer: 'one',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+    const cardB: StudyCard = {
+      id: 'note-2:es-en',
+      noteId: 'note-2',
+      prompt: 'dos',
+      answer: 'two',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+    const cardC: StudyCard = {
+      id: 'note-3:es-en',
+      noteId: 'note-3',
+      prompt: 'tres',
+      answer: 'three',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+
+    services.cards.load = () => [cardA, cardB, cardC]
+    render(<App services={services} />)
+
+    // Start practice session
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(screen.getByRole('heading', { name: 'uno' })).toBeInTheDocument()
+
+    // Answer first card with Easy (4) to graduate it
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
+
+    const progressBar = screen.getByRole('progressbar', {
+      name: /session progress/i,
+    })
+    expect(progressBar).toHaveAttribute('aria-valuenow', '33')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
+
+    // Navigate to deck
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(
+      screen.getByRole('heading', { name: /manage deck/i }),
+    ).toBeInTheDocument()
+
+    // Topbar in deck should have Resume button
+    const resumeButton = screen.getByRole('button', { name: /^resume$/i })
+    expect(resumeButton).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^practice$/i }),
+    ).not.toBeInTheDocument()
+
+    // Resume review session
+    await user.click(resumeButton)
+    expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
+
+    // Progress bar still reflects completed card in session
+    const resumedProgressBar = screen.getByRole('progressbar', {
+      name: /session progress/i,
+    })
+    expect(resumedProgressBar).toHaveAttribute('aria-valuenow', '33')
+    expect(resumedProgressBar).toHaveAttribute(
+      'aria-valuetext',
+      '2 cards remaining',
+    )
+  })
+
+  it('preserves re-queued learning step cards when pausing and resuming a study session', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    const now = 1_700_000_000_000
+    services.clock.now = () => now
+
+    const cardA: StudyCard = {
+      id: 'note-1:es-en',
+      noteId: 'note-1',
+      prompt: 'palabra-a',
+      answer: 'word-a',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+    const cardB: StudyCard = {
+      id: 'note-2:es-en',
+      noteId: 'note-2',
+      prompt: 'palabra-b',
+      answer: 'word-b',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+
+    services.cards.load = () => [cardA, cardB]
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('heading', { name: 'palabra-a' }),
+    ).toBeInTheDocument()
+
+    // Rate Again (1) to requeue at the end of the session
+    await user.keyboard('{Enter}')
+    await user.keyboard('1')
+    expect(
+      screen.getByRole('heading', { name: 'palabra-b' }),
+    ).toBeInTheDocument()
+
+    // Navigate away to deck and resume
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('button', { name: /^resume$/i }))
+
+    // Finish card B
+    expect(
+      screen.getByRole('heading', { name: 'palabra-b' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // Card A reappears from learning requeue
+    expect(
+      screen.getByRole('heading', { name: 'palabra-a' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // Session completes
+    expect(
+      screen.getByRole('heading', { name: /¡hecho!/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('displays Resume practice on the home screen when an active study session is in progress', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    const now = 1_700_000_000_000
+    services.clock.now = () => now
+
+    const cardA: StudyCard = {
+      id: 'note-1:es-en',
+      noteId: 'note-1',
+      prompt: 'palabra',
+      answer: 'word',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+
+    services.cards.load = () => [cardA]
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(screen.getByRole('heading', { name: 'palabra' })).toBeInTheDocument()
+
+    // Click brand logo to go home
+    await user.click(screen.getByRole('button', { name: /jolito/i }))
+    expect(
+      screen.getByRole('heading', { name: /make the words/i }),
+    ).toBeInTheDocument()
+
+    // Home screen action displays Resume practice
+    const resumeHeroButton = screen.getByRole('button', {
+      name: /^resume practice$/i,
+    })
+    expect(resumeHeroButton).toBeInTheDocument()
+
+    // Click Resume practice to return to active card
+    await user.click(resumeHeroButton)
+    expect(screen.getByRole('heading', { name: 'palabra' })).toBeInTheDocument()
+  })
+
+  it('reflects card edits made in deck view when resuming the active study session', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    const now = 1_700_000_000_000
+    services.clock.now = () => now
+    services.auth.getUser = () =>
+      Promise.resolve({ id: 'u1', email: 'test@example.com' })
+
+    const cardA: StudyCard = {
+      id: 'note-1:es-en',
+      noteId: 'note-1',
+      prompt: 'palabra original',
+      answer: 'original word',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+    }
+
+    services.cards.load = () => [cardA]
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('heading', { name: 'palabra original' }),
+    ).toBeInTheDocument()
+
+    // Navigate to deck
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+    // Edit the card in deck view
+    await user.click(
+      screen.getByRole('row', { name: /card: palabra original/i }),
+    )
+    const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    await user.clear(promptInput)
+    await user.type(promptInput, 'palabra actualizada')
+    await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+    // Resume review
+    await user.click(screen.getByRole('button', { name: /^resume$/i }))
+    expect(
+      screen.getByRole('heading', { name: 'palabra actualizada' }),
+    ).toBeInTheDocument()
+  })
 })

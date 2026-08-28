@@ -2206,8 +2206,11 @@ export function App({
       const now = services.clock.now()
       setReferenceTime(now)
       setQueue((currentQueue) => {
-        if (viewRef.current !== 'review') return currentQueue
-        return orderCardsForReview(newCards, now).map(({ id }) => id)
+        if (currentQueue.length > 0) {
+          const cardIdSet = new Set(newCards.map((c) => c.id))
+          return currentQueue.filter((id) => cardIdSet.has(id))
+        }
+        return currentQueue
       })
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
@@ -2680,8 +2683,6 @@ export function App({
   function goHome() {
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
-    setQueue([])
-    setSessionTotal(0)
     setAnswer('')
     setRevealed(false)
   }
@@ -2924,12 +2925,21 @@ export function App({
                 >
                   Create a card <span aria-hidden="true">→</span>
                 </button>
-                <button
-                  className="secondary-button"
-                  onClick={() => beginReview()}
-                >
-                  Practice
-                </button>
+                {queue.length > 0 ? (
+                  <button
+                    className="secondary-button"
+                    onClick={() => navigateTo('review')}
+                  >
+                    Resume practice
+                  </button>
+                ) : (
+                  <button
+                    className="secondary-button"
+                    onClick={() => beginReview()}
+                  >
+                    Practice
+                  </button>
+                )}
               </div>
             </div>
             <div className="hero-visual">
@@ -3073,11 +3083,18 @@ export function App({
               >
                 Manage deck
               </button>
-              {dueCount > 0 && (
+              {queue.length > 0 ? (
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('review')}
+                >
+                  Resume
+                </button>
+              ) : dueCount > 0 ? (
                 <button className="text-button" onClick={() => beginReview()}>
                   Practice
                 </button>
-              )}
+              ) : null}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3532,11 +3549,18 @@ export function App({
                   + New card
                 </button>
               )}
-              {dueCount > 0 && (
+              {queue.length > 0 ? (
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('review')}
+                >
+                  Resume
+                </button>
+              ) : dueCount > 0 ? (
                 <button className="text-button" onClick={() => beginReview()}>
                   Practice
                 </button>
-              )}
+              ) : null}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
