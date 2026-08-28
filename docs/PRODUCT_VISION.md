@@ -53,7 +53,7 @@ The learner enters a Spanish phrase or word and can accept or edit suggested mat
 
 - concise English translation;
 - natural Mexican Spanish audio;
-- an engaging, Duolingo-like contextual visual;
+- an evocative, contextual scene illustration;
 - linked reverse card by default;
 - optional AI-suggested contextual explanation.
 

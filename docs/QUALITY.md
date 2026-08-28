@@ -38,6 +38,7 @@ Documentation is part of the deliverable:
 
 - `README.md` explains what Jolito is and its current user-facing status.
 - `docs/PRODUCT_VISION.md` records product direction and scope.
+- `docs/DESIGN.md` defines visual, interaction, and copy principles.
 - `docs/` holds developer documentation for architecture, testing, and consequential decisions.
 - Decisions that are costly to reverse require an [Architecture Decision Record](adr/README.md).
 
