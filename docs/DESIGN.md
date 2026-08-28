@@ -68,10 +68,13 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 ---
 
-## 8. Tactility & Geometric Invariants
+## 8. Visual Coherence, Tactility & Geometric Invariants
 
+- **Harmonic corner vocabulary:** Jolito pairs smooth, generous container radii (`20px` / `16px` for cards, dialogs, and banners) with full pills (`--pill-radius: 999px`) for interactive controls. Avoid introducing sharp `4px`/`8px` boxy corners or mixing conflicting corner scales.
+- **Consistent typographic rhythm:** Adjacent labels, status chips, and buttons must share uniform font sizes and line heights (`--font-sans`). Avoid ad-hoc font-size variations across neighboring elements.
+- **Token discipline over ad-hoc styling:** Always reuse established CSS custom properties (`--paper`, `--ink`, `--line`, `--shadow-md`, `--pill-height`). Never invent rogue hex codes, blurry drop-shadows, or custom padding scales.
 - **Grounded physical feel:** Crisp 2D offset shadows (`--shadow-md`), solid hairlines (`--line`), and physical depression on click (`:active { transform: translate(2px, 2px); }`) give interfaces a satisfying, mechanical weight.
-- **Geometric consistency:** Shared pill tokens (`--pill-height: 32px`, `--pill-height-sm: 24px`, `--pill-radius: 999px`) keep rows, badges, and controls aligned across views with zero layout jitter.
+- **Shared pill geometry:** Strict pill tokens (`--pill-height: 32px`, `--pill-height-sm: 24px`, `--pill-radius: 999px`) keep rows, badges, and controls aligned across views with zero layout jitter.
 - **Adaptive resilience:** Typography scales smoothly with phrase length (`.is-medium`, `.is-long`) so short idioms stay bold while paragraph-length colloquial phrases remain legible.
 
 ---
@@ -95,12 +98,13 @@ Almost every major design improvement in Jolito's history has been a **subtracti
 
 ## 10. Common Pitfalls & Antidotes
 
-| Pitfall (Default Reflex)                                         | Antidote (The Jolito Way)                                                                           |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Data Spilling** (`Practice (4)`, `Deck (12)`)                  | **Action Purity:** Pure verbs (`Practice`, `Manage deck`). Metrics belong in dedicated stat views.  |
-| **Nesting Frames** (Card inside container inside outline)        | **De-Framing:** Whitespace, scale, and subtle surface tints (`--paper`, `--card`).                  |
-| **Popup Spawning** (Modal dialogs, toaster alerts)               | **In-Place Morphing:** Animate and transform the clicked element directly.                          |
-| **Administrative Metering** (Queue beads, counters during study) | **Ambient Flow:** Unobtrusive peripheral orientation (3px hairline bar).                            |
-| **Over-Automation** (AI writing user's context/memory notes)     | **Assist, Don't Presume:** AI provides translations/audio; the learner authors personal notes.      |
-| **Binary Judgment** (Red/green right vs wrong)                   | **Nuanced Diffing:** Gentle character-level diffs; the learner retains 100% self-grading authority. |
-| **Layout Jitter** (Buttons shifting width on count changes)      | **Dimensional Stability:** Fixed pill heights (`32px` / `24px`) and robust flex alignments.         |
+| Pitfall (Default Reflex)                                                                                       | Antidote (The Jolito Way)                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Inconsistent Styling** (Sharp 4px/8px corners next to rounded cards, ad-hoc font sizes, blurry drop-shadows) | **Visual Coherence:** Stick to the shared vocabulary (20px container corners, 999px pills, 3px hard shadows, canonical typography scale). |
+| **Data Spilling** (`Practice (4)`, `Deck (12)`)                                                                | **Action Purity:** Pure verbs (`Practice`, `Manage deck`). Metrics belong in dedicated stat views.                                        |
+| **Nesting Frames** (Card inside container inside outline)                                                      | **De-Framing:** Whitespace, scale, and subtle surface tints (`--paper`, `--card`).                                                        |
+| **Popup Spawning** (Modal dialogs, toaster alerts)                                                             | **In-Place Morphing:** Animate and transform the clicked element directly.                                                                |
+| **Administrative Metering** (Queue beads, counters during study)                                               | **Ambient Flow:** Unobtrusive peripheral orientation (3px hairline bar).                                                                  |
+| **Over-Automation** (AI writing user's context/memory notes)                                                   | **Assist, Don't Presume:** AI provides translations/audio; the learner authors personal notes.                                            |
+| **Binary Judgment** (Red/green right vs wrong)                                                                 | **Nuanced Diffing:** Gentle character-level diffs; the learner retains 100% self-grading authority.                                       |
+| **Layout Jitter** (Buttons shifting width on count changes)                                                    | **Dimensional Stability:** Fixed pill heights (`32px` / `24px`) and robust flex alignments.                                               |
