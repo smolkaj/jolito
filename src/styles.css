@@ -2252,7 +2252,7 @@ kbd {
 }
 
 /* Responsive Breakpoints */
-@media (max-height: 520px) {
+@media (max-height: 520px) and (orientation: landscape) {
   .review-page {
     height: 100dvh;
     min-height: 0;
@@ -2592,7 +2592,7 @@ kbd {
   }
 }
 
-@media (max-height: 520px) and (max-width: 680px) {
+@media (max-height: 520px) and (max-width: 680px) and (orientation: landscape) {
   .review-page {
     padding-top: 6px;
     padding-bottom: 8px;
@@ -2611,7 +2611,7 @@ kbd {
   }
 
   .review-page .study-prompt-wrap {
-    max-height: 52px;
+    max-height: 64px;
   }
 
   .study-prompt.is-medium {
@@ -4250,6 +4250,17 @@ kbd {
   color: var(--tezontle-dark);
   background: var(--tezontle-soft);
   border-color: var(--tezontle);
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .review-page .study-card-quick-actions,
+  .review-page .keyboard-hint {
+    display: none;
+  }
+
+  .review-page .grade-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

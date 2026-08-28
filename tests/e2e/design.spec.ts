@@ -158,6 +158,15 @@ test('short landscape keeps grading fixed while long review content scrolls', as
     375,
   )
   await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
+
+  await page.setViewportSize({ width: 568, height: 320 })
+  const compactContentBounds = await page
+    .locator('.reveal-content')
+    .boundingBox()
+  expect(compactContentBounds).not.toBeNull()
+  expect(compactContentBounds!.height).toBeGreaterThanOrEqual(40)
+  await expect(page.getByText('You wrote')).toBeInViewport()
+  await expect(page.locator('.grade-buttons')).toBeInViewport({ ratio: 1 })
 })
 
 test('mobile keeps the tactile sample and live card preview available', async ({
