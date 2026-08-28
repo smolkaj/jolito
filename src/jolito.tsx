@@ -2820,7 +2820,9 @@ export function App({
                   className="secondary-button"
                   onClick={() => beginReview()}
                 >
-                  Practice
+                  {authUser && dueCount > 0
+                    ? `Practice (${dueCount})`
+                    : 'Practice'}
                 </button>
               </div>
             </div>
@@ -3276,7 +3278,7 @@ export function App({
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"
-                aria-label="Save card"
+                aria-label={authUser ? 'Save card' : 'Sign in to save card'}
               >
                 {savedToast ? (
                   <span className="save-button-saved" aria-hidden="true">
@@ -3286,7 +3288,7 @@ export function App({
                     </span>
                   </span>
                 ) : (
-                  <span>Save card</span>
+                  <span>{authUser ? 'Save card' : 'Sign in to save'}</span>
                 )}
               </button>
               <div className="sr-only" role="status" aria-live="polite">
@@ -3409,6 +3411,25 @@ export function App({
                 </button>
               </div>
             </header>
+
+            {!authUser && (
+              <aside
+                className="deck-demo-banner"
+                role="note"
+                aria-label="Demo deck notice"
+              >
+                <span className="deck-demo-text">
+                  ✦ Demo deck (4 example cards)
+                </span>
+                <button
+                  type="button"
+                  className="deck-demo-action"
+                  onClick={() => openSyncModal()}
+                >
+                  Sign in to access your deck →
+                </button>
+              </aside>
+            )}
 
             <div className="deck-toolbar">
               <div className="deck-search-wrap">

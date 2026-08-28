@@ -95,7 +95,7 @@ describe('Jolito', () => {
     // Advance clock by 1 day to practice the reverse card on day 2
     services.fixedClock.currentTime += 24 * 60 * 60 * 1000
     await user.click(screen.getByRole('button', { name: /back home/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await user.click(screen.getByRole('button', { name: /^practice/i }))
 
     expect(
       screen.getByRole('heading', { name: 'Where can I find the metro?' }),
@@ -893,7 +893,7 @@ describe('Jolito', () => {
     // Reset spoken list before starting review
     services.mockSpeaker.spoken = []
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await user.click(screen.getByRole('button', { name: /^practice/i }))
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -2586,5 +2586,73 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
+  })
+
+  it('displays guest sign in to save button on create screen and demo banner on deck manager when logged out', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // 1. Check Create view as guest
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    expect(
+      screen.getByRole('button', { name: /sign in to save/i }),
+    ).toBeInTheDocument()
+
+    // 2. Check Deck Manager as guest
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(
+      screen.getByRole('note', { name: /demo deck notice/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/✦ Demo deck \(4 example cards\)/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /sign in to access your deck/i }),
+    ).toBeInTheDocument()
+
+    // 3. Click sign in from demo banner to open sync modal
+    await user.click(
+      screen.getByRole('button', { name: /sign in to access your deck/i }),
+    )
+    expect(
+      screen.getByRole('heading', { name: /^cloud sync$/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('displays personalized practice count and Save card button when authenticated', async () => {
+    const user = userEvent.setup()
+    const customCard = createStudyCards(
+      {
+        spanish: 'chido',
+        english: 'cool',
+        context: 'slang',
+        bidirectional: false,
+      },
+      'note-1',
+      1000,
+    )
+    const services = createTestServices({
+      cards: customCard,
+      user: { id: 'usr-123', email: 'learner@example.com' },
+    })
+    render(<App services={services} />)
+
+    // 1. Welcome view displays due count on Practice button
+    expect(
+      screen.getByRole('button', { name: 'Practice (1)' }),
+    ).toBeInTheDocument()
+
+    // 2. Create view displays 'Save card' (not 'Sign in to save')
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    expect(
+      screen.getByRole('button', { name: 'Save card' }),
+    ).toBeInTheDocument()
+
+    // 3. Deck Manager does not display demo banner
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(
+      screen.queryByRole('note', { name: /demo deck notice/i }),
+    ).not.toBeInTheDocument()
   })
 })
