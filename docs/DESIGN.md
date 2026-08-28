@@ -4,6 +4,8 @@ Jolito should feel like calm, tactile language practice—not an administrative 
 
 The principles guide judgment rather than replace it. When they pull in different directions, favor the choice that best protects learning, clarity, and flow.
 
+These principles build on the [product vision](PRODUCT_VISION.md) and the repository's [design invariants](../AGENTS.md). Those documents remain authoritative for learning modes and learner authorship, and for offline and accessibility requirements; this document does not restate them.
+
 ## Every element earns its place
 
 Start with the learner's immediate goal and add only what helps them reach it. Available data, empty space, and familiar UI conventions do not by themselves justify another label, count, control, or container.
@@ -40,32 +42,8 @@ Use the fewest words that make the experience clear—not an arbitrary word limi
 
 Do not make icons or layout carry meaning they cannot reliably communicate. Secondary help may use progressive disclosure, but it must remain available to keyboard, touch, and assistive-technology users; essential guidance must never depend on hover alone.
 
-## Every mode reinforces meaning
-
-Text, audio, imagery, and motion should strengthen the same learning goal. A mode earns attention by clarifying meaning, pronunciation, context, recall, or action.
-
-Avoid filler media and ornamental feedback that competes with the material being learned. Multimodal should mean mutually reinforcing, not merely more.
-
-## The core experience remains whole offline
-
-Review, creation, and playback should feel complete without connectivity. Network services may enrich the experience, but must not become hidden prerequisites for its essential rhythm.
-
-Make connectivity and pending work understandable without demanding attention when everything is healthy. When the network cannot fulfill a request, preserve the learner's work and communicate what will happen next.
-
-## Automation preserves authorship
-
-Automation should remove mechanical work while leaving the learner in control of what they study and how they express it. Offer proposals transparently, preserve existing input, and make acceptance or revision explicit.
-
-Never overwrite user-authored material merely because an automated alternative is available.
-
 ## Coherence outlasts novelty
 
 New work should feel related to the rest of Jolito in visual character, interaction behavior, and voice. Reuse the established language before introducing a new one; make deviations deliberate and explain what they improve.
 
 The implementation is the source of truth for tokens, dimensions, type scales, motion curves, and component details. A principle should survive those values changing.
-
-## Inclusion is part of the design
-
-Keyboard, touch, pointer, screen-reader, zoomed, high-contrast, and reduced-motion experiences are the same product, not secondary adaptations. No essential action or information should depend exclusively on one input or sensory mode.
-
-Accessibility is not traded away for visual quiet. When an affordance needs more visible explanation, add it with restraint rather than relying on ambiguity.
