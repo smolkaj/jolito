@@ -462,7 +462,7 @@ describe('Jolito', () => {
     ).toHaveAttribute('aria-valuetext', '4 cards remaining')
   })
 
-  it('suggests Mexican Spanish expressions and auto-fills translation and context on selection', async () => {
+  it('suggests Mexican Spanish expressions and auto-fills translation without populating context on selection', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
@@ -479,14 +479,12 @@ describe('Jolito', () => {
     // Click suggestion item
     await user.click(screen.getByText('ahorita'))
 
-    // Verifies auto-fill of Spanish, English, and context!
+    // Verifies auto-fill of Spanish and English while keeping Context blank for user input
     expect(spanishInput).toHaveValue('ahorita')
     expect(screen.getByLabelText(/english/i)).toHaveValue(
       'right now / in a bit',
     )
-    expect(screen.getByLabelText(/context/i)).toHaveValue(
-      'Iconic Mexican time nuance: right now, soon, or never.',
-    )
+    expect(screen.getByLabelText(/context/i)).toHaveValue('')
     expect(
       screen.queryByRole('listbox', { name: /spanish suggestions/i }),
     ).not.toBeInTheDocument()
@@ -511,10 +509,32 @@ describe('Jolito', () => {
 
     expect(spanishInput).toHaveValue('aguacate')
     expect(screen.getByLabelText(/english/i)).toHaveValue('avocado')
+    expect(screen.getByLabelText(/context/i)).toHaveValue('')
     expect(screen.queryByText(/did you mean/i)).not.toBeInTheDocument()
     expect(
       screen.queryByRole('listbox', { name: /spanish suggestions/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('preserves existing user-typed additional context when applying an autocomplete suggestion', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    const contextInput = screen.getByLabelText(/additional context/i)
+
+    await user.type(contextInput, 'Heard at the market in Coyoacán')
+    await user.type(spanishInput, 'ahor')
+
+    await user.click(screen.getByText('ahorita'))
+
+    expect(spanishInput).toHaveValue('ahorita')
+    expect(screen.getByLabelText(/english/i)).toHaveValue(
+      'right now / in a bit',
+    )
+    expect(contextInput).toHaveValue('Heard at the market in Coyoacán')
   })
 
   it('supports keyboard navigation (ArrowDown + Enter) to select suggestions and closes overlay', async () => {
@@ -706,6 +726,7 @@ describe('Jolito', () => {
 
     expect(spanishInput).toHaveValue('ahorita')
     expect(englishInput).toHaveValue('right now / in a bit')
+    expect(contextInput).toHaveValue('')
 
     // 2. Tab into English field -> all text is selected and overwritten on typing
     await user.tab()
@@ -716,13 +737,13 @@ describe('Jolito', () => {
     await user.keyboard('soon')
     expect(englishInput).toHaveValue('soon')
 
-    // 3. Tab directly into Context field -> all text is selected
+    // 3. Tab directly into Context field -> focus is gained on empty field
     await user.tab()
     expect(contextInput).toHaveFocus()
-    expect(contextInput.selectionStart).toBe(0)
-    expect(contextInput.selectionEnd).toBe(
-      'Iconic Mexican time nuance: right now, soon, or never.'.length,
-    )
+    expect(contextInput).toHaveValue('')
+
+    await user.keyboard('Mexican concept of time')
+    expect(contextInput).toHaveValue('Mexican concept of time')
   })
 
   it('disables autocapitalization on card creation and edit text fields for mobile keyboards', async () => {

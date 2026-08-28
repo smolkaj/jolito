@@ -2625,9 +2625,6 @@ export function App({
     }
     setSpanishInput(entry.spanish)
     setEnglishInput(entry.english)
-    if (entry.context) {
-      setContextInput(entry.context)
-    }
     setSuggestions([])
     setDidYouMean(null)
     setActiveSuggestionIndex(-1)
