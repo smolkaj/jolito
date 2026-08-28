@@ -2246,6 +2246,7 @@ export function App({
 
   useEffect(() => {
     return services.auth.onAuthStateChange((user) => {
+      const prevUser = authUserRef.current
       authUserRef.current = user
       setAuthUser(user)
       if (user) {
@@ -2266,9 +2267,38 @@ export function App({
             if (res.success) setSyncStatus('synced')
           })
         }
+      } else if (prevUser !== null) {
+        // Explicit transition from signed in to signed out:
+        // Clear local user deck and restore clean starter demo deck
+        setCards(starterCards)
+        setDeletedCardIds([])
+        deletedCardIdsRef.current = new Set()
+        setSyncStatus('idle')
+        setSelectedCardIds(new Set())
+        setEditingCard(null)
+        setDeletingCards(null)
+        setAnswer('')
+        setRevealed(false)
+        const now = services.clock.now()
+        setReferenceTime(now)
+        setQueue(() => {
+          const due = starterCards
+            .filter((c) => isDue(c, now))
+            .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
+            .map(({ id }) => id)
+          return due
+        })
+        setSessionTotal(() => starterCards.filter((c) => isDue(c, now)).length)
+        setReviewedCount(0)
       }
     })
-  }, [onUpdateCards, saveCardFromParams, services.auth, services.sync])
+  }, [
+    onUpdateCards,
+    saveCardFromParams,
+    services.auth,
+    services.clock,
+    services.sync,
+  ])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
