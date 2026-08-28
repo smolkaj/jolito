@@ -2641,14 +2641,10 @@ export function App({
       if (val.trim().length >= 2) {
         const matches = services.assistant.suggest(val, 'es', 5)
         setSuggestions(matches)
-        const hasDirectMatches = matches.some(
-          (m) =>
-            m.matchType === 'exact' ||
-            m.matchType === 'prefix' ||
-            m.matchType === 'lemma',
-        )
         setDidYouMean(
-          !hasDirectMatches ? services.assistant.didYouMean(val, 'es') : null,
+          matches.length === 0
+            ? services.assistant.didYouMean(val, 'es')
+            : null,
         )
       } else {
         setSuggestions([])
@@ -3167,10 +3163,6 @@ export function App({
                           aria-selected={activeSuggestionIndex === index}
                           className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
                           onPointerDown={(e) => {
-                            e.preventDefault()
-                            applySuggestion(item)
-                          }}
-                          onMouseDown={(e) => {
                             e.preventDefault()
                             applySuggestion(item)
                           }}

@@ -531,9 +531,18 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('detects typos in Spanish input and offers "Did you mean" suggestion chip', async () => {
+  it('offers "Did you mean" suggestion chip as fallback when dropdown suggestions are empty', async () => {
     const user = userEvent.setup({ delay: null })
-    const services = createTestServices()
+    const assistant = new OfflineCardAssistant([
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: 'Food.',
+        tag: 'food',
+      },
+    ])
+    vi.spyOn(assistant, 'suggest').mockReturnValue([])
+    const services = createTestServices({ assistant })
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))

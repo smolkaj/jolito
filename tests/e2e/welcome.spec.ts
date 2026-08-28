@@ -326,19 +326,20 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
     path: 'test-results/suggestion-closed-after-selection.png',
   })
 
-  // 2. Test Typo / Did You Mean
+  // 2. Test Typo / Fuzzy match in autocomplete dropdown
   await spanishInput.fill('aguacatte')
-  await expect(page.getByText(/did you mean/i)).toBeVisible()
-  await expect(page.getByRole('button', { name: /aguacate/i })).toBeVisible()
+  const suggestionsList = page.getByRole('listbox', {
+    name: /spanish suggestions/i,
+  })
+  await expect(suggestionsList).toBeVisible()
+  await expect(suggestionsList.getByText('aguacate')).toBeVisible()
+  await expect(suggestionsList.getByText(/typo match/i)).toBeVisible()
 
-  // Click typo chip to apply
-  await page.getByRole('button', { name: /aguacate/i }).click()
+  // Click typo suggestion item to apply
+  await suggestionsList.getByText('aguacate').click()
   await expect(spanishInput).toHaveValue('aguacate')
   await expect(page.getByLabel(/english/i)).toHaveValue('avocado')
-  await expect(page.getByText(/did you mean/i)).not.toBeVisible()
-  await expect(
-    page.getByRole('listbox', { name: /spanish suggestions/i }),
-  ).not.toBeVisible()
+  await expect(suggestionsList).not.toBeVisible()
 
   // 3. Test keyboard selection (ArrowDown + Enter) closes overlay
   await spanishInput.fill('que pad')

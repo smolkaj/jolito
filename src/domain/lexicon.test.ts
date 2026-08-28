@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  damerauLevenshtein,
   extractGlossTerms,
   LexiconIndex,
   normalizeForSearch,
@@ -82,21 +81,15 @@ describe('extractGlossTerms', () => {
   })
 })
 
-describe('damerauLevenshtein', () => {
-  it('computes accurate edit distances with transpositions', () => {
-    expect(damerauLevenshtein('', '')).toBe(0)
-    expect(damerauLevenshtein('', 'aguacate')).toBe(8)
-    expect(damerauLevenshtein('aguacate', '')).toBe(8)
-    expect(damerauLevenshtein('aguacate', 'aguacate')).toBe(0)
-    expect(damerauLevenshtein('aguacatte', 'aguacate')).toBe(1)
-    expect(damerauLevenshtein('agaucate', 'aguacate')).toBe(1) // transposition
-    expect(damerauLevenshtein('orale', 'órale')).toBe(1)
-    expect(damerauLevenshtein('chido', 'chdo')).toBe(1)
-    expect(damerauLevenshtein('completely', 'different')).toBeGreaterThan(4)
-  })
-})
-
 describe('weightedSpanishDistance', () => {
+  it('computes distances and handles base edge cases', () => {
+    expect(weightedSpanishDistance('', '')).toBe(0)
+    expect(weightedSpanishDistance('', 'aguacate')).toBe(8)
+    expect(weightedSpanishDistance('aguacate', '')).toBe(8)
+    expect(weightedSpanishDistance('aguacate', 'aguacate')).toBe(0)
+    expect(weightedSpanishDistance('a', 'aguacate')).toBeGreaterThanOrEqual(3)
+  })
+
   it('assigns lower distance to Spanish phonetic substitutions', () => {
     // Silent h insertion/deletion (0.4 vs 1.0)
     expect(weightedSpanishDistance('ablar', 'hablar')).toBeCloseTo(0.4, 1)
@@ -114,9 +107,6 @@ describe('weightedSpanishDistance', () => {
 
     // Transpositions
     expect(weightedSpanishDistance('agaucate', 'aguacate')).toBeCloseTo(0.8, 1)
-
-    // Large length difference
-    expect(weightedSpanishDistance('a', 'aguacate')).toBeGreaterThanOrEqual(3)
   })
 })
 

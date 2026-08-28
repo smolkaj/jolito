@@ -70,51 +70,6 @@ export function extractGlossTerms(english: string): string[] {
   return Array.from(terms)
 }
 
-export function damerauLevenshtein(source: string, target: string): number {
-  const sLen = source.length
-  const tLen = target.length
-
-  if (sLen === 0) return tLen
-  if (tLen === 0) return sLen
-
-  const d: number[][] = []
-  for (let i = 0; i <= sLen; i++) {
-    const row: number[] = new Array<number>(tLen + 1).fill(0)
-    row[0] = i
-    d.push(row)
-  }
-  for (let j = 0; j <= tLen; j++) {
-    d[0]![j] = j
-  }
-
-  for (let i = 1; i <= sLen; i++) {
-    const sChar = source.charAt(i - 1)
-    for (let j = 1; j <= tLen; j++) {
-      const tChar = target.charAt(j - 1)
-      const cost = sChar === tChar ? 0 : 1
-
-      let min = Math.min(
-        d[i - 1]![j]! + 1, // deletion
-        d[i]![j - 1]! + 1, // insertion
-        d[i - 1]![j - 1]! + cost, // substitution
-      )
-
-      if (
-        i > 1 &&
-        j > 1 &&
-        sChar === target.charAt(j - 2) &&
-        source.charAt(i - 2) === tChar
-      ) {
-        min = Math.min(min, d[i - 2]![j - 2]! + 1)
-      }
-
-      d[i]![j] = min
-    }
-  }
-
-  return d[sLen]![tLen]!
-}
-
 export function weightedSpanishDistance(
   source: string,
   target: string,
@@ -238,8 +193,11 @@ export class LexiconIndex {
           this.esLengthBuckets.set(esLen, [])
         }
         this.esLengthBuckets.get(esLen)!.push(entryIdx)
+        const esBigrams = new Set<string>()
         for (let i = 0; i < normEs.length - 1; i++) {
-          const bg = normEs.slice(i, i + 2)
+          esBigrams.add(normEs.slice(i, i + 2))
+        }
+        for (const bg of esBigrams) {
           if (!this.esBigramIndex.has(bg)) {
             this.esBigramIndex.set(bg, [])
           }
@@ -248,25 +206,31 @@ export class LexiconIndex {
       }
 
       const enTerms = extractGlossTerms(entry.english)
+      const enLengths = new Set<number>()
+      const enBigrams = new Set<string>()
       for (const term of enTerms) {
         const normEn = normalizeForSearch(term)
         if (normEn && !this.normalizedEnglishMap.has(normEn)) {
           this.normalizedEnglishMap.set(normEn, entry)
         }
         if (normEn) {
-          const enLen = normEn.length
-          if (!this.enLengthBuckets.has(enLen)) {
-            this.enLengthBuckets.set(enLen, [])
-          }
-          this.enLengthBuckets.get(enLen)!.push(entryIdx)
+          enLengths.add(normEn.length)
           for (let i = 0; i < normEn.length - 1; i++) {
-            const bg = normEn.slice(i, i + 2)
-            if (!this.enBigramIndex.has(bg)) {
-              this.enBigramIndex.set(bg, [])
-            }
-            this.enBigramIndex.get(bg)!.push(entryIdx)
+            enBigrams.add(normEn.slice(i, i + 2))
           }
         }
+      }
+      for (const enLen of enLengths) {
+        if (!this.enLengthBuckets.has(enLen)) {
+          this.enLengthBuckets.set(enLen, [])
+        }
+        this.enLengthBuckets.get(enLen)!.push(entryIdx)
+      }
+      for (const bg of enBigrams) {
+        if (!this.enBigramIndex.has(bg)) {
+          this.enBigramIndex.set(bg, [])
+        }
+        this.enBigramIndex.get(bg)!.push(entryIdx)
       }
       const fullNormEn = normalizeForSearch(entry.english)
       if (fullNormEn && !this.normalizedEnglishMap.has(fullNormEn)) {
