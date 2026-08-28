@@ -1282,6 +1282,7 @@ test('aligns study card quick actions with card container and supports keyboard 
     Math.abs((revealedAlign.actionsLeft ?? 0) - (revealedAlign.panelLeft ?? 0)),
   ).toBeLessThanOrEqual(1)
 
+  await page.waitForTimeout(250)
   await page.screenshot({ path: 'test-results/study-revealed-aligned.png' })
 
   const unrevealedAxe = await new AxeBuilder({ page })
