@@ -3297,6 +3297,26 @@ export function App({
                   </div>
                 )}
               </div>
+              <div className="field-group">
+                <label htmlFor="english">
+                  <UsFlag /> English
+                </label>
+                <textarea
+                  id="english"
+                  name="english"
+                  rows={2}
+                  required
+                  autoCapitalize="none"
+                  enterKeyHint="next"
+                  value={englishInput}
+                  onChange={onEnglishChange}
+                  onFocus={(e) => {
+                    handleFocusSelect(e)
+                    dismissSuggestions()
+                  }}
+                  placeholder="English translation"
+                />
+              </div>
               {duplicateCard && (
                 <div
                   className="create-duplicate-notice"
@@ -3331,26 +3351,6 @@ export function App({
                   </button>
                 </div>
               )}
-              <div className="field-group">
-                <label htmlFor="english">
-                  <UsFlag /> English
-                </label>
-                <textarea
-                  id="english"
-                  name="english"
-                  rows={2}
-                  required
-                  autoCapitalize="none"
-                  enterKeyHint="next"
-                  value={englishInput}
-                  onChange={onEnglishChange}
-                  onFocus={(e) => {
-                    handleFocusSelect(e)
-                    dismissSuggestions()
-                  }}
-                  placeholder="English translation"
-                />
-              </div>
               <div className="field-group">
                 <label htmlFor="context">Additional Context</label>
                 <textarea
