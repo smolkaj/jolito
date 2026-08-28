@@ -8,7 +8,7 @@ Jolito is a sensory language practice tool, not a database or administrative das
 
 - **Question every word:** Before adding a label, header, or description, ask: _"Do we need text here at all?"_ If layout, icon, spatial position, or state makes the intent obvious, eliminate the text.
 - **High information density:** When text is necessary, make it punchy, crisp, and direct (1–3 words). Never use multi-sentence instructions where a clear affordance suffices.
-- **Self-explanatory affordances:** The interface should guide the user intuitively. Avoid instructional banners, explanatory tooltips, or redundant helper copy.
+- **Self-explanatory affordances:** The default UI should guide intuitively without persistent instructional banners or redundant inline helper copy. Subtle tooltips or hover shortcuts are welcome for progressive disclosure because they stay hidden until needed.
 - **Learner-focused voice:** Keep system messages calm, encouraging, and unpretentious (e.g., `¡Hecho!` over `Session completed successfully`).
 
 ---
