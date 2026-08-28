@@ -3623,7 +3623,6 @@ export function App({
                   <button
                     type="button"
                     className="text-button create-duplicate-action"
-                    tabIndex={-1}
                     onClick={() => setEditingCard(duplicateCard)}
                   >
                     Edit existing card

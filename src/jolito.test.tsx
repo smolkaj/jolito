@@ -853,6 +853,50 @@ describe('Jolito', () => {
     expect(contextInput).toHaveValue('Mexican concept of time')
   })
 
+  it('preserves full keyboard tab navigation including duplicate edit button when duplicate exists', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = createStudyCards(
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: '',
+        bidirectional: false,
+      },
+      'note-1',
+      1000,
+    )
+    const services = createTestServices({ cards })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText<HTMLTextAreaElement>(/spanish/i)
+    const englishInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/^english$/i)
+    const contextInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/additional context/i)
+
+    await user.type(spanishInput, 'aguacate')
+    await user.type(englishInput, 'avocado')
+
+    const editExistingButton = screen.getByRole('button', {
+      name: /edit existing card/i,
+    })
+    expect(editExistingButton).toBeInTheDocument()
+
+    // Spanish -> English -> Edit existing button -> Context
+    spanishInput.focus()
+    expect(spanishInput).toHaveFocus()
+
+    await user.tab()
+    expect(englishInput).toHaveFocus()
+
+    await user.tab()
+    expect(editExistingButton).toHaveFocus()
+
+    await user.tab()
+    expect(contextInput).toHaveFocus()
+  })
+
   it('disables autocapitalization on card creation and edit text fields for mobile keyboards', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
