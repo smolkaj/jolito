@@ -25,6 +25,7 @@ describe('importAnkiDeck application service', () => {
         reviews: 3,
         lapses: 0,
       },
+      createdAt: 1700000000000,
     },
   ]
 

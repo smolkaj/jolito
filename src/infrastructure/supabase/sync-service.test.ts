@@ -19,6 +19,7 @@ const mockCard: StudyCard = {
     reviews: 0,
     lapses: 0,
   },
+  createdAt: 1000,
 }
 
 describe('SupabaseSyncService', () => {

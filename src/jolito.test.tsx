@@ -425,6 +425,7 @@ describe('Jolito', () => {
             reviews: 1,
             lapses: 0,
           },
+          createdAt: 0,
         },
       ],
       clockTime: 0,
@@ -2292,6 +2293,129 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('sorts deck manager cards by creation date and alphabetically via dropdown and column header', async () => {
+    const user = userEvent.setup()
+    const now = Date.UTC(2026, 7, 21, 12, 0, 0)
+    const customCards: StudyCard[] = [
+      {
+        id: 'note-1:es-en',
+        noteId: 'note-1',
+        prompt: 'zapato',
+        answer: 'shoe',
+        direction: 'es-en',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: 1000,
+      },
+      {
+        id: 'note-2:es-en',
+        noteId: 'note-2',
+        prompt: 'árbol',
+        answer: 'tree',
+        direction: 'es-en',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: 3000,
+      },
+      {
+        id: 'note-3:es-en',
+        noteId: 'note-3',
+        prompt: 'bueno',
+        answer: 'good',
+        direction: 'es-en',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: 2000,
+      },
+    ]
+
+    const services = createTestServices({ cards: customCards })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+    const sortSelect = screen.getByRole('combobox', { name: /sort cards/i })
+    expect(sortSelect).toHaveValue('created-desc')
+
+    // Initial order (created-desc): árbol (3000), bueno (2000), zapato (1000)
+    let rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(
+      rows.map(
+        (r) =>
+          r.querySelector('.col-prompt .deck-phrase-text')?.textContent ?? '',
+      ),
+    ).toEqual(['árbol', 'bueno', 'zapato'])
+
+    // Change to Oldest first (created-asc)
+    await user.selectOptions(sortSelect, 'created-asc')
+    rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(
+      rows.map(
+        (r) =>
+          r.querySelector('.col-prompt .deck-phrase-text')?.textContent ?? '',
+      ),
+    ).toEqual(['zapato', 'bueno', 'árbol'])
+
+    // Change to Alphabetical (A–Z)
+    await user.selectOptions(sortSelect, 'alpha-asc')
+    rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(
+      rows.map(
+        (r) =>
+          r.querySelector('.col-prompt .deck-phrase-text')?.textContent ?? '',
+      ),
+    ).toEqual(['árbol', 'bueno', 'zapato'])
+
+    // Click "Prompt" column header button to toggle to Alphabetical (Z–A)
+    const promptHeaderBtn = screen.getByRole('button', {
+      name: /sort by prompt/i,
+    })
+    await user.click(promptHeaderBtn)
+    expect(sortSelect).toHaveValue('alpha-desc')
+    rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(
+      rows.map(
+        (r) =>
+          r.querySelector('.col-prompt .deck-phrase-text')?.textContent ?? '',
+      ),
+    ).toEqual(['zapato', 'bueno', 'árbol'])
+
+    // Click "Prompt" column header button again to reset to Newest first
+    await user.click(promptHeaderBtn)
+    expect(sortSelect).toHaveValue('created-desc')
+    rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(
+      rows.map(
+        (r) =>
+          r.querySelector('.col-prompt .deck-phrase-text')?.textContent ?? '',
+      ),
+    ).toEqual(['árbol', 'bueno', 'zapato'])
+  })
+
   it('modifies card in deck manager by clicking row and persists updates to storage', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
@@ -2837,6 +2961,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: 0,
     }
     const mediumCard: StudyCard = {
       id: 'test-med:es-en',
@@ -2854,6 +2979,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: 0,
     }
     const shortCard: StudyCard = {
       id: 'test-short:es-en',
@@ -2871,6 +2997,7 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      createdAt: 0,
     }
 
     services.cards.load = () => [longCard, mediumCard, shortCard]
