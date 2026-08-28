@@ -870,10 +870,11 @@ test('configures mobile viewport and touch action defaults for iOS standalone er
   expect(touchAction).toBe('manipulation')
 })
 
-test('ensures zero horizontal or vertical overflow across mobile and desktop viewports', async ({
+test('ensures zero horizontal overflow across mobile and desktop viewports and verifies vertical fit for single-screen views', async ({
   page,
 }) => {
   const viewports = [
+    { name: 'Narrow Mobile (320x568)', width: 320, height: 568 },
     { name: 'iPhone SE (375x667)', width: 375, height: 667 },
     { name: 'iPhone 14 (390x844)', width: 390, height: 844 },
     { name: 'iPhone Pro Max (430x932)', width: 430, height: 932 },
@@ -883,12 +884,14 @@ test('ensures zero horizontal or vertical overflow across mobile and desktop vie
   for (const vp of viewports) {
     await page.setViewportSize({ width: vp.width, height: vp.height })
 
-    for (const testPage of ['welcome', 'deck', 'review']) {
+    for (const testPage of ['welcome', 'deck', 'review', 'create']) {
       await page.goto('/')
       if (testPage === 'deck') {
         await page.getByRole('button', { name: /manage deck/i }).click()
       } else if (testPage === 'review') {
         await page.getByRole('button', { name: /^practice$/i }).click()
+      } else if (testPage === 'create') {
+        await page.getByRole('button', { name: /create a card/i }).click()
       }
 
       const dims = await page.evaluate(() => {
@@ -900,14 +903,84 @@ test('ensures zero horizontal or vertical overflow across mobile and desktop vie
           docClientHeight: doc.clientHeight,
         }
       })
+
+      // Invariant: zero horizontal overflow on any view
       expect(
         dims.docScrollWidth,
         `${testPage} on ${vp.name} horizontal overflow`,
       ).toBe(dims.docClientWidth)
-      expect(
-        dims.docScrollHeight,
-        `${testPage} on ${vp.name} vertical overflow`,
-      ).toBe(dims.docClientHeight)
+
+      // Single-screen initial views should fit cleanly in viewport without unnecessary vertical scroll
+      if (testPage === 'welcome' || testPage === 'review') {
+        expect(
+          dims.docScrollHeight,
+          `${testPage} on ${vp.name} vertical overflow`,
+        ).toBe(dims.docClientHeight)
+      }
     }
   }
+})
+
+test('enables vertical scrolling in deck manager when card list exceeds viewport', async ({
+  page,
+}) => {
+  const cards = Array.from({ length: 25 }, (_, i) => ({
+    id: `scroll-test-card-${i}:es-en`,
+    noteId: `scroll-note-${i}`,
+    prompt: `Palabra ${i + 1}`,
+    answer: `Word ${i + 1}`,
+    direction: 'es-en',
+    context: 'Context sample',
+    scene: 'conversation',
+    schedule: {
+      state: 'new',
+      dueAt: 0,
+      intervalDays: 0,
+      easeFactor: 2.5,
+      reviews: 0,
+      lapses: 0,
+    },
+  }))
+
+  await page.addInitScript((cardList) => {
+    window.localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({ version: 1, cards: cardList, deletedCardIds: [] }),
+    )
+  }, cards)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/deck')
+  await expect(
+    page.getByRole('heading', { name: /manage deck/i }),
+  ).toBeVisible()
+
+  const lastCard = page.getByText('Palabra 25')
+  await expect(lastCard).toBeAttached()
+
+  const initialDims = await page.evaluate(() => ({
+    docScrollHeight: document.documentElement.scrollHeight,
+    docClientHeight: document.documentElement.clientHeight,
+    scrollY: window.scrollY,
+  }))
+
+  // Deck list exceeds viewport height and document is scrollable
+  expect(initialDims.docScrollHeight).toBeGreaterThan(
+    initialDims.docClientHeight,
+  )
+  expect(initialDims.scrollY).toBe(0)
+
+  // Save screenshot of top state
+  await page.screenshot({ path: 'test-results/deck-scroll-top.png' })
+
+  // Scroll last card into view
+  await lastCard.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+
+  const scrolledY = await page.evaluate(() => window.scrollY)
+  expect(scrolledY).toBeGreaterThan(0)
+  await expect(lastCard).toBeInViewport()
+
+  // Save screenshot of scrolled bottom state
+  await page.screenshot({ path: 'test-results/deck-scroll-bottom.png' })
 })
