@@ -1111,7 +1111,7 @@ describe('Jolito', () => {
 
     // User can manually toggle paste link input if desired
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
 
     // Enter link / token
@@ -1151,9 +1151,7 @@ describe('Jolito', () => {
 
     // In iOS standalone mode, paste input and hint are directly visible
     expect(
-      await screen.findByText(
-        /Long-press the button in your email and tap Copy Link/i,
-      ),
+      await screen.findByText(/Long-press the link in your email to copy/i),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/^sign-in link$/i)).toBeInTheDocument()
 
@@ -1224,7 +1222,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
@@ -1252,7 +1250,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
@@ -1292,7 +1290,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
 
     const pasteBtn = screen.getByRole('button', {
@@ -1541,7 +1539,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
 
     const pasteBtn = screen.getByRole('button', {
@@ -1885,7 +1883,7 @@ describe('Jolito', () => {
 
     // 4. Guest toggles paste input and enters link / code
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
     await user.type(tokenInput, '123456')
@@ -1931,9 +1929,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
-      await screen.findByText(
-        /Long-press the button in your email and tap Copy Link/i,
-      ),
+      await screen.findByText(/Long-press the link in your email to copy/i),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/^sign-in link$/i)).toBeInTheDocument()
 
@@ -2030,7 +2026,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     await user.click(
-      screen.getByRole('button', { name: /paste sign-in link manually/i }),
+      screen.getByRole('button', { name: /paste link manually/i }),
     )
 
     const tokenInput = screen.getByLabelText(/^sign-in link$/i)
