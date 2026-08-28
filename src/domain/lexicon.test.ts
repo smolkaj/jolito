@@ -4,6 +4,7 @@ import {
   extractGlossTerms,
   LexiconIndex,
   normalizeForSearch,
+  weightedSpanishDistance,
   type LexiconEntry,
 } from './lexicon'
 
@@ -95,6 +96,30 @@ describe('damerauLevenshtein', () => {
   })
 })
 
+describe('weightedSpanishDistance', () => {
+  it('assigns lower distance to Spanish phonetic substitutions', () => {
+    // Silent h insertion/deletion (0.4 vs 1.0)
+    expect(weightedSpanishDistance('ablar', 'hablar')).toBeCloseTo(0.4, 1)
+    expect(weightedSpanishDistance('acer', 'hacer')).toBeCloseTo(0.4, 1)
+
+    // b/v homophones (0.4 vs 1.0)
+    expect(weightedSpanishDistance('havia', 'habia')).toBeCloseTo(0.4, 1)
+
+    // g/j homophones before e/i (0.4 vs 1.0)
+    expect(weightedSpanishDistance('elejir', 'elegir')).toBeCloseTo(0.4, 1)
+
+    // Double consonant reductions from English learners (0.4 vs 1.0)
+    expect(weightedSpanishDistance('aguacatte', 'aguacate')).toBeCloseTo(0.4, 1)
+    expect(weightedSpanishDistance('proffesor', 'profesor')).toBeCloseTo(0.4, 1)
+
+    // Transpositions
+    expect(weightedSpanishDistance('agaucate', 'aguacate')).toBeCloseTo(0.8, 1)
+
+    // Large length difference
+    expect(weightedSpanishDistance('a', 'aguacate')).toBeGreaterThanOrEqual(3)
+  })
+})
+
 describe('LexiconIndex', () => {
   const index = new LexiconIndex(
     [
@@ -165,6 +190,19 @@ describe('LexiconIndex', () => {
       const results = index.suggest('padre', 'es')
       expect(results.length).toBeGreaterThan(0)
       expect(results[0]?.spanish).toBe('qué padre')
+    })
+
+    it('finds fuzzy suggestions when typos occur and assigns fuzzy matchType', () => {
+      const results = index.suggest('aguacatte', 'es')
+      expect(results.length).toBeGreaterThan(0)
+      expect(results[0]?.spanish).toBe('aguacate')
+      expect(results[0]?.matchType).toBe('fuzzy')
+      expect(results[0]?.matchedForm).toBe('aguacatte')
+
+      const enFuzzy = index.suggest('avocaddo', 'en')
+      expect(enFuzzy.length).toBeGreaterThan(0)
+      expect(enFuzzy[0]?.spanish).toBe('aguacate')
+      expect(enFuzzy[0]?.matchType).toBe('fuzzy')
     })
 
     it('limits returned suggestions to requested limit', () => {

@@ -557,6 +557,32 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('renders fuzzy typo matches in autocomplete dropdown with badge and keyboard selection', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'aguacatte')
+
+    const listbox = screen.getByRole('listbox', {
+      name: /spanish suggestions/i,
+    })
+    expect(listbox).toBeInTheDocument()
+    expect(within(listbox).getByText('aguacate')).toBeInTheDocument()
+    expect(within(listbox).getByText('typo match')).toBeInTheDocument()
+
+    // Navigate with keyboard and select
+    await user.keyboard('{ArrowDown}{Enter}')
+
+    expect(spanishInput).toHaveValue('aguacate')
+    expect(screen.getByLabelText(/english/i)).toHaveValue('avocado')
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('preserves existing user-typed additional context when applying an autocomplete suggestion', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()

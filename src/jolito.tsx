@@ -2641,10 +2641,14 @@ export function App({
       if (val.trim().length >= 2) {
         const matches = services.assistant.suggest(val, 'es', 5)
         setSuggestions(matches)
+        const hasDirectMatches = matches.some(
+          (m) =>
+            m.matchType === 'exact' ||
+            m.matchType === 'prefix' ||
+            m.matchType === 'lemma',
+        )
         setDidYouMean(
-          matches.length === 0
-            ? services.assistant.didYouMean(val, 'es')
-            : null,
+          !hasDirectMatches ? services.assistant.didYouMean(val, 'es') : null,
         )
       } else {
         setSuggestions([])
@@ -3178,6 +3182,11 @@ export function App({
                             {item.matchType === 'lemma' && item.matchedForm && (
                               <span className="suggestion-lemma-badge">
                                 from <em>{item.matchedForm}</em>
+                              </span>
+                            )}
+                            {item.matchType === 'fuzzy' && (
+                              <span className="suggestion-fuzzy-badge">
+                                typo match
                               </span>
                             )}
                             {item.tag && (
