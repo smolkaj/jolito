@@ -426,50 +426,6 @@ export class LexiconIndex {
     return results
   }
 
-  didYouMean(query: string, lang: 'es' | 'en' = 'es'): LexiconEntry | null {
-    const normalized = normalizeForSearch(query)
-    if (normalized.length < 3) return null
-
-    if (lang === 'es') {
-      if (
-        this.normalizedSpanishMap.has(normalized) ||
-        this.lemmaMap.has(normalized)
-      ) {
-        return null
-      }
-    } else {
-      if (this.normalizedEnglishMap.has(normalized)) {
-        return null
-      }
-    }
-
-    let bestMatch: LexiconEntry | null = null
-    let minDistance = Infinity
-    const maxAllowedDistance =
-      normalized.length <= 4 ? 1.0 : normalized.length <= 7 ? 1.8 : 2.2
-
-    const candidateIndices = this.getFuzzyCandidates(normalized, lang)
-    for (const idx of candidateIndices) {
-      const entry = this.entries[idx]
-      if (!entry) continue
-      const terms = this.getTerms(entry, lang)
-
-      for (const normTarget of terms) {
-        if (normTarget.startsWith(normalized)) continue
-
-        if (Math.abs(normTarget.length - normalized.length) <= 3) {
-          const distance = weightedSpanishDistance(normalized, normTarget)
-          if (distance <= maxAllowedDistance && distance < minDistance) {
-            minDistance = distance
-            bestMatch = entry
-          }
-        }
-      }
-    }
-
-    return bestMatch
-  }
-
   translate(text: string, from: 'es' | 'en' = 'es'): LexiconEntry | null {
     const normalized = normalizeForSearch(text)
     if (!normalized) return null

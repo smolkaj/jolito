@@ -34,7 +34,6 @@ export type CardAssistant = {
     lang?: 'es' | 'en',
     limit?: number,
   ): AutocompleteSuggestion[]
-  didYouMean(query: string, lang?: 'es' | 'en'): LexiconEntry | null
   translate(text: string, from?: 'es' | 'en'): LexiconEntry | null
   loadDictionary?(): Promise<boolean> | boolean | Promise<void> | void
 }

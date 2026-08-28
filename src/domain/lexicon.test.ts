@@ -189,6 +189,11 @@ describe('LexiconIndex', () => {
       expect(results[0]?.matchType).toBe('fuzzy')
       expect(results[0]?.matchedForm).toBe('aguacatte')
 
+      const compoundFuzzy = index.suggest('no machnes', 'es')
+      expect(compoundFuzzy.length).toBeGreaterThan(0)
+      expect(compoundFuzzy[0]?.spanish).toBe('no manches')
+      expect(compoundFuzzy[0]?.matchType).toBe('fuzzy')
+
       const enFuzzy = index.suggest('avocaddo', 'en')
       expect(enFuzzy.length).toBeGreaterThan(0)
       expect(enFuzzy[0]?.spanish).toBe('aguacate')
@@ -198,38 +203,6 @@ describe('LexiconIndex', () => {
     it('limits returned suggestions to requested limit', () => {
       const results = index.suggest('a', 'es', 1)
       expect(results.length).toBeLessThanOrEqual(1)
-    })
-  })
-
-  describe('didYouMean', () => {
-    it('returns null for short queries under 3 characters', () => {
-      expect(index.didYouMean('ag')).toBeNull()
-    })
-
-    it('returns null for exact matches and known lemmas in Spanish and English', () => {
-      expect(index.didYouMean('aguacate', 'es')).toBeNull()
-      expect(index.didYouMean('qué padre', 'es')).toBeNull()
-      expect(index.didYouMean('avocado', 'en')).toBeNull()
-      expect(index.didYouMean('tuvimos', 'es')).toBeNull() // known lemma form
-    })
-
-    it('returns fuzzy match for minor typos in Spanish and English', () => {
-      const typoResult = index.didYouMean('aguacatte')
-      expect(typoResult).not.toBeNull()
-      expect(typoResult?.spanish).toBe('aguacate')
-      expect(typoResult?.english).toBe('avocado')
-
-      const typoResult2 = index.didYouMean('no machnes')
-      expect(typoResult2).not.toBeNull()
-      expect(typoResult2?.spanish).toBe('no manches')
-
-      const typoEnResult = index.didYouMean('avocaddo', 'en')
-      expect(typoEnResult).not.toBeNull()
-      expect(typoEnResult?.spanish).toBe('aguacate')
-    })
-
-    it('returns null for completely unrelated words', () => {
-      expect(index.didYouMean('xyzabc123')).toBeNull()
     })
   })
 
