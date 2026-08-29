@@ -383,8 +383,35 @@ def main():
     with open(DICT_OUTPUT_PATH, "wb") as f:
         f.write(dict_bytes)
 
-    print(f"5. Writing {len(lemma_map)} inflection mappings to {LEMMAS_OUTPUT_PATH}...")
-    lemma_bytes = json.dumps(lemma_map, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    # Invert and compact lemma map into packed stem dictionary:
+    # { "lemma": "~o ~as ~a ... irregular1 irregular2" }
+    inverted_lemmas = {}
+    for form, targets in lemma_map.items():
+        target_list = targets if isinstance(targets, list) else [targets]
+        for t in target_list:
+            if t not in inverted_lemmas:
+                inverted_lemmas[t] = []
+            if form not in inverted_lemmas[t]:
+                inverted_lemmas[t].append(form)
+
+    def get_stem(lemma):
+        if lemma.endswith(("ar", "er", "ir")) and len(lemma) > 2:
+            return lemma[:-2]
+        return lemma
+
+    packed_lemmas = {}
+    for lemma, forms in sorted(inverted_lemmas.items()):
+        stem = get_stem(lemma)
+        encoded_tokens = []
+        for f in sorted(forms):
+            if len(stem) >= 2 and f.startswith(stem):
+                encoded_tokens.append("~" + f[len(stem):])
+            else:
+                encoded_tokens.append(f)
+        packed_lemmas[lemma] = " ".join(encoded_tokens)
+
+    print(f"5. Writing {len(lemma_map)} inflection mappings ({len(packed_lemmas)} lemmas) to {LEMMAS_OUTPUT_PATH}...")
+    lemma_bytes = json.dumps(packed_lemmas, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     with open(LEMMAS_OUTPUT_PATH, "wb") as f:
         f.write(lemma_bytes)
 
@@ -394,7 +421,7 @@ def main():
 
     print(f"✓ Successfully built Jolito Lexicon in {elapsed:.2f}s!")
     print(f"  Dictionary: {len(entries)} words | {len(dict_bytes)/1024:.1f} KB (gzipped: {dict_gz/1024:.1f} KB)")
-    print(f"  Lemma map:  {len(lemma_map)} forms  | {len(lemma_bytes)/1024:.1f} KB (gzipped: {lemma_gz/1024:.1f} KB)")
+    print(f"  Packed lemma map: {len(lemma_map)} forms across {len(packed_lemmas)} lemmas | {len(lemma_bytes)/1024:.1f} KB (gzipped: {lemma_gz/1024:.1f} KB)")
 
 if __name__ == "__main__":
     main()

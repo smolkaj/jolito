@@ -3,6 +3,7 @@ import {
   extractGlossTerms,
   LexiconIndex,
   normalizeForSearch,
+  unpackLemmas,
   weightedSpanishDistance,
   type LexiconEntry,
 } from './lexicon'
@@ -264,6 +265,62 @@ describe('LexiconIndex', () => {
       )
       const res2 = testIndex2.suggest('vengo', 'es')
       expect(res2[0]?.spanish).toBe('venir')
+    })
+
+    it('unpacks and indexes compact stem-encoded lemmas', () => {
+      const packedIndex = new LexiconIndex(
+        [
+          {
+            spanish: 'hablar',
+            english: 'to speak',
+            context: 'Verb',
+            tag: 'basics',
+          },
+          {
+            spanish: 'comer',
+            english: 'to eat',
+            context: 'Verb',
+            tag: 'basics',
+          },
+          {
+            spanish: 'vivir',
+            english: 'to live',
+            context: 'Verb',
+            tag: 'basics',
+          },
+          { spanish: 'ser', english: 'to be', context: 'Verb', tag: 'basics' },
+          { spanish: 'ir', english: 'to go', context: 'Verb', tag: 'basics' },
+        ],
+        {
+          hablar: '~o ~as ~a ~amos ~aron hablé',
+          comer: '~o ~es ~e ~imos comí',
+          vivir: '~o ~es ~e ~imos viví',
+          ser: 'era soy eres es fue',
+          ir: 'voy vas va fue',
+        },
+      )
+
+      const habloResults = packedIndex.suggest('hablo', 'es')
+      expect(habloResults[0]?.spanish).toBe('hablar')
+      expect(habloResults[0]?.matchType).toBe('lemma')
+
+      const comiResults = packedIndex.suggest('comí', 'es')
+      expect(comiResults[0]?.spanish).toBe('comer')
+      expect(comiResults[0]?.matchType).toBe('lemma')
+
+      const fueResults = packedIndex.suggest('fue', 'es')
+      expect(fueResults.map((r) => r.spanish)).toContain('ser')
+      expect(fueResults.map((r) => r.spanish)).toContain('ir')
+
+      // Direct unpackLemmas coverage for arrays, non-verbs, whitespace tokens, duplicate entries
+      const unpacked = unpackLemmas({
+        hablar: ['~o', '~as', 'hablé', '~o'],
+        feliz: 'felices',
+        comer: '~o  ~es',
+      })
+      expect(unpacked['hablo']).toEqual(['hablar'])
+      expect(unpacked['felices']).toEqual(['feliz'])
+      expect(unpacked['comes']).toEqual(['comer'])
     })
 
     it('finds word-boundary matches in compound phrases', () => {
