@@ -23,7 +23,7 @@ jobs:
       - run: npm run cap:sync
       - name: Build Xcode iOS scheme
         run: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
+          xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
             -destination 'generic/platform=iOS' \
             -configuration Debug \
