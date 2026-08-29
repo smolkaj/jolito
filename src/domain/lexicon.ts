@@ -160,7 +160,8 @@ export function unpackLemmas(
   const result: Record<string, string[]> = {}
   for (const [lemma, formsVal] of Object.entries(packed)) {
     const stem =
-      lemma.endsWith('ar') || lemma.endsWith('er') || lemma.endsWith('ir')
+      (lemma.endsWith('ar') || lemma.endsWith('er') || lemma.endsWith('ir')) &&
+      lemma.length > 2
         ? lemma.slice(0, -2)
         : lemma
     const forms = Array.isArray(formsVal)

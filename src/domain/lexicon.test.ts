@@ -312,15 +312,20 @@ describe('LexiconIndex', () => {
       expect(fueResults.map((r) => r.spanish)).toContain('ser')
       expect(fueResults.map((r) => r.spanish)).toContain('ir')
 
-      // Direct unpackLemmas coverage for arrays, non-verbs, whitespace tokens, duplicate entries
+      // Direct unpackLemmas coverage for arrays, non-verbs, whitespace tokens, duplicate entries, and 2-letter verbs
       const unpacked = unpackLemmas({
         hablar: ['~o', '~as', 'hablé', '~o'],
         feliz: 'felices',
         comer: '~o  ~es',
+        ir: '~emos ~é ~ía ~se voy fue',
       })
       expect(unpacked['hablo']).toEqual(['hablar'])
       expect(unpacked['felices']).toEqual(['feliz'])
       expect(unpacked['comes']).toEqual(['comer'])
+      expect(unpacked['iremos']).toEqual(['ir'])
+      expect(unpacked['iré']).toEqual(['ir'])
+      expect(unpacked['irse']).toEqual(['ir'])
+      expect(unpacked['voy']).toEqual(['ir'])
     })
 
     it('finds word-boundary matches in compound phrases', () => {
