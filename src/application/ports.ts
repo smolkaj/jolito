@@ -31,6 +31,13 @@ export type SoundPlayer = {
   play(earcon: Earcon): void
 }
 
+export type HapticEffect =
+  'selection' | 'again' | 'hard' | 'good' | 'easy' | 'complete'
+
+export type HapticsPlayer = {
+  trigger(effect: HapticEffect): void
+}
+
 export type CardAssistant = {
   suggest(
     query: string,
@@ -106,6 +113,7 @@ export type AppServices = {
   cards: CardRepository
   speaker: Speaker
   sounds: SoundPlayer
+  haptics: HapticsPlayer
   assistant: CardAssistant
   auth: AuthService
   sync: SyncService

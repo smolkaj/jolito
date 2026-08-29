@@ -2842,6 +2842,7 @@ export function App({
       if (!currentCard) return
       const now = services.clock.now()
       services.sounds.play(gradeValue)
+      services.haptics?.trigger(gradeValue)
       const reviewed = scheduleReview(currentCard, gradeValue, now)
       const { updatedCards, buriedCardIds } = burySiblingCards(
         cardsRef.current,
@@ -2871,10 +2872,18 @@ export function App({
       setRevealed(false)
       if (nextQueue.length === 0) {
         services.sounds.play('complete')
+        services.haptics?.trigger('complete')
         navigateTo('complete')
       }
     },
-    [currentCard, navigateTo, queue, services.clock, services.sounds],
+    [
+      currentCard,
+      navigateTo,
+      queue,
+      services.clock,
+      services.haptics,
+      services.sounds,
+    ],
   )
 
   useEffect(() => {
@@ -2976,6 +2985,7 @@ export function App({
     if (revealed || !currentCard) return
     setRevealed(true)
     services.sounds.play('reveal')
+    services.haptics?.trigger('selection')
     playAudio(currentCard.answer, localeForAnswer(currentCard))
   }
 

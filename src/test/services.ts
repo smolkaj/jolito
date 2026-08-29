@@ -9,6 +9,8 @@ import type {
   FeedbackResult,
   FeedbackService,
   FeedbackSubmission,
+  HapticEffect,
+  HapticsPlayer,
   IdGenerator,
   SoundPlayer,
   Speaker,
@@ -84,6 +86,14 @@ export class MockSoundPlayer implements SoundPlayer {
 
   play(earcon: Earcon): void {
     this.played.push(earcon)
+  }
+}
+
+export class MockHapticsPlayer implements HapticsPlayer {
+  public triggered: HapticEffect[] = []
+
+  trigger(effect: HapticEffect): void {
+    this.triggered.push(effect)
   }
 }
 
@@ -269,6 +279,7 @@ export function createTestServices(options?: {
   memoryCards: MemoryCardRepository
   mockSpeaker: MockSpeaker
   mockSounds: MockSoundPlayer
+  mockHaptics: MockHapticsPlayer
   fixedClock: FixedClock
   sequentialIds: SequentialIds
   assistant: CardAssistant
@@ -285,6 +296,7 @@ export function createTestServices(options?: {
     mockSpeaker.isSupported = options.speakerSupported
   }
   const mockSounds = new MockSoundPlayer()
+  const mockHaptics = new MockHapticsPlayer()
   const fixedClock = new FixedClock(options?.clockTime)
   const sequentialIds = new SequentialIds()
   const assistant = options?.assistant ?? new OfflineCardAssistant(TEST_LEXICON)
@@ -305,6 +317,7 @@ export function createTestServices(options?: {
     cards: memoryCards,
     speaker: mockSpeaker,
     sounds: mockSounds,
+    haptics: mockHaptics,
     clock: fixedClock,
     ids: sequentialIds,
     assistant,
@@ -314,6 +327,7 @@ export function createTestServices(options?: {
     memoryCards,
     mockSpeaker,
     mockSounds,
+    mockHaptics,
     fixedClock,
     sequentialIds,
     mockAuth,

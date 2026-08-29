@@ -1,0 +1,13 @@
+# Maestro iOS Native Smoke Test Flow
+appId: to.joli.app
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Make your Spanish stick.'
+- assertVisible: 'Practice'
+- tapOn: 'Practice'
+- assertVisible: 'Your answer'
+- inputText: 'avocado'
+- pressKey: Enter
+- assertVisible: 'Good'
+- tapOn: 'Good'

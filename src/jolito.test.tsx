@@ -136,6 +136,16 @@ describe('Jolito', () => {
       'easy',
       'complete',
     ])
+    expect(services.mockHaptics.triggered).toEqual([
+      'selection',
+      'easy',
+      'complete',
+      'selection',
+      'again',
+      'selection',
+      'easy',
+      'complete',
+    ])
     expect(services.memoryCards.saved).toHaveLength(2)
     expect(services.memoryCards.saved?.[0]?.prompt).toBe(
       '¿Dónde está el metro?',

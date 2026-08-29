@@ -18,13 +18,14 @@ The PR author briefly describes behavior changed and verification performed. Scr
 
 ## Testing strategy
 
-| Layer       | Purpose                             | Jolito examples                                                           |
-| ----------- | ----------------------------------- | ------------------------------------------------------------------------- |
-| Unit        | Fast, deterministic domain behavior | scheduling, answer comparison, card-direction creation, serialization     |
-| Property    | Invariants across many inputs       | no invalid review state, stable serialization, valid due-date transitions |
-| Integration | Components collaborating in a DOM   | typing and revealing an answer, a card creation form                      |
-| Browser     | Critical behavior in a real browser | keyboard review loop, offline creation, reconnect/sync                    |
-| Visual      | Guard the designed experience       | welcome, create, prompt, revealed answer, mobile breakpoints              |
+| Layer           | Purpose                             | Jolito examples                                                           |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------- |
+| Unit            | Fast, deterministic domain behavior | scheduling, answer comparison, card-direction creation, serialization     |
+| Property        | Invariants across many inputs       | no invalid review state, stable serialization, valid due-date transitions |
+| Integration     | Components collaborating in a DOM   | typing and revealing an answer, a card creation form                      |
+| Browser/Mobile  | Critical behavior in real viewports | keyboard review loop, mobile touch ergonomics, offline creation           |
+| Native CI (iOS) | Validate Xcode & Swift compilation  | xcodebuild workspace verification, Capacitor plugin bindings on macOS-15  |
+| Visual          | Guard the designed experience       | welcome, create, prompt, revealed answer, mobile breakpoints              |
 
 Coverage is a guardrail, not a score. The `src/domain` and `src/application` core must maintain at least 95% statement, branch, function, and line coverage. UI coverage is judged by behavior-focused integration and browser tests rather than a blanket percentage.
 
@@ -46,6 +47,7 @@ Documentation is part of the deliverable:
 
 ```sh
 npm run check       # formatting, linting, types, unit coverage, production build
-npm run test:e2e    # browser-level smoke tests
+npm run test:e2e    # browser and mobile touch smoke tests
+npm run cap:sync    # sync web assets to native iOS project
 npm run audit:prod  # production dependency vulnerabilities
 ```
