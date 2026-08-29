@@ -460,6 +460,22 @@ export class SupabaseAuthService implements AuthService {
       rawToken = rawToken.slice(1, -1).trim()
     }
 
+    // 0. Check if rawToken is a plain webpage link without tokens
+    if (
+      (rawToken.includes('joli.to') ||
+        rawToken.includes('workers.dev') ||
+        rawToken.includes('localhost')) &&
+      !rawToken.includes('access_token=') &&
+      !rawToken.includes('token=') &&
+      !rawToken.includes('token_hash=')
+    ) {
+      return {
+        success: false,
+        error:
+          'This webpage link has no session tokens. In Safari, tap "Copy sign-in link" on the top banner.',
+      }
+    }
+
     // 1. Check if rawToken is a pasted session fragment / URL containing access_token
     if (rawToken.includes('access_token=')) {
       const hashStr = rawToken.includes('#')
@@ -624,7 +640,7 @@ export class SupabaseAuthService implements AuthService {
 
         if (/expired|invalid/i.test(rawError)) {
           lastError =
-            'Invalid or expired sign-in link. If you opened the link in Safari, copy your sign-in link from Safari or request a new email.'
+            'Invalid or expired link. Tap the link in your email to open Safari, then tap "Copy sign-in link" on the top banner.'
         } else {
           lastError = rawError
         }

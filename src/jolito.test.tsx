@@ -1345,7 +1345,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // On standard desktop browser, no paste input is shown by default
-    expect(screen.queryByLabelText(/^sign-in link$/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/sign-in link/i)).not.toBeInTheDocument()
 
     // User can manually toggle paste link input if desired
     await user.click(
@@ -1389,9 +1389,9 @@ describe('Jolito', () => {
 
     // In iOS standalone mode, paste input and hint are directly visible
     expect(
-      await screen.findByText(/Long-press the link in your email to copy/i),
+      await screen.findByText(/Open the email in Safari, tap/i),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/^sign-in link$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/sign-in link/i)).toBeInTheDocument()
 
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
@@ -1463,7 +1463,7 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /paste link manually/i }),
     )
 
-    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(
       tokenInput,
       'https://example.supabase.co/auth/v1/verify?token=pkce_secret123&type=magiclink',
@@ -1491,7 +1491,7 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /paste link manually/i }),
     )
 
-    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(
       tokenInput,
       'https://xwqjelkfdcfzyxxblvhp.supabase.co/auth/v1/verify?token=45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b&type=magiclink&redirect_to=https://joli.to/',
@@ -2132,7 +2132,7 @@ describe('Jolito', () => {
     await user.click(
       screen.getByRole('button', { name: /paste link manually/i }),
     )
-    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
@@ -2176,9 +2176,9 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
     expect(
-      await screen.findByText(/Long-press the link in your email to copy/i),
+      await screen.findByText(/Open the email in Safari, tap/i),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/^sign-in link$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/sign-in link/i)).toBeInTheDocument()
 
     const resendBtn = screen.getByRole('button', { name: /resend link/i })
     expect(resendBtn).toBeInTheDocument()
@@ -2276,7 +2276,7 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /paste link manually/i }),
     )
 
-    const tokenInput = screen.getByLabelText(/^sign-in link$/i)
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
