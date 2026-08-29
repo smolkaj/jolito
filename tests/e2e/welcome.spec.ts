@@ -913,6 +913,30 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
   }
 })
 
+test('hides card preview on tablet and mobile viewports (<= 860px) so it does not crowd form inputs', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /create a card/i }).click()
+  await expect(
+    page.getByRole('heading', { name: 'New flashcard' }),
+  ).toBeVisible()
+
+  // On desktop (> 860px), preview cards are visible side-by-side
+  await page.setViewportSize({ width: 1024, height: 768 })
+  await expect(page.locator('.create-visual')).toBeVisible()
+  await page.screenshot({ path: 'test-results/create-desktop-1024.png' })
+
+  // On tablet (800px) and mobile (390px), preview cards are hidden
+  await page.setViewportSize({ width: 800, height: 800 })
+  await expect(page.locator('.create-visual')).toBeHidden()
+  await page.screenshot({ path: 'test-results/create-tablet-800.png' })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.locator('.create-visual')).toBeHidden()
+  await page.screenshot({ path: 'test-results/create-mobile-390.png' })
+})
+
 test('enables vertical scrolling in deck manager when card list exceeds viewport', async ({
   page,
 }) => {
