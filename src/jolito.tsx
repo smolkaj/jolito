@@ -3020,7 +3020,7 @@ export function App({
       suggestionsBlurTimerRef.current = window.setTimeout(() => {
         dismissSuggestions()
         suggestionsBlurTimerRef.current = null
-      }, 0)
+      }, 150)
     },
     [dismissSuggestions],
   )
@@ -3591,10 +3591,7 @@ export function App({
                   enterKeyHint="next"
                   value={englishInput}
                   onChange={onEnglishChange}
-                  onFocus={(e) => {
-                    handleFocusSelect(e)
-                    dismissSuggestions()
-                  }}
+                  onFocus={handleFocusSelect}
                   placeholder="English translation"
                 />
               </div>
@@ -3642,10 +3639,7 @@ export function App({
                   enterKeyHint="done"
                   value={contextInput}
                   onChange={(e) => setContextInput(e.target.value)}
-                  onFocus={(e) => {
-                    handleFocusSelect(e)
-                    dismissSuggestions()
-                  }}
+                  onFocus={handleFocusSelect}
                   placeholder="Optional context, regional nuance, or memory hook"
                 />
               </div>
@@ -3674,10 +3668,7 @@ export function App({
                         enterKeyHint="next"
                         value={reversePromptInput}
                         onChange={(e) => setReversePromptInput(e.target.value)}
-                        onFocus={(e) => {
-                          handleFocusSelect(e)
-                          dismissSuggestions()
-                        }}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>
@@ -3692,10 +3683,7 @@ export function App({
                         enterKeyHint="done"
                         value={reverseAnswerInput}
                         onChange={(e) => setReverseAnswerInput(e.target.value)}
-                        onFocus={(e) => {
-                          handleFocusSelect(e)
-                          dismissSuggestions()
-                        }}
+                        onFocus={handleFocusSelect}
                         placeholder="Optional"
                       />
                     </div>

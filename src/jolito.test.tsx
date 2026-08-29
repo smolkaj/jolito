@@ -741,9 +741,11 @@ describe('Jolito', () => {
     // Tab directly into English field without selecting a suggestion
     await user.tab()
     expect(englishInput).toHaveFocus()
-    expect(
-      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
-    ).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('defers suggestion overlay dismissal on blur to allow uninterrupted focus transitions', async () => {
@@ -774,6 +776,42 @@ describe('Jolito', () => {
       ).not.toBeInTheDocument()
     })
     expect(spanishInput).toHaveValue('ahor')
+  })
+
+  it('allows smooth sequential field focus transitions without synchronous suggestion unmounting', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    const contextInput = screen.getByLabelText(/additional context/i)
+
+    await user.type(spanishInput, 'ahor')
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Focus English directly (as done by iOS accessory Next arrow)
+    englishInput.focus()
+    expect(englishInput).toHaveFocus()
+
+    // Overlay is not synchronously torn down during the focus event
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Focus Context directly
+    contextInput.focus()
+    expect(contextInput).toHaveFocus()
+
+    // After blur timer completes, suggestions dismiss cleanly
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('selects existing text when tabbing between fields in the card creation view', async () => {
@@ -813,6 +851,50 @@ describe('Jolito', () => {
 
     await user.keyboard('Mexican concept of time')
     expect(contextInput).toHaveValue('Mexican concept of time')
+  })
+
+  it('preserves full keyboard tab navigation including duplicate edit button when duplicate exists', async () => {
+    const user = userEvent.setup({ delay: null })
+    const cards = createStudyCards(
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: '',
+        bidirectional: false,
+      },
+      'note-1',
+      1000,
+    )
+    const services = createTestServices({ cards })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText<HTMLTextAreaElement>(/spanish/i)
+    const englishInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/^english$/i)
+    const contextInput =
+      screen.getByLabelText<HTMLTextAreaElement>(/additional context/i)
+
+    await user.type(spanishInput, 'aguacate')
+    await user.type(englishInput, 'avocado')
+
+    const editExistingButton = screen.getByRole('button', {
+      name: /edit existing card/i,
+    })
+    expect(editExistingButton).toBeInTheDocument()
+
+    // Spanish -> English -> Edit existing button -> Context
+    spanishInput.focus()
+    expect(spanishInput).toHaveFocus()
+
+    await user.tab()
+    expect(englishInput).toHaveFocus()
+
+    await user.tab()
+    expect(editExistingButton).toHaveFocus()
+
+    await user.tab()
+    expect(contextInput).toHaveFocus()
   })
 
   it('disables autocapitalization on card creation and edit text fields for mobile keyboards', async () => {
