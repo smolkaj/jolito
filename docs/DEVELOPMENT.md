@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 24 (Krypton LTS)
+- Node.js >=24 (Node 24 LTS / Node 26+)
 - npm
 
 ## Start the app
