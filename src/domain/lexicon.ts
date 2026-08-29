@@ -150,6 +150,41 @@ export function weightedSpanishDistance(
   return d[sLen]![tLen]!
 }
 
+/**
+ * Unpacks a compact stem-encoded lemma dictionary where keys are headwords/lemmas
+ * and values are space-delimited inflected forms (prefixed with ~ if sharing the verb stem).
+ */
+export function unpackLemmas(
+  packed: Record<string, string | string[]>,
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {}
+  for (const [lemma, formsVal] of Object.entries(packed)) {
+    const stem =
+      (lemma.endsWith('ar') || lemma.endsWith('er') || lemma.endsWith('ir')) &&
+      lemma.length > 2
+        ? lemma.slice(0, -2)
+        : lemma
+    const forms = Array.isArray(formsVal)
+      ? formsVal
+      : typeof formsVal === 'string' &&
+          (formsVal.includes(' ') || formsVal.startsWith('~'))
+        ? formsVal.split(' ')
+        : [formsVal]
+
+    for (let i = 0; i < forms.length; i++) {
+      const token = forms[i]
+      if (!token) continue
+      const form = token.charCodeAt(0) === 126 ? stem + token.slice(1) : token
+      if (!result[form]) {
+        result[form] = [lemma]
+      } else if (!result[form].includes(lemma)) {
+        result[form].push(lemma)
+      }
+    }
+  }
+  return result
+}
+
 export class LexiconIndex {
   private entries: LexiconEntry[] = []
   private normalizedSpanishMap: Map<string, LexiconEntry> = new Map()
@@ -169,7 +204,18 @@ export class LexiconIndex {
   }
 
   setLemmaMap(lemmas: Record<string, string | string[]>): void {
-    for (const [form, lemma] of Object.entries(lemmas)) {
+    let source = lemmas
+    for (const val of Object.values(lemmas)) {
+      if (
+        typeof val === 'string' &&
+        (val.includes(' ') || val.startsWith('~'))
+      ) {
+        source = unpackLemmas(lemmas)
+        break
+      }
+    }
+
+    for (const [form, lemma] of Object.entries(source)) {
       const normForm = normalizeForSearch(form)
       if (!normForm) continue
       const list = Array.isArray(lemma) ? lemma : [lemma]
