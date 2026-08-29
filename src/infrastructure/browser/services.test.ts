@@ -28,6 +28,7 @@ describe('createBrowserServices', () => {
     expect(services.assistant).toBeDefined()
     expect(services.auth).toBeDefined()
     expect(services.sync).toBeDefined()
+    expect(services.feedback).toBeDefined()
 
     speakerSpy.mockRestore()
     assistantSpy.mockRestore()
