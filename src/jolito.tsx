@@ -1726,7 +1726,7 @@ function SyncModal({
           >
             {isStandalone() && isIOS() ? (
               <p className="sync-explanation">
-                Open the email in Safari, tap <strong>Copy session link</strong>{' '}
+                Open the email in Safari, tap <strong>Copy sign-in link</strong>{' '}
                 on the top banner, then paste it here:
               </p>
             ) : (

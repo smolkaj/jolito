@@ -472,7 +472,7 @@ export class SupabaseAuthService implements AuthService {
       return {
         success: false,
         error:
-          'This webpage link has no session tokens. In Safari, tap "Copy session link" on the top banner.',
+          'This webpage link has no session tokens. In Safari, tap "Copy sign-in link" on the top banner.',
       }
     }
 
@@ -640,7 +640,7 @@ export class SupabaseAuthService implements AuthService {
 
         if (/expired|invalid/i.test(rawError)) {
           lastError =
-            'Invalid or expired link. Tap the link in your email to open Safari, then tap "Copy session link" on the top banner.'
+            'Invalid or expired link. Tap the link in your email to open Safari, then tap "Copy sign-in link" on the top banner.'
         } else {
           lastError = rawError
         }
