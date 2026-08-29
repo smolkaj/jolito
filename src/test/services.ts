@@ -237,25 +237,19 @@ export class MockSyncService implements SyncService {
 export class MockFeedbackService implements FeedbackService {
   public submissions: Array<{
     submission: FeedbackSubmission
-    user: AuthUser
+    user: AuthUser | null
   }> = []
   public shouldSucceed = true
   public errorMessage = 'Failed to send feedback.'
 
   submitFeedback(
     submission: FeedbackSubmission,
-    user: AuthUser,
+    user: AuthUser | null,
   ): Promise<FeedbackResult> {
     if (!this.shouldSucceed) {
-      return Promise.resolve({
-        success: false,
-        error: this.errorMessage,
-      })
+      return Promise.resolve({ success: false, error: this.errorMessage })
     }
-    this.submissions.push({
-      submission: { ...submission },
-      user: { ...user },
-    })
+    this.submissions.push({ submission, user })
     return Promise.resolve({ success: true })
   }
 }

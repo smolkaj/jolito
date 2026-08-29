@@ -3294,38 +3294,37 @@ describe('Jolito', () => {
     })
   })
 
-  it('does not display feedback button or completion prompt when user is not signed in', async () => {
+  it('allows guest user to open feedback modal and submit feedback from footer', async () => {
     const user = userEvent.setup()
     const services = createTestServices({ user: null, cards: [] })
     render(<App services={services} />)
 
-    // 1. Welcome page footer
-    expect(
-      screen.queryByRole('button', { name: /^feedback$/i }),
-    ).not.toBeInTheDocument()
+    // 1. Welcome page footer has Feedback button for guests
+    const feedbackBtn = screen.getByRole('button', { name: /^feedback$/i })
+    expect(feedbackBtn).toBeInTheDocument()
+    await user.click(feedbackBtn)
 
-    // 2. Deck page footer
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
     expect(
-      screen.queryByRole('button', { name: /^feedback$/i }),
-    ).not.toBeInTheDocument()
+      screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/your note helps us improve jolito\./i),
+    ).toBeInTheDocument()
 
-    // 3. Create page footer
-    await user.click(screen.getByRole('button', { name: /create a card/i }))
-    expect(
-      screen.queryByRole('button', { name: /^feedback$/i }),
-    ).not.toBeInTheDocument()
+    const messageInput = screen.getByPlaceholderText(/what’s on your mind\?/i)
+    await user.type(messageInput, 'Love the Mexican audio pronunciations!')
+    await user.click(screen.getByRole('button', { name: /send feedback/i }))
 
-    // 4. Session complete screen
-    await user.click(screen.getByRole('button', { name: /jolito home/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(services.mockFeedback.submissions).toHaveLength(1)
+    expect(services.mockFeedback.submissions[0]!.user).toBeNull()
+    expect(services.mockFeedback.submissions[0]!.submission.message).toBe(
+      'Love the Mexican audio pronunciations!',
+    )
+
+    // Close modal with Done button
+    await user.click(screen.getByRole('button', { name: /done/i }))
     expect(
-      screen.queryByRole('button', { name: /^feedback$/i }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', {
-        name: /have feedback or found a bug\?/i,
-      }),
+      screen.queryByRole('heading', { name: /¡muchas gracias!/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -3365,7 +3364,7 @@ describe('Jolito', () => {
 
     // Verified submission payload recorded in test service
     expect(services.mockFeedback.submissions).toHaveLength(1)
-    expect(services.mockFeedback.submissions[0]!.user.email).toBe(
+    expect(services.mockFeedback.submissions[0]!.user?.email).toBe(
       'student@example.com',
     )
     expect(services.mockFeedback.submissions[0]!.submission.message).toBe(

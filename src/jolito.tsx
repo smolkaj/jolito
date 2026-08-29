@@ -1905,7 +1905,7 @@ function FeedbackModalInner({
   currentView,
 }: {
   onClose: () => void
-  user: AuthUser
+  user: AuthUser | null
   feedbackService: FeedbackService
   currentView: View
 }) {
@@ -1993,7 +1993,9 @@ function FeedbackModalInner({
             <p className="modal-subtitle">
               {isSuccess
                 ? 'Your note has been received.'
-                : `Sending as ${user.email}`}
+                : user
+                  ? `Sending as ${user.email}`
+                  : 'Your note helps us improve Jolito.'}
             </p>
           </div>
           <button
@@ -2096,7 +2098,7 @@ function FeedbackModal({
   currentView: View
 }) {
   useEffect(() => {
-    if (!isOpen || !user) return
+    if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -2105,9 +2107,9 @@ function FeedbackModal({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, user, onClose])
+  }, [isOpen, onClose])
 
-  if (!isOpen || !user) return null
+  if (!isOpen) return null
 
   return (
     <FeedbackModalInner
@@ -2119,23 +2121,10 @@ function FeedbackModal({
   )
 }
 
-function AppFooter({
-  authUser,
-  onOpenFeedback,
-}: {
-  authUser: AuthUser | null
-  onOpenFeedback: () => void
-}) {
+function AppFooter({ onOpenFeedback }: { onOpenFeedback: () => void }) {
   return (
     <footer className="app-footer" aria-label="Site footer">
-      <div className="footer-copy">
-        <span>Jolito</span>
-        <span className="footer-dot" aria-hidden="true">
-          •
-        </span>
-        <span>Spoken Mexican Spanish</span>
-      </div>
-      {authUser && (
+      <div className="app-footer-inner">
         <button
           type="button"
           className="footer-link-button"
@@ -2143,7 +2132,7 @@ function AppFooter({
         >
           Feedback
         </button>
-      )}
+      </div>
     </footer>
   )
 }
@@ -3107,10 +3096,9 @@ export function App({
   }, [])
 
   const openFeedbackModal = useCallback(() => {
-    if (!authUser) return
     setSuggestions([])
     setIsFeedbackOpen(true)
-  }, [authUser])
+  }, [])
 
   const closeFeedbackModal = useCallback(() => {
     setIsFeedbackOpen(false)
@@ -3296,7 +3284,7 @@ export function App({
               </button>
             </div>
           </section>
-          <AppFooter authUser={authUser} onOpenFeedback={openFeedbackModal} />
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3741,7 +3729,7 @@ export function App({
               </div>
             </form>
           </section>
-          <AppFooter authUser={authUser} onOpenFeedback={openFeedbackModal} />
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -4215,7 +4203,7 @@ export function App({
               </div>
             )}
           </section>
-          <AppFooter authUser={authUser} onOpenFeedback={openFeedbackModal} />
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <DeckBackupModal
           isOpen={isBackupOpen}
@@ -4357,7 +4345,7 @@ export function App({
               </div>
             )}
           </section>
-          <AppFooter authUser={authUser} onOpenFeedback={openFeedbackModal} />
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}

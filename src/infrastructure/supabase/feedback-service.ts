@@ -30,7 +30,7 @@ export class SupabaseFeedbackService implements FeedbackService {
 
   async submitFeedback(
     submission: FeedbackSubmission,
-    user: AuthUser,
+    user: AuthUser | null,
   ): Promise<FeedbackResult> {
     const validation = feedbackSubmissionSchema.safeParse(submission)
     if (!validation.success) {
@@ -43,10 +43,6 @@ export class SupabaseFeedbackService implements FeedbackService {
       }
     }
 
-    if (!user || !user.id || !user.email) {
-      return { success: false, error: 'Sign in to send feedback.' }
-    }
-
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return {
         success: false,
@@ -56,12 +52,21 @@ export class SupabaseFeedbackService implements FeedbackService {
 
     let headers = await this.getAuthHeaders()
     if (!headers) {
-      return { success: false, error: 'Sign in to send feedback.' }
+      if (user) {
+        return { success: false, error: 'Sign in to send feedback.' }
+      }
+      // For unauthenticated guest submissions, use the Supabase anon key
+      headers = {
+        apikey: this.supabaseAnonKey,
+        Authorization: `Bearer ${this.supabaseAnonKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      }
     }
 
     const payload = {
-      user_id: user.id,
-      email: user.email,
+      user_id: user?.id ?? null,
+      email: user?.email ?? 'guest@jolito.app',
       message: validation.data.message,
       context: validation.data.context ?? {},
     }
