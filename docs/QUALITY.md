@@ -12,7 +12,7 @@ Every merged code change must pass the automated quality gates:
 - production build;
 - production dependency audit.
 
-CI and supported local development use Node.js 24 (Krypton LTS), pinned in `.nvmrc` and the GitHub workflow.
+CI and supported local development use Node.js >=24 (tested on Node 24 Krypton LTS and Node 26+), pinned to LTS in `.nvmrc` and GitHub Actions workflows.
 
 The PR author briefly describes behavior changed and verification performed. Screenshots are expected for a material visual change, not for every implementation detail. Human review is for product judgment and design clarity; CI is responsible for repeatable regression detection.
 
