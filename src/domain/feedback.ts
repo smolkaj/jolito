@@ -12,7 +12,7 @@ export const feedbackSubmissionSchema = z.object({
 export type FeedbackSubmission = z.infer<typeof feedbackSubmissionSchema>
 
 export const feedbackRowSchema = z.object({
-  user_id: z.string().min(1, 'User ID is required.'),
+  user_id: z.string().min(1).nullable().default(null),
   email: z.string().email('Valid email is required.'),
   message: z.string().min(1),
   context: z.record(z.string(), z.unknown()).default({}),

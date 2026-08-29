@@ -4356,27 +4356,6 @@ kbd {
   box-shadow: 0 0 0 var(--ink);
 }
 
-.complete-feedback-prompt {
-  margin-top: 14px;
-  text-align: center;
-}
-
-.complete-feedback-prompt .complete-link-button {
-  font-size: 13px;
-  color: var(--ink-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  background: transparent;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: color 120ms ease;
-}
-
-.complete-feedback-prompt .complete-link-button:hover {
-  color: var(--rosa-dark);
-}
-
 /* App Footer */
 .app-footer {
   position: fixed;

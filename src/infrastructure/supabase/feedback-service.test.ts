@@ -9,12 +9,16 @@ describe('SupabaseFeedbackService', () => {
   }
 
   let mockAuth: AuthService
+  let refreshSessionSpy: ReturnType<typeof vi.fn<() => Promise<string | null>>>
 
   beforeEach(() => {
+    refreshSessionSpy = vi
+      .fn<() => Promise<string | null>>()
+      .mockResolvedValue('refreshed-access-token')
     mockAuth = {
       getUser: vi.fn().mockResolvedValue(mockUser),
       getAccessToken: vi.fn().mockResolvedValue('mock-access-token'),
-      refreshSession: vi.fn().mockResolvedValue('refreshed-access-token'),
+      refreshSession: refreshSessionSpy,
       sendMagicLink: vi.fn(),
       verifyOtp: vi.fn(),
       signOut: vi.fn(),
@@ -185,5 +189,67 @@ describe('SupabaseFeedbackService', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toBe('Network offline')
+  })
+
+  it('submits guest feedback using anon credentials and null user_id', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(null, {
+        status: 201,
+      }),
+    )
+
+    const service = new SupabaseFeedbackService(
+      mockAuth,
+      'https://supabase.example.com',
+      'anon-key',
+    )
+
+    const result = await service.submitFeedback(
+      {
+        message: 'Guest feedback from landing page',
+        context: { view: 'welcome', version: '0.1.0' },
+      },
+      null,
+    )
+
+    expect(result.success).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://supabase.example.com/rest/v1/feedback',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          apikey: 'anon-key',
+          Authorization: 'Bearer anon-key',
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({
+          user_id: null,
+          email: 'guest@jolito.app',
+          message: 'Guest feedback from landing page',
+          context: { view: 'welcome', version: '0.1.0' },
+        }),
+      }),
+    )
+  })
+
+  it('does not attempt session refresh on 401 when user is null', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Unauthorized', { status: 401 }),
+    )
+
+    const service = new SupabaseFeedbackService(
+      mockAuth,
+      'https://supabase.example.com',
+      'anon-key',
+    )
+
+    const result = await service.submitFeedback(
+      { message: 'Guest feedback' },
+      null,
+    )
+
+    expect(result.success).toBe(false)
+    expect(refreshSessionSpy).not.toHaveBeenCalled()
   })
 })

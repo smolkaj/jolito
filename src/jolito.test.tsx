@@ -3463,7 +3463,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('provides feedback prompt on the session complete screen', async () => {
+  it('provides feedback button in footer on the session complete screen', async () => {
     const user = userEvent.setup()
     const authUser = {
       id: 'student-123',
@@ -3479,7 +3479,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     const completeFeedbackBtn = screen.getByRole('button', {
-      name: /have feedback or found a bug\?/i,
+      name: /^feedback$/i,
     })
     expect(completeFeedbackBtn).toBeInTheDocument()
     await user.click(completeFeedbackBtn)

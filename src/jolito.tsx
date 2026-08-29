@@ -4333,17 +4333,6 @@ export function App({
                 Back home
               </button>
             </div>
-            {authUser && (
-              <div className="complete-feedback-prompt">
-                <button
-                  type="button"
-                  className="complete-link-button"
-                  onClick={openFeedbackModal}
-                >
-                  Have feedback or found a bug?
-                </button>
-              </div>
-            )}
           </section>
           <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>

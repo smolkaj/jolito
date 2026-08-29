@@ -50,11 +50,14 @@ export class SupabaseFeedbackService implements FeedbackService {
       }
     }
 
-    let headers = await this.getAuthHeaders()
-    if (!headers) {
-      if (user) {
+    let headers: Record<string, string>
+    if (user) {
+      const authHeaders = await this.getAuthHeaders()
+      if (!authHeaders) {
         return { success: false, error: 'Sign in to send feedback.' }
       }
+      headers = authHeaders
+    } else {
       // For unauthenticated guest submissions, use the Supabase anon key
       headers = {
         apikey: this.supabaseAnonKey,
@@ -79,7 +82,7 @@ export class SupabaseFeedbackService implements FeedbackService {
         body: JSON.stringify(payload),
       })
 
-      if (res.status === 401 && this.authService.refreshSession) {
+      if (res.status === 401 && user && this.authService.refreshSession) {
         const refreshedToken = await this.authService.refreshSession()
         if (refreshedToken) {
           headers = {

@@ -1,9 +1,9 @@
 -- Jolito Feedback Schema (Supabase PostgreSQL)
--- Authenticated feedback submissions with Row Level Security (RLS)
+-- Authenticated and guest feedback submissions with Row Level Security (RLS)
 
 create table if not exists public.feedback (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   email text not null,
   message text not null,
   context jsonb not null default '{}'::jsonb,
@@ -13,11 +13,14 @@ create table if not exists public.feedback (
 -- Enable Row Level Security
 alter table public.feedback enable row level security;
 
--- Policies: Authenticated users can insert feedback
-create policy "Authenticated users can insert feedback"
+-- Policies: Authenticated users and guests can insert feedback
+create policy "Users and guests can insert feedback"
   on public.feedback for insert
-  to authenticated
-  with check (auth.uid() = user_id);
+  to anon, authenticated
+  with check (
+    (user_id is null and auth.uid() is null)
+    or (user_id = auth.uid())
+  );
 
 -- Policies: Users can view their own submitted feedback
 create policy "Users can view their own feedback"
