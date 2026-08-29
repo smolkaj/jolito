@@ -1,0 +1,31 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and push a new beta build to Apple TestFlight"
+  lane :beta do
+    # 1. Sync project capabilities and certificates if configured
+    if ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
+      app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
+        is_key_content_base64: true
+      )
+    end
+
+    # 2. Build the iOS archive (.ipa)
+    build_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "Jolito.ipa",
+      clean: true
+    )
+
+    # 3. Upload to TestFlight
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+end

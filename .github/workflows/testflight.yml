@@ -1,0 +1,46 @@
+name: TestFlight Beta Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: 'What changed in this beta build?'
+        required: false
+        default: 'Mexican Spanish practice improvements and sensory haptics'
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    name: Build & Deploy to TestFlight
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm run build
+          npm run cap:sync
+          gem install fastlane --no-document
+
+      - name: Run Fastlane Beta
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APPLE_CERTIFICATE_PASS: ${{ secrets.APPLE_CERTIFICATE_PASS }}
+        run: |
+          fastlane ios beta

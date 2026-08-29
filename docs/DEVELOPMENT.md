@@ -117,6 +117,22 @@ npm run cap:sync
 npm run cap:ios
 ```
 
+### Running Native Simulator & Touch E2E Tests
+
+```sh
+npm run test:e2e                # runs full desktop and mobile touch target audits
+# On macOS with Xcode Simulator:
+maestro test tests/native/smoke.yaml
+```
+
+### Deploying to Apple TestFlight
+
+TestFlight beta builds are automatically deployed via GitHub Actions on the `macos-15` runner or locally using Fastlane:
+
+```sh
+fastlane ios beta
+```
+
 ## Before opening a PR
 
 ```sh
