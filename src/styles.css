@@ -675,7 +675,9 @@ summary:focus-visible {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sample-phrase {
@@ -902,18 +904,14 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  width: var(--pill-height-sm);
   height: var(--pill-height-sm);
+  min-width: var(--pill-height-sm);
   min-height: var(--pill-height-sm);
-  max-height: var(--pill-height-sm);
   box-sizing: border-box;
-  padding: 0 10px;
-  border-radius: var(--pill-radius);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: normal;
+  padding: 0;
+  border-radius: 9999px;
+  flex-shrink: 0;
   transition: all 140ms ease;
 }
 
@@ -921,6 +919,20 @@ summary:focus-visible {
   width: 13px;
   height: 13px;
   fill: currentColor;
+  transition: transform 140ms ease;
+}
+
+.sample-card.is-playing .sample-listen-hint svg {
+  animation: audio-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes audio-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.2);
+  }
 }
 
 /* Card Creation Page */
@@ -1600,7 +1612,8 @@ summary:focus-visible {
   .resend-link-button.is-sent,
   .resend-button-sent,
   .resend-button-check,
-  .paste-input-btn.is-pasted {
+  .paste-input-btn.is-pasted,
+  .sample-card.is-playing .sample-listen-hint svg {
     animation: none;
   }
 

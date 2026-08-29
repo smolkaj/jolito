@@ -1724,11 +1724,19 @@ function SyncModal({
             }}
             className="sync-auth-form"
           >
-            <p className="sync-explanation">
-              Paste the sign-in link sent to <strong>{email.trim()}</strong>:
-            </p>
+            {isStandalone() && isIOS() ? (
+              <p className="sync-explanation">
+                Open the email in Safari, tap <strong>Copy sign-in link</strong>{' '}
+                on the top banner, then paste it here:
+              </p>
+            ) : (
+              <p className="sync-explanation">
+                Paste the sign-in link or 6-digit code sent to{' '}
+                <strong>{email.trim()}</strong>:
+              </p>
+            )}
             <div className="field-group">
-              <label htmlFor="sync-otp">Sign-in link</label>
+              <label htmlFor="sync-otp">Sign-in link or code</label>
               <div className="link-input-wrap">
                 <input
                   ref={pasteInputRef}
@@ -1736,7 +1744,7 @@ function SyncModal({
                   type="text"
                   required
                   autoFocus
-                  placeholder="Paste sign-in link"
+                  placeholder="Paste link or code"
                   autoComplete="one-time-code"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
@@ -1767,11 +1775,6 @@ function SyncModal({
                     </button>
                   )}
               </div>
-              {isIOS() && (
-                <span className="field-hint">
-                  Long-press the link in your email to copy.
-                </span>
-              )}
             </div>
             <div className="sync-sent-actions">
               <button
@@ -3227,9 +3230,6 @@ export function App({
                     <svg viewBox="0 0 24 24">
                       <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
                     </svg>
-                    {samplePlaying && activeSampleSide === 'english'
-                      ? 'Playing…'
-                      : 'Tap to hear'}
                   </span>
                 </div>
                 <div className="sample-card-body">
@@ -3262,9 +3262,6 @@ export function App({
                     <svg viewBox="0 0 24 24">
                       <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
                     </svg>
-                    {samplePlaying && activeSampleSide === 'spanish'
-                      ? 'Playing…'
-                      : 'Tap to hear'}
                   </span>
                 </div>
                 <div className="sample-card-body">
@@ -3411,9 +3408,6 @@ export function App({
                       <svg viewBox="0 0 24 24">
                         <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
                       </svg>
-                      {createPlaying && activeCreateSide === 'english'
-                        ? 'Playing…'
-                        : 'Tap to hear'}
                     </span>
                   </div>
                   <div className="sample-card-body">
@@ -3456,9 +3450,6 @@ export function App({
                       <svg viewBox="0 0 24 24">
                         <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
                       </svg>
-                      {createPlaying && activeCreateSide === 'spanish'
-                        ? 'Playing…'
-                        : 'Tap to hear'}
                     </span>
                   </div>
                   <div className="sample-card-body">

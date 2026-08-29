@@ -582,7 +582,23 @@ describe('SupabaseAuthService', () => {
 
     const res = await service.verifyOtp('test@example.com', '111222')
     expect(res.success).toBe(false)
-    expect(res.error).toContain('If you opened the link in Safari')
+    expect(res.error).toContain(
+      'Tap the link in your email to open Safari, then tap "Copy sign-in link"',
+    )
+  })
+
+  it('rejects plain webpage URL without session tokens with clear guidance', async () => {
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    const res = await service.verifyOtp('', 'https://joli.to/')
+    expect(res.success).toBe(false)
+    expect(res.error).toContain(
+      'This webpage link has no session tokens. In Safari, tap "Copy sign-in link"',
+    )
   })
 
   it('exports session link for PWA transfer when authenticated', () => {
