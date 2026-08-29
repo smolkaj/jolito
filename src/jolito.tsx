@@ -2947,6 +2947,14 @@ export function App({
     setRevealed(false)
   }
 
+  function handlePractice() {
+    if (queue.length > 0) {
+      navigateTo('review')
+    } else {
+      beginReview()
+    }
+  }
+
   function beginReview(cardIds?: string[]) {
     const now = services.clock.now()
     const nextQueue =
@@ -3194,21 +3202,9 @@ export function App({
                 >
                   Create a card <span aria-hidden="true">→</span>
                 </button>
-                {queue.length > 0 ? (
-                  <button
-                    className="secondary-button"
-                    onClick={() => navigateTo('review')}
-                  >
-                    Resume practice
-                  </button>
-                ) : (
-                  <button
-                    className="secondary-button"
-                    onClick={() => beginReview()}
-                  >
-                    Practice
-                  </button>
-                )}
+                <button className="secondary-button" onClick={handlePractice}>
+                  Practice
+                </button>
               </div>
             </div>
             <div className="hero-visual">
@@ -3361,18 +3357,11 @@ export function App({
               >
                 Manage deck
               </button>
-              {queue.length > 0 ? (
-                <button
-                  className="text-button"
-                  onClick={() => navigateTo('review')}
-                >
-                  Resume
-                </button>
-              ) : dueCount > 0 ? (
-                <button className="text-button" onClick={() => beginReview()}>
+              {(queue.length > 0 || dueCount > 0) && (
+                <button className="text-button" onClick={handlePractice}>
                   Practice
                 </button>
-              ) : null}
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3824,18 +3813,11 @@ export function App({
                   + New card
                 </button>
               )}
-              {queue.length > 0 ? (
-                <button
-                  className="text-button"
-                  onClick={() => navigateTo('review')}
-                >
-                  Resume
-                </button>
-              ) : dueCount > 0 ? (
-                <button className="text-button" onClick={() => beginReview()}>
+              {(queue.length > 0 || dueCount > 0) && (
+                <button className="text-button" onClick={handlePractice}>
                   Practice
                 </button>
-              ) : null}
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
