@@ -3574,15 +3574,12 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
 
-    // Topbar in deck should have Resume button
-    const resumeButton = screen.getByRole('button', { name: /^resume$/i })
-    expect(resumeButton).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: /^practice$/i }),
-    ).not.toBeInTheDocument()
+    // Topbar in deck should have Practice button
+    const practiceButton = screen.getByRole('button', { name: /^practice$/i })
+    expect(practiceButton).toBeInTheDocument()
 
-    // Resume review session
-    await user.click(resumeButton)
+    // Resume review session via Practice button
+    await user.click(practiceButton)
     expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
 
     // Progress bar still reflects completed card in session
@@ -3656,7 +3653,7 @@ describe('Jolito', () => {
 
     // Navigate away to deck and resume
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
-    await user.click(screen.getByRole('button', { name: /^resume$/i }))
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Finish card B
     expect(
@@ -3678,7 +3675,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('displays Resume practice on the home screen when an active study session is in progress', async () => {
+  it('resumes an active study session when clicking Practice on the home screen', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     const now = 1_700_000_000_000
@@ -3715,14 +3712,14 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /make the words/i }),
     ).toBeInTheDocument()
 
-    // Home screen action displays Resume practice
-    const resumeHeroButton = screen.getByRole('button', {
-      name: /^resume practice$/i,
+    // Home screen action displays Practice
+    const practiceHeroButton = screen.getByRole('button', {
+      name: /^practice$/i,
     })
-    expect(resumeHeroButton).toBeInTheDocument()
+    expect(practiceHeroButton).toBeInTheDocument()
 
-    // Click Resume practice to return to active card
-    await user.click(resumeHeroButton)
+    // Click Practice to return to active card
+    await user.click(practiceHeroButton)
     expect(screen.getByRole('heading', { name: 'palabra' })).toBeInTheDocument()
   })
 
@@ -3773,8 +3770,8 @@ describe('Jolito', () => {
     await user.type(promptInput, 'palabra actualizada')
     await user.click(screen.getByRole('button', { name: /save changes/i }))
 
-    // Resume review
-    await user.click(screen.getByRole('button', { name: /^resume$/i }))
+    // Resume review via Practice button
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(
       screen.getByRole('heading', { name: 'palabra actualizada' }),
     ).toBeInTheDocument()
@@ -3880,8 +3877,8 @@ describe('Jolito', () => {
       ),
     )
 
-    // Resume review
-    await user.click(screen.getByRole('button', { name: /^resume$/i }))
+    // Resume review via Practice button
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByRole('heading', { name: 'card-2' })).toBeInTheDocument()
 
     // 1 completed out of 2 total -> 50%
