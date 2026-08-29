@@ -24,10 +24,16 @@
     "setup:domain": "node scripts/setup-domain.ts",
     "generate:seo": "node scripts/generate-seo-assets.ts",
     "build:favicons": "node scripts/build-favicons.mjs",
+    "cap:sync": "cap sync",
+    "cap:ios": "cap open ios",
     "deploy": "npm run build && wrangler deploy",
     "deploy:preview": "npm run build && wrangler versions upload"
   },
   "dependencies": {
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/status-bar": "^8.0.3",
     "fflate": "^0.8.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -36,6 +42,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.1",

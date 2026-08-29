@@ -25,6 +25,7 @@ describe('createBrowserServices', () => {
     expect(services.cards).toBeDefined()
     expect(services.speaker).toBeDefined()
     expect(services.sounds).toBeDefined()
+    expect(services.haptics).toBeDefined()
     expect(services.assistant).toBeDefined()
     expect(services.auth).toBeDefined()
     expect(services.sync).toBeDefined()

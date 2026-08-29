@@ -4,6 +4,7 @@ import { SupabaseAuthService } from '../supabase/auth-service'
 import { SupabaseFeedbackService } from '../supabase/feedback-service'
 import { SupabaseSyncService } from '../supabase/sync-service'
 import { LocalStorageCardRepository } from './card-repository'
+import { BrowserHapticsPlayer } from './haptics'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
 import { EnhancedBrowserSpeaker } from './speech'
@@ -46,6 +47,7 @@ export function createBrowserServices(): AppServices {
     cards: new LocalStorageCardRepository(),
     speaker,
     sounds: new WebAudioSoundPlayer(),
+    haptics: new BrowserHapticsPlayer(),
     assistant,
     auth,
     sync,

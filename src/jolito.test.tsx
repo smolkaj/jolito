@@ -136,6 +136,16 @@ describe('Jolito', () => {
       'easy',
       'complete',
     ])
+    expect(services.mockHaptics.triggered).toEqual([
+      'selection',
+      'easy',
+      'complete',
+      'selection',
+      'again',
+      'selection',
+      'easy',
+      'complete',
+    ])
     expect(services.memoryCards.saved).toHaveLength(2)
     expect(services.memoryCards.saved?.[0]?.prompt).toBe(
       '¿Dónde está el metro?',
@@ -3486,6 +3496,17 @@ describe('Jolito', () => {
 
     expect(
       screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders understated native app notice in site footer', () => {
+    const services = createTestServices({ user: null, cards: [] })
+    render(<App services={services} />)
+
+    expect(
+      screen.getByText(
+        'Also available as a native app for iOS & Android ($2.99)',
+      ),
     ).toBeInTheDocument()
   })
 

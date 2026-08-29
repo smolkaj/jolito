@@ -100,6 +100,23 @@ npm run setup:domain
 
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality and browser checks remain the code-quality gates.
 
+## Native iOS & Mobile development
+
+Jolito uses [Capacitor](https://capacitorjs.com/) to package the application as a native iOS app sharing the core local-first architecture, sensory feedback (haptics), and spaced-repetition loop.
+
+### Syncing web assets to the native Xcode project
+
+```sh
+npm run build
+npm run cap:sync
+```
+
+### Opening in Xcode (macOS)
+
+```sh
+npm run cap:ios
+```
+
 ## Before opening a PR
 
 ```sh
