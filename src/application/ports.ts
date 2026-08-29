@@ -96,7 +96,7 @@ export type FeedbackResult = {
 export type FeedbackService = {
   submitFeedback(
     submission: FeedbackSubmission,
-    user: AuthUser,
+    user: AuthUser | null,
   ): Promise<FeedbackResult>
 }
 

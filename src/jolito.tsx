@@ -1328,6 +1328,7 @@ function SyncModal({
   auth,
   sync,
   onSaveLocally,
+  onOpenFeedback,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -1341,6 +1342,7 @@ function SyncModal({
   auth: AuthService
   sync: SyncService
   onSaveLocally?: (() => void) | undefined
+  onOpenFeedback?: (() => void) | undefined
 }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
@@ -1613,6 +1615,21 @@ function SyncModal({
                 {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
               </button>
             </div>
+
+            {onOpenFeedback && (
+              <div className="sync-account-feedback">
+                <button
+                  type="button"
+                  className="sync-feedback-link"
+                  onClick={() => {
+                    onClose()
+                    onOpenFeedback()
+                  }}
+                >
+                  Have feedback or spotted a nuance? →
+                </button>
+              </div>
+            )}
           </div>
         ) : !isOtpSent ? (
           <form
@@ -1888,7 +1905,7 @@ function FeedbackModalInner({
   currentView,
 }: {
   onClose: () => void
-  user: AuthUser
+  user: AuthUser | null
   feedbackService: FeedbackService
   currentView: View
 }) {
@@ -1976,7 +1993,9 @@ function FeedbackModalInner({
             <p className="modal-subtitle">
               {isSuccess
                 ? 'Your note has been received.'
-                : `Sending as ${user.email}`}
+                : user
+                  ? `Sending as ${user.email}`
+                  : 'Your note helps us improve Jolito.'}
             </p>
           </div>
           <button
@@ -2079,7 +2098,7 @@ function FeedbackModal({
   currentView: View
 }) {
   useEffect(() => {
-    if (!isOpen || !user) return
+    if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -2088,9 +2107,9 @@ function FeedbackModal({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, user, onClose])
+  }, [isOpen, onClose])
 
-  if (!isOpen || !user) return null
+  if (!isOpen) return null
 
   return (
     <FeedbackModalInner
@@ -2099,6 +2118,22 @@ function FeedbackModal({
       feedbackService={feedbackService}
       currentView={currentView}
     />
+  )
+}
+
+function AppFooter({ onOpenFeedback }: { onOpenFeedback: () => void }) {
+  return (
+    <footer className="app-footer" aria-label="Site footer">
+      <div className="app-footer-inner">
+        <button
+          type="button"
+          className="footer-link-button"
+          onClick={onOpenFeedback}
+        >
+          Feedback
+        </button>
+      </div>
+    </footer>
   )
 }
 
@@ -3061,10 +3096,9 @@ export function App({
   }, [])
 
   const openFeedbackModal = useCallback(() => {
-    if (!authUser) return
     setSuggestions([])
     setIsFeedbackOpen(true)
-  }, [authUser])
+  }, [])
 
   const closeFeedbackModal = useCallback(() => {
     setIsFeedbackOpen(false)
@@ -3122,15 +3156,6 @@ export function App({
               >
                 Manage deck
               </button>
-              {authUser && (
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={openFeedbackModal}
-                >
-                  Feedback
-                </button>
-              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3259,6 +3284,7 @@ export function App({
               </button>
             </div>
           </section>
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3269,6 +3295,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3346,15 +3373,6 @@ export function App({
                   Practice
                 </button>
               ) : null}
-              {authUser && (
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={openFeedbackModal}
-                >
-                  Feedback
-                </button>
-              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -3711,6 +3729,7 @@ export function App({
               </div>
             </form>
           </section>
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3721,6 +3740,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3816,15 +3836,6 @@ export function App({
                   Practice
                 </button>
               ) : null}
-              {authUser && (
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={openFeedbackModal}
-                >
-                  Feedback
-                </button>
-              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -4192,6 +4203,7 @@ export function App({
               </div>
             )}
           </section>
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <DeckBackupModal
           isOpen={isBackupOpen}
@@ -4213,6 +4225,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4263,15 +4276,6 @@ export function App({
               >
                 + New card
               </button>
-              {authUser && (
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={openFeedbackModal}
-                >
-                  Feedback
-                </button>
-              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -4329,18 +4333,8 @@ export function App({
                 Back home
               </button>
             </div>
-            {authUser && (
-              <div className="complete-feedback-prompt">
-                <button
-                  type="button"
-                  className="complete-link-button"
-                  onClick={openFeedbackModal}
-                >
-                  Have feedback or found a bug?
-                </button>
-              </div>
-            )}
           </section>
+          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -4351,6 +4345,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4400,15 +4395,6 @@ export function App({
             >
               + New card
             </button>
-            {authUser && (
-              <button
-                className="text-button"
-                type="button"
-                onClick={openFeedbackModal}
-              >
-                Feedback
-              </button>
-            )}
             <ConnectionPill
               authUser={authUser}
               syncStatus={syncStatus}
@@ -4574,6 +4560,7 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+        onOpenFeedback={openFeedbackModal}
       />
       <EditCardModal
         isOpen={editingCard !== null}

@@ -3079,6 +3079,27 @@ kbd {
   justify-content: center;
 }
 
+.sync-account-feedback {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.sync-feedback-link {
+  font-size: 13px;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.sync-feedback-link:hover {
+  color: var(--rosa-dark);
+}
+
 .sync-auth-pane {
   display: flex;
   flex-direction: column;
@@ -4335,25 +4356,70 @@ kbd {
   box-shadow: 0 0 0 var(--ink);
 }
 
-.complete-feedback-prompt {
-  margin-top: 14px;
-  text-align: center;
+/* App Footer */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding-top: 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-left: max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
+  padding-right: max(clamp(20px, 5vw, 80px), env(safe-area-inset-right));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
 }
 
-.complete-feedback-prompt .complete-link-button {
-  font-size: 13px;
+.app-footer-inner {
+  width: min(1080px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: auto;
+}
+
+.footer-link-button {
+  background: rgba(250, 248, 245, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--line-subtle);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ink-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  background: transparent;
-  border: none;
-  padding: 4px 8px;
   cursor: pointer;
-  transition: color 120ms ease;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
-.complete-feedback-prompt .complete-link-button:hover {
+.footer-link-button:hover {
   color: var(--rosa-dark);
+  border-color: var(--rosa-soft);
+  background: var(--paper-clean);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.footer-link-button:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .app-footer {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .app-footer-inner {
+    justify-content: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

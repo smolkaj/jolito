@@ -21,14 +21,26 @@ describe('Feedback domain schemas', () => {
     expect(empty.success).toBe(false)
   })
 
-  it('validates feedback database row schema', () => {
-    const row = feedbackRowSchema.safeParse({
+  it('validates feedback database row schema for authenticated and guest submissions', () => {
+    const authRow = feedbackRowSchema.safeParse({
       user_id: 'user-123',
       email: 'student@example.com',
       message: 'Add more examples for "¡Qué padre!"',
       context: { version: '0.1.0' },
     })
-    expect(row.success).toBe(true)
+    expect(authRow.success).toBe(true)
+
+    const guestRow = feedbackRowSchema.safeParse({
+      user_id: null,
+      email: 'guest@jolito.app',
+      message: 'Love the app!',
+      context: { version: '0.1.0' },
+    })
+    expect(guestRow.success).toBe(true)
+    if (guestRow.success) {
+      expect(guestRow.data.user_id).toBeNull()
+      expect(guestRow.data.email).toBe('guest@jolito.app')
+    }
 
     const invalidEmail = feedbackRowSchema.safeParse({
       user_id: 'user-123',
