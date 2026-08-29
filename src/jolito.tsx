@@ -2125,9 +2125,6 @@ function AppFooter({ onOpenFeedback }: { onOpenFeedback: () => void }) {
   return (
     <footer className="app-footer" aria-label="Site footer">
       <div className="app-footer-inner">
-        <span className="footer-native-note">
-          Also available as a native app for iOS &amp; Android ($2.99)
-        </span>
         <button
           type="button"
           className="footer-link-button"

@@ -77,10 +77,10 @@ describe('BrowserHapticsPlayer', () => {
     expect(vibrate).toHaveBeenCalledWith(10)
 
     player.trigger('again')
-    expect(vibrate).toHaveBeenCalledWith([25, 40, 25])
+    expect(vibrate).toHaveBeenCalledWith([15, 30, 15])
 
     player.trigger('hard')
-    expect(vibrate).toHaveBeenCalledWith(30)
+    expect(vibrate).toHaveBeenCalledWith(20)
 
     player.trigger('good')
     expect(vibrate).toHaveBeenCalledWith(15)
@@ -89,7 +89,7 @@ describe('BrowserHapticsPlayer', () => {
     expect(vibrate).toHaveBeenCalledWith(12)
 
     player.trigger('complete')
-    expect(vibrate).toHaveBeenCalledWith([20, 50, 20, 50, 35])
+    expect(vibrate).toHaveBeenCalledWith([15, 30, 15, 30, 20])
 
     expect(selectionChanged).not.toHaveBeenCalled()
     expect(impact).not.toHaveBeenCalled()

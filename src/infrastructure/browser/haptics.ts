@@ -93,10 +93,10 @@ export class BrowserHapticsPlayer implements HapticsPlayer {
         this.vibrator.vibrate(10)
         break
       case 'again':
-        this.vibrator.vibrate([25, 40, 25])
+        this.vibrator.vibrate([15, 30, 15])
         break
       case 'hard':
-        this.vibrator.vibrate(30)
+        this.vibrator.vibrate(20)
         break
       case 'good':
         this.vibrator.vibrate(15)
@@ -105,7 +105,7 @@ export class BrowserHapticsPlayer implements HapticsPlayer {
         this.vibrator.vibrate(12)
         break
       case 'complete':
-        this.vibrator.vibrate([20, 50, 20, 50, 35])
+        this.vibrator.vibrate([15, 30, 15, 30, 20])
         break
     }
   }

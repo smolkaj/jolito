@@ -3499,17 +3499,6 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders understated native app notice in site footer', () => {
-    const services = createTestServices({ user: null, cards: [] })
-    render(<App services={services} />)
-
-    expect(
-      screen.getByText(
-        'Also available as a native app for iOS & Android ($2.99)',
-      ),
-    ).toBeInTheDocument()
-  })
-
   it('pauses and resumes an active study session when navigating to deck management and back', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
