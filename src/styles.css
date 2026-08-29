@@ -2378,6 +2378,10 @@ kbd {
   .create-sidebar header {
     max-width: 500px;
   }
+
+  .create-visual {
+    display: none;
+  }
 }
 
 @media (max-width: 680px) {
@@ -2484,10 +2488,6 @@ kbd {
 
   .create-layout h1 {
     font-size: 36px;
-  }
-
-  .create-visual {
-    display: none;
   }
 
   .create-form {
