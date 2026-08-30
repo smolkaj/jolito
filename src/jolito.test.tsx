@@ -3358,7 +3358,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        /have an idea, spotted a bug or typo, or want to share a mexican spanish nuance\? we’d love to hear from you!/i,
+        /have an idea or spotted a bug\? we’d love to hear from you!/i,
       ),
     ).toBeInTheDocument()
 
@@ -3395,38 +3395,6 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /¡muchas gracias!/i }),
     ).not.toBeInTheDocument()
-  })
-
-  it('supports opening feedback modal from sync modal', async () => {
-    const user = userEvent.setup()
-    const authUser = {
-      id: 'student-123',
-      email: 'student@example.com',
-    }
-    const services = createTestServices({ user: authUser })
-    render(<App services={services} />)
-
-    // Open sync / account modal via connection pill
-    await user.click(
-      screen.getByRole('button', { name: /deck synced with cloud/i }),
-    )
-    expect(
-      screen.getByRole('heading', { name: /cloud sync/i }),
-    ).toBeInTheDocument()
-
-    // Click feedback link inside account modal
-    const syncFeedbackBtn = screen.getByRole('button', {
-      name: /have feedback or spotted a nuance\? →/i,
-    })
-    await user.click(syncFeedbackBtn)
-
-    // Sync modal is closed, feedback modal is open
-    expect(
-      screen.queryByRole('heading', { name: /cloud sync/i }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: /share feedback/i }),
-    ).toBeInTheDocument()
   })
 
   it('supports closing feedback modal with Escape', async () => {

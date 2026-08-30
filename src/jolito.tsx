@@ -1328,7 +1328,6 @@ function SyncModal({
   auth,
   sync,
   onSaveLocally,
-  onOpenFeedback,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -1342,7 +1341,6 @@ function SyncModal({
   auth: AuthService
   sync: SyncService
   onSaveLocally?: (() => void) | undefined
-  onOpenFeedback?: (() => void) | undefined
 }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
@@ -1615,21 +1613,6 @@ function SyncModal({
                 {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
               </button>
             </div>
-
-            {onOpenFeedback && (
-              <div className="sync-account-feedback">
-                <button
-                  type="button"
-                  className="sync-feedback-link"
-                  onClick={() => {
-                    onClose()
-                    onOpenFeedback()
-                  }}
-                >
-                  Have feedback or spotted a nuance? →
-                </button>
-              </div>
-            )}
           </div>
         ) : !isOtpSent ? (
           <form
@@ -2035,8 +2018,7 @@ function FeedbackModalInner({
             }}
           >
             <p className="feedback-encouragement">
-              Have an idea, spotted a bug or typo, or want to share a Mexican
-              Spanish nuance? We’d love to hear from you!
+              Have an idea or spotted a bug? We’d love to hear from you!
             </p>
 
             <div className="feedback-field-group">
@@ -3298,7 +3280,6 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3730,7 +3711,6 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4208,7 +4188,6 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4328,7 +4307,6 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4543,7 +4521,6 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-        onOpenFeedback={openFeedbackModal}
       />
       <EditCardModal
         isOpen={editingCard !== null}
