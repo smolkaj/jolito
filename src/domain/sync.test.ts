@@ -246,4 +246,26 @@ describe('reconcileStudyCards', () => {
     )
     expect(resultDueRemote.cards[0]?.schedule.dueAt).toBe(9000)
   })
+
+  it('preserves the latest lastReviewedAt timestamp across devices', () => {
+    const localWithReview = {
+      ...cardA,
+      schedule: {
+        ...cardA.schedule,
+        reviews: 2,
+        lastReviewedAt: 12345678,
+      },
+    }
+    const remoteOlder = {
+      ...cardA,
+      schedule: {
+        ...cardA.schedule,
+        reviews: 1,
+        lastReviewedAt: 10000000,
+      },
+    }
+
+    const result = reconcileStudyCards([localWithReview], [remoteOlder])
+    expect(result.cards[0]?.schedule.lastReviewedAt).toBe(12345678)
+  })
 })

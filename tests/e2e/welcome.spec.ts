@@ -199,7 +199,7 @@ test('creates and reviews both directions with the keyboard', async ({
 
   // Reach celebratory ¡Hecho! completion screen (reverse direction card is staggered for day 2)
   await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
-  await expect(page.getByText(/1 card practiced/i)).toBeVisible()
+  await expect(page.getByText(/1 card practiced\./i)).toBeVisible()
   await expect(page.locator('.complete-mascot-frame')).toBeVisible()
   await expect(page.locator('.complete-mascot-img')).toBeVisible()
 

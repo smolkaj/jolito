@@ -106,8 +106,16 @@ function reconcileSingleCard(local: StudyCard, remote: StudyCard): StudyCard {
     }
   }
 
+  const latestReviewedAt =
+    Math.max(localSched.lastReviewedAt ?? 0, remoteSched.lastReviewedAt ?? 0) ||
+    undefined
+
   return {
     ...winner,
     createdAt: winner.createdAt || local.createdAt || remote.createdAt || 0,
+    schedule: {
+      ...winner.schedule,
+      lastReviewedAt: winner.schedule.lastReviewedAt ?? latestReviewedAt,
+    },
   }
 }

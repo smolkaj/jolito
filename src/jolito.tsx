@@ -30,6 +30,7 @@ import {
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   burySiblingCards,
+  getCardsStudiedToday,
   grades,
   intervalLabel,
   isDue,
@@ -38,6 +39,7 @@ import {
   shouldRequeueInSession,
   updateStudyCard,
   deleteStudyCard,
+  DEFAULT_STUDY_BATCH_SIZE,
   type Grade,
   type StudyCard,
   type UpdateCardParams,
@@ -2311,7 +2313,11 @@ export function App({
     const requested = viewFromHash(hash)
     if (requested === 'review') {
       const now = services.clock.now()
-      const due = orderCardsForReview(initialCards, now).map(({ id }) => id)
+      const due = orderCardsForReview(
+        initialCards,
+        now,
+        DEFAULT_STUDY_BATCH_SIZE,
+      ).map(({ id }) => id)
       if (due.length === 0) {
         return { view: 'complete', queue: [] }
       }
@@ -2445,6 +2451,7 @@ export function App({
       }
       const deletedIdsArray = Array.from(deletedCardIdsRef.current)
 
+      cardsRef.current = newCards
       setCards(newCards)
       setDeletedCardIds(deletedIdsArray)
       services.cards.save(newCards, deletedIdsArray)
@@ -2519,6 +2526,16 @@ export function App({
 
   const deckStats = useMemo(
     () => getDeckStats(cards, referenceTime),
+    [cards, referenceTime],
+  )
+
+  const studiedTodayCount = useMemo(
+    () => getCardsStudiedToday(cards, referenceTime),
+    [cards, referenceTime],
+  )
+
+  const remainingDueCount = useMemo(
+    () => orderCardsForReview(cards, referenceTime).length,
     [cards, referenceTime],
   )
 
@@ -2654,12 +2671,82 @@ export function App({
     services.sync,
   ])
 
+  const syncDebounceTimerRef = useRef<number | null>(null)
+
+  const flushSync = useCallback(() => {
+    if (syncDebounceTimerRef.current !== null) {
+      window.clearTimeout(syncDebounceTimerRef.current)
+      syncDebounceTimerRef.current = null
+    }
+    if (!authUserRef.current) return
+    const userCards = filterOutStarterCards(cardsRef.current)
+    const deletedIds = Array.from(deletedCardIdsRef.current)
+    void services.sync
+      .syncDeck(userCards, authUserRef.current, deletedIds)
+      .then((res) => {
+        if (res.success) {
+          setSyncStatus('synced')
+          if (res.cards) {
+            onUpdateCards(res.cards, false, res.deletedCardIds)
+          }
+        } else {
+          setSyncStatus('error')
+        }
+      })
+  }, [onUpdateCards, services.sync])
+
+  const scheduleDebouncedSync = useCallback(() => {
+    if (!authUserRef.current) return
+    if (syncDebounceTimerRef.current !== null) {
+      window.clearTimeout(syncDebounceTimerRef.current)
+    }
+    syncDebounceTimerRef.current = window.setTimeout(() => {
+      syncDebounceTimerRef.current = null
+      flushSync()
+    }, 1500)
+  }, [flushSync])
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const onOnline = () => {
       setIsOnline(true)
-      if (authUserRef.current) {
-        setSyncStatus('syncing')
+      flushSync()
+    }
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [flushSync])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushSync()
+      } else if (document.visibilityState === 'visible') {
+        if (authUserRef.current) {
+          const userCards = filterOutStarterCards(cardsRef.current)
+          const deletedIds = Array.from(deletedCardIdsRef.current)
+          void services.sync
+            .syncDeck(userCards, authUserRef.current, deletedIds)
+            .then((res) => {
+              if (res.success) {
+                setSyncStatus('synced')
+                if (res.cards) {
+                  onUpdateCards(res.cards, false, res.deletedCardIds)
+                }
+              }
+            })
+        }
+      }
+    }
+
+    const handleFocus = () => {
+      if (authUserRef.current && document.visibilityState === 'visible') {
         const userCards = filterOutStarterCards(cardsRef.current)
         const deletedIds = Array.from(deletedCardIdsRef.current)
         void services.sync
@@ -2670,20 +2757,23 @@ export function App({
               if (res.cards) {
                 onUpdateCards(res.cards, false, res.deletedCardIds)
               }
-            } else {
-              setSyncStatus('error')
             }
           })
       }
     }
-    const onOffline = () => setIsOnline(false)
-    window.addEventListener('online', onOnline)
-    window.addEventListener('offline', onOffline)
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pagehide', flushSync)
     return () => {
-      window.removeEventListener('online', onOnline)
-      window.removeEventListener('offline', onOffline)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pagehide', flushSync)
+      if (syncDebounceTimerRef.current !== null) {
+        window.clearTimeout(syncDebounceTimerRef.current)
+      }
     }
-  }, [onUpdateCards, services.sync])
+  }, [flushSync, onUpdateCards, services.sync])
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()
@@ -2700,9 +2790,11 @@ export function App({
       } else if (nextView === 'review') {
         if (queueRef.current.length === 0) {
           const now = services.clock.now()
-          const newQueue = orderCardsForReview(cardsRef.current, now).map(
-            ({ id }) => id,
-          )
+          const newQueue = orderCardsForReview(
+            cardsRef.current,
+            now,
+            DEFAULT_STUDY_BATCH_SIZE,
+          ).map(({ id }) => id)
           setSessionTotal(newQueue.length)
           setQueue(newQueue)
         }
@@ -2834,6 +2926,7 @@ export function App({
       const nextCards = updatedCards.map((card) =>
         card.id === reviewed.id ? reviewed : card,
       )
+      cardsRef.current = nextCards
       setCards(nextCards)
       const requeue = shouldRequeueInSession(reviewed.schedule)
       const buriedSet = new Set(buriedCardIds)
@@ -2855,13 +2948,18 @@ export function App({
       if (nextQueue.length === 0) {
         services.sounds.play('complete')
         services.haptics?.trigger('complete')
+        flushSync()
         navigateTo('complete')
+      } else {
+        scheduleDebouncedSync()
       }
     },
     [
       currentCard,
+      flushSync,
       navigateTo,
       queue,
+      scheduleDebouncedSync,
       services.clock,
       services.haptics,
       services.sounds,
@@ -2952,7 +3050,10 @@ export function App({
   function beginReview(cardIds?: string[]) {
     const now = services.clock.now()
     const nextQueue =
-      cardIds ?? orderCardsForReview(cards, now).map(({ id }) => id)
+      cardIds ??
+      orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE).map(
+        ({ id }) => id,
+      )
     setQueue(nextQueue)
     setSessionTotal(nextQueue.length)
     setReviewedCount(0)
@@ -4260,11 +4361,20 @@ export function App({
             </p>
             <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
             {authUser ? (
-              <p>
-                {reviewedCount > 0
-                  ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
-                  : 'Nothing is due right now. Add something from your day in CDMX?'}
-              </p>
+              <div className="complete-copy">
+                <p>
+                  {reviewedCount > 0
+                    ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
+                    : 'Nothing is due right now. Add something from your day in CDMX?'}
+                </p>
+                {studiedTodayCount > 0 && (
+                  <p className="complete-subtext">
+                    {studiedTodayCount}{' '}
+                    {studiedTodayCount === 1 ? 'card' : 'cards'} practiced today
+                    across your devices.
+                  </p>
+                )}
+              </div>
             ) : (
               <div className="complete-copy">
                 <p>
@@ -4285,15 +4395,33 @@ export function App({
               </div>
             )}
             <div className="complete-actions">
-              <button
-                className="primary-button"
-                onClick={() => navigateTo('create')}
-              >
-                Create a card <span aria-hidden="true">→</span>
-              </button>
-              <button className="secondary-button" onClick={goHome}>
-                Back home
-              </button>
+              {remainingDueCount > 0 ? (
+                <>
+                  <button
+                    className="primary-button"
+                    onClick={() => beginReview()}
+                  >
+                    Practice next{' '}
+                    {Math.min(remainingDueCount, DEFAULT_STUDY_BATCH_SIZE)}{' '}
+                    <span aria-hidden="true">→</span>
+                  </button>
+                  <button className="secondary-button" onClick={goHome}>
+                    Back home
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="primary-button"
+                    onClick={() => navigateTo('create')}
+                  >
+                    Create a card <span aria-hidden="true">→</span>
+                  </button>
+                  <button className="secondary-button" onClick={goHome}>
+                    Back home
+                  </button>
+                </>
+              )}
             </div>
           </section>
           <AppFooter onOpenFeedback={openFeedbackModal} />

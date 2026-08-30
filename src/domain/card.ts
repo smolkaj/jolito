@@ -36,6 +36,7 @@ export const reviewScheduleSchema = z.preprocess(
     easeFactor: z.number().default(2.5),
     reviews: z.number(),
     lapses: z.number(),
+    lastReviewedAt: z.number().optional(),
   }),
 )
 
@@ -221,6 +222,8 @@ export function scheduleReview(
   const current = card.schedule
   const reviews = current.reviews + 1
 
+  let updatedSchedule: ReviewSchedule
+
   if (grade === 'again') {
     const isLapse = current.state === 'review'
     const lapses = current.lapses + (isLapse ? 1 : 0)
@@ -228,126 +231,110 @@ export function scheduleReview(
       ? Math.max(MIN_EASE_FACTOR, +(current.easeFactor - 0.2).toFixed(2))
       : current.easeFactor
 
-    return {
-      ...card,
-      schedule: {
-        state:
-          isLapse || current.state === 'relearning' ? 'relearning' : 'learning',
-        dueAt: now + (isLapse ? 10 * MINUTE : 1 * MINUTE),
-        intervalDays: 0,
-        easeFactor,
-        reviews,
-        lapses,
-      },
+    updatedSchedule = {
+      state:
+        isLapse || current.state === 'relearning' ? 'relearning' : 'learning',
+      dueAt: now + (isLapse ? 10 * MINUTE : 1 * MINUTE),
+      intervalDays: 0,
+      easeFactor,
+      reviews,
+      lapses,
+      lastReviewedAt: now,
     }
-  }
-
-  if (current.state === 'new') {
+  } else if (current.state === 'new') {
     if (grade === 'hard') {
-      return {
-        ...card,
-        schedule: {
-          state: 'learning',
-          dueAt: now + 6 * MINUTE,
-          intervalDays: 0,
-          easeFactor: current.easeFactor,
-          reviews,
-          lapses: current.lapses,
-        },
+      updatedSchedule = {
+        state: 'learning',
+        dueAt: now + 6 * MINUTE,
+        intervalDays: 0,
+        easeFactor: current.easeFactor,
+        reviews,
+        lapses: current.lapses,
+        lastReviewedAt: now,
       }
-    }
-    if (grade === 'good') {
-      return {
-        ...card,
-        schedule: {
-          state: 'learning',
-          dueAt: now + 10 * MINUTE,
-          intervalDays: 0,
-          easeFactor: current.easeFactor,
-          reviews,
-          lapses: current.lapses,
-        },
+    } else if (grade === 'good') {
+      updatedSchedule = {
+        state: 'learning',
+        dueAt: now + 10 * MINUTE,
+        intervalDays: 0,
+        easeFactor: current.easeFactor,
+        reviews,
+        lapses: current.lapses,
+        lastReviewedAt: now,
       }
-    }
-    // grade === 'easy'
-    return {
-      ...card,
-      schedule: {
+    } else {
+      // grade === 'easy'
+      updatedSchedule = {
         state: 'review',
         dueAt: now + 4 * DAY,
         intervalDays: 4,
         easeFactor: current.easeFactor,
         reviews,
         lapses: current.lapses,
-      },
-    }
-  }
-
-  if (current.state === 'learning') {
-    if (grade === 'hard') {
-      return {
-        ...card,
-        schedule: {
-          state: 'learning',
-          dueAt: now + 10 * MINUTE,
-          intervalDays: 0,
-          easeFactor: current.easeFactor,
-          reviews,
-          lapses: current.lapses,
-        },
+        lastReviewedAt: now,
       }
     }
-    const intervalDays = nextIntervalDays(current, grade)
-    return {
-      ...card,
-      schedule: {
+  } else if (current.state === 'learning') {
+    if (grade === 'hard') {
+      updatedSchedule = {
+        state: 'learning',
+        dueAt: now + 10 * MINUTE,
+        intervalDays: 0,
+        easeFactor: current.easeFactor,
+        reviews,
+        lapses: current.lapses,
+        lastReviewedAt: now,
+      }
+    } else {
+      const intervalDays = nextIntervalDays(current, grade)
+      updatedSchedule = {
         state: 'review',
         dueAt: now + intervalDays * DAY,
         intervalDays,
         easeFactor: current.easeFactor,
         reviews,
         lapses: current.lapses,
-      },
+        lastReviewedAt: now,
+      }
     }
-  }
-
-  if (current.state === 'relearning') {
+  } else if (current.state === 'relearning') {
     const intervalDays = nextIntervalDays(current, grade)
-    return {
-      ...card,
-      schedule: {
-        state: 'review',
-        dueAt: now + intervalDays * DAY,
-        intervalDays,
-        easeFactor: current.easeFactor,
-        reviews,
-        lapses: current.lapses,
-      },
+    updatedSchedule = {
+      state: 'review',
+      dueAt: now + intervalDays * DAY,
+      intervalDays,
+      easeFactor: current.easeFactor,
+      reviews,
+      lapses: current.lapses,
+      lastReviewedAt: now,
     }
-  }
+  } else {
+    // Graduated review card updates (SM-2)
+    let easeFactor = current.easeFactor
+    if (grade === 'hard') {
+      easeFactor = Math.max(
+        MIN_EASE_FACTOR,
+        +(current.easeFactor - 0.15).toFixed(2),
+      )
+    } else if (grade === 'easy') {
+      easeFactor = +(current.easeFactor + 0.15).toFixed(2)
+    }
 
-  // Graduated review card updates (SM-2)
-  let easeFactor = current.easeFactor
-  if (grade === 'hard') {
-    easeFactor = Math.max(
-      MIN_EASE_FACTOR,
-      +(current.easeFactor - 0.15).toFixed(2),
-    )
-  } else if (grade === 'easy') {
-    easeFactor = +(current.easeFactor + 0.15).toFixed(2)
-  }
-
-  const intervalDays = nextIntervalDays(current, grade)
-  return {
-    ...card,
-    schedule: {
+    const intervalDays = nextIntervalDays(current, grade)
+    updatedSchedule = {
       state: 'review',
       dueAt: now + intervalDays * DAY,
       intervalDays,
       easeFactor,
       reviews,
       lapses: current.lapses,
-    },
+      lastReviewedAt: now,
+    }
+  }
+
+  return {
+    ...card,
+    schedule: updatedSchedule,
   }
 }
 
@@ -381,11 +368,15 @@ export function burySiblingCards(
   return { updatedCards, buriedCardIds }
 }
 
+export const DEFAULT_STUDY_BATCH_SIZE = 10
+export const DEFAULT_ROLLOVER_HOUR = 4
+
 export function orderCardsForReview(
   cards: StudyCard[],
   now: number,
+  limit?: number,
 ): StudyCard[] {
-  return cards
+  const due = cards
     .filter((card) => isDue(card, now))
     .sort((left, right) => {
       if (left.direction !== right.direction) {
@@ -396,6 +387,53 @@ export function orderCardsForReview(
       }
       return left.id.localeCompare(right.id)
     })
+  if (typeof limit === 'number' && limit > 0) {
+    return due.slice(0, limit)
+  }
+  return due
+}
+
+export function getStudyDayStart(
+  now: number,
+  rolloverHour: number = DEFAULT_ROLLOVER_HOUR,
+): number {
+  const date = new Date(now)
+  const currentHour = date.getHours()
+  const start = new Date(date)
+  if (currentHour < rolloverHour) {
+    start.setDate(start.getDate() - 1)
+  }
+  start.setHours(rolloverHour, 0, 0, 0)
+  return start.getTime()
+}
+
+export function isReviewedToday(
+  card: StudyCard,
+  now: number,
+  rolloverHour: number = DEFAULT_ROLLOVER_HOUR,
+): boolean {
+  if (card.schedule.lastReviewedAt === undefined) {
+    return false
+  }
+  return card.schedule.lastReviewedAt >= getStudyDayStart(now, rolloverHour)
+}
+
+export function getCardsStudiedToday(
+  cards: StudyCard[],
+  now: number,
+  rolloverHour: number = DEFAULT_ROLLOVER_HOUR,
+): number {
+  const dayStart = getStudyDayStart(now, rolloverHour)
+  let count = 0
+  for (const card of cards) {
+    if (
+      card.schedule.lastReviewedAt !== undefined &&
+      card.schedule.lastReviewedAt >= dayStart
+    ) {
+      count++
+    }
+  }
+  return count
 }
 
 export function intervalLabel(card: StudyCard, grade: Grade): string {
