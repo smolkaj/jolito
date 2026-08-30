@@ -57,7 +57,7 @@ import {
 } from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
-import type { SyncStatus } from './domain/sync'
+import { reconcileStudyCards, type SyncStatus } from './domain/sync'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
@@ -2671,29 +2671,48 @@ export function App({
     services.sync,
   ])
 
+  const isSyncingRef = useRef(false)
   const syncDebounceTimerRef = useRef<number | null>(null)
+
+  const performSync = useCallback(async () => {
+    if (isSyncingRef.current || !authUserRef.current) return
+    isSyncingRef.current = true
+    setSyncStatus('syncing')
+    try {
+      const userCards = filterOutStarterCards(cardsRef.current)
+      const deletedIds = Array.from(deletedCardIdsRef.current)
+      const res = await services.sync.syncDeck(
+        userCards,
+        authUserRef.current,
+        deletedIds,
+      )
+      if (res.success && res.cards) {
+        // Reconcile server response against current in-flight local deck to prevent overwriting intermediate edits or reviews
+        const reconciled = reconcileStudyCards(
+          cardsRef.current,
+          res.cards,
+          Array.from(deletedCardIdsRef.current),
+          res.deletedCardIds ?? [],
+        )
+        onUpdateCards(reconciled.cards, false, reconciled.deletedCardIds)
+        setSyncStatus('synced')
+      } else if (!res.success) {
+        setSyncStatus('error')
+      }
+    } catch {
+      setSyncStatus('error')
+    } finally {
+      isSyncingRef.current = false
+    }
+  }, [onUpdateCards, services.sync])
 
   const flushSync = useCallback(() => {
     if (syncDebounceTimerRef.current !== null) {
       window.clearTimeout(syncDebounceTimerRef.current)
       syncDebounceTimerRef.current = null
     }
-    if (!authUserRef.current) return
-    const userCards = filterOutStarterCards(cardsRef.current)
-    const deletedIds = Array.from(deletedCardIdsRef.current)
-    void services.sync
-      .syncDeck(userCards, authUserRef.current, deletedIds)
-      .then((res) => {
-        if (res.success) {
-          setSyncStatus('synced')
-          if (res.cards) {
-            onUpdateCards(res.cards, false, res.deletedCardIds)
-          }
-        } else {
-          setSyncStatus('error')
-        }
-      })
-  }, [onUpdateCards, services.sync])
+    void performSync()
+  }, [performSync])
 
   const scheduleDebouncedSync = useCallback(() => {
     if (!authUserRef.current) return
@@ -2702,9 +2721,9 @@ export function App({
     }
     syncDebounceTimerRef.current = window.setTimeout(() => {
       syncDebounceTimerRef.current = null
-      flushSync()
+      void performSync()
     }, 1500)
-  }, [flushSync])
+  }, [performSync])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -2728,37 +2747,13 @@ export function App({
       if (document.visibilityState === 'hidden') {
         flushSync()
       } else if (document.visibilityState === 'visible') {
-        if (authUserRef.current) {
-          const userCards = filterOutStarterCards(cardsRef.current)
-          const deletedIds = Array.from(deletedCardIdsRef.current)
-          void services.sync
-            .syncDeck(userCards, authUserRef.current, deletedIds)
-            .then((res) => {
-              if (res.success) {
-                setSyncStatus('synced')
-                if (res.cards) {
-                  onUpdateCards(res.cards, false, res.deletedCardIds)
-                }
-              }
-            })
-        }
+        flushSync()
       }
     }
 
     const handleFocus = () => {
-      if (authUserRef.current && document.visibilityState === 'visible') {
-        const userCards = filterOutStarterCards(cardsRef.current)
-        const deletedIds = Array.from(deletedCardIdsRef.current)
-        void services.sync
-          .syncDeck(userCards, authUserRef.current, deletedIds)
-          .then((res) => {
-            if (res.success) {
-              setSyncStatus('synced')
-              if (res.cards) {
-                onUpdateCards(res.cards, false, res.deletedCardIds)
-              }
-            }
-          })
+      if (document.visibilityState === 'visible') {
+        flushSync()
       }
     }
 
@@ -2773,7 +2768,7 @@ export function App({
         window.clearTimeout(syncDebounceTimerRef.current)
       }
     }
-  }, [flushSync, onUpdateCards, services.sync])
+  }, [flushSync])
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()

@@ -115,7 +115,7 @@ function reconcileSingleCard(local: StudyCard, remote: StudyCard): StudyCard {
     createdAt: winner.createdAt || local.createdAt || remote.createdAt || 0,
     schedule: {
       ...winner.schedule,
-      lastReviewedAt: winner.schedule.lastReviewedAt ?? latestReviewedAt,
+      lastReviewedAt: latestReviewedAt,
     },
   }
 }

@@ -4011,4 +4011,98 @@ describe('Jolito', () => {
     })
     expect(services.mockSync.syncedCount).toBeGreaterThan(beforeHideSyncs)
   })
+
+  it('preserves in-flight card reviews when a slow background sync resolves', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const cardA: StudyCard = {
+      id: 'card-inflight-1:es-en',
+      noteId: 'note-inflight-1',
+      prompt: 'hola',
+      answer: 'hello',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+    const cardB: StudyCard = {
+      id: 'card-inflight-2:es-en',
+      noteId: 'note-inflight-2',
+      prompt: 'adios',
+      answer: 'goodbye',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+
+    let resolvePendingSync: (() => void) | null = null
+    const services = createTestServices({
+      cards: [cardA, cardB],
+      clockTime: now,
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    // Override syncDeck to be controllable
+    const originalSyncDeck = services.mockSync.syncDeck.bind(services.mockSync)
+    let syncCallCount = 0
+    services.sync.syncDeck = (localCards, user, localDeletedIds) => {
+      syncCallCount++
+      if (syncCallCount === 2) {
+        // Return a delayed promise that returns the older state
+        return new Promise((resolve) => {
+          resolvePendingSync = () => {
+            resolve({
+              success: true,
+              cards: [cardA, cardB], // older snapshot before review
+              deletedCardIds: [],
+              syncedAt: Date.now(),
+            })
+          }
+        })
+      }
+      return originalSyncDeck(localCards, user, localDeletedIds)
+    }
+
+    render(<App services={services} />)
+
+    // Start practice
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    // Trigger debounced/focus sync (syncCallCount = 2, returns pending promise)
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+
+    // While sync is in-flight, grade cardA with Easy
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // Now resolve the in-flight sync with the older server response
+    act(() => {
+      resolvePendingSync?.()
+    })
+
+    // The in-flight review on cardA must NOT have been overwritten
+    const currentMemoryCards = services.memoryCards.saved ?? []
+    const updatedCardA = currentMemoryCards.find((c) => c.id === cardA.id)
+    expect(updatedCardA?.schedule.reviews).toBe(1)
+    expect(updatedCardA?.schedule.lastReviewedAt).toBe(now)
+  })
 })
