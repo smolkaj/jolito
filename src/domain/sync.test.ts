@@ -246,4 +246,52 @@ describe('reconcileStudyCards', () => {
     )
     expect(resultDueRemote.cards[0]?.schedule.dueAt).toBe(9000)
   })
+
+  it('preserves the latest lastReviewedAt timestamp across devices', () => {
+    const localWithReview = {
+      ...cardA,
+      schedule: {
+        ...cardA.schedule,
+        reviews: 2,
+        lastReviewedAt: 12345678,
+      },
+    }
+    const remoteOlder = {
+      ...cardA,
+      schedule: {
+        ...cardA.schedule,
+        reviews: 1,
+        lastReviewedAt: 10000000,
+      },
+    }
+
+    const result = reconcileStudyCards([localWithReview], [remoteOlder])
+    expect(result.cards[0]?.schedule.lastReviewedAt).toBe(12345678)
+  })
+
+  it('preserves newer lastReviewedAt timestamp even when the winning card had an older timestamp', () => {
+    const localWinningCard = {
+      ...cardA,
+      schedule: {
+        ...cardA.schedule,
+        reviews: 5,
+        lastReviewedAt: 1000,
+      },
+    }
+    const remoteNonWinningCard = {
+      ...cardA,
+      schedule: {
+        ...cardA.schedule,
+        reviews: 3,
+        lastReviewedAt: 2000,
+      },
+    }
+
+    const result = reconcileStudyCards(
+      [localWinningCard],
+      [remoteNonWinningCard],
+    )
+    expect(result.cards[0]?.schedule.reviews).toBe(5)
+    expect(result.cards[0]?.schedule.lastReviewedAt).toBe(2000)
+  })
 })

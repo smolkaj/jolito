@@ -231,7 +231,7 @@ describe('Jolito', () => {
     expect(screen.getByText('how cool')).toBeInTheDocument()
     expect(document.querySelector('.diff-exact-card')).toBeInTheDocument()
     await user.keyboard('4')
-    expect(screen.getByText(/1 card practiced/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 card practiced\./i)).toBeInTheDocument()
   })
 
   it('circulates failed cards to the end of the session queue until all cards are graduated', async () => {
@@ -3868,5 +3868,241 @@ describe('Jolito', () => {
       'aria-valuetext',
       '1 card remaining',
     )
+  })
+
+  it('chunks large due backlogs into 10-card sprint batches and offers practice next batch', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    // Create 12 due cards
+    const cards: StudyCard[] = Array.from({ length: 12 }, (_, i) => {
+      const idx = String(i + 1).padStart(2, '0')
+      return {
+        id: `card-${idx}:es-en`,
+        noteId: `note-${idx}`,
+        prompt: `palabra-${idx}`,
+        answer: `word-${idx}`,
+        direction: 'es-en',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: now,
+      }
+    })
+
+    const services = createTestServices({
+      cards,
+      clockTime: now,
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+    render(<App services={services} />)
+
+    // 1. Click Practice on home screen -> starts batch 1 with 10 cards
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('heading', { name: 'palabra-01' }),
+    ).toBeInTheDocument()
+
+    // Answer all 10 cards in batch 1 with Easy (4)
+    for (let i = 1; i <= 10; i++) {
+      const idx = String(i).padStart(2, '0')
+      expect(
+        screen.getByRole('heading', { name: `palabra-${idx}` }),
+      ).toBeInTheDocument()
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+    }
+
+    // 2. Completion screen for batch 1
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+    expect(screen.getByText(/10 cards practiced\./i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/10 cards practiced today across your devices\./i),
+    ).toBeInTheDocument()
+
+    // 3. Button to practice the remaining 2 cards is shown
+    const nextBatchBtn = screen.getByRole('button', {
+      name: /practice next 2/i,
+    })
+    expect(nextBatchBtn).toBeInTheDocument()
+
+    // 4. Click next batch -> starts batch 2 with remaining 2 cards
+    await user.click(nextBatchBtn)
+    expect(
+      screen.getByRole('heading', { name: 'palabra-11' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    expect(
+      screen.getByRole('heading', { name: 'palabra-12' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // 5. Final completion screen
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+    expect(screen.getByText(/2 cards practiced\./i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/12 cards practiced today across your devices\./i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /create a card/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('triggers cloud sync on card review grading and flushes on tab hide', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const card: StudyCard = {
+      id: 'card-sync-1:es-en',
+      noteId: 'note-sync-1',
+      prompt: 'gracias',
+      answer: 'thank you',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+
+    const services = createTestServices({
+      cards: [card],
+      clockTime: now,
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+    render(<App services={services} />)
+
+    // Initial sync on mount/auth
+    expect(services.mockSync.syncedCount).toBeGreaterThanOrEqual(1)
+    const initialSyncs = services.mockSync.syncedCount
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await user.keyboard('{Enter}')
+    await user.keyboard('4') // Easy -> finishes session and flushes sync
+
+    expect(services.mockSync.syncedCount).toBeGreaterThan(initialSyncs)
+    expect(services.mockSync.remoteCards[0]?.schedule.reviews).toBe(1)
+    expect(
+      services.mockSync.remoteCards[0]?.schedule.lastReviewedAt,
+    ).toBeDefined()
+
+    // Test visibilitychange flush
+    const beforeHideSyncs = services.mockSync.syncedCount
+    act(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'hidden',
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(services.mockSync.syncedCount).toBeGreaterThan(beforeHideSyncs)
+  })
+
+  it('preserves in-flight card reviews when a slow background sync resolves', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const cardA: StudyCard = {
+      id: 'card-inflight-1:es-en',
+      noteId: 'note-inflight-1',
+      prompt: 'hola',
+      answer: 'hello',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+    const cardB: StudyCard = {
+      id: 'card-inflight-2:es-en',
+      noteId: 'note-inflight-2',
+      prompt: 'adios',
+      answer: 'goodbye',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      createdAt: now,
+    }
+
+    let resolvePendingSync: (() => void) | null = null
+    const services = createTestServices({
+      cards: [cardA, cardB],
+      clockTime: now,
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    // Override syncDeck to be controllable
+    const originalSyncDeck = services.mockSync.syncDeck.bind(services.mockSync)
+    let syncCallCount = 0
+    services.sync.syncDeck = (localCards, user, localDeletedIds) => {
+      syncCallCount++
+      if (syncCallCount === 2) {
+        // Return a delayed promise that returns the older state
+        return new Promise((resolve) => {
+          resolvePendingSync = () => {
+            resolve({
+              success: true,
+              cards: [cardA, cardB], // older snapshot before review
+              deletedCardIds: [],
+              syncedAt: Date.now(),
+            })
+          }
+        })
+      }
+      return originalSyncDeck(localCards, user, localDeletedIds)
+    }
+
+    render(<App services={services} />)
+
+    // Start practice
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    // Trigger debounced/focus sync (syncCallCount = 2, returns pending promise)
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+
+    // While sync is in-flight, grade cardA with Easy
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // Now resolve the in-flight sync with the older server response
+    act(() => {
+      resolvePendingSync?.()
+    })
+
+    // The in-flight review on cardA must NOT have been overwritten
+    const currentMemoryCards = services.memoryCards.saved ?? []
+    const updatedCardA = currentMemoryCards.find((c) => c.id === cardA.id)
+    expect(updatedCardA?.schedule.reviews).toBe(1)
+    expect(updatedCardA?.schedule.lastReviewedAt).toBe(now)
   })
 })
