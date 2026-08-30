@@ -3092,27 +3092,6 @@ kbd {
   justify-content: center;
 }
 
-.sync-account-feedback {
-  margin-top: 14px;
-  text-align: center;
-}
-
-.sync-feedback-link {
-  font-size: 13px;
-  color: var(--ink-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  background: transparent;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: color 120ms ease;
-}
-
-.sync-feedback-link:hover {
-  color: var(--rosa-dark);
-}
-
 .sync-auth-pane {
   display: flex;
   flex-direction: column;
