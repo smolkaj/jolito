@@ -33,7 +33,7 @@ Jolito blends the proven power of spaced repetition flashcards with the audio im
 3. **Make it flow:** New cards focus inputs automatically; prompt audio plays automatically; keyboard shortcuts (`Enter` to reveal, `1`–`4` to grade, `Space` for audio) carry the learner through review with zero friction.
 4. **Words and chunks are equally valid:** A card may be a single word, an idiom, or any useful language chunk.
 5. **Two-way by default, independently editable:** Most cards create linked Spanish ↔ English and English ↔ Spanish practice cards with side-by-side previews.
-6. **Offline is a first-class requirement:** Review, creation, and audio work completely without an internet connection using local browser storage and service worker caching.
+6. **Offline is a first-class requirement:** After sign-in and initial sync, review, manual card creation, and audio work completely without an internet connection using local browser storage and service worker caching. Changes sync unobtrusively later.
 7. **Context is available, never in the way:** Concise answers serve as the primary card target, while an optional context drawer provides richer explanations, grammar notes, and CDMX slang variants.
 8. **Use modes in concert:** Text, visuals, and audio clarify and reinforce one another without competing for attention.
 

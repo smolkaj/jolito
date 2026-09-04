@@ -1998,13 +1998,37 @@ describe('Jolito', () => {
 
   it('updates connection pill when network goes offline and recovers online', async () => {
     const services = createTestServices()
-    render(<App services={services} />)
+    const { unmount } = render(<App services={services} />)
 
     expect(
       screen.getByRole('button', { name: /not signed in/i }),
     ).toBeInTheDocument()
 
-    // Trigger offline event
+    // Trigger offline event for guest
+    window.dispatchEvent(new Event('offline'))
+    expect(
+      await screen.findByRole('button', {
+        name: /offline demo\. connect to internet and sign in to build your deck/i,
+      }),
+    ).toBeInTheDocument()
+
+    // Trigger online event for guest
+    window.dispatchEvent(new Event('online'))
+    expect(
+      await screen.findByRole('button', { name: /not signed in/i }),
+    ).toBeInTheDocument()
+
+    unmount()
+
+    // For signed-in user, offline indicates local storage persistence
+    const authedServices = createTestServices({
+      user: { id: 'usr-1', email: 'authed@example.com' },
+    })
+    render(<App services={authedServices} />)
+    expect(
+      screen.getByRole('button', { name: /deck synced with cloud/i }),
+    ).toBeInTheDocument()
+
     window.dispatchEvent(new Event('offline'))
     expect(
       await screen.findByRole('button', {
@@ -2012,10 +2036,9 @@ describe('Jolito', () => {
       }),
     ).toBeInTheDocument()
 
-    // Trigger online event
     window.dispatchEvent(new Event('online'))
     expect(
-      await screen.findByRole('button', { name: /not signed in/i }),
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
     ).toBeInTheDocument()
   })
 
@@ -3101,7 +3124,9 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // 5. Click sign in from demo modal to open sync modal
-    await user.click(screen.getByRole('button', { name: /sign in to sync/i }))
+    await user.click(
+      screen.getByRole('button', { name: /sign in to build your deck/i }),
+    )
     expect(
       screen.getByRole('heading', { name: /^cloud sync$/i }),
     ).toBeInTheDocument()
