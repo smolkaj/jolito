@@ -422,126 +422,9 @@ describe('EnhancedBrowserSpeaker', () => {
       'Paulina (Enhanced)',
     )
   })
-
-  it('detects enhanced voice and notifies voice changes via speaker methods', () => {
-    const originalSpeechSynthesis = window.speechSynthesis
-    let voicesListener: (() => void) | null = null
-    let mockVoiceList: SpeechSynthesisVoice[] = []
-
-    const mockSynth = {
-      getVoices: () => mockVoiceList,
-      addEventListener: (evt: string, cb: () => void) => {
-        if (evt === 'voiceschanged') voicesListener = cb
-      },
-      removeEventListener: (evt: string, cb: () => void) => {
-        if (evt === 'voiceschanged' && voicesListener === cb) {
-          voicesListener = null
-        }
-      },
-      speak: vi.fn(),
-      cancel: vi.fn(),
-    }
-    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
-      value: class {
-        text = ''
-        voice = null
-      },
-      writable: true,
-      configurable: true,
-    })
-
-    Object.defineProperty(window, 'speechSynthesis', {
-      value: mockSynth,
-      writable: true,
-      configurable: true,
-    })
-
-    const speaker = new EnhancedBrowserSpeaker()
-    expect(speaker.areVoicesLoaded()).toBe(false)
-    expect(speaker.hasEnhancedVoice('es-MX')).toBe(false)
-
-    let notified = false
-    const unsubscribe = speaker.onVoicesChanged(() => {
-      notified = true
-    })
-
-    const triggerVoices = () => {
-      if (typeof voicesListener === 'function') {
-        voicesListener()
-      }
-    }
-
-    mockVoiceList = [
-      {
-        lang: 'es-MX',
-        name: 'Paulina (Enhanced)',
-        default: false,
-        localService: true,
-        voiceURI: 'es-MX-paulina-enhanced',
-      },
-    ]
-
-    triggerVoices()
-    expect(notified).toBe(true)
-    expect(speaker.areVoicesLoaded()).toBe(true)
-    expect(speaker.hasEnhancedVoice('es-MX')).toBe(true)
-
-    unsubscribe()
-    notified = false
-    triggerVoices()
-    expect(notified).toBe(false)
-
-    window.speechSynthesis = originalSpeechSynthesis
-  })
 })
 
-describe('Apple voice enhancement helpers', () => {
-  it('detects presence of enhanced Mexican Spanish voices', async () => {
-    const { hasEnhancedMexicanSpanishVoice } = await import('./speech')
-
-    const compactOnly: SpeechSynthesisVoice[] = [
-      {
-        lang: 'es-MX',
-        name: 'Paulina',
-        default: true,
-        localService: true,
-        voiceURI: 'es-MX-paulina',
-      },
-      {
-        lang: 'es-ES',
-        name: 'Mónica (Enhanced)',
-        default: false,
-        localService: true,
-        voiceURI: 'es-ES-monica-enhanced',
-      },
-    ]
-
-    const withEnhancedPaulina: SpeechSynthesisVoice[] = [
-      {
-        lang: 'es-MX',
-        name: 'Paulina (Enhanced)',
-        default: false,
-        localService: true,
-        voiceURI: 'es-MX-paulina-enhanced',
-      },
-    ]
-
-    const withSiriMexico: SpeechSynthesisVoice[] = [
-      {
-        lang: 'es-MX',
-        name: 'Siri (Voice 1)',
-        default: false,
-        localService: true,
-        voiceURI: 'es-MX-siri',
-      },
-    ]
-
-    expect(hasEnhancedMexicanSpanishVoice([])).toBe(false)
-    expect(hasEnhancedMexicanSpanishVoice(compactOnly)).toBe(false)
-    expect(hasEnhancedMexicanSpanishVoice(withEnhancedPaulina)).toBe(true)
-    expect(hasEnhancedMexicanSpanishVoice(withSiriMexico)).toBe(true)
-  })
-
+describe('isEnhancedMexicanVoice helper', () => {
   it('evaluates isEnhancedMexicanVoice helper correctly', async () => {
     const { isEnhancedMexicanVoice } = await import('./speech')
 
@@ -557,8 +440,8 @@ describe('Apple voice enhancement helpers', () => {
 
     expect(
       isEnhancedMexicanVoice({
-        lang: 'es_MX',
-        name: 'Siri Voice 1',
+        lang: 'es-MX',
+        name: 'Siri (Voice 1)',
         default: false,
         localService: true,
         voiceURI: 'es-MX-siri',
@@ -582,112 +465,6 @@ describe('Apple voice enhancement helpers', () => {
         default: false,
         localService: true,
         voiceURI: 'es-ES-monica-enhanced',
-      }),
-    ).toBe(false)
-  })
-
-  it('determines whether to prompt user for voice upgrade', async () => {
-    const { shouldPromptAppleVoiceUpgrade } = await import('./speech')
-
-    const compactVoices: SpeechSynthesisVoice[] = [
-      {
-        lang: 'es-MX',
-        name: 'Paulina',
-        default: true,
-        localService: true,
-        voiceURI: 'es-MX-paulina',
-      },
-    ]
-
-    const enhancedVoices: SpeechSynthesisVoice[] = [
-      {
-        lang: 'es-MX',
-        name: 'Paulina (Enhanced)',
-        default: false,
-        localService: true,
-        voiceURI: 'es-MX-paulina-enhanced',
-      },
-    ]
-
-    // Apple user with compact voice and not dismissed -> prompt
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        voices: compactVoices,
-        dismissed: false,
-      }),
-    ).toBe(true)
-
-    // Dismissed by user -> do not prompt
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        voices: compactVoices,
-        dismissed: true,
-      }),
-    ).toBe(false)
-
-    // Non-Apple user -> do not prompt
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: false,
-        voices: compactVoices,
-        dismissed: false,
-      }),
-    ).toBe(false)
-
-    // Voices not loaded yet -> do not prompt
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        voices: [],
-        dismissed: false,
-      }),
-    ).toBe(false)
-
-    // Enhanced voice already present -> do not prompt
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        voices: enhancedVoices,
-        dismissed: false,
-      }),
-    ).toBe(false)
-
-    // Tests with isAppleVoiceSupported and hasEnhancedVoice
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        hasEnhancedVoice: false,
-        voicesLoaded: true,
-        dismissed: false,
-      }),
-    ).toBe(true)
-
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        hasEnhancedVoice: true,
-        voicesLoaded: true,
-        dismissed: false,
-      }),
-    ).toBe(false)
-
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: false,
-        hasEnhancedVoice: false,
-        voicesLoaded: true,
-        dismissed: false,
-      }),
-    ).toBe(false)
-
-    expect(
-      shouldPromptAppleVoiceUpgrade({
-        isAppleVoiceSupported: true,
-        hasEnhancedVoice: false,
-        voicesLoaded: false,
-        dismissed: false,
       }),
     ).toBe(false)
   })

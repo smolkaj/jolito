@@ -7,8 +7,8 @@ import {
   generateConnectionId,
   generateSecMsGec,
   parseBinaryAudioFrame,
-} from './protocol'
-import { getDeterministicVoice, isValidVoice } from './voices'
+} from './protocol.ts'
+import { getDeterministicVoice, isValidVoice } from './voices.ts'
 
 export interface SynthesizeOptions {
   text: string

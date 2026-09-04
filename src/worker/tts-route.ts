@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import { synthesizeSpeech } from '../infrastructure/tts/synthesize'
+import { synthesizeSpeech } from '../infrastructure/tts/synthesize.ts'
 import {
   getDeterministicVoice,
   isValidVoice,
-} from '../infrastructure/tts/voices'
+} from '../infrastructure/tts/voices.ts'
 
 export const ttsQuerySchema = z.object({
   text: z
@@ -11,8 +11,25 @@ export const ttsQuerySchema = z.object({
     .trim()
     .min(1, 'Missing required query parameter "text"')
     .max(500, 'Text parameter too long (max 500 characters)'),
-  locale: z.string().trim().default('es-MX'),
-  voice: z.string().trim().optional(),
+  locale: z
+    .string()
+    .trim()
+    .refine(
+      (val) => {
+        const clean = val.toLowerCase().replace(/_/g, '-')
+        return clean.startsWith('es') || clean.startsWith('en')
+      },
+      { message: 'Unsupported locale. Supported locales: es-MX, en-US' },
+    )
+    .default('es-MX'),
+  voice: z
+    .string()
+    .trim()
+    .refine((v) => isValidVoice(v), {
+      message:
+        'Invalid voice parameter. Supported voices: es-MX-DaliaNeural, es-MX-JorgeNeural, en-US-JennyNeural, en-US-GuyNeural',
+    })
+    .optional(),
 })
 
 export interface TtsRouteDependencies {
@@ -76,10 +93,7 @@ export async function handleTtsRequest(
   }
 
   const { text, locale, voice: requestedVoice } = parsed.data
-  const voice =
-    requestedVoice && isValidVoice(requestedVoice)
-      ? requestedVoice
-      : getDeterministicVoice(text, locale)
+  const voice = requestedVoice ?? getDeterministicVoice(text, locale)
 
   const synthesize = deps?.synthesizeFn ?? synthesizeSpeech
 

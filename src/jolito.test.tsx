@@ -4377,7 +4377,6 @@ describe('Jolito', () => {
 
     it('keeps all views clean and free of obsolete voice guide prompts and buttons', () => {
       const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = false
 
       render(<App services={services} />)
 

@@ -85,4 +85,24 @@ describe('handleTtsRequest', () => {
     expect(json.error).toBe('Speech synthesis failed')
     expect(json.details).toContain('Bing TTS unreachable')
   })
+
+  it('returns 400 if an invalid or unsupported voice is requested', async () => {
+    const request = new Request(
+      'https://joli.to/api/tts?text=hola&voice=invalid-voice-name',
+    )
+    const response = await handleTtsRequest(request)
+    expect(response.status).toBe(400)
+    const json = (await response.json()) as { error?: string }
+    expect(json.error).toContain('Invalid voice parameter')
+  })
+
+  it('returns 400 if an unsupported locale is requested', async () => {
+    const request = new Request(
+      'https://joli.to/api/tts?text=bonjour&locale=fr-FR',
+    )
+    const response = await handleTtsRequest(request)
+    expect(response.status).toBe(400)
+    const json = (await response.json()) as { error?: string }
+    expect(json.error).toContain('Unsupported locale')
+  })
 })

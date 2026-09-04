@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  isAppleVoiceSupported,
-  isIOS,
-  isMacOS,
-  isStandalone,
-} from './environment'
+import { isIOS, isMacOS, isStandalone } from './environment'
 
 describe('isStandalone', () => {
   it('returns false when window is undefined or null', () => {
@@ -131,85 +126,6 @@ describe('isMacOS', () => {
       isMacOS({
         userAgent: 'Mozilla/5.0 (X11; Linux x86_64)',
         platform: 'Linux x86_64',
-      }),
-    ).toBe(false)
-  })
-})
-
-describe('isAppleVoiceSupported', () => {
-  it('returns false when navigator is null or undefined', () => {
-    expect(isAppleVoiceSupported(null)).toBe(false)
-  })
-
-  it('returns true for iOS devices', () => {
-    const iphoneNav = {
-      userAgent:
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
-    }
-    expect(isAppleVoiceSupported(iphoneNav)).toBe(true)
-
-    const ipadNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
-      platform: 'MacIntel',
-      maxTouchPoints: 5,
-    }
-    expect(isAppleVoiceSupported(ipadNav)).toBe(true)
-  })
-
-  it('returns true for macOS Safari', () => {
-    const safariNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-      platform: 'MacIntel',
-      maxTouchPoints: 0,
-      vendor: 'Apple Computer, Inc.',
-    }
-    expect(isAppleVoiceSupported(safariNav)).toBe(true)
-  })
-
-  it('returns false for macOS Chrome / Chromium / Edge', () => {
-    const chromeNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      platform: 'MacIntel',
-      maxTouchPoints: 0,
-      vendor: 'Google Inc.',
-    }
-    expect(isAppleVoiceSupported(chromeNav)).toBe(false)
-
-    const edgeNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0',
-      platform: 'MacIntel',
-      maxTouchPoints: 0,
-      vendor: 'Google Inc.',
-    }
-    expect(isAppleVoiceSupported(edgeNav)).toBe(false)
-  })
-
-  it('returns false for macOS Firefox', () => {
-    const firefoxNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:123.0) Gecko/20100101 Firefox/123.0',
-      platform: 'MacIntel',
-      maxTouchPoints: 0,
-      vendor: '',
-    }
-    expect(isAppleVoiceSupported(firefoxNav)).toBe(false)
-  })
-
-  it('returns false for Windows / Linux / Android', () => {
-    expect(
-      isAppleVoiceSupported({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        platform: 'Win32',
-      }),
-    ).toBe(false)
-    expect(
-      isAppleVoiceSupported({
-        userAgent: 'Mozilla/5.0 (Linux; Android 14)',
-        platform: 'Linux armv8l',
       }),
     ).toBe(false)
   })

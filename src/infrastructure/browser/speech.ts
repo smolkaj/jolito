@@ -57,27 +57,6 @@ export class EnhancedBrowserSpeaker implements Speaker {
     )
   }
 
-  areVoicesLoaded(): boolean {
-    this.refreshVoices()
-    return this.voices.length > 0
-  }
-
-  hasEnhancedVoice(locale = 'es-MX'): boolean {
-    if (!this.supported()) return false
-    const current = this.refreshVoices()
-    if (locale.toLowerCase().startsWith('es')) {
-      return hasEnhancedMexicanSpanishVoice(current)
-    }
-    return false
-  }
-
-  onVoicesChanged(cb: () => void): () => void {
-    this.listeners.add(cb)
-    return () => {
-      this.listeners.delete(cb)
-    }
-  }
-
   speak(text: string, locale: string): boolean {
     if (!this.supported()) return false
 
@@ -244,29 +223,4 @@ export function isEnhancedMexicanVoice(v: SpeechSynthesisVoice): boolean {
       name.includes('natural') ||
       name.includes('neural'))
   )
-}
-
-export function hasEnhancedMexicanSpanishVoice(
-  voices: SpeechSynthesisVoice[],
-): boolean {
-  return voices.some(isEnhancedMexicanVoice)
-}
-
-export function shouldPromptAppleVoiceUpgrade(options: {
-  isAppleVoiceSupported: boolean
-  hasEnhancedVoice?: boolean
-  voices?: SpeechSynthesisVoice[]
-  voicesLoaded?: boolean
-  dismissed?: boolean
-}): boolean {
-  if (options.dismissed) return false
-  if (!options.isAppleVoiceSupported) return false
-
-  if (options.voices !== undefined) {
-    if (options.voices.length === 0) return false
-    return !hasEnhancedMexicanSpanishVoice(options.voices)
-  }
-
-  if (options.voicesLoaded === false) return false
-  return !(options.hasEnhancedVoice ?? false)
 }

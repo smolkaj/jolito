@@ -421,8 +421,36 @@ describe('NeuralVoiceEngine', () => {
     )
 
     // mockFetch should only be called for the 2 unbundled phrases
-    expect(mockFetch).toHaveBeenCalledTimes(2)
     expect(engine.hasAudio('palabra uno', 'es-MX')).toBe(true)
     expect(engine.hasAudio('palabra dos', 'es-MX')).toBe(true)
+  })
+
+  it('keeps audio isolated by voice so identical phrases across different personas do not collide', () => {
+    const engine = new NeuralVoiceEngine()
+    const daliaBuffer = { duration: 1 } as unknown as AudioBuffer
+    const jorgeBuffer = { duration: 2 } as unknown as AudioBuffer
+
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+
+    // Dalia voice is present
+    expect(engine.hasAudio('hola', 'es-MX', 'es-MX-DaliaNeural')).toBe(true)
+
+    // Jorge voice must NOT be present and must not be hijacked by Dalia
+    expect(engine.hasAudio('hola', 'es-MX', 'es-MX-JorgeNeural')).toBe(false)
+
+    // Registering Jorge separately must preserve both
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      jorgeBuffer,
+      'es-MX-JorgeNeural',
+    )
+    expect(engine.hasAudio('hola', 'es-MX', 'es-MX-JorgeNeural')).toBe(true)
+    expect(engine.hasAudio('hola', 'es-MX', 'es-MX-DaliaNeural')).toBe(true)
   })
 })

@@ -105,6 +105,13 @@ export class NeuralVoiceEngine {
       if (clean !== raw && clean.length > 0) {
         keys.push(`${normalizedLocale}:${clean}:${voice}`)
       }
+      return keys
+    }
+
+    const defaultVoice = getDeterministicVoice(text, locale)
+    keys.push(`${normalizedLocale}:${raw}:${defaultVoice}`)
+    if (clean !== raw && clean.length > 0) {
+      keys.push(`${normalizedLocale}:${clean}:${defaultVoice}`)
     }
 
     keys.push(`${normalizedLocale}:${raw}`)
@@ -173,6 +180,28 @@ export class NeuralVoiceEngine {
           return true
         } catch {
           return false
+        }
+      }
+    }
+
+    // If voice-specific audio was not found, fallback to bundled static audio blobs (if present)
+    if (voice) {
+      for (const fallbackKey of this.getCacheKeys(text, locale)) {
+        const bundledUrl = this.audioBlobs.get(fallbackKey)
+        if (
+          bundledUrl &&
+          typeof window !== 'undefined' &&
+          typeof window.Audio !== 'undefined'
+        ) {
+          try {
+            const audio = new window.Audio(bundledUrl)
+            if (typeof audio.play === 'function') {
+              void audio.play().catch(() => {})
+            }
+            return true
+          } catch {
+            return false
+          }
         }
       }
     }
@@ -286,6 +315,14 @@ export class NeuralVoiceEngine {
         }
       }
 
+      if (
+        typeof navigator !== 'undefined' &&
+        'onLine' in navigator &&
+        !navigator.onLine
+      ) {
+        return false
+      }
+
       try {
         const response = await fetchFn(url)
         if (!response.ok) return false
@@ -348,6 +385,14 @@ export class NeuralVoiceEngine {
     items: PrefetchItem[],
     fetchFn: typeof fetch = fetch,
   ): Promise<void> {
+    if (
+      typeof navigator !== 'undefined' &&
+      'onLine' in navigator &&
+      !navigator.onLine
+    ) {
+      return
+    }
+
     const uncached = items.filter((item) => {
       const clean = item.text.trim()
       if (!clean) return false
@@ -530,21 +575,10 @@ export class LayeredNeuralSpeaker implements Speaker {
         .awaitAudio(cleanText, normLocale, voice, 200)
         .then((ready) => {
           if (ready) {
-            const played = this.neuralEngine.playAudio(
-              cleanText,
-              normLocale,
-              voice,
-            )
-            if (!played) {
-              this.fallbackSpeaker.speak(cleanText, normLocale)
-            }
-          } else {
-            this.fallbackSpeaker.speak(cleanText, normLocale)
+            this.neuralEngine.playAudio(cleanText, normLocale, voice)
           }
         })
-        .catch(() => {
-          this.fallbackSpeaker.speak(cleanText, normLocale)
-        })
+        .catch(() => {})
       return true
     }
 
@@ -557,20 +591,5 @@ export class LayeredNeuralSpeaker implements Speaker {
       .catch(() => {})
 
     return this.fallbackSpeaker.speak(cleanText, normLocale)
-  }
-
-  hasEnhancedVoice(locale?: string): boolean {
-    if (this.neuralEngine.supported()) {
-      return true
-    }
-    return this.fallbackSpeaker.hasEnhancedVoice?.(locale) ?? false
-  }
-
-  areVoicesLoaded(): boolean {
-    return this.fallbackSpeaker.areVoicesLoaded?.() ?? true
-  }
-
-  onVoicesChanged(cb: () => void): () => void {
-    return this.fallbackSpeaker.onVoicesChanged?.(cb) ?? (() => {})
   }
 }
