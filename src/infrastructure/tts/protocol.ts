@@ -94,7 +94,9 @@ export function escapeXml(str: string): string {
 
 export function buildSsml(text: string, voice: string, locale: string): string {
   const escaped = escapeXml(text)
-  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${locale}'><voice name='${voice}'><prosody pitch='+0Hz' rate='+0%'>${escaped}</prosody></voice></speak>`
+  const escapedVoice = escapeXml(voice)
+  const escapedLocale = escapeXml(locale)
+  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${escapedLocale}'><voice name='${escapedVoice}'><prosody pitch='+0Hz' rate='+0%'>${escaped}</prosody></voice></speak>`
 }
 
 export function buildConfigMessage(

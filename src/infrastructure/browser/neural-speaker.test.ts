@@ -195,6 +195,46 @@ describe('LayeredNeuralSpeaker', () => {
     )
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
+
+  it('plays bundled neural audio for starter words like aguacate without mocking hasAudio', () => {
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('aguacate', 'es-MX', { cardSeed: 'card-1' })
+    expect(played).toBe(true)
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('falls back to speech synthesis if in-flight prefetch times out after 200ms', async () => {
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'awaitAudio').mockResolvedValue(false)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('palabra lenta', 'es-MX', {
+      cardSeed: 'card-1',
+    })
+    expect(played).toBe(true)
+
+    // Flush microtasks
+    await Promise.resolve()
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra lenta', 'es-MX')
+  })
 })
 
 describe('NeuralVoiceEngine', () => {
@@ -452,5 +492,35 @@ describe('NeuralVoiceEngine', () => {
     )
     expect(engine.hasAudio('hola', 'es-MX', 'es-MX-JorgeNeural')).toBe(true)
     expect(engine.hasAudio('hola', 'es-MX', 'es-MX-DaliaNeural')).toBe(true)
+  })
+
+  it('stops previous audio playback and cancels speech synthesis when stopAudio is called', () => {
+    const engine = new NeuralVoiceEngine()
+    const mockStop = vi.fn()
+    const mockDisconnect = vi.fn()
+    const mockSource = {
+      stop: mockStop,
+      disconnect: mockDisconnect,
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+    } as unknown as AudioBufferSourceNode
+
+    ;(
+      engine as unknown as { currentSource: AudioBufferSourceNode | null }
+    ).currentSource = mockSource
+
+    const cancelSpy = vi.fn()
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: { cancel: cancelSpy },
+      configurable: true,
+      writable: true,
+    })
+
+    engine.stopAudio()
+
+    expect(mockStop).toHaveBeenCalled()
+    expect(mockDisconnect).toHaveBeenCalled()
+    expect(cancelSpy).toHaveBeenCalled()
   })
 })

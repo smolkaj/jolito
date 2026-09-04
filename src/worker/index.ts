@@ -9,7 +9,7 @@ export interface WorkerEnv {
 export default {
   async fetch(request: Request, env?: WorkerEnv): Promise<Response> {
     const url = new URL(request.url)
-    if (url.pathname === '/api/tts') {
+    if (url.pathname.replace(/\/+$/, '') === '/api/tts') {
       return handleTtsRequest(request)
     }
 

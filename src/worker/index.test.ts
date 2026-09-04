@@ -9,6 +9,12 @@ describe('worker fetch handler', () => {
     expect(res.status).toBe(400)
   })
 
+  it('routes /api/tts/ with trailing slash to TTS handler', async () => {
+    const req = new Request('https://joli.to/api/tts/')
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(400)
+  })
+
   it('delegates asset requests to env.ASSETS when present', async () => {
     let capturedAssetRequest: Request | null = null
     const mockEnv = {

@@ -3,6 +3,7 @@ import { synthesizeSpeech } from '../infrastructure/tts/synthesize.ts'
 import {
   getDeterministicVoice,
   isValidVoice,
+  normalizeLocale,
 } from '../infrastructure/tts/voices.ts'
 
 export const ttsQuerySchema = z.object({
@@ -16,11 +17,14 @@ export const ttsQuerySchema = z.object({
     .trim()
     .refine(
       (val) => {
-        const clean = val.toLowerCase().replace(/_/g, '-')
-        return clean.startsWith('es') || clean.startsWith('en')
+        const norm = val.toLowerCase().replace(/_/g, '-')
+        return (
+          norm === 'es-mx' || norm === 'en-us' || norm === 'es' || norm === 'en'
+        )
       },
       { message: 'Unsupported locale. Supported locales: es-MX, en-US' },
     )
+    .transform(normalizeLocale)
     .default('es-MX'),
   voice: z
     .string()
@@ -50,6 +54,17 @@ export async function handleTtsRequest(
     return new Response(null, {
       status: 204,
       headers: corsHeaders,
+    })
+  }
+
+  if (request.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: {
+        ...corsHeaders,
+        Allow: 'GET, OPTIONS',
+        'Content-Type': 'application/json',
+      },
     })
   }
 

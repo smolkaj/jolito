@@ -105,4 +105,25 @@ describe('handleTtsRequest', () => {
     const json = (await response.json()) as { error?: string }
     expect(json.error).toContain('Unsupported locale')
   })
+
+  it('rejects SSML injection attempts in locale parameter', async () => {
+    const request = new Request(
+      "https://joli.to/api/tts?text=test&locale=es'><injection>",
+    )
+    const response = await handleTtsRequest(request)
+    expect(response.status).toBe(400)
+    const json = (await response.json()) as { error?: string }
+    expect(json.error).toContain('Unsupported locale')
+  })
+
+  it('returns 405 Method Not Allowed for non-GET non-OPTIONS requests', async () => {
+    const request = new Request('https://joli.to/api/tts?text=hola', {
+      method: 'POST',
+    })
+    const response = await handleTtsRequest(request)
+    expect(response.status).toBe(405)
+    expect(response.headers.get('Allow')).toBe('GET, OPTIONS')
+    const json = (await response.json()) as { error?: string }
+    expect(json.error).toBe('Method not allowed')
+  })
 })

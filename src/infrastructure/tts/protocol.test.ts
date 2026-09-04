@@ -31,6 +31,12 @@ describe('protocol', () => {
     )
   })
 
+  it('escapes XML special characters in voice and locale attributes to prevent SSML injection', () => {
+    const ssml = buildSsml('hello', "voice' <inject>", "es' <bad>")
+    expect(ssml).toContain("xml:lang='es&apos; &lt;bad&gt;'")
+    expect(ssml).toContain("<voice name='voice&apos; &lt;inject&gt;'>")
+  })
+
   it('generates consistent Sec-MS-GEC token for fixed timestamp', async () => {
     // 1700000000 -> Nov 14, 2023
     const token1 = await generateSecMsGec(1700000000)

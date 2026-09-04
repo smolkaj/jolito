@@ -2,7 +2,6 @@ import type { Speaker } from '../../application/ports'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
-  private listeners = new Set<() => void>()
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
@@ -35,9 +34,6 @@ export class EnhancedBrowserSpeaker implements Speaker {
       this.refreshVoices()
       const handler = () => {
         this.refreshVoices()
-        for (const listener of this.listeners) {
-          listener()
-        }
       }
       if (typeof window.speechSynthesis.addEventListener === 'function') {
         window.speechSynthesis.addEventListener('voiceschanged', handler)

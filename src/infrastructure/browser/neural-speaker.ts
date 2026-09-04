@@ -122,10 +122,55 @@ export class NeuralVoiceEngine {
     return keys
   }
 
+  private currentSource: AudioBufferSourceNode | null = null
+  private currentAudioElement: HTMLAudioElement | null = null
+
+  stopAudio(): void {
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop()
+        this.currentSource.disconnect()
+      } catch {
+        // Already stopped
+      }
+      this.currentSource = null
+    }
+    if (this.currentAudioElement) {
+      try {
+        this.currentAudioElement.pause()
+        this.currentAudioElement.currentTime = 0
+      } catch {
+        // Ignore pause errors
+      }
+      this.currentAudioElement = null
+    }
+    if (
+      typeof window !== 'undefined' &&
+      'speechSynthesis' in window &&
+      typeof window.speechSynthesis.cancel === 'function'
+    ) {
+      try {
+        window.speechSynthesis.cancel()
+      } catch {
+        // Ignore cancel errors
+      }
+    }
+  }
+
   hasAudio(text: string, locale: string, voice?: string): boolean {
-    return this.getCacheKeys(text, locale, voice).some(
+    const hasVoiceMatch = this.getCacheKeys(text, locale, voice).some(
       (key) => this.audioCache.has(key) || this.audioBlobs.has(key),
     )
+    if (hasVoiceMatch) return true
+
+    // If a specific voice was requested but not found, check if unvoiced (bundled audio) exists
+    if (voice) {
+      return this.getCacheKeys(text, locale).some(
+        (key) => this.audioCache.has(key) || this.audioBlobs.has(key),
+      )
+    }
+
+    return false
   }
 
   isAudioInFlight(text: string, locale: string, voice?: string): boolean {
@@ -173,7 +218,14 @@ export class NeuralVoiceEngine {
         typeof window.Audio !== 'undefined'
       ) {
         try {
+          this.stopAudio()
           const audio = new window.Audio(cachedUrl)
+          this.currentAudioElement = audio
+          audio.onended = () => {
+            if (this.currentAudioElement === audio) {
+              this.currentAudioElement = null
+            }
+          }
           if (typeof audio.play === 'function') {
             void audio.play().catch(() => {})
           }
@@ -184,9 +236,14 @@ export class NeuralVoiceEngine {
       }
     }
 
-    // If voice-specific audio was not found, fallback to bundled static audio blobs (if present)
+    // If voice-specific audio was not found, fallback to unvoiced keys (bundled static audio)
     if (voice) {
       for (const fallbackKey of this.getCacheKeys(text, locale)) {
+        const cachedBuffer = this.audioCache.get(fallbackKey)
+        if (cachedBuffer) {
+          return this.playBuffer(cachedBuffer)
+        }
+
         const bundledUrl = this.audioBlobs.get(fallbackKey)
         if (
           bundledUrl &&
@@ -194,7 +251,14 @@ export class NeuralVoiceEngine {
           typeof window.Audio !== 'undefined'
         ) {
           try {
+            this.stopAudio()
             const audio = new window.Audio(bundledUrl)
+            this.currentAudioElement = audio
+            audio.onended = () => {
+              if (this.currentAudioElement === audio) {
+                this.currentAudioElement = null
+              }
+            }
             if (typeof audio.play === 'function') {
               void audio.play().catch(() => {})
             }
@@ -494,9 +558,17 @@ export class NeuralVoiceEngine {
         this.audioContext.resume().catch(() => {})
       }
 
+      this.stopAudio()
+
       const source = this.audioContext.createBufferSource()
       source.buffer = buffer
       source.connect(this.audioContext.destination)
+      source.onended = () => {
+        if (this.currentSource === source) {
+          this.currentSource = null
+        }
+      }
+      this.currentSource = source
       source.start(0)
       return true
     } catch {
@@ -575,10 +647,21 @@ export class LayeredNeuralSpeaker implements Speaker {
         .awaitAudio(cleanText, normLocale, voice, 200)
         .then((ready) => {
           if (ready) {
-            this.neuralEngine.playAudio(cleanText, normLocale, voice)
+            const played = this.neuralEngine.playAudio(
+              cleanText,
+              normLocale,
+              voice,
+            )
+            if (!played) {
+              this.fallbackSpeaker.speak(cleanText, normLocale)
+            }
+          } else {
+            this.fallbackSpeaker.speak(cleanText, normLocale)
           }
         })
-        .catch(() => {})
+        .catch(() => {
+          this.fallbackSpeaker.speak(cleanText, normLocale)
+        })
       return true
     }
 
