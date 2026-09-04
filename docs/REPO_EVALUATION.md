@@ -28,14 +28,14 @@ However, it is not yet in an unconstrained **"ideal state"**. The primary bottle
 ### Genuine Bottlenecks & Gaps
 
 1. **The 5,000-Line UI Monolith (`src/jolito.tsx` & `src/jolito.test.tsx`):**
-   - _Problem:_ Despite strict hexagonal isolation in `domain`, `application`, and `infrastructure`, the entire presentation layer is packed into [`src/jolito.tsx`](../src/jolito.tsx) (4,868 lines). It contains over 500 lines of SVG icons, multiple modals (`SyncModal`, `FeedbackModal`, `EditCardModal`, `StarterCardsModal`), the full `DeckManagerView`, `CreateCardView`, `StudyView`, and `WelcomeView`.
+   - _Problem:_ Despite strict hexagonal isolation in `domain`, `application`, and `infrastructure`, the entire presentation layer was historically packed into [`src/jolito.tsx`](../src/jolito.tsx) (4,868 lines). It contained over 500 lines of SVG icons, multiple modals (`SyncModal`, `FeedbackModal`, `EditCardModal`, `DeckBackupModal`, `DemoDeckModal`, `DeleteCardsModal`), the full `DeckManagerView`, `CreateCardView`, `StudyView`, and `WelcomeView`.
    - _Consequence for multi-agent workflows:_ When multiple AI agents or engineers work simultaneously in isolated Git worktrees on UI-adjacent features (e.g. audio prefetching, gesture handling, deck filtering), concurrent branches frequently collide with merge conflicts in `src/jolito.tsx`.
-   - _Resolution:_ Extract presentation components into a clean `src/ui/` structure (`src/ui/icons.tsx`, `src/ui/modals/`, `src/ui/views/`).
+   - _Resolution:_ Extract presentation components into a clean `src/ui/` structure (`src/ui/icons.tsx`, `src/ui/AudioButton.tsx`, `src/ui/modals/`, `src/ui/views/`).
 
 2. **Domain Boundary Leak in `src/domain/anki-sql.ts`:**
    - _Problem:_ Invariant #1 in [`docs/ARCHITECTURE.md`](ARCHITECTURE.md#dependency-rules) mandates: _"domain imports no React, browser, network, persistence, or provider SDKs."_ However, `src/domain/anki-sql.ts` dynamically imports `node:fs` and `node:path`, references `process.cwd()`, and imports Vite WASM URLs (`sql.js/dist/sql-wasm.wasm?url`).
    - _Consequence:_ Vite/Rolldown logs build-time warnings on every build (`Module "node:path" has been externalized for browser compatibility`).
-   - _Resolution:_ Relocate SQLite wasm loading and file extraction to `src/infrastructure/storage/anki-sql.ts` (or `src/infrastructure/browser/`), exposing a clean interface to domain parsers.
+   - _Resolution:_ Immediate: Suppress the Vite bundling warning via `@vite-ignore` indirection. Next architectural milestone: Relocate SQLite wasm loading and file extraction to `src/infrastructure/storage/anki-sql.ts` (or `src/infrastructure/browser/`), exposing a clean interface to domain parsers.
 
 3. **React 19 `act(...)` Warning in Component Tests:**
    - _Problem:_ Running `vitest` logs an unawaited `act` warning:
@@ -81,9 +81,9 @@ However, it is not yet in an unconstrained **"ideal state"**. The primary bottle
 ## Recommended Execution Order
 
 1. **Phase 1: Developer Efficiency (Immediate Track)**
-   - Move SQLite/WASM initialization from `src/domain/anki-sql.ts` to `src/infrastructure/storage/anki-sql.ts`, eliminating the Vite externalization warning and enforcing domain purity.
+   - Suppress SQLite/WASM Vite externalization warnings via `@vite-ignore`, with planned architectural extraction of SQLite initialization to `src/infrastructure/storage/anki-sql.ts`.
    - Fix the React 19 `act(...)` async suspension warning in `src/jolito.test.tsx`.
-   - Extract UI presentation components from `src/jolito.tsx` into modular files (`src/ui/icons.tsx`, `src/ui/modals/`, `src/ui/views/`).
+   - Extract UI presentation components from `src/jolito.tsx` into modular files (`src/ui/icons.tsx`, `src/ui/AudioButton.tsx`, `src/ui/modals/`, `src/ui/views/`).
 2. **Phase 2: Visitor Funnel & Product Story**
    - Contextualize the guest card-creation sign-in modal.
    - Introduce a calm "Why Jolito?" value proposition fold on the welcome view.

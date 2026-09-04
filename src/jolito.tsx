@@ -1,6 +1,5 @@
 import {
   type ChangeEvent,
-  type FocusEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -59,11 +58,7 @@ import {
   viewFromHash,
 } from './navigation'
 
-function handleFocusSelect(
-  event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
-) {
-  event.currentTarget.select()
-}
+import { handleFocusSelect } from './ui/utils'
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -92,11 +87,13 @@ import {
   UsFlag,
   UserIcon,
 } from './ui/icons'
+import { AudioButton } from './ui/AudioButton'
 import { EditCardModal } from './ui/modals/EditCardModal'
 import { SyncModal } from './ui/modals/SyncModal'
 import { FeedbackModal } from './ui/modals/FeedbackModal'
 
 export {
+  AudioButton,
   ClipboardIcon,
   CloudCheckIcon,
   CloudCheckSticker,
@@ -133,31 +130,6 @@ function Brand({ onClick }: { onClick?: () => void }) {
     </button>
   ) : (
     <div className="brand">{content}</div>
-  )
-}
-
-function AudioButton({
-  label,
-  onClick,
-  prompt = false,
-}: {
-  label: string
-  onClick: () => void
-  prompt?: boolean
-}) {
-  return (
-    <button
-      className="audio-button"
-      type="button"
-      aria-label={label}
-      title={label}
-      data-prompt-audio={prompt || undefined}
-      onClick={onClick}
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-      </svg>
-    </button>
   )
 }
 

@@ -1,20 +1,9 @@
-import {
-  type FocusEvent,
-  type FormEvent,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import type { StudyCard, UpdateCardParams } from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
-import { AudioButton, MexicoFlag, UsFlag } from '../icons'
-
-function handleFocusSelect(
-  event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
-) {
-  event.currentTarget.select()
-}
+import { MexicoFlag, UsFlag } from '../icons'
+import { AudioButton } from '../AudioButton'
+import { handleFocusSelect } from '../utils'
 
 function EditCardModalInner({
   card,
