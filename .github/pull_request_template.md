@@ -29,7 +29,7 @@
 
 - [ ] `npm run check` (formatting, linting with architecture boundaries, strict TypeScript, Vitest 95%+ coverage, Vite build)
 - [ ] `npm run test:e2e` (browser tests passing for user workflow, accessibility, or offline behavior changes)
-- [ ] `npm run audit:prod` (0 high-severity vulnerabilities)
+- [ ] Dependency security verified (clean PR dependency review / 0 high-severity vulnerabilities)
 - [ ] Documentation or an ADR was updated when behavior, setup, or architecture changed.
 
 ## Independent review audit trail

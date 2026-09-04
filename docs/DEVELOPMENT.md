@@ -98,7 +98,7 @@ The Cloudflare DNS zone, edge TLS settings, custom domain bindings for `joli.to`
 npm run setup:domain
 ```
 
-Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality and browser checks remain the code-quality gates.
+Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality, browser, and iOS native compilation checks remain the code-quality gates.
 
 ## Native iOS & Mobile development
 
