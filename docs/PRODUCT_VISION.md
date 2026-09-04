@@ -79,7 +79,7 @@ Suggested keyboard controls:
 
 ### Core Platform (v1.0 Shipped)
 
-- **Cross-Platform Access:** Offline-first web application and native iOS app (Capacitor) sharing the local-first application shell, local storage, and tactile sensory haptics.
+- **Web Application (PWA):** Installable, offline-capable progressive web application at [`joli.to`](https://joli.to) with local browser storage, service worker caching, and full mobile touch compliance.
 - **Unified Card Collection:** Single personal card collection with creation date and alphabetical sorting, duplicate detection and resolution, and instant editing.
 - **Multimodal Mexican Spanish:** Spanish ↔ English reciprocal card creation with lexicon assistance, autocomplete, lemma resolution, and verb conjugation ranking.
 - **Studio Neural Audio:** Spoken Mexican Spanish audio on prompts and answers with edge synthesis (`/api/tts`), practice prefetching, voice cycling, bundled neural starter audio, and offline caching.
@@ -90,8 +90,9 @@ Suggested keyboard controls:
 
 ### Strategic Horizons
 
-#### Horizon 1: Sensory Polish & Native Ecosystem (Active Next)
+#### Horizon 1: Native iOS App & Mobile Polish (Active Next)
 
+- **Native iOS Client via Capacitor:** Packaging the local-first application shell as an official iOS app (`ios/App`) with sensory haptics, TestFlight beta distribution, and App Store readiness.
 - **Native iOS Authentication:** Apple Sign-In integrated with Supabase Auth.
 - **Ecosystem Widgets:** Quick-review Lock Screen and Home Screen widgets on iOS.
 - **Configurable Study Controls:** Custom daily new-card intake limits and advanced queue prioritization.

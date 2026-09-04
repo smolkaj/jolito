@@ -86,15 +86,15 @@ _Goal: Ensure cards and progress are safely backed up and synced without sacrifi
 
 ---
 
-### Track 6: 📱 Native iOS Client & Mobile Ecosystem
+### Track 6: 📱 Native iOS Client & Mobile Ecosystem (Horizon 1 🚀)
 
-_Goal: Bring Jolito's calm, rhythmic study flow to iOS with native tactile polish and instant widget access._
+_Goal: Bring Jolito's calm, rhythmic study flow to iOS with native tactile polish, TestFlight distribution, and instant widget access._
 
-- **Native Mobile Experience via Capacitor (Complete ✅):** Native iOS app packaging (`ios/App`) sharing the core local-first React web application, local storage, and offline service worker.
+- **Native Mobile Packaging & Shell (Beta Groundwork ✅):** Capacitor app packaging (`ios/App`) sharing the core local-first React web application, local storage, and offline service worker.
 - **Sensory Haptics (Complete ✅):** Native tactile feedback via `@capacitor/haptics` for card reveals and self-grading.
 - **Automated Native Toolchain & CI (Complete ✅):** Xcode compilation validation in GitHub Actions (`macos-15`), Fastlane TestFlight distribution, and Maestro native test support.
-- **Apple Sign-In (Next):** Native iOS authentication flow integrating with Supabase Auth.
-- **Native Widgets & Extensions (Planned):** Quick-review Lock Screen and Home Screen widgets.
+- **Apple Sign-In (Active Next):** Native iOS authentication flow integrating with Supabase Auth.
+- **App Store Release & Widgets (Horizon 1):** Official App Store release and quick-review Lock Screen/Home Screen widgets.
 
 ---
 
