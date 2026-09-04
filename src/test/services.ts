@@ -12,8 +12,10 @@ import type {
   HapticEffect,
   HapticsPlayer,
   IdGenerator,
+  PrefetchItem,
   SoundPlayer,
   Speaker,
+  SpeakerOptions,
   SyncResult,
   SyncService,
 } from '../application/ports'
@@ -68,7 +70,12 @@ export class MemoryCardRepository implements CardRepository {
 
 export class MockSpeaker implements Speaker {
   public spoken: Array<{ text: string; locale: string }> = []
-  public prefetched: Array<{ text: string; locale: string }> = []
+  public spokenCalls: Array<{
+    text: string
+    locale: string
+    options?: SpeakerOptions | undefined
+  }> = []
+  public prefetched: PrefetchItem[] = []
   public isSupported = true
   public enhancedVoice = false
   public voicesLoaded = true
@@ -78,13 +85,14 @@ export class MockSpeaker implements Speaker {
     return this.isSupported
   }
 
-  prefetch(items: Array<{ text: string; locale: string }>): void {
+  prefetch(items: PrefetchItem[]): void {
     this.prefetched.push(...items)
   }
 
-  speak(text: string, locale: string): boolean {
+  speak(text: string, locale: string, options?: SpeakerOptions): boolean {
     if (!this.isSupported) return false
     this.spoken.push({ text, locale })
+    this.spokenCalls.push({ text, locale, options })
     return true
   }
 

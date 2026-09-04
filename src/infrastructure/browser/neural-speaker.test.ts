@@ -46,7 +46,11 @@ describe('LayeredNeuralSpeaker', () => {
 
     const played = speaker.speak('aguacate', 'es-MX')
     expect(played).toBe(true)
-    expect(mockPlayBuffer).toHaveBeenCalledWith('aguacate', 'es-MX')
+    expect(mockPlayBuffer).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+    )
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
@@ -143,7 +147,53 @@ describe('LayeredNeuralSpeaker', () => {
     const played = speaker.speak('palabra nueva', 'es-MX')
     expect(played).toBe(true)
     expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX')
-    expect(fetchSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const call = fetchSpy.mock.calls[0]
+    expect(call?.[0]).toBe('palabra nueva')
+    expect(call?.[1]).toBe('es-MX')
+    expect(typeof call?.[2]).toBe('object')
+    if (call?.[2] && typeof call[2] === 'object') {
+      expect(call[2].voice).toBeDefined()
+    }
+  })
+
+  it('awaits in-flight prefetch for Card 0 and plays neural audio instead of falling back to robotic speech', async () => {
+    let resolveInFlight: (value: boolean) => void = () => {}
+    const inFlightPromise = new Promise<boolean>((resolve) => {
+      resolveInFlight = resolve
+    })
+
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'awaitAudio').mockImplementation(
+      () => inFlightPromise,
+    )
+    const playSpy = vi.spyOn(neuralEngine, 'playAudio').mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    // Auto-play for Card 0 starts while prefetch is in flight
+    const played = speaker.speak('primer tarjeta', 'es-MX', {
+      cardSeed: 'card-1',
+    })
+    expect(played).toBe(true)
+    // Fallback speaker must NOT be called immediately
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+
+    // Now in-flight prefetch completes
+    resolveInFlight(true)
+    await inFlightPromise
+
+    // Neural audio plays smoothly
+    expect(playSpy).toHaveBeenCalledWith(
+      'primer tarjeta',
+      'es-MX',
+      expect.any(String),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 })
 

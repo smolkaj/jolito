@@ -43,13 +43,19 @@ export function hashString(str: string): number {
 
 /**
  * Deterministically selects a male or female voice for the given text and locale.
- * Ensures consistent speaker voice for the same phrase across all clients,
- * while cycling evenly between genders across different phrases.
+ * When a seed (such as a card ID) is provided, it uses the seed so both the prompt
+ * and answer of that card speak with the exact same persona (female or male).
+ * When no seed is provided, it falls back to hashing the text.
  */
-export function getDeterministicVoice(text: string, locale = 'es-MX'): string {
+export function getDeterministicVoice(
+  text: string,
+  locale = 'es-MX',
+  seed?: string,
+): string {
   const normLocale = normalizeLocale(locale)
   const voices = NEURAL_VOICES[normLocale]
-  const cleanText = text.trim().toLowerCase()
-  const isFemale = hashString(cleanText) % 2 === 0
+  const key =
+    seed && seed.trim().length > 0 ? seed.trim() : text.trim().toLowerCase()
+  const isFemale = hashString(key) % 2 === 0
   return isFemale ? voices.female : voices.male
 }

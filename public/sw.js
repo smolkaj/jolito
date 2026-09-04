@@ -58,7 +58,9 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter(
+              (key) => key !== CACHE_NAME && !key.startsWith('jolito-audio-'),
+            )
             .map((key) => caches.delete(key)),
         ),
       )
@@ -88,11 +90,15 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request
-  if (
-    request.method !== 'GET' ||
-    new URL(request.url).origin !== self.location.origin
-  )
+  const requestUrl = new URL(request.url)
+  if (request.method !== 'GET' || requestUrl.origin !== self.location.origin)
     return
+
+  // Audio TTS requests are managed explicitly by NeuralVoiceEngine in jolito-audio-v1 cache.
+  // Avoid duplicating or competing with the app audio cache.
+  if (requestUrl.pathname.startsWith('/api/tts')) {
+    return
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(

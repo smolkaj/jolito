@@ -86,4 +86,19 @@ describe('voices', () => {
     expect(maleCount).toBeGreaterThan(0)
     expect(femaleCount + maleCount).toBe(samplePhrases.length)
   })
+
+  it('keeps speaker persona consistent across front and back of the same card using card seed', () => {
+    const cardId = 'card-12345'
+    const prompt = 'how cool'
+    const answer = '¡qué padre!'
+
+    const promptVoice = getDeterministicVoice(prompt, 'en-US', cardId)
+    const answerVoice = getDeterministicVoice(answer, 'es-MX', cardId)
+
+    const isPromptFemale = promptVoice === NEURAL_VOICES['en-US'].female
+    const isAnswerFemale = answerVoice === NEURAL_VOICES['es-MX'].female
+
+    // Both sides of the card must share the same persona (both female or both male)
+    expect(isPromptFemale).toBe(isAnswerFemale)
+  })
 })

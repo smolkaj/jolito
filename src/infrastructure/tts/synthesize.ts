@@ -45,24 +45,24 @@ export async function defaultWsFactory(
     typeof (globalThis as unknown as { WebSocketPair?: unknown })
       .WebSocketPair !== 'undefined'
   ) {
-    try {
-      const resp = await fetch(url, {
-        headers: {
-          Upgrade: 'websocket',
-          ...headers,
-        },
-      })
-      const ws = (resp as unknown as { webSocket?: unknown }).webSocket as
-        (EdgeWebSocketLike & { accept?: () => void }) | undefined
-      if (ws) {
-        if (typeof ws.accept === 'function') {
-          ws.accept()
-        }
-        return ws
+    const httpUrl = url.replace(/^wss:/i, 'https:').replace(/^ws:/i, 'http:')
+    const resp = await fetch(httpUrl, {
+      headers: {
+        Upgrade: 'websocket',
+        ...headers,
+      },
+    })
+    const ws = (resp as unknown as { webSocket?: unknown }).webSocket as
+      (EdgeWebSocketLike & { accept?: () => void }) | undefined
+    if (ws) {
+      if (typeof ws.accept === 'function') {
+        ws.accept()
       }
-    } catch {
-      // Fall through to other WebSocket implementations if available
+      return ws
     }
+    throw new Error(
+      `WebSocket upgrade failed with HTTP ${resp.status} ${resp.statusText}`,
+    )
   }
 
   // 2. Node.js environment: use undici WebSocket which allows custom headers (Origin, etc.)
@@ -149,7 +149,10 @@ export async function synthesizeSpeech(
       resolve(combined)
     }
 
+    let handshakeSent = false
     function sendHandshake() {
+      if (handshakeSent) return
+      handshakeSent = true
       try {
         // 1. Send speech.config
         ws.send(buildConfigMessage())

@@ -108,7 +108,8 @@ export function buildSsmlMessage(
   ssml: string,
   timestamp = new Date().toISOString(),
 ): string {
-  return `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${timestamp}Z\r\nPath:ssml\r\n\r\n${ssml}`
+  const ts = timestamp.endsWith('Z') ? timestamp : `${timestamp}Z`
+  return `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${ts}\r\nPath:ssml\r\n\r\n${ssml}`
 }
 
 export function parseBinaryAudioFrame(data: ArrayBuffer | Uint8Array): {

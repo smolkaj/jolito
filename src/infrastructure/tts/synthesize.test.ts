@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { EdgeWebSocketLike } from './synthesize'
-import { synthesizeSpeech } from './synthesize'
+import { defaultWsFactory, synthesizeSpeech } from './synthesize'
 
 class MockEdgeWebSocket implements EdgeWebSocketLike {
   sentMessages: Array<string | ArrayBuffer | Uint8Array> = []
@@ -173,5 +173,79 @@ describe('synthesizeSpeech', () => {
     await attachedPromise
 
     await expect(promise).rejects.toThrow('timed out after 50ms')
+  })
+
+  it('ensures sendHandshake is idempotent even if readyState is 1 and open event fires', async () => {
+    const { mockWs, wsFactory, attachedPromise } = createMockEnvironment(1) // OPEN
+
+    const promise = synthesizeSpeech({
+      text: 'Idempotent handshake',
+      timeoutMs: 1000,
+      wsFactory,
+    })
+
+    await attachedPromise
+    // Socket was already open, and now emits open event again
+    mockWs.simulateOpen()
+
+    // Must only send 2 messages (1 speech.config, 1 ssml), not 4
+    expect(mockWs.sentMessages.length).toBe(2)
+
+    mockWs.simulateAudioChunk(new Uint8Array([1, 2, 3]))
+    mockWs.simulateTurnEnd()
+
+    const result = await promise
+    expect(result).toEqual(new Uint8Array([1, 2, 3]))
+  })
+
+  describe('defaultWsFactory', () => {
+    it('rewrites wss scheme to https for Cloudflare Workers fetch WebSocket upgrade', async () => {
+      const mockWs = { accept: vi.fn(), binaryType: '' }
+      const fakeFetch = vi.fn().mockResolvedValue({
+        status: 101,
+        statusText: 'Switching Protocols',
+        webSocket: mockWs,
+      })
+
+      // Emulate Cloudflare Workers global environment with WebSocketPair and fetch
+      const originalFetch = globalThis.fetch
+      const originalWebSocketPair = (
+        globalThis as unknown as { WebSocketPair?: unknown }
+      ).WebSocketPair
+
+      try {
+        globalThis.fetch = fakeFetch
+        ;(globalThis as unknown as { WebSocketPair: unknown }).WebSocketPair =
+          class {}
+
+        const ws = await defaultWsFactory(
+          'wss://speech.platform.bing.com/path',
+          {
+            Origin: 'chrome-extension://test',
+          },
+        )
+
+        expect(fakeFetch).toHaveBeenCalledTimes(1)
+        const [fetchUrl, fetchInit] = fakeFetch.mock.calls[0] as [
+          string,
+          RequestInit,
+        ]
+        expect(fetchUrl).toBe('https://speech.platform.bing.com/path')
+        const headers = fetchInit.headers as Record<string, string>
+        expect(headers.Upgrade).toBe('websocket')
+        expect(headers.Origin).toBe('chrome-extension://test')
+        expect(mockWs.accept).toHaveBeenCalled()
+        expect(ws).toBe(mockWs)
+      } finally {
+        globalThis.fetch = originalFetch
+        if (typeof originalWebSocketPair === 'undefined') {
+          delete (globalThis as unknown as { WebSocketPair?: unknown })
+            .WebSocketPair
+        } else {
+          ;(globalThis as unknown as { WebSocketPair: unknown }).WebSocketPair =
+            originalWebSocketPair
+        }
+      }
+    })
   })
 })

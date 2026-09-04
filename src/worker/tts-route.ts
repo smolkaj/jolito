@@ -59,6 +59,22 @@ export async function handleTtsRequest(
     )
   }
 
+  const edgeCache =
+    typeof caches !== 'undefined' && 'default' in caches
+      ? (caches as unknown as { default: Cache }).default
+      : null
+
+  if (edgeCache) {
+    try {
+      const cached = await edgeCache.match(request)
+      if (cached) {
+        return cached
+      }
+    } catch {
+      // Ignore cache lookup errors
+    }
+  }
+
   const { text, locale, voice: requestedVoice } = parsed.data
   const voice =
     requestedVoice && isValidVoice(requestedVoice)
@@ -77,7 +93,7 @@ export async function handleTtsRequest(
 
     const body = new Uint8Array(audioBytes).buffer
 
-    return new Response(body, {
+    const response = new Response(body, {
       status: 200,
       headers: {
         ...corsHeaders,
@@ -86,6 +102,16 @@ export async function handleTtsRequest(
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     })
+
+    if (edgeCache) {
+      try {
+        await edgeCache.put(request, response.clone())
+      } catch {
+        // Ignore cache storage errors
+      }
+    }
+
+    return response
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return new Response(

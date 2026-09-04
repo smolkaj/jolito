@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { App, AppleVoiceGuideModal } from './jolito'
+import { App } from './jolito'
 import { createStudyCards, type StudyCard } from './domain/card'
 import { starterCards } from './application/starter-cards'
 import { OfflineCardAssistant } from './application/card-assistant'
@@ -4251,253 +4251,8 @@ describe('Jolito', () => {
     expect(updatedCardA?.schedule.lastReviewedAt).toBe(now)
   })
 
-  describe('Apple voice enhancement banner and guide', () => {
-    const setupSafariMac = () => {
-      Object.defineProperty(navigator, 'userAgent', {
-        configurable: true,
-        value:
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-        writable: true,
-      })
-      Object.defineProperty(navigator, 'vendor', {
-        configurable: true,
-        value: 'Apple Computer, Inc.',
-        writable: true,
-      })
-      Object.defineProperty(navigator, 'maxTouchPoints', {
-        configurable: true,
-        value: 0,
-        writable: true,
-      })
-    }
-
-    const setupIPhone = () => {
-      Object.defineProperty(navigator, 'userAgent', {
-        configurable: true,
-        value:
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15',
-        writable: true,
-      })
-      Object.defineProperty(navigator, 'vendor', {
-        configurable: true,
-        value: 'Apple Computer, Inc.',
-        writable: true,
-      })
-      Object.defineProperty(navigator, 'maxTouchPoints', {
-        configurable: true,
-        value: 5,
-        writable: true,
-      })
-    }
-
-    it('displays Voice guide footer button on Apple platforms when enhanced voice is missing, opens guide modal, and restores focus on close', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-
-      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
-      expect(footerBtn).toBeInTheDocument()
-      await user.click(footerBtn)
-
-      expect(
-        screen.getByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: /open system settings ↗/i }),
-      ).toBeInTheDocument()
-      expect(screen.getAllByText(/spoken content/i).length).toBeGreaterThan(0)
-      expect(
-        screen.getAllByText(/paulina \(enhanced\)/i).length,
-      ).toBeGreaterThan(0)
-
-      await user.click(screen.getByRole('button', { name: /got it/i }))
-      expect(
-        screen.queryByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).not.toBeInTheDocument()
-      expect(document.activeElement).toBe(footerBtn)
-    })
-
-    it('displays iOS breadcrumb guide when platform is iPhone', async () => {
-      setupIPhone()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-
-      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
-      await user.click(footerBtn)
-
-      expect(
-        screen.getByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-      expect(screen.getByLabelText(/settings path/i)).toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: /open system settings ↗/i }),
-      ).not.toBeInTheDocument()
-    })
-
-    it('does not display footer link on non-Apple platforms', () => {
-      Object.defineProperty(navigator, 'userAgent', {
-        configurable: true,
-        value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
-        writable: true,
-      })
-      Object.defineProperty(navigator, 'vendor', {
-        configurable: true,
-        value: 'Google Inc.',
-        writable: true,
-      })
-      const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-
-      expect(
-        screen.queryByRole('button', { name: /^voice guide$/i }),
-      ).not.toBeInTheDocument()
-    })
-
-    it('does not display footer link when enhanced voice is already present', () => {
-      setupSafariMac()
-      const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = true
-
-      render(<App services={services} />)
-
-      expect(
-        screen.queryByRole('button', { name: /^voice guide$/i }),
-      ).not.toBeInTheDocument()
-    })
-
-    it('keeps Practice view completely clean and free of intrusive banners', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices()
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-
-      // Navigate to Practice
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
-
-      // Practice view must NOT have any voice banner
-      expect(
-        screen.queryByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).not.toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: /setup guide/i }),
-      ).not.toBeInTheDocument()
-    })
-
-    it('closes modal and restores focus when Escape key is pressed', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-
-      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
-      await user.click(footerBtn)
-
-      expect(
-        screen.getByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-
-      await user.keyboard('{Escape}')
-
-      expect(
-        screen.queryByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).not.toBeInTheDocument()
-      expect(document.activeElement).toBe(footerBtn)
-    })
-
-    it('renders state-aware confirmation message when modal is opened and enhanced voice is active', () => {
-      const handleClose = vi.fn()
-      const handleGotIt = vi.fn()
-
-      render(
-        <AppleVoiceGuideModal
-          isOpen={true}
-          isMac={true}
-          hasEnhancedVoice={true}
-          onClose={handleClose}
-          onGotIt={handleGotIt}
-        />,
-      )
-
-      expect(
-        screen.getByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText(/paulina \(enhanced\) is installed and active!/i),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: /^done$/i }),
-      ).toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: /open system settings ↗/i }),
-      ).not.toBeInTheDocument()
-    })
-
-    it('preserves focus inside modal and does not oscillate when background voiceschanged event fires', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices({ cards: [] })
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-
-      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
-      await user.click(footerBtn)
-
-      const gotItBtn = screen.getByRole('button', { name: /got it/i })
-      gotItBtn.focus()
-      expect(document.activeElement).toBe(gotItBtn)
-
-      // Simulate background voiceschanged event (e.g. OS voice registration or speaker update)
-      act(() => {
-        services.mockSpeaker.triggerVoicesChanged()
-      })
-
-      // Modal remains open and active focus is NOT stolen or oscillated
-      expect(
-        screen.getByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-      expect(document.activeElement).toBe(gotItBtn)
-
-      // Closes cleanly and returns focus to footer trigger
-      await user.keyboard('{Escape}')
-      expect(
-        screen.queryByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).not.toBeInTheDocument()
-      expect(document.activeElement).toBe(footerBtn)
-    })
-
-    it('eagerly prefetches upcoming review cards into speaker audio cache', async () => {
-      const user = userEvent.setup()
+  describe('Studio neural voice engine and practice prefetching', () => {
+    it('eagerly prefetches upcoming review cards on home screen with cardSeed', () => {
       const services = createTestServices({
         cards: [
           {
@@ -4541,20 +4296,98 @@ describe('Jolito', () => {
 
       render(<App services={services} />)
 
-      const practiceBtn = screen.getByRole('button', {
-        name: /^practice$/i,
-      })
-      await user.click(practiceBtn)
-
+      // Eager prefetching triggers immediately on home screen load
       expect(services.mockSpeaker.prefetched.length).toBeGreaterThan(0)
       expect(services.mockSpeaker.prefetched).toEqual(
         expect.arrayContaining([
-          { text: '¿Cómo estás?', locale: 'es-MX' },
-          { text: 'How are you?', locale: 'en-US' },
-          { text: 'Mucho gusto', locale: 'es-MX' },
-          { text: 'Nice to meet you', locale: 'en-US' },
+          expect.objectContaining({
+            text: '¿Cómo estás?',
+            locale: 'es-MX',
+            cardSeed: 'c1',
+          }),
+          expect.objectContaining({
+            text: 'How are you?',
+            locale: 'en-US',
+            cardSeed: 'c1',
+          }),
+          expect.objectContaining({
+            text: 'Mucho gusto',
+            locale: 'es-MX',
+            cardSeed: 'c2',
+          }),
+          expect.objectContaining({
+            text: 'Nice to meet you',
+            locale: 'en-US',
+            cardSeed: 'c2',
+          }),
         ]),
       )
+    })
+
+    it('passes consistent cardSeed to speak and playAudio during practice review', async () => {
+      const user = userEvent.setup({ delay: null })
+      const card = {
+        id: 'c1',
+        noteId: 'n1',
+        prompt: 'how cool',
+        answer: '¡qué padre!',
+        direction: 'en-es' as const,
+        context: '',
+        scene: 'conversation' as const,
+        schedule: {
+          dueAt: 0,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          state: 'new' as const,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: 1000,
+      }
+      const services = createTestServices({ cards: [card] })
+
+      render(<App services={services} />)
+
+      // Enter review
+      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+      // Prompt auto-play should pass cardSeed: 'c1'
+      expect(
+        services.mockSpeaker.spokenCalls.some(
+          (s) =>
+            s.text === 'how cool' &&
+            s.locale === 'en-US' &&
+            s.options?.cardSeed === 'c1',
+        ),
+      ).toBe(true)
+
+      // Reveal card
+      await user.keyboard('{Enter}')
+
+      // Answer audio should also pass cardSeed: 'c1'
+      expect(
+        services.mockSpeaker.spokenCalls.some(
+          (s) =>
+            s.text === '¡qué padre!' &&
+            s.locale === 'es-MX' &&
+            s.options?.cardSeed === 'c1',
+        ),
+      ).toBe(true)
+    })
+
+    it('keeps all views clean and free of obsolete voice guide prompts and buttons', () => {
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
+
+      render(<App services={services} />)
+
+      // Must not display obsolete Voice guide button
+      expect(
+        screen.queryByRole('button', { name: /^voice guide$/i }),
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(/enhanced mexican spanish voice/i),
+      ).not.toBeInTheDocument()
     })
   })
 })
