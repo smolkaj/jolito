@@ -23,15 +23,15 @@ describe('SEO search snippet and favicon compliance', () => {
     expect(descContent.toLowerCase()).toContain('flashcards')
 
     // OpenGraph and Twitter descriptions should also be updated
-    expect(html).toContain(
-      '<meta\n      property="og:description"\n      content="' +
-        descContent +
-        '"',
+    expect(html).toMatch(
+      new RegExp(
+        `<meta\\s+property="og:description"\\s+content="${descContent}"`,
+      ),
     )
-    expect(html).toContain(
-      '<meta\n      name="twitter:description"\n      content="' +
-        descContent +
-        '"',
+    expect(html).toMatch(
+      new RegExp(
+        `<meta\\s+name="twitter:description"\\s+content="${descContent}"`,
+      ),
     )
   })
 
@@ -83,5 +83,24 @@ describe('SEO search snippet and favicon compliance', () => {
         `Expected ${file} to exist in public directory`,
       ).toBe(true)
     }
+  })
+
+  it('precaches all declared favicon and shell icon assets in public/sw.js', () => {
+    const swPath = resolve(publicDir, 'sw.js')
+    expect(existsSync(swPath)).toBe(true)
+    const swContent = readFileSync(swPath, 'utf-8')
+
+    // Verify cache version was bumped for new asset inventory
+    expect(swContent).toMatch(/CACHE_NAME\s*=\s*'jolito-shell-v7'/)
+
+    // All favicon variants must be present in PWA_ASSETS for offline parity
+    expect(swContent).toContain('favicon.svg')
+    expect(swContent).toContain('favicon.png')
+    expect(swContent).toContain('favicon-48x48.png')
+    expect(swContent).toContain('favicon-96x96.png')
+    expect(swContent).toContain('favicon-32x32.png')
+    expect(swContent).toContain('favicon-16x16.png')
+    expect(swContent).toContain('favicon.ico')
+    expect(swContent).toContain('apple-touch-icon.png')
   })
 })

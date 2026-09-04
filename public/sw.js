@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'jolito-shell-v6'
+const CACHE_NAME = 'jolito-shell-v7'
 const scopePath = new URL(self.registration.scope).pathname
 const shellUrl = scopePath
 const indexUrl = `${scopePath}index.html`
@@ -8,6 +8,8 @@ const PWA_ASSETS = [
   `${scopePath}manifest.webmanifest`,
   `${scopePath}favicon.svg`,
   `${scopePath}favicon.png`,
+  `${scopePath}favicon-96x96.png`,
+  `${scopePath}favicon-48x48.png`,
   `${scopePath}favicon-32x32.png`,
   `${scopePath}favicon-16x16.png`,
   `${scopePath}favicon.ico`,
