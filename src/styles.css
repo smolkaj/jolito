@@ -3323,7 +3323,8 @@ kbd {
   line-height: 1.4;
 }
 
-.redirect-auth-banner {
+.redirect-auth-banner,
+.apple-voice-banner {
   width: min(1080px, 100%);
   margin: 10px auto 0;
   display: flex;
@@ -3331,7 +3332,7 @@ kbd {
   justify-content: space-between;
   gap: 10px;
   padding: 6px 10px 6px 14px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: var(--paper-subtle);
   border: 1px solid var(--line-subtle);
   color: var(--ink);
@@ -3340,27 +3341,52 @@ kbd {
   animation: slideUp 0.18s var(--ease-spring);
 }
 
-.redirect-auth-banner .banner-text {
+.redirect-auth-banner .banner-left,
+.apple-voice-banner .banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.apple-voice-banner .banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  flex-shrink: 0;
+}
+
+.redirect-auth-banner .banner-text,
+.apple-voice-banner .banner-text {
   margin: 0;
   font-weight: 600;
   color: var(--ink);
   font-size: 13px;
 }
 
-.redirect-auth-banner .banner-actions {
+.apple-voice-banner .banner-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.redirect-auth-banner .banner-actions,
+.apple-voice-banner .banner-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.redirect-auth-banner .banner-action-btn {
+.redirect-auth-banner .banner-action-btn,
+.apple-voice-banner .banner-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   height: 28px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   font-size: 12px;
   font-weight: 700;
   background: var(--card);
@@ -3371,7 +3397,8 @@ kbd {
   white-space: nowrap;
 }
 
-.redirect-auth-banner .banner-action-btn:hover {
+.redirect-auth-banner .banner-action-btn:hover,
+.apple-voice-banner .banner-action-btn:hover {
   border-color: var(--line);
   background: #ffffff;
   box-shadow: var(--shadow-sm);
@@ -3383,124 +3410,14 @@ kbd {
   border-color: var(--turquesa);
 }
 
-.redirect-auth-banner .banner-dismiss-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: transparent;
-  border: none;
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.redirect-auth-banner .banner-dismiss-btn:hover {
-  background: var(--line-subtle);
-  color: var(--ink);
-}
-
-@media (max-width: 580px) {
-  .redirect-auth-banner {
-    border-radius: 14px;
-    padding: 8px 10px 8px 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .redirect-auth-banner .banner-text {
-    font-size: 12.5px;
-    line-height: 1.35;
-    flex: 1;
-    min-width: 140px;
-  }
-
-  .redirect-auth-banner .banner-actions {
-    margin-left: auto;
-  }
-}
-
-/* Apple Voice Upgrade Banner & Modal */
-.apple-voice-banner {
-  width: min(1080px, 100%);
-  margin: 10px auto 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px 10px 6px 14px;
-  border-radius: 999px;
-  background: var(--paper-subtle);
-  border: 1px solid var(--line-subtle);
-  color: var(--ink);
-  font-size: 13px;
-  box-shadow: var(--shadow-sm);
-  animation: slideUp 0.18s var(--ease-spring);
-}
-
-.apple-voice-banner .banner-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.apple-voice-banner .banner-icon {
-  font-size: 15px;
-  flex-shrink: 0;
-}
-
-.apple-voice-banner .banner-text {
-  margin: 0;
-  font-weight: 600;
-  color: var(--ink);
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.apple-voice-banner .banner-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.apple-voice-banner .banner-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--card);
-  border: 1px solid var(--line-subtle);
-  color: var(--ink);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.apple-voice-banner .banner-action-btn:hover {
-  border-color: var(--line);
-  background: #ffffff;
-  box-shadow: var(--shadow-sm);
-}
-
+.redirect-auth-banner .banner-dismiss-btn,
 .apple-voice-banner .banner-dismiss-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   background: transparent;
   border: none;
   color: var(--ink-soft);
@@ -3510,12 +3427,14 @@ kbd {
   flex-shrink: 0;
 }
 
+.redirect-auth-banner .banner-dismiss-btn:hover,
 .apple-voice-banner .banner-dismiss-btn:hover {
   background: var(--line-subtle);
   color: var(--ink);
 }
 
-@media (max-width: 680px) {
+@media (max-width: 580px) {
+  .redirect-auth-banner,
   .apple-voice-banner {
     border-radius: 14px;
     padding: 8px 10px 8px 12px;
@@ -3523,17 +3442,22 @@ kbd {
     gap: 8px;
   }
 
+  .redirect-auth-banner .banner-text,
   .apple-voice-banner .banner-text {
-    white-space: normal;
     font-size: 12.5px;
     line-height: 1.35;
+    white-space: normal;
+    flex: 1;
+    min-width: 140px;
   }
 
+  .redirect-auth-banner .banner-actions,
   .apple-voice-banner .banner-actions {
     margin-left: auto;
   }
 }
 
+/* Apple Voice Upgrade Modal */
 .apple-voice-modal {
   max-width: 500px;
 }
@@ -3557,7 +3481,7 @@ kbd {
   padding: 10px 14px;
   background: var(--paper-subtle);
   border: 1px solid var(--line-subtle);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 14px;
@@ -3593,12 +3517,6 @@ kbd {
 .apple-voice-steps li strong {
   color: var(--ink);
   font-weight: 700;
-}
-
-.apple-voice-modal-cta {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 14px;
 }
 
 .apple-voice-modal-actions {

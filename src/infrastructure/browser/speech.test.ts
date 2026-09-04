@@ -422,27 +422,118 @@ describe('EnhancedBrowserSpeaker', () => {
       'Paulina (Enhanced)',
     )
   })
+
+  it('detects enhanced voice and notifies voice changes via speaker methods', () => {
+    const originalSpeechSynthesis = window.speechSynthesis
+    let voicesListener: (() => void) | null = null
+    let mockVoiceList: SpeechSynthesisVoice[] = []
+
+    const mockSynth = {
+      getVoices: () => mockVoiceList,
+      addEventListener: (evt: string, cb: () => void) => {
+        if (evt === 'voiceschanged') voicesListener = cb
+      },
+      removeEventListener: (evt: string, cb: () => void) => {
+        if (evt === 'voiceschanged' && voicesListener === cb) {
+          voicesListener = null
+        }
+      },
+      speak: vi.fn(),
+      cancel: vi.fn(),
+    }
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: class {
+        text = ''
+        voice = null
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: mockSynth,
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+    expect(speaker.areVoicesLoaded()).toBe(false)
+    expect(speaker.hasEnhancedVoice('es-MX')).toBe(false)
+
+    let notified = false
+    const unsubscribe = speaker.onVoicesChanged(() => {
+      notified = true
+    })
+
+    const triggerVoices = () => {
+      if (typeof voicesListener === 'function') {
+        voicesListener()
+      }
+    }
+
+    mockVoiceList = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-paulina-enhanced',
+      },
+    ]
+
+    triggerVoices()
+    expect(notified).toBe(true)
+    expect(speaker.areVoicesLoaded()).toBe(true)
+    expect(speaker.hasEnhancedVoice('es-MX')).toBe(true)
+
+    unsubscribe()
+    notified = false
+    triggerVoices()
+    expect(notified).toBe(false)
+
+    window.speechSynthesis = originalSpeechSynthesis
+  })
 })
 
 describe('Apple voice enhancement helpers', () => {
-  it('detects Apple platforms accurately', async () => {
-    const { isApplePlatform, isMacOS } = await import('./speech')
+  it('detects Apple voice-supported platforms accurately', async () => {
+    const { isAppleVoiceSupported, isMacOS } = await import('./speech')
 
-    const iPhoneUA =
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15'
-    const macUA =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-    const androidUA =
-      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36'
-    const windowsUA =
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    const iPhoneUA = {
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15',
+    }
+    const macSafariNav = {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+      vendor: 'Apple Computer, Inc.',
+    }
+    const macChromeNav = {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+      vendor: 'Google Inc.',
+    }
+    const androidNav = {
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
+      platform: 'Linux armv8l',
+    }
+    const windowsNav = {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      platform: 'Win32',
+    }
 
-    expect(isApplePlatform(iPhoneUA)).toBe(true)
-    expect(isApplePlatform(macUA)).toBe(true)
-    expect(isApplePlatform(androidUA)).toBe(false)
-    expect(isApplePlatform(windowsUA)).toBe(false)
+    expect(isAppleVoiceSupported(iPhoneUA)).toBe(true)
+    expect(isAppleVoiceSupported(macSafariNav)).toBe(true)
+    expect(isAppleVoiceSupported(macChromeNav)).toBe(false)
+    expect(isAppleVoiceSupported(androidNav)).toBe(false)
+    expect(isAppleVoiceSupported(windowsNav)).toBe(false)
 
-    expect(isMacOS(macUA)).toBe(true)
+    expect(isMacOS(macChromeNav)).toBe(true)
+    expect(isMacOS(macSafariNav)).toBe(true)
     expect(isMacOS(iPhoneUA)).toBe(false)
   })
 
@@ -556,6 +647,43 @@ describe('Apple voice enhancement helpers', () => {
       shouldPromptAppleVoiceUpgrade({
         isApple: true,
         voices: enhancedVoices,
+        dismissed: false,
+      }),
+    ).toBe(false)
+
+    // Tests with isAppleVoiceSupported and hasEnhancedVoice
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isAppleVoiceSupported: true,
+        hasEnhancedVoice: false,
+        voicesLoaded: true,
+        dismissed: false,
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isAppleVoiceSupported: true,
+        hasEnhancedVoice: true,
+        voicesLoaded: true,
+        dismissed: false,
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isAppleVoiceSupported: false,
+        hasEnhancedVoice: false,
+        voicesLoaded: true,
+        dismissed: false,
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isAppleVoiceSupported: true,
+        hasEnhancedVoice: false,
+        voicesLoaded: false,
         dismissed: false,
       }),
     ).toBe(false)

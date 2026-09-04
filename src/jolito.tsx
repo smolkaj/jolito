@@ -58,12 +58,13 @@ import {
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import { reconcileStudyCards, type SyncStatus } from './domain/sync'
-import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import {
-  isApplePlatform,
+  isAppleVoiceSupported,
+  isIOS,
   isMacOS,
-  shouldPromptAppleVoiceUpgrade,
-} from './infrastructure/browser/speech'
+  isStandalone,
+} from './infrastructure/browser/environment'
+import { shouldPromptAppleVoiceUpgrade } from './infrastructure/browser/speech'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -2293,12 +2294,10 @@ function RedirectAuthNotice({
 
 function AppleVoiceNotice({
   isOpen,
-  isMac,
   onDismiss,
   onOpenGuide,
 }: {
   isOpen: boolean
-  isMac: boolean
   onDismiss: () => void
   onOpenGuide: () => void
 }) {
@@ -2308,10 +2307,23 @@ function AppleVoiceNotice({
     <aside className="apple-voice-banner" role="status" aria-live="polite">
       <div className="banner-left">
         <span className="banner-icon" aria-hidden="true">
-          🎙️
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" x2="12" y1="19" y2="22" />
+          </svg>
         </span>
         <p className="banner-text">
-          Upgrade to Apple’s studio Mexican Spanish voice for free.
+          Apple’s Enhanced Mexican Spanish voice offers clearer pronunciation.
         </p>
       </div>
       <div className="banner-actions">
@@ -2320,7 +2332,7 @@ function AppleVoiceNotice({
           className="banner-action-btn"
           onClick={onOpenGuide}
         >
-          {isMac ? 'Open Settings ↗' : 'Setup guide'}
+          Setup guide
         </button>
         <button
           type="button"
@@ -2347,21 +2359,71 @@ function AppleVoiceGuideModal({
   isOpen,
   isMac,
   onClose,
+  onGotIt,
 }: {
   isOpen: boolean
   isMac: boolean
   onClose: () => void
+  onGotIt: () => void
 }) {
+  const modalRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
     if (!isOpen) return
+    triggerRef.current = document.activeElement as HTMLElement | null
+
+    const modalEl = modalRef.current
+    if (modalEl) {
+      const firstFocusable = modalEl.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      firstFocusable?.focus()
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
         onClose()
+        return
+      }
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return
+        const focusables = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter(
+          (el) =>
+            el.offsetParent !== null ||
+            el.offsetWidth > 0 ||
+            el.offsetHeight > 0,
+        )
+
+        if (focusables.length === 0) {
+          e.preventDefault()
+          return
+        }
+
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (!first || !last) return
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
       }
     }
+
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      triggerRef.current?.focus()
+    }
   }, [isOpen, onClose])
 
   if (!isOpen) return null
@@ -2383,6 +2445,7 @@ function AppleVoiceGuideModal({
       role="presentation"
     >
       <div
+        ref={modalRef}
         className="modal-content apple-voice-modal"
         role="dialog"
         aria-modal="true"
@@ -2391,11 +2454,10 @@ function AppleVoiceGuideModal({
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="apple-voice-modal-title">
-              Get Studio Mexican Spanish Voice
-            </h2>
+            <h2 id="apple-voice-modal-title">Enhanced Mexican Spanish Voice</h2>
             <p className="modal-subtitle">
-              Apple provides free high-definition neural voices.
+              Apple provides free high-quality voices with natural
+              pronunciation.
             </p>
           </div>
           <button
@@ -2412,26 +2474,36 @@ function AppleVoiceGuideModal({
           {isMac ? (
             <>
               <p className="apple-voice-intro">
-                macOS includes studio-quality voices (
-                <strong>Paulina Enhanced</strong> and <strong>Siri</strong>),
-                but defaults to a lightweight compact voice.
+                macOS includes high-definition voices (
+                <strong>Paulina (Enhanced)</strong> and <strong>Siri</strong>),
+                but defaults to a compact voice.
               </p>
-              <div className="apple-voice-modal-cta">
-                <button
-                  type="button"
-                  className="primary-button"
-                  onClick={handleOpenSettings}
-                >
-                  Open System Settings ↗
-                </button>
+              <div
+                className="apple-voice-breadcrumbs"
+                aria-label="Settings path"
+              >
+                <span className="crumb">System Settings</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb">Accessibility</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb">Spoken Content</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb crumb-highlight">Manage Voices…</span>
               </div>
               <ol className="apple-voice-steps">
                 <li>
-                  In System Settings, click <strong>Spoken Content</strong>.
+                  In System Settings, open{' '}
+                  <strong>Accessibility → Spoken Content</strong>.
                 </li>
                 <li>
-                  Next to <strong>System Voice</strong>, open the dropdown and
-                  select <strong>Manage Voices…</strong>
+                  Next to <strong>System Voice</strong>, select{' '}
+                  <strong>Manage Voices…</strong>
                 </li>
                 <li>
                   Search for <strong>Spanish (Mexico)</strong> and click the
@@ -2439,22 +2511,22 @@ function AppleVoiceGuideModal({
                   <strong>Siri</strong>.
                 </li>
                 <li>
-                  Once downloaded, return to Jolito—it switches to the studio
-                  voice automatically!
+                  Once downloaded, return to Jolito—it uses the enhanced voice
+                  automatically!
                 </li>
               </ol>
             </>
           ) : (
             <>
               <p className="apple-voice-intro">
-                iPhone and iPad include studio-quality neural voices, but use a
-                compact voice by default to save storage space.
+                iOS includes high-definition neural voices, but uses a compact
+                voice by default to save storage.
               </p>
               <div
                 className="apple-voice-breadcrumbs"
                 aria-label="Settings path"
               >
-                <span className="crumb">Settings ⚙️</span>
+                <span className="crumb">Settings</span>
                 <span className="crumb-arrow" aria-hidden="true">
                   →
                 </span>
@@ -2491,11 +2563,19 @@ function AppleVoiceGuideModal({
           )}
 
           <div className="apple-voice-modal-actions">
+            {isMac && (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleOpenSettings}
+              >
+                Open System Settings ↗
+              </button>
+            )}
             <button
               type="button"
-              className="primary-button"
-              onClick={onClose}
-              autoFocus
+              className={isMac ? 'secondary-button' : 'primary-button'}
+              onClick={onGotIt}
             >
               Got it
             </button>
@@ -2622,20 +2702,31 @@ export function App({
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => {
-    if (
-      typeof window !== 'undefined' &&
-      'speechSynthesis' in window &&
-      typeof window.speechSynthesis.getVoices === 'function'
-    ) {
-      try {
-        return window.speechSynthesis.getVoices()
-      } catch {
-        return []
+  const isApple = useMemo(() => isAppleVoiceSupported(), [])
+  const isMac = useMemo(() => isMacOS(), [])
+
+  const [hasEnhancedVoice, setHasEnhancedVoice] = useState<boolean>(() => {
+    return services.speaker.hasEnhancedVoice?.('es-MX') ?? false
+  })
+  const [voicesLoaded, setVoicesLoaded] = useState<boolean>(() => {
+    return services.speaker.areVoicesLoaded?.() ?? true
+  })
+
+  useEffect(() => {
+    const checkVoice = () => {
+      setHasEnhancedVoice(services.speaker.hasEnhancedVoice?.('es-MX') ?? false)
+      setVoicesLoaded(services.speaker.areVoicesLoaded?.() ?? true)
+    }
+
+    checkVoice()
+    const unsubscribe = services.speaker.onVoicesChanged?.(checkVoice)
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
       }
     }
-    return []
-  })
+  }, [services.speaker])
+
   const [appleVoiceBannerDismissed, setAppleVoiceBannerDismissed] =
     useState<boolean>(() => {
       try {
@@ -2648,64 +2739,14 @@ export function App({
     })
   const [isAppleVoiceModalOpen, setIsAppleVoiceModalOpen] = useState(false)
 
-  useEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      !('speechSynthesis' in window) ||
-      typeof window.speechSynthesis.getVoices !== 'function'
-    ) {
-      return
-    }
-
-    const updateVoices = () => {
-      try {
-        const v = window.speechSynthesis.getVoices()
-        if (v && v.length > 0) {
-          setVoices(v)
-        }
-      } catch {
-        // Graceful fallback
-      }
-    }
-
-    updateVoices()
-
-    let cleanup: (() => void) | undefined
-
-    if (typeof window.speechSynthesis.addEventListener === 'function') {
-      window.speechSynthesis.addEventListener('voiceschanged', updateVoices)
-      cleanup = () => {
-        window.speechSynthesis.removeEventListener(
-          'voiceschanged',
-          updateVoices,
-        )
-      }
-    } else if ('onvoiceschanged' in window.speechSynthesis) {
-      const original = window.speechSynthesis.onvoiceschanged
-      window.speechSynthesis.onvoiceschanged = (e) => {
-        if (typeof original === 'function') {
-          original.call(window.speechSynthesis, e)
-        }
-        updateVoices()
-      }
-      cleanup = () => {
-        window.speechSynthesis.onvoiceschanged = original
-      }
-    }
-
-    return cleanup
-  }, [])
-
-  const isApple = useMemo(() => isApplePlatform(), [])
-  const isMac = useMemo(() => isMacOS(), [])
-
   const showAppleVoiceBanner = useMemo(() => {
     return shouldPromptAppleVoiceUpgrade({
-      isApple,
-      voices,
+      isAppleVoiceSupported: isApple,
+      hasEnhancedVoice,
+      voicesLoaded,
       dismissed: appleVoiceBannerDismissed,
     })
-  }, [isApple, voices, appleVoiceBannerDismissed])
+  }, [isApple, hasEnhancedVoice, voicesLoaded, appleVoiceBannerDismissed])
 
   const handleDismissAppleVoiceBanner = useCallback(() => {
     setAppleVoiceBannerDismissed(true)
@@ -2718,16 +2759,12 @@ export function App({
 
   const handleOpenAppleVoiceGuide = useCallback(() => {
     setIsAppleVoiceModalOpen(true)
-    if (isMac) {
-      try {
-        window.location.assign(
-          'x-apple.systempreferences:com.apple.Accessibility-Settings.extension',
-        )
-      } catch {
-        // Graceful fallback
-      }
-    }
-  }, [isMac])
+  }, [])
+
+  const handleGotItAppleVoiceGuide = useCallback(() => {
+    setIsAppleVoiceModalOpen(false)
+    handleDismissAppleVoiceBanner()
+  }, [handleDismissAppleVoiceBanner])
 
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const [activeSampleSide, setActiveSampleSide] = useState<
@@ -3688,7 +3725,6 @@ export function App({
           />
           <AppleVoiceNotice
             isOpen={showAppleVoiceBanner}
-            isMac={isMac}
             onDismiss={handleDismissAppleVoiceBanner}
             onOpenGuide={handleOpenAppleVoiceGuide}
           />
@@ -3826,6 +3862,7 @@ export function App({
           isOpen={isAppleVoiceModalOpen}
           isMac={isMac}
           onClose={() => setIsAppleVoiceModalOpen(false)}
+          onGotIt={handleGotItAppleVoiceGuide}
         />
       </>
     )
@@ -4259,11 +4296,6 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
-        />
-        <AppleVoiceGuideModal
-          isOpen={isAppleVoiceModalOpen}
-          isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
         />
       </>
     )
@@ -4747,11 +4779,6 @@ export function App({
           feedbackService={services.feedback}
           currentView={view}
         />
-        <AppleVoiceGuideModal
-          isOpen={isAppleVoiceModalOpen}
-          isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
-        />
       </>
     )
   }
@@ -4892,11 +4919,6 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
-        />
-        <AppleVoiceGuideModal
-          isOpen={isAppleVoiceModalOpen}
-          isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
         />
       </>
     )
@@ -5111,11 +5133,6 @@ export function App({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
-      />
-      <AppleVoiceGuideModal
-        isOpen={isAppleVoiceModalOpen}
-        isMac={isMac}
-        onClose={() => setIsAppleVoiceModalOpen(false)}
       />
     </>
   )

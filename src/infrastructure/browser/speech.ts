@@ -1,7 +1,9 @@
 import type { Speaker } from '../../application/ports'
+import { isAppleVoiceSupported } from './environment'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
+  private listeners = new Set<() => void>()
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
@@ -10,21 +12,38 @@ export class EnhancedBrowserSpeaker implements Speaker {
     this.initVoices()
   }
 
+  private refreshVoices(): SpeechSynthesisVoice[] {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return []
+    }
+    try {
+      const current = window.speechSynthesis.getVoices()
+      if (current && current.length > 0) {
+        this.voices = current
+      }
+    } catch {
+      // Graceful fallback
+    }
+    return this.voices
+  }
+
   private initVoices(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       return
     }
 
     try {
-      this.voices = window.speechSynthesis.getVoices()
-      if (typeof window.speechSynthesis.addEventListener === 'function') {
-        window.speechSynthesis.addEventListener('voiceschanged', () => {
-          this.voices = window.speechSynthesis.getVoices()
-        })
-      } else if ('onvoiceschanged' in window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          this.voices = window.speechSynthesis.getVoices()
+      this.refreshVoices()
+      const handler = () => {
+        this.refreshVoices()
+        for (const listener of this.listeners) {
+          listener()
         }
+      }
+      if (typeof window.speechSynthesis.addEventListener === 'function') {
+        window.speechSynthesis.addEventListener('voiceschanged', handler)
+      } else if ('onvoiceschanged' in window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = handler
       }
     } catch {
       // Graceful fallback if getVoices throws
@@ -37,6 +56,27 @@ export class EnhancedBrowserSpeaker implements Speaker {
       'speechSynthesis' in window &&
       typeof window.SpeechSynthesisUtterance === 'function'
     )
+  }
+
+  areVoicesLoaded(): boolean {
+    this.refreshVoices()
+    return this.voices.length > 0
+  }
+
+  hasEnhancedVoice(locale = 'es-MX'): boolean {
+    if (!this.supported()) return false
+    const current = this.refreshVoices()
+    if (locale.toLowerCase().startsWith('es')) {
+      return hasEnhancedMexicanSpanishVoice(current)
+    }
+    return false
+  }
+
+  onVoicesChanged(cb: () => void): () => void {
+    this.listeners.add(cb)
+    return () => {
+      this.listeners.delete(cb)
+    }
   }
 
   speak(text: string, locale: string): boolean {
@@ -208,29 +248,12 @@ export class EnhancedBrowserSpeaker implements Speaker {
   }
 }
 
-export function isApplePlatform(userAgent?: string): boolean {
-  const ua =
-    userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
-  if (!ua) return false
-  const isIOSorMac = /iPhone|iPad|iPod|Macintosh/i.test(ua)
-  const isIPadOS =
-    typeof navigator !== 'undefined' &&
-    navigator.maxTouchPoints !== undefined &&
-    navigator.maxTouchPoints > 1 &&
-    /Macintosh/i.test(ua)
-  return isIOSorMac || isIPadOS
-}
+export { isAppleVoiceSupported, isMacOS } from './environment'
 
-export function isMacOS(userAgent?: string): boolean {
-  const ua =
-    userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
-  if (!ua) return false
-  const isMac = /Macintosh/i.test(ua)
-  const isTouch =
-    typeof navigator !== 'undefined' &&
-    navigator.maxTouchPoints !== undefined &&
-    navigator.maxTouchPoints > 1
-  return isMac && !isTouch
+export function isApplePlatform(userAgent?: string): boolean {
+  return isAppleVoiceSupported(
+    userAgent !== undefined ? { userAgent } : undefined,
+  )
 }
 
 export function hasEnhancedMexicanSpanishVoice(
@@ -253,12 +276,22 @@ export function hasEnhancedMexicanSpanishVoice(
 }
 
 export function shouldPromptAppleVoiceUpgrade(options: {
-  isApple: boolean
-  voices: SpeechSynthesisVoice[]
+  isAppleVoiceSupported?: boolean
+  isApple?: boolean
+  hasEnhancedVoice?: boolean
+  voices?: SpeechSynthesisVoice[]
+  voicesLoaded?: boolean
   dismissed: boolean
 }): boolean {
   if (options.dismissed) return false
-  if (!options.isApple) return false
-  if (options.voices.length === 0) return false
-  return !hasEnhancedMexicanSpanishVoice(options.voices)
+  const isSupported = options.isAppleVoiceSupported ?? options.isApple ?? false
+  if (!isSupported) return false
+
+  if (options.voices !== undefined) {
+    if (options.voices.length === 0) return false
+    return !hasEnhancedMexicanSpanishVoice(options.voices)
+  }
+
+  if (options.voicesLoaded === false) return false
+  return !(options.hasEnhancedVoice ?? false)
 }

@@ -265,4 +265,16 @@ export class LayeredNeuralSpeaker implements Speaker {
 
     return this.fallbackSpeaker.speak(text, locale)
   }
+
+  hasEnhancedVoice(locale?: string): boolean {
+    return this.fallbackSpeaker.hasEnhancedVoice?.(locale) ?? false
+  }
+
+  areVoicesLoaded(): boolean {
+    return this.fallbackSpeaker.areVoicesLoaded?.() ?? true
+  }
+
+  onVoicesChanged(cb: () => void): () => void {
+    return this.fallbackSpeaker.onVoicesChanged?.(cb) ?? (() => {})
+  }
 }

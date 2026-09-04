@@ -4235,120 +4235,66 @@ describe('Jolito', () => {
   })
 
   describe('Apple voice enhancement banner and guide', () => {
-    it('displays voice upgrade banner on welcome view for Apple platforms when only compact voice is present', () => {
-      const services = createTestServices({ cards: [] })
-      const mockVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina',
-          default: true,
-          localService: true,
-          voiceURI: 'es-MX-paulina',
-        },
-      ]
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => mockVoices,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        },
-        writable: true,
+    const setupSafariMac = () => {
+      Object.defineProperty(navigator, 'userAgent', {
         configurable: true,
-      })
-
-      render(<App services={services} />)
-
-      expect(
-        screen.getByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
-        ),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: /open settings/i }),
-      ).toBeInTheDocument()
-    })
-
-    it('opens guide modal with macOS instructions when user clicks Open Settings on macOS', async () => {
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices({ cards: [] })
-      const mockVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina',
-          default: true,
-          localService: true,
-          voiceURI: 'es-MX-paulina',
-        },
-      ]
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => mockVoices,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        },
+        value:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
         writable: true,
-        configurable: true,
       })
+      Object.defineProperty(navigator, 'vendor', {
+        configurable: true,
+        value: 'Apple Computer, Inc.',
+        writable: true,
+      })
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        configurable: true,
+        value: 0,
+        writable: true,
+      })
+    }
 
-      render(<App services={services} />)
-
-      const openBtn = screen.getByRole('button', { name: /open settings/i })
-      await user.click(openBtn)
-
-      expect(
-        screen.getByRole('heading', {
-          name: /get studio mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-      expect(screen.getByText(/spoken content/i)).toBeInTheDocument()
-      expect(screen.getByText(/paulina \(enhanced\)/i)).toBeInTheDocument()
-
-      // Close modal
-      await user.click(screen.getByRole('button', { name: /got it/i }))
-      expect(
-        screen.queryByRole('heading', {
-          name: /get studio mexican spanish voice/i,
-        }),
-      ).not.toBeInTheDocument()
-    })
-
-    it('displays iOS breadcrumb guide when platform is iPhone', async () => {
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices({ cards: [] })
-      const mockVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina',
-          default: true,
-          localService: true,
-          voiceURI: 'es-MX-paulina',
-        },
-      ]
-
+    const setupIPhone = () => {
       Object.defineProperty(navigator, 'userAgent', {
         configurable: true,
         value:
           'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15',
         writable: true,
       })
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => mockVoices,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        },
-        writable: true,
+      Object.defineProperty(navigator, 'vendor', {
         configurable: true,
+        value: 'Apple Computer, Inc.',
+        writable: true,
       })
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        configurable: true,
+        value: 5,
+        writable: true,
+      })
+    }
+
+    it('displays voice upgrade banner on welcome view for Apple platforms when enhanced voice is not installed', () => {
+      setupSafariMac()
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
+
+      render(<App services={services} />)
+
+      expect(
+        screen.getByText(
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
+        ),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /setup guide/i }),
+      ).toBeInTheDocument()
+    })
+
+    it('opens guide modal with macOS instructions when user clicks Setup guide on macOS', async () => {
+      setupSafariMac()
+      const user = userEvent.setup({ delay: null })
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
 
       render(<App services={services} />)
 
@@ -4357,108 +4303,95 @@ describe('Jolito', () => {
 
       expect(
         screen.getByRole('heading', {
-          name: /get studio mexican spanish voice/i,
+          name: /enhanced mexican spanish voice/i,
+        }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /open system settings ↗/i }),
+      ).toBeInTheDocument()
+      expect(screen.getAllByText(/spoken content/i).length).toBeGreaterThan(0)
+      expect(
+        screen.getAllByText(/paulina \(enhanced\)/i).length,
+      ).toBeGreaterThan(0)
+
+      // "Got it" button closes modal AND dismisses banner
+      await user.click(screen.getByRole('button', { name: /got it/i }))
+      expect(
+        screen.queryByRole('heading', {
+          name: /enhanced mexican spanish voice/i,
+        }),
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
+        ),
+      ).not.toBeInTheDocument()
+    })
+
+    it('displays iOS breadcrumb guide when platform is iPhone', async () => {
+      setupIPhone()
+      const user = userEvent.setup({ delay: null })
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
+
+      render(<App services={services} />)
+
+      const guideBtn = screen.getByRole('button', { name: /setup guide/i })
+      await user.click(guideBtn)
+
+      expect(
+        screen.getByRole('heading', {
+          name: /enhanced mexican spanish voice/i,
         }),
       ).toBeInTheDocument()
       expect(screen.getByLabelText(/settings path/i)).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /open system settings ↗/i }),
+      ).not.toBeInTheDocument()
     })
 
     it('does not display voice banner when enhanced Mexican Spanish voice is already present', () => {
+      setupSafariMac()
       const services = createTestServices({ cards: [] })
-      const mockVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina (Enhanced)',
-          default: false,
-          localService: true,
-          voiceURI: 'es-MX-paulina-enhanced',
-        },
-      ]
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => mockVoices,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        },
-        writable: true,
-        configurable: true,
-      })
+      services.mockSpeaker.enhancedVoice = true
 
       render(<App services={services} />)
 
       expect(
         screen.queryByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
       ).not.toBeInTheDocument()
     })
 
     it('does not display voice banner on non-Apple platforms', () => {
-      const services = createTestServices({ cards: [] })
-      const mockVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina',
-          default: true,
-          localService: true,
-          voiceURI: 'es-MX-paulina',
-        },
-      ]
-
       Object.defineProperty(navigator, 'userAgent', {
         configurable: true,
         value: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
         writable: true,
       })
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => mockVoices,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        },
-        writable: true,
+      Object.defineProperty(navigator, 'vendor', {
         configurable: true,
+        value: 'Google Inc.',
+        writable: true,
       })
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
 
       render(<App services={services} />)
 
       expect(
         screen.queryByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
       ).not.toBeInTheDocument()
     })
 
     it('dismisses banner and persists to localStorage when dismiss button is clicked', async () => {
+      setupSafariMac()
       const user = userEvent.setup({ delay: null })
       const services = createTestServices({ cards: [] })
-      const mockVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina',
-          default: true,
-          localService: true,
-          voiceURI: 'es-MX-paulina',
-        },
-      ]
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => mockVoices,
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-        },
-        writable: true,
-        configurable: true,
-      })
+      services.mockSpeaker.enhancedVoice = false
 
       const { unmount } = render(<App services={services} />)
 
@@ -4469,7 +4402,7 @@ describe('Jolito', () => {
 
       expect(
         screen.queryByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
       ).not.toBeInTheDocument()
       expect(localStorage.getItem('jolito_apple_voice_banner_dismissed')).toBe(
@@ -4482,67 +4415,60 @@ describe('Jolito', () => {
       render(<App services={services} />)
       expect(
         screen.queryByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
       ).not.toBeInTheDocument()
     })
 
-    it('auto-dismisses banner reactively when voiceschanged event fires with enhanced voice', () => {
+    it('auto-dismisses banner reactively when speaker voices change and enhanced voice is registered', () => {
+      setupSafariMac()
       const services = createTestServices({ cards: [] })
-      let currentVoices: SpeechSynthesisVoice[] = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina',
-          default: true,
-          localService: true,
-          voiceURI: 'es-MX-paulina',
-        },
-      ]
-      let voicesChangedHandler: (() => void) | null = null
-
-      Object.defineProperty(window, 'speechSynthesis', {
-        value: {
-          cancel: vi.fn(),
-          speak: vi.fn(),
-          getVoices: () => currentVoices,
-          addEventListener: vi.fn((event: string, handler: () => void) => {
-            if (event === 'voiceschanged') {
-              voicesChangedHandler = handler
-            }
-          }),
-          removeEventListener: vi.fn(),
-        },
-        writable: true,
-        configurable: true,
-      })
+      services.mockSpeaker.enhancedVoice = false
 
       render(<App services={services} />)
 
       expect(
         screen.getByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
       ).toBeInTheDocument()
 
       // User installs enhanced voice in OS settings and returns to app
-      currentVoices = [
-        {
-          lang: 'es-MX',
-          name: 'Paulina (Enhanced)',
-          default: false,
-          localService: true,
-          voiceURI: 'es-MX-paulina-enhanced',
-        },
-      ]
-
       act(() => {
-        voicesChangedHandler?.()
+        services.mockSpeaker.enhancedVoice = true
+        services.mockSpeaker.triggerVoicesChanged()
       })
 
       expect(
         screen.queryByText(
-          /upgrade to apple’s studio mexican spanish voice for free/i,
+          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
+      ).not.toBeInTheDocument()
+    })
+
+    it('closes modal and restores focus when Escape key is pressed', async () => {
+      setupSafariMac()
+      const user = userEvent.setup({ delay: null })
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
+
+      render(<App services={services} />)
+
+      const guideBtn = screen.getByRole('button', { name: /setup guide/i })
+      await user.click(guideBtn)
+
+      expect(
+        screen.getByRole('heading', {
+          name: /enhanced mexican spanish voice/i,
+        }),
+      ).toBeInTheDocument()
+
+      await user.keyboard('{Escape}')
+
+      expect(
+        screen.queryByRole('heading', {
+          name: /enhanced mexican spanish voice/i,
+        }),
       ).not.toBeInTheDocument()
     })
   })
