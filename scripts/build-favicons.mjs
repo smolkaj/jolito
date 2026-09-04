@@ -29,10 +29,12 @@ console.log('Saved public/favicon.svg (Option 4: Ramillete Radial)')
 async function buildRasters() {
   const browser = await chromium.launch()
 
-  // 1. Browser tab favicons (transparent background for light/dark tab strips)
+  // 1. Browser tab & search engine favicons (transparent background for light/dark tab strips)
   const tabFavicons = [
     { name: 'favicon-16x16.png', size: 16 },
     { name: 'favicon-32x32.png', size: 32 },
+    { name: 'favicon-48x48.png', size: 48 },
+    { name: 'favicon-96x96.png', size: 96 },
     { name: 'favicon.png', size: 32 },
   ]
 
@@ -129,15 +131,16 @@ from PIL import Image
 import os
 
 public_dir = "${publicDir}"
+png48 = os.path.join(public_dir, "favicon-48x48.png")
 png32 = os.path.join(public_dir, "favicon-32x32.png")
 png16 = os.path.join(public_dir, "favicon-16x16.png")
 ico_out = os.path.join(public_dir, "favicon.ico")
 
+img48 = Image.open(png48).convert("RGBA")
 img32 = Image.open(png32).convert("RGBA")
 img16 = Image.open(png16).convert("RGBA")
-img48 = img32.resize((48, 48), Image.Resampling.LANCZOS)
 
-img32.save(ico_out, format="ICO", sizes=[(16, 16), (32, 32), (48, 48)], append_images=[img16, img48])
+img48.save(ico_out, format="ICO", sizes=[(16, 16), (32, 32), (48, 48)], append_images=[img32, img16])
 print("Built multi-layer favicon.ico")
 `
   execSync(`python3 -c '${script}'`, { stdio: 'inherit' })
