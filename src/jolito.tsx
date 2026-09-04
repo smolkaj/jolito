@@ -2128,6 +2128,83 @@ export function App({
               </button>
             </div>
           </section>
+          <section className="welcome-why" aria-labelledby="why-jolito-title">
+            <div className="why-inner">
+              <div className="why-header">
+                <p className="eyebrow why-eyebrow">THE JOLITO WAY</p>
+                <h2 id="why-jolito-title">Why another flashcard app?</h2>
+                <p className="why-subtitle">
+                  Most apps force you to tap through multiple-choice word banks
+                  or configure complex desktop templates. Jolito bridges the
+                  gap: the proven power of spaced repetition paired with
+                  effortless card authoring, ear-first Mexican Spanish audio,
+                  and an active keyboard flow.
+                </p>
+              </div>
+
+              <div className="why-grid">
+                <article className="why-card">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number">1</span>
+                    <span className="why-badge-label">Active recall</span>
+                  </div>
+                  <h3>Type before you flip</h3>
+                  <p>
+                    Produce language from memory instead of passively guessing
+                    multiple-choice options. Instant visual diffs highlight
+                    spelling nuances while you retain full grading authority.
+                  </p>
+                </article>
+
+                <article className="why-card">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number">2</span>
+                    <span className="why-badge-label">Memory retention</span>
+                  </div>
+                  <h3>Spaced repetition that sticks</h3>
+                  <p>
+                    Cards return right when you are on the verge of forgetting
+                    them. Built on proven SRS scheduling so daily practice takes
+                    only a few focused minutes.
+                  </p>
+                </article>
+
+                <article className="why-card">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number">3</span>
+                    <span className="why-badge-label">Ear-first audio</span>
+                  </div>
+                  <h3>Spoken Mexican Spanish</h3>
+                  <p>
+                    Listen to natural Mexico City pronunciation with everyday
+                    contextual nuances. Train your ear for the Spanish you
+                    actually hear on the street, at markets, and at home.
+                  </p>
+                </article>
+              </div>
+
+              <div className="why-highlights-bar" data-nosnippet>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>100% local-first & offline</span>
+                </div>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>Anki (.apkg) import in seconds</span>
+                </div>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>Zero ads, zero subscriptions</span>
+                </div>
+              </div>
+            </div>
+          </section>
           <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
@@ -2139,6 +2216,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2572,6 +2650,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3049,6 +3128,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3195,6 +3275,7 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3414,6 +3495,7 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+        pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
       />
       <EditCardModal
         isOpen={editingCard !== null}

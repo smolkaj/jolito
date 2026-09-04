@@ -179,7 +179,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       page.getByRole('heading', { name: /share feedback/i }),
     ).not.toBeVisible()
     await expect(
-      page.getByRole('heading', { name: /^cloud sync$/i }),
+      page.getByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).toBeVisible()
   })
 })

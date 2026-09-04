@@ -941,6 +941,151 @@ summary:focus-visible {
   }
 }
 
+/* Welcome "Why Jolito?" Fold */
+.welcome-why {
+  width: min(1080px, 100%);
+  margin: 32px auto 0;
+  padding: 48px 0 24px;
+  border-top: 2px dashed var(--line-subtle);
+}
+
+.why-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.why-header {
+  text-align: center;
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+.why-eyebrow {
+  margin: 0 0 8px;
+  color: var(--rosa-dark);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.why-header h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: var(--display-weight, 600);
+  line-height: 1.15;
+  letter-spacing: var(--display-letter-spacing, -1px);
+  color: var(--ink);
+}
+
+.why-subtitle {
+  margin: 14px auto 0;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.why-card {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  padding: 24px 20px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.why-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.why-badge-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper-subtle);
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.why-badge-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--ink-muted);
+}
+
+.why-card h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+
+.why-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.why-highlights-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px 28px;
+  padding: 16px 20px;
+  background: var(--paper-subtle);
+  border: 1.5px dashed var(--turquesa-border);
+  border-radius: 12px;
+}
+
+.why-highlight-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.why-highlight-check {
+  color: var(--verde-dark);
+  font-weight: 800;
+}
+
+@media (max-width: 860px) {
+  .why-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .welcome-why {
+    margin-top: 24px;
+    padding-top: 28px;
+  }
+}
+
 /* Card Creation Page */
 .create-page {
   background: var(--paper);

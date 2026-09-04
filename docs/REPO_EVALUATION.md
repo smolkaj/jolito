@@ -80,11 +80,11 @@ However, it is not yet in an unconstrained **"ideal state"**. The primary bottle
 
 ## Recommended Execution Order
 
-1. **Phase 1: Developer Efficiency (Immediate Track)**
+1. **Phase 1: Developer Efficiency (Delivered in PR #195 ✅)**
    - Suppress SQLite/WASM Vite externalization warnings via `@vite-ignore`, with planned architectural extraction of SQLite initialization to `src/infrastructure/storage/anki-sql.ts`.
    - Fix the React 19 `act(...)` async suspension warning in `src/jolito.test.tsx`.
    - Extract UI presentation components from `src/jolito.tsx` into modular files (`src/ui/icons.tsx`, `src/ui/AudioButton.tsx`, `src/ui/modals/`, `src/ui/views/`).
-2. **Phase 2: Visitor Funnel & Product Story**
+2. **Phase 2: Visitor Funnel & Product Story (Delivered in PR #196 ✅)**
    - Contextualize the guest card-creation sign-in modal.
    - Introduce a calm "Why Jolito?" value proposition fold on the welcome view.
    - Update `<noscript>` copy in `index.html`.

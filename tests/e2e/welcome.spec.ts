@@ -9,7 +9,7 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
   await expect(
     page.getByRole('heading', { name: /make the words you meet stick/i }),
   ).toBeVisible()
-  await expect(page.getByText('Jolito')).toBeVisible()
+  await expect(page.getByText('Jolito', { exact: true })).toBeVisible()
   const brandMark = page.locator('.brand .brand-mark')
   await expect(brandMark).toBeVisible()
   const mascotImg = page.locator('.welcome-mascot-img')
@@ -820,10 +820,10 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
 
   // Sign in modal MUST open asking the user to log in!
   await expect(
-    page.getByRole('heading', { name: /^cloud sync$/i }),
+    page.getByRole('heading', { name: /^save your card & start your deck$/i }),
   ).toBeVisible()
   await expect(
-    page.getByText(/sync your deck across all your devices/i),
+    page.getByText(/save “chido” to your personal deck/i),
   ).toBeVisible()
 
   await page.screenshot({
@@ -839,7 +839,7 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
   // Modal can be dismissed with Escape and preserves form inputs
   await page.keyboard.press('Escape')
   await expect(
-    page.getByRole('heading', { name: /^cloud sync$/i }),
+    page.getByRole('heading', { name: /^save your card & start your deck$/i }),
   ).not.toBeVisible()
   await expect(spanishInput).toHaveValue('chido')
   await expect(englishInput).toHaveValue('cool')
@@ -902,8 +902,8 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
         `${testPage} on ${vp.name} horizontal overflow`,
       ).toBe(dims.docClientWidth)
 
-      // Single-screen initial views should fit cleanly in viewport without unnecessary vertical scroll
-      if (testPage === 'welcome' || testPage === 'review') {
+      // Single-screen study review view should fit cleanly in viewport without unnecessary vertical scroll
+      if (testPage === 'review') {
         expect(
           dims.docScrollHeight,
           `${testPage} on ${vp.name} vertical overflow`,
@@ -911,6 +911,34 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
       }
     }
   }
+})
+
+test('displays "Why Jolito?" value proposition fold on welcome view with zero WCAG violations', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(
+    page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /^type before you flip$/i }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /^spaced repetition that sticks$/i }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /^spoken mexican spanish$/i }),
+  ).toBeVisible()
+
+  await page.screenshot({
+    path: 'test-results/welcome-landing-page.png',
+    fullPage: true,
+  })
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
 })
 
 test('hides card preview on tablet and mobile viewports (<= 860px) so it does not crowd form inputs', async ({

@@ -27,6 +27,7 @@ export interface SyncModalProps {
   auth: AuthService
   sync: SyncService
   onSaveLocally?: (() => void) | undefined
+  pendingCardPrompt?: string | undefined
 }
 
 export function SyncModal({
@@ -38,6 +39,7 @@ export function SyncModal({
   auth,
   sync,
   onSaveLocally,
+  pendingCardPrompt,
 }: SyncModalProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
@@ -218,9 +220,15 @@ export function SyncModal({
       >
         <div className="modal-header">
           <div className="modal-header-copy">
-            <h2 id="sync-modal-title">Cloud sync</h2>
+            <h2 id="sync-modal-title">
+              {pendingCardPrompt
+                ? 'Save your card & start your deck'
+                : 'Cloud sync'}
+            </h2>
             <p className="modal-subtitle">
-              Sync your deck across all your devices.
+              {pendingCardPrompt
+                ? `Save “${pendingCardPrompt}” to your personal deck and sync your cards across devices.`
+                : 'Sync your deck across all your devices.'}
             </p>
           </div>
           <button
@@ -255,7 +263,9 @@ export function SyncModal({
                 className="primary-button"
                 onClick={onSaveLocally}
               >
-                Save card to this device →
+                {pendingCardPrompt
+                  ? `Save “${pendingCardPrompt}” to this device →`
+                  : 'Save card to this device →'}
               </button>
             )}
           </div>
@@ -337,14 +347,26 @@ export function SyncModal({
             >
               {loadingAction === 'send'
                 ? 'Sending link…'
-                : 'Send sign-in link →'}
+                : pendingCardPrompt
+                  ? 'Save card & send link →'
+                  : 'Send sign-in link →'}
             </button>
           </form>
         ) : !showPasteLink ? (
           <div className="sync-sent-pane">
             <p className="sync-explanation">
-              Click the sign-in link sent to <strong>{email.trim()}</strong> to
-              connect your account.
+              {pendingCardPrompt ? (
+                <>
+                  Click the sign-in link sent to <strong>{email.trim()}</strong>
+                  . Your card “{pendingCardPrompt}” will be saved to your deck
+                  automatically.
+                </>
+              ) : (
+                <>
+                  Click the sign-in link sent to <strong>{email.trim()}</strong>{' '}
+                  to connect your account.
+                </>
+              )}
             </p>
             <div className="sync-sent-actions">
               <button
@@ -464,7 +486,9 @@ export function SyncModal({
               >
                 {loadingAction === 'verify'
                   ? 'Signing in…'
-                  : 'Sign in & sync →'}
+                  : pendingCardPrompt
+                    ? 'Sign in & save card →'
+                    : 'Sign in & sync →'}
               </button>
               <div className="sync-sent-sub-actions">
                 <button

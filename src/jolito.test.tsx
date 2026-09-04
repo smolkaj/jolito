@@ -2261,10 +2261,12 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
     expect(
-      screen.getByRole('heading', { name: /^cloud sync$/i }),
+      screen.getByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/sync your deck across all your devices/i),
+      screen.getByText(/save “chela” to your personal deck/i),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
 
@@ -2286,15 +2288,22 @@ describe('Jolito', () => {
     await user.type(englishInput, 'cool')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // 2. Sign-in modal opens with focused cloud sync heading
+    // 2. Sign-in modal opens with focused save card heading
     expect(
-      screen.getByRole('heading', { name: /^cloud sync$/i }),
+      screen.getByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/save “chido” to your personal deck/i),
     ).toBeInTheDocument()
 
     // 3. Guest enters email and requests link
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save card & send link/i }),
+    )
 
     // 4. Guest toggles paste input and enters link / code
     await user.click(
@@ -2302,11 +2311,15 @@ describe('Jolito', () => {
     )
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
-    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
+    await user.click(
+      screen.getByRole('button', { name: /sign in & save card/i }),
+    )
 
     // 5. Verification succeeds -> pending card is automatically saved!
     expect(
-      screen.queryByRole('heading', { name: /^cloud sync$/i }),
+      screen.queryByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
     expect(spanishInput).toHaveValue('')
@@ -2341,7 +2354,9 @@ describe('Jolito', () => {
 
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pwa-creator@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save card & send link/i }),
+    )
 
     expect(
       await screen.findByText(/Open the email in Safari, tap/i),
@@ -2369,7 +2384,9 @@ describe('Jolito', () => {
 
     // Modal is open
     expect(
-      screen.getByRole('heading', { name: /^cloud sync$/i }),
+      screen.getByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).toBeInTheDocument()
 
     // Guest presses Escape to dismiss modal
@@ -2377,16 +2394,18 @@ describe('Jolito', () => {
 
     // Modal is closed, but typed input is preserved in form!
     expect(
-      screen.queryByRole('heading', { name: /^cloud sync$/i }),
+      screen.queryByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).not.toBeInTheDocument()
     expect(spanishInput).toHaveValue('popote')
     expect(englishInput).toHaveValue('straw')
   })
 
-  it('opens modal when auth backend is unconfigured and allows saving card locally in preview mode', async () => {
+  it('allows guest to save pending card locally when cloud sync is disabled in preview', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({ cards: [] })
-    services.mockAuth.configured = false // Unconfigured / offline preview mode
+    services.mockAuth.configured = false
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -2398,7 +2417,9 @@ describe('Jolito', () => {
 
     // Modal opens asking to sign in and showing preview notice
     expect(
-      screen.getByRole('heading', { name: /^cloud sync$/i }),
+      screen.getByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).toBeInTheDocument()
     expect(
       screen.getByText(/cloud sync is disabled in this preview/i),
@@ -2406,11 +2427,13 @@ describe('Jolito', () => {
 
     // User clicks save locally in preview
     await user.click(
-      screen.getByRole('button', { name: /save card to this device/i }),
+      screen.getByRole('button', { name: /save “orale” to this device/i }),
     )
 
     expect(
-      screen.queryByRole('heading', { name: /^cloud sync$/i }),
+      screen.queryByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “orale”/i)
     expect(services.memoryCards.saved).toHaveLength(2)
@@ -2438,7 +2461,9 @@ describe('Jolito', () => {
     // 3. Guest signs in
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
-    await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
+    await user.click(
+      screen.getByRole('button', { name: /save card & send link/i }),
+    )
 
     await user.click(
       screen.getByRole('button', { name: /paste link manually/i }),
@@ -2446,11 +2471,15 @@ describe('Jolito', () => {
 
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
-    await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
+    await user.click(
+      screen.getByRole('button', { name: /sign in & save card/i }),
+    )
 
     // 4. Modal closes and card is saved
     expect(
-      screen.queryByRole('heading', { name: /^cloud sync$/i }),
+      screen.queryByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
 
