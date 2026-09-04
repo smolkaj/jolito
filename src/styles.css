@@ -4036,10 +4036,6 @@ kbd {
   font-size: 13.5px;
 }
 
-.edit-card-form .field-label-row {
-  margin-bottom: 4px;
-}
-
 .field-label-row {
   display: flex;
   align-items: center;

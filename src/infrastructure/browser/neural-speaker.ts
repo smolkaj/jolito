@@ -174,8 +174,19 @@ export class NeuralVoiceEngine {
   }
 
   isAudioInFlight(text: string, locale: string, voice?: string): boolean {
-    const primaryKey = this.getPrimaryCacheKey(text, locale, voice)
-    return this.inFlightFetches.has(primaryKey)
+    const cleanText = text.trim()
+    const normLocale = normalizeLocale(locale)
+    const effectiveVoice = voice ?? getDeterministicVoice(cleanText, normLocale)
+    const voiceKey = this.getPrimaryCacheKey(
+      cleanText,
+      normLocale,
+      effectiveVoice,
+    )
+    const unvoicedKey = this.getPrimaryCacheKey(cleanText, normLocale)
+    return (
+      this.inFlightFetches.has(voiceKey) ||
+      this.inFlightFetches.has(unvoicedKey)
+    )
   }
 
   registerAudioBuffer(
@@ -479,10 +490,7 @@ export class NeuralVoiceEngine {
       if (!clean) return false
       const normLocale = normalizeLocale(item.locale)
       const voice =
-        item.voice ??
-        (item.cardSeed
-          ? getDeterministicVoice(clean, normLocale, item.cardSeed)
-          : undefined)
+        item.voice ?? getDeterministicVoice(clean, normLocale, item.cardSeed)
       const key = this.getPrimaryCacheKey(clean, normLocale, voice)
       if (seenKeys.has(key)) return false
       seenKeys.add(key)
@@ -500,9 +508,7 @@ export class NeuralVoiceEngine {
         batch.map((item) => {
           const voice =
             item.voice ??
-            (item.cardSeed
-              ? getDeterministicVoice(item.text, item.locale, item.cardSeed)
-              : undefined)
+            getDeterministicVoice(item.text, item.locale, item.cardSeed)
           return this.fetchAndCacheAudio(
             item.text,
             item.locale,

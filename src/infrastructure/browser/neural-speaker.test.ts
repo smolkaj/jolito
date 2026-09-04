@@ -560,6 +560,39 @@ describe('NeuralVoiceEngine', () => {
     // Should only fetch once despite duplicate items in the array
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(engine.hasAudio('palabra repetida', 'es-MX')).toBe(true)
+
+    // Test skipping in-flight items
+    let resolveInFlight!: (res: Response) => void
+    const inFlightPromise = new Promise<Response>((resolve) => {
+      resolveInFlight = resolve
+    })
+
+    // Start an in-flight fetch for 'en vuelo'
+    const pendingFetch = engine.fetchAndCacheAudio(
+      'en vuelo',
+      'es-MX',
+      () => inFlightPromise,
+    )
+    expect(engine.isAudioInFlight('en vuelo', 'es-MX')).toBe(true)
+
+    const mockPrefetchFetch = vi.fn()
+    // Attempt to prefetch 'en vuelo' while it is in-flight
+    await engine.prefetch(
+      [{ text: 'en vuelo', locale: 'es-MX' }],
+      mockPrefetchFetch,
+    )
+
+    // Prefetch must skip the in-flight item, so mockPrefetchFetch is not called
+    expect(mockPrefetchFetch).not.toHaveBeenCalled()
+
+    // Clean up in-flight fetch
+    resolveInFlight(
+      new Response(new Uint8Array([1, 2, 3]).buffer, {
+        status: 200,
+        headers: { 'Content-Type': 'audio/mpeg' },
+      }),
+    )
+    await pendingFetch
   })
 
   it('keeps audio isolated by voice so identical phrases across different personas do not collide', () => {
