@@ -1,3 +1,8 @@
+/**
+ * Difference in seconds between the Windows Filetime epoch (January 1, 1601 UTC)
+ * and the Unix epoch (January 1, 1970 UTC). Used by Microsoft Edge TTS to calculate
+ * 100-nanosecond tick timestamps for Sec-MS-GEC authentication tokens.
+ */
 export const WIN_EPOCH = 11644473600n
 export const TRUSTED_CLIENT_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
 export const CHROMIUM_FULL_VERSION = '143.0.3650.75'

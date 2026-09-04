@@ -4349,6 +4349,75 @@ describe('Jolito', () => {
       )
     })
 
+    it('eagerly prefetches all cards across the collection in background, prioritizing due cards first', () => {
+      const services = createTestServices({
+        cards: [
+          {
+            id: 'due-1',
+            noteId: 'n1',
+            prompt: 'palabra urgente',
+            answer: 'urgent word',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            schedule: {
+              dueAt: 0,
+              intervalDays: 0,
+              easeFactor: 2.5,
+              state: 'new',
+              reviews: 0,
+              lapses: 0,
+            },
+            createdAt: 1000,
+          },
+          {
+            id: 'future-1',
+            noteId: 'n2',
+            prompt: 'palabra futura',
+            answer: 'future word',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            schedule: {
+              dueAt: 99999999999, // scheduled far into the future
+              intervalDays: 10,
+              easeFactor: 2.5,
+              state: 'review',
+              reviews: 2,
+              lapses: 0,
+            },
+            createdAt: 1000,
+          },
+        ],
+      })
+
+      render(<App services={services} />)
+
+      // Both due and future cards must be prefetched for offline readiness
+      expect(services.mockSpeaker.prefetched).toEqual([
+        expect.objectContaining({
+          text: 'palabra urgente',
+          locale: 'es-MX',
+          cardSeed: 'due-1',
+        }),
+        expect.objectContaining({
+          text: 'urgent word',
+          locale: 'en-US',
+          cardSeed: 'due-1',
+        }),
+        expect.objectContaining({
+          text: 'palabra futura',
+          locale: 'es-MX',
+          cardSeed: 'future-1',
+        }),
+        expect.objectContaining({
+          text: 'future word',
+          locale: 'en-US',
+          cardSeed: 'future-1',
+        }),
+      ])
+    })
+
     it('passes consistent cardSeed to speak and playAudio during practice review', async () => {
       const user = userEvent.setup({ delay: null })
       const card = {
