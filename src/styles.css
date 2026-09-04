@@ -1166,6 +1166,9 @@ summary:focus-visible {
   list-style: none;
   max-height: 240px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .suggestion-item {
@@ -1179,6 +1182,9 @@ summary:focus-visible {
   flex-direction: column;
   gap: 2px;
   border: 1px solid transparent;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .suggestion-item:hover,

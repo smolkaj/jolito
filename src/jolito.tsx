@@ -2418,6 +2418,10 @@ export function App({
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
+  const isScrollingRef = useRef(false)
+  const scrollResetTimerRef = useRef<number | null>(null)
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null)
+  const isDraggingRef = useRef(false)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
 
@@ -2877,6 +2881,9 @@ export function App({
       if (suggestionsBlurTimerRef.current !== null) {
         window.clearTimeout(suggestionsBlurTimerRef.current)
       }
+      if (scrollResetTimerRef.current !== null) {
+        window.clearTimeout(scrollResetTimerRef.current)
+      }
     }
   }, [])
 
@@ -3072,6 +3079,9 @@ export function App({
       window.clearTimeout(suggestionsBlurTimerRef.current)
       suggestionsBlurTimerRef.current = null
     }
+    isScrollingRef.current = false
+    isDraggingRef.current = false
+    pointerDownPosRef.current = null
     setSuggestions([])
     setActiveSuggestionIndex(-1)
   }, [])
@@ -3079,7 +3089,50 @@ export function App({
   useEffect(() => {
     if (suggestions.length === 0) return
 
+    const onScroll = () => {
+      if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+        suggestionsBlurTimerRef.current = null
+      }
+      isScrollingRef.current = true
+      isDraggingRef.current = true
+      if (scrollResetTimerRef.current !== null) {
+        window.clearTimeout(scrollResetTimerRef.current)
+      }
+      scrollResetTimerRef.current = window.setTimeout(() => {
+        isScrollingRef.current = false
+        scrollResetTimerRef.current = null
+      }, 300)
+    }
+
     const handlePointerDown = (event: PointerEvent) => {
+      pointerDownPosRef.current = { x: event.clientX, y: event.clientY }
+      isDraggingRef.current = false
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!pointerDownPosRef.current) return
+      const dx = event.clientX - pointerDownPosRef.current.x
+      const dy = event.clientY - pointerDownPosRef.current.y
+      if (Math.hypot(dx, dy) > 8) {
+        isDraggingRef.current = true
+        isScrollingRef.current = true
+        if (suggestionsBlurTimerRef.current !== null) {
+          window.clearTimeout(suggestionsBlurTimerRef.current)
+          suggestionsBlurTimerRef.current = null
+        }
+      }
+    }
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const wasDragging = isDraggingRef.current
+      pointerDownPosRef.current = null
+      isDraggingRef.current = false
+
+      if (wasDragging || isScrollingRef.current) {
+        return
+      }
+
       const target = event.target
       if (
         target instanceof Node &&
@@ -3091,9 +3144,33 @@ export function App({
       dismissSuggestions()
     }
 
+    const handleClick = (event: MouseEvent) => {
+      if (isScrollingRef.current) return
+      const target = event.target
+      if (
+        target instanceof Node &&
+        (suggestionsRef.current?.contains(target) ||
+          spanishInputRef.current?.contains(target))
+      ) {
+        return
+      }
+      dismissSuggestions()
+    }
+
+    window.addEventListener('scroll', onScroll, {
+      capture: true,
+      passive: true,
+    })
     document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', handlePointerUp)
+    document.addEventListener('click', handleClick)
     return () => {
+      window.removeEventListener('scroll', onScroll, { capture: true })
       document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', handlePointerUp)
+      document.removeEventListener('click', handleClick)
     }
   }, [suggestions.length, dismissSuggestions])
 
@@ -3145,6 +3222,11 @@ export function App({
       if (related && suggestionsRef.current?.contains(related)) {
         return
       }
+      // If the blur was caused by scrolling or a touch scroll gesture,
+      // preserve suggestions so the user can browse them freely on iOS.
+      if (isScrollingRef.current || isDraggingRef.current) {
+        return
+      }
       // Defer suggestion dismissal so synchronous blur/focus transitions
       // (such as iOS Safari keyboard accessory arrows jumping to adjacent fields)
       // are not aborted by mid-event DOM unmounting.
@@ -3152,6 +3234,10 @@ export function App({
         window.clearTimeout(suggestionsBlurTimerRef.current)
       }
       suggestionsBlurTimerRef.current = window.setTimeout(() => {
+        if (isScrollingRef.current || isDraggingRef.current) {
+          suggestionsBlurTimerRef.current = null
+          return
+        }
         dismissSuggestions()
         suggestionsBlurTimerRef.current = null
       }, 150)
@@ -3600,7 +3686,7 @@ export function App({
                         type="button"
                         className="suggestions-dismiss-button"
                         tabIndex={-1}
-                        onPointerDown={(e) => {
+                        onMouseDown={(e) => {
                           e.preventDefault()
                         }}
                         onClick={dismissSuggestions}
@@ -3622,8 +3708,10 @@ export function App({
                           role="option"
                           aria-selected={activeSuggestionIndex === index}
                           className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
-                          onPointerDown={(e) => {
+                          onMouseDown={(e) => {
                             e.preventDefault()
+                          }}
+                          onClick={() => {
                             applySuggestion(item)
                           }}
                         >

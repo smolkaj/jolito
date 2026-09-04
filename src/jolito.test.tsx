@@ -824,6 +824,92 @@ describe('Jolito', () => {
     })
   })
 
+  it('does not close suggestion overlay when scrolling the page or when scroll triggers input blur on iOS', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Simulate iOS scroll behavior: a scroll event occurs, causing the keyboard to dismiss and input to blur
+    fireEvent.scroll(window)
+    fireEvent.blur(spanishInput)
+
+    // Wait past the normal blur timer duration (150ms)
+    await new Promise((resolve) => setTimeout(resolve, 250))
+
+    // Suggestions remain open and browseable on iOS even after scrolling blurs the input
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
+  })
+
+  it('allows scrolling and browsing suggestions list without accidentally selecting items', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    const listbox = screen.getByRole('listbox', {
+      name: /spanish suggestions/i,
+    })
+    expect(listbox).toBeInTheDocument()
+
+    const item = screen.getByText('ahorita')
+
+    // Simulate touch scroll drag on the suggestion item: pointerdown -> pointermove (>8px) -> pointerup
+    fireEvent.pointerDown(item, { clientX: 100, clientY: 200 })
+    fireEvent.pointerMove(document, { clientX: 100, clientY: 250 })
+    fireEvent.pointerUp(item, { clientX: 100, clientY: 250 })
+
+    // Suggestion is NOT selected by dragging/scrolling, suggestions remain open
+    expect(spanishInput).toHaveValue('ahor')
+    expect(listbox).toBeInTheDocument()
+
+    // Tapping the item now selects it
+    await user.click(item)
+    expect(spanishInput).toHaveValue('ahorita')
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not close suggestions when touch-dragging outside to scroll the page', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Simulate touch scroll gesture outside (e.g. on the heading)
+    const heading = screen.getByRole('heading', { name: /new flashcard/i })
+    fireEvent.pointerDown(heading, { clientX: 150, clientY: 100 })
+    fireEvent.pointerMove(document, { clientX: 150, clientY: 200 })
+    fireEvent.pointerUp(heading, { clientX: 150, clientY: 200 })
+
+    // Overlay is preserved because the interaction was a scroll gesture, not a tap
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+    expect(spanishInput).toHaveValue('ahor')
+  })
+
   it('selects existing text when tabbing between fields in the card creation view', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
