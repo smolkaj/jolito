@@ -315,23 +315,57 @@ export class NeuralVoiceEngine {
     }
   }
 
+  private async registerDecodedBufferOrBlob(
+    cleanText: string,
+    normLocale: string,
+    voice: string | undefined,
+    arrayBuffer: ArrayBuffer,
+  ): Promise<boolean> {
+    const decoded = await this.decodeAudio(arrayBuffer)
+    if (decoded) {
+      this.registerAudioBuffer(cleanText, normLocale, decoded, voice)
+      return true
+    }
+    if (
+      typeof URL !== 'undefined' &&
+      typeof URL.createObjectURL === 'function'
+    ) {
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+      const objectUrl = URL.createObjectURL(blob)
+      this.registerAudioDataUrl(cleanText, normLocale, objectUrl, voice)
+      return true
+    }
+    return false
+  }
+
   async fetchAndCacheAudio(
     text: string,
     locale: string,
     optionsOrFetchFn?:
-      | { cardSeed?: string | undefined; voice?: string | undefined }
+      | {
+          cardSeed?: string | undefined
+          voice?: string | undefined
+          fetchFn?: typeof fetch
+        }
       | typeof fetch,
     optionalFetchFn?: typeof fetch,
   ): Promise<boolean> {
     let options:
-      { cardSeed?: string | undefined; voice?: string | undefined } | undefined
+      | {
+          cardSeed?: string | undefined
+          voice?: string | undefined
+          fetchFn?: typeof fetch
+        }
+      | undefined
     let fetchFn: typeof fetch = fetch
 
     if (typeof optionsOrFetchFn === 'function') {
       fetchFn = optionsOrFetchFn
     } else if (optionsOrFetchFn) {
       options = optionsOrFetchFn
-      if (optionalFetchFn) {
+      if (options.fetchFn) {
+        fetchFn = options.fetchFn
+      } else if (optionalFetchFn) {
         fetchFn = optionalFetchFn
       }
     }
@@ -343,8 +377,6 @@ export class NeuralVoiceEngine {
     const voice =
       options?.voice ??
       getDeterministicVoice(cleanText, normLocale, options?.cardSeed)
-
-    if (this.hasAudio(cleanText, normLocale, voice)) return true
 
     const inFlightKey = this.getPrimaryCacheKey(cleanText, normLocale, voice)
     const existing = this.inFlightFetches.get(inFlightKey)
@@ -359,20 +391,13 @@ export class NeuralVoiceEngine {
           const cachedResp = await cache.match(url)
           if (cachedResp && cachedResp.ok) {
             const arrayBuffer = await cachedResp.arrayBuffer()
-            const decoded = await this.decodeAudio(arrayBuffer)
-            if (decoded) {
-              this.registerAudioBuffer(cleanText, normLocale, decoded, voice)
-              return true
-            }
-            if (
-              typeof URL !== 'undefined' &&
-              typeof URL.createObjectURL === 'function'
-            ) {
-              const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
-              const objectUrl = URL.createObjectURL(blob)
-              this.registerAudioDataUrl(cleanText, normLocale, objectUrl, voice)
-              return true
-            }
+            const registered = await this.registerDecodedBufferOrBlob(
+              cleanText,
+              normLocale,
+              voice,
+              arrayBuffer,
+            )
+            if (registered) return true
           }
         } catch {
           // Cache match failed, proceed to network
@@ -400,21 +425,12 @@ export class NeuralVoiceEngine {
         }
 
         const arrayBuffer = await response.arrayBuffer()
-        const decoded = await this.decodeAudio(arrayBuffer)
-        if (decoded) {
-          this.registerAudioBuffer(cleanText, normLocale, decoded, voice)
-          return true
-        }
-        if (
-          typeof URL !== 'undefined' &&
-          typeof URL.createObjectURL === 'function'
-        ) {
-          const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
-          const objectUrl = URL.createObjectURL(blob)
-          this.registerAudioDataUrl(cleanText, normLocale, objectUrl, voice)
-          return true
-        }
-        return false
+        return this.registerDecodedBufferOrBlob(
+          cleanText,
+          normLocale,
+          voice,
+          arrayBuffer,
+        )
       } catch {
         return false
       }
@@ -583,6 +599,7 @@ export class LayeredNeuralSpeaker implements Speaker {
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
+  private speakGeneration = 0
 
   constructor(options?: {
     neuralEngine?: NeuralVoiceEngine
@@ -591,6 +608,11 @@ export class LayeredNeuralSpeaker implements Speaker {
     this.neuralEngine = options?.neuralEngine ?? new NeuralVoiceEngine()
     this.fallbackSpeaker =
       options?.fallbackSpeaker ?? new EnhancedBrowserSpeaker()
+  }
+
+  private speakFallback(text: string, locale: string): boolean {
+    this.neuralEngine.stopAudio()
+    return this.fallbackSpeaker.speak(text, locale)
   }
 
   supported(): boolean {
@@ -628,6 +650,7 @@ export class LayeredNeuralSpeaker implements Speaker {
     this.lastSpokenText = cleanText
     this.lastSpokenLocale = normLocale
     this.lastSpokenTime = now
+    const currentGen = ++this.speakGeneration
 
     // 1. If audio is already cached in memory, play immediately
     if (this.neuralEngine.hasAudio(cleanText, normLocale, voice)) {
@@ -636,7 +659,7 @@ export class LayeredNeuralSpeaker implements Speaker {
         if (played) return true
       } catch {
         // Fall back seamlessly to browser speech synthesis
-        return this.fallbackSpeaker.speak(cleanText, normLocale)
+        return this.speakFallback(cleanText, normLocale)
       }
     }
 
@@ -646,6 +669,7 @@ export class LayeredNeuralSpeaker implements Speaker {
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, 200)
         .then((ready) => {
+          if (this.speakGeneration !== currentGen) return
           if (ready) {
             const played = this.neuralEngine.playAudio(
               cleanText,
@@ -653,14 +677,15 @@ export class LayeredNeuralSpeaker implements Speaker {
               voice,
             )
             if (!played) {
-              this.fallbackSpeaker.speak(cleanText, normLocale)
+              this.speakFallback(cleanText, normLocale)
             }
           } else {
-            this.fallbackSpeaker.speak(cleanText, normLocale)
+            this.speakFallback(cleanText, normLocale)
           }
         })
         .catch(() => {
-          this.fallbackSpeaker.speak(cleanText, normLocale)
+          if (this.speakGeneration !== currentGen) return
+          this.speakFallback(cleanText, normLocale)
         })
       return true
     }
@@ -673,6 +698,6 @@ export class LayeredNeuralSpeaker implements Speaker {
       })
       .catch(() => {})
 
-    return this.fallbackSpeaker.speak(cleanText, normLocale)
+    return this.speakFallback(cleanText, normLocale)
   }
 }

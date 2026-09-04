@@ -235,6 +235,66 @@ describe('LayeredNeuralSpeaker', () => {
     await Promise.resolve()
     expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra lenta', 'es-MX')
   })
+
+  it('discards delayed awaitAudio playback and fallback when superseded by another speech action', async () => {
+    let resolveAwaitAudio!: (ready: boolean) => void
+    const awaitPromise = new Promise<boolean>((resolve) => {
+      resolveAwaitAudio = resolve
+    })
+
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'awaitAudio').mockReturnValue(awaitPromise)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    // 1. First speak starts awaiting in-flight audio for card-1
+    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1' })
+
+    // 2. User rapidly navigates or speaks prompt 2 (superseding action)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    speaker.speak('prompt 2', 'es-MX', { cardSeed: 'card-2' })
+
+    // 3. Earlier awaitAudio completes with ready = true
+    resolveAwaitAudio(true)
+    await Promise.resolve()
+
+    // It should play prompt 2, but NOT delayed prompt 1
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'prompt 2',
+      'es-MX',
+      expect.any(String),
+    )
+    expect(playAudioSpy).not.toHaveBeenCalledWith(
+      'prompt 1',
+      'es-MX',
+      expect.any(String),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('stops active neural audio before delegating to fallback speaker', () => {
+    const stopAudioSpy = vi.spyOn(neuralEngine, 'stopAudio')
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    speaker.speak('fallback phrase', 'es-MX')
+
+    expect(stopAudioSpy).toHaveBeenCalled()
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('fallback phrase', 'es-MX')
+  })
 })
 
 describe('NeuralVoiceEngine', () => {

@@ -641,7 +641,7 @@ function EditCardModalInner({
   cards?: StudyCard[] | undefined
   onClose: () => void
   onSave: (card: StudyCard, updates: UpdateCardParams) => void
-  onPlayAudio: (text: string, locale: string) => void
+  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
   const [answer, setAnswer] = useState(card.answer)
@@ -737,7 +737,9 @@ function EditCardModalInner({
               {prompt.trim() && (
                 <AudioButton
                   label="Play prompt preview"
-                  onClick={() => onPlayAudio(prompt.trim(), promptLocale)}
+                  onClick={() =>
+                    onPlayAudio(prompt.trim(), promptLocale, card.id)
+                  }
                 />
               )}
             </div>
@@ -763,7 +765,9 @@ function EditCardModalInner({
               {answer.trim() && (
                 <AudioButton
                   label="Play answer preview"
-                  onClick={() => onPlayAudio(answer.trim(), answerLocale)}
+                  onClick={() =>
+                    onPlayAudio(answer.trim(), answerLocale, card.id)
+                  }
                 />
               )}
             </div>
@@ -845,7 +849,7 @@ function EditCardModal({
   cards?: StudyCard[] | undefined
   onClose: () => void
   onSave: (card: StudyCard, updates: UpdateCardParams) => void
-  onPlayAudio: (text: string, locale: string) => void
+  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   useEffect(() => {
     if (!isOpen) return
