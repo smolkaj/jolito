@@ -94,7 +94,7 @@ async function main() {
     ),
   ).toString('base64')
 
-  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="76" height="76" xmlns="http://www.w3.org/2000/svg">
   <g fill="#e4007c">
     <rect x="3" y="6.5" width="11" height="4.5" rx="2.25" transform="rotate(-22 8.5 8.75)" />
     <rect x="1" y="13.75" width="12" height="4.5" rx="2.25" />
@@ -139,7 +139,7 @@ async function main() {
     display: flex;
     position: relative;
     overflow: hidden;
-    padding: 72px 80px;
+    padding: 72px 84px;
     align-items: center;
     justify-content: space-between;
   }
@@ -147,28 +147,28 @@ async function main() {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    max-width: 580px;
+    max-width: 610px;
     z-index: 2;
   }
   .brand-row {
     display: flex;
     align-items: center;
-    gap: 18px;
-    margin-bottom: 32px;
+    gap: 22px;
+    margin-bottom: 36px;
   }
   .brand-mark {
     display: block;
     flex-shrink: 0;
   }
   .brand-title {
-    font-size: 64px;
+    font-size: 78px;
     font-weight: 800;
     color: #121815;
     letter-spacing: -0.04em;
     line-height: 1;
   }
   .headline {
-    font-size: 56px;
+    font-size: 66px;
     font-weight: 800;
     color: #121815;
     line-height: 1.08;
@@ -180,7 +180,7 @@ async function main() {
   }
   .right {
     position: absolute;
-    right: 30px;
+    right: 28px;
     bottom: -15px;
     width: 500px;
     height: 560px;
@@ -203,7 +203,7 @@ async function main() {
         ${logoSvg}
         <span class="brand-title">Jolito</span>
       </div>
-      <h1 class="headline">Mexican Spanish that <em>sticks.</em></h1>
+      <h1 class="headline">Mexican Spanish<br />that <em>sticks.</em></h1>
     </div>
     <div class="right">
       <img class="mascot" src="data:image/png;base64,${welcomeImgBase64}" alt="Jolito Mascot" />
