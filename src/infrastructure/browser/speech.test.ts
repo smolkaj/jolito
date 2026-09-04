@@ -496,47 +496,6 @@ describe('EnhancedBrowserSpeaker', () => {
 })
 
 describe('Apple voice enhancement helpers', () => {
-  it('detects Apple voice-supported platforms accurately', async () => {
-    const { isAppleVoiceSupported, isMacOS } = await import('./speech')
-
-    const iPhoneUA = {
-      userAgent:
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15',
-    }
-    const macSafariNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
-      platform: 'MacIntel',
-      maxTouchPoints: 0,
-      vendor: 'Apple Computer, Inc.',
-    }
-    const macChromeNav = {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      platform: 'MacIntel',
-      maxTouchPoints: 0,
-      vendor: 'Google Inc.',
-    }
-    const androidNav = {
-      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
-      platform: 'Linux armv8l',
-    }
-    const windowsNav = {
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      platform: 'Win32',
-    }
-
-    expect(isAppleVoiceSupported(iPhoneUA)).toBe(true)
-    expect(isAppleVoiceSupported(macSafariNav)).toBe(true)
-    expect(isAppleVoiceSupported(macChromeNav)).toBe(false)
-    expect(isAppleVoiceSupported(androidNav)).toBe(false)
-    expect(isAppleVoiceSupported(windowsNav)).toBe(false)
-
-    expect(isMacOS(macChromeNav)).toBe(true)
-    expect(isMacOS(macSafariNav)).toBe(true)
-    expect(isMacOS(iPhoneUA)).toBe(false)
-  })
-
   it('detects presence of enhanced Mexican Spanish voices', async () => {
     const { hasEnhancedMexicanSpanishVoice } = await import('./speech')
 
@@ -609,7 +568,7 @@ describe('Apple voice enhancement helpers', () => {
     // Apple user with compact voice and not dismissed -> prompt
     expect(
       shouldPromptAppleVoiceUpgrade({
-        isApple: true,
+        isAppleVoiceSupported: true,
         voices: compactVoices,
         dismissed: false,
       }),
@@ -618,7 +577,7 @@ describe('Apple voice enhancement helpers', () => {
     // Dismissed by user -> do not prompt
     expect(
       shouldPromptAppleVoiceUpgrade({
-        isApple: true,
+        isAppleVoiceSupported: true,
         voices: compactVoices,
         dismissed: true,
       }),
@@ -627,7 +586,7 @@ describe('Apple voice enhancement helpers', () => {
     // Non-Apple user -> do not prompt
     expect(
       shouldPromptAppleVoiceUpgrade({
-        isApple: false,
+        isAppleVoiceSupported: false,
         voices: compactVoices,
         dismissed: false,
       }),
@@ -636,7 +595,7 @@ describe('Apple voice enhancement helpers', () => {
     // Voices not loaded yet -> do not prompt
     expect(
       shouldPromptAppleVoiceUpgrade({
-        isApple: true,
+        isAppleVoiceSupported: true,
         voices: [],
         dismissed: false,
       }),
@@ -645,7 +604,7 @@ describe('Apple voice enhancement helpers', () => {
     // Enhanced voice already present -> do not prompt
     expect(
       shouldPromptAppleVoiceUpgrade({
-        isApple: true,
+        isAppleVoiceSupported: true,
         voices: enhancedVoices,
         dismissed: false,
       }),

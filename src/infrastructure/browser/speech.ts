@@ -1,5 +1,4 @@
 import type { Speaker } from '../../application/ports'
-import { isAppleVoiceSupported } from './environment'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
@@ -176,7 +175,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       })
       if (mxAny) return mxAny
 
-      // 3. Latin American Spanish variants (es-419, es-us, es-la, es-co, etc.)
+      // 4. Latin American Spanish variants (es-419, es-us, es-la, es-co, etc.)
       const latamAny = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
@@ -192,7 +191,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       })
       if (latamAny) return latamAny
 
-      // 4. Any Spanish voice (es-ES, es, spa, or name containing spanish/español)
+      // 5. Any Spanish voice (es-ES, es, spa, or name containing spanish/español)
       const esFallback = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
@@ -248,14 +247,6 @@ export class EnhancedBrowserSpeaker implements Speaker {
   }
 }
 
-export { isAppleVoiceSupported, isMacOS } from './environment'
-
-export function isApplePlatform(userAgent?: string): boolean {
-  return isAppleVoiceSupported(
-    userAgent !== undefined ? { userAgent } : undefined,
-  )
-}
-
 export function hasEnhancedMexicanSpanishVoice(
   voices: SpeechSynthesisVoice[],
 ): boolean {
@@ -276,16 +267,14 @@ export function hasEnhancedMexicanSpanishVoice(
 }
 
 export function shouldPromptAppleVoiceUpgrade(options: {
-  isAppleVoiceSupported?: boolean
-  isApple?: boolean
+  isAppleVoiceSupported: boolean
   hasEnhancedVoice?: boolean
   voices?: SpeechSynthesisVoice[]
   voicesLoaded?: boolean
   dismissed: boolean
 }): boolean {
   if (options.dismissed) return false
-  const isSupported = options.isAppleVoiceSupported ?? options.isApple ?? false
-  if (!isSupported) return false
+  if (!options.isAppleVoiceSupported) return false
 
   if (options.voices !== undefined) {
     if (options.voices.length === 0) return false

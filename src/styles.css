@@ -3493,7 +3493,6 @@ kbd {
 
 .apple-voice-breadcrumbs .crumb-arrow {
   color: var(--ink-muted);
-  opacity: 0.7;
 }
 
 .apple-voice-breadcrumbs .crumb-highlight {
@@ -3521,11 +3520,45 @@ kbd {
 
 .apple-voice-modal-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line-subtle);
+}
+
+.apple-voice-modal-actions .primary-button,
+.apple-voice-modal-actions .secondary-button {
+  min-height: 40px;
+  height: 40px;
+  max-height: 40px;
+  box-sizing: border-box;
+  padding: 0 18px;
+  font-size: 14px;
+  border-radius: 12px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apple-voice-modal-actions .secondary-button {
+  background: var(--card);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  box-shadow: 2px 2px 0 var(--turquesa-deep);
+}
+
+.apple-voice-modal-actions .secondary-button:hover {
+  background: var(--paper-subtle);
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--turquesa-dark);
+}
+
+.apple-voice-modal-actions .secondary-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 /* Deck Manager Layout */
@@ -4476,6 +4509,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .footer-link-button {

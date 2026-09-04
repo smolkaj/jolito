@@ -2114,10 +2114,27 @@ function FeedbackModal({
   )
 }
 
-function AppFooter({ onOpenFeedback }: { onOpenFeedback: () => void }) {
+function AppFooter({
+  onOpenFeedback,
+  onOpenAppleVoiceGuide,
+  isApple = false,
+}: {
+  onOpenFeedback: () => void
+  onOpenAppleVoiceGuide?: () => void
+  isApple?: boolean
+}) {
   return (
     <footer className="app-footer" aria-label="Site footer">
       <div className="app-footer-inner">
+        {isApple && onOpenAppleVoiceGuide && (
+          <button
+            type="button"
+            className="footer-link-button"
+            onClick={onOpenAppleVoiceGuide}
+          >
+            Enhanced voice
+          </button>
+        )}
         <button
           type="button"
           className="footer-link-button"
@@ -2304,7 +2321,10 @@ function AppleVoiceNotice({
   if (!isOpen) return null
 
   return (
-    <aside className="apple-voice-banner" role="status" aria-live="polite">
+    <aside
+      className="apple-voice-banner"
+      aria-label="Voice upgrade recommendation"
+    >
       <div className="banner-left">
         <span className="banner-icon" aria-hidden="true">
           <svg
@@ -2317,9 +2337,7 @@ function AppleVoiceNotice({
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" x2="12" y1="19" y2="22" />
+            <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
           </svg>
         </span>
         <p className="banner-text">
@@ -2422,7 +2440,14 @@ function AppleVoiceGuideModal({
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
-      triggerRef.current?.focus()
+      if (triggerRef.current && document.body.contains(triggerRef.current)) {
+        triggerRef.current.focus()
+      } else {
+        const fallback = document.querySelector<HTMLElement>(
+          '.primary-button, .brand, button',
+        )
+        fallback?.focus()
+      }
     }
   }, [isOpen, onClose])
 
@@ -2475,8 +2500,8 @@ function AppleVoiceGuideModal({
             <>
               <p className="apple-voice-intro">
                 macOS includes high-definition voices (
-                <strong>Paulina (Enhanced)</strong> and <strong>Siri</strong>),
-                but defaults to a compact voice.
+                <strong>Paulina (Enhanced)</strong>), but defaults to a compact
+                voice.
               </p>
               <div
                 className="apple-voice-breadcrumbs"
@@ -2507,8 +2532,7 @@ function AppleVoiceGuideModal({
                 </li>
                 <li>
                   Search for <strong>Spanish (Mexico)</strong> and click the
-                  download icon next to <strong>Paulina (Enhanced)</strong> or{' '}
-                  <strong>Siri</strong>.
+                  download icon next to <strong>Paulina (Enhanced)</strong>.
                 </li>
                 <li>
                   Once downloaded, return to Jolito—it uses the enhanced voice
@@ -2519,8 +2543,8 @@ function AppleVoiceGuideModal({
           ) : (
             <>
               <p className="apple-voice-intro">
-                iOS includes high-definition neural voices, but uses a compact
-                voice by default to save storage.
+                iOS includes high-definition voices, but uses a compact voice by
+                default to save storage.
               </p>
               <div
                 className="apple-voice-breadcrumbs"
@@ -2552,8 +2576,7 @@ function AppleVoiceGuideModal({
                 </li>
                 <li>
                   Tap the download icon next to{' '}
-                  <strong>Paulina (Enhanced)</strong> or <strong>Siri</strong>{' '}
-                  (free, ~50 MB).
+                  <strong>Paulina (Enhanced)</strong> (free, ~50 MB).
                 </li>
                 <li>
                   Return to Jolito—the enhanced voice is used immediately!
@@ -3723,11 +3746,6 @@ export function App({
             onDismiss={() => setRedirectAuthBanner(null)}
             onCopySessionLink={handleCopySessionLink}
           />
-          <AppleVoiceNotice
-            isOpen={showAppleVoiceBanner}
-            onDismiss={handleDismissAppleVoiceBanner}
-            onOpenGuide={handleOpenAppleVoiceGuide}
-          />
           <section className="welcome-hero">
             <div className="hero-copy">
               <img
@@ -3825,7 +3843,11 @@ export function App({
               </button>
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
+            isApple={isApple}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -4264,7 +4286,11 @@ export function App({
               </div>
             </form>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
+            isApple={isApple}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -4296,6 +4322,12 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          onClose={() => setIsAppleVoiceModalOpen(false)}
+          onGotIt={handleGotItAppleVoiceGuide}
         />
       </>
     )
@@ -4730,7 +4762,11 @@ export function App({
               </div>
             )}
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
+            isApple={isApple}
+          />
         </main>
         <DeckBackupModal
           isOpen={isBackupOpen}
@@ -4778,6 +4814,12 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          onClose={() => setIsAppleVoiceModalOpen(false)}
+          onGotIt={handleGotItAppleVoiceGuide}
         />
       </>
     )
@@ -4887,7 +4929,11 @@ export function App({
               )}
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
+            isApple={isApple}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -4919,6 +4965,12 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          onClose={() => setIsAppleVoiceModalOpen(false)}
+          onGotIt={handleGotItAppleVoiceGuide}
         />
       </>
     )
@@ -4959,6 +5011,11 @@ export function App({
           message={redirectAuthBanner}
           onDismiss={() => setRedirectAuthBanner(null)}
           onCopySessionLink={handleCopySessionLink}
+        />
+        <AppleVoiceNotice
+          isOpen={showAppleVoiceBanner}
+          onDismiss={handleDismissAppleVoiceBanner}
+          onOpenGuide={handleOpenAppleVoiceGuide}
         />
         <div
           className="review-progress-track"
@@ -5133,6 +5190,12 @@ export function App({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
+      />
+      <AppleVoiceGuideModal
+        isOpen={isAppleVoiceModalOpen}
+        isMac={isMac}
+        onClose={() => setIsAppleVoiceModalOpen(false)}
+        onGotIt={handleGotItAppleVoiceGuide}
       />
     </>
   )
