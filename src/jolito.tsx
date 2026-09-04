@@ -2448,15 +2448,17 @@ export function App({
     queueRef.current = queue
   })
 
-  // Eagerly prefetch upcoming due cards on load/home screen so Card 0 audio is 0ms ready
+  // Eagerly prefetch entire collection in background, prioritizing due review cards first
   useEffect(() => {
     if (cards.length === 0 || typeof services.speaker.prefetch !== 'function') {
       return
     }
 
     const now = services.clock.now()
-    const dueOrNewCards = orderCardsForReview(cards, now).slice(0, 5)
-    if (dueOrNewCards.length === 0) return
+    const dueCards = orderCardsForReview(cards, now)
+    const dueIds = new Set(dueCards.map((c) => c.id))
+    const nonDueCards = cards.filter((c) => !dueIds.has(c.id))
+    const allOrderedCards = [...dueCards, ...nonDueCards]
 
     const items: Array<{
       text: string
@@ -2464,7 +2466,7 @@ export function App({
       cardSeed?: string
     }> = []
 
-    for (const card of dueOrNewCards) {
+    for (const card of allOrderedCards) {
       if (card.prompt.trim()) {
         items.push({
           text: card.prompt,

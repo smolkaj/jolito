@@ -473,15 +473,23 @@ export class NeuralVoiceEngine {
       return
     }
 
+    const seenKeys = new Set<string>()
     const uncached = items.filter((item) => {
       const clean = item.text.trim()
       if (!clean) return false
+      const normLocale = normalizeLocale(item.locale)
       const voice =
         item.voice ??
         (item.cardSeed
-          ? getDeterministicVoice(clean, item.locale, item.cardSeed)
+          ? getDeterministicVoice(clean, normLocale, item.cardSeed)
           : undefined)
-      return !this.hasAudio(clean, item.locale, voice)
+      const key = this.getPrimaryCacheKey(clean, normLocale, voice)
+      if (seenKeys.has(key)) return false
+      seenKeys.add(key)
+      return (
+        !this.hasAudio(clean, normLocale, voice) &&
+        !this.isAudioInFlight(clean, normLocale, voice)
+      )
     })
     if (uncached.length === 0) return
 
