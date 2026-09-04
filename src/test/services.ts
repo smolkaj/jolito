@@ -69,6 +69,9 @@ export class MemoryCardRepository implements CardRepository {
 export class MockSpeaker implements Speaker {
   public spoken: Array<{ text: string; locale: string }> = []
   public isSupported = true
+  public enhancedVoice = false
+  public voicesLoaded = true
+  public listeners = new Set<() => void>()
 
   supported(): boolean {
     return this.isSupported
@@ -78,6 +81,27 @@ export class MockSpeaker implements Speaker {
     if (!this.isSupported) return false
     this.spoken.push({ text, locale })
     return true
+  }
+
+  hasEnhancedVoice(): boolean {
+    return this.enhancedVoice
+  }
+
+  areVoicesLoaded(): boolean {
+    return this.voicesLoaded
+  }
+
+  onVoicesChanged(cb: () => void): () => void {
+    this.listeners.add(cb)
+    return () => {
+      this.listeners.delete(cb)
+    }
+  }
+
+  triggerVoicesChanged(): void {
+    for (const listener of this.listeners) {
+      listener()
+    }
   }
 }
 

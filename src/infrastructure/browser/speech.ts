@@ -2,6 +2,7 @@ import type { Speaker } from '../../application/ports'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
+  private listeners = new Set<() => void>()
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
@@ -10,21 +11,38 @@ export class EnhancedBrowserSpeaker implements Speaker {
     this.initVoices()
   }
 
+  private refreshVoices(): SpeechSynthesisVoice[] {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return []
+    }
+    try {
+      const current = window.speechSynthesis.getVoices()
+      if (current && current.length > 0) {
+        this.voices = current
+      }
+    } catch {
+      // Graceful fallback
+    }
+    return this.voices
+  }
+
   private initVoices(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       return
     }
 
     try {
-      this.voices = window.speechSynthesis.getVoices()
-      if (typeof window.speechSynthesis.addEventListener === 'function') {
-        window.speechSynthesis.addEventListener('voiceschanged', () => {
-          this.voices = window.speechSynthesis.getVoices()
-        })
-      } else if ('onvoiceschanged' in window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = () => {
-          this.voices = window.speechSynthesis.getVoices()
+      this.refreshVoices()
+      const handler = () => {
+        this.refreshVoices()
+        for (const listener of this.listeners) {
+          listener()
         }
+      }
+      if (typeof window.speechSynthesis.addEventListener === 'function') {
+        window.speechSynthesis.addEventListener('voiceschanged', handler)
+      } else if ('onvoiceschanged' in window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = handler
       }
     } catch {
       // Graceful fallback if getVoices throws
@@ -37,6 +55,27 @@ export class EnhancedBrowserSpeaker implements Speaker {
       'speechSynthesis' in window &&
       typeof window.SpeechSynthesisUtterance === 'function'
     )
+  }
+
+  areVoicesLoaded(): boolean {
+    this.refreshVoices()
+    return this.voices.length > 0
+  }
+
+  hasEnhancedVoice(locale = 'es-MX'): boolean {
+    if (!this.supported()) return false
+    const current = this.refreshVoices()
+    if (locale.toLowerCase().startsWith('es')) {
+      return hasEnhancedMexicanSpanishVoice(current)
+    }
+    return false
+  }
+
+  onVoicesChanged(cb: () => void): () => void {
+    this.listeners.add(cb)
+    return () => {
+      this.listeners.delete(cb)
+    }
   }
 
   speak(text: string, locale: string): boolean {
@@ -59,10 +98,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       window.speechSynthesis.cancel()
 
       // Always query latest voices to capture newly registered or async system voice packs
-      const currentVoices = window.speechSynthesis.getVoices()
-      if (currentVoices.length > 0) {
-        this.voices = currentVoices
-      }
+      this.refreshVoices()
 
       const utterance = new window.SpeechSynthesisUtterance(text)
       utterance.lang = locale
@@ -93,29 +129,29 @@ export class EnhancedBrowserSpeaker implements Speaker {
     const isSpanish = normalizedTarget.startsWith('es')
 
     if (isSpanish) {
-      // 1. Preferred Mexican Spanish neural / natural voices
-      const mxNatural = this.voices.find((v) => {
+      // 1. Preferred enhanced / premium / natural / siri Mexican Spanish voices
+      const mxEnhanced = this.voices.find(isEnhancedMexicanVoice)
+      if (mxEnhanced) return mxEnhanced
+
+      // 2. High-quality named Mexican voices (compact Paulina, Jorge, Dalia, Raul, Sabina, Google)
+      const mxNamed = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
           (lang === 'es-mx' ||
             name.includes('mexic') ||
             lang.includes('mexic')) &&
-          (name.includes('natural') ||
-            name.includes('enhanced') ||
-            name.includes('premium') ||
-            name.includes('paulina') ||
+          (name.includes('paulina') ||
             name.includes('jorge') ||
             name.includes('dalia') ||
             name.includes('raul') ||
             name.includes('sabina') ||
-            name.includes('google') ||
-            name.includes('siri'))
+            name.includes('google'))
         )
       })
-      if (mxNatural) return mxNatural
+      if (mxNamed) return mxNamed
 
-      // 2. Any exact Mexican Spanish voice
+      // 3. Any exact Mexican Spanish voice
       const mxAny = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
@@ -123,7 +159,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       })
       if (mxAny) return mxAny
 
-      // 3. Latin American Spanish variants (es-419, es-us, es-la, es-co, etc.)
+      // 4. Latin American Spanish variants (es-419, es-us, es-la, es-co, etc.)
       const latamAny = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
@@ -139,7 +175,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       })
       if (latamAny) return latamAny
 
-      // 4. Any Spanish voice (es-ES, es, spa, or name containing spanish/español)
+      // 5. Any Spanish voice (es-ES, es, spa, or name containing spanish/español)
       const esFallback = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
@@ -193,4 +229,44 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
     return null
   }
+}
+
+export function isEnhancedMexicanVoice(v: SpeechSynthesisVoice): boolean {
+  const lang = v.lang.toLowerCase().replace(/_/g, '-')
+  const name = v.name.toLowerCase()
+  const isMx =
+    lang === 'es-mx' || name.includes('mexic') || lang.includes('mexic')
+  return (
+    isMx &&
+    (name.includes('enhanced') ||
+      name.includes('premium') ||
+      name.includes('siri') ||
+      name.includes('natural') ||
+      name.includes('neural'))
+  )
+}
+
+export function hasEnhancedMexicanSpanishVoice(
+  voices: SpeechSynthesisVoice[],
+): boolean {
+  return voices.some(isEnhancedMexicanVoice)
+}
+
+export function shouldPromptAppleVoiceUpgrade(options: {
+  isAppleVoiceSupported: boolean
+  hasEnhancedVoice?: boolean
+  voices?: SpeechSynthesisVoice[]
+  voicesLoaded?: boolean
+  dismissed?: boolean
+}): boolean {
+  if (options.dismissed) return false
+  if (!options.isAppleVoiceSupported) return false
+
+  if (options.voices !== undefined) {
+    if (options.voices.length === 0) return false
+    return !hasEnhancedMexicanSpanishVoice(options.voices)
+  }
+
+  if (options.voicesLoaded === false) return false
+  return !(options.hasEnhancedVoice ?? false)
 }

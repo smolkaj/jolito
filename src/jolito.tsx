@@ -58,7 +58,13 @@ import {
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import { reconcileStudyCards, type SyncStatus } from './domain/sync'
-import { isIOS, isStandalone } from './infrastructure/browser/environment'
+import {
+  isAppleVoiceSupported,
+  isIOS,
+  isMacOS,
+  isStandalone,
+} from './infrastructure/browser/environment'
+import { shouldPromptAppleVoiceUpgrade } from './infrastructure/browser/speech'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
@@ -2108,10 +2114,27 @@ function FeedbackModal({
   )
 }
 
-function AppFooter({ onOpenFeedback }: { onOpenFeedback: () => void }) {
+function AppFooter({
+  onOpenFeedback,
+  onOpenVoiceGuide,
+  showVoiceGuide = false,
+}: {
+  onOpenFeedback: () => void
+  onOpenVoiceGuide?: () => void
+  showVoiceGuide?: boolean
+}) {
   return (
     <footer className="app-footer" aria-label="Site footer">
       <div className="app-footer-inner">
+        {showVoiceGuide && onOpenVoiceGuide && (
+          <button
+            type="button"
+            className="footer-link-button"
+            onClick={onOpenVoiceGuide}
+          >
+            Voice guide
+          </button>
+        )}
         <button
           type="button"
           className="footer-link-button"
@@ -2286,6 +2309,261 @@ function RedirectAuthNotice({
   )
 }
 
+export function AppleVoiceGuideModal({
+  isOpen,
+  isMac,
+  hasEnhancedVoice = false,
+  onClose,
+  onGotIt,
+}: {
+  isOpen: boolean
+  isMac: boolean
+  hasEnhancedVoice?: boolean
+  onClose: () => void
+  onGotIt: () => void
+}) {
+  const modalRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLElement | null>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
+  useEffect(() => {
+    if (!isOpen) return
+    triggerRef.current = document.activeElement as HTMLElement | null
+
+    const modalEl = modalRef.current
+    if (modalEl) {
+      const firstFocusable = modalEl.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      firstFocusable?.focus()
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onCloseRef.current()
+        return
+      }
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return
+        const focusables = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter(
+          (el) =>
+            el.offsetParent !== null ||
+            el.offsetWidth > 0 ||
+            el.offsetHeight > 0,
+        )
+
+        if (focusables.length === 0) {
+          e.preventDefault()
+          return
+        }
+
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (!first || !last) return
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      if (triggerRef.current && document.body.contains(triggerRef.current)) {
+        triggerRef.current.focus()
+      } else {
+        const fallback = document.querySelector<HTMLElement>(
+          '.primary-button, .brand, button',
+        )
+        fallback?.focus()
+      }
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  const handleOpenSettings = () => {
+    try {
+      window.location.assign(
+        'x-apple.systempreferences:com.apple.Accessibility-Settings.extension',
+      )
+    } catch {
+      // Fallback
+    }
+  }
+
+  return (
+    <div
+      className="modal-backdrop apple-voice-modal-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        ref={modalRef}
+        className="modal-content apple-voice-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="apple-voice-modal-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="apple-voice-modal-title">Enhanced Mexican Spanish Voice</h2>
+            <p className="modal-subtitle">
+              Apple provides free high-quality voices with natural
+              pronunciation.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            aria-label="Close voice guide dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="apple-voice-modal-body">
+          {hasEnhancedVoice ? (
+            <div className="apple-voice-active-notice" role="status">
+              <p>
+                ✓ <strong>Paulina (Enhanced) is installed and active!</strong>
+              </p>
+              <p>
+                Jolito is using Apple’s high-definition Mexican Spanish voice
+                for clear, natural pronunciation.
+              </p>
+            </div>
+          ) : isMac ? (
+            <>
+              <p className="apple-voice-intro">
+                macOS includes high-definition voices (
+                <strong>Paulina (Enhanced)</strong>), but defaults to a compact
+                voice.
+              </p>
+              <div
+                className="apple-voice-breadcrumbs"
+                aria-label="Settings path"
+              >
+                <span className="crumb">System Settings</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb">Accessibility</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb">Spoken Content</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb crumb-highlight">Manage Voices…</span>
+              </div>
+              <ol className="apple-voice-steps">
+                <li>
+                  In System Settings, open{' '}
+                  <strong>Accessibility → Spoken Content</strong>.
+                </li>
+                <li>
+                  Next to <strong>System Voice</strong>, select{' '}
+                  <strong>Manage Voices…</strong>
+                </li>
+                <li>
+                  Search for <strong>Spanish (Mexico)</strong> and click the
+                  download icon next to <strong>Paulina (Enhanced)</strong>.
+                </li>
+                <li>
+                  Return to Jolito—the enhanced voice is used automatically!
+                </li>
+              </ol>
+            </>
+          ) : (
+            <>
+              <p className="apple-voice-intro">
+                iOS includes high-definition voices, but uses a compact voice by
+                default to save storage.
+              </p>
+              <div
+                className="apple-voice-breadcrumbs"
+                aria-label="Settings path"
+              >
+                <span className="crumb">Settings</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb">Accessibility</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb">Spoken Content</span>
+                <span className="crumb-arrow" aria-hidden="true">
+                  →
+                </span>
+                <span className="crumb crumb-highlight">Voices</span>
+              </div>
+              <ol className="apple-voice-steps">
+                <li>
+                  Open the iOS <strong>Settings</strong> app.
+                </li>
+                <li>
+                  Tap <strong>Accessibility → Spoken Content → Voices</strong>.
+                </li>
+                <li>
+                  Select <strong>Spanish → Spanish (Mexico)</strong>.
+                </li>
+                <li>
+                  Tap the download icon next to{' '}
+                  <strong>Paulina (Enhanced)</strong> (free, ~50 MB).
+                </li>
+                <li>
+                  Return to Jolito—the enhanced voice is used immediately!
+                </li>
+              </ol>
+            </>
+          )}
+
+          <div className="apple-voice-modal-actions">
+            {!hasEnhancedVoice && isMac && (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleOpenSettings}
+              >
+                Open System Settings ↗
+              </button>
+            )}
+            <button
+              type="button"
+              className={
+                !hasEnhancedVoice && isMac
+                  ? 'secondary-button'
+                  : 'primary-button'
+              }
+              onClick={onGotIt}
+            >
+              {hasEnhancedVoice ? 'Done' : 'Got it'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function App({
   services: customServices,
 }: {
@@ -2402,6 +2680,49 @@ export function App({
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !services.speaker.supported(),
   )
+  const isApple = useMemo(() => isAppleVoiceSupported(), [])
+  const isMac = useMemo(() => isMacOS(), [])
+
+  const [hasEnhancedVoice, setHasEnhancedVoice] = useState<boolean>(() => {
+    return services.speaker.hasEnhancedVoice?.('es-MX') ?? false
+  })
+  const [voicesLoaded, setVoicesLoaded] = useState<boolean>(() => {
+    return services.speaker.areVoicesLoaded?.() ?? true
+  })
+
+  useEffect(() => {
+    const checkVoice = () => {
+      setHasEnhancedVoice(services.speaker.hasEnhancedVoice?.('es-MX') ?? false)
+      setVoicesLoaded(services.speaker.areVoicesLoaded?.() ?? true)
+    }
+
+    checkVoice()
+    const unsubscribe = services.speaker.onVoicesChanged?.(checkVoice)
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
+      }
+    }
+  }, [services.speaker])
+
+  const [isAppleVoiceModalOpen, setIsAppleVoiceModalOpen] = useState(false)
+
+  const showVoiceGuide = useMemo(() => {
+    return shouldPromptAppleVoiceUpgrade({
+      isAppleVoiceSupported: isApple,
+      hasEnhancedVoice,
+      voicesLoaded,
+    })
+  }, [isApple, hasEnhancedVoice, voicesLoaded])
+
+  const handleOpenAppleVoiceGuide = useCallback(() => {
+    setIsAppleVoiceModalOpen(true)
+  }, [])
+
+  const handleCloseAppleVoiceGuide = useCallback(() => {
+    setIsAppleVoiceModalOpen(false)
+  }, [])
+
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const [activeSampleSide, setActiveSampleSide] = useState<
     'spanish' | 'english'
@@ -3456,7 +3777,11 @@ export function App({
               </button>
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3488,6 +3813,13 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -3889,7 +4221,11 @@ export function App({
               </div>
             </form>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3921,6 +4257,13 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -4355,7 +4698,11 @@ export function App({
               </div>
             )}
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
+          />
         </main>
         <DeckBackupModal
           isOpen={isBackupOpen}
@@ -4403,6 +4750,13 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -4512,7 +4866,11 @@ export function App({
               )}
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -4544,6 +4902,13 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <AppleVoiceGuideModal
+          isOpen={isAppleVoiceModalOpen}
+          isMac={isMac}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -4758,6 +5123,13 @@ export function App({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
+      />
+      <AppleVoiceGuideModal
+        isOpen={isAppleVoiceModalOpen}
+        isMac={isMac}
+        hasEnhancedVoice={hasEnhancedVoice}
+        onClose={handleCloseAppleVoiceGuide}
+        onGotIt={handleCloseAppleVoiceGuide}
       />
     </>
   )
