@@ -98,10 +98,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       window.speechSynthesis.cancel()
 
       // Always query latest voices to capture newly registered or async system voice packs
-      const currentVoices = window.speechSynthesis.getVoices()
-      if (currentVoices.length > 0) {
-        this.voices = currentVoices
-      }
+      this.refreshVoices()
 
       const utterance = new window.SpeechSynthesisUtterance(text)
       utterance.lang = locale
@@ -133,20 +130,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
     if (isSpanish) {
       // 1. Preferred enhanced / premium / natural / siri Mexican Spanish voices
-      const mxEnhanced = this.voices.find((v) => {
-        const lang = v.lang.toLowerCase().replace(/_/g, '-')
-        const name = v.name.toLowerCase()
-        return (
-          (lang === 'es-mx' ||
-            name.includes('mexic') ||
-            lang.includes('mexic')) &&
-          (name.includes('enhanced') ||
-            name.includes('premium') ||
-            name.includes('natural') ||
-            name.includes('siri') ||
-            name.includes('neural'))
-        )
-      })
+      const mxEnhanced = this.voices.find(isEnhancedMexicanVoice)
       if (mxEnhanced) return mxEnhanced
 
       // 2. High-quality named Mexican voices (compact Paulina, Jorge, Dalia, Raul, Sabina, Google)
@@ -247,23 +231,25 @@ export class EnhancedBrowserSpeaker implements Speaker {
   }
 }
 
+export function isEnhancedMexicanVoice(v: SpeechSynthesisVoice): boolean {
+  const lang = v.lang.toLowerCase().replace(/_/g, '-')
+  const name = v.name.toLowerCase()
+  const isMx =
+    lang === 'es-mx' || name.includes('mexic') || lang.includes('mexic')
+  return (
+    isMx &&
+    (name.includes('enhanced') ||
+      name.includes('premium') ||
+      name.includes('siri') ||
+      name.includes('natural') ||
+      name.includes('neural'))
+  )
+}
+
 export function hasEnhancedMexicanSpanishVoice(
   voices: SpeechSynthesisVoice[],
 ): boolean {
-  return voices.some((v) => {
-    const lang = v.lang.toLowerCase().replace(/_/g, '-')
-    const name = v.name.toLowerCase()
-    const isMx =
-      lang === 'es-mx' || name.includes('mexic') || lang.includes('mexic')
-    return (
-      isMx &&
-      (name.includes('enhanced') ||
-        name.includes('premium') ||
-        name.includes('siri') ||
-        name.includes('natural') ||
-        name.includes('neural'))
-    )
-  })
+  return voices.some(isEnhancedMexicanVoice)
 }
 
 export function shouldPromptAppleVoiceUpgrade(options: {
@@ -271,7 +257,7 @@ export function shouldPromptAppleVoiceUpgrade(options: {
   hasEnhancedVoice?: boolean
   voices?: SpeechSynthesisVoice[]
   voicesLoaded?: boolean
-  dismissed: boolean
+  dismissed?: boolean
 }): boolean {
   if (options.dismissed) return false
   if (!options.isAppleVoiceSupported) return false

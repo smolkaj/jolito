@@ -2116,23 +2116,23 @@ function FeedbackModal({
 
 function AppFooter({
   onOpenFeedback,
-  onOpenAppleVoiceGuide,
-  isApple = false,
+  onOpenVoiceGuide,
+  showVoiceGuide = false,
 }: {
   onOpenFeedback: () => void
-  onOpenAppleVoiceGuide?: () => void
-  isApple?: boolean
+  onOpenVoiceGuide?: () => void
+  showVoiceGuide?: boolean
 }) {
   return (
     <footer className="app-footer" aria-label="Site footer">
       <div className="app-footer-inner">
-        {isApple && onOpenAppleVoiceGuide && (
+        {showVoiceGuide && onOpenVoiceGuide && (
           <button
             type="button"
             className="footer-link-button"
-            onClick={onOpenAppleVoiceGuide}
+            onClick={onOpenVoiceGuide}
           >
-            Enhanced voice
+            Voice guide
           </button>
         )}
         <button
@@ -2309,83 +2309,25 @@ function RedirectAuthNotice({
   )
 }
 
-function AppleVoiceNotice({
-  isOpen,
-  onDismiss,
-  onOpenGuide,
-}: {
-  isOpen: boolean
-  onDismiss: () => void
-  onOpenGuide: () => void
-}) {
-  if (!isOpen) return null
-
-  return (
-    <aside
-      className="apple-voice-banner"
-      aria-label="Voice upgrade recommendation"
-    >
-      <div className="banner-left">
-        <span className="banner-icon" aria-hidden="true">
-          <svg
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-          </svg>
-        </span>
-        <p className="banner-text">
-          Apple’s Enhanced Mexican Spanish voice offers clearer pronunciation.
-        </p>
-      </div>
-      <div className="banner-actions">
-        <button
-          type="button"
-          className="banner-action-btn"
-          onClick={onOpenGuide}
-        >
-          Setup guide
-        </button>
-        <button
-          type="button"
-          className="banner-dismiss-btn"
-          onClick={onDismiss}
-          aria-label="Dismiss voice upgrade recommendation"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14">
-            <path
-              d="M18 6L6 18M6 6l12 12"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-    </aside>
-  )
-}
-
-function AppleVoiceGuideModal({
+export function AppleVoiceGuideModal({
   isOpen,
   isMac,
+  hasEnhancedVoice = false,
   onClose,
   onGotIt,
 }: {
   isOpen: boolean
   isMac: boolean
+  hasEnhancedVoice?: boolean
   onClose: () => void
   onGotIt: () => void
 }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLElement | null>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   useEffect(() => {
     if (!isOpen) return
@@ -2402,7 +2344,7 @@ function AppleVoiceGuideModal({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key === 'Tab') {
@@ -2449,7 +2391,7 @@ function AppleVoiceGuideModal({
         fallback?.focus()
       }
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -2496,7 +2438,17 @@ function AppleVoiceGuideModal({
         </div>
 
         <div className="apple-voice-modal-body">
-          {isMac ? (
+          {hasEnhancedVoice ? (
+            <div className="apple-voice-active-notice" role="status">
+              <p>
+                ✓ <strong>Paulina (Enhanced) is installed and active!</strong>
+              </p>
+              <p>
+                Jolito is using Apple’s high-definition Mexican Spanish voice
+                for clear, natural pronunciation.
+              </p>
+            </div>
+          ) : isMac ? (
             <>
               <p className="apple-voice-intro">
                 macOS includes high-definition voices (
@@ -2535,8 +2487,7 @@ function AppleVoiceGuideModal({
                   download icon next to <strong>Paulina (Enhanced)</strong>.
                 </li>
                 <li>
-                  Once downloaded, return to Jolito—it uses the enhanced voice
-                  automatically!
+                  Return to Jolito—the enhanced voice is used automatically!
                 </li>
               </ol>
             </>
@@ -2586,7 +2537,7 @@ function AppleVoiceGuideModal({
           )}
 
           <div className="apple-voice-modal-actions">
-            {isMac && (
+            {!hasEnhancedVoice && isMac && (
               <button
                 type="button"
                 className="primary-button"
@@ -2597,10 +2548,14 @@ function AppleVoiceGuideModal({
             )}
             <button
               type="button"
-              className={isMac ? 'secondary-button' : 'primary-button'}
+              className={
+                !hasEnhancedVoice && isMac
+                  ? 'secondary-button'
+                  : 'primary-button'
+              }
               onClick={onGotIt}
             >
-              Got it
+              {hasEnhancedVoice ? 'Done' : 'Got it'}
             </button>
           </div>
         </div>
@@ -2750,44 +2705,23 @@ export function App({
     }
   }, [services.speaker])
 
-  const [appleVoiceBannerDismissed, setAppleVoiceBannerDismissed] =
-    useState<boolean>(() => {
-      try {
-        return (
-          localStorage.getItem('jolito_apple_voice_banner_dismissed') === 'true'
-        )
-      } catch {
-        return false
-      }
-    })
   const [isAppleVoiceModalOpen, setIsAppleVoiceModalOpen] = useState(false)
 
-  const showAppleVoiceBanner = useMemo(() => {
+  const showVoiceGuide = useMemo(() => {
     return shouldPromptAppleVoiceUpgrade({
       isAppleVoiceSupported: isApple,
       hasEnhancedVoice,
       voicesLoaded,
-      dismissed: appleVoiceBannerDismissed,
     })
-  }, [isApple, hasEnhancedVoice, voicesLoaded, appleVoiceBannerDismissed])
-
-  const handleDismissAppleVoiceBanner = useCallback(() => {
-    setAppleVoiceBannerDismissed(true)
-    try {
-      localStorage.setItem('jolito_apple_voice_banner_dismissed', 'true')
-    } catch {
-      // Graceful fallback
-    }
-  }, [])
+  }, [isApple, hasEnhancedVoice, voicesLoaded])
 
   const handleOpenAppleVoiceGuide = useCallback(() => {
     setIsAppleVoiceModalOpen(true)
   }, [])
 
-  const handleGotItAppleVoiceGuide = useCallback(() => {
+  const handleCloseAppleVoiceGuide = useCallback(() => {
     setIsAppleVoiceModalOpen(false)
-    handleDismissAppleVoiceBanner()
-  }, [handleDismissAppleVoiceBanner])
+  }, [])
 
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const [activeSampleSide, setActiveSampleSide] = useState<
@@ -3845,8 +3779,8 @@ export function App({
           </section>
           <AppFooter
             onOpenFeedback={openFeedbackModal}
-            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
-            isApple={isApple}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
           />
         </main>
         <SyncModal
@@ -3883,8 +3817,9 @@ export function App({
         <AppleVoiceGuideModal
           isOpen={isAppleVoiceModalOpen}
           isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
-          onGotIt={handleGotItAppleVoiceGuide}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -4288,8 +4223,8 @@ export function App({
           </section>
           <AppFooter
             onOpenFeedback={openFeedbackModal}
-            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
-            isApple={isApple}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
           />
         </main>
         <SyncModal
@@ -4326,8 +4261,9 @@ export function App({
         <AppleVoiceGuideModal
           isOpen={isAppleVoiceModalOpen}
           isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
-          onGotIt={handleGotItAppleVoiceGuide}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -4764,8 +4700,8 @@ export function App({
           </section>
           <AppFooter
             onOpenFeedback={openFeedbackModal}
-            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
-            isApple={isApple}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
           />
         </main>
         <DeckBackupModal
@@ -4818,8 +4754,9 @@ export function App({
         <AppleVoiceGuideModal
           isOpen={isAppleVoiceModalOpen}
           isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
-          onGotIt={handleGotItAppleVoiceGuide}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -4931,8 +4868,8 @@ export function App({
           </section>
           <AppFooter
             onOpenFeedback={openFeedbackModal}
-            onOpenAppleVoiceGuide={handleOpenAppleVoiceGuide}
-            isApple={isApple}
+            onOpenVoiceGuide={handleOpenAppleVoiceGuide}
+            showVoiceGuide={showVoiceGuide}
           />
         </main>
         <SyncModal
@@ -4969,8 +4906,9 @@ export function App({
         <AppleVoiceGuideModal
           isOpen={isAppleVoiceModalOpen}
           isMac={isMac}
-          onClose={() => setIsAppleVoiceModalOpen(false)}
-          onGotIt={handleGotItAppleVoiceGuide}
+          hasEnhancedVoice={hasEnhancedVoice}
+          onClose={handleCloseAppleVoiceGuide}
+          onGotIt={handleCloseAppleVoiceGuide}
         />
       </>
     )
@@ -5011,11 +4949,6 @@ export function App({
           message={redirectAuthBanner}
           onDismiss={() => setRedirectAuthBanner(null)}
           onCopySessionLink={handleCopySessionLink}
-        />
-        <AppleVoiceNotice
-          isOpen={showAppleVoiceBanner}
-          onDismiss={handleDismissAppleVoiceBanner}
-          onOpenGuide={handleOpenAppleVoiceGuide}
         />
         <div
           className="review-progress-track"
@@ -5194,8 +5127,9 @@ export function App({
       <AppleVoiceGuideModal
         isOpen={isAppleVoiceModalOpen}
         isMac={isMac}
-        onClose={() => setIsAppleVoiceModalOpen(false)}
-        onGotIt={handleGotItAppleVoiceGuide}
+        hasEnhancedVoice={hasEnhancedVoice}
+        onClose={handleCloseAppleVoiceGuide}
+        onGotIt={handleCloseAppleVoiceGuide}
       />
     </>
   )

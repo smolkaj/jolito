@@ -542,6 +542,50 @@ describe('Apple voice enhancement helpers', () => {
     expect(hasEnhancedMexicanSpanishVoice(withSiriMexico)).toBe(true)
   })
 
+  it('evaluates isEnhancedMexicanVoice helper correctly', async () => {
+    const { isEnhancedMexicanVoice } = await import('./speech')
+
+    expect(
+      isEnhancedMexicanVoice({
+        lang: 'es-MX',
+        name: 'Paulina (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-paulina-enhanced',
+      }),
+    ).toBe(true)
+
+    expect(
+      isEnhancedMexicanVoice({
+        lang: 'es_MX',
+        name: 'Siri Voice 1',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-siri',
+      }),
+    ).toBe(true)
+
+    expect(
+      isEnhancedMexicanVoice({
+        lang: 'es-MX',
+        name: 'Paulina',
+        default: true,
+        localService: true,
+        voiceURI: 'es-MX-paulina',
+      }),
+    ).toBe(false)
+
+    expect(
+      isEnhancedMexicanVoice({
+        lang: 'es-ES',
+        name: 'Mónica (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-ES-monica-enhanced',
+      }),
+    ).toBe(false)
+  })
+
   it('determines whether to prompt user for voice upgrade', async () => {
     const { shouldPromptAppleVoiceUpgrade } = await import('./speech')
 

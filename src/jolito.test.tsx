@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { App } from './jolito'
+import { App, AppleVoiceGuideModal } from './jolito'
 import { createStudyCards, type StudyCard } from './domain/card'
 import { starterCards } from './application/starter-cards'
 import { OfflineCardAssistant } from './application/card-assistant'
@@ -4273,7 +4273,7 @@ describe('Jolito', () => {
       })
     }
 
-    it('displays permanent Enhanced voice footer link on Apple platforms and opens guide modal', async () => {
+    it('displays Voice guide footer button on Apple platforms when enhanced voice is missing, opens guide modal, and restores focus on close', async () => {
       setupSafariMac()
       const user = userEvent.setup({ delay: null })
       const services = createTestServices({ cards: [] })
@@ -4281,7 +4281,7 @@ describe('Jolito', () => {
 
       render(<App services={services} />)
 
-      const footerBtn = screen.getByRole('button', { name: /enhanced voice/i })
+      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
       expect(footerBtn).toBeInTheDocument()
       await user.click(footerBtn)
 
@@ -4304,6 +4304,7 @@ describe('Jolito', () => {
           name: /enhanced mexican spanish voice/i,
         }),
       ).not.toBeInTheDocument()
+      expect(document.activeElement).toBe(footerBtn)
     })
 
     it('displays iOS breadcrumb guide when platform is iPhone', async () => {
@@ -4314,7 +4315,7 @@ describe('Jolito', () => {
 
       render(<App services={services} />)
 
-      const footerBtn = screen.getByRole('button', { name: /enhanced voice/i })
+      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
       await user.click(footerBtn)
 
       expect(
@@ -4345,122 +4346,41 @@ describe('Jolito', () => {
       render(<App services={services} />)
 
       expect(
-        screen.queryByRole('button', { name: /enhanced voice/i }),
+        screen.queryByRole('button', { name: /^voice guide$/i }),
       ).not.toBeInTheDocument()
     })
 
-    it('displays voice upgrade banner during practice on Apple platforms when enhanced voice is not installed', async () => {
+    it('does not display footer link when enhanced voice is already present', () => {
+      setupSafariMac()
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = true
+
+      render(<App services={services} />)
+
+      expect(
+        screen.queryByRole('button', { name: /^voice guide$/i }),
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps Practice view completely clean and free of intrusive banners', async () => {
       setupSafariMac()
       const user = userEvent.setup({ delay: null })
       const services = createTestServices()
       services.mockSpeaker.enhancedVoice = false
 
       render(<App services={services} />)
-
-      // Welcome view should NOT have the intrusive banner
-      expect(
-        screen.queryByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).not.toBeInTheDocument()
 
       // Navigate to Practice
       await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
-      // Practice view displays contextual banner
-      expect(
-        screen.getByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: /setup guide/i }),
-      ).toBeInTheDocument()
-
-      // Opening setup guide from practice works
-      await user.click(screen.getByRole('button', { name: /setup guide/i }))
-      expect(
-        screen.getByRole('heading', {
-          name: /enhanced mexican spanish voice/i,
-        }),
-      ).toBeInTheDocument()
-    })
-
-    it('does not display voice banner during practice when enhanced voice is already present', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices()
-      services.mockSpeaker.enhancedVoice = true
-
-      render(<App services={services} />)
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
-
+      // Practice view must NOT have any voice banner
       expect(
         screen.queryByText(
           /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
         ),
       ).not.toBeInTheDocument()
-    })
-
-    it('dismisses banner and persists to localStorage when dismiss button is clicked in practice', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices()
-      services.mockSpeaker.enhancedVoice = false
-
-      const { unmount } = render(<App services={services} />)
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
-
-      const dismissBtn = screen.getByRole('button', {
-        name: /dismiss voice upgrade recommendation/i,
-      })
-      await user.click(dismissBtn)
-
       expect(
-        screen.queryByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).not.toBeInTheDocument()
-      expect(localStorage.getItem('jolito_apple_voice_banner_dismissed')).toBe(
-        'true',
-      )
-
-      unmount()
-
-      // Re-render: starts in review view because hash is already #review
-      render(<App services={services} />)
-      expect(
-        screen.queryByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).not.toBeInTheDocument()
-    })
-
-    it('auto-dismisses banner reactively when speaker voices change and enhanced voice is registered', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices()
-      services.mockSpeaker.enhancedVoice = false
-
-      render(<App services={services} />)
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
-
-      expect(
-        screen.getByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).toBeInTheDocument()
-
-      // User installs enhanced voice in OS settings and returns to app
-      act(() => {
-        services.mockSpeaker.enhancedVoice = true
-        services.mockSpeaker.triggerVoicesChanged()
-      })
-
-      expect(
-        screen.queryByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
+        screen.queryByRole('button', { name: /setup guide/i }),
       ).not.toBeInTheDocument()
     })
 
@@ -4472,7 +4392,7 @@ describe('Jolito', () => {
 
       render(<App services={services} />)
 
-      const footerBtn = screen.getByRole('button', { name: /enhanced voice/i })
+      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
       await user.click(footerBtn)
 
       expect(
@@ -4488,39 +4408,75 @@ describe('Jolito', () => {
           name: /enhanced mexican spanish voice/i,
         }),
       ).not.toBeInTheDocument()
+      expect(document.activeElement).toBe(footerBtn)
     })
 
-    it('restores focus gracefully when banner is dismissed via Got it button in modal', async () => {
-      setupSafariMac()
-      const user = userEvent.setup({ delay: null })
-      const services = createTestServices()
-      services.mockSpeaker.enhancedVoice = false
+    it('renders state-aware confirmation message when modal is opened and enhanced voice is active', () => {
+      const handleClose = vi.fn()
+      const handleGotIt = vi.fn()
 
-      render(<App services={services} />)
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
-
-      const guideBtn = screen.getByRole('button', { name: /setup guide/i })
-      await user.click(guideBtn)
+      render(
+        <AppleVoiceGuideModal
+          isOpen={true}
+          isMac={true}
+          hasEnhancedVoice={true}
+          onClose={handleClose}
+          onGotIt={handleGotIt}
+        />,
+      )
 
       expect(
         screen.getByRole('heading', {
           name: /enhanced mexican spanish voice/i,
         }),
       ).toBeInTheDocument()
+      expect(
+        screen.getByText(/paulina \(enhanced\) is installed and active!/i),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /^done$/i }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /open system settings ↗/i }),
+      ).not.toBeInTheDocument()
+    })
 
-      // Clicking "Got it" unmounts the banner (which contained the trigger button)
-      await user.click(screen.getByRole('button', { name: /got it/i }))
+    it('preserves focus inside modal and does not oscillate when background voiceschanged event fires', async () => {
+      setupSafariMac()
+      const user = userEvent.setup({ delay: null })
+      const services = createTestServices({ cards: [] })
+      services.mockSpeaker.enhancedVoice = false
 
+      render(<App services={services} />)
+
+      const footerBtn = screen.getByRole('button', { name: /^voice guide$/i })
+      await user.click(footerBtn)
+
+      const gotItBtn = screen.getByRole('button', { name: /got it/i })
+      gotItBtn.focus()
+      expect(document.activeElement).toBe(gotItBtn)
+
+      // Simulate background voiceschanged event (e.g. OS voice registration or speaker update)
+      act(() => {
+        services.mockSpeaker.triggerVoicesChanged()
+      })
+
+      // Modal remains open and active focus is NOT stolen or oscillated
+      expect(
+        screen.getByRole('heading', {
+          name: /enhanced mexican spanish voice/i,
+        }),
+      ).toBeInTheDocument()
+      expect(document.activeElement).toBe(gotItBtn)
+
+      // Closes cleanly and returns focus to footer trigger
+      await user.keyboard('{Escape}')
       expect(
         screen.queryByRole('heading', {
           name: /enhanced mexican spanish voice/i,
         }),
       ).not.toBeInTheDocument()
-      expect(
-        screen.queryByText(
-          /apple’s enhanced mexican spanish voice offers clearer pronunciation/i,
-        ),
-      ).not.toBeInTheDocument()
+      expect(document.activeElement).toBe(footerBtn)
     })
   })
 })

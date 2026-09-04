@@ -3323,8 +3323,7 @@ kbd {
   line-height: 1.4;
 }
 
-.redirect-auth-banner,
-.apple-voice-banner {
+.redirect-auth-banner {
   width: min(1080px, 100%);
   margin: 10px auto 0;
   display: flex;
@@ -3341,46 +3340,28 @@ kbd {
   animation: slideUp 0.18s var(--ease-spring);
 }
 
-.redirect-auth-banner .banner-left,
-.apple-voice-banner .banner-left {
+.redirect-auth-banner .banner-left {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
-.apple-voice-banner .banner-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-muted);
-  flex-shrink: 0;
-}
-
-.redirect-auth-banner .banner-text,
-.apple-voice-banner .banner-text {
+.redirect-auth-banner .banner-text {
   margin: 0;
   font-weight: 600;
   color: var(--ink);
   font-size: 13px;
 }
 
-.apple-voice-banner .banner-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.redirect-auth-banner .banner-actions,
-.apple-voice-banner .banner-actions {
+.redirect-auth-banner .banner-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.redirect-auth-banner .banner-action-btn,
-.apple-voice-banner .banner-action-btn {
+.redirect-auth-banner .banner-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3397,8 +3378,7 @@ kbd {
   white-space: nowrap;
 }
 
-.redirect-auth-banner .banner-action-btn:hover,
-.apple-voice-banner .banner-action-btn:hover {
+.redirect-auth-banner .banner-action-btn:hover {
   border-color: var(--line);
   background: #ffffff;
   box-shadow: var(--shadow-sm);
@@ -3410,8 +3390,7 @@ kbd {
   border-color: var(--turquesa);
 }
 
-.redirect-auth-banner .banner-dismiss-btn,
-.apple-voice-banner .banner-dismiss-btn {
+.redirect-auth-banner .banner-dismiss-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3427,23 +3406,20 @@ kbd {
   flex-shrink: 0;
 }
 
-.redirect-auth-banner .banner-dismiss-btn:hover,
-.apple-voice-banner .banner-dismiss-btn:hover {
+.redirect-auth-banner .banner-dismiss-btn:hover {
   background: var(--line-subtle);
   color: var(--ink);
 }
 
 @media (max-width: 580px) {
-  .redirect-auth-banner,
-  .apple-voice-banner {
+  .redirect-auth-banner {
     border-radius: 14px;
     padding: 8px 10px 8px 12px;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .redirect-auth-banner .banner-text,
-  .apple-voice-banner .banner-text {
+  .redirect-auth-banner .banner-text {
     font-size: 12.5px;
     line-height: 1.35;
     white-space: normal;
@@ -3451,8 +3427,7 @@ kbd {
     min-width: 140px;
   }
 
-  .redirect-auth-banner .banner-actions,
-  .apple-voice-banner .banner-actions {
+  .redirect-auth-banner .banner-actions {
     margin-left: auto;
   }
 }
@@ -3516,6 +3491,27 @@ kbd {
 .apple-voice-steps li strong {
   color: var(--ink);
   font-weight: 700;
+}
+
+.apple-voice-active-notice {
+  padding: 12px 16px;
+  background: var(--verde-soft);
+  border: 1.5px solid var(--verde);
+  border-radius: 12px;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+
+.apple-voice-active-notice p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.apple-voice-active-notice p + p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
 }
 
 .apple-voice-modal-actions {
