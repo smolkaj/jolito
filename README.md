@@ -35,13 +35,16 @@ Jolito was created to bridge that gap: pairing the proven power of spaced repeti
 - **Ear-first immersion:** Spoken Mexican Spanish audio on prompts and answers trains your ear for everyday conversation.
 - **Active typed recall:** Produce language instead of just recognizing it. Instant visual diffs highlight spelling nuances while you retain full authority over your self-grading.
 - **Live dual-card workbench:** Create linked Spanish ↔ English reciprocal cards simultaneously with side-by-side previews, contextual explanations, and rapid batch creation.
+- **Offline lexicon assistant:** Instant smart translations, lemmas, and verb conjugation suggestions powered by a bundled Mexican Spanish dictionary.
+- **Duplicate detection:** Proactively catches and resolves duplicate cards across creation, deck management, and editing.
 - **Anki import:** Bring existing [Anki](https://apps.ankiweb.net/) decks (`.apkg` packages or text exports) in seconds, preserving learning history and [spaced-repetition](https://en.wikipedia.org/wiki/Spaced_repetition) schedules.
-- **Offline by default:** Installable PWA with local browser storage and service worker caching. Practice anywhere with zero network latency.
-- **Cloud backup:** Optional passwordless sign-in with instant multi-device synchronization powered by Supabase.
+- **Native iOS app & tactile haptics:** Package and run as a native iOS app via Capacitor, featuring sensory haptic feedback for card reveals and self-grading.
+- **Offline-first study:** Installable PWA and native app with local storage and service worker caching. Once signed in, practice, create, and manage cards anywhere with zero network latency.
+- **Personal decks & cloud sync:** Passwordless email sign-in unlocks your personal deck with seamless multi-device backup powered by Supabase.
 
 ## Run it locally
 
-Requires **Node.js 24** (Krypton LTS) and npm.
+Requires **Node.js >=24** (Node 24 LTS or Node 26+) and npm.
 
 ```sh
 # Clone & install

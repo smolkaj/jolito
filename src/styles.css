@@ -4036,15 +4036,12 @@ kbd {
   font-size: 13.5px;
 }
 
-.edit-card-form .field-label-row {
-  margin-bottom: 4px;
-}
-
 .field-label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 28px;
   margin-bottom: 6px;
 }
 
@@ -4059,6 +4056,7 @@ kbd {
 }
 
 .field-label-row .audio-button {
+  position: relative;
   width: 28px;
   height: 28px;
   min-width: 28px;
@@ -4066,6 +4064,12 @@ kbd {
   padding: 0;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.field-label-row .audio-button::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 
 .field-label-row .audio-button svg {

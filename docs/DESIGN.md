@@ -4,7 +4,7 @@ Jolito should feel like calm, tactile language practice—not an administrative 
 
 The principles guide judgment rather than replace it. When they pull in different directions, favor the choice that best protects learning, clarity, and flow.
 
-These principles build on the [product vision](PRODUCT_VISION.md) and the repository's [design invariants](../AGENTS.md). Those documents remain authoritative for learning modes and learner authorship, and for offline and accessibility requirements; this document does not restate them.
+These principles build on the [product vision](PRODUCT_VISION.md) and the repository's [architecture invariants](ARCHITECTURE.md#core-invariants). Those documents remain authoritative for learning modes and learner authorship, and for offline and accessibility requirements; this document does not restate them.
 
 ## Every element earns its place
 

@@ -3,6 +3,9 @@
 - Status: Proposed
 - Date: 2026-08-21
 
+> [!NOTE]
+> Zero-cost cloud snapshot synchronization with Supabase and RLS was accepted for the current product stage in [ADR 0005](0005-cloud-snapshot-sync-supabase.md). This evaluation remains active as the reference candidate for future fine-grained operation-log replication when concurrent multi-device editing requires it.
+
 ## Context
 
 Review and manual card creation must work offline, while an account-backed

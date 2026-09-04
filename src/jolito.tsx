@@ -784,7 +784,9 @@ function EditCardModalInner({
           </div>
 
           <div className="field-group">
-            <label htmlFor="edit-context">Additional Context</label>
+            <div className="field-label-row">
+              <label htmlFor="edit-context">Additional Context</label>
+            </div>
             <textarea
               id="edit-context"
               rows={2}
@@ -1879,7 +1881,7 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
               onSignIn()
             }}
           >
-            Sign in to sync <span aria-hidden="true">→</span>
+            Sign in to build your deck <span aria-hidden="true">→</span>
           </button>
           <button type="button" className="secondary-button" onClick={onClose}>
             Explore demo deck
@@ -2149,7 +2151,9 @@ function ConnectionPill({
   if (!isOnline) {
     stateClass = 'is-offline'
     label = 'Offline'
-    ariaLabel = 'Offline. Card changes are saved to this device.'
+    ariaLabel = authUser
+      ? 'Offline. Card changes are saved to this device.'
+      : 'Offline demo. Connect to internet and sign in to build your deck.'
     icon = <CloudOffIcon />
   } else if (authUser) {
     if (syncStatus === 'syncing') {
@@ -2446,15 +2450,17 @@ export function App({
     queueRef.current = queue
   })
 
-  // Eagerly prefetch upcoming due cards on load/home screen so Card 0 audio is 0ms ready
+  // Eagerly prefetch entire collection in background, prioritizing due review cards first
   useEffect(() => {
     if (cards.length === 0 || typeof services.speaker.prefetch !== 'function') {
       return
     }
 
     const now = services.clock.now()
-    const dueOrNewCards = orderCardsForReview(cards, now).slice(0, 5)
-    if (dueOrNewCards.length === 0) return
+    const dueCards = orderCardsForReview(cards, now)
+    const dueIds = new Set(dueCards.map((c) => c.id))
+    const nonDueCards = cards.filter((c) => !dueIds.has(c.id))
+    const allOrderedCards = [...dueCards, ...nonDueCards]
 
     const items: Array<{
       text: string
@@ -2462,7 +2468,7 @@ export function App({
       cardSeed?: string
     }> = []
 
-    for (const card of dueOrNewCards) {
+    for (const card of allOrderedCards) {
       if (card.prompt.trim()) {
         items.push({
           text: card.prompt,
@@ -2483,45 +2489,6 @@ export function App({
       void services.speaker.prefetch(items)
     }
   }, [cards, services.clock, services.speaker])
-
-  useEffect(() => {
-    if (
-      view !== 'review' ||
-      queue.length === 0 ||
-      typeof services.speaker.prefetch !== 'function'
-    ) {
-      return
-    }
-
-    const upcomingIds = new Set(queue.slice(0, 5))
-    const upcomingCards = cards.filter((card) => upcomingIds.has(card.id))
-    const itemsToPrefetch: Array<{
-      text: string
-      locale: string
-      cardSeed?: string
-    }> = []
-
-    for (const card of upcomingCards) {
-      if (card.prompt.trim()) {
-        itemsToPrefetch.push({
-          text: card.prompt,
-          locale: localeForPrompt(card),
-          cardSeed: card.id,
-        })
-      }
-      if (card.answer.trim()) {
-        itemsToPrefetch.push({
-          text: card.answer,
-          locale: localeForAnswer(card),
-          cardSeed: card.id,
-        })
-      }
-    }
-
-    if (itemsToPrefetch.length > 0) {
-      void services.speaker.prefetch(itemsToPrefetch)
-    }
-  }, [cards, queue, services.speaker, view])
 
   const onUpdateCards = useCallback(
     (

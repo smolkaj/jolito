@@ -525,6 +525,76 @@ describe('NeuralVoiceEngine', () => {
     expect(engine.hasAudio('palabra dos', 'es-MX')).toBe(true)
   })
 
+  it('deduplicates identical prefetch items and skips in-flight items', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: (
+        _data: ArrayBuffer,
+        success: (buf: AudioBuffer) => void,
+      ) => {
+        success({ duration: 1 } as unknown as AudioBuffer)
+      },
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve(
+        new Response(new Uint8Array([1, 2, 3]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      )
+    })
+
+    // Pass duplicate items for 'palabra repetida'
+    await engine.prefetch(
+      [
+        { text: 'palabra repetida', locale: 'es-MX', cardSeed: 'seed-1' },
+        { text: 'palabra repetida', locale: 'es-MX', cardSeed: 'seed-1' },
+      ],
+      mockFetch,
+    )
+
+    // Should only fetch once despite duplicate items in the array
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(engine.hasAudio('palabra repetida', 'es-MX')).toBe(true)
+
+    // Test skipping in-flight items
+    let resolveInFlight!: (res: Response) => void
+    const inFlightPromise = new Promise<Response>((resolve) => {
+      resolveInFlight = resolve
+    })
+
+    // Start an in-flight fetch for 'en vuelo'
+    const pendingFetch = engine.fetchAndCacheAudio(
+      'en vuelo',
+      'es-MX',
+      () => inFlightPromise,
+    )
+    expect(engine.isAudioInFlight('en vuelo', 'es-MX')).toBe(true)
+
+    const mockPrefetchFetch = vi.fn()
+    // Attempt to prefetch 'en vuelo' while it is in-flight
+    await engine.prefetch(
+      [{ text: 'en vuelo', locale: 'es-MX' }],
+      mockPrefetchFetch,
+    )
+
+    // Prefetch must skip the in-flight item, so mockPrefetchFetch is not called
+    expect(mockPrefetchFetch).not.toHaveBeenCalled()
+
+    // Clean up in-flight fetch
+    resolveInFlight(
+      new Response(new Uint8Array([1, 2, 3]).buffer, {
+        status: 200,
+        headers: { 'Content-Type': 'audio/mpeg' },
+      }),
+    )
+    await pendingFetch
+  })
+
   it('keeps audio isolated by voice so identical phrases across different personas do not collide', () => {
     const engine = new NeuralVoiceEngine()
     const daliaBuffer = { duration: 1 } as unknown as AudioBuffer

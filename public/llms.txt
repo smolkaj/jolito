@@ -19,8 +19,8 @@ Jolito was created to bridge that gap: pairing the proven power of spaced repeti
 - **Bidirectional Reciprocal Cards:** Create linked Spanish ↔ English cards simultaneously with side-by-side previews, contextual explanations, and rapid batch creation.
 - **Mexican Spanish Lexicon & Autocomplete:** Built-in dictionary of common Mexican Spanish terms, idioms, and CDMX slang with instant suggestions and typo correction during card creation.
 - **Anki Import:** Bring existing Anki decks (`.apkg` packages or text exports) in seconds, preserving learning history and spaced-repetition schedules.
-- **Offline by Default:** Complete card creation, editing, audio playback, and review work seamlessly with zero network latency.
-- **Free with No Sign-Up Barrier:** Start studying immediately in the browser with local storage; optional passwordless cloud backup is available for cross-device sync.
+- **Offline-First Study:** Once connected, review, card creation, audio playback, and spaced repetition run 100% offline via local storage and service worker caching, syncing unobtrusively in the background when connected.
+- **Instant Interactive Demo:** Try spaced repetition immediately in your browser with zero friction. Connect your email to unlock your personal deck and sync across devices.
 
 ## Web Application
 
