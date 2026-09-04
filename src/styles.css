@@ -3424,6 +3424,192 @@ kbd {
   }
 }
 
+/* Apple Voice Upgrade Banner & Modal */
+.apple-voice-banner {
+  width: min(1080px, 100%);
+  margin: 10px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px 6px 14px;
+  border-radius: 999px;
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  color: var(--ink);
+  font-size: 13px;
+  box-shadow: var(--shadow-sm);
+  animation: slideUp 0.18s var(--ease-spring);
+}
+
+.apple-voice-banner .banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.apple-voice-banner .banner-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.apple-voice-banner .banner-text {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apple-voice-banner .banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.apple-voice-banner .banner-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--card);
+  border: 1px solid var(--line-subtle);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.apple-voice-banner .banner-action-btn:hover {
+  border-color: var(--line);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.apple-voice-banner .banner-dismiss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.apple-voice-banner .banner-dismiss-btn:hover {
+  background: var(--line-subtle);
+  color: var(--ink);
+}
+
+@media (max-width: 680px) {
+  .apple-voice-banner {
+    border-radius: 14px;
+    padding: 8px 10px 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .apple-voice-banner .banner-text {
+    white-space: normal;
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+
+  .apple-voice-banner .banner-actions {
+    margin-left: auto;
+  }
+}
+
+.apple-voice-modal {
+  max-width: 500px;
+}
+
+.apple-voice-modal-body {
+  margin-top: 14px;
+}
+
+.apple-voice-intro {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+}
+
+.apple-voice-breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.apple-voice-breadcrumbs .crumb {
+  color: var(--ink);
+}
+
+.apple-voice-breadcrumbs .crumb-arrow {
+  color: var(--ink-muted);
+  opacity: 0.7;
+}
+
+.apple-voice-breadcrumbs .crumb-highlight {
+  color: var(--verde-dark);
+  background: var(--verde-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.apple-voice-steps {
+  margin: 0 0 18px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.apple-voice-steps li strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.apple-voice-modal-cta {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+}
+
+.apple-voice-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-subtle);
+}
+
 /* Deck Manager Layout */
 .deck-page {
   gap: 28px;

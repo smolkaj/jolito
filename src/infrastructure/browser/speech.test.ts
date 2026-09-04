@@ -561,4 +561,3 @@ describe('Apple voice enhancement helpers', () => {
     ).toBe(false)
   })
 })
-

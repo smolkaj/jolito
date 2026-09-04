@@ -210,8 +210,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
 export function isApplePlatform(userAgent?: string): boolean {
   const ua =
-    userAgent ??
-    (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+    userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
   if (!ua) return false
   const isIOSorMac = /iPhone|iPad|iPod|Macintosh/i.test(ua)
   const isIPadOS =
@@ -224,8 +223,7 @@ export function isApplePlatform(userAgent?: string): boolean {
 
 export function isMacOS(userAgent?: string): boolean {
   const ua =
-    userAgent ??
-    (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+    userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
   if (!ua) return false
   const isMac = /Macintosh/i.test(ua)
   const isTouch =
