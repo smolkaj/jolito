@@ -57,7 +57,20 @@ import {
   titleForView,
   viewFromHash,
 } from './navigation'
-
+import {
+  CloudCheckIcon,
+  CloudOffIcon,
+  JolitoMark,
+  MexicoFlag,
+  SyncAlertIcon,
+  SyncSpinnerIcon,
+  UsFlag,
+  UserIcon,
+} from './ui/icons'
+import { AudioButton } from './ui/AudioButton'
+import { EditCardModal } from './ui/modals/EditCardModal'
+import { SyncModal } from './ui/modals/SyncModal'
+import { FeedbackModal } from './ui/modals/FeedbackModal'
 import { handleFocusSelect } from './ui/utils'
 
 const gradeLabels: Record<Grade, string> = {
@@ -72,44 +85,6 @@ const localeForPrompt = (card: StudyCard) =>
 
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
-
-import {
-  ClipboardIcon,
-  CloudCheckIcon,
-  CloudCheckSticker,
-  CloudOffIcon,
-  JolitoMark,
-  MexicoFlag,
-  PhoneLinkIcon,
-  ShieldIcon,
-  SyncAlertIcon,
-  SyncSpinnerIcon,
-  UsFlag,
-  UserIcon,
-} from './ui/icons'
-import { AudioButton } from './ui/AudioButton'
-import { EditCardModal } from './ui/modals/EditCardModal'
-import { SyncModal } from './ui/modals/SyncModal'
-import { FeedbackModal } from './ui/modals/FeedbackModal'
-
-export {
-  AudioButton,
-  ClipboardIcon,
-  CloudCheckIcon,
-  CloudCheckSticker,
-  CloudOffIcon,
-  JolitoMark,
-  MexicoFlag,
-  PhoneLinkIcon,
-  ShieldIcon,
-  SyncAlertIcon,
-  SyncSpinnerIcon,
-  UsFlag,
-  UserIcon,
-  EditCardModal,
-  SyncModal,
-  FeedbackModal,
-}
 
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (

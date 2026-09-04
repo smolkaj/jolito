@@ -396,5 +396,3 @@ export function ClipboardIcon({
     </svg>
   )
 }
-
-export { AudioButton } from './AudioButton'
