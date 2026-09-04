@@ -11,6 +11,25 @@ infrastructure ────────────┴────────�
 (browser, storage, sync, auth, speech, AI providers)
 ```
 
+## Engineering philosophy
+
+- **Simplicity above all.** Every layer of indirection, abstraction, or "just in case" parameter must justify its existence. When in doubt, leave it out.
+- **Reject ambient magic & dual systems.** Favor explicit, inspectable code over invisible runtime interception or complex build-time code generation. Avoid building static-only solutions that will require a second, divergent mechanism for dynamic/user-created data later.
+- **Know the ideal north star.** Design the unconstrained ideal first. If taking a pragmatic shortcut, explicitly name what was traded away and why.
+- **Test-first & DAMP.** Write the test before the code. Three clear, readable test bodies beat one clever parameterized helper.
+- **Walking skeleton first.** Get a minimal end-to-end slice compiling and passing one test before polishing internals.
+- **Churn is free.** Never leave dead code, redundant helpers, or stale call sites behind to avoid touching files. Mechanical refactoring is cheap.
+
+## Core invariants
+
+1. **Strictly $0.00 operating costs.** Every layer of cloud infrastructure—static hosting (Cloudflare), cloud database sync (Supabase permanent free tier), edge API endpoints, and speech synthesis—must remain strictly $0.00 without recurring bills, usage tiers, or paid API keys. Features must be architected around local compute, open protocols, and zero-cost infrastructure.
+2. **Local-first & offline by default.** Card review, creation, and audio playback must work completely without network connectivity once an account is linked. Account setup is required for personal decks; once connected, cloud sync is an asynchronous enhancer, never a prerequisite.
+3. **Keyboard-first & accessible.** All interactions (`Enter` to reveal, `1`–`4` to grade, `Space` for audio) must be 100% keyboard-operable with zero WCAG 2.1 A/AA violations.
+4. **Never fail silently.** Prefer compile-time constraints. Fail loudly with structured errors rather than fallback defaults.
+5. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads, import archives) must be validated with runtime Zod schemas.
+6. **Data migrations are mandatory.** When changing storage representations, provide an explicit, tested migration for existing cards.
+7. **Visual verification is mandatory.** DOM presence is not visual correctness. Author and reviewer must visually verify rendered appearance, layering, and contrast on UI changes.
+
 ## Dependency rules
 
 - `domain` imports no React, browser, network, persistence, or provider SDKs.
