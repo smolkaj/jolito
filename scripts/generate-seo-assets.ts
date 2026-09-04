@@ -94,7 +94,7 @@ async function main() {
     ),
   ).toString('base64')
 
-  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="76" height="76" xmlns="http://www.w3.org/2000/svg">
+  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
   <g fill="#e4007c">
     <rect x="3" y="6.5" width="11" height="4.5" rx="2.25" transform="rotate(-22 8.5 8.75)" />
     <rect x="1" y="13.75" width="12" height="4.5" rx="2.25" />
@@ -139,7 +139,7 @@ async function main() {
     display: flex;
     position: relative;
     overflow: hidden;
-    padding: 72px 84px;
+    padding: 68px 84px;
     align-items: center;
     justify-content: space-between;
   }
@@ -153,22 +153,22 @@ async function main() {
   .brand-row {
     display: flex;
     align-items: center;
-    gap: 22px;
-    margin-bottom: 36px;
+    gap: 24px;
+    margin-bottom: 34px;
   }
   .brand-mark {
     display: block;
     flex-shrink: 0;
   }
   .brand-title {
-    font-size: 78px;
+    font-size: 96px;
     font-weight: 800;
     color: #121815;
     letter-spacing: -0.04em;
     line-height: 1;
   }
   .headline {
-    font-size: 66px;
+    font-size: 64px;
     font-weight: 800;
     color: #121815;
     line-height: 1.08;
