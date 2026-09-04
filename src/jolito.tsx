@@ -784,7 +784,9 @@ function EditCardModalInner({
           </div>
 
           <div className="field-group">
-            <label htmlFor="edit-context">Additional Context</label>
+            <div className="field-label-row">
+              <label htmlFor="edit-context">Additional Context</label>
+            </div>
             <textarea
               id="edit-context"
               rows={2}
