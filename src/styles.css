@@ -173,6 +173,12 @@ summary:focus-visible {
   position: relative;
 }
 
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Topbar Navigation */
 .topbar {
   width: min(1080px, 100%);
@@ -2444,16 +2450,12 @@ kbd {
     height: 24px;
   }
 
-  .welcome-page {
-    min-height: 100svh;
-  }
-
   .welcome-hero {
     min-height: auto;
     grid-template-columns: 1fr;
     align-items: start;
-    padding-top: 18px;
-    padding-bottom: 24px;
+    padding-top: 14px;
+    padding-bottom: 12px;
   }
 
   .welcome-mascot-img {
@@ -4356,26 +4358,20 @@ kbd {
 
 /* App Footer */
 .app-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
-  padding-top: 8px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  padding-left: max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
-  padding-right: max(clamp(20px, 5vw, 80px), env(safe-area-inset-right));
+  margin-top: auto;
+  padding-top: 16px;
+  width: min(1080px, 100%);
+  margin-left: auto;
+  margin-right: auto;
   display: flex;
-  justify-content: center;
-  pointer-events: none;
+  justify-content: flex-end;
 }
 
 .app-footer-inner {
-  width: min(1080px, 100%);
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  pointer-events: auto;
 }
 
 .footer-link-button {
@@ -4408,16 +4404,6 @@ kbd {
 .footer-link-button:focus-visible {
   outline: 2px solid var(--rosa);
   outline-offset: 2px;
-}
-
-@media (max-width: 600px) {
-  .app-footer {
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-  }
-
-  .app-footer-inner {
-    justify-content: center;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -143,4 +143,43 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       page.getByRole('heading', { name: /share feedback/i }),
     ).not.toBeVisible()
   })
+
+  test('ensures feedback button does not overlap save card button on mobile viewports', async ({
+    page,
+  }) => {
+    // Test on iPhone standard mobile viewport
+    await page.goto('/')
+    await page.getByRole('button', { name: /^create a card$/i }).click()
+
+    const saveBtn = page.getByRole('button', {
+      name: /save card|sign in to save/i,
+    })
+    const feedbackBtn = page.getByRole('button', { name: /^feedback$/i })
+
+    await expect(saveBtn).toBeVisible()
+    await expect(feedbackBtn).toBeVisible()
+
+    // Verify non-overlapping bounding boxes: feedback button is positioned below save button
+    const saveBox = await saveBtn.boundingBox()
+    const feedbackBox = await feedbackBtn.boundingBox()
+    expect(saveBox).not.toBeNull()
+    expect(feedbackBox).not.toBeNull()
+    expect(feedbackBox!.y).toBeGreaterThanOrEqual(saveBox!.y + saveBox!.height)
+
+    // Verify tapping save button interacts with save flow rather than feedback modal
+    const spanishInput = page.getByRole('combobox', {
+      name: /mexican spanish/i,
+    })
+    const englishInput = page.getByLabel(/english/i)
+    await spanishInput.fill('chido')
+    await englishInput.fill('cool')
+
+    await saveBtn.click()
+    await expect(
+      page.getByRole('heading', { name: /share feedback/i }),
+    ).not.toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: /^cloud sync$/i }),
+    ).toBeVisible()
+  })
 })
