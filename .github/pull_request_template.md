@@ -19,7 +19,7 @@
 
 - [ ] The requested behavior and important failure cases are covered by tests.
 - [ ] Existing behavior that must remain unchanged is preserved and verified.
-- [ ] Core design invariants are maintained (local-first/offline, keyboard-accessible, runtime boundary validation).
+- [ ] Core architecture invariants are maintained (zero-cost, local-first/offline, keyboard-accessible, runtime boundary validation).
 
 ## Risk and rollback
 

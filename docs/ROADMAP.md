@@ -100,10 +100,12 @@ _Goal: Bring Jolito's calm, rhythmic study flow to iOS with native tactile polis
 
 ## Invariants & Quality Standards
 
-All tracks must preserve repository invariants from [`AGENTS.md`](../AGENTS.md):
+All tracks must preserve core architecture invariants from [`docs/ARCHITECTURE.md`](ARCHITECTURE.md#core-invariants):
 
-1. **Local-first & offline by default**
-2. **Keyboard-first & accessible (zero WCAG violations)**
-3. **Never fail silently**
-4. **Validate boundaries with Zod**
-5. **Data migrations are mandatory**
+1. **Strictly $0.00 operating costs**
+2. **Local-first & offline by default**
+3. **Keyboard-first & accessible (zero WCAG violations)**
+4. **Never fail silently**
+5. **Validate boundaries with Zod**
+6. **Data migrations are mandatory**
+7. **Visual verification is mandatory**
