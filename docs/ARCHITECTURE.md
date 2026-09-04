@@ -38,20 +38,15 @@ supabase/migrations
 Do not add a build orchestrator or microservices until repository scale proves
 the need.
 
-## Target topology
+## Current and target topology
 
-- React and Vite provide an offline-capable web application shell.
-- A local database is the UI's immediate source of data.
-- PostgreSQL is the canonical synchronized server store.
-- Supabase is the leading candidate for managed Postgres, Auth, RLS, and media
-  storage.
-- PowerSync is the leading candidate for Postgres/local SQLite sync, subject to
-  the acceptance spike in ADR 0002.
-- A Node.js 24 TypeScript service owns privileged AI/media operations,
-  webhooks, and durable background work. Start with Fastify when that service
-  is needed.
-- Future Expo clients share domain, contracts, sync schema, and test fixtures;
-  sharing every UI component is not a goal.
+- React and Vite provide an offline-capable single-page application shell.
+- Local storage (with versioned serialization envelopes) is the UI's immediate, zero-latency source of data.
+- PostgreSQL hosted on Supabase is the canonical synchronized server store, operating under Supabase's permanent free tier ([ADR 0005](adr/0005-cloud-snapshot-sync-supabase.md)).
+- Supabase provides passwordless authentication (email Magic Link / OTP) and Row-Level Security (RLS) policies for user isolation.
+- PowerSync / operation-log sync remains under evaluation for future fine-grained multi-device concurrent editing ([ADR 0003](adr/0003-offline-sync-evaluation.md)).
+- Cloudflare Workers serve static assets and edge API endpoints (such as `/api/tts` for neural text-to-speech) without requiring a heavy standalone application server. When privileged backend work or long-running jobs require a dedicated Node.js service, adopt Fastify within an npm workspace.
+- Native iOS is delivered via Capacitor (`@capacitor/core`, `@capacitor/ios`), directly reusing the React web shell, local storage, and sound engine while bridging native sensory haptics, keyboard resize behavior, and status bar controls.
 
 ## Data evolution
 

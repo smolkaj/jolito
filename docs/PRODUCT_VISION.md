@@ -79,32 +79,33 @@ Suggested keyboard controls:
 
 ### MVP
 
-- Web app
+- Web app and native iOS client (Capacitor) sharing local storage and haptics
 - One personal card collection (no decks required); optional lightweight tags later
-- Manual card creation with AI suggestions
+- Manual card creation with lexicon assistance and autocomplete suggestions
 - Spanish ↔ English cards; Mexican/CDMX Spanish as the language variety
 - Typed active recall, self-evaluation, diffs, keyboard-first review
-- Spoken audio on prompt and answer
+- Spoken audio on prompt and answer (studio neural audio with offline caching)
 - Illustrations and optional deeper context
 - Familiar Anki-style scheduling, with an editable default of 20 new cards per day and no artificial review limit
-- Account-backed sync with offline-capable local storage
+- Account-backed snapshot sync with offline-capable local storage
+- Anki deck and note import (`.apkg` and text exports)
 
 ### Explicitly later
 
-- iOS and Android clients, sharing the same synchronized collection
-- Import from Anki
+- Native Android client
 - Speech-recognition/pronunciation evaluation
 - Bulk/transcript capture
+- Generative scene illustrations and remote LLM card enrichment
 - Social features, streak mechanics, courses, and complex deck management
-- Facebook and Amazon sign-in
+- Third-party social logins (Facebook, Amazon)
 
 ## Account and sync approach
 
 There is no guest mode. A simple account path protects cards from the outset and makes eventual multi-device sync straightforward:
 
-- Google sign-in
-- passwordless email link
-- Apple sign-in by the iOS phase, or earlier if low-cost to support
+- passwordless email link and 6-digit OTP via Supabase
+- Apple sign-in for the native iOS client
+- Google sign-in (future option)
 
 The app still keeps a durable local collection for immediate, offline interaction. The server-backed account is the canonical synchronized record. Existing card media should be cached locally. If a user creates a card offline, its manual fields save immediately; AI translation, image generation, richer context, and new synthesized audio can queue for enrichment when connectivity returns.
 
