@@ -45,7 +45,7 @@ _Goal: Turn any real-world phrase heard on the street into a rich, multimodal ca
 - **Lexicon-Assisted Card Creation (Complete ✅):** Enter a Spanish phrase or word → instant local autocomplete, translation suggestions, and definition lookups powered by a bundled Mexican Spanish lexicon with lemma resolution and verb-conjugation ranking ([`OfflineCardAssistant`](../src/application/card-assistant.ts)).
 - **Live Reciprocal Dual-Card Creation (Complete ✅):** Edit reciprocal Spanish ↔ English cards simultaneously with side-by-side previews and independent prompt/answer overrides.
 - **Duplicate Recognition & Resolution (Complete ✅):** Proactive duplicate detection and in-place resolution across creation, deck management, and editing.
-- **Studio Neural Voice & Audio Caching (Complete ✅):** High-fidelity neural voice engine with practice prefetching, voice cycling, bundled neural audio for sample cards, and service worker caching for 100% offline study.
+- **Studio Neural Voice Engine (Horizon 1 🚀):** High-fidelity edge-synthesized neural voices (`/api/tts`) with practice prefetching, voice cycling, and service worker caching extending beyond built-in OS/device speech synthesis.
 - **Contextual Visuals (Planned):** Clean, culturally grounded scene illustrations that anchor phrase meaning and context.
 - **Remote LLM Multimodal Authoring (Planned):** Generative CDMX cultural context notes, usage registers, and scene imagery enrichment when connectivity is available.
 

@@ -82,7 +82,7 @@ Suggested keyboard controls:
 - **Web Application (PWA):** Installable, offline-capable progressive web application at [`joli.to`](https://joli.to) with local browser storage, service worker caching, and full mobile touch compliance.
 - **Unified Card Collection:** Single personal card collection with creation date and alphabetical sorting, duplicate detection and resolution, and instant editing.
 - **Multimodal Mexican Spanish:** Spanish ↔ English reciprocal card creation with lexicon assistance, autocomplete, lemma resolution, and verb conjugation ranking.
-- **Studio Neural Audio:** Spoken Mexican Spanish audio on prompts and answers with edge synthesis (`/api/tts`), practice prefetching, voice cycling, bundled neural starter audio, and offline caching.
+- **Spoken Audio Immersion:** Spoken Mexican Spanish audio on prompts and answers using device/browser speech synthesis (Web Speech API) and pre-bundled audio for starter phrases.
 - **Active Typed Recall & Flow:** Production-first typed recall with affine gap alignment diffs, case-insensitivity, automatic audio reveal playback, Web Audio earcons, and sprint study batching.
 - **Spaced Repetition & Continuity:** Proven Anki-compatible scheduling, overdue queue prioritization, active study session preservation across navigation, and cross-device daily progress sync.
 - **Interoperability & Data Ownership:** Complete Anki `.apkg` (SQLite collection) and text note import, plus 100% offline JSON deck backup, export, and conflict-free restore/merge.
@@ -93,6 +93,7 @@ Suggested keyboard controls:
 #### Horizon 1: Native iOS App & Mobile Polish (Active Next)
 
 - **Native iOS Client via Capacitor:** Packaging the local-first application shell as an official iOS app (`ios/App`) with sensory haptics, TestFlight beta distribution, and App Store readiness.
+- **Studio Neural Voice Engine:** High-fidelity edge-synthesized neural Mexican Spanish voices (`/api/tts`), practice prefetching, voice cycling, and service worker audio caching beyond standard OS/device voices.
 - **Native iOS Authentication:** Apple Sign-In integrated with Supabase Auth.
 - **Ecosystem Widgets:** Quick-review Lock Screen and Home Screen widgets on iOS.
 - **Configurable Study Controls:** Custom daily new-card intake limits and advanced queue prioritization.
