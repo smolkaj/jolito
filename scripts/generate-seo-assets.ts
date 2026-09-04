@@ -94,7 +94,7 @@ async function main() {
     ),
   ).toString('base64')
 
-  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="54" height="54" xmlns="http://www.w3.org/2000/svg">
+  const logoSvg = `<svg class="brand-mark" viewBox="0 0 32 32" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
   <g fill="#e4007c">
     <rect x="3" y="6.5" width="11" height="4.5" rx="2.25" transform="rotate(-22 8.5 8.75)" />
     <rect x="1" y="13.75" width="12" height="4.5" rx="2.25" />
@@ -127,7 +127,7 @@ async function main() {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 32px;
+    padding: 36px;
   }
   .card {
     width: 100%;
@@ -139,127 +139,71 @@ async function main() {
     display: flex;
     position: relative;
     overflow: hidden;
-    padding: 54px 64px;
+    padding: 72px 80px;
+    align-items: center;
+    justify-content: space-between;
   }
   .left {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    max-width: 590px;
+    justify-content: center;
+    max-width: 580px;
     z-index: 2;
   }
   .brand-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 18px;
+    margin-bottom: 32px;
   }
   .brand-mark {
     display: block;
     flex-shrink: 0;
   }
   .brand-title {
-    font-size: 54px;
+    font-size: 64px;
     font-weight: 800;
     color: #121815;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.04em;
     line-height: 1;
   }
-  .brand-pill {
-    background: #fdf0f7;
-    color: #e4007c;
-    border: 2px solid #fad2e1;
-    font-size: 15px;
-    font-weight: 800;
-    padding: 6px 14px;
-    border-radius: 999px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .main-copy {
-    margin-top: 16px;
-  }
   .headline {
-    font-size: 54px;
+    font-size: 56px;
     font-weight: 800;
     color: #121815;
-    line-height: 1.06;
-    letter-spacing: -0.03em;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
   }
   .headline em {
     font-style: normal;
     color: #e4007c;
   }
-  .tagline {
-    font-size: 26px;
-    font-weight: 600;
-    color: #4b5a52;
-    line-height: 1.35;
-    margin-top: 18px;
-    letter-spacing: -0.01em;
-    max-width: 520px;
-  }
-  .bottom-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .domain-badge {
-    background: #e4007c;
-    color: #ffffff;
-    font-size: 28px;
-    font-weight: 800;
-    padding: 12px 28px;
-    border-radius: 999px;
-    border: 2.5px solid #121815;
-    box-shadow: 3px 3px 0 #121815;
-    letter-spacing: -0.01em;
-  }
-  .feature-tag {
-    background: #eaf3ed;
-    color: #234734;
-    border: 2px solid #9ec2ad;
-    font-size: 18px;
-    font-weight: 700;
-    padding: 10px 20px;
-    border-radius: 999px;
-  }
   .right {
     position: absolute;
-    right: 14px;
-    bottom: -20px;
-    width: 490px;
+    right: 30px;
+    bottom: -15px;
+    width: 500px;
     height: 560px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
   }
   .mascot {
-    width: 490px;
+    width: 500px;
     height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 14px 28px rgba(18, 24, 21, 0.1));
+    filter: drop-shadow(0 16px 32px rgba(18, 24, 21, 0.08));
   }
 </style>
 </head>
 <body>
   <div class="card">
     <div class="left">
-      <div>
-        <div class="brand-row">
-          ${logoSvg}
-          <span class="brand-title">Jolito</span>
-          <span class="brand-pill">Mexican Spanish</span>
-        </div>
-        <div class="main-copy">
-          <h1 class="headline">Spoken Mexican Spanish that <em>sticks.</em></h1>
-          <p class="tagline">Beautiful flashcards with natural audio, practiced at your rhythm.</p>
-        </div>
+      <div class="brand-row">
+        ${logoSvg}
+        <span class="brand-title">Jolito</span>
       </div>
-      <div class="bottom-row">
-        <div class="domain-badge">joli.to</div>
-        <span class="feature-tag">100% Free & Offline</span>
-      </div>
+      <h1 class="headline">Mexican Spanish that <em>sticks.</em></h1>
     </div>
     <div class="right">
       <img class="mascot" src="data:image/png;base64,${welcomeImgBase64}" alt="Jolito Mascot" />
