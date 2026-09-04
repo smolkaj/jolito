@@ -6,7 +6,7 @@ Our hexagonal architecture decouples core domain logic from UI and infrastructur
 
 ```mermaid
 flowchart TD
-    Foundation["Hexagonal Foundation & Core Loop (Complete ✅)"]
+    Foundation["Core Platform v1.0 (Shipped ✅)"]
 
     Foundation --> Track1["✨ Track 1: Simplicity, Delight & Sensory Flow (Active / Polished ✅)<br/>(Calm visual hierarchy, earcons, tactile haptics, spring diffs)"]
     Foundation --> Track2["🎨 Track 2: Multimodal AI Authoring (Active / Advanced 🚀)<br/>(Lexicon assistant, dual reciprocal cards, neural audio, scene visuals)"]
@@ -19,7 +19,7 @@ flowchart TD
 ---
 
 > [!NOTE]
-> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Jolito's north star. The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
+> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Jolito's north star, complementing the Core Platform (v1.0) and Strategic Horizons in [`PRODUCT_VISION.md`](PRODUCT_VISION.md). The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
 
 ---
 
