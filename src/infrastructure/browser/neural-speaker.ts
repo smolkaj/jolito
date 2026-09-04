@@ -44,12 +44,71 @@ export function getAudioUrl(
   return `/api/tts?${params.toString()}`
 }
 
+export class LruAudioCache {
+  private readonly cache = new Map<string, AudioBuffer>()
+  constructor(public readonly maxSize: number = 200) {}
+
+  get(key: string): AudioBuffer | undefined {
+    const val = this.cache.get(key)
+    if (val !== undefined) {
+      this.cache.delete(key)
+      this.cache.set(key, val)
+    }
+    return val
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key)
+  }
+
+  set(key: string, value: AudioBuffer): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key)
+    } else if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value
+      if (oldestKey !== undefined) {
+        this.cache.delete(oldestKey)
+      }
+    }
+    this.cache.set(key, value)
+  }
+
+  delete(key: string): boolean {
+    return this.cache.delete(key)
+  }
+
+  clear(): void {
+    this.cache.clear()
+  }
+
+  get size(): number {
+    return this.cache.size
+  }
+
+  keys(): IterableIterator<string> {
+    return this.cache.keys()
+  }
+
+  values(): IterableIterator<AudioBuffer> {
+    return this.cache.values()
+  }
+
+  entries(): IterableIterator<[string, AudioBuffer]> {
+    return this.cache.entries()
+  }
+
+  [Symbol.iterator](): IterableIterator<[string, AudioBuffer]> {
+    return this.cache[Symbol.iterator]()
+  }
+}
+
 export class NeuralVoiceEngine {
   private audioContext: AudioContext | null = null
-  private audioCache = new Map<string, AudioBuffer>()
+  private audioCache: LruAudioCache
   private audioBlobs = new Map<string, string>()
 
-  constructor() {
+  constructor(maxMemoryBuffers = 200) {
+    this.audioCache = new LruAudioCache(maxMemoryBuffers)
     this.initContext()
     for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
       this.audioBlobs.set(key, url)
@@ -214,10 +273,17 @@ export class NeuralVoiceEngine {
   playAudio(text: string, locale: string, voice?: string): boolean {
     if (!this.supported()) return false
 
-    for (const key of this.getCacheKeys(text, locale, voice)) {
+    const cacheKeys = this.getCacheKeys(text, locale, voice)
+    for (const key of cacheKeys) {
       // 1. Cached AudioBuffer playback via Web Audio API
       const cachedBuffer = this.audioCache.get(key)
       if (cachedBuffer) {
+        // Also refresh variant keys so the phrase stays together as a unit in the LRU cache
+        for (const otherKey of cacheKeys) {
+          if (otherKey !== key) {
+            this.audioCache.get(otherKey)
+          }
+        }
         return this.playBuffer(cachedBuffer)
       }
 
@@ -357,6 +423,7 @@ export class NeuralVoiceEngine {
           cardSeed?: string | undefined
           voice?: string | undefined
           fetchFn?: typeof fetch
+          skipDecodeIfCacheFull?: boolean | undefined
         }
       | typeof fetch,
     optionalFetchFn?: typeof fetch,
@@ -366,6 +433,7 @@ export class NeuralVoiceEngine {
           cardSeed?: string | undefined
           voice?: string | undefined
           fetchFn?: typeof fetch
+          skipDecodeIfCacheFull?: boolean | undefined
         }
       | undefined
     let fetchFn: typeof fetch = fetch
@@ -401,6 +469,12 @@ export class NeuralVoiceEngine {
         try {
           const cachedResp = await cache.match(url)
           if (cachedResp && cachedResp.ok) {
+            if (
+              options?.skipDecodeIfCacheFull &&
+              this.audioCache.size >= this.audioCache.maxSize
+            ) {
+              return true
+            }
             const arrayBuffer = await cachedResp.arrayBuffer()
             const registered = await this.registerDecodedBufferOrBlob(
               cleanText,
@@ -433,6 +507,13 @@ export class NeuralVoiceEngine {
           } catch {
             // Ignore cache write errors
           }
+        }
+
+        if (
+          options?.skipDecodeIfCacheFull &&
+          this.audioCache.size >= this.audioCache.maxSize
+        ) {
+          return true
         }
 
         const arrayBuffer = await response.arrayBuffer()
@@ -476,47 +557,71 @@ export class NeuralVoiceEngine {
     items: PrefetchItem[],
     fetchFn: typeof fetch = fetch,
   ): Promise<void> {
-    if (
-      typeof navigator !== 'undefined' &&
-      'onLine' in navigator &&
-      !navigator.onLine
-    ) {
-      return
-    }
-
     const seenKeys = new Set<string>()
-    const uncached = items.filter((item) => {
+    const resolvedItems: Array<{
+      text: string
+      locale: string
+      voice: string
+      cardSeed?: string | undefined
+      key: string
+    }> = []
+
+    for (const item of items) {
       const clean = item.text.trim()
-      if (!clean) return false
+      if (!clean) continue
       const normLocale = normalizeLocale(item.locale)
       const voice =
         item.voice ?? getDeterministicVoice(clean, normLocale, item.cardSeed)
       const key = this.getPrimaryCacheKey(clean, normLocale, voice)
-      if (seenKeys.has(key)) return false
+      if (seenKeys.has(key)) continue
       seenKeys.add(key)
-      return (
+
+      if (
         !this.hasAudio(clean, normLocale, voice) &&
         !this.isAudioInFlight(clean, normLocale, voice)
-      )
-    })
-    if (uncached.length === 0) return
+      ) {
+        resolvedItems.push({
+          text: clean,
+          locale: normLocale,
+          voice,
+          cardSeed: item.cardSeed,
+          key,
+        })
+      }
+    }
+
+    if (resolvedItems.length === 0) return
 
     const CONCURRENCY = 3
-    for (let i = 0; i < uncached.length; i += CONCURRENCY) {
-      const batch = uncached.slice(i, i + CONCURRENCY)
+    for (let i = 0; i < resolvedItems.length; i += CONCURRENCY) {
+      const batch = resolvedItems.slice(i, i + CONCURRENCY)
       await Promise.allSettled(
-        batch.map((item) => {
-          const voice =
-            item.voice ??
-            getDeterministicVoice(item.text, item.locale, item.cardSeed)
-          return this.fetchAndCacheAudio(
+        batch.map((item) =>
+          this.fetchAndCacheAudio(
             item.text,
             item.locale,
-            { voice, cardSeed: item.cardSeed },
+            {
+              voice: item.voice,
+              cardSeed: item.cardSeed,
+              skipDecodeIfCacheFull: true,
+            },
             fetchFn,
-          )
-        }),
+          ),
+        ),
       )
+
+      if (i + CONCURRENCY < resolvedItems.length) {
+        await new Promise<void>((resolve) => {
+          if (
+            typeof window !== 'undefined' &&
+            typeof window.requestIdleCallback === 'function'
+          ) {
+            window.requestIdleCallback(() => resolve(), { timeout: 150 })
+          } else {
+            setTimeout(resolve, 0)
+          }
+        })
+      }
     }
   }
 
@@ -618,8 +723,11 @@ export class LayeredNeuralSpeaker implements Speaker {
   constructor(options?: {
     neuralEngine?: NeuralVoiceEngine
     fallbackSpeaker?: Speaker
+    maxMemoryBuffers?: number
   }) {
-    this.neuralEngine = options?.neuralEngine ?? new NeuralVoiceEngine()
+    this.neuralEngine =
+      options?.neuralEngine ??
+      new NeuralVoiceEngine(options?.maxMemoryBuffers ?? 200)
     this.fallbackSpeaker =
       options?.fallbackSpeaker ?? new EnhancedBrowserSpeaker()
   }

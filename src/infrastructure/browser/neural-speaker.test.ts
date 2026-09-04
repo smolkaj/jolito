@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Speaker } from '../../application/ports'
-import { LayeredNeuralSpeaker, NeuralVoiceEngine } from './neural-speaker'
+import {
+  LayeredNeuralSpeaker,
+  LruAudioCache,
+  NeuralVoiceEngine,
+} from './neural-speaker'
 
 describe('LayeredNeuralSpeaker', () => {
   let fallbackSpeaker: Speaker
@@ -652,5 +656,292 @@ describe('NeuralVoiceEngine', () => {
     expect(mockStop).toHaveBeenCalled()
     expect(mockDisconnect).toHaveBeenCalled()
     expect(cancelSpy).toHaveBeenCalled()
+  })
+
+  it('evicts least recently used audio buffers when exceeding maxMemoryBuffers', () => {
+    // Each phrase registers up to 2 keys (voiced and unvoiced), so 4 keys hold 2 phrases
+    const engine = new NeuralVoiceEngine(4)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf3 = { duration: 3 } as unknown as AudioBuffer
+
+    engine.registerAudioBuffer('uno', 'es-MX', buf1)
+    engine.registerAudioBuffer('dos', 'es-MX', buf2)
+
+    expect(engine.hasAudio('uno', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('dos', 'es-MX')).toBe(true)
+
+    // Access 'uno' via playAudio to make it MRU
+    engine.playAudio('uno', 'es-MX')
+
+    // Register 3rd item
+    engine.registerAudioBuffer('tres', 'es-MX', buf3)
+
+    // 'dos' must have been evicted, 'uno' and 'tres' must remain
+    expect(engine.hasAudio('uno', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('dos', 'es-MX')).toBe(false)
+    expect(engine.hasAudio('tres', 'es-MX')).toBe(true)
+  })
+
+  it('hydrates previously cached audio from CacheStorage during offline prefetch without making network requests', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: (
+        _data: ArrayBuffer,
+        success: (buf: AudioBuffer) => void,
+      ) => {
+        success({ duration: 1.2 } as unknown as AudioBuffer)
+      },
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const cachedMp3Buffer = new Uint8Array([10, 20, 30]).buffer
+    const mockCache = {
+      match: vi.fn().mockImplementation((url: string) => {
+        // Only return cached response for 'guardada', not for 'otra frase'
+        if (url.includes('text=guardada')) {
+          return Promise.resolve(
+            new Response(cachedMp3Buffer, {
+              status: 200,
+              headers: { 'Content-Type': 'audio/mpeg' },
+            }),
+          )
+        }
+        return Promise.resolve(undefined)
+      }),
+      put: vi.fn().mockResolvedValue(undefined),
+    }
+
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    // Simulate offline device
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+      writable: true,
+    })
+
+    const mockFetch = vi.fn()
+
+    try {
+      await engine.prefetch(
+        [
+          { text: 'guardada', locale: 'es-MX' },
+          { text: 'otra frase', locale: 'es-MX' },
+        ],
+        mockFetch,
+      )
+
+      // Network fetch must never be called while offline
+      expect(mockFetch).not.toHaveBeenCalled()
+
+      // The phrase that was present in CacheStorage must be hydrated into memory
+      expect(engine.hasAudio('guardada', 'es-MX')).toBe(true)
+
+      // The uncached phrase was safely skipped
+      expect(engine.hasAudio('otra frase', 'es-MX')).toBe(false)
+    } finally {
+      // Restore online state
+      Object.defineProperty(navigator, 'onLine', {
+        value: true,
+        configurable: true,
+        writable: true,
+      })
+    }
+  })
+
+  it('skips decoding into memory during prefetch when memory is full while saving to CacheStorage', async () => {
+    const engine = new NeuralVoiceEngine(1)
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: vi.fn(
+        (_data: ArrayBuffer, success: (buf: AudioBuffer) => void) => {
+          success({ duration: 1 } as unknown as AudioBuffer)
+        },
+      ),
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockPut = vi.fn().mockResolvedValue(undefined)
+    const mockCache = {
+      match: vi.fn().mockResolvedValue(undefined),
+      put: mockPut,
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const mockFetch = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(new Uint8Array([1, 2]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      ),
+    )
+
+    // Item 1 should fill the cache
+    await engine.prefetch([{ text: 'primera', locale: 'es-MX' }], mockFetch)
+    expect(engine.hasAudio('primera', 'es-MX')).toBe(true)
+    const decodeCalls = (
+      mockAudioContext.decodeAudioData as ReturnType<typeof vi.fn>
+    ).mock.calls.length
+
+    // Item 2: memory is full (1 item), so prefetch should save to CacheStorage but skip decoding into memory
+    await engine.prefetch([{ text: 'segunda', locale: 'es-MX' }], mockFetch)
+    expect(mockPut).toHaveBeenCalled()
+    // decodeAudioData should not have been called for 'segunda'
+    expect(
+      (mockAudioContext.decodeAudioData as ReturnType<typeof vi.fn>).mock.calls
+        .length,
+    ).toBe(decodeCalls)
+    // 'primera' was not evicted
+    expect(engine.hasAudio('primera', 'es-MX')).toBe(true)
+  })
+
+  it('cooperatively yields between prefetch batches', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: (
+        _data: ArrayBuffer,
+        success: (buf: AudioBuffer) => void,
+      ) => {
+        success({ duration: 1 } as unknown as AudioBuffer)
+      },
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const idleSpy = vi.fn((cb: () => void) => {
+      cb()
+      return 1
+    })
+    Object.defineProperty(window, 'requestIdleCallback', {
+      value: idleSpy,
+      configurable: true,
+      writable: true,
+    })
+
+    const mockFetch = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(new Uint8Array([1, 2]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      ),
+    )
+
+    // Prefetch 4 items (concurrency is 3, so 2 batches: batch 1 has 3 items, batch 2 has 1 item)
+    await engine.prefetch(
+      [
+        { text: 'batch item 1', locale: 'es-MX' },
+        { text: 'batch item 2', locale: 'es-MX' },
+        { text: 'batch item 3', locale: 'es-MX' },
+        { text: 'batch item 4', locale: 'es-MX' },
+      ],
+      mockFetch,
+    )
+
+    // requestIdleCallback should have been called between batch 1 and batch 2
+    expect(idleSpy).toHaveBeenCalled()
+  })
+})
+
+describe('LruAudioCache', () => {
+  it('enforces maximum capacity by evicting the least recently used entries', () => {
+    const cache = new LruAudioCache(2)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf3 = { duration: 3 } as unknown as AudioBuffer
+
+    cache.set('k1', buf1)
+    cache.set('k2', buf2)
+    expect(cache.size).toBe(2)
+    expect(cache.has('k1')).toBe(true)
+    expect(cache.has('k2')).toBe(true)
+
+    // Adding a 3rd entry evicts the oldest entry ('k1')
+    cache.set('k3', buf3)
+    expect(cache.size).toBe(2)
+    expect(cache.has('k1')).toBe(false)
+    expect(cache.has('k2')).toBe(true)
+    expect(cache.has('k3')).toBe(true)
+  })
+
+  it('refreshes item position upon get() to prevent eviction of recently accessed items', () => {
+    const cache = new LruAudioCache(2)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf3 = { duration: 3 } as unknown as AudioBuffer
+
+    cache.set('k1', buf1)
+    cache.set('k2', buf2)
+
+    // Access 'k1' to promote it to most recently used
+    expect(cache.get('k1')).toBe(buf1)
+
+    // Adding 'k3' should now evict 'k2', keeping 'k1' and 'k3'
+    cache.set('k3', buf3)
+    expect(cache.size).toBe(2)
+    expect(cache.has('k1')).toBe(true)
+    expect(cache.has('k2')).toBe(false)
+    expect(cache.has('k3')).toBe(true)
+  })
+
+  it('updates existing keys without growing size or evicting other keys', () => {
+    const cache = new LruAudioCache(2)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf1Updated = { duration: 1.5 } as unknown as AudioBuffer
+
+    cache.set('k1', buf1)
+    cache.set('k2', buf2)
+    expect(cache.size).toBe(2)
+
+    cache.set('k1', buf1Updated)
+    expect(cache.size).toBe(2)
+    expect(cache.get('k1')).toBe(buf1Updated)
+    expect(cache.has('k2')).toBe(true)
+  })
+
+  it('supports delete, clear, and key/value/entry iteration', () => {
+    const cache = new LruAudioCache(3)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+
+    cache.set('a', buf1)
+    cache.set('b', buf2)
+
+    expect(Array.from(cache.keys())).toEqual(['a', 'b'])
+    expect(Array.from(cache.values())).toEqual([buf1, buf2])
+    expect(Array.from(cache.entries())).toEqual([
+      ['a', buf1],
+      ['b', buf2],
+    ])
+    expect(Array.from(cache)).toEqual([
+      ['a', buf1],
+      ['b', buf2],
+    ])
+
+    expect(cache.delete('a')).toBe(true)
+    expect(cache.has('a')).toBe(false)
+    expect(cache.size).toBe(1)
+
+    cache.clear()
+    expect(cache.size).toBe(0)
   })
 })
