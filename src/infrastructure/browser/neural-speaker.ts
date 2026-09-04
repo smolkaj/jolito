@@ -1,5 +1,8 @@
 import type { Speaker } from '../../application/ports'
+import { getDeterministicVoice, normalizeLocale } from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
+
+export const AUDIO_CACHE_NAME = 'jolito-audio-v1'
 
 export const BUNDLED_NEURAL_AUDIO: Record<string, string> = {
   'es-mx:aguacate': '/audio/aguacate-es.mp3',
@@ -19,6 +22,17 @@ export const BUNDLED_NEURAL_AUDIO: Record<string, string> = {
   'en-us:the bill please': '/audio/the-bill-please-en.mp3',
   'es-mx:para llevar': '/audio/para-llevar-es.mp3',
   'en-us:to go': '/audio/to-go-en.mp3',
+}
+
+export function getAudioUrl(text: string, locale: string): string {
+  const normLocale = normalizeLocale(locale)
+  const voice = getDeterministicVoice(text, normLocale)
+  const params = new URLSearchParams({
+    text: text.trim(),
+    locale: normLocale,
+    voice,
+  })
+  return `/api/tts?${params.toString()}`
 }
 
 export class NeuralVoiceEngine {
@@ -79,13 +93,15 @@ export class NeuralVoiceEngine {
   }
 
   registerAudioBuffer(text: string, locale: string, buffer: AudioBuffer): void {
-    const key = this.getPrimaryCacheKey(text, locale)
-    this.audioCache.set(key, buffer)
+    for (const key of this.getCacheKeys(text, locale)) {
+      this.audioCache.set(key, buffer)
+    }
   }
 
   registerAudioDataUrl(text: string, locale: string, dataUrl: string): void {
-    const key = this.getPrimaryCacheKey(text, locale)
-    this.audioBlobs.set(key, dataUrl)
+    for (const key of this.getCacheKeys(text, locale)) {
+      this.audioBlobs.set(key, dataUrl)
+    }
   }
 
   playAudio(text: string, locale: string): boolean {
@@ -120,6 +136,138 @@ export class NeuralVoiceEngine {
     return false
   }
 
+  private async getCache(): Promise<Cache | null> {
+    if (typeof window !== 'undefined' && 'caches' in window && window.caches) {
+      try {
+        return await window.caches.open(AUDIO_CACHE_NAME)
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+
+  private async decodeAudio(
+    arrayBuffer: ArrayBuffer,
+  ): Promise<AudioBuffer | null> {
+    if (
+      !this.audioContext ||
+      typeof this.audioContext.decodeAudioData !== 'function'
+    ) {
+      return null
+    }
+    try {
+      const bufferCopy = arrayBuffer.slice(0)
+      return await new Promise<AudioBuffer>((resolve, reject) => {
+        const res: unknown = this.audioContext!.decodeAudioData(
+          bufferCopy,
+          (buf) => resolve(buf),
+          (err) => reject(err),
+        )
+        if (
+          res !== null &&
+          typeof res === 'object' &&
+          'then' in res &&
+          typeof (res as Promise<AudioBuffer>).then === 'function'
+        ) {
+          void (res as Promise<AudioBuffer>).then(resolve).catch(reject)
+        }
+      })
+    } catch {
+      return null
+    }
+  }
+
+  async fetchAndCacheAudio(
+    text: string,
+    locale: string,
+    fetchFn: typeof fetch = fetch,
+  ): Promise<boolean> {
+    const cleanText = text.trim()
+    if (!cleanText) return false
+    if (this.hasAudio(cleanText, locale)) return true
+
+    const url = getAudioUrl(cleanText, locale)
+    const cache = await this.getCache()
+
+    if (cache) {
+      try {
+        const cachedResp = await cache.match(url)
+        if (cachedResp && cachedResp.ok) {
+          const arrayBuffer = await cachedResp.arrayBuffer()
+          const decoded = await this.decodeAudio(arrayBuffer)
+          if (decoded) {
+            this.registerAudioBuffer(cleanText, locale, decoded)
+            return true
+          }
+          if (
+            typeof URL !== 'undefined' &&
+            typeof URL.createObjectURL === 'function'
+          ) {
+            const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+            const objectUrl = URL.createObjectURL(blob)
+            this.registerAudioDataUrl(cleanText, locale, objectUrl)
+            return true
+          }
+        }
+      } catch {
+        // Cache match failed, proceed to network
+      }
+    }
+
+    try {
+      const response = await fetchFn(url)
+      if (!response.ok) return false
+
+      if (cache) {
+        try {
+          await cache.put(url, response.clone())
+        } catch {
+          // Ignore cache write errors
+        }
+      }
+
+      const arrayBuffer = await response.arrayBuffer()
+      const decoded = await this.decodeAudio(arrayBuffer)
+      if (decoded) {
+        this.registerAudioBuffer(cleanText, locale, decoded)
+        return true
+      }
+      if (
+        typeof URL !== 'undefined' &&
+        typeof URL.createObjectURL === 'function'
+      ) {
+        const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+        const objectUrl = URL.createObjectURL(blob)
+        this.registerAudioDataUrl(cleanText, locale, objectUrl)
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
+  }
+
+  async prefetch(
+    items: Array<{ text: string; locale: string }>,
+    fetchFn: typeof fetch = fetch,
+  ): Promise<void> {
+    const uncached = items.filter(
+      (item) => item.text.trim() && !this.hasAudio(item.text, item.locale),
+    )
+    if (uncached.length === 0) return
+
+    const CONCURRENCY = 3
+    for (let i = 0; i < uncached.length; i += CONCURRENCY) {
+      const batch = uncached.slice(i, i + CONCURRENCY)
+      await Promise.allSettled(
+        batch.map((item) =>
+          this.fetchAndCacheAudio(item.text, item.locale, fetchFn),
+        ),
+      )
+    }
+  }
+
   private prewarmedUrls = new Set<string>()
   private inFlightPrewarm: Promise<boolean> | null = null
 
@@ -148,33 +296,18 @@ export class NeuralVoiceEngine {
               return
             }
             const arrayBuffer = await response.arrayBuffer()
-
             if (
               this.audioContext &&
               typeof this.audioContext.decodeAudioData === 'function'
             ) {
-              const bufferCopy = arrayBuffer.slice(0)
-              const decodedBuffer = await new Promise<AudioBuffer>(
-                (resolve, reject) => {
-                  const res: unknown = this.audioContext!.decodeAudioData(
-                    bufferCopy,
-                    (buf) => resolve(buf),
-                    (err) => reject(err),
-                  )
-                  if (
-                    res !== null &&
-                    typeof res === 'object' &&
-                    'then' in res &&
-                    typeof (res as Promise<AudioBuffer>).then === 'function'
-                  ) {
-                    void (res as Promise<AudioBuffer>)
-                      .then(resolve)
-                      .catch(reject)
-                  }
-                },
-              )
-              for (const key of keys) {
-                this.audioCache.set(key, decodedBuffer)
+              const decodedBuffer = await this.decodeAudio(arrayBuffer)
+              if (decodedBuffer) {
+                for (const key of keys) {
+                  this.audioCache.set(key, decodedBuffer)
+                }
+              } else {
+                allSucceeded = false
+                return
               }
             }
             this.prewarmedUrls.add(url)
@@ -238,6 +371,13 @@ export class LayeredNeuralSpeaker implements Speaker {
     return this.neuralEngine.prewarm(fetchFn)
   }
 
+  async prefetch(
+    items: Array<{ text: string; locale: string }>,
+    fetchFn?: typeof fetch,
+  ): Promise<void> {
+    await this.neuralEngine.prefetch(items, fetchFn)
+  }
+
   speak(text: string, locale: string): boolean {
     if (!this.supported()) return false
 
@@ -261,6 +401,9 @@ export class LayeredNeuralSpeaker implements Speaker {
       } catch {
         // Fall back seamlessly to browser speech synthesis
       }
+    } else {
+      // Uncached: fire background fetch and cache for subsequent plays
+      void this.neuralEngine.fetchAndCacheAudio(text, locale).catch(() => {})
     }
 
     return this.fallbackSpeaker.speak(text, locale)

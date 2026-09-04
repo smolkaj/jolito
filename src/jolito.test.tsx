@@ -4495,5 +4495,66 @@ describe('Jolito', () => {
       ).not.toBeInTheDocument()
       expect(document.activeElement).toBe(footerBtn)
     })
+
+    it('eagerly prefetches upcoming review cards into speaker audio cache', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices({
+        cards: [
+          {
+            id: 'c1',
+            noteId: 'n1',
+            prompt: '¿Cómo estás?',
+            answer: 'How are you?',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            schedule: {
+              dueAt: 0,
+              intervalDays: 0,
+              easeFactor: 2.5,
+              state: 'new',
+              reviews: 0,
+              lapses: 0,
+            },
+            createdAt: 1000,
+          },
+          {
+            id: 'c2',
+            noteId: 'n2',
+            prompt: 'Mucho gusto',
+            answer: 'Nice to meet you',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            schedule: {
+              dueAt: 0,
+              intervalDays: 0,
+              easeFactor: 2.5,
+              state: 'new',
+              reviews: 0,
+              lapses: 0,
+            },
+            createdAt: 1000,
+          },
+        ],
+      })
+
+      render(<App services={services} />)
+
+      const practiceBtn = screen.getByRole('button', {
+        name: /^practice$/i,
+      })
+      await user.click(practiceBtn)
+
+      expect(services.mockSpeaker.prefetched.length).toBeGreaterThan(0)
+      expect(services.mockSpeaker.prefetched).toEqual(
+        expect.arrayContaining([
+          { text: '¿Cómo estás?', locale: 'es-MX' },
+          { text: 'How are you?', locale: 'en-US' },
+          { text: 'Mucho gusto', locale: 'es-MX' },
+          { text: 'Nice to meet you', locale: 'en-US' },
+        ]),
+      )
+    })
   })
 })

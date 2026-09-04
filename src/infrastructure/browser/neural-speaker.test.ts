@@ -118,6 +118,33 @@ describe('LayeredNeuralSpeaker', () => {
     speaker.speak('Qué padre', 'es-MX')
     expect(mockPlayBuffer).toHaveBeenCalledTimes(2)
   })
+  it('delegates prefetch to neural engine', async () => {
+    const prefetchSpy = vi.spyOn(neuralEngine, 'prefetch').mockResolvedValue()
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const items = [{ text: 'hola', locale: 'es-MX' }]
+    await speaker.prefetch(items)
+    expect(prefetchSpy).toHaveBeenCalledWith(items, undefined)
+  })
+
+  it('triggers background fetchAndCacheAudio when speaking uncached phrase', () => {
+    const fetchSpy = vi
+      .spyOn(neuralEngine, 'fetchAndCacheAudio')
+      .mockResolvedValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('palabra nueva', 'es-MX')
+    expect(played).toBe(true)
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX')
+    expect(fetchSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX')
+  })
 })
 
 describe('NeuralVoiceEngine', () => {
@@ -250,5 +277,102 @@ describe('NeuralVoiceEngine', () => {
       engine as unknown as { audioCache: Map<string, AudioBuffer> }
     ).audioCache
     expect(internalCache.size).toBe(0)
+  })
+
+  it('fetches uncached audio from /api/tts with deterministic voice and caches it in CacheStorage', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockBuffer = { duration: 1 } as AudioBuffer
+    const mockAudioContext = {
+      decodeAudioData: vi.fn().mockResolvedValue(mockBuffer),
+      createBufferSource: vi.fn(),
+      destination: {},
+      state: 'running',
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockCacheStorage = new Map<string, Response>()
+    const mockCache = {
+      match: vi.fn((url: string) =>
+        Promise.resolve(mockCacheStorage.get(url) ?? null),
+      ),
+      put: vi.fn((url: string, resp: Response) => {
+        mockCacheStorage.set(url, resp)
+        return Promise.resolve()
+      }),
+    }
+    vi.stubGlobal('caches', {
+      open: vi.fn(() => Promise.resolve(mockCache)),
+    })
+
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve(
+        new Response(new Uint8Array([1, 2, 3]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      )
+    })
+
+    const phrase = 'buenos días amigos'
+    expect(engine.hasAudio(phrase, 'es-MX')).toBe(false)
+
+    const success = await engine.fetchAndCacheAudio(phrase, 'es-MX', mockFetch)
+    expect(success).toBe(true)
+
+    // Now hasAudio should be true
+    expect(engine.hasAudio(phrase, 'es-MX')).toBe(true)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    const calledUrl = mockFetch.mock.calls[0]![0] as string
+    expect(calledUrl).toContain('/api/tts?text=buenos+d%C3%ADas+amigos')
+    expect(calledUrl).toMatch(/voice=es-MX-(Dalia|Jorge)Neural/)
+    expect(mockCache.put).toHaveBeenCalledTimes(1)
+
+    // Second call should retrieve from CacheStorage without calling fetch
+    const secondFetch = vi.fn()
+    const secondSuccess = await engine.fetchAndCacheAudio(
+      phrase,
+      'es-MX',
+      secondFetch,
+    )
+    expect(secondSuccess).toBe(true)
+    expect(secondFetch).not.toHaveBeenCalled()
+  })
+
+  it('prefetches multiple items, skipping already cached phrases', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockBuffer = { duration: 1 } as AudioBuffer
+    const mockAudioContext = {
+      decodeAudioData: vi.fn().mockResolvedValue(mockBuffer),
+      createBufferSource: vi.fn(),
+      destination: {},
+      state: 'running',
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve(
+        new Response(new Uint8Array([1, 2, 3]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      )
+    })
+
+    // 'aguacate' is bundled, 'palabra 1' and 'palabra 2' are new
+    await engine.prefetch(
+      [
+        { text: 'aguacate', locale: 'es-MX' },
+        { text: 'palabra uno', locale: 'es-MX' },
+        { text: 'palabra dos', locale: 'es-MX' },
+      ],
+      mockFetch,
+    )
+
+    // mockFetch should only be called for the 2 unbundled phrases
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(engine.hasAudio('palabra uno', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('palabra dos', 'es-MX')).toBe(true)
   })
 })

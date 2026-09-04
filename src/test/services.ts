@@ -68,6 +68,7 @@ export class MemoryCardRepository implements CardRepository {
 
 export class MockSpeaker implements Speaker {
   public spoken: Array<{ text: string; locale: string }> = []
+  public prefetched: Array<{ text: string; locale: string }> = []
   public isSupported = true
   public enhancedVoice = false
   public voicesLoaded = true
@@ -75,6 +76,10 @@ export class MockSpeaker implements Speaker {
 
   supported(): boolean {
     return this.isSupported
+  }
+
+  prefetch(items: Array<{ text: string; locale: string }>): void {
+    this.prefetched.push(...items)
   }
 
   speak(text: string, locale: string): boolean {

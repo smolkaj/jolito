@@ -23,6 +23,9 @@ export type Speaker = {
   speak(text: string, locale: string): boolean
   supported(): boolean
   prewarm?(): Promise<boolean> | boolean | Promise<void> | void
+  prefetch?(
+    items: Array<{ text: string; locale: string }>,
+  ): Promise<void> | void
   hasEnhancedVoice?(locale?: string): boolean
   areVoicesLoaded?(): boolean
   onVoicesChanged?(cb: () => void): () => void

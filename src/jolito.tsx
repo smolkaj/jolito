@@ -2762,6 +2762,39 @@ export function App({
     queueRef.current = queue
   })
 
+  useEffect(() => {
+    if (
+      view !== 'review' ||
+      queue.length === 0 ||
+      typeof services.speaker.prefetch !== 'function'
+    ) {
+      return
+    }
+
+    const upcomingIds = new Set(queue.slice(0, 5))
+    const upcomingCards = cards.filter((card) => upcomingIds.has(card.id))
+    const itemsToPrefetch: Array<{ text: string; locale: string }> = []
+
+    for (const card of upcomingCards) {
+      if (card.prompt.trim()) {
+        itemsToPrefetch.push({
+          text: card.prompt,
+          locale: localeForPrompt(card),
+        })
+      }
+      if (card.answer.trim()) {
+        itemsToPrefetch.push({
+          text: card.answer,
+          locale: localeForAnswer(card),
+        })
+      }
+    }
+
+    if (itemsToPrefetch.length > 0) {
+      void services.speaker.prefetch(itemsToPrefetch)
+    }
+  }, [cards, queue, services.speaker, view])
+
   const onUpdateCards = useCallback(
     (
       newCards: StudyCard[],
