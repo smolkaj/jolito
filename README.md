@@ -39,8 +39,8 @@ Jolito was created to bridge that gap: pairing the proven power of spaced repeti
 - **Duplicate detection:** Proactively catches and resolves duplicate cards across creation, deck management, and editing.
 - **Anki import:** Bring existing [Anki](https://apps.ankiweb.net/) decks (`.apkg` packages or text exports) in seconds, preserving learning history and [spaced-repetition](https://en.wikipedia.org/wiki/Spaced_repetition) schedules.
 - **Native iOS app & tactile haptics:** Package and run as a native iOS app via Capacitor, featuring sensory haptic feedback for card reveals and self-grading.
-- **Offline by default:** Installable PWA and native app with local storage and service worker caching. Practice anywhere with zero network latency.
-- **Cloud backup:** Optional passwordless sign-in with instant multi-device synchronization powered by Supabase.
+- **Offline-first study:** Installable PWA and native app with local storage and service worker caching. Once signed in, practice, create, and manage cards anywhere with zero network latency.
+- **Personal decks & cloud sync:** Passwordless email sign-in unlocks your personal deck with seamless multi-device backup powered by Supabase.
 
 ## Run it locally
 

@@ -33,7 +33,7 @@ Every PR must pass the [independent PR review loop](.agents/skills/independent-p
 
 # Design invariants
 
-1. **Local-first & offline by default.** Card review, creation, and audio playback must work completely without network connectivity. Sync is an enhancer, never a prerequisite.
+1. **Local-first & offline by default.** Card review, creation, and audio playback must work completely without network connectivity once an account is linked. Account setup is required for personal decks; once connected, cloud sync is an asynchronous enhancer, never a prerequisite.
 2. **Keyboard-first & accessible.** All interactions (`Enter` to reveal, `1`–`4` to grade, `Space` for audio) must be 100% keyboard-operable with zero WCAG 2.1 A/AA violations.
 3. **Never fail silently.** Prefer compile-time constraints. Fail loudly with structured errors rather than fallback defaults.
 4. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads) must be validated with runtime Zod schemas.

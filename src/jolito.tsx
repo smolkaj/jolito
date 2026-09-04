@@ -1879,7 +1879,7 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
               onSignIn()
             }}
           >
-            Sign in to sync <span aria-hidden="true">→</span>
+            Sign in to build your deck <span aria-hidden="true">→</span>
           </button>
           <button type="button" className="secondary-button" onClick={onClose}>
             Explore demo deck
@@ -2149,7 +2149,9 @@ function ConnectionPill({
   if (!isOnline) {
     stateClass = 'is-offline'
     label = 'Offline'
-    ariaLabel = 'Offline. Card changes are saved to this device.'
+    ariaLabel = authUser
+      ? 'Offline. Card changes are saved to this device.'
+      : 'Offline demo. Connect to internet and sign in to build your deck.'
     icon = <CloudOffIcon />
   } else if (authUser) {
     if (syncStatus === 'syncing') {
