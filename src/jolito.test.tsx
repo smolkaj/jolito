@@ -416,6 +416,23 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
+  it('protects interactive UI chrome from search snippet concatenation using data-nosnippet', () => {
+    const services = createTestServices()
+    const { container } = render(<App services={services} />)
+
+    const navActions = container.querySelector('.nav-actions')
+    expect(navActions).toHaveAttribute('data-nosnippet')
+
+    const heroActions = container.querySelector('.hero-actions')
+    expect(heroActions).toHaveAttribute('data-nosnippet')
+
+    const heroVisual = container.querySelector('.hero-visual')
+    expect(heroVisual).toHaveAttribute('data-nosnippet')
+
+    const footerInner = container.querySelector('.app-footer-inner')
+    expect(footerInner).toHaveAttribute('data-nosnippet')
+  })
+
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
     const services = createTestServices({
       cards: [

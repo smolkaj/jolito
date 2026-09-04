@@ -2125,7 +2125,7 @@ function AppFooter({
 }) {
   return (
     <footer className="app-footer" aria-label="Site footer">
-      <div className="app-footer-inner">
+      <div className="app-footer-inner" data-nosnippet>
         {showVoiceGuide && onOpenVoiceGuide && (
           <button
             type="button"
@@ -3660,7 +3660,7 @@ export function App({
         <main className="app-shell welcome-page">
           <nav className="topbar" aria-label="Main navigation">
             <Brand />
-            <div className="nav-actions">
+            <div className="nav-actions" data-nosnippet>
               <button
                 className="text-button"
                 onClick={() => navigateTo('deck')}
@@ -3698,7 +3698,7 @@ export function App({
                 <br />
                 Practice them at your rhythm.
               </p>
-              <div className="hero-actions">
+              <div className="hero-actions" data-nosnippet>
                 <button
                   className="primary-button"
                   onClick={() => navigateTo('create')}
@@ -3710,7 +3710,7 @@ export function App({
                 </button>
               </div>
             </div>
-            <div className="hero-visual">
+            <div className="hero-visual" data-nosnippet>
               {/* English Card (concise meaning) */}
               <button
                 type="button"
@@ -3857,7 +3857,7 @@ export function App({
         <main className="app-shell create-page">
           <nav className="topbar" aria-label="Card creation navigation">
             <Brand onClick={goHome} />
-            <div className="nav-actions">
+            <div className="nav-actions" data-nosnippet>
               <button
                 className="text-button"
                 onClick={() => navigateTo('deck')}
@@ -4317,7 +4317,7 @@ export function App({
         <main className="app-shell deck-page">
           <nav className="topbar" aria-label="Deck navigation">
             <Brand onClick={goHome} />
-            <div className="nav-actions">
+            <div className="nav-actions" data-nosnippet>
               {cards.length > 0 && (
                 <button
                   className="text-button"
@@ -4768,7 +4768,7 @@ export function App({
         <main className="app-shell complete-page">
           <nav className="topbar" aria-label="Session navigation">
             <Brand onClick={goHome} />
-            <div className="nav-actions">
+            <div className="nav-actions" data-nosnippet>
               <button
                 className="text-button"
                 onClick={() => navigateTo('deck')}
@@ -4927,7 +4927,7 @@ export function App({
       <main className="app-shell review-page">
         <nav className="topbar" aria-label="Review navigation">
           <Brand onClick={goHome} />
-          <div className="nav-actions">
+          <div className="nav-actions" data-nosnippet>
             <button className="text-button" onClick={() => navigateTo('deck')}>
               Manage deck
             </button>
