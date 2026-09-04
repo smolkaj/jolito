@@ -365,4 +365,200 @@ describe('EnhancedBrowserSpeaker', () => {
     speaker.speak('avocado', 'en-US')
     expect(speakMock).toHaveBeenCalledTimes(2)
   })
+
+  it('prefers enhanced / premium voice over compact voice when both are available', () => {
+    const speakMock = vi.fn()
+    const cancelMock = vi.fn()
+
+    const mockVoices: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina',
+        default: true,
+        localService: true,
+        voiceURI: 'es-MX-paulina-compact',
+      },
+      {
+        lang: 'es-MX',
+        name: 'Paulina (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-paulina-enhanced',
+      },
+    ]
+
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        speak: speakMock,
+        cancel: cancelMock,
+        speaking: false,
+        pending: false,
+        getVoices: () => mockVoices,
+        onvoiceschanged: null,
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    let selectedVoice: SpeechSynthesisVoice | null = null
+    class MockUtterance {
+      lang = ''
+      set voice(v: SpeechSynthesisVoice | null) {
+        selectedVoice = v
+      }
+      constructor(public text: string) {}
+    }
+
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: MockUtterance,
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+    speaker.speak('hola', 'es-MX')
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Paulina (Enhanced)',
+    )
+  })
 })
+
+describe('Apple voice enhancement helpers', () => {
+  it('detects Apple platforms accurately', async () => {
+    const { isApplePlatform, isMacOS } = await import('./speech')
+
+    const iPhoneUA =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15'
+    const macUA =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+    const androidUA =
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36'
+    const windowsUA =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+
+    expect(isApplePlatform(iPhoneUA)).toBe(true)
+    expect(isApplePlatform(macUA)).toBe(true)
+    expect(isApplePlatform(androidUA)).toBe(false)
+    expect(isApplePlatform(windowsUA)).toBe(false)
+
+    expect(isMacOS(macUA)).toBe(true)
+    expect(isMacOS(iPhoneUA)).toBe(false)
+  })
+
+  it('detects presence of enhanced Mexican Spanish voices', async () => {
+    const { hasEnhancedMexicanSpanishVoice } = await import('./speech')
+
+    const compactOnly: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina',
+        default: true,
+        localService: true,
+        voiceURI: 'es-MX-paulina',
+      },
+      {
+        lang: 'es-ES',
+        name: 'Mónica (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-ES-monica-enhanced',
+      },
+    ]
+
+    const withEnhancedPaulina: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-paulina-enhanced',
+      },
+    ]
+
+    const withSiriMexico: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Siri (Voice 1)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-siri',
+      },
+    ]
+
+    expect(hasEnhancedMexicanSpanishVoice([])).toBe(false)
+    expect(hasEnhancedMexicanSpanishVoice(compactOnly)).toBe(false)
+    expect(hasEnhancedMexicanSpanishVoice(withEnhancedPaulina)).toBe(true)
+    expect(hasEnhancedMexicanSpanishVoice(withSiriMexico)).toBe(true)
+  })
+
+  it('determines whether to prompt user for voice upgrade', async () => {
+    const { shouldPromptAppleVoiceUpgrade } = await import('./speech')
+
+    const compactVoices: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina',
+        default: true,
+        localService: true,
+        voiceURI: 'es-MX-paulina',
+      },
+    ]
+
+    const enhancedVoices: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina (Enhanced)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-MX-paulina-enhanced',
+      },
+    ]
+
+    // Apple user with compact voice and not dismissed -> prompt
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isApple: true,
+        voices: compactVoices,
+        dismissed: false,
+      }),
+    ).toBe(true)
+
+    // Dismissed by user -> do not prompt
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isApple: true,
+        voices: compactVoices,
+        dismissed: true,
+      }),
+    ).toBe(false)
+
+    // Non-Apple user -> do not prompt
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isApple: false,
+        voices: compactVoices,
+        dismissed: false,
+      }),
+    ).toBe(false)
+
+    // Voices not loaded yet -> do not prompt
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isApple: true,
+        voices: [],
+        dismissed: false,
+      }),
+    ).toBe(false)
+
+    // Enhanced voice already present -> do not prompt
+    expect(
+      shouldPromptAppleVoiceUpgrade({
+        isApple: true,
+        voices: enhancedVoices,
+        dismissed: false,
+      }),
+    ).toBe(false)
+  })
+})
+

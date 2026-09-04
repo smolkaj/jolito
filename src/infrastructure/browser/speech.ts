@@ -93,29 +93,42 @@ export class EnhancedBrowserSpeaker implements Speaker {
     const isSpanish = normalizedTarget.startsWith('es')
 
     if (isSpanish) {
-      // 1. Preferred Mexican Spanish neural / natural voices
-      const mxNatural = this.voices.find((v) => {
+      // 1. Preferred enhanced / premium / natural / siri Mexican Spanish voices
+      const mxEnhanced = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
           (lang === 'es-mx' ||
             name.includes('mexic') ||
             lang.includes('mexic')) &&
-          (name.includes('natural') ||
-            name.includes('enhanced') ||
+          (name.includes('enhanced') ||
             name.includes('premium') ||
-            name.includes('paulina') ||
+            name.includes('natural') ||
+            name.includes('siri') ||
+            name.includes('neural'))
+        )
+      })
+      if (mxEnhanced) return mxEnhanced
+
+      // 2. High-quality named Mexican voices (compact Paulina, Jorge, Dalia, Raul, Sabina, Google)
+      const mxNamed = this.voices.find((v) => {
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        const name = v.name.toLowerCase()
+        return (
+          (lang === 'es-mx' ||
+            name.includes('mexic') ||
+            lang.includes('mexic')) &&
+          (name.includes('paulina') ||
             name.includes('jorge') ||
             name.includes('dalia') ||
             name.includes('raul') ||
             name.includes('sabina') ||
-            name.includes('google') ||
-            name.includes('siri'))
+            name.includes('google'))
         )
       })
-      if (mxNatural) return mxNatural
+      if (mxNamed) return mxNamed
 
-      // 2. Any exact Mexican Spanish voice
+      // 3. Any exact Mexican Spanish voice
       const mxAny = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
@@ -193,4 +206,61 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
     return null
   }
+}
+
+export function isApplePlatform(userAgent?: string): boolean {
+  const ua =
+    userAgent ??
+    (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  if (!ua) return false
+  const isIOSorMac = /iPhone|iPad|iPod|Macintosh/i.test(ua)
+  const isIPadOS =
+    typeof navigator !== 'undefined' &&
+    navigator.maxTouchPoints !== undefined &&
+    navigator.maxTouchPoints > 1 &&
+    /Macintosh/i.test(ua)
+  return isIOSorMac || isIPadOS
+}
+
+export function isMacOS(userAgent?: string): boolean {
+  const ua =
+    userAgent ??
+    (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  if (!ua) return false
+  const isMac = /Macintosh/i.test(ua)
+  const isTouch =
+    typeof navigator !== 'undefined' &&
+    navigator.maxTouchPoints !== undefined &&
+    navigator.maxTouchPoints > 1
+  return isMac && !isTouch
+}
+
+export function hasEnhancedMexicanSpanishVoice(
+  voices: SpeechSynthesisVoice[],
+): boolean {
+  return voices.some((v) => {
+    const lang = v.lang.toLowerCase().replace(/_/g, '-')
+    const name = v.name.toLowerCase()
+    const isMx =
+      lang === 'es-mx' || name.includes('mexic') || lang.includes('mexic')
+    return (
+      isMx &&
+      (name.includes('enhanced') ||
+        name.includes('premium') ||
+        name.includes('siri') ||
+        name.includes('natural') ||
+        name.includes('neural'))
+    )
+  })
+}
+
+export function shouldPromptAppleVoiceUpgrade(options: {
+  isApple: boolean
+  voices: SpeechSynthesisVoice[]
+  dismissed: boolean
+}): boolean {
+  if (options.dismissed) return false
+  if (!options.isApple) return false
+  if (options.voices.length === 0) return false
+  return !hasEnhancedMexicanSpanishVoice(options.voices)
 }
