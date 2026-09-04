@@ -75,39 +75,53 @@ Suggested keyboard controls:
 - `Enter`: reveal / submit
 - `1`, `2`, `3`, `4`: Again, Hard, Good, Easy
 
-## Scope
+## Product Scope & Horizons
 
-### MVP
+### Core Platform (v1.0 Shipped)
 
-- Web app and native iOS client (Capacitor) sharing local storage and haptics
-- One personal card collection (no decks required); optional lightweight tags later
-- Manual card creation with lexicon assistance and autocomplete suggestions
-- Spanish ↔ English cards; Mexican/CDMX Spanish as the language variety
-- Typed active recall, self-evaluation, diffs, keyboard-first review
-- Spoken audio on prompt and answer (studio neural audio with offline caching)
-- Illustrations and optional deeper context
-- Familiar Anki-style scheduling, with an editable default of 20 new cards per day and no artificial review limit
-- Account-backed snapshot sync with offline-capable local storage
-- Anki deck and note import (`.apkg` and text exports)
+- **Web Application (PWA):** Installable, offline-capable progressive web application at [`joli.to`](https://joli.to) with local browser storage, service worker caching, and full mobile touch compliance.
+- **Unified Card Collection:** Single personal card collection with creation date and alphabetical sorting, duplicate detection and resolution, and instant editing.
+- **Multimodal Mexican Spanish:** Spanish ↔ English reciprocal card creation with lexicon assistance, autocomplete, lemma resolution, and verb conjugation ranking.
+- **Spoken Audio Immersion:** Spoken Mexican Spanish audio on prompts and answers using device/browser speech synthesis (Web Speech API) and pre-bundled audio for starter phrases.
+- **Active Typed Recall & Flow:** Production-first typed recall with affine gap alignment diffs, case-insensitivity, automatic audio reveal playback, Web Audio earcons, and sprint study batching.
+- **Spaced Repetition & Continuity:** Proven Anki-compatible scheduling, overdue queue prioritization, active study session preservation across navigation, and cross-device daily progress sync.
+- **Interoperability & Data Ownership:** Complete Anki `.apkg` (SQLite collection) and text note import, plus 100% offline JSON deck backup, export, and conflict-free restore/merge.
+- **Local-First Cloud Backup:** Deterministic PostgreSQL snapshot replication and RLS isolation via Supabase's permanent free tier, paired with in-app user feedback.
 
-### Explicitly later
+### Strategic Horizons
 
-- Native Android client
-- Speech-recognition/pronunciation evaluation
-- Bulk/transcript capture
-- Generative scene illustrations and remote LLM card enrichment
-- Social features, streak mechanics, courses, and complex deck management
-- Third-party social logins (Facebook, Amazon)
+#### Horizon 1: Native iOS App & Mobile Polish (Active Next)
+
+- **Native iOS Client via Capacitor:** Packaging the local-first application shell as an official iOS app (`ios/App`) with sensory haptics, TestFlight beta distribution, and App Store readiness.
+- **Studio Neural Voice Engine:** High-fidelity edge-synthesized neural Mexican Spanish voices (`/api/tts`), practice prefetching, voice cycling, and service worker audio caching beyond standard OS/device voices.
+- **Native iOS Authentication:** Apple Sign-In integrated with Supabase Auth.
+- **Ecosystem Widgets:** Quick-review Lock Screen and Home Screen widgets on iOS.
+- **Configurable Study Controls:** Custom daily new-card intake limits and advanced queue prioritization.
+- **Retention & Habit Insights:** Visual retention curves, interval distribution, and daily practice streak insights.
+- **Contextual Organization:** Lightweight user-defined tagging by topic, register, or situation.
+
+#### Horizon 2: Multimodal AI Enrichment
+
+- **Contextual Scene Visuals:** Clean, culturally grounded scene illustrations that anchor phrase meaning and context.
+- **Remote LLM Card Enrichment:** Generative CDMX cultural context notes, usage registers, and scene imagery enrichment.
+- **Anki Collection Export:** Exporting Jolito decks to `.apkg` packages for complete two-way Anki interoperability.
+
+#### Horizon 3: Ecosystem Expansion
+
+- **Native Android Client:** Expanding the Capacitor mobile shell to Android.
+- **Fine-Grained Replication:** PowerSync / operation-log sync when real-time multi-device concurrent editing is required.
+- **Pronunciation Evaluation:** Spoken production evaluation and speech recognition.
+- **Bulk & Dialogue Capture:** Rapid capture from street transcripts, dialogues, or reading passages.
 
 ## Account and sync approach
 
-There is no guest mode. A simple account path protects cards from the outset and makes eventual multi-device sync straightforward:
+Jolito balances frictionless exploration with personal data protection. Learners can immediately explore starter cards and practice without an account; linking an account unlocks personal deck persistence and seamless multi-device backup:
 
-- passwordless email link and 6-digit OTP via Supabase
-- Apple sign-in for the native iOS client
-- Google sign-in (future option)
+- passwordless 1-click email magic link and 6-digit OTP via Supabase
+- Apple Sign-In for the native iOS client
+- Google Sign-In (future option)
 
-The app still keeps a durable local collection for immediate, offline interaction. The server-backed account is the canonical synchronized record. Existing card media should be cached locally. If a user creates a card offline, its manual fields save immediately; AI translation, image generation, richer context, and new synthesized audio can queue for enrichment when connectivity returns.
+The app maintains a durable local collection for immediate, zero-latency interaction. Once connected, cloud sync is an asynchronous enhancer, never a prerequisite: card reviews, creations, and edits save locally first and replicate unobtrusively in the background. Existing card media and synthesized neural audio are cached locally via the service worker.
 
 ## Working definition of success
 

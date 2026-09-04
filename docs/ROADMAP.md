@@ -6,7 +6,7 @@ Our hexagonal architecture decouples core domain logic from UI and infrastructur
 
 ```mermaid
 flowchart TD
-    Foundation["Hexagonal Foundation & Core Loop (Complete ✅)"]
+    Foundation["Core Platform v1.0 (Shipped ✅)"]
 
     Foundation --> Track1["✨ Track 1: Simplicity, Delight & Sensory Flow (Active / Polished ✅)<br/>(Calm visual hierarchy, earcons, tactile haptics, spring diffs)"]
     Foundation --> Track2["🎨 Track 2: Multimodal AI Authoring (Active / Advanced 🚀)<br/>(Lexicon assistant, dual reciprocal cards, neural audio, scene visuals)"]
@@ -19,7 +19,7 @@ flowchart TD
 ---
 
 > [!NOTE]
-> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Jolito's north star. The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
+> **How to read this roadmap:** This document outlines the problem spaces, high-level goals, and capability areas needed to achieve Jolito's north star, complementing the Core Platform (v1.0) and Strategic Horizons in [`PRODUCT_VISION.md`](PRODUCT_VISION.md). The items within each track represent intended outcomes and reference directions, not rigid implementation prescriptions. Exact UX designs, technical choices, and trade-offs are defined test-first within dedicated worktrees when each track is actively explored.
 
 ---
 
@@ -45,7 +45,7 @@ _Goal: Turn any real-world phrase heard on the street into a rich, multimodal ca
 - **Lexicon-Assisted Card Creation (Complete ✅):** Enter a Spanish phrase or word → instant local autocomplete, translation suggestions, and definition lookups powered by a bundled Mexican Spanish lexicon with lemma resolution and verb-conjugation ranking ([`OfflineCardAssistant`](../src/application/card-assistant.ts)).
 - **Live Reciprocal Dual-Card Creation (Complete ✅):** Edit reciprocal Spanish ↔ English cards simultaneously with side-by-side previews and independent prompt/answer overrides.
 - **Duplicate Recognition & Resolution (Complete ✅):** Proactive duplicate detection and in-place resolution across creation, deck management, and editing.
-- **Studio Neural Voice & Audio Caching (Complete ✅):** High-fidelity neural voice engine with practice prefetching, voice cycling, bundled neural audio for sample cards, and service worker caching for 100% offline study.
+- **Studio Neural Voice Engine (Horizon 1 🚀):** High-fidelity edge-synthesized neural voices (`/api/tts`) with practice prefetching, voice cycling, and service worker caching extending beyond built-in OS/device speech synthesis.
 - **Contextual Visuals (Planned):** Clean, culturally grounded scene illustrations that anchor phrase meaning and context.
 - **Remote LLM Multimodal Authoring (Planned):** Generative CDMX cultural context notes, usage registers, and scene imagery enrichment when connectivity is available.
 
@@ -86,15 +86,15 @@ _Goal: Ensure cards and progress are safely backed up and synced without sacrifi
 
 ---
 
-### Track 6: 📱 Native iOS Client & Mobile Ecosystem
+### Track 6: 📱 Native iOS Client & Mobile Ecosystem (Horizon 1 🚀)
 
-_Goal: Bring Jolito's calm, rhythmic study flow to iOS with native tactile polish and instant widget access._
+_Goal: Bring Jolito's calm, rhythmic study flow to iOS with native tactile polish, TestFlight distribution, and instant widget access._
 
-- **Native Mobile Experience via Capacitor (Complete ✅):** Native iOS app packaging (`ios/App`) sharing the core local-first React web application, local storage, and offline service worker.
+- **Native Mobile Packaging & Shell (Beta Groundwork ✅):** Capacitor app packaging (`ios/App`) sharing the core local-first React web application, local storage, and offline service worker.
 - **Sensory Haptics (Complete ✅):** Native tactile feedback via `@capacitor/haptics` for card reveals and self-grading.
 - **Automated Native Toolchain & CI (Complete ✅):** Xcode compilation validation in GitHub Actions (`macos-15`), Fastlane TestFlight distribution, and Maestro native test support.
-- **Apple Sign-In (Next):** Native iOS authentication flow integrating with Supabase Auth.
-- **Native Widgets & Extensions (Planned):** Quick-review Lock Screen and Home Screen widgets.
+- **Apple Sign-In (Active Next):** Native iOS authentication flow integrating with Supabase Auth.
+- **App Store Release & Widgets (Horizon 1):** Official App Store release and quick-review Lock Screen/Home Screen widgets.
 
 ---
 
