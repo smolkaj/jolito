@@ -24,7 +24,6 @@ jobs:
           cache: npm
       - run: npm ci --no-audit
       - run: npm run check
-      - run: npm run audit:prod
 
   browser:
     name: Browser smoke tests

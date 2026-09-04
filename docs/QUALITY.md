@@ -10,7 +10,8 @@ Every merged code change must pass the automated quality gates:
 - focused unit tests for domain behavior;
 - at least one browser-level test when a user workflow changes;
 - production build;
-- production dependency audit.
+- native iOS Xcode compilation and Capacitor sync;
+- dependency vulnerability review (via GitHub Dependency Review on PRs and continuous Dependabot auditing).
 
 CI and supported local development use Node.js >=24 (tested on Node 24 Krypton LTS and Node 26+), pinned to LTS in `.nvmrc` and GitHub Actions workflows.
 
@@ -49,5 +50,5 @@ Documentation is part of the deliverable:
 npm run check       # formatting, linting, types, unit coverage, production build
 npm run test:e2e    # browser and mobile touch smoke tests
 npm run cap:sync    # sync web assets to native iOS project
-npm run audit:prod  # production dependency vulnerabilities
+npm run audit:prod  # local production dependency vulnerability audit
 ```
