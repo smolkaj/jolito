@@ -19,13 +19,23 @@ export type CardRepository = {
   save(cards: StudyCard[], deletedCardIds?: string[]): void
 }
 
+export type SpeakerOptions = {
+  cardSeed?: string | undefined
+  voice?: string | undefined
+}
+
+export type PrefetchItem = {
+  text: string
+  locale: string
+  cardSeed?: string | undefined
+  voice?: string | undefined
+}
+
 export type Speaker = {
-  speak(text: string, locale: string): boolean
+  speak(text: string, locale: string, options?: SpeakerOptions): boolean
   supported(): boolean
   prewarm?(): Promise<boolean> | boolean | Promise<void> | void
-  hasEnhancedVoice?(locale?: string): boolean
-  areVoicesLoaded?(): boolean
-  onVoicesChanged?(cb: () => void): () => void
+  prefetch?(items: PrefetchItem[]): Promise<void> | void
 }
 
 export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'

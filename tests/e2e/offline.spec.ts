@@ -30,7 +30,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   // Track any failed app asset requests while offline
   const failedRequests: string[] = []
   page.on('requestfailed', (req) => {
-    if (!req.url().includes('supabase.co')) {
+    if (!req.url().includes('supabase.co') && !req.url().includes('/api/tts')) {
       failedRequests.push(req.url())
     }
   })

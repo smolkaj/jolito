@@ -1,11 +1,16 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "jolito",
+  "main": "src/worker/index.ts",
   "compatibility_date": "2026-08-21",
   "workers_dev": true,
+  "cache": {
+    "enabled": true,
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
   },
   "routes": [
     {

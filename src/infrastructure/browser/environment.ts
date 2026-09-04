@@ -68,39 +68,3 @@ export function isMacOS(
   const ua = nav.userAgent || ''
   return /Macintosh|MacIntel/i.test(ua) || nav.platform === 'MacIntel'
 }
-
-/**
- * Detects whether the browser runs in an environment where Apple's system speech voices
- * (from macOS/iOS Accessibility > Spoken Content) are actually exposed to Web Speech API.
- * On iOS/iPadOS, all browsers use WebKit and have access to Apple voices.
- * On macOS, only Safari / WebKit / WKWebView expose Apple voices; Chrome, Edge, and Firefox
- * on macOS use their own speech synthesis systems and do not expose downloaded Apple voice packs.
- */
-export function isAppleVoiceSupported(
-  customNavigator?: {
-    userAgent?: string
-    maxTouchPoints?: number
-    platform?: string
-    vendor?: string
-  } | null,
-): boolean {
-  const nav =
-    customNavigator === undefined
-      ? typeof navigator !== 'undefined'
-        ? navigator
-        : null
-      : customNavigator
-  if (!nav) return false
-  if (isIOS(nav)) return true
-  if (!isMacOS(nav)) return false
-
-  const ua = nav.userAgent || ''
-  const vendor = nav.vendor || ''
-
-  const isChromium = /Chrome|Chromium|Edg|OPR/i.test(ua)
-  const isFirefox = /Firefox/i.test(ua)
-  const isAppleVendor = /Apple/i.test(vendor)
-  const isSafari = /Safari/i.test(ua) && !isChromium
-
-  return (isSafari || isAppleVendor) && !isFirefox
-}
