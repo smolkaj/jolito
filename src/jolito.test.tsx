@@ -908,6 +908,48 @@ describe('Jolito', () => {
       screen.getByRole('listbox', { name: /spanish suggestions/i }),
     ).toBeInTheDocument()
     expect(spanishInput).toHaveValue('ahor')
+
+    // A subsequent clean tap outside without dragging cleanly dismisses the overlay
+    fireEvent.pointerDown(heading, { clientX: 150, clientY: 100 })
+    fireEvent.pointerUp(heading, { clientX: 150, clientY: 100 })
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('resets gesture drag state on pointercancel so subsequent outside taps still dismiss suggestions', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/spanish/i)
+    await user.type(spanishInput, 'ahor')
+
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    const heading = screen.getByRole('heading', { name: /new flashcard/i })
+
+    // Simulate an interrupted gesture: pointerdown -> pointermove -> pointercancel
+    fireEvent.pointerDown(heading, { clientX: 150, clientY: 100 })
+    fireEvent.pointerMove(document, { clientX: 150, clientY: 200 })
+    fireEvent.pointerCancel(document)
+
+    // Suggestions remain open after cancelled gesture
+    expect(
+      screen.getByRole('listbox', { name: /spanish suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Next tap outside successfully dismisses suggestions
+    fireEvent.pointerDown(heading, { clientX: 150, clientY: 100 })
+    fireEvent.pointerUp(heading, { clientX: 150, clientY: 100 })
+
+    expect(
+      screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('selects existing text when tabbing between fields in the card creation view', async () => {

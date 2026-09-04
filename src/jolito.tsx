@@ -3095,7 +3095,6 @@ export function App({
         suggestionsBlurTimerRef.current = null
       }
       isScrollingRef.current = true
-      isDraggingRef.current = true
       if (scrollResetTimerRef.current !== null) {
         window.clearTimeout(scrollResetTimerRef.current)
       }
@@ -3116,12 +3115,16 @@ export function App({
       const dy = event.clientY - pointerDownPosRef.current.y
       if (Math.hypot(dx, dy) > 8) {
         isDraggingRef.current = true
-        isScrollingRef.current = true
         if (suggestionsBlurTimerRef.current !== null) {
           window.clearTimeout(suggestionsBlurTimerRef.current)
           suggestionsBlurTimerRef.current = null
         }
       }
+    }
+
+    const handlePointerCancel = () => {
+      pointerDownPosRef.current = null
+      isDraggingRef.current = false
     }
 
     const handlePointerUp = (event: PointerEvent) => {
@@ -3164,12 +3167,14 @@ export function App({
     document.addEventListener('pointerdown', handlePointerDown)
     document.addEventListener('pointermove', handlePointerMove)
     document.addEventListener('pointerup', handlePointerUp)
+    document.addEventListener('pointercancel', handlePointerCancel)
     document.addEventListener('click', handleClick)
     return () => {
       window.removeEventListener('scroll', onScroll, { capture: true })
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('pointermove', handlePointerMove)
       document.removeEventListener('pointerup', handlePointerUp)
+      document.removeEventListener('pointercancel', handlePointerCancel)
       document.removeEventListener('click', handleClick)
     }
   }, [suggestions.length, dismissSuggestions])
