@@ -3065,7 +3065,10 @@ describe('Jolito', () => {
     expect(screen.getByText(/⌃ E/i)).toBeInTheDocument()
 
     // 2. Pressing Ctrl+E while input is focused opens edit modal
-    await user.keyboard('{Control>}e{/Control}')
+    await act(async () => {
+      fireEvent.keyDown(answerInput, { key: 'e', ctrlKey: true })
+      await Promise.resolve()
+    })
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
@@ -3084,7 +3087,10 @@ describe('Jolito', () => {
     expect(screen.getByText(/1–4/i)).toBeInTheDocument()
 
     // 4. Pressing bare 'e' when revealed opens edit modal
-    await user.keyboard('e')
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'e' })
+      await Promise.resolve()
+    })
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
@@ -4172,14 +4178,22 @@ describe('Jolito', () => {
 
     // Test visibilitychange flush
     const beforeHideSyncs = services.mockSync.syncedCount
-    act(() => {
+    try {
+      await act(async () => {
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          value: 'hidden',
+        })
+        document.dispatchEvent(new Event('visibilitychange'))
+        await Promise.resolve()
+      })
+      expect(services.mockSync.syncedCount).toBeGreaterThan(beforeHideSyncs)
+    } finally {
       Object.defineProperty(document, 'visibilityState', {
         configurable: true,
-        value: 'hidden',
+        value: 'visible',
       })
-      document.dispatchEvent(new Event('visibilitychange'))
-    })
-    expect(services.mockSync.syncedCount).toBeGreaterThan(beforeHideSyncs)
+    }
   })
 
   it('preserves in-flight card reviews when a slow background sync resolves', async () => {
@@ -4231,12 +4245,13 @@ describe('Jolito', () => {
 
     // Override syncDeck to be controllable
     const originalSyncDeck = services.mockSync.syncDeck.bind(services.mockSync)
+    let syncPromise: ReturnType<typeof originalSyncDeck> | null = null
     let syncCallCount = 0
     services.sync.syncDeck = (localCards, user, localDeletedIds) => {
       syncCallCount++
       if (syncCallCount === 2) {
         // Return a delayed promise that returns the older state
-        return new Promise((resolve) => {
+        syncPromise = new Promise((resolve) => {
           resolvePendingSync = () => {
             resolve({
               success: true,
@@ -4246,6 +4261,7 @@ describe('Jolito', () => {
             })
           }
         })
+        return syncPromise
       }
       return originalSyncDeck(localCards, user, localDeletedIds)
     }
@@ -4256,17 +4272,17 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
     // Trigger debounced/focus sync (syncCallCount = 2, returns pending promise)
-    act(() => {
-      window.dispatchEvent(new Event('focus'))
-    })
+    window.dispatchEvent(new Event('focus'))
 
     // While sync is in-flight, grade cardA with Easy
-    await user.keyboard('{Enter}')
-    await user.keyboard('4')
+    fireEvent.click(screen.getByRole('button', { name: /reveal answer/i }))
+    fireEvent.click(screen.getByRole('button', { name: /easy/i }))
 
     // Now resolve the in-flight sync with the older server response
-    act(() => {
+    await act(async () => {
       resolvePendingSync?.()
+      await syncPromise
+      await Promise.resolve()
     })
 
     // The in-flight review on cardA must NOT have been overwritten
