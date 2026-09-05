@@ -17,6 +17,7 @@ git worktree remove ../jolito-<task> && git worktree prune
 - Open PRs proactively and early; share them with the user for review.
 - Always proactively provide the live branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
 - Never merge PRs without explicit user approval.
+- After merging a PR, proactively consider whether there is natural follow-up work (e.g. a refactoring, tweak, refinement, optimization, or improvement closely related to the PR) and suggest tackling it next.
 
 # Independent review loop
 
