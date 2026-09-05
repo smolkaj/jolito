@@ -87,6 +87,15 @@ const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
 
 /**
+ * Returns the target Mexican Spanish text and locale for a card
+ * (the prompt on es-en comprehension cards, or the answer on en-es production cards).
+ */
+const targetSpanishForCard = (card: StudyCard) => ({
+  text: card.direction === 'es-en' ? card.prompt : card.answer,
+  locale: 'es-MX' as const,
+})
+
+/**
  * Stagger duration (in ms) before speaking the revealed answer.
  * Allows the reveal earcon chime (C5 -> E5, ~100ms) to finish its attack and harmonic
  * envelope without frequency-masking the opening consonants/phonemes of the spoken answer.
@@ -1794,11 +1803,8 @@ export function App({
           revealAudioTimerRef.current = null
         }
         if (revealed) {
-          playAudio(
-            currentCard.answer,
-            localeForAnswer(currentCard),
-            currentCard.id,
-          )
+          const target = targetSpanishForCard(currentCard)
+          playAudio(target.text, target.locale, currentCard.id)
         } else {
           playAudio(
             currentCard.prompt,

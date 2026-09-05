@@ -71,7 +71,7 @@ Gentle answer comparison can highlight close or exact matches, but it must not m
 
 Suggested keyboard controls:
 
-- `Space`: replay audio (prompt before reveal, expected answer after reveal)
+- `Space`: replay audio (prompt before reveal, Spanish target phrase after reveal)
 - `Enter`: reveal / submit
 - `1`, `2`, `3`, `4`: Again, Hard, Good, Easy
 
