@@ -257,6 +257,60 @@ describe('compareAnswer (character-level affine diff)', () => {
     const emDash = compareAnswer('stop\u2014go', 'stop-go')
     expect(emDash.isExact).toBe(true)
   })
+
+  it('treats slash spacing variations as exact matches', () => {
+    const withoutSpaces = compareAnswer('to take/drink', 'to take / drink')
+    expect(withoutSpaces.isExact).toBe(true)
+
+    const reverse = compareAnswer('to take / drink', 'to take/drink')
+    expect(reverse.isExact).toBe(true)
+
+    const irregular = compareAnswer('to take  /  drink', 'to take / drink')
+    expect(irregular.isExact).toBe(true)
+  })
+
+  it('aligns delimiters cleanly when typing has typos alongside delimiter spacing differences', () => {
+    const result = compareAnswer('to take/drnk', 'to take / drink')
+    expect(result.isExact).toBe(false)
+    expect(result.typedSegments).toEqual([
+      { value: 'to take / drnk', status: 'match' },
+    ])
+    expect(result.expectedSegments).toEqual([
+      { value: 'to take / dr', status: 'match' },
+      { value: 'i', status: 'missing' },
+      { value: 'nk', status: 'match' },
+    ])
+  })
+
+  it('aligns isolated characters and single-letter words without swallowing them into whitespace gaps', () => {
+    // Hyphens with space variations
+    const hyphenResult = compareAnswer('well - known', 'well-known')
+    expect(hyphenResult.isExact).toBe(false)
+    expect(hyphenResult.typedSegments).toEqual([
+      { value: 'well', status: 'match' },
+      { value: ' ', status: 'extra' },
+      { value: '-', status: 'match' },
+      { value: ' ', status: 'extra' },
+      { value: 'known', status: 'match' },
+    ])
+    expect(hyphenResult.expectedSegments).toEqual([
+      { value: 'well-known', status: 'match' },
+    ])
+
+    // Single-letter Spanish words without spaces
+    const singleLetterResult = compareAnswer('panyvino', 'pan y vino')
+    expect(singleLetterResult.isExact).toBe(false)
+    expect(singleLetterResult.typedSegments).toEqual([
+      { value: 'panyvino', status: 'match' },
+    ])
+    expect(singleLetterResult.expectedSegments).toEqual([
+      { value: 'pan', status: 'match' },
+      { value: ' ', status: 'missing' },
+      { value: 'y', status: 'match' },
+      { value: ' ', status: 'missing' },
+      { value: 'vino', status: 'match' },
+    ])
+  })
 })
 
 describe('normalizeTypography', () => {
@@ -275,6 +329,15 @@ describe('normalizeTypography', () => {
   it('replaces en-dash and em-dash with hyphen', () => {
     expect(normalizeTypography('a\u2013b')).toBe('a-b')
     expect(normalizeTypography('a\u2014b')).toBe('a-b')
+  })
+
+  it('normalizes spacing around slash delimiters', () => {
+    expect(normalizeTypography('take/drink')).toBe('take / drink')
+    expect(normalizeTypography('take / drink')).toBe('take / drink')
+    expect(normalizeTypography('take  /  drink')).toBe('take / drink')
+    expect(normalizeTypography('take /drink')).toBe('take / drink')
+    expect(normalizeTypography('take/ drink')).toBe('take / drink')
+    expect(normalizeTypography(' / ')).toBe('/')
   })
 
   it('leaves plain ASCII text unchanged', () => {
