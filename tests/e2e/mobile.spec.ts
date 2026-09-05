@@ -75,6 +75,12 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     // Capture mobile welcome snapshot
     await page.screenshot({ path: 'test-results/mobile-welcome.png' })
 
+    // Verify scroll cue is hidden on mobile to avoid redundant button farm
+    const scrollCue = page.getByRole('button', {
+      name: /^scroll down to explore why jolito$/i,
+    })
+    await expect(scrollCue).toBeHidden()
+
     // Initial accessibility check on mobile welcome screen
     const welcomeAxe = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -179,7 +185,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       page.getByRole('heading', { name: /share feedback/i }),
     ).not.toBeVisible()
     await expect(
-      page.getByRole('heading', { name: /^cloud sync$/i }),
+      page.getByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
     ).toBeVisible()
   })
 })

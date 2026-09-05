@@ -1,6 +1,5 @@
 import {
   type ChangeEvent,
-  type FocusEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -16,13 +15,7 @@ import { createCards } from './application/create-cards'
 import { importAnkiDeck } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
-import type {
-  AppServices,
-  AuthService,
-  AuthUser,
-  FeedbackService,
-  SyncService,
-} from './application/ports'
+import type { AppServices, AuthUser, SyncService } from './application/ports'
 import {
   filterOutStarterCards,
   starterCards,
@@ -50,11 +43,7 @@ import {
   type DeckFilterState,
   type DeckSortOrder,
 } from './application/deck-management'
-import {
-  findDuplicateCards,
-  findDuplicateNoteCards,
-  getDuplicateGroups,
-} from './domain/duplicate'
+import { findDuplicateNoteCards, getDuplicateGroups } from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import { reconcileStudyCards, type SyncStatus } from './domain/sync'
@@ -68,12 +57,21 @@ import {
   titleForView,
   viewFromHash,
 } from './navigation'
-
-function handleFocusSelect(
-  event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
-) {
-  event.currentTarget.select()
-}
+import {
+  CloudCheckIcon,
+  CloudOffIcon,
+  JolitoMark,
+  MexicoFlag,
+  SyncAlertIcon,
+  SyncSpinnerIcon,
+  UsFlag,
+  UserIcon,
+} from './ui/icons'
+import { AudioButton } from './ui/AudioButton'
+import { EditCardModal } from './ui/modals/EditCardModal'
+import { SyncModal } from './ui/modals/SyncModal'
+import { FeedbackModal } from './ui/modals/FeedbackModal'
+import { handleFocusSelect } from './ui/utils'
 
 const gradeLabels: Record<Grade, string> = {
   again: 'Again',
@@ -88,123 +86,26 @@ const localeForPrompt = (card: StudyCard) =>
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
 
-function MexicoFlag({ className }: { className?: string }) {
-  return (
-    <svg
-      className={`flag-icon flag-mx ${className ?? ''}`}
-      viewBox="0 0 18 12"
-      width="16"
-      height="11"
-      aria-hidden="true"
-    >
-      <rect width="6" height="12" fill="#006847" />
-      <rect x="6" width="6" height="12" fill="#ffffff" />
-      <rect x="12" width="6" height="12" fill="#ce1126" />
-      <circle cx="9" cy="6" r="1.8" fill="#bfa054" />
-      <circle cx="9" cy="6" r="1.1" fill="#4a2e12" />
-      <circle cx="9" cy="5.4" r="0.5" fill="#006847" />
-    </svg>
-  )
-}
+/**
+ * Stagger duration (in ms) before speaking the revealed answer.
+ * Allows the reveal earcon chime (C5 -> E5, ~100ms) to finish its attack and harmonic
+ * envelope without frequency-masking the opening consonants/phonemes of the spoken answer.
+ */
+const REVEAL_AUDIO_STAGGER_MS = 120
 
-function UsFlag({ className }: { className?: string }) {
-  return (
-    <svg
-      className={`flag-icon flag-us ${className ?? ''}`}
-      viewBox="0 0 18 12"
-      width="16"
-      height="11"
-      aria-hidden="true"
-    >
-      <rect width="18" height="12" fill="#bf0a30" />
-      <rect y="1.8" width="18" height="1.8" fill="#ffffff" />
-      <rect y="5.4" width="18" height="1.8" fill="#ffffff" />
-      <rect y="9" width="18" height="1.8" fill="#ffffff" />
-      <rect width="8" height="6" fill="#002868" />
-      <circle cx="2.5" cy="2" r="0.55" fill="#ffffff" />
-      <circle cx="5.5" cy="2" r="0.55" fill="#ffffff" />
-      <circle cx="4" cy="4" r="0.55" fill="#ffffff" />
-    </svg>
-  )
-}
-
-export function JolitoMark({
-  className = '',
-  size = 34,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`jolito-mark ${className}`.trim()}
-      viewBox="0 0 32 32"
-      width={size}
-      height={size}
-      aria-hidden={ariaHidden}
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <g className="jolito-gills jolito-gills-left">
-        <rect
-          className="jolito-gill gill-tl"
-          x="3"
-          y="6.5"
-          width="11"
-          height="4.5"
-          rx="2.25"
-        />
-        <rect
-          className="jolito-gill gill-ml"
-          x="1"
-          y="13.75"
-          width="12"
-          height="4.5"
-          rx="2.25"
-        />
-        <rect
-          className="jolito-gill gill-bl"
-          x="3"
-          y="21"
-          width="11"
-          height="4.5"
-          rx="2.25"
-        />
-      </g>
-      <g className="jolito-gills jolito-gills-right">
-        <rect
-          className="jolito-gill gill-tr"
-          x="18"
-          y="6.5"
-          width="11"
-          height="4.5"
-          rx="2.25"
-        />
-        <rect
-          className="jolito-gill gill-mr"
-          x="19"
-          y="13.75"
-          width="12"
-          height="4.5"
-          rx="2.25"
-        />
-        <rect
-          className="jolito-gill gill-br"
-          x="18"
-          y="21"
-          width="11"
-          height="4.5"
-          rx="2.25"
-        />
-      </g>
-      <g className="jolito-core">
-        <circle className="jolito-core-outer" cx="16" cy="16" r="6" />
-        <circle className="jolito-core-mid" cx="16" cy="16" r="4.2" />
-        <circle className="jolito-core-inner" cx="16" cy="16" r="2.2" />
-      </g>
-    </svg>
-  )
+function getActiveAudioItems(
+  cards: StudyCard[],
+): Array<{ text: string; locale: string }> {
+  const items: Array<{ text: string; locale: string }> = []
+  for (const card of cards) {
+    if (card.prompt.trim()) {
+      items.push({ text: card.prompt, locale: localeForPrompt(card) })
+    }
+    if (card.answer.trim()) {
+      items.push({ text: card.answer, locale: localeForAnswer(card) })
+    }
+  }
+  return items
 }
 
 function Brand({ onClick }: { onClick?: () => void }) {
@@ -226,311 +127,6 @@ function Brand({ onClick }: { onClick?: () => void }) {
     </button>
   ) : (
     <div className="brand">{content}</div>
-  )
-}
-
-function AudioButton({
-  label,
-  onClick,
-  prompt = false,
-}: {
-  label: string
-  onClick: () => void
-  prompt?: boolean
-}) {
-  return (
-    <button
-      className="audio-button"
-      type="button"
-      aria-label={label}
-      title={label}
-      data-prompt-audio={prompt || undefined}
-      onClick={onClick}
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-      </svg>
-    </button>
-  )
-}
-
-export function CloudCheckIcon({
-  className = '',
-  size = 15,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-cloud-check ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      aria-hidden={ariaHidden}
-    >
-      <path
-        d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
-        fill="currentColor"
-      />
-      <path
-        d="m7.8 13.5 2.8 2.8 5.6-5.6"
-        fill="none"
-        stroke="var(--turquesa-soft, #eaf3ed)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-export function CloudCheckSticker({
-  size = 60,
-  className = '',
-}: {
-  size?: number
-  className?: string
-}) {
-  return (
-    <svg
-      className={`cloud-check-sticker ${className}`.trim()}
-      viewBox="0 0 64 48"
-      width={size}
-      height={(size * 48) / 64}
-      aria-hidden="true"
-    >
-      {/* Soft sticker drop shadow */}
-      <path
-        d="M51.5 24C49.8 15.6 42.4 9.5 33.5 9.5c-7 0-13.1 3.9-16.1 9.8C7.6 20 2 26.2 2 33.7 2 41.6 8.5 48 16.5 48h35c6.6 0 12-5.4 12-12 0-6.3-4.9-11.4-11.2-11.9z"
-        fill="rgba(18, 24, 21, 0.08)"
-        transform="translate(2, 3)"
-      />
-      {/* Cloud sticker body - Vibrant Oaxacan Turquesa */}
-      <path
-        d="M51.5 21C49.8 12.6 42.4 6.5 33.5 6.5c-7 0-13.1 3.9-16.1 9.8C7.6 17 2 23.2 2 30.7 2 38.6 8.5 45 16.5 45h35c6.6 0 12-5.4 12-12 0-6.3-4.9-11.4-11.2-11.9z"
-        fill="#2a7a63"
-      />
-      {/* Subtle organic upper highlight */}
-      <path
-        d="M33.5 8.5c6.2 0 11.6 3.8 13.8 9.5"
-        fill="none"
-        stroke="#5ab69c"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      {/* Bold Crisp White Checkmark */}
-      <path
-        d="M22 28.5l7.5 7.5 15-15"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-export function UserIcon({
-  className = '',
-  size = 15,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-user ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <circle cx="12" cy="7.5" r="3.75" />
-      <path d="M19.5 20.5a7.5 7.5 0 0 0-15 0" />
-    </svg>
-  )
-}
-
-export function SyncSpinnerIcon({
-  className = '',
-  size = 15,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-sync-spinner ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <path d="M21 12a9 9 0 0 0-15.5-6.36L3 8" />
-      <path d="M3 3v5h5" />
-      <path d="M3 12a9 9 0 0 0 15.5 6.36L21 16" />
-      <path d="M21 21v-5h-5" />
-    </svg>
-  )
-}
-
-export function CloudOffIcon({
-  className = '',
-  size = 15,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-cloud-off ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <path d="M2 2l20 20" />
-      <path d="M8.8 3.5A5.5 5.5 0 0 1 16.9 7.2 4.2 4.2 0 0 1 20 11.2a4 4 0 0 1-2.1 3.5" />
-      <path d="M5.5 9.8A4.5 4.5 0 0 0 7 17.5h8.5" />
-    </svg>
-  )
-}
-
-export function SyncAlertIcon({
-  className = '',
-  size = 15,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-sync-alert ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <path d="m12 3.5 9 15.5a1.2 1.2 0 0 1-1.04 1.8H4.04A1.2 1.2 0 0 1 3 19L12 3.5Z" />
-      <path d="M12 9v4" />
-      <circle cx="12" cy="16.5" r="0.75" fill="currentColor" />
-    </svg>
-  )
-}
-
-export function ShieldIcon({
-  className = '',
-  size = 20,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-shield ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  )
-}
-
-export function PhoneLinkIcon({
-  className = '',
-  size = 16,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-phone-link ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-      <path d="M12 18h.01" />
-    </svg>
-  )
-}
-
-export function ClipboardIcon({
-  className = '',
-  size = 14,
-  ariaHidden = true,
-}: {
-  className?: string
-  size?: number
-  ariaHidden?: boolean
-}) {
-  return (
-    <svg
-      className={`icon-clipboard ${className}`.trim()}
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden={ariaHidden}
-    >
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-    </svg>
   )
 }
 
@@ -628,255 +224,6 @@ function getCardScheduleBadge(
     Math.round(msUntilDue / (24 * 60 * 60 * 1000)),
   )
   return { label: `Due in ${daysUntilDue}d`, type: 'review' }
-}
-
-function EditCardModalInner({
-  card,
-  cards = [],
-  onClose,
-  onSave,
-  onPlayAudio,
-}: {
-  card: StudyCard
-  cards?: StudyCard[] | undefined
-  onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
-  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
-}) {
-  const [prompt, setPrompt] = useState(card.prompt)
-  const [answer, setAnswer] = useState(card.answer)
-  const [context, setContext] = useState(card.context ?? '')
-  const [resetProgress, setResetProgress] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const isEsToEn = card.direction === 'es-en'
-  const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
-  const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
-
-  const isAlreadyNew =
-    card.schedule.state === 'new' && card.schedule.reviews === 0
-
-  const duplicateConflict = useMemo(() => {
-    const matches = findDuplicateCards(cards, {
-      prompt,
-      direction: card.direction,
-      excludeCardId: card.id,
-    })
-    return matches[0] ?? null
-  }, [cards, prompt, card.direction, card.id])
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    const trimmedPrompt = prompt.trim()
-    const trimmedAnswer = answer.trim()
-    if (!trimmedPrompt) {
-      setError('Prompt cannot be empty.')
-      return
-    }
-    if (!trimmedAnswer) {
-      setError('Answer cannot be empty.')
-      return
-    }
-    setError(null)
-    onSave(card, {
-      prompt: trimmedPrompt,
-      answer: trimmedAnswer,
-      context: context.trim(),
-      resetProgress: isAlreadyNew ? false : resetProgress,
-    })
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content edit-card-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-card-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="edit-card-modal-title">Edit flashcard</h2>
-            <p className="modal-subtitle">
-              Modify prompt, answer, or memory notes.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
-        </div>
-
-        {error && (
-          <div className="status-banner status-error" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
-
-        {duplicateConflict && (
-          <div className="status-banner edit-duplicate-notice" role="status">
-            <p>
-              Duplicate prompt: <strong>{duplicateConflict.prompt}</strong>{' '}
-              already exists in your deck ({duplicateConflict.answer}).
-            </p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="edit-card-form">
-          <div className="field-group">
-            <div className="field-label-row">
-              <label htmlFor="edit-prompt">
-                {isEsToEn ? <MexicoFlag /> : <UsFlag />}{' '}
-                {isEsToEn ? 'Mexican Spanish (Prompt)' : 'English (Prompt)'}
-              </label>
-              {prompt.trim() && (
-                <AudioButton
-                  label="Play prompt preview"
-                  onClick={() =>
-                    onPlayAudio(prompt.trim(), promptLocale, card.id)
-                  }
-                />
-              )}
-            </div>
-            <textarea
-              id="edit-prompt"
-              rows={2}
-              required
-              autoFocus
-              autoCapitalize="none"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onFocus={handleFocusSelect}
-              placeholder="Prompt text"
-            />
-          </div>
-
-          <div className="field-group">
-            <div className="field-label-row">
-              <label htmlFor="edit-answer">
-                {isEsToEn ? <UsFlag /> : <MexicoFlag />}{' '}
-                {isEsToEn ? 'English (Answer)' : 'Mexican Spanish (Answer)'}
-              </label>
-              {answer.trim() && (
-                <AudioButton
-                  label="Play answer preview"
-                  onClick={() =>
-                    onPlayAudio(answer.trim(), answerLocale, card.id)
-                  }
-                />
-              )}
-            </div>
-            <textarea
-              id="edit-answer"
-              rows={2}
-              required
-              autoCapitalize="none"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              onFocus={handleFocusSelect}
-              placeholder="Answer text"
-            />
-          </div>
-
-          <div className="field-group">
-            <div className="field-label-row">
-              <label htmlFor="edit-context">Additional Context</label>
-            </div>
-            <textarea
-              id="edit-context"
-              rows={2}
-              autoCapitalize="none"
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              onFocus={handleFocusSelect}
-              placeholder="Optional context, usage notes, or nuance"
-            />
-          </div>
-
-          <label
-            className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
-          >
-            <input
-              id="edit-reset-progress"
-              name="resetProgress"
-              type="checkbox"
-              checked={resetProgress && !isAlreadyNew}
-              disabled={isAlreadyNew}
-              onChange={(e) => setResetProgress(e.target.checked)}
-            />
-            <span className="toggle" aria-hidden="true" />
-            <div className="toggle-label-group">
-              <span className="toggle-title">Reset learning progress</span>
-              <span className="toggle-description">
-                {isAlreadyNew
-                  ? 'Card is already brand new (0 reviews)'
-                  : 'Treat as a new card and restart review history'}
-              </span>
-            </div>
-          </label>
-
-          <div className="edit-modal-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button type="submit" className="primary-button">
-              Save changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function EditCardModal({
-  isOpen,
-  card,
-  cards,
-  onClose,
-  onSave,
-  onPlayAudio,
-}: {
-  isOpen: boolean
-  card: StudyCard | null
-  cards?: StudyCard[] | undefined
-  onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
-  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
-}) {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!isOpen || !card) return null
-
-  return (
-    <EditCardModalInner
-      key={card.id}
-      card={card}
-      cards={cards}
-      onClose={onClose}
-      onSave={onSave}
-      onPlayAudio={onPlayAudio}
-    />
-  )
 }
 
 function DeleteCardsModal({
@@ -1327,500 +674,6 @@ function DeckBackupModal(props: {
   return <DeckBackupModalInner {...props} />
 }
 
-function SyncModal({
-  isOpen,
-  onClose,
-  cards,
-  deletedCardIds = [],
-  onUpdateCards,
-  auth,
-  sync,
-  onSaveLocally,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  cards: StudyCard[]
-  deletedCardIds?: string[]
-  onUpdateCards: (
-    newCards: StudyCard[],
-    syncToCloud?: boolean,
-    newDeletedCardIds?: string[],
-  ) => void
-  auth: AuthService
-  sync: SyncService
-  onSaveLocally?: (() => void) | undefined
-}) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [email, setEmail] = useState('')
-  const [token, setToken] = useState('')
-  const [isOtpSent, setIsOtpSent] = useState(false)
-  const [showPasteLink, setShowPasteLink] = useState(
-    () => isStandalone() && isIOS(),
-  )
-  const [transientFeedback, setTransientFeedback] = useState<
-    'synced' | 'resent' | 'pasted' | null
-  >(null)
-  const [loadingAction, setLoadingAction] = useState<
-    'send' | 'verify' | 'sync' | 'signout' | null
-  >(null)
-  const [statusMsg, setStatusMsg] = useState<{
-    type: 'success' | 'error' | 'info'
-    message: string
-  } | null>(null)
-
-  const feedbackTimerRef = useRef<number | null>(null)
-  const pasteInputRef = useRef<HTMLInputElement | null>(null)
-
-  const loading = loadingAction !== null
-  const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
-  const isSynced = transientFeedback === 'synced'
-  const isLinkResent = transientFeedback === 'resent'
-  const isPasted = transientFeedback === 'pasted'
-
-  const triggerTransientFeedback = (
-    feedback: 'synced' | 'resent' | 'pasted',
-    durationMs = 2500,
-  ) => {
-    if (feedbackTimerRef.current !== null) {
-      window.clearTimeout(feedbackTimerRef.current)
-    }
-    setTransientFeedback(feedback)
-    feedbackTimerRef.current = window.setTimeout(() => {
-      setTransientFeedback(null)
-      feedbackTimerRef.current = null
-    }, durationMs)
-  }
-
-  const clearTransientFeedback = () => {
-    if (feedbackTimerRef.current !== null) {
-      window.clearTimeout(feedbackTimerRef.current)
-      feedbackTimerRef.current = null
-    }
-    setTransientFeedback(null)
-  }
-
-  useEffect(() => {
-    return () => clearTransientFeedback()
-  }, [])
-
-  useEffect(() => {
-    return auth.onAuthStateChange((currentUser) => {
-      setUser(currentUser)
-      if (currentUser && onSaveLocally) {
-        onClose()
-      }
-    })
-  }, [auth, onClose, onSaveLocally])
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
-  const handleSendLink = async (isResend = false, e?: FormEvent) => {
-    e?.preventDefault()
-    if (!email.trim()) return
-    setLoadingAction('send')
-    setStatusMsg(null)
-    const res = await auth.sendMagicLink(email.trim())
-    setLoadingAction(null)
-    if (res.success) {
-      setIsOtpSent(true)
-      if (isResend) {
-        triggerTransientFeedback('resent', 2500)
-      }
-    } else {
-      setStatusMsg({
-        type: 'error',
-        message: res.error || 'Failed to send sign-in link.',
-      })
-    }
-  }
-
-  const handlePasteClipboard = async () => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
-      try {
-        const text = await navigator.clipboard.readText()
-        if (text) {
-          setToken(text.trim())
-          triggerTransientFeedback('pasted', 1500)
-        }
-      } catch {
-        // clipboard access not permitted
-      }
-    }
-  }
-
-  const handleVerifyOtp = async (e?: FormEvent) => {
-    e?.preventDefault()
-    const cleanToken = token.trim()
-    if (!cleanToken) return
-    setLoadingAction('verify')
-    setStatusMsg(null)
-    const res = await auth.verifyOtp(email.trim(), cleanToken)
-    setLoadingAction(null)
-    if (res.success) {
-      if (onSaveLocally) {
-        onClose()
-      } else {
-        setStatusMsg({
-          type: 'success',
-          message: 'Signed in! Deck synchronized with cloud.',
-        })
-      }
-    } else {
-      setStatusMsg({
-        type: 'error',
-        message: res.error || 'Invalid sign-in link.',
-      })
-    }
-  }
-
-  const handleSyncNow = async () => {
-    if (!user) return
-    setLoadingAction('sync')
-    setStatusMsg(null)
-    const res = await syncDeckWithCloud({
-      localCards: cards,
-      localDeletedIds: deletedCardIds,
-      user,
-      syncService: sync,
-      onCardsUpdated: (newCards, newDeletedIds) =>
-        onUpdateCards(newCards, false, newDeletedIds),
-    })
-    setLoadingAction(null)
-    if (res.success) {
-      triggerTransientFeedback('synced', 2500)
-    } else {
-      setStatusMsg({
-        type: 'error',
-        message: res.error || 'Failed to sync with cloud.',
-      })
-    }
-  }
-
-  const handleSignOut = async () => {
-    clearTransientFeedback()
-    setLoadingAction('signout')
-    await auth.signOut()
-    setLoadingAction(null)
-    setIsOtpSent(false)
-    setToken('')
-    setStatusMsg(null)
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content sync-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sync-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="sync-modal-title">Cloud sync</h2>
-            <p className="modal-subtitle">
-              Sync your deck across all your devices.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
-        </div>
-
-        {statusMsg && (
-          <div
-            className={`status-banner status-${statusMsg.type}`}
-            role={statusMsg.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{statusMsg.message}</p>
-          </div>
-        )}
-
-        {!isBackendConfigured && !user ? (
-          <div className="sync-notice-card">
-            <span className="notice-icon" aria-hidden="true">
-              <ShieldIcon size={22} />
-            </span>
-            <h4>Cloud sync is disabled in this preview</h4>
-            <p>Flashcards and progress remain safely stored on this device.</p>
-            {onSaveLocally && (
-              <button
-                type="button"
-                className="primary-button"
-                onClick={onSaveLocally}
-              >
-                Save card to this device →
-              </button>
-            )}
-          </div>
-        ) : user ? (
-          <div className="sync-account-pane">
-            <div className="sync-account-hero">
-              <div className="sync-cloud-sticker-wrap" aria-hidden="true">
-                <CloudCheckSticker size={58} />
-              </div>
-              <div className="sync-account-details">
-                <span className="account-badge">Signed in</span>
-                <p className="account-email">{user.email}</p>
-              </div>
-            </div>
-
-            <div className="sync-actions-row">
-              <button
-                type="button"
-                className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
-                onClick={() => {
-                  void handleSyncNow()
-                }}
-                disabled={loading}
-              >
-                {isSynced ? (
-                  <span className="sync-button-synced">
-                    <span className="sync-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="sync-button-text">Synced!</span>
-                  </span>
-                ) : (
-                  <>
-                    <SyncSpinnerIcon
-                      size={15}
-                      className={loadingAction === 'sync' ? 'is-spinning' : ''}
-                    />
-                    <span>
-                      {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
-                    </span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                className="secondary-button sign-out-button"
-                onClick={() => {
-                  void handleSignOut()
-                }}
-                disabled={loading}
-              >
-                {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
-              </button>
-            </div>
-          </div>
-        ) : !isOtpSent ? (
-          <form
-            onSubmit={(e) => {
-              void handleSendLink(false, e)
-            }}
-            className="sync-auth-form"
-          >
-            <div className="field-group">
-              <label htmlFor="sync-email">Email address</label>
-              <input
-                id="sync-email"
-                type="email"
-                required
-                autoFocus
-                placeholder="learner@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              className="primary-button"
-              disabled={loading || !email.trim()}
-            >
-              {loadingAction === 'send'
-                ? 'Sending link…'
-                : 'Send sign-in link →'}
-            </button>
-          </form>
-        ) : !showPasteLink ? (
-          <div className="sync-sent-pane">
-            <p className="sync-explanation">
-              Click the sign-in link sent to <strong>{email.trim()}</strong> to
-              connect your account.
-            </p>
-            <div className="sync-sent-actions">
-              <button
-                type="button"
-                className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
-                disabled={loading}
-                onClick={() => {
-                  void handleSendLink(true)
-                }}
-              >
-                {isLinkResent ? (
-                  <span className="resend-button-sent">
-                    <span className="resend-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="resend-button-text">Link sent!</span>
-                  </span>
-                ) : (
-                  <span>
-                    {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
-                  </span>
-                )}
-              </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setShowPasteLink(true)
-                    setTimeout(() => pasteInputRef.current?.focus(), 0)
-                  }}
-                >
-                  Paste link manually
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              void handleVerifyOtp(e)
-            }}
-            className="sync-auth-form"
-          >
-            {isStandalone() && isIOS() ? (
-              <p className="sync-explanation">
-                Open the email in Safari, tap <strong>Copy sign-in link</strong>{' '}
-                on the top banner, then paste it here:
-              </p>
-            ) : (
-              <p className="sync-explanation">
-                Paste the sign-in link or 6-digit code sent to{' '}
-                <strong>{email.trim()}</strong>:
-              </p>
-            )}
-            <div className="field-group">
-              <label htmlFor="sync-otp">Sign-in link or code</label>
-              <div className="link-input-wrap">
-                <input
-                  ref={pasteInputRef}
-                  id="sync-otp"
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="Paste link or code"
-                  autoComplete="one-time-code"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="link-input"
-                />
-                {typeof navigator !== 'undefined' &&
-                  typeof navigator.clipboard?.readText === 'function' && (
-                    <button
-                      type="button"
-                      className={`paste-input-btn ${isPasted ? 'is-pasted' : ''}`}
-                      onClick={() => {
-                        void handlePasteClipboard()
-                      }}
-                      title="Paste from clipboard"
-                      aria-label="Paste from clipboard"
-                    >
-                      {isPasted ? (
-                        <>
-                          <span aria-hidden="true">✓</span>
-                          <span>Pasted</span>
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardIcon size={12} />
-                          <span>Paste</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-              </div>
-            </div>
-            <div className="sync-sent-actions">
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={loading || !token.trim()}
-              >
-                {loadingAction === 'verify'
-                  ? 'Signing in…'
-                  : 'Sign in & sync →'}
-              </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className={`modal-link-btn resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
-                  disabled={loading}
-                  onClick={() => {
-                    void handleSendLink(true)
-                  }}
-                >
-                  {isLinkResent
-                    ? 'Link sent! ✓'
-                    : loadingAction === 'send'
-                      ? 'Resending…'
-                      : 'Resend link'}
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-        <div className="sr-only" role="status" aria-live="polite">
-          {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
-          {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
-          {isPasted ? 'Pasted link from clipboard.' : ''}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 interface DemoDeckModalProps {
   isOpen: boolean
   onClose: () => void
@@ -1889,228 +742,6 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
         </div>
       </div>
     </div>
-  )
-}
-
-function FeedbackModalInner({
-  onClose,
-  user,
-  feedbackService,
-  currentView,
-}: {
-  onClose: () => void
-  user: AuthUser | null
-  feedbackService: FeedbackService
-  currentView: View
-}) {
-  const [message, setMessage] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (!isSuccess) {
-      textareaRef.current?.focus()
-    }
-  }, [isSuccess])
-
-  const handleSubmit = async (e?: FormEvent) => {
-    if (e) e.preventDefault()
-    const trimmed = message.trim()
-    if (!trimmed || isSubmitting) return
-
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      const result = await feedbackService.submitFeedback(
-        {
-          message: trimmed,
-          context: {
-            view: currentView,
-            version: '0.1.0',
-            userAgent:
-              typeof navigator !== 'undefined' ? navigator.userAgent : null,
-            language:
-              typeof navigator !== 'undefined' ? navigator.language : null,
-            viewport:
-              typeof window !== 'undefined'
-                ? `${window.innerWidth}x${window.innerHeight}`
-                : null,
-            screen:
-              typeof window !== 'undefined' && window.screen
-                ? `${window.screen.width}x${window.screen.height}`
-                : null,
-            devicePixelRatio:
-              typeof window !== 'undefined' ? window.devicePixelRatio : null,
-            url: typeof window !== 'undefined' ? window.location.href : null,
-            online: typeof navigator !== 'undefined' ? navigator.onLine : null,
-          },
-        },
-        user,
-      )
-
-      if (result.success) {
-        setIsSuccess(true)
-      } else {
-        setError(result.error ?? 'Failed to send feedback. Please try again.')
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Network error sending feedback.',
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <div
-      className="modal-backdrop feedback-modal-backdrop"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="modal-content feedback-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="feedback-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="feedback-modal-title">
-              {isSuccess ? '¡Muchas gracias!' : 'Share feedback'}
-            </h2>
-            <p className="modal-subtitle">
-              {isSuccess
-                ? 'Your note has been received.'
-                : user
-                  ? `Sending as ${user.email}`
-                  : 'Your note helps us improve Jolito.'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close feedback dialog"
-          >
-            ✕
-          </button>
-        </div>
-
-        {isSuccess ? (
-          <div className="feedback-success-state">
-            <p className="feedback-success-message">
-              Thank you for helping make Jolito better! We read every note.
-            </p>
-            <div className="feedback-modal-actions">
-              <button
-                type="button"
-                className="primary-button"
-                onClick={onClose}
-                autoFocus
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        ) : (
-          <form
-            className="feedback-form"
-            onSubmit={(e) => {
-              void handleSubmit(e)
-            }}
-          >
-            <p className="feedback-encouragement">
-              Have an idea or spotted a bug? We’d love to hear from you!
-            </p>
-
-            <div className="feedback-field-group">
-              <label htmlFor="feedback-message-input" className="sr-only">
-                Your feedback
-              </label>
-              <textarea
-                ref={textareaRef}
-                id="feedback-message-input"
-                className="feedback-textarea"
-                rows={5}
-                value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value)
-                  setError(null)
-                }}
-                placeholder="What’s on your mind?"
-              />
-            </div>
-
-            {error && (
-              <div className="feedback-error-banner" role="alert">
-                {error}
-              </div>
-            )}
-
-            <div className="feedback-modal-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={!message.trim() || isSubmitting}
-              >
-                {isSubmitting ? 'Sending…' : 'Send feedback'}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function FeedbackModal({
-  isOpen,
-  onClose,
-  user,
-  feedbackService,
-  currentView,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  user: AuthUser | null
-  feedbackService: FeedbackService
-  currentView: View
-}) {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
-  return (
-    <FeedbackModalInner
-      onClose={onClose}
-      user={user}
-      feedbackService={feedbackService}
-      currentView={currentView}
-    />
   )
 }
 
@@ -2344,7 +975,13 @@ export function App({
     }
   }, [view])
 
+  const revealAudioTimerRef = useRef<number | null>(null)
+
   const navigateTo = useCallback((nextView: View, replace = false) => {
+    if (revealAudioTimerRef.current !== null) {
+      window.clearTimeout(revealAudioTimerRef.current)
+      revealAudioTimerRef.current = null
+    }
     setIsDemoDeckDismissed(false)
     setView(nextView)
     if (typeof window === 'undefined') return
@@ -2420,10 +1057,14 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
+  const [playingSamplerPhrase, setPlayingSamplerPhrase] = useState<
+    string | null
+  >(null)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
+  const samplerTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
@@ -2504,6 +1145,7 @@ export function App({
       }
       const deletedIdsArray = Array.from(deletedCardIdsRef.current)
 
+      const previousCards = cardsRef.current
       cardsRef.current = newCards
       setCards(newCards)
       setDeletedCardIds(deletedIdsArray)
@@ -2536,8 +1178,41 @@ export function App({
             else setSyncStatus('error')
           })
       }
+
+      if (typeof services.speaker.pruneUnusedAudio === 'function') {
+        const nextActiveItems = getActiveAudioItems(newCards)
+        const previousActiveKeys = new Set(
+          getActiveAudioItems(previousCards).map(
+            (i) => `${i.locale}:${i.text}`,
+          ),
+        )
+        const nextActiveKeys = new Set(
+          nextActiveItems.map((i) => `${i.locale}:${i.text}`),
+        )
+        let hasRemovedAudio =
+          (newDeletedCardIds !== undefined && newDeletedCardIds.length > 0) ||
+          newCards.length < previousCards.length
+        if (!hasRemovedAudio) {
+          for (const prevKey of previousActiveKeys) {
+            if (!nextActiveKeys.has(prevKey)) {
+              hasRemovedAudio = true
+              break
+            }
+          }
+        }
+
+        if (hasRemovedAudio) {
+          void services.speaker.pruneUnusedAudio(nextActiveItems)
+        }
+      }
     },
-    [navigateTo, services.cards, services.clock, services.sync],
+    [
+      navigateTo,
+      services.cards,
+      services.clock,
+      services.speaker,
+      services.sync,
+    ],
   )
 
   const handleSaveEdit = useCallback(
@@ -2673,23 +1348,53 @@ export function App({
       authUserRef.current = user
       setAuthUser(user)
       if (user) {
+        let userCards = filterOutStarterCards(cardsRef.current)
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
-          saveCardFromParams(pending)
-        } else {
-          const userCards = filterOutStarterCards(cardsRef.current)
-          const deletedIds = Array.from(deletedCardIdsRef.current)
-          void syncDeckWithCloud({
-            localCards: userCards,
-            localDeletedIds: deletedIds,
-            user,
-            syncService: services.sync,
-            onCardsUpdated: (newCards, newDeletedIds) =>
-              onUpdateCards(newCards, false, newDeletedIds),
-          }).then((res) => {
-            if (res.success) setSyncStatus('synced')
+          const created = createCards(pending, {
+            clock: services.clock,
+            ids: services.ids,
           })
+          if (created.length > 0) {
+            userCards = [...created, ...userCards]
+            const savedSpanish = pending.spanish.trim()
+            setSavedToast(savedSpanish)
+            if (savedToastTimerRef.current !== null) {
+              window.clearTimeout(savedToastTimerRef.current)
+            }
+            savedToastTimerRef.current = window.setTimeout(() => {
+              setSavedToast(null)
+              savedToastTimerRef.current = null
+            }, 3000)
+          }
+
+          setSpanishInput('')
+          setEnglishInput('')
+          setContextInput('')
+          setReversePromptInput('')
+          setReverseAnswerInput('')
+          setSuggestions([])
+          setActiveSuggestionIndex(-1)
+          setPendingCard(null)
+          pendingCardRef.current = null
+          setIsSyncOpen(false)
+
+          const deletedIds = Array.from(deletedCardIdsRef.current)
+          onUpdateCards(userCards, false, deletedIds)
         }
+
+        const deletedIds = Array.from(deletedCardIdsRef.current)
+        void syncDeckWithCloud({
+          localCards: userCards,
+          localDeletedIds: deletedIds,
+          user,
+          syncService: services.sync,
+          onCardsUpdated: (newCards, newDeletedIds) =>
+            onUpdateCards(newCards, false, newDeletedIds),
+        }).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
       } else if (prevUser !== null) {
         // Explicit transition from signed in to signed out:
         // Clear local user deck and restore clean starter demo deck
@@ -2718,9 +1423,9 @@ export function App({
     })
   }, [
     onUpdateCards,
-    saveCardFromParams,
     services.auth,
     services.clock,
+    services.ids,
     services.sync,
   ])
 
@@ -2829,6 +1534,10 @@ export function App({
 
   useEffect(() => {
     const onPopState = () => {
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
+      }
       setIsDemoDeckDismissed(false)
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
@@ -2858,6 +1567,10 @@ export function App({
 
   const playAudio = useCallback(
     (text: string, locale: string, cardSeed?: string) => {
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
+      }
       const played = services.speaker.speak(
         text,
         locale,
@@ -2897,6 +1610,21 @@ export function App({
     [activeSampleSide, playSampleAudio],
   )
 
+  const handlePlaySampler = useCallback(
+    (phrase: string) => {
+      setPlayingSamplerPhrase(phrase)
+      playAudio(phrase, 'es-MX')
+      if (samplerTimerRef.current !== null) {
+        window.clearTimeout(samplerTimerRef.current)
+      }
+      samplerTimerRef.current = window.setTimeout(() => {
+        setPlayingSamplerPhrase(null)
+        samplerTimerRef.current = null
+      }, 1200)
+    },
+    [playAudio],
+  )
+
   const onCreateCardClick = useCallback(
     (side: 'spanish' | 'english') => {
       if (activeCreateSide !== side) {
@@ -2925,8 +1653,14 @@ export function App({
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
       }
+      if (samplerTimerRef.current !== null) {
+        window.clearTimeout(samplerTimerRef.current)
+      }
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
+      }
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
       }
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
@@ -2970,6 +1704,10 @@ export function App({
 
   const grade = useCallback(
     (gradeValue: Grade) => {
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
+      }
       if (!currentCard) return
       const now = services.clock.now()
       services.sounds.play(gradeValue)
@@ -3047,6 +1785,10 @@ export function App({
           event.metaKey)
       ) {
         event.preventDefault()
+        if (revealAudioTimerRef.current !== null) {
+          window.clearTimeout(revealAudioTimerRef.current)
+          revealAudioTimerRef.current = null
+        }
         if (revealed) {
           playAudio(
             currentCard.answer,
@@ -3113,6 +1855,10 @@ export function App({
   }
 
   function beginReview(cardIds?: string[]) {
+    if (revealAudioTimerRef.current !== null) {
+      window.clearTimeout(revealAudioTimerRef.current)
+      revealAudioTimerRef.current = null
+    }
     const now = services.clock.now()
     const nextQueue =
       cardIds ??
@@ -3134,7 +1880,18 @@ export function App({
     setRevealed(true)
     services.sounds.play('reveal')
     services.haptics?.trigger('selection')
-    playAudio(currentCard.answer, localeForAnswer(currentCard), currentCard.id)
+    if (revealAudioTimerRef.current !== null) {
+      window.clearTimeout(revealAudioTimerRef.current)
+    }
+    const cardToSpeak = currentCard
+    revealAudioTimerRef.current = window.setTimeout(() => {
+      playAudio(
+        cardToSpeak.answer,
+        localeForAnswer(cardToSpeak),
+        cardToSpeak.id,
+      )
+      revealAudioTimerRef.current = null
+    }, REVEAL_AUDIO_STAGGER_MS)
   }
 
   const dismissSuggestions = useCallback(() => {
@@ -3423,103 +2180,289 @@ export function App({
             onCopySessionLink={handleCopySessionLink}
           />
           <section className="welcome-hero">
-            <div className="hero-copy">
-              <img
-                src={logoUrl}
-                alt=""
-                aria-hidden="true"
-                className="welcome-mascot-img"
-                style={{ transform: 'scaleX(-1)' }}
-              />
-              <h1>
-                Make the words <br />
-                you meet <em>stick.</em>
-              </h1>
-              <p className="lede">
-                Create beautiful, spoken flashcards.
-                <br />
-                Practice them at your rhythm.
-              </p>
-              <div className="hero-actions" data-nosnippet>
+            <div className="welcome-hero-main">
+              <div className="hero-copy">
+                <img
+                  src={logoUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="welcome-mascot-img"
+                />
+                <h1>
+                  Make the words <br />
+                  you meet <em>stick.</em>
+                </h1>
+                <p className="lede">
+                  Create beautiful, spoken flashcards.
+                  <br />
+                  Practice them at your rhythm.
+                </p>
+                <div className="hero-actions" data-nosnippet>
+                  <button
+                    className="primary-button"
+                    onClick={() => navigateTo('create')}
+                  >
+                    Create a card <span aria-hidden="true">→</span>
+                  </button>
+                  <button className="secondary-button" onClick={handlePractice}>
+                    Practice
+                  </button>
+                </div>
+              </div>
+              <div className="hero-visual" data-nosnippet>
+                {/* English Card (concise meaning) */}
                 <button
-                  className="primary-button"
-                  onClick={() => navigateTo('create')}
+                  type="button"
+                  className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+                  onClick={() => onSampleCardClick('english')}
+                  aria-label={
+                    activeSampleSide === 'english'
+                      ? 'Play pronunciation for English card: avocado'
+                      : 'Show English card: avocado'
+                  }
                 >
-                  Create a card <span aria-hidden="true">→</span>
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <UsFlag /> ENGLISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <div className="sample-illustration" aria-hidden="true">
+                      <img
+                        src={sampleAguacateUrl}
+                        alt=""
+                        className="sample-art-image"
+                      />
+                    </div>
+                    <p className="sample-phrase">avocado</p>
+                  </div>
                 </button>
-                <button className="secondary-button" onClick={handlePractice}>
-                  Practice
+                {/* Mexican Spanish Card */}
+                <button
+                  type="button"
+                  className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+                  onClick={() => onSampleCardClick('spanish')}
+                  aria-label={
+                    activeSampleSide === 'spanish'
+                      ? 'Play pronunciation for Mexican Spanish card: aguacate'
+                      : 'Show Mexican Spanish card: aguacate'
+                  }
+                >
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <MexicoFlag /> MEXICAN SPANISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <div className="sample-illustration" aria-hidden="true">
+                      <img
+                        src={sampleAguacateUrl}
+                        alt=""
+                        className="sample-art-image"
+                      />
+                    </div>
+                    <p className="sample-phrase">aguacate</p>
+                  </div>
                 </button>
               </div>
             </div>
-            <div className="hero-visual" data-nosnippet>
-              {/* English Card (concise meaning) */}
-              <button
-                type="button"
-                className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
-                onClick={() => onSampleCardClick('english')}
-                aria-label={
-                  activeSampleSide === 'english'
-                    ? 'Play pronunciation for English card: avocado'
-                    : 'Show English card: avocado'
-                }
-              >
-                <div className="sample-card-header">
-                  <span className="sample-badge">
-                    <UsFlag /> ENGLISH
-                  </span>
-                  <span className="sample-listen-hint" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="sample-card-body">
-                  <div className="sample-illustration" aria-hidden="true">
-                    <img
-                      src={sampleAguacateUrl}
-                      alt=""
-                      className="sample-art-image"
-                    />
+            <button
+              type="button"
+              className="hero-scroll-cue"
+              onClick={() => {
+                document
+                  .getElementById('why-jolito')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              aria-label="Scroll down to explore Why Jolito"
+            >
+              <span className="scroll-cue-text">Why Jolito?</span>
+              <span className="scroll-cue-arrow" aria-hidden="true">
+                ↓
+              </span>
+            </button>
+          </section>
+          <section
+            className="welcome-why"
+            id="why-jolito"
+            aria-labelledby="why-jolito-title"
+          >
+            <div className="why-inner">
+              <div className="why-header">
+                <p className="eyebrow why-eyebrow">THE JOLITO METHOD</p>
+                <h2 id="why-jolito-title">Spoken Spanish built for memory</h2>
+                <p className="why-subtitle">
+                  Active recall, authentic Mexican audio, and rhythmic spaced
+                  repetition. Jolito bridges effortless card authoring with the
+                  spoken confidence to use words in the real world.
+                </p>
+              </div>
+
+              <div className="why-grid">
+                <article className="why-card why-card-recall">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-recall">1</span>
+                    <span className="why-badge-label">Active recall</span>
                   </div>
-                  <p className="sample-phrase">avocado</p>
-                </div>
-              </button>
-              {/* Mexican Spanish Card */}
-              <button
-                type="button"
-                className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
-                onClick={() => onSampleCardClick('spanish')}
-                aria-label={
-                  activeSampleSide === 'spanish'
-                    ? 'Play pronunciation for Mexican Spanish card: aguacate'
-                    : 'Show Mexican Spanish card: aguacate'
-                }
-              >
-                <div className="sample-card-header">
-                  <span className="sample-badge">
-                    <MexicoFlag /> MEXICAN SPANISH
-                  </span>
-                  <span className="sample-listen-hint" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="sample-card-body">
-                  <div className="sample-illustration" aria-hidden="true">
-                    <img
-                      src={sampleAguacateUrl}
-                      alt=""
-                      className="sample-art-image"
-                    />
+                  <h3>Type before you flip</h3>
+                  <p>
+                    Produce language from memory instead of passively guessing
+                    multiple-choice options. Instant visual diffs highlight
+                    spelling nuances while you retain full grading authority.
+                  </p>
+                  <div
+                    className="bento-visual bento-visual-recall"
+                    aria-hidden="true"
+                  >
+                    <div className="mini-card-shell">
+                      <div className="mini-card-header">
+                        <span className="mini-card-tag">PROMPT</span>
+                        <span className="mini-card-phrase">¿Qué onda?</span>
+                      </div>
+                      <div className="mini-card-input-box">
+                        <span className="mini-typed-correct">what</span>
+                        <span className="mini-typed-space">&nbsp;</span>
+                        <span className="mini-typed-diff">’s up?</span>
+                      </div>
+                      <div className="mini-card-footer">
+                        <span className="mini-pill-highlight">
+                          Typo diff visual feedback
+                        </span>
+                        <span className="mini-pill-authority">Self-graded</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="sample-phrase">aguacate</p>
+                </article>
+
+                <article className="why-card why-card-srs">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-srs">2</span>
+                    <span className="why-badge-label">Memory retention</span>
+                  </div>
+                  <h3>Spaced repetition that sticks</h3>
+                  <p>
+                    Cards return right when you are on the verge of forgetting
+                    them. Built on proven SRS scheduling so daily practice takes
+                    only a few focused minutes.
+                  </p>
+                  <div
+                    className="bento-visual bento-visual-srs"
+                    aria-hidden="true"
+                  >
+                    <div className="srs-cadence-track">
+                      <div className="srs-cadence-node">
+                        <span className="srs-node-pill">10m</span>
+                        <span className="srs-node-sub">Learn</span>
+                      </div>
+                      <div className="srs-cadence-line"></div>
+                      <div className="srs-cadence-node">
+                        <span className="srs-node-pill">1d</span>
+                        <span className="srs-node-sub">Recall</span>
+                      </div>
+                      <div className="srs-cadence-line"></div>
+                      <div className="srs-cadence-node">
+                        <span className="srs-node-pill">4d</span>
+                        <span className="srs-node-sub">Lock-in</span>
+                      </div>
+                      <div className="srs-cadence-line"></div>
+                      <div className="srs-cadence-node is-mastered">
+                        <span className="srs-node-pill">2w+</span>
+                        <span className="srs-node-sub">Fluent</span>
+                      </div>
+                    </div>
+                    <div className="srs-cadence-note">
+                      <span className="srs-note-icon">⚡</span>
+                      <span>Calculated spacing prevents deck overload</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="why-card why-card-audio">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-audio">3</span>
+                    <span className="why-badge-label">Ear-first audio</span>
+                  </div>
+                  <h3>Spoken Mexican Spanish</h3>
+                  <p>
+                    Listen to natural Mexico City pronunciation with everyday
+                    contextual nuances. Tap any phrase to hear the authentic
+                    CDMX cadence:
+                  </p>
+                  <div className="bento-visual bento-visual-audio">
+                    <div
+                      className="audio-sampler-group"
+                      role="group"
+                      aria-label="Interactive Mexican Spanish audio samples"
+                    >
+                      {[
+                        { es: '¡Órale!', en: 'Right on / wow' },
+                        { es: '¿Qué onda?', en: "What's up?" },
+                        { es: 'No manches', en: 'No way!' },
+                      ].map((item) => (
+                        <button
+                          key={item.es}
+                          type="button"
+                          className={`sampler-pill ${playingSamplerPhrase === item.es ? 'is-playing' : ''}`}
+                          onClick={() => handlePlaySampler(item.es)}
+                          aria-label={`Listen to Mexican Spanish pronunciation for ${item.es}: ${item.en}`}
+                        >
+                          <span
+                            className="sampler-speaker-icon"
+                            aria-hidden="true"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                              <path
+                                d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </span>
+                          <span className="sampler-text-es">{item.es}</span>
+                          <span className="sampler-text-en">{item.en}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div className="why-highlights-bar" data-nosnippet>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>100% local-first & offline</span>
                 </div>
-              </button>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>Anki (.apkg) import in seconds</span>
+                </div>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>Zero ads, zero subscriptions</span>
+                </div>
+              </div>
+              <AppFooter onOpenFeedback={openFeedbackModal} />
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3530,6 +2473,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3963,6 +2909,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4440,6 +3389,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4586,6 +3538,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -4805,6 +3760,7 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+        pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
       />
       <EditCardModal
         isOpen={editingCard !== null}

@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Speaker } from '../../application/ports'
-import { LayeredNeuralSpeaker, NeuralVoiceEngine } from './neural-speaker'
+import {
+  LayeredNeuralSpeaker,
+  LruAudioCache,
+  NeuralVoiceEngine,
+} from './neural-speaker'
 
 describe('LayeredNeuralSpeaker', () => {
   let fallbackSpeaker: Speaker
@@ -294,6 +298,118 @@ describe('LayeredNeuralSpeaker', () => {
 
     expect(stopAudioSpy).toHaveBeenCalled()
     expect(fallbackSpeakSpy).toHaveBeenCalledWith('fallback phrase', 'es-MX')
+  })
+
+  it('exposes cache and in-flight inspection helpers', () => {
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+    expect(typeof speaker.hasAudio).toBe('function')
+    expect(typeof speaker.hasDiskAudio).toBe('function')
+    expect(typeof speaker.isAudioInFlight).toBe('function')
+    expect(typeof speaker.syncDiskCache).toBe('function')
+  })
+
+  it('awaits disk-cached audio and plays neural voice rather than falling back to robotic speech', async () => {
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: (
+        _data: ArrayBuffer,
+        success: (buf: AudioBuffer) => void,
+      ) => {
+        success({ duration: 1.0 } as unknown as AudioBuffer)
+      },
+    } as unknown as AudioContext
+    ;(neuralEngine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const cachedMp3Buffer = new Uint8Array([1, 2, 3]).buffer
+    const mockCache = {
+      keys: vi
+        .fn()
+        .mockResolvedValue([
+          new Request(
+            'http://localhost/api/tts?text=en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
+          ),
+        ]),
+      match: vi.fn().mockResolvedValue(
+        new Response(cachedMp3Buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      ),
+      put: vi.fn().mockResolvedValue(undefined),
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    await speaker.syncDiskCache()
+    expect(speaker.hasDiskAudio('en_disco', 'es-MX')).toBe(true)
+    expect(speaker.hasAudio('en_disco', 'es-MX')).toBe(false)
+
+    const playSpy = vi.spyOn(neuralEngine, 'playAudio').mockReturnValue(true)
+
+    const played = speaker.speak('en_disco', 'es-MX', {
+      voice: 'es-MX-DaliaNeural',
+    })
+    expect(played).toBe(true)
+
+    // Fallback should NOT be invoked immediately
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+
+    // Allow microtasks and promise resolution for disk hydration
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    // Neural audio was played from disk cache
+    expect(playSpy).toHaveBeenCalledWith(
+      'en_disco',
+      'es-MX',
+      'es-MX-DaliaNeural',
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('falls back to speech synthesis if disk cache hydration times out', async () => {
+    vi.spyOn(neuralEngine, 'hasDiskAudio').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'awaitAudio').mockResolvedValue(false)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('timeout_disk', 'es-MX')
+    expect(played).toBe(true)
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX')
+  })
+
+  it('delegates pruneUnusedAudio to neural engine', async () => {
+    const pruneSpy = vi
+      .spyOn(neuralEngine, 'pruneUnusedAudio')
+      .mockResolvedValue(3)
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const items = [{ text: 'hola', locale: 'es-MX' }]
+    const count = await speaker.pruneUnusedAudio(items)
+    expect(count).toBe(3)
+    expect(pruneSpy).toHaveBeenCalledWith(items)
   })
 })
 
@@ -652,5 +768,430 @@ describe('NeuralVoiceEngine', () => {
     expect(mockStop).toHaveBeenCalled()
     expect(mockDisconnect).toHaveBeenCalled()
     expect(cancelSpy).toHaveBeenCalled()
+  })
+
+  it('evicts least recently used audio buffers when exceeding maxMemoryBuffers', () => {
+    // Each phrase registers up to 2 keys (voiced and unvoiced), so 4 keys hold 2 phrases
+    const engine = new NeuralVoiceEngine(4)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf3 = { duration: 3 } as unknown as AudioBuffer
+
+    engine.registerAudioBuffer('uno', 'es-MX', buf1)
+    engine.registerAudioBuffer('dos', 'es-MX', buf2)
+
+    expect(engine.hasAudio('uno', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('dos', 'es-MX')).toBe(true)
+
+    // Access 'uno' via playAudio to make it MRU
+    engine.playAudio('uno', 'es-MX')
+
+    // Register 3rd item
+    engine.registerAudioBuffer('tres', 'es-MX', buf3)
+
+    // 'dos' must have been evicted, 'uno' and 'tres' must remain
+    expect(engine.hasAudio('uno', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('dos', 'es-MX')).toBe(false)
+    expect(engine.hasAudio('tres', 'es-MX')).toBe(true)
+  })
+
+  it('hydrates previously cached audio from CacheStorage during offline prefetch without making network requests', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: (
+        _data: ArrayBuffer,
+        success: (buf: AudioBuffer) => void,
+      ) => {
+        success({ duration: 1.2 } as unknown as AudioBuffer)
+      },
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const cachedMp3Buffer = new Uint8Array([10, 20, 30]).buffer
+    const mockCache = {
+      match: vi.fn().mockImplementation((url: string) => {
+        // Only return cached response for 'guardada', not for 'otra frase'
+        if (url.includes('text=guardada')) {
+          return Promise.resolve(
+            new Response(cachedMp3Buffer, {
+              status: 200,
+              headers: { 'Content-Type': 'audio/mpeg' },
+            }),
+          )
+        }
+        return Promise.resolve(undefined)
+      }),
+      put: vi.fn().mockResolvedValue(undefined),
+    }
+
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    // Simulate offline device
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      configurable: true,
+      writable: true,
+    })
+
+    const mockFetch = vi.fn()
+
+    try {
+      await engine.prefetch(
+        [
+          { text: 'guardada', locale: 'es-MX' },
+          { text: 'otra frase', locale: 'es-MX' },
+        ],
+        mockFetch,
+      )
+
+      // Network fetch must never be called while offline
+      expect(mockFetch).not.toHaveBeenCalled()
+
+      // The phrase that was present in CacheStorage must be hydrated into memory
+      expect(engine.hasAudio('guardada', 'es-MX')).toBe(true)
+
+      // The uncached phrase was safely skipped
+      expect(engine.hasAudio('otra frase', 'es-MX')).toBe(false)
+    } finally {
+      // Restore online state
+      Object.defineProperty(navigator, 'onLine', {
+        value: true,
+        configurable: true,
+        writable: true,
+      })
+    }
+  })
+
+  it('skips decoding into memory during prefetch when memory is full while saving to CacheStorage', async () => {
+    const engine = new NeuralVoiceEngine(1)
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: vi.fn(
+        (_data: ArrayBuffer, success: (buf: AudioBuffer) => void) => {
+          success({ duration: 1 } as unknown as AudioBuffer)
+        },
+      ),
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const mockPut = vi.fn().mockResolvedValue(undefined)
+    const mockCache = {
+      match: vi.fn().mockResolvedValue(undefined),
+      put: mockPut,
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const mockFetch = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(new Uint8Array([1, 2]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      ),
+    )
+
+    // Item 1 should fill the cache
+    await engine.prefetch([{ text: 'primera', locale: 'es-MX' }], mockFetch)
+    expect(engine.hasAudio('primera', 'es-MX')).toBe(true)
+    const decodeCalls = (
+      mockAudioContext.decodeAudioData as ReturnType<typeof vi.fn>
+    ).mock.calls.length
+
+    // Item 2: memory is full (1 item), so prefetch should save to CacheStorage but skip decoding into memory
+    await engine.prefetch([{ text: 'segunda', locale: 'es-MX' }], mockFetch)
+    expect(mockPut).toHaveBeenCalled()
+    // decodeAudioData should not have been called for 'segunda'
+    expect(
+      (mockAudioContext.decodeAudioData as ReturnType<typeof vi.fn>).mock.calls
+        .length,
+    ).toBe(decodeCalls)
+    // 'primera' was not evicted
+    expect(engine.hasAudio('primera', 'es-MX')).toBe(true)
+  })
+
+  it('cooperatively yields between prefetch batches', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockAudioContext = {
+      state: 'running',
+      decodeAudioData: (
+        _data: ArrayBuffer,
+        success: (buf: AudioBuffer) => void,
+      ) => {
+        success({ duration: 1 } as unknown as AudioBuffer)
+      },
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const idleSpy = vi.fn((cb: () => void) => {
+      cb()
+      return 1
+    })
+    Object.defineProperty(window, 'requestIdleCallback', {
+      value: idleSpy,
+      configurable: true,
+      writable: true,
+    })
+
+    const mockFetch = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(new Uint8Array([1, 2]).buffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg' },
+        }),
+      ),
+    )
+
+    // Prefetch 4 items (concurrency is 3, so 2 batches: batch 1 has 3 items, batch 2 has 1 item)
+    await engine.prefetch(
+      [
+        { text: 'batch item 1', locale: 'es-MX' },
+        { text: 'batch item 2', locale: 'es-MX' },
+        { text: 'batch item 3', locale: 'es-MX' },
+        { text: 'batch item 4', locale: 'es-MX' },
+      ],
+      mockFetch,
+    )
+
+    // requestIdleCallback should have been called between batch 1 and batch 2
+    expect(idleSpy).toHaveBeenCalled()
+  })
+
+  it('populates disk cache keys from CacheStorage and detects disk-cached phrases', async () => {
+    const mockRequests = [
+      new Request(
+        'http://localhost/api/tts?text=palabra_en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
+      ),
+      new Request(
+        'http://localhost/api/tts?text=%C2%A1buenos%20d%C3%ADas!&locale=es-mx&voice=es-MX-JorgeNeural',
+      ),
+    ]
+    const mockCache = {
+      keys: vi.fn().mockResolvedValue(mockRequests),
+      match: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const engine = new NeuralVoiceEngine()
+    await engine.syncDiskCache()
+
+    expect(engine.hasDiskAudio('palabra_en_disco', 'es-MX')).toBe(true)
+    expect(
+      engine.hasDiskAudio('palabra_en_disco', 'es-MX', 'es-MX-DaliaNeural'),
+    ).toBe(true)
+    // Specific opposite voice returns false when not cached
+    expect(
+      engine.hasDiskAudio('palabra_en_disco', 'es-MX', 'es-MX-JorgeNeural'),
+    ).toBe(false)
+    // Resilient to punctuation
+    expect(engine.hasDiskAudio('buenos días', 'es-MX')).toBe(true)
+    expect(engine.hasDiskAudio('¡buenos días!', 'es-MX')).toBe(true)
+    // Non-existent phrase returns false
+    expect(engine.hasDiskAudio('no existe', 'es-MX')).toBe(false)
+  })
+
+  it('prunes unreferenced audio from CacheStorage and cleans up disk/memory caches', async () => {
+    const req1 = new Request(
+      'http://localhost/api/tts?text=active_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
+    )
+    const req2 = new Request(
+      'http://localhost/api/tts?text=deleted_phrase&locale=es-mx&voice=es-MX-JorgeNeural',
+    )
+    const mockDelete = vi.fn().mockResolvedValue(true)
+    const mockCache = {
+      keys: vi.fn().mockResolvedValue([req1, req2]),
+      match: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: mockDelete,
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const engine = new NeuralVoiceEngine()
+    await engine.syncDiskCache()
+    expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
+    expect(engine.hasDiskAudio('deleted_phrase', 'es-MX')).toBe(true)
+
+    // Prune with only 'active_phrase' present
+    const prunedCount = await engine.pruneUnusedAudio([
+      { text: 'active_phrase', locale: 'es-MX' },
+    ])
+    expect(prunedCount).toBe(1)
+    expect(mockDelete).toHaveBeenCalledTimes(1)
+    const deletedArg: unknown = mockDelete.mock.calls[0]?.[0]
+    const deletedUrl =
+      deletedArg instanceof Request ? deletedArg.url : String(deletedArg)
+    expect(deletedUrl).toContain('deleted_phrase')
+    expect(deletedUrl).not.toContain('active_phrase')
+
+    // Deleted phrase is no longer recognized as disk-cached
+    expect(engine.hasDiskAudio('deleted_phrase', 'es-MX')).toBe(false)
+    expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
+  })
+
+  it('retries disk cache population if an earlier attempt failed', async () => {
+    let attempt = 0
+    const req = new Request(
+      'http://localhost/api/tts?text=retry_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
+    )
+    const mockCache = {
+      keys: vi.fn().mockImplementation(() => {
+        attempt++
+        if (attempt === 1)
+          return Promise.reject(new Error('Cache transient read failure'))
+        return Promise.resolve([req])
+      }),
+      match: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const engine = new NeuralVoiceEngine()
+    // First attempt fails transiently
+    await engine.syncDiskCache()
+    expect(engine.hasDiskAudio('retry_phrase', 'es-MX')).toBe(false)
+
+    // Second attempt recovers and populates keys
+    await engine.syncDiskCache()
+    expect(engine.hasDiskAudio('retry_phrase', 'es-MX')).toBe(true)
+  })
+})
+
+describe('LruAudioCache', () => {
+  it('enforces maximum capacity by evicting the least recently used entries', () => {
+    const cache = new LruAudioCache(2)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf3 = { duration: 3 } as unknown as AudioBuffer
+
+    cache.set('k1', buf1)
+    cache.set('k2', buf2)
+    expect(cache.size).toBe(2)
+    expect(cache.has('k1')).toBe(true)
+    expect(cache.has('k2')).toBe(true)
+
+    // Adding a 3rd entry evicts the oldest entry ('k1')
+    cache.set('k3', buf3)
+    expect(cache.size).toBe(2)
+    expect(cache.has('k1')).toBe(false)
+    expect(cache.has('k2')).toBe(true)
+    expect(cache.has('k3')).toBe(true)
+  })
+
+  it('refreshes item position upon get() to prevent eviction of recently accessed items', () => {
+    const cache = new LruAudioCache(2)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf3 = { duration: 3 } as unknown as AudioBuffer
+
+    cache.set('k1', buf1)
+    cache.set('k2', buf2)
+
+    // Access 'k1' to promote it to most recently used
+    expect(cache.get('k1')).toBe(buf1)
+
+    // Adding 'k3' should now evict 'k2', keeping 'k1' and 'k3'
+    cache.set('k3', buf3)
+    expect(cache.size).toBe(2)
+    expect(cache.has('k1')).toBe(true)
+    expect(cache.has('k2')).toBe(false)
+    expect(cache.has('k3')).toBe(true)
+  })
+
+  it('updates existing keys without growing size or evicting other keys', () => {
+    const cache = new LruAudioCache(2)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+    const buf1Updated = { duration: 1.5 } as unknown as AudioBuffer
+
+    cache.set('k1', buf1)
+    cache.set('k2', buf2)
+    expect(cache.size).toBe(2)
+
+    cache.set('k1', buf1Updated)
+    expect(cache.size).toBe(2)
+    expect(cache.get('k1')).toBe(buf1Updated)
+    expect(cache.has('k2')).toBe(true)
+  })
+
+  it('supports delete, clear, and key/value/entry iteration', () => {
+    const cache = new LruAudioCache(3)
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+
+    cache.set('a', buf1)
+    cache.set('b', buf2)
+
+    expect(Array.from(cache.keys())).toEqual(['a', 'b'])
+    expect(Array.from(cache.values())).toEqual([buf1, buf2])
+    expect(Array.from(cache.entries())).toEqual([
+      ['a', buf1],
+      ['b', buf2],
+    ])
+    expect(Array.from(cache)).toEqual([
+      ['a', buf1],
+      ['b', buf2],
+    ])
+
+    expect(cache.delete('a')).toBe(true)
+    expect(cache.has('a')).toBe(false)
+    expect(cache.size).toBe(1)
+
+    cache.clear()
+    expect(cache.size).toBe(0)
+  })
+
+  it('defensively clamps maxSize to at least 1', () => {
+    const cacheZero = new LruAudioCache(0)
+    expect(cacheZero.maxSize).toBe(1)
+
+    const cacheNegative = new LruAudioCache(-10)
+    expect(cacheNegative.maxSize).toBe(1)
+
+    const buf1 = { duration: 1 } as unknown as AudioBuffer
+    const buf2 = { duration: 2 } as unknown as AudioBuffer
+
+    cacheZero.set('a', buf1)
+    expect(cacheZero.size).toBe(1)
+    expect(cacheZero.get('a')).toBe(buf1)
+
+    // Second insertion evicts the first because maxSize is clamped to 1
+    cacheZero.set('b', buf2)
+    expect(cacheZero.size).toBe(1)
+    expect(cacheZero.get('a')).toBeUndefined()
+    expect(cacheZero.get('b')).toBe(buf2)
   })
 })

@@ -36,6 +36,9 @@ export type Speaker = {
   supported(): boolean
   prewarm?(): Promise<boolean> | boolean | Promise<void> | void
   prefetch?(items: PrefetchItem[]): Promise<void> | void
+  pruneUnusedAudio?(
+    activeItems: Array<{ text: string; locale: string }>,
+  ): Promise<number> | number | void
 }
 
 export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'

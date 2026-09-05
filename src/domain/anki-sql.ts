@@ -18,8 +18,14 @@ export async function getSqlJs(
       if (typeof process === 'undefined' || !process.versions?.node) {
         sqlPromise = initSqlJs({ locateFile: () => sqlWasmUrl })
       } else {
-        const fs = await import('node:fs')
-        const path = await import('node:path')
+        const fsModule = 'node:fs'
+        const pathModule = 'node:path'
+        const fs = (await import(
+          /* @vite-ignore */ fsModule
+        )) as typeof import('node:fs')
+        const path = (await import(
+          /* @vite-ignore */ pathModule
+        )) as typeof import('node:path')
         const buffer = fs.readFileSync(
           path.resolve(process.cwd(), 'node_modules/sql.js/dist/sql-wasm.wasm'),
         )
