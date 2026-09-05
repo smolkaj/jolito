@@ -4759,7 +4759,7 @@ describe('Jolito', () => {
         screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
       ).toBeInTheDocument()
 
-      // Symmetric return cue at bottom is rendered
+      // Symmetric return cue at top of why section is rendered
       expect(
         screen.getByRole('button', { name: /^try jolito now/i }),
       ).toBeInTheDocument()
