@@ -1661,6 +1661,7 @@ export function App({
       }
       if (revealAudioTimerRef.current !== null) {
         window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
       }
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
