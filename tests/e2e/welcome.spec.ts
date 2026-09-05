@@ -209,6 +209,97 @@ test('creates and reviews both directions with the keyboard', async ({
   expect(results.violations).toEqual([])
 })
 
+test('advances progress bar visibly during practice with bidirectional cards', async ({
+  page,
+}) => {
+  const now = Date.now()
+  const cards = []
+  for (let i = 1; i <= 10; i++) {
+    const idx = String(i).padStart(2, '0')
+    cards.push(
+      {
+        id: `card-${idx}:es-en`,
+        noteId: `note-${idx}`,
+        prompt: `palabra-${idx}`,
+        answer: `word-${idx}`,
+        direction: 'es-en',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now - 1000,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: now - 1000,
+      },
+      {
+        id: `card-${idx}:en-es`,
+        noteId: `note-${idx}`,
+        prompt: `word-${idx}`,
+        answer: `palabra-${idx}`,
+        direction: 'en-es',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now - 1000,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: now - 1000,
+      },
+    )
+  }
+
+  await page.addInitScript((cardList) => {
+    window.localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({ version: 1, cards: cardList, deletedCardIds: [] }),
+    )
+  }, cards)
+
+  await page.goto('/#/study')
+  const progressBar = page.locator('.review-progress-track')
+  await expect(progressBar).toHaveAttribute('aria-valuenow', '0')
+  await expect(progressBar).toHaveAttribute(
+    'aria-valuetext',
+    '10 cards remaining',
+  )
+
+  // Reveal answer and rate Easy (4)
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+
+  // Progress bar advances to 10% (1 completed out of 10 in batch, 9 remaining)
+  await expect(progressBar).toHaveAttribute('aria-valuenow', '10')
+  await expect(progressBar).toHaveAttribute(
+    'aria-valuetext',
+    '9 cards remaining',
+  )
+
+  // Rate second card Easy (4)
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+  await expect(progressBar).toHaveAttribute('aria-valuenow', '20')
+  await expect(progressBar).toHaveAttribute(
+    'aria-valuetext',
+    '8 cards remaining',
+  )
+
+  await page.screenshot({ path: '/tmp/jolito-progress-bar-active.png' })
+  await page.screenshot({ path: 'test-results/jolito-progress-bar-active.png' })
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})
+
 test('supports browser back and forward navigation across views', async ({
   page,
 }) => {
