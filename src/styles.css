@@ -580,7 +580,7 @@ summary:focus-visible {
   width: 100%;
   flex: 1;
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
 }
@@ -1049,7 +1049,7 @@ summary:focus-visible {
 
 .why-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -1371,7 +1371,7 @@ summary:focus-visible {
 
 @media (max-width: 860px) {
   .why-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 18px;
   }
 }
@@ -1967,7 +1967,7 @@ summary:focus-visible {
 
 .compact-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   padding-bottom: 8px;
 }
@@ -2428,7 +2428,7 @@ kbd {
 
 .diff-row {
   display: grid;
-  grid-template-columns: 88px 1fr;
+  grid-template-columns: 88px minmax(0, 1fr);
   gap: 12px;
   align-items: baseline;
 }
@@ -2581,7 +2581,7 @@ kbd {
 
 .grade-buttons {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 0;
 }
@@ -2590,7 +2590,7 @@ kbd {
   min-width: 0;
   padding: 10px 12px;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 2px 9px;
   border: 2px solid var(--line);
@@ -2833,7 +2833,7 @@ kbd {
 /* Responsive Breakpoints */
 @media (max-width: 860px) {
   .welcome-hero-main {
-    grid-template-columns: 1fr 0.85fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
     gap: 28px;
   }
 
@@ -2843,7 +2843,7 @@ kbd {
   }
 
   .create-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
     max-width: 580px;
   }
@@ -2922,7 +2922,7 @@ kbd {
   }
 
   .welcome-hero-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 20px;
   }
@@ -2972,7 +2972,7 @@ kbd {
   }
 
   .create-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     margin-top: 24px;
   }
 
@@ -2986,7 +2986,7 @@ kbd {
   }
 
   .compact-fields {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .review-progress-track {
@@ -3030,11 +3030,11 @@ kbd {
   }
 
   .diff-row {
-    grid-template-columns: 68px 1fr;
+    grid-template-columns: 68px minmax(0, 1fr);
   }
 
   .grade-buttons {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .keyboard-hint {
@@ -3274,7 +3274,7 @@ kbd {
 
 .import-mode-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -3495,7 +3495,7 @@ kbd {
 
 .sync-actions-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -4423,7 +4423,10 @@ kbd {
   }
 
   .deck-card-row {
-    grid-template-columns: 32px minmax(95px, 110px) 1fr 1fr;
+    grid-template-columns: 32px minmax(95px, 110px) minmax(0, 1fr) minmax(
+        0,
+        1fr
+      );
     gap: 8px;
     padding: 8px 10px;
   }
@@ -4435,7 +4438,7 @@ kbd {
 
 @media (max-width: 580px) {
   .deck-card-row {
-    grid-template-columns: 28px minmax(85px, 95px) 1fr;
+    grid-template-columns: 28px minmax(85px, 95px) minmax(0, 1fr);
     gap: 6px;
   }
 
