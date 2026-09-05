@@ -59,3 +59,23 @@ export function getDeterministicVoice(
   const isFemale = hashString(key) % 2 === 0
   return isFemale ? voices.female : voices.male
 }
+
+/**
+ * Returns the counter-voice (opposite gender) for a given neural voice.
+ */
+export function getAlternateVoice(voice: string): string {
+  if (voice === NEURAL_VOICES['es-MX'].female) return NEURAL_VOICES['es-MX'].male
+  if (voice === NEURAL_VOICES['es-MX'].male) return NEURAL_VOICES['es-MX'].female
+  if (voice === NEURAL_VOICES['en-US'].female) return NEURAL_VOICES['en-US'].male
+  if (voice === NEURAL_VOICES['en-US'].male) return NEURAL_VOICES['en-US'].female
+  return voice
+}
+
+/**
+ * Returns both neural voices (female and male) available for a given locale.
+ */
+export function getAllVoicesForLocale(locale: string): [string, string] {
+  const norm = normalizeLocale(locale)
+  const voices = NEURAL_VOICES[norm]
+  return [voices.female, voices.male]
+}

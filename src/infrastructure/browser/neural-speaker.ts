@@ -3,30 +3,39 @@ import type {
   Speaker,
   SpeakerOptions,
 } from '../../application/ports'
-import { getDeterministicVoice, normalizeLocale } from '../tts/voices'
+import {
+  getAlternateVoice,
+  getDeterministicVoice,
+  normalizeLocale,
+} from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
 
 export const AUDIO_CACHE_NAME = 'jolito-audio-v1'
 
-export const BUNDLED_NEURAL_AUDIO: Record<string, string> = {
-  'es-mx:aguacate': '/audio/aguacate-es.mp3',
-  'en-us:avocado': '/audio/avocado-en.mp3',
-  'es-mx:qué padre': '/audio/que-padre-es.mp3',
-  'es-mx:que padre': '/audio/que-padre-es.mp3',
-  'en-us:how cool': '/audio/how-cool-en.mp3',
-  'es-mx:¿dónde está el metro?': '/audio/donde-esta-el-metro-es.mp3',
-  'es-mx:donde esta el metro': '/audio/donde-esta-el-metro-es.mp3',
-  'en-us:where is the metro?': '/audio/where-is-the-metro-en.mp3',
-  'en-us:where is the metro': '/audio/where-is-the-metro-en.mp3',
-  'es-mx:nos vemos al rato': '/audio/nos-vemos-al-rato-es.mp3',
-  'en-us:see you later': '/audio/see-you-later-en.mp3',
-  'es-mx:la cuenta, por favor': '/audio/la-cuenta-por-favor-es.mp3',
-  'es-mx:la cuenta por favor': '/audio/la-cuenta-por-favor-es.mp3',
-  'en-us:the bill, please': '/audio/the-bill-please-en.mp3',
-  'en-us:the bill please': '/audio/the-bill-please-en.mp3',
-  'es-mx:para llevar': '/audio/para-llevar-es.mp3',
-  'en-us:to go': '/audio/to-go-en.mp3',
+export const DUAL_VOICE_MAX_DURATION_SECONDS = 1.35
+export const DUAL_VOICE_PAUSE_MS = 320
+
+export function isShortPhraseForDualVoice(text: string): boolean {
+  const clean = text.trim()
+  if (!clean) return false
+  const words = clean.split(/\s+/).filter(Boolean)
+  return words.length > 0 && words.length <= 3 && clean.length <= 30
 }
+
+export const STARTER_PHRASES: Array<{ text: string; locale: string }> = [
+  { text: 'aguacate', locale: 'es-MX' },
+  { text: 'avocado', locale: 'en-US' },
+  { text: 'qué padre', locale: 'es-MX' },
+  { text: 'how cool', locale: 'en-US' },
+  { text: '¿dónde está el metro?', locale: 'es-MX' },
+  { text: 'where is the metro?', locale: 'en-US' },
+  { text: 'nos vemos al rato', locale: 'es-MX' },
+  { text: 'see you later', locale: 'en-US' },
+  { text: 'la cuenta, por favor', locale: 'es-MX' },
+  { text: 'the bill, please', locale: 'en-US' },
+  { text: 'para llevar', locale: 'es-MX' },
+  { text: 'to go', locale: 'en-US' },
+]
 
 export function getAudioUrl(
   text: string,
@@ -113,9 +122,6 @@ export class NeuralVoiceEngine {
   constructor(maxMemoryBuffers = 200) {
     this.audioCache = new LruAudioCache(maxMemoryBuffers)
     this.initContext()
-    for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
-      this.audioBlobs.set(key, url)
-    }
     void this.getCache()
   }
 
@@ -144,6 +150,7 @@ export class NeuralVoiceEngine {
   }
 
   private inFlightFetches = new Map<string, Promise<boolean>>()
+  private dualVoiceTimer: number | null = null
 
   private getPrimaryCacheKey(
     text: string,
@@ -152,36 +159,19 @@ export class NeuralVoiceEngine {
   ): string {
     const normalizedLocale = locale.toLowerCase().replace(/_/g, '-')
     const clean = text.trim().toLowerCase()
-    return voice
-      ? `${normalizedLocale}:${clean}:${voice}`
-      : `${normalizedLocale}:${clean}`
+    const effectiveVoice = voice ?? getDeterministicVoice(clean, normalizedLocale)
+    return `${normalizedLocale}:${clean}:${effectiveVoice}`
   }
 
   private getCacheKeys(text: string, locale: string, voice?: string): string[] {
     const normalizedLocale = locale.toLowerCase().replace(/_/g, '-')
     const raw = text.trim().toLowerCase()
     const clean = raw.replace(/[¿?¡!.,]/g, '').trim()
-    const keys: string[] = []
-
-    if (voice) {
-      keys.push(`${normalizedLocale}:${raw}:${voice}`)
-      if (clean !== raw && clean.length > 0) {
-        keys.push(`${normalizedLocale}:${clean}:${voice}`)
-      }
-      return keys
-    }
-
-    const defaultVoice = getDeterministicVoice(text, locale)
-    keys.push(`${normalizedLocale}:${raw}:${defaultVoice}`)
+    const effectiveVoice = voice ?? getDeterministicVoice(raw, normalizedLocale)
+    const keys: string[] = [`${normalizedLocale}:${raw}:${effectiveVoice}`]
     if (clean !== raw && clean.length > 0) {
-      keys.push(`${normalizedLocale}:${clean}:${defaultVoice}`)
+      keys.push(`${normalizedLocale}:${clean}:${effectiveVoice}`)
     }
-
-    keys.push(`${normalizedLocale}:${raw}`)
-    if (clean !== raw && clean.length > 0) {
-      keys.push(`${normalizedLocale}:${clean}`)
-    }
-
     return keys
   }
 
@@ -189,6 +179,12 @@ export class NeuralVoiceEngine {
   private currentAudioElement: HTMLAudioElement | null = null
 
   stopAudio(): void {
+    if (this.dualVoiceTimer !== null) {
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(this.dualVoiceTimer)
+      }
+      this.dualVoiceTimer = null
+    }
     if (this.currentSource) {
       try {
         this.currentSource.stop()
@@ -221,19 +217,24 @@ export class NeuralVoiceEngine {
   }
 
   hasAudio(text: string, locale: string, voice?: string): boolean {
-    const hasVoiceMatch = this.getCacheKeys(text, locale, voice).some(
-      (key) => this.audioCache.has(key) || this.audioBlobs.has(key),
-    )
-    if (hasVoiceMatch) return true
-
-    // If a specific voice was requested but not found, check if unvoiced (bundled audio) exists
     if (voice) {
-      return this.getCacheKeys(text, locale).some(
+      return this.getCacheKeys(text, locale, voice).some(
         (key) => this.audioCache.has(key) || this.audioBlobs.has(key),
       )
     }
-
-    return false
+    const normLocale = normalizeLocale(locale)
+    const defaultVoice = getDeterministicVoice(text, normLocale)
+    if (
+      this.getCacheKeys(text, normLocale, defaultVoice).some(
+        (key) => this.audioCache.has(key) || this.audioBlobs.has(key),
+      )
+    ) {
+      return true
+    }
+    const altVoice = getAlternateVoice(defaultVoice)
+    return this.getCacheKeys(text, normLocale, altVoice).some(
+      (key) => this.audioCache.has(key) || this.audioBlobs.has(key),
+    )
   }
 
   isAudioInFlight(text: string, locale: string, voice?: string): boolean {
@@ -245,11 +246,7 @@ export class NeuralVoiceEngine {
       normLocale,
       effectiveVoice,
     )
-    const unvoicedKey = this.getPrimaryCacheKey(cleanText, normLocale)
-    return (
-      this.inFlightFetches.has(voiceKey) ||
-      this.inFlightFetches.has(unvoicedKey)
-    )
+    return this.inFlightFetches.has(voiceKey)
   }
 
   private diskCacheKeys = new Set<string>()
@@ -259,20 +256,23 @@ export class NeuralVoiceEngine {
     const cleanText = text.trim()
     if (!cleanText) return false
     const normLocale = normalizeLocale(locale)
-    const effectiveVoice = voice ?? getDeterministicVoice(cleanText, normLocale)
-    const hasVoiceMatch = this.getCacheKeys(
-      cleanText,
-      normLocale,
-      effectiveVoice,
-    ).some((k) => this.diskCacheKeys.has(k))
-    if (hasVoiceMatch) return true
-
-    if (!voice) {
-      return this.getCacheKeys(cleanText, normLocale).some((k) =>
+    if (voice) {
+      return this.getCacheKeys(cleanText, normLocale, voice).some((k) =>
         this.diskCacheKeys.has(k),
       )
     }
-    return false
+    const defaultVoice = getDeterministicVoice(cleanText, normLocale)
+    if (
+      this.getCacheKeys(cleanText, normLocale, defaultVoice).some((k) =>
+        this.diskCacheKeys.has(k),
+      )
+    ) {
+      return true
+    }
+    const altVoice = getAlternateVoice(defaultVoice)
+    return this.getCacheKeys(cleanText, normLocale, altVoice).some((k) =>
+      this.diskCacheKeys.has(k),
+    )
   }
 
   private recordDiskKey(
@@ -287,13 +287,6 @@ export class NeuralVoiceEngine {
       effectiveVoice,
     )) {
       this.diskCacheKeys.add(key)
-    }
-    const raw = cleanText.trim().toLowerCase()
-    const clean = raw.replace(/[¿?¡!.,]/g, '').trim()
-    const norm = normLocale.toLowerCase().replace(/_/g, '-')
-    this.diskCacheKeys.add(`${norm}:${raw}`)
-    if (clean !== raw && clean.length > 0) {
-      this.diskCacheKeys.add(`${norm}:${clean}`)
     }
   }
 
@@ -319,10 +312,21 @@ export class NeuralVoiceEngine {
     }
   }
 
-  playAudio(text: string, locale: string, voice?: string): boolean {
+  playAudio(
+    text: string,
+    locale: string,
+    voice?: string,
+    options?: {
+      dualVoice?: boolean | undefined
+      onEnded?: (() => void) | undefined
+    },
+  ): boolean {
     if (!this.supported()) return false
 
-    const cacheKeys = this.getCacheKeys(text, locale, voice)
+    const normLocale = normalizeLocale(locale)
+    const effectiveVoice = voice ?? getDeterministicVoice(text, normLocale)
+    const cacheKeys = this.getCacheKeys(text, normLocale, effectiveVoice)
+
     for (const key of cacheKeys) {
       // 1. Cached AudioBuffer playback via Web Audio API
       const cachedBuffer = this.audioCache.get(key)
@@ -333,10 +337,36 @@ export class NeuralVoiceEngine {
             this.audioCache.get(otherKey)
           }
         }
-        return this.playBuffer(cachedBuffer)
+
+        const isSpanish = normLocale === 'es-MX'
+        const qualifiesForDualVoice =
+          isSpanish &&
+          options?.dualVoice !== false &&
+          isShortPhraseForDualVoice(text) &&
+          cachedBuffer.duration <= DUAL_VOICE_MAX_DURATION_SECONDS
+
+        if (qualifiesForDualVoice) {
+          const alternateVoice = getAlternateVoice(effectiveVoice)
+          return this.playBuffer(cachedBuffer, () => {
+            options?.onEnded?.()
+            if (this.dualVoiceTimer !== null && typeof window !== 'undefined') {
+              window.clearTimeout(this.dualVoiceTimer)
+            }
+            if (typeof window !== 'undefined') {
+              this.dualVoiceTimer = window.setTimeout(() => {
+                this.dualVoiceTimer = null
+                this.playAudio(text, normLocale, alternateVoice, {
+                  dualVoice: false,
+                })
+              }, DUAL_VOICE_PAUSE_MS)
+            }
+          })
+        }
+
+        return this.playBuffer(cachedBuffer, options?.onEnded)
       }
 
-      // 2. Audio element playback (bundled MP3 / data URL)
+      // 2. Audio element playback (data URL)
       const cachedUrl = this.audioBlobs.get(key)
       if (
         cachedUrl &&
@@ -351,6 +381,7 @@ export class NeuralVoiceEngine {
             if (this.currentAudioElement === audio) {
               this.currentAudioElement = null
             }
+            options?.onEnded?.()
           }
           if (typeof audio.play === 'function') {
             void audio.play().catch(() => {})
@@ -358,40 +389,6 @@ export class NeuralVoiceEngine {
           return true
         } catch {
           return false
-        }
-      }
-    }
-
-    // If voice-specific audio was not found, fallback to unvoiced keys (bundled static audio)
-    if (voice) {
-      for (const fallbackKey of this.getCacheKeys(text, locale)) {
-        const cachedBuffer = this.audioCache.get(fallbackKey)
-        if (cachedBuffer) {
-          return this.playBuffer(cachedBuffer)
-        }
-
-        const bundledUrl = this.audioBlobs.get(fallbackKey)
-        if (
-          bundledUrl &&
-          typeof window !== 'undefined' &&
-          typeof window.Audio !== 'undefined'
-        ) {
-          try {
-            this.stopAudio()
-            const audio = new window.Audio(bundledUrl)
-            this.currentAudioElement = audio
-            audio.onended = () => {
-              if (this.currentAudioElement === audio) {
-                this.currentAudioElement = null
-              }
-            }
-            if (typeof audio.play === 'function') {
-              void audio.play().catch(() => {})
-            }
-            return true
-          } catch {
-            return false
-          }
         }
       }
     }
@@ -462,7 +459,12 @@ export class NeuralVoiceEngine {
       const clean = item.text.trim()
       if (!clean) continue
       const norm = normalizeLocale(item.locale)
-      for (const k of this.getCacheKeys(clean, norm)) {
+      const defVoice = getDeterministicVoice(clean, norm)
+      const altVoice = getAlternateVoice(defVoice)
+      for (const k of this.getCacheKeys(clean, norm, defVoice)) {
+        activeKeys.add(k)
+      }
+      for (const k of this.getCacheKeys(clean, norm, altVoice)) {
         activeKeys.add(k)
       }
     }
@@ -481,19 +483,31 @@ export class NeuralVoiceEngine {
           if (!text || !locale) continue
 
           const normLocale = normalizeLocale(locale)
-          const isReferenced = this.getCacheKeys(text, normLocale).some((k) =>
-            activeKeys.has(k),
-          )
+          const defVoice = getDeterministicVoice(text, normLocale)
+          const altVoice = getAlternateVoice(defVoice)
+          const isReferenced =
+            this.getCacheKeys(text, normLocale, defVoice).some((k) =>
+              activeKeys.has(k),
+            ) ||
+            this.getCacheKeys(text, normLocale, altVoice).some((k) =>
+              activeKeys.has(k),
+            )
 
           if (!isReferenced) {
             await cache.delete(req)
             deletedCount++
             const voice = url.searchParams.get('voice') ?? undefined
-            for (const k of this.getCacheKeys(text, normLocale, voice)) {
+            if (voice) {
+              for (const k of this.getCacheKeys(text, normLocale, voice)) {
+                this.diskCacheKeys.delete(k)
+                this.audioCache.delete(k)
+              }
+            }
+            for (const k of this.getCacheKeys(text, normLocale, defVoice)) {
               this.diskCacheKeys.delete(k)
               this.audioCache.delete(k)
             }
-            for (const k of this.getCacheKeys(text, normLocale)) {
+            for (const k of this.getCacheKeys(text, normLocale, altVoice)) {
               this.diskCacheKeys.delete(k)
               this.audioCache.delete(k)
             }
@@ -545,11 +559,15 @@ export class NeuralVoiceEngine {
     normLocale: string,
     voice: string | undefined,
     arrayBuffer: ArrayBuffer,
+    options?: { requireDecode?: boolean },
   ): Promise<boolean> {
     const decoded = await this.decodeAudio(arrayBuffer)
     if (decoded) {
       this.registerAudioBuffer(cleanText, normLocale, decoded, voice)
       return true
+    }
+    if (options?.requireDecode) {
+      return false
     }
     if (
       typeof URL !== 'undefined' &&
@@ -572,6 +590,7 @@ export class NeuralVoiceEngine {
           voice?: string | undefined
           fetchFn?: typeof fetch
           skipDecodeIfCacheFull?: boolean | undefined
+          requireDecode?: boolean | undefined
         }
       | typeof fetch,
     optionalFetchFn?: typeof fetch,
@@ -582,6 +601,7 @@ export class NeuralVoiceEngine {
           voice?: string | undefined
           fetchFn?: typeof fetch
           skipDecodeIfCacheFull?: boolean | undefined
+          requireDecode?: boolean | undefined
         }
       | undefined
     let fetchFn: typeof fetch = fetch
@@ -666,12 +686,19 @@ export class NeuralVoiceEngine {
           return true
         }
 
+        const requireDecode =
+          Boolean(options?.requireDecode) &&
+          Boolean(
+            this.audioContext &&
+              typeof this.audioContext.decodeAudioData === 'function',
+          )
         const arrayBuffer = await response.arrayBuffer()
         return this.registerDecodedBufferOrBlob(
           cleanText,
           normLocale,
           voice,
           arrayBuffer,
+          { requireDecode },
         )
       } catch {
         return false
@@ -706,7 +733,8 @@ export class NeuralVoiceEngine {
   async prefetch(
     items: PrefetchItem[],
     fetchFn: typeof fetch = fetch,
-  ): Promise<void> {
+    options?: { requireDecode?: boolean },
+  ): Promise<boolean> {
     const seenKeys = new Set<string>()
     const resolvedItems: Array<{
       text: string
@@ -720,32 +748,40 @@ export class NeuralVoiceEngine {
       const clean = item.text.trim()
       if (!clean) continue
       const normLocale = normalizeLocale(item.locale)
-      const voice =
+      const primaryVoice =
         item.voice ?? getDeterministicVoice(clean, normLocale, item.cardSeed)
-      const key = this.getPrimaryCacheKey(clean, normLocale, voice)
-      if (seenKeys.has(key)) continue
-      seenKeys.add(key)
+      const voicesToFetch =
+        item.bothVoices !== false
+          ? [primaryVoice, getAlternateVoice(primaryVoice)]
+          : [primaryVoice]
 
-      if (
-        !this.hasAudio(clean, normLocale, voice) &&
-        !this.isAudioInFlight(clean, normLocale, voice)
-      ) {
-        resolvedItems.push({
-          text: clean,
-          locale: normLocale,
-          voice,
-          cardSeed: item.cardSeed,
-          key,
-        })
+      for (const voice of voicesToFetch) {
+        const key = this.getPrimaryCacheKey(clean, normLocale, voice)
+        if (seenKeys.has(key)) continue
+        seenKeys.add(key)
+
+        if (
+          !this.hasAudio(clean, normLocale, voice) &&
+          !this.isAudioInFlight(clean, normLocale, voice)
+        ) {
+          resolvedItems.push({
+            text: clean,
+            locale: normLocale,
+            voice,
+            cardSeed: item.cardSeed,
+            key,
+          })
+        }
       }
     }
 
-    if (resolvedItems.length === 0) return
+    if (resolvedItems.length === 0) return true
 
+    let allSucceeded = true
     const CONCURRENCY = 3
     for (let i = 0; i < resolvedItems.length; i += CONCURRENCY) {
       const batch = resolvedItems.slice(i, i + CONCURRENCY)
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         batch.map((item) =>
           this.fetchAndCacheAudio(
             item.text,
@@ -754,11 +790,18 @@ export class NeuralVoiceEngine {
               voice: item.voice,
               cardSeed: item.cardSeed,
               skipDecodeIfCacheFull: true,
+              requireDecode: options?.requireDecode,
             },
             fetchFn,
           ),
         ),
       )
+
+      for (const res of results) {
+        if (res.status === 'rejected' || res.value !== true) {
+          allSucceeded = false
+        }
+      }
 
       if (i + CONCURRENCY < resolvedItems.length) {
         await new Promise<void>((resolve) => {
@@ -773,58 +816,30 @@ export class NeuralVoiceEngine {
         })
       }
     }
+
+    return allSucceeded
   }
 
-  private prewarmedUrls = new Set<string>()
   private inFlightPrewarm: Promise<boolean> | null = null
 
   async prewarm(fetchFn: typeof fetch = fetch): Promise<boolean> {
     if (this.inFlightPrewarm) return this.inFlightPrewarm
 
-    const urlToKeys = new Map<string, string[]>()
-    for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
-      if (this.prewarmedUrls.has(url)) continue
-      const keys = urlToKeys.get(url) ?? []
-      keys.push(key)
-      urlToKeys.set(url, keys)
-    }
-
-    if (urlToKeys.size === 0) return true
-
     this.inFlightPrewarm = (async () => {
-      let allSucceeded = true
-
-      await Promise.all(
-        Array.from(urlToKeys.entries()).map(async ([url, keys]) => {
-          try {
-            const response = await fetchFn(url)
-            if (!response.ok) {
-              allSucceeded = false
-              return
-            }
-            const arrayBuffer = await response.arrayBuffer()
-            if (
-              this.audioContext &&
-              typeof this.audioContext.decodeAudioData === 'function'
-            ) {
-              const decodedBuffer = await this.decodeAudio(arrayBuffer)
-              if (decodedBuffer) {
-                for (const key of keys) {
-                  this.audioCache.set(key, decodedBuffer)
-                }
-              } else {
-                allSucceeded = false
-                return
-              }
-            }
-            this.prewarmedUrls.add(url)
-          } catch {
-            allSucceeded = false
-          }
-        }),
-      )
-
-      return allSucceeded
+      try {
+        const success = await this.prefetch(
+          STARTER_PHRASES.map((p) => ({
+            text: p.text,
+            locale: p.locale,
+            bothVoices: true,
+          })),
+          fetchFn,
+          { requireDecode: true },
+        )
+        return success
+      } catch {
+        return false
+      }
     })().finally(() => {
       this.inFlightPrewarm = null
     })
@@ -832,7 +847,7 @@ export class NeuralVoiceEngine {
     return this.inFlightPrewarm
   }
 
-  private playBuffer(buffer: AudioBuffer): boolean {
+  private playBuffer(buffer: AudioBuffer, onEnded?: () => void): boolean {
     try {
       if (!this.audioContext) {
         this.initContext()
@@ -852,6 +867,7 @@ export class NeuralVoiceEngine {
         if (this.currentSource === source) {
           this.currentSource = null
         }
+        onEnded?.()
       }
       this.currentSource = source
       source.start(0)
@@ -882,9 +898,15 @@ export class LayeredNeuralSpeaker implements Speaker {
       options?.fallbackSpeaker ?? new EnhancedBrowserSpeaker()
   }
 
-  private speakFallback(text: string, locale: string): boolean {
+  private speakFallback(
+    text: string,
+    locale: string,
+    options?: SpeakerOptions,
+  ): boolean {
     this.neuralEngine.stopAudio()
-    return this.fallbackSpeaker.speak(text, locale)
+    return options
+      ? this.fallbackSpeaker.speak(text, locale, options)
+      : this.fallbackSpeaker.speak(text, locale)
   }
 
   supported(): boolean {
@@ -949,11 +971,16 @@ export class LayeredNeuralSpeaker implements Speaker {
     // 1. If audio is already cached in memory, play immediately
     if (this.neuralEngine.hasAudio(cleanText, normLocale, voice)) {
       try {
-        const played = this.neuralEngine.playAudio(cleanText, normLocale, voice)
+        const played = this.neuralEngine.playAudio(
+          cleanText,
+          normLocale,
+          voice,
+          options,
+        )
         if (played) return true
       } catch {
         // Fall back seamlessly to browser speech synthesis
-        return this.speakFallback(cleanText, normLocale)
+        return this.speakFallback(cleanText, normLocale, options)
       }
     }
 
@@ -991,17 +1018,18 @@ export class LayeredNeuralSpeaker implements Speaker {
               cleanText,
               normLocale,
               voice,
+              options,
             )
             if (!played) {
-              this.speakFallback(cleanText, normLocale)
+              this.speakFallback(cleanText, normLocale, options)
             }
           } else {
-            this.speakFallback(cleanText, normLocale)
+            this.speakFallback(cleanText, normLocale, options)
           }
         })
         .catch(() => {
           if (this.speakGeneration !== currentGen) return
-          this.speakFallback(cleanText, normLocale)
+          this.speakFallback(cleanText, normLocale, options)
         })
       return true
     }
@@ -1014,6 +1042,20 @@ export class LayeredNeuralSpeaker implements Speaker {
       })
       .catch(() => {})
 
-    return this.speakFallback(cleanText, normLocale)
+    if (
+      normLocale === 'es-MX' &&
+      options?.dualVoice !== false &&
+      isShortPhraseForDualVoice(cleanText)
+    ) {
+      const altVoice = getAlternateVoice(voice)
+      void this.neuralEngine
+        .fetchAndCacheAudio(cleanText, normLocale, {
+          voice: altVoice,
+          cardSeed: options?.cardSeed,
+        })
+        .catch(() => {})
+    }
+
+    return this.speakFallback(cleanText, normLocale, options)
   }
 }
