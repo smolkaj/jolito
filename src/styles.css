@@ -1217,30 +1217,54 @@ summary:focus-visible {
 .mini-grade-preview {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: 6px;
   margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--line-subtle);
+  padding-top: 10px;
+  border-top: 1.5px dashed var(--line-subtle);
 }
 
 .mini-grade-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 2px;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 6px;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 8px;
   border: 1.5px solid var(--line);
-  color: var(--ink-soft);
-  background: var(--card);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  line-height: 1.2;
+}
+
+.mini-grade-btn.grade-again {
+  background: var(--tezontle);
+  color: #ffffff;
+  border-color: var(--tezontle-dark);
+}
+
+.mini-grade-btn.grade-hard {
+  background: var(--cempasuchil);
+  color: var(--ink);
+  border-color: var(--cempasuchil-dark);
+}
+
+.mini-grade-btn.grade-good {
+  background: var(--maya-dark);
+  color: #ffffff;
+  border-color: #075985;
+}
+
+.mini-grade-btn.grade-easy {
+  background: var(--verde);
+  color: #ffffff;
+  border-color: var(--verde-dark);
 }
 
 .mini-grade-btn.is-selected {
-  background: var(--turquesa-soft);
-  border-color: var(--turquesa-dark);
-  color: var(--turquesa-dark);
-  font-weight: 800;
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  transform: translateY(-1px);
+  box-shadow: 2px 3px 0 var(--ink);
 }
 
 /* Card 2: SRS Cadence Visual */
@@ -1366,55 +1390,19 @@ summary:focus-visible {
   margin-left: auto;
 }
 
-.why-highlights-bar {
+.why-return-cue {
   display: flex;
-  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 16px 32px;
-  padding: 8px 0 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-.why-highlight-item {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink-soft);
+  padding-top: 12px;
 }
 
-.why-highlight-check {
-  color: var(--verde-dark);
-  font-weight: 800;
+.why-return-cue .hero-scroll-cue {
+  margin-top: 0;
 }
 
-.why-bottom-cta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0 0;
-  text-align: center;
-}
-
-.why-cta-title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: clamp(20px, 2.8vw, 26px);
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.why-cta-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
+.why-return-cue .hero-scroll-cue:hover .scroll-cue-arrow {
+  transform: translateY(-2px);
 }
 
 @media (max-width: 860px) {
@@ -3004,13 +2992,8 @@ kbd {
       max(16px, env(safe-area-inset-left));
   }
 
-  .why-cta-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .why-cta-actions button {
-    width: 100%;
+  .why-return-cue .hero-scroll-cue {
+    display: inline-flex;
   }
 
   .welcome-mascot-img {

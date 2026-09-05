@@ -2325,87 +2325,9 @@ export function App({
               </div>
 
               <div className="why-grid">
-                <article className="why-card why-card-recall">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-recall">1</span>
-                    <span className="why-badge-label">Active recall</span>
-                  </div>
-                  <h3>Type before you flip</h3>
-                  <p>
-                    Produce language from memory instead of passively guessing
-                    multiple choice. Instant visual diffs catch typos while you
-                    retain full self-grading authority.
-                  </p>
-                  <div
-                    className="bento-visual bento-visual-recall"
-                    aria-hidden="true"
-                  >
-                    <div className="diff-card mini-diff-card">
-                      <div className="diff-card-header">
-                        <span className="diff-card-title">
-                          Prompt: ¿Qué onda?
-                        </span>
-                        <span className="diff-badge close">Typo</span>
-                      </div>
-                      <div className="diff-rows">
-                        <div className="diff-row">
-                          <span className="diff-label">You wrote</span>
-                          <p className="diff-text">
-                            <span className="diff-seg diff-seg-match">
-                              what
-                            </span>
-                            <span className="diff-seg diff-seg-match diff-seg-space">
-                              &nbsp;
-                            </span>
-                            <span className="diff-seg diff-seg-incorrect">
-                              up
-                            </span>
-                          </p>
-                        </div>
-                        <div className="diff-row expected-row">
-                          <span className="diff-label">Expected</span>
-                          <div className="diff-row-main">
-                            <p className="diff-text">
-                              <span className="diff-seg diff-seg-match">
-                                what
-                              </span>
-                              <span className="diff-seg diff-seg-match diff-seg-space">
-                                &nbsp;
-                              </span>
-                              <span className="diff-seg diff-seg-missing">
-                                ’s
-                              </span>
-                              <span className="diff-seg diff-seg-match diff-seg-space">
-                                &nbsp;
-                              </span>
-                              <span className="diff-seg diff-seg-match">
-                                up?
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mini-grade-preview">
-                        <span className="mini-grade-btn grade-again">
-                          1 Again
-                        </span>
-                        <span className="mini-grade-btn grade-hard">
-                          2 Hard
-                        </span>
-                        <span className="mini-grade-btn grade-good is-selected">
-                          3 Good
-                        </span>
-                        <span className="mini-grade-btn grade-easy">
-                          4 Easy
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-
                 <article className="why-card why-card-srs">
                   <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-srs">2</span>
+                    <span className="why-badge-number why-badge-srs">1</span>
                     <span className="why-badge-label">Memory retention</span>
                   </div>
                   <h3>Spaced repetition that sticks</h3>
@@ -2448,7 +2370,7 @@ export function App({
 
                 <article className="why-card why-card-audio">
                   <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-audio">3</span>
+                    <span className="why-badge-number why-badge-audio">2</span>
                     <span className="why-badge-label">Ear-first audio</span>
                   </div>
                   <h3>Spoken Mexican Spanish</h3>
@@ -2497,49 +2419,99 @@ export function App({
                     </div>
                   </div>
                 </article>
+
+                <article className="why-card why-card-recall">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-recall">3</span>
+                    <span className="why-badge-label">Active recall</span>
+                  </div>
+                  <h3>Type before you flip</h3>
+                  <p>
+                    Produce Spanish from memory instead of passively guessing
+                    multiple choice. Instant visual diffs catch typos while you
+                    retain full self-grading authority.
+                  </p>
+                  <div
+                    className="bento-visual bento-visual-recall"
+                    aria-hidden="true"
+                  >
+                    <div className="diff-card mini-diff-card">
+                      <div className="diff-card-header">
+                        <span className="diff-card-title">
+                          Prompt: “What’s up?”
+                        </span>
+                        <span className="diff-badge close">Typo</span>
+                      </div>
+                      <div className="diff-rows">
+                        <div className="diff-row">
+                          <span className="diff-label">You wrote</span>
+                          <p className="diff-text">
+                            <span className="diff-seg diff-seg-match">que</span>
+                            <span className="diff-seg diff-seg-match diff-seg-space">
+                              &nbsp;
+                            </span>
+                            <span className="diff-seg diff-seg-match">
+                              onda
+                            </span>
+                          </p>
+                        </div>
+                        <div className="diff-row expected-row">
+                          <span className="diff-label">Expected</span>
+                          <div className="diff-row-main">
+                            <p className="diff-text">
+                              <span className="diff-seg diff-seg-missing">
+                                ¿
+                              </span>
+                              <span className="diff-seg diff-seg-match">Q</span>
+                              <span className="diff-seg diff-seg-match">u</span>
+                              <span className="diff-seg diff-seg-accent">
+                                é
+                              </span>
+                              <span className="diff-seg diff-seg-match diff-seg-space">
+                                &nbsp;
+                              </span>
+                              <span className="diff-seg diff-seg-match">
+                                onda
+                              </span>
+                              <span className="diff-seg diff-seg-missing">
+                                ?
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mini-grade-preview">
+                        <span className="mini-grade-btn grade-again">
+                          1 Again
+                        </span>
+                        <span className="mini-grade-btn grade-hard">
+                          2 Hard
+                        </span>
+                        <span className="mini-grade-btn grade-good is-selected">
+                          3 Good
+                        </span>
+                        <span className="mini-grade-btn grade-easy">
+                          4 Easy
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               </div>
 
-              <div className="why-highlights-bar" data-nosnippet>
-                <div className="why-highlight-item">
-                  <span className="why-highlight-check" aria-hidden="true">
-                    ✓
+              <div className="why-return-cue">
+                <button
+                  type="button"
+                  className="hero-scroll-cue"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  <span className="scroll-cue-text">Try Jolito now</span>
+                  <span className="scroll-cue-arrow" aria-hidden="true">
+                    ↑
                   </span>
-                  <span>100% local-first & offline</span>
-                </div>
-                <div className="why-highlight-item">
-                  <span className="why-highlight-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>Anki (.apkg) import in seconds</span>
-                </div>
-                <div className="why-highlight-item">
-                  <span className="why-highlight-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>Zero ads, zero subscriptions</span>
-                </div>
-              </div>
-
-              <div className="why-bottom-cta" data-nosnippet>
-                <p className="why-cta-title">Ready to make words stick?</p>
-                <div className="why-cta-actions">
-                  <button
-                    type="button"
-                    className="primary-button"
-                    onClick={handlePractice}
-                  >
-                    Start practicing <span aria-hidden="true">→</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' })
-                    }}
-                  >
-                    Try Jolito now ↑
-                  </button>
-                </div>
+                </button>
               </div>
             </div>
           </section>

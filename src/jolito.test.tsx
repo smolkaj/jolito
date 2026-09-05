@@ -4759,10 +4759,7 @@ describe('Jolito', () => {
         screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
       ).toBeInTheDocument()
 
-      // Symmetric CTA at bottom is rendered
-      expect(
-        screen.getByRole('button', { name: /^start practicing/i }),
-      ).toBeInTheDocument()
+      // Symmetric return cue at bottom is rendered
       expect(
         screen.getByRole('button', { name: /^try jolito now/i }),
       ).toBeInTheDocument()
