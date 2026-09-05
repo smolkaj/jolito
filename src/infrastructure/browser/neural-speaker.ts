@@ -253,7 +253,7 @@ export class NeuralVoiceEngine {
   }
 
   private diskCacheKeys = new Set<string>()
-  private diskKeysLoaded = false
+  private diskKeysPromise: Promise<void> | null = null
 
   hasDiskAudio(text: string, locale: string, voice?: string): boolean {
     const cleanText = text.trim()
@@ -267,9 +267,12 @@ export class NeuralVoiceEngine {
     ).some((k) => this.diskCacheKeys.has(k))
     if (hasVoiceMatch) return true
 
-    return this.getCacheKeys(cleanText, normLocale).some((k) =>
-      this.diskCacheKeys.has(k),
-    )
+    if (!voice) {
+      return this.getCacheKeys(cleanText, normLocale).some((k) =>
+        this.diskCacheKeys.has(k),
+      )
+    }
+    return false
   }
 
   private recordDiskKey(
@@ -285,8 +288,12 @@ export class NeuralVoiceEngine {
     )) {
       this.diskCacheKeys.add(key)
     }
-    for (const key of this.getCacheKeys(cleanText, normLocale)) {
-      this.diskCacheKeys.add(key)
+    const raw = cleanText.trim().toLowerCase()
+    const clean = raw.replace(/[¿?¡!.,]/g, '').trim()
+    const norm = normLocale.toLowerCase().replace(/_/g, '-')
+    this.diskCacheKeys.add(`${norm}:${raw}`)
+    if (clean !== raw && clean.length > 0) {
+      this.diskCacheKeys.add(`${norm}:${clean}`)
     }
   }
 
@@ -396,9 +403,10 @@ export class NeuralVoiceEngine {
     if (typeof window !== 'undefined' && 'caches' in window && window.caches) {
       try {
         const cache = await window.caches.open(AUDIO_CACHE_NAME)
-        if (!this.diskKeysLoaded) {
-          this.diskKeysLoaded = true
-          void this.populateDiskKeys(cache)
+        if (!this.diskKeysPromise) {
+          this.diskKeysPromise = this.populateDiskKeys(cache).catch(() => {
+            this.diskKeysPromise = null
+          })
         }
         return cache
       } catch {
@@ -409,32 +417,91 @@ export class NeuralVoiceEngine {
   }
 
   private async populateDiskKeys(cache: Cache): Promise<void> {
-    try {
-      if (typeof cache.keys !== 'function') return
-      const requests = await cache.keys()
-      for (const req of requests) {
-        try {
-          const urlStr = typeof req === 'string' ? req : req.url
-          const url = new URL(urlStr, 'http://localhost')
-          const text = url.searchParams.get('text')
-          const locale = url.searchParams.get('locale')
-          const voice = url.searchParams.get('voice') ?? undefined
-          if (text && locale) {
-            this.recordDiskKey(text, locale, voice)
-          }
-        } catch {
-          // Skip malformed URL
+    if (typeof cache.keys !== 'function') return
+    const requests = await cache.keys()
+    for (const req of requests) {
+      try {
+        const urlStr = typeof req === 'string' ? req : req.url
+        const url = new URL(urlStr, 'http://localhost')
+        const text = url.searchParams.get('text')
+        const locale = url.searchParams.get('locale')
+        const voice = url.searchParams.get('voice') ?? undefined
+        if (text && locale) {
+          this.recordDiskKey(text, locale, voice)
         }
+      } catch {
+        // Skip malformed URL
       }
-    } catch {
-      // Ignore cache keys read failure
     }
   }
 
   async syncDiskCache(): Promise<void> {
     const cache = await this.getCache()
     if (cache) {
-      await this.populateDiskKeys(cache)
+      if (!this.diskKeysPromise) {
+        this.diskKeysPromise = this.populateDiskKeys(cache).catch(() => {
+          this.diskKeysPromise = null
+        })
+      }
+      await this.diskKeysPromise
+    }
+  }
+
+  async pruneUnusedAudio(
+    activeItems: Array<{ text: string; locale: string }>,
+  ): Promise<number> {
+    const cache = await this.getCache()
+    if (!cache) return 0
+
+    const activeKeys = new Set<string>()
+    for (const item of activeItems) {
+      const clean = item.text.trim()
+      if (!clean) continue
+      const norm = normalizeLocale(item.locale)
+      for (const k of this.getCacheKeys(clean, norm)) {
+        activeKeys.add(k)
+      }
+    }
+
+    try {
+      if (typeof cache.keys !== 'function') return 0
+      const requests = await cache.keys()
+      let deletedCount = 0
+
+      for (const req of requests) {
+        try {
+          const urlStr = typeof req === 'string' ? req : req.url
+          const url = new URL(urlStr, 'http://localhost')
+          const text = url.searchParams.get('text')
+          const locale = url.searchParams.get('locale')
+          if (!text || !locale) continue
+
+          const normLocale = normalizeLocale(locale)
+          const isReferenced = this.getCacheKeys(text, normLocale).some((k) =>
+            activeKeys.has(k),
+          )
+
+          if (!isReferenced) {
+            await cache.delete(req)
+            deletedCount++
+            const voice = url.searchParams.get('voice') ?? undefined
+            for (const k of this.getCacheKeys(text, normLocale, voice)) {
+              this.diskCacheKeys.delete(k)
+              this.audioCache.delete(k)
+            }
+            for (const k of this.getCacheKeys(text, normLocale)) {
+              this.diskCacheKeys.delete(k)
+              this.audioCache.delete(k)
+            }
+          }
+        } catch {
+          // Skip entry on parse/delete error
+        }
+      }
+
+      return deletedCount
+    } catch {
+      return 0
     }
   }
 
@@ -842,6 +909,12 @@ export class LayeredNeuralSpeaker implements Speaker {
 
   async syncDiskCache(): Promise<void> {
     await this.neuralEngine.syncDiskCache()
+  }
+
+  async pruneUnusedAudio(
+    activeItems: Array<{ text: string; locale: string }>,
+  ): Promise<number> {
+    return this.neuralEngine.pruneUnusedAudio(activeItems)
   }
 
   speak(text: string, locale: string, options?: SpeakerOptions): boolean {

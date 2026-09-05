@@ -4565,15 +4565,143 @@ describe('Jolito', () => {
       // Reveal card
       await user.keyboard('{Enter}')
 
-      // Answer audio should also pass cardSeed: 'c1'
+      // Answer audio should also pass cardSeed: 'c1' (staggered to prevent earcon chime masking)
+      await waitFor(() => {
+        expect(
+          services.mockSpeaker.spokenCalls.some(
+            (s) =>
+              s.text === '¡qué padre!' &&
+              s.locale === 'es-MX' &&
+              s.options?.cardSeed === 'c1',
+          ),
+        ).toBe(true)
+      })
+    })
+
+    it('prunes unused audio cache entries when cards are deleted', async () => {
+      const user = userEvent.setup({ delay: null })
+      const card1 = createStudyCards(
+        {
+          spanish: 'aguacate',
+          english: 'avocado',
+          context: '',
+          bidirectional: false,
+        },
+        'c1',
+        1000,
+      )[0]!
+      const card2 = createStudyCards(
+        {
+          spanish: 'plátano',
+          english: 'banana',
+          context: '',
+          bidirectional: false,
+        },
+        'c2',
+        1000,
+      )[0]!
+      const services = createTestServices({
+        cards: [card1, card2],
+      })
+
+      render(<App services={services} />)
+
+      // Enter review
+      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+      expect(services.mockSpeaker.prunedCalls).toHaveLength(0)
+
+      // Delete the active card ('aguacate')
+      await user.click(
+        screen.getByRole('button', { name: /delete card: aguacate/i }),
+      )
+      await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+      // Prune should have been called with only the remaining active card's items
+      expect(services.mockSpeaker.prunedCalls).toHaveLength(1)
+      const prunedActiveItems = services.mockSpeaker.prunedCalls[0]
+      expect(prunedActiveItems).toEqual([
+        { text: 'plátano', locale: 'es-MX' },
+        { text: 'banana', locale: 'en-US' },
+      ])
+    })
+
+    it('prunes unused audio cache entries when card text is edited', async () => {
+      const user = userEvent.setup({ delay: null })
+      const card = createStudyCards(
+        {
+          spanish: 'aguacate',
+          english: 'avocado',
+          context: '',
+          bidirectional: false,
+        },
+        'c1',
+        1000,
+      )[0]!
+      const services = createTestServices({
+        cards: [card],
+      })
+
+      render(<App services={services} />)
+
+      // Open in-study edit modal
+      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      await user.click(
+        screen.getByRole('button', { name: /edit card: aguacate/i }),
+      )
+
+      // Change prompt to 'palta'
+      const promptField = screen.getByLabelText(/spanish/i)
+      await user.clear(promptField)
+      await user.type(promptField, 'palta')
+      await user.click(screen.getByRole('button', { name: /save changes/i }))
+
+      expect(services.mockSpeaker.prunedCalls.length).toBeGreaterThanOrEqual(1)
+      const lastPruned =
+        services.mockSpeaker.prunedCalls[
+          services.mockSpeaker.prunedCalls.length - 1
+        ]
+      expect(lastPruned).toEqual([
+        { text: 'palta', locale: 'es-MX' },
+        { text: 'avocado', locale: 'en-US' },
+      ])
+    })
+
+    it('cancels pending reveal answer audio when navigating away before stagger expires', async () => {
+      const user = userEvent.setup({ delay: null })
+      const card = createStudyCards(
+        {
+          spanish: 'hola',
+          english: 'hello',
+          context: '',
+          bidirectional: false,
+        },
+        'c1',
+        1000,
+      )[0]!
+      const services = createTestServices({
+        cards: [card],
+      })
+
+      render(<App services={services} />)
+
+      // Enter review
+      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      services.mockSpeaker.spokenCalls = []
+
+      // Reveal card
+      await user.keyboard('{Enter}')
+
+      // Immediately navigate back to decks view before 120ms
+      await user.click(screen.getByRole('button', { name: /jolito/i }))
+
+      // Wait 150ms to ensure the timer would have expired
+      await new Promise((resolve) => setTimeout(resolve, 150))
+
+      // Spoken answer ('hello') should NEVER have been triggered
       expect(
-        services.mockSpeaker.spokenCalls.some(
-          (s) =>
-            s.text === '¡qué padre!' &&
-            s.locale === 'es-MX' &&
-            s.options?.cardSeed === 'c1',
-        ),
-      ).toBe(true)
+        services.mockSpeaker.spokenCalls.some((s) => s.text === 'hello'),
+      ).toBe(false)
     })
 
     it('keeps all views clean and free of obsolete voice guide prompts and buttons', () => {
