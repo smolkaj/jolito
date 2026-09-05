@@ -17,13 +17,16 @@ export const stripDiacritics = (text: string): string =>
 export const stripPunctuation = (text: string): string =>
   text.replace(/[^\p{L}\p{M}\p{N}]/gu, '')
 
-/** Replace common OS-level typographic substitutions with ASCII equivalents. */
+/** Replace common OS-level typographic substitutions with ASCII equivalents and normalize delimiter spacing. */
 export const normalizeTypography = (text: string): string =>
   text
     .replace(/\u2026/g, '...')
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\//g, ' / ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 export const baseNormalize = (text: string): string =>
   stripPunctuation(stripDiacritics(text.toLocaleLowerCase()))
@@ -45,8 +48,11 @@ const MATCH_SCORE_EXACT = 4
 const MATCH_SCORE_ACCENT = 3
 const CONTINUOUS_MATCH_BONUS = 4
 const GAP_OPEN_PENALTY = 5
+const GAP_OPEN_SPACE_PENALTY = 2
 const GAP_EXTEND_PENALTY = 0
 const NEG_INF = -1e9
+
+const isWhitespace = (ch: string): boolean => /\s/.test(ch)
 
 function matchScore(tChar: string, eChar: string): number {
   if (tChar.toLowerCase() === eChar.toLowerCase()) return MATCH_SCORE_EXACT
@@ -116,11 +122,17 @@ export function compareAnswer(
   Y_score[N]![M] = 0
 
   for (let i = N - 1; i >= 0; i--) {
-    X_score[i]![M] = -GAP_OPEN_PENALTY - (N - 1 - i) * GAP_EXTEND_PENALTY
+    const penalty = isWhitespace(tChars[i]!)
+      ? GAP_OPEN_SPACE_PENALTY
+      : GAP_OPEN_PENALTY
+    X_score[i]![M] = -penalty - (N - 1 - i) * GAP_EXTEND_PENALTY
   }
 
   for (let j = M - 1; j >= 0; j--) {
-    Y_score[N]![j] = -GAP_OPEN_PENALTY - (M - 1 - j) * GAP_EXTEND_PENALTY
+    const penalty = isWhitespace(eChars[j]!)
+      ? GAP_OPEN_SPACE_PENALTY
+      : GAP_OPEN_PENALTY
+    Y_score[N]![j] = -penalty - (M - 1 - j) * GAP_EXTEND_PENALTY
   }
 
   for (let i = N - 1; i >= 0; i--) {
@@ -137,13 +149,19 @@ export function compareAnswer(
       }
 
       // X: extra character in typed (gap in expected)
-      const xToM = M_score[i + 1]![j]! - GAP_OPEN_PENALTY
+      const xPenalty = isWhitespace(tc)
+        ? GAP_OPEN_SPACE_PENALTY
+        : GAP_OPEN_PENALTY
+      const xToM = M_score[i + 1]![j]! - xPenalty
       const xToX = X_score[i + 1]![j]! - GAP_EXTEND_PENALTY
       const xToY = Y_score[i + 1]![j]! - GAP_EXTEND_PENALTY
       X_score[i]![j] = Math.max(xToM, xToX, xToY)
 
       // Y: missing character in typed (gap in typed)
-      const yToM = M_score[i]![j + 1]! - GAP_OPEN_PENALTY
+      const yPenalty = isWhitespace(ec)
+        ? GAP_OPEN_SPACE_PENALTY
+        : GAP_OPEN_PENALTY
+      const yToM = M_score[i]![j + 1]! - yPenalty
       const yToY = Y_score[i]![j + 1]! - GAP_EXTEND_PENALTY
       const yToX = X_score[i]![j + 1]! - GAP_EXTEND_PENALTY
       Y_score[i]![j] = Math.max(yToM, yToY, yToX)
@@ -194,8 +212,11 @@ export function compareAnswer(
       const tc = tChars[i]!
       typedRaw.push({ value: tc, status: 'extra' })
 
+      const xPenalty = isWhitespace(tc)
+        ? GAP_OPEN_SPACE_PENALTY
+        : GAP_OPEN_PENALTY
       const toX = X_score[i + 1]![j]! - GAP_EXTEND_PENALTY
-      const toM = M_score[i + 1]![j]! - GAP_OPEN_PENALTY
+      const toM = M_score[i + 1]![j]! - xPenalty
 
       if (X_score[i]![j] === toX) {
         state = STATE_EXTRA
@@ -209,8 +230,11 @@ export function compareAnswer(
       const ec = eChars[j]!
       expectedRaw.push({ value: ec, status: 'missing' })
 
+      const yPenalty = isWhitespace(ec)
+        ? GAP_OPEN_SPACE_PENALTY
+        : GAP_OPEN_PENALTY
       const toY = Y_score[i]![j + 1]! - GAP_EXTEND_PENALTY
-      const toM = M_score[i]![j + 1]! - GAP_OPEN_PENALTY
+      const toM = M_score[i]![j + 1]! - yPenalty
 
       if (Y_score[i]![j] === toY) {
         state = STATE_MISSING
