@@ -2324,17 +2324,32 @@ export function App({
                 <div className="why-story">
                   <p>
                     When I moved to Mexico City with my Mexican wife and twin
-                    daughters, I needed a way to make the words I learned in
-                    Condesa stick. Anki’s spaced repetition algorithm was
-                    unbeatable, but creating rich cards by hand felt like an
-                    exhausting chore at the end of the day. Duolingo was fun,
-                    but locked me into rigid beginner lessons without the
-                    real-world phrases I heard on the street.
+                    daughters, I studied at{' '}
+                    <a
+                      href="https://ihmexico.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      International House
+                    </a>
+                    , but needed a way to make the real-world phrases I met
+                    exploring the city stick. Anki’s algorithm was unbeatable
+                    for memory, yet building rich flashcards by hand after class
+                    felt like an exhausting chore. Duolingo was playful, but
+                    locked me into rigid beginner lessons far removed from
+                    everyday Mexican life.
                   </p>
                   <p>
-                    Jolito bridges that gap: the proven retention of spaced
-                    repetition, paired with instant card creation, native CDMX
-                    audio, and active typed recall.
+                    Jolito bridges that gap: the proven retention of{' '}
+                    <a
+                      href="https://en.wikipedia.org/wiki/Spaced_repetition"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      spaced repetition
+                    </a>
+                    , paired with instant card creation, native CDMX audio, and
+                    active typed recall.
                   </p>
                 </div>
               </div>
@@ -2347,9 +2362,17 @@ export function App({
                   </div>
                   <h3>Spaced repetition that sticks</h3>
                   <p>
-                    Review cards right as you are on the verge of forgetting
-                    them. Proven intervals keep daily practice to a few focused
-                    minutes.
+                    <a
+                      href="https://en.wikipedia.org/wiki/Spaced_repetition"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Spaced repetition
+                    </a>{' '}
+                    is an evidence-based cognitive science technique that
+                    schedules reviews right as a phrase is about to slip from
+                    memory. Each successful recall expands the interval, locking
+                    words into permanent recall with just a few minutes a day.
                   </p>
                   <div
                     className="bento-visual bento-visual-srs"
@@ -2378,7 +2401,10 @@ export function App({
                     </div>
                     <div className="srs-cadence-note">
                       <span className="srs-note-icon">⚡</span>
-                      <span>Rhythmic spacing prevents review backlogs</span>
+                      <span>
+                        Expanding intervals match your brain’s natural
+                        forgetting curve
+                      </span>
                     </div>
                   </div>
                 </article>
@@ -2386,13 +2412,13 @@ export function App({
                 <article className="why-card why-card-audio">
                   <div className="why-card-badge">
                     <span className="why-badge-number why-badge-audio">2</span>
-                    <span className="why-badge-label">Ear-first audio</span>
+                    <span className="why-badge-label">Spoken Spanish</span>
                   </div>
                   <h3>Spoken Mexican Spanish</h3>
                   <p>
-                    Train your ear on authentic Mexico City cadence and everyday
-                    expressions, not robotic textbook audio. Tap any phrase to
-                    listen:
+                    You choose whatever phrases, slang, or nuances you want to
+                    learn—Jolito gives each card authentic Mexico City
+                    pronunciation, not robotic textbook audio. Tap to listen:
                   </p>
                   <div className="bento-visual bento-visual-audio">
                     <div

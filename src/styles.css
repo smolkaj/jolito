@@ -1085,6 +1085,28 @@ summary:focus-visible {
   color: var(--ink);
 }
 
+.why-story a,
+.why-card a {
+  color: var(--rosa-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: color 120ms ease;
+}
+
+.why-story a:hover,
+.why-card a:hover {
+  color: var(--ink);
+}
+
+.why-story a:focus-visible,
+.why-card a:focus-visible {
+  outline: 2px solid var(--maya-dark);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .why-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

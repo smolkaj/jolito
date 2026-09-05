@@ -4745,6 +4745,17 @@ describe('Jolito', () => {
       expect(
         screen.getByText(/moved to mexico city with my mexican wife/i),
       ).toBeInTheDocument()
+      expect(
+        screen.getByRole('link', { name: /international house/i }),
+      ).toHaveAttribute('href', 'https://ihmexico.com/')
+      expect(
+        screen.getAllByRole('link', { name: /spaced repetition/i })[0],
+      ).toHaveAttribute(
+        'href',
+        'https://en.wikipedia.org/wiki/Spaced_repetition',
+      )
+      expect(screen.queryByText(/condesa/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/forgetting curve/i)).toBeInTheDocument()
 
       // 3 Value pillars are rendered
       expect(
