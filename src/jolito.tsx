@@ -1029,10 +1029,14 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
+  const [playingSamplerPhrase, setPlayingSamplerPhrase] = useState<
+    string | null
+  >(null)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
+  const samplerTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
@@ -1282,23 +1286,53 @@ export function App({
       authUserRef.current = user
       setAuthUser(user)
       if (user) {
+        let userCards = filterOutStarterCards(cardsRef.current)
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
-          saveCardFromParams(pending)
-        } else {
-          const userCards = filterOutStarterCards(cardsRef.current)
-          const deletedIds = Array.from(deletedCardIdsRef.current)
-          void syncDeckWithCloud({
-            localCards: userCards,
-            localDeletedIds: deletedIds,
-            user,
-            syncService: services.sync,
-            onCardsUpdated: (newCards, newDeletedIds) =>
-              onUpdateCards(newCards, false, newDeletedIds),
-          }).then((res) => {
-            if (res.success) setSyncStatus('synced')
+          const created = createCards(pending, {
+            clock: services.clock,
+            ids: services.ids,
           })
+          if (created.length > 0) {
+            userCards = [...created, ...userCards]
+            const savedSpanish = pending.spanish.trim()
+            setSavedToast(savedSpanish)
+            if (savedToastTimerRef.current !== null) {
+              window.clearTimeout(savedToastTimerRef.current)
+            }
+            savedToastTimerRef.current = window.setTimeout(() => {
+              setSavedToast(null)
+              savedToastTimerRef.current = null
+            }, 3000)
+          }
+
+          setSpanishInput('')
+          setEnglishInput('')
+          setContextInput('')
+          setReversePromptInput('')
+          setReverseAnswerInput('')
+          setSuggestions([])
+          setActiveSuggestionIndex(-1)
+          setPendingCard(null)
+          pendingCardRef.current = null
+          setIsSyncOpen(false)
+
+          const deletedIds = Array.from(deletedCardIdsRef.current)
+          onUpdateCards(userCards, false, deletedIds)
         }
+
+        const deletedIds = Array.from(deletedCardIdsRef.current)
+        void syncDeckWithCloud({
+          localCards: userCards,
+          localDeletedIds: deletedIds,
+          user,
+          syncService: services.sync,
+          onCardsUpdated: (newCards, newDeletedIds) =>
+            onUpdateCards(newCards, false, newDeletedIds),
+        }).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
       } else if (prevUser !== null) {
         // Explicit transition from signed in to signed out:
         // Clear local user deck and restore clean starter demo deck
@@ -1327,9 +1361,9 @@ export function App({
     })
   }, [
     onUpdateCards,
-    saveCardFromParams,
     services.auth,
     services.clock,
+    services.ids,
     services.sync,
   ])
 
@@ -1506,6 +1540,21 @@ export function App({
     [activeSampleSide, playSampleAudio],
   )
 
+  const handlePlaySampler = useCallback(
+    (phrase: string) => {
+      setPlayingSamplerPhrase(phrase)
+      playAudio(phrase, 'es-MX')
+      if (samplerTimerRef.current !== null) {
+        window.clearTimeout(samplerTimerRef.current)
+      }
+      samplerTimerRef.current = window.setTimeout(() => {
+        setPlayingSamplerPhrase(null)
+        samplerTimerRef.current = null
+      }, 1200)
+    },
+    [playAudio],
+  )
+
   const onCreateCardClick = useCallback(
     (side: 'spanish' | 'english') => {
       if (activeCreateSide !== side) {
@@ -1533,6 +1582,9 @@ export function App({
     return () => {
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
+      }
+      if (samplerTimerRef.current !== null) {
+        window.clearTimeout(samplerTimerRef.current)
       }
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
@@ -2032,103 +2084,289 @@ export function App({
             onCopySessionLink={handleCopySessionLink}
           />
           <section className="welcome-hero">
-            <div className="hero-copy">
-              <img
-                src={logoUrl}
-                alt=""
-                aria-hidden="true"
-                className="welcome-mascot-img"
-                style={{ transform: 'scaleX(-1)' }}
-              />
-              <h1>
-                Make the words <br />
-                you meet <em>stick.</em>
-              </h1>
-              <p className="lede">
-                Create beautiful, spoken flashcards.
-                <br />
-                Practice them at your rhythm.
-              </p>
-              <div className="hero-actions" data-nosnippet>
+            <div className="welcome-hero-main">
+              <div className="hero-copy">
+                <img
+                  src={logoUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="welcome-mascot-img"
+                />
+                <h1>
+                  Make the words <br />
+                  you meet <em>stick.</em>
+                </h1>
+                <p className="lede">
+                  Create beautiful, spoken flashcards.
+                  <br />
+                  Practice them at your rhythm.
+                </p>
+                <div className="hero-actions" data-nosnippet>
+                  <button
+                    className="primary-button"
+                    onClick={() => navigateTo('create')}
+                  >
+                    Create a card <span aria-hidden="true">→</span>
+                  </button>
+                  <button className="secondary-button" onClick={handlePractice}>
+                    Practice
+                  </button>
+                </div>
+              </div>
+              <div className="hero-visual" data-nosnippet>
+                {/* English Card (concise meaning) */}
                 <button
-                  className="primary-button"
-                  onClick={() => navigateTo('create')}
+                  type="button"
+                  className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+                  onClick={() => onSampleCardClick('english')}
+                  aria-label={
+                    activeSampleSide === 'english'
+                      ? 'Play pronunciation for English card: avocado'
+                      : 'Show English card: avocado'
+                  }
                 >
-                  Create a card <span aria-hidden="true">→</span>
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <UsFlag /> ENGLISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <div className="sample-illustration" aria-hidden="true">
+                      <img
+                        src={sampleAguacateUrl}
+                        alt=""
+                        className="sample-art-image"
+                      />
+                    </div>
+                    <p className="sample-phrase">avocado</p>
+                  </div>
                 </button>
-                <button className="secondary-button" onClick={handlePractice}>
-                  Practice
+                {/* Mexican Spanish Card */}
+                <button
+                  type="button"
+                  className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+                  onClick={() => onSampleCardClick('spanish')}
+                  aria-label={
+                    activeSampleSide === 'spanish'
+                      ? 'Play pronunciation for Mexican Spanish card: aguacate'
+                      : 'Show Mexican Spanish card: aguacate'
+                  }
+                >
+                  <div className="sample-card-header">
+                    <span className="sample-badge">
+                      <MexicoFlag /> MEXICAN SPANISH
+                    </span>
+                    <span className="sample-listen-hint" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="sample-card-body">
+                    <div className="sample-illustration" aria-hidden="true">
+                      <img
+                        src={sampleAguacateUrl}
+                        alt=""
+                        className="sample-art-image"
+                      />
+                    </div>
+                    <p className="sample-phrase">aguacate</p>
+                  </div>
                 </button>
               </div>
             </div>
-            <div className="hero-visual" data-nosnippet>
-              {/* English Card (concise meaning) */}
-              <button
-                type="button"
-                className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
-                onClick={() => onSampleCardClick('english')}
-                aria-label={
-                  activeSampleSide === 'english'
-                    ? 'Play pronunciation for English card: avocado'
-                    : 'Show English card: avocado'
-                }
-              >
-                <div className="sample-card-header">
-                  <span className="sample-badge">
-                    <UsFlag /> ENGLISH
-                  </span>
-                  <span className="sample-listen-hint" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="sample-card-body">
-                  <div className="sample-illustration" aria-hidden="true">
-                    <img
-                      src={sampleAguacateUrl}
-                      alt=""
-                      className="sample-art-image"
-                    />
+            <button
+              type="button"
+              className="hero-scroll-cue"
+              onClick={() => {
+                document
+                  .getElementById('why-jolito')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              aria-label="Scroll down to explore Why Jolito"
+            >
+              <span className="scroll-cue-text">Why Jolito?</span>
+              <span className="scroll-cue-arrow" aria-hidden="true">
+                ↓
+              </span>
+            </button>
+          </section>
+          <section
+            className="welcome-why"
+            id="why-jolito"
+            aria-labelledby="why-jolito-title"
+          >
+            <div className="why-inner">
+              <div className="why-header">
+                <p className="eyebrow why-eyebrow">THE JOLITO METHOD</p>
+                <h2 id="why-jolito-title">Spoken Spanish built for memory</h2>
+                <p className="why-subtitle">
+                  Active recall, authentic Mexican audio, and rhythmic spaced
+                  repetition. Jolito bridges effortless card authoring with the
+                  spoken confidence to use words in the real world.
+                </p>
+              </div>
+
+              <div className="why-grid">
+                <article className="why-card why-card-recall">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-recall">1</span>
+                    <span className="why-badge-label">Active recall</span>
                   </div>
-                  <p className="sample-phrase">avocado</p>
-                </div>
-              </button>
-              {/* Mexican Spanish Card */}
-              <button
-                type="button"
-                className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
-                onClick={() => onSampleCardClick('spanish')}
-                aria-label={
-                  activeSampleSide === 'spanish'
-                    ? 'Play pronunciation for Mexican Spanish card: aguacate'
-                    : 'Show Mexican Spanish card: aguacate'
-                }
-              >
-                <div className="sample-card-header">
-                  <span className="sample-badge">
-                    <MexicoFlag /> MEXICAN SPANISH
-                  </span>
-                  <span className="sample-listen-hint" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                    </svg>
-                  </span>
-                </div>
-                <div className="sample-card-body">
-                  <div className="sample-illustration" aria-hidden="true">
-                    <img
-                      src={sampleAguacateUrl}
-                      alt=""
-                      className="sample-art-image"
-                    />
+                  <h3>Type before you flip</h3>
+                  <p>
+                    Produce language from memory instead of passively guessing
+                    multiple-choice options. Instant visual diffs highlight
+                    spelling nuances while you retain full grading authority.
+                  </p>
+                  <div
+                    className="bento-visual bento-visual-recall"
+                    aria-hidden="true"
+                  >
+                    <div className="mini-card-shell">
+                      <div className="mini-card-header">
+                        <span className="mini-card-tag">PROMPT</span>
+                        <span className="mini-card-phrase">¿Qué onda?</span>
+                      </div>
+                      <div className="mini-card-input-box">
+                        <span className="mini-typed-correct">what</span>
+                        <span className="mini-typed-space">&nbsp;</span>
+                        <span className="mini-typed-diff">’s up?</span>
+                      </div>
+                      <div className="mini-card-footer">
+                        <span className="mini-pill-highlight">
+                          Typo diff visual feedback
+                        </span>
+                        <span className="mini-pill-authority">Self-graded</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="sample-phrase">aguacate</p>
+                </article>
+
+                <article className="why-card why-card-srs">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-srs">2</span>
+                    <span className="why-badge-label">Memory retention</span>
+                  </div>
+                  <h3>Spaced repetition that sticks</h3>
+                  <p>
+                    Cards return right when you are on the verge of forgetting
+                    them. Built on proven SRS scheduling so daily practice takes
+                    only a few focused minutes.
+                  </p>
+                  <div
+                    className="bento-visual bento-visual-srs"
+                    aria-hidden="true"
+                  >
+                    <div className="srs-cadence-track">
+                      <div className="srs-cadence-node">
+                        <span className="srs-node-pill">10m</span>
+                        <span className="srs-node-sub">Learn</span>
+                      </div>
+                      <div className="srs-cadence-line"></div>
+                      <div className="srs-cadence-node">
+                        <span className="srs-node-pill">1d</span>
+                        <span className="srs-node-sub">Recall</span>
+                      </div>
+                      <div className="srs-cadence-line"></div>
+                      <div className="srs-cadence-node">
+                        <span className="srs-node-pill">4d</span>
+                        <span className="srs-node-sub">Lock-in</span>
+                      </div>
+                      <div className="srs-cadence-line"></div>
+                      <div className="srs-cadence-node is-mastered">
+                        <span className="srs-node-pill">2w+</span>
+                        <span className="srs-node-sub">Fluent</span>
+                      </div>
+                    </div>
+                    <div className="srs-cadence-note">
+                      <span className="srs-note-icon">⚡</span>
+                      <span>Calculated spacing prevents deck overload</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="why-card why-card-audio">
+                  <div className="why-card-badge">
+                    <span className="why-badge-number why-badge-audio">3</span>
+                    <span className="why-badge-label">Ear-first audio</span>
+                  </div>
+                  <h3>Spoken Mexican Spanish</h3>
+                  <p>
+                    Listen to natural Mexico City pronunciation with everyday
+                    contextual nuances. Tap any phrase to hear the authentic
+                    CDMX cadence:
+                  </p>
+                  <div className="bento-visual bento-visual-audio">
+                    <div
+                      className="audio-sampler-group"
+                      role="group"
+                      aria-label="Interactive Mexican Spanish audio samples"
+                    >
+                      {[
+                        { es: '¡Órale!', en: 'Right on / wow' },
+                        { es: '¿Qué onda?', en: "What's up?" },
+                        { es: 'No manches', en: 'No way!' },
+                      ].map((item) => (
+                        <button
+                          key={item.es}
+                          type="button"
+                          className={`sampler-pill ${playingSamplerPhrase === item.es ? 'is-playing' : ''}`}
+                          onClick={() => handlePlaySampler(item.es)}
+                          aria-label={`Listen to Mexican Spanish pronunciation for ${item.es}: ${item.en}`}
+                        >
+                          <span
+                            className="sampler-speaker-icon"
+                            aria-hidden="true"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                              <path
+                                d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </span>
+                          <span className="sampler-text-es">{item.es}</span>
+                          <span className="sampler-text-en">{item.en}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div className="why-highlights-bar" data-nosnippet>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>100% local-first & offline</span>
                 </div>
-              </button>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>Anki (.apkg) import in seconds</span>
+                </div>
+                <div className="why-highlight-item">
+                  <span className="why-highlight-check" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>Zero ads, zero subscriptions</span>
+                </div>
+              </div>
+              <AppFooter onOpenFeedback={openFeedbackModal} />
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -2139,6 +2377,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2572,6 +2813,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3049,6 +3293,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3195,6 +3442,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3414,6 +3664,7 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
+        pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
       />
       <EditCardModal
         isOpen={editingCard !== null}
