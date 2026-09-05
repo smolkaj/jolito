@@ -1174,16 +1174,107 @@ describe('Jolito', () => {
       screen.queryByRole('img', { name: 'Card illustration' }),
     ).not.toBeInTheDocument()
 
-    // Replay audio shortcut after reveal replays the EXPECTED ANSWER!
+    // Replay audio shortcut after reveal replays the target Spanish phrase (aguacate), reinforcing the target language
     services.mockSpeaker.spoken = []
     fireEvent.keyDown(window, { code: 'Space' })
     expect(services.mockSpeaker.spoken).toEqual([
-      { text: 'avocado', locale: 'en-US' },
+      { text: 'aguacate', locale: 'es-MX' },
     ])
 
     // Rating fieldset has visually-hidden legend
     const legend = document.querySelector('.grade-fieldset legend')
     expect(legend).toHaveClass('sr-only')
+  })
+
+  it('plays answer audio on reveal and Spanish audio on replay shortcut after reveal for both card directions', async () => {
+    const user = userEvent.setup({ delay: null })
+    // Direction 1: ES -> EN (prompt: "hola", answer: "hello")
+    const esEnCard = createStudyCards(
+      {
+        spanish: 'hola',
+        english: 'hello',
+        context: '',
+        bidirectional: false,
+      },
+      'c-es-en',
+      0,
+    )[0]!
+
+    // Direction 2: EN -> ES (prompt: "world", answer: "mundo")
+    const enEsCard: StudyCard = {
+      ...esEnCard,
+      id: 'c-en-es',
+      noteId: 'c-en-es',
+      direction: 'en-es',
+      prompt: 'world',
+      answer: 'mundo',
+    }
+
+    const services = createTestServices({
+      cards: [esEnCard, enEsCard],
+    })
+
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice/i }))
+
+    // Card 1: hola (ES -> EN)
+    expect(screen.getByRole('heading', { name: 'hola' })).toBeInTheDocument()
+
+    // Replay prompt audio before reveal plays Spanish prompt
+    services.mockSpeaker.spoken = []
+    fireEvent.keyDown(window, { code: 'Space', ctrlKey: true })
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'hola', locale: 'es-MX' },
+    ])
+
+    // Reveal Card 1
+    services.mockSpeaker.spoken = []
+    await user.keyboard('{Enter}')
+
+    // Wait for staggered reveal audio
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    // Reveal auto-play plays English answer to cement semantic mapping
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'hello', locale: 'en-US' },
+    ])
+
+    // Replay audio shortcut after reveal plays target Spanish phrase
+    services.mockSpeaker.spoken = []
+    fireEvent.keyDown(window, { code: 'Space' })
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'hola', locale: 'es-MX' },
+    ])
+
+    // Rate Card 1 to advance to Card 2
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'world' })).toBeInTheDocument()
+
+    // Card 2: world (EN -> ES)
+    // Replay prompt audio before reveal plays English prompt without spoiling Spanish answer
+    services.mockSpeaker.spoken = []
+    fireEvent.keyDown(window, { code: 'Space', ctrlKey: true })
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'world', locale: 'en-US' },
+    ])
+
+    // Reveal Card 2
+    services.mockSpeaker.spoken = []
+    await user.keyboard('{Enter}')
+
+    // Wait for staggered reveal audio
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    // Reveal auto-play plays Spanish answer
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'mundo', locale: 'es-MX' },
+    ])
+
+    // Replay audio shortcut after reveal also plays Spanish answer
+    services.mockSpeaker.spoken = []
+    fireEvent.keyDown(window, { code: 'Space' })
+    expect(services.mockSpeaker.spoken).toEqual([
+      { text: 'mundo', locale: 'es-MX' },
+    ])
   })
 
   it('plays prompt audio exactly once when starting practice with an authenticated user and does not loop', async () => {
@@ -4846,10 +4937,8 @@ describe('Jolito', () => {
       // Wait 150ms to ensure the timer would have expired
       await new Promise((resolve) => setTimeout(resolve, 150))
 
-      // Spoken answer ('hello') should NEVER have been triggered
-      expect(
-        services.mockSpeaker.spokenCalls.some((s) => s.text === 'hello'),
-      ).toBe(false)
+      // Spoken reveal audio should NEVER have been triggered
+      expect(services.mockSpeaker.spokenCalls).toHaveLength(0)
     })
 
     it('keeps all views clean and free of obsolete voice guide prompts and buttons', () => {
