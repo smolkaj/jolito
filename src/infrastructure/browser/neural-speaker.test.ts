@@ -330,7 +330,7 @@ describe('LayeredNeuralSpeaker', () => {
         .fn()
         .mockResolvedValue([
           new Request(
-            'http://localhost/audio/edge?text=en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
+            'http://localhost/api/tts?text=en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
           ),
         ]),
       match: vi.fn().mockResolvedValue(
@@ -395,6 +395,21 @@ describe('LayeredNeuralSpeaker', () => {
     await new Promise((resolve) => setTimeout(resolve, 10))
 
     expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX')
+  })
+
+  it('delegates pruneUnusedAudio to neural engine', async () => {
+    const pruneSpy = vi
+      .spyOn(neuralEngine, 'pruneUnusedAudio')
+      .mockResolvedValue(3)
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const items = [{ text: 'hola', locale: 'es-MX' }]
+    const count = await speaker.pruneUnusedAudio(items)
+    expect(count).toBe(3)
+    expect(pruneSpy).toHaveBeenCalledWith(items)
   })
 })
 
@@ -961,10 +976,10 @@ describe('NeuralVoiceEngine', () => {
     const engine = new NeuralVoiceEngine()
     const mockRequests = [
       new Request(
-        'http://localhost/audio/edge?text=palabra_en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
+        'http://localhost/api/tts?text=palabra_en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
       ),
       new Request(
-        'http://localhost/audio/edge?text=%C2%A1buenos%20d%C3%ADas!&locale=es-mx&voice=es-MX-JorgeNeural',
+        'http://localhost/api/tts?text=%C2%A1buenos%20d%C3%ADas!&locale=es-mx&voice=es-MX-JorgeNeural',
       ),
     ]
     const mockCache = {
@@ -986,11 +1001,92 @@ describe('NeuralVoiceEngine', () => {
     expect(
       engine.hasDiskAudio('palabra_en_disco', 'es-MX', 'es-MX-DaliaNeural'),
     ).toBe(true)
+    // Specific opposite voice returns false when not cached
+    expect(
+      engine.hasDiskAudio('palabra_en_disco', 'es-MX', 'es-MX-JorgeNeural'),
+    ).toBe(false)
     // Resilient to punctuation
     expect(engine.hasDiskAudio('buenos días', 'es-MX')).toBe(true)
     expect(engine.hasDiskAudio('¡buenos días!', 'es-MX')).toBe(true)
     // Non-existent phrase returns false
     expect(engine.hasDiskAudio('no existe', 'es-MX')).toBe(false)
+  })
+
+  it('prunes unreferenced audio from CacheStorage and cleans up disk/memory caches', async () => {
+    const engine = new NeuralVoiceEngine()
+    const req1 = new Request(
+      'http://localhost/api/tts?text=active_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
+    )
+    const req2 = new Request(
+      'http://localhost/api/tts?text=deleted_phrase&locale=es-mx&voice=es-MX-JorgeNeural',
+    )
+    const mockDelete = vi.fn().mockResolvedValue(true)
+    const mockCache = {
+      keys: vi.fn().mockResolvedValue([req1, req2]),
+      match: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: mockDelete,
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    await engine.syncDiskCache()
+    expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
+    expect(engine.hasDiskAudio('deleted_phrase', 'es-MX')).toBe(true)
+
+    // Prune with only 'active_phrase' present
+    const prunedCount = await engine.pruneUnusedAudio([
+      { text: 'active_phrase', locale: 'es-MX' },
+    ])
+    expect(prunedCount).toBe(1)
+    expect(mockDelete).toHaveBeenCalledTimes(1)
+    const deletedArg: unknown = mockDelete.mock.calls[0]?.[0]
+    const deletedUrl =
+      deletedArg instanceof Request ? deletedArg.url : String(deletedArg)
+    expect(deletedUrl).toContain('deleted_phrase')
+    expect(deletedUrl).not.toContain('active_phrase')
+
+    // Deleted phrase is no longer recognized as disk-cached
+    expect(engine.hasDiskAudio('deleted_phrase', 'es-MX')).toBe(false)
+    expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
+  })
+
+  it('retries disk cache population if an earlier attempt failed', async () => {
+    const engine = new NeuralVoiceEngine()
+    let attempt = 0
+    const req = new Request(
+      'http://localhost/api/tts?text=retry_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
+    )
+    const mockCache = {
+      keys: vi.fn().mockImplementation(() => {
+        attempt++
+        if (attempt === 1)
+          return Promise.reject(new Error('Cache transient read failure'))
+        return Promise.resolve([req])
+      }),
+      match: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    // First attempt fails transiently
+    await engine.syncDiskCache()
+    expect(engine.hasDiskAudio('retry_phrase', 'es-MX')).toBe(false)
+
+    // Second attempt recovers and populates keys
+    await engine.syncDiskCache()
+    expect(engine.hasDiskAudio('retry_phrase', 'es-MX')).toBe(true)
   })
 })
 

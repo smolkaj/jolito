@@ -86,6 +86,21 @@ const localeForPrompt = (card: StudyCard) =>
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
 
+function getActiveAudioItems(
+  cards: StudyCard[],
+): Array<{ text: string; locale: string }> {
+  const items: Array<{ text: string; locale: string }> = []
+  for (const card of cards) {
+    if (card.prompt.trim()) {
+      items.push({ text: card.prompt, locale: localeForPrompt(card) })
+    }
+    if (card.answer.trim()) {
+      items.push({ text: card.answer, locale: localeForAnswer(card) })
+    }
+  }
+  return items
+}
+
 function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
@@ -1038,6 +1053,7 @@ export function App({
   const sampleTimerRef = useRef<number | null>(null)
   const samplerTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
+  const revealAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
   const isScrollingRef = useRef(false)
@@ -1149,8 +1165,22 @@ export function App({
             else setSyncStatus('error')
           })
       }
+
+      if (
+        (newDeletedCardIds !== undefined ||
+          newCards.length < cardsRef.current.length) &&
+        typeof services.speaker.pruneUnusedAudio === 'function'
+      ) {
+        void services.speaker.pruneUnusedAudio(getActiveAudioItems(newCards))
+      }
     },
-    [navigateTo, services.cards, services.clock, services.sync],
+    [
+      navigateTo,
+      services.cards,
+      services.clock,
+      services.speaker,
+      services.sync,
+    ],
   )
 
   const handleSaveEdit = useCallback(
@@ -1589,6 +1619,9 @@ export function App({
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
       }
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+      }
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
       }
@@ -1631,6 +1664,10 @@ export function App({
 
   const grade = useCallback(
     (gradeValue: Grade) => {
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
+      }
       if (!currentCard) return
       const now = services.clock.now()
       services.sounds.play(gradeValue)
@@ -1708,6 +1745,10 @@ export function App({
           event.metaKey)
       ) {
         event.preventDefault()
+        if (revealAudioTimerRef.current !== null) {
+          window.clearTimeout(revealAudioTimerRef.current)
+          revealAudioTimerRef.current = null
+        }
         if (revealed) {
           playAudio(
             currentCard.answer,
@@ -1774,6 +1815,10 @@ export function App({
   }
 
   function beginReview(cardIds?: string[]) {
+    if (revealAudioTimerRef.current !== null) {
+      window.clearTimeout(revealAudioTimerRef.current)
+      revealAudioTimerRef.current = null
+    }
     const now = services.clock.now()
     const nextQueue =
       cardIds ??
@@ -1795,7 +1840,18 @@ export function App({
     setRevealed(true)
     services.sounds.play('reveal')
     services.haptics?.trigger('selection')
-    playAudio(currentCard.answer, localeForAnswer(currentCard), currentCard.id)
+    if (revealAudioTimerRef.current !== null) {
+      window.clearTimeout(revealAudioTimerRef.current)
+    }
+    const cardToSpeak = currentCard
+    revealAudioTimerRef.current = window.setTimeout(() => {
+      playAudio(
+        cardToSpeak.answer,
+        localeForAnswer(cardToSpeak),
+        cardToSpeak.id,
+      )
+      revealAudioTimerRef.current = null
+    }, 120)
   }
 
   const dismissSuggestions = useCallback(() => {

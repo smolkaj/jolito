@@ -4565,15 +4565,17 @@ describe('Jolito', () => {
       // Reveal card
       await user.keyboard('{Enter}')
 
-      // Answer audio should also pass cardSeed: 'c1'
-      expect(
-        services.mockSpeaker.spokenCalls.some(
-          (s) =>
-            s.text === '¡qué padre!' &&
-            s.locale === 'es-MX' &&
-            s.options?.cardSeed === 'c1',
-        ),
-      ).toBe(true)
+      // Answer audio should also pass cardSeed: 'c1' (staggered to prevent earcon chime masking)
+      await waitFor(() => {
+        expect(
+          services.mockSpeaker.spokenCalls.some(
+            (s) =>
+              s.text === '¡qué padre!' &&
+              s.locale === 'es-MX' &&
+              s.options?.cardSeed === 'c1',
+          ),
+        ).toBe(true)
+      })
     })
 
     it('keeps all views clean and free of obsolete voice guide prompts and buttons', () => {
