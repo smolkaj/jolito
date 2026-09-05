@@ -1180,7 +1180,7 @@ summary:focus-visible {
   padding-top: 18px;
 }
 
-/* Card 1: Authentic Diff Visual */
+/* Card 3: Active Recall Diff Visual */
 .mini-diff-card {
   padding: 12px 14px;
   border-radius: 12px;
@@ -1267,7 +1267,7 @@ summary:focus-visible {
   box-shadow: 2px 3px 0 var(--ink);
 }
 
-/* Card 2: SRS Cadence Visual */
+/* Card 1: SRS Cadence Visual */
 .srs-cadence-track {
   display: flex;
   align-items: center;
@@ -1329,7 +1329,7 @@ summary:focus-visible {
   font-size: 12px;
 }
 
-/* Card 3: Audio Sampler Visual */
+/* Card 2: Audio Sampler Visual */
 .audio-sampler-group {
   display: flex;
   flex-direction: column;
@@ -1390,18 +1390,18 @@ summary:focus-visible {
   margin-left: auto;
 }
 
-.why-return-cue {
+.why-top-cue {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 12px;
+  margin-bottom: -10px;
 }
 
-.why-return-cue .hero-scroll-cue {
+.why-top-cue .hero-scroll-cue {
   margin-top: 0;
 }
 
-.why-return-cue .hero-scroll-cue:hover .scroll-cue-arrow {
+.why-top-cue .hero-scroll-cue:hover .scroll-cue-arrow {
   transform: translateY(-2px);
 }
 
@@ -2992,7 +2992,7 @@ kbd {
       max(16px, env(safe-area-inset-left));
   }
 
-  .why-return-cue .hero-scroll-cue {
+  .why-top-cue .hero-scroll-cue {
     display: inline-flex;
   }
 

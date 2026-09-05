@@ -2223,6 +2223,21 @@ export function App({
             aria-labelledby="why-jolito-title"
           >
             <div className="why-inner">
+              <div className="why-top-cue">
+                <button
+                  type="button"
+                  className="hero-scroll-cue"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  <span className="scroll-cue-text">Try Jolito now</span>
+                  <span className="scroll-cue-arrow" aria-hidden="true">
+                    ↑
+                  </span>
+                </button>
+              </div>
+
               <div className="why-header">
                 <p className="eyebrow why-eyebrow">BORN IN MEXICO CITY</p>
                 <h2 id="why-jolito-title">Why another flashcard app?</h2>
@@ -2417,21 +2432,6 @@ export function App({
                     </div>
                   </div>
                 </article>
-              </div>
-
-              <div className="why-return-cue">
-                <button
-                  type="button"
-                  className="hero-scroll-cue"
-                  onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                >
-                  <span className="scroll-cue-text">Try Jolito now</span>
-                  <span className="scroll-cue-arrow" aria-hidden="true">
-                    ↑
-                  </span>
-                </button>
               </div>
             </div>
           </section>
