@@ -105,6 +105,16 @@ export class EnhancedBrowserSpeaker implements Speaker {
     }
   }
 
+  stop(): void {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel()
+      } catch {
+        // Ignore errors
+      }
+    }
+  }
+
   private selectBestVoice(
     locale: string,
     gender?: 'female' | 'male',
@@ -114,18 +124,64 @@ export class EnhancedBrowserSpeaker implements Speaker {
     const normalizedTarget = locale.toLowerCase().replace(/_/g, '-')
     const isSpanish = normalizedTarget.startsWith('es')
 
-    const maleKeywords = ['jorge', 'raul', 'carlos', 'enrique', 'miguel', 'pablo', 'male', 'guy', 'tom']
-    const femaleKeywords = ['paulina', 'dalia', 'sabina', 'monica', 'soledad', 'elena', 'female', 'jenny', 'samantha', 'ava']
+    const maleKeywords = [
+      'jorge',
+      'raul',
+      'carlos',
+      'enrique',
+      'miguel',
+      'pablo',
+      'male',
+      'guy',
+      'tom',
+    ]
+    const femaleKeywords = [
+      'paulina',
+      'dalia',
+      'sabina',
+      'monica',
+      'soledad',
+      'elena',
+      'female',
+      'jenny',
+      'samantha',
+      'ava',
+    ]
 
     if (gender) {
       const targetKeywords = gender === 'male' ? maleKeywords : femaleKeywords
-      const genderMatch = this.voices.find((v) => {
-        const lang = v.lang.toLowerCase().replace(/_/g, '-')
-        const name = v.name.toLowerCase()
-        const langMatches = isSpanish ? (lang.startsWith('es') || name.includes('mexic') || name.includes('spanish')) : lang.startsWith('en')
-        return langMatches && targetKeywords.some((k) => name.includes(k))
-      })
-      if (genderMatch) return genderMatch
+      if (isSpanish) {
+        // Priority 1: Mexican Spanish matching target gender
+        const mxGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          const isMx =
+            lang === 'es-mx' || name.includes('mexic') || lang.includes('mexic')
+          return isMx && targetKeywords.some((k) => name.includes(k))
+        })
+        if (mxGenderMatch) return mxGenderMatch
+
+        // Priority 2: Any Spanish voice matching target gender
+        const esGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          return (
+            (lang.startsWith('es') || name.includes('spanish')) &&
+            targetKeywords.some((k) => name.includes(k))
+          )
+        })
+        if (esGenderMatch) return esGenderMatch
+      } else {
+        const enGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          return (
+            lang.startsWith('en') &&
+            targetKeywords.some((k) => name.includes(k))
+          )
+        })
+        if (enGenderMatch) return enGenderMatch
+      }
     }
 
     if (isSpanish) {

@@ -9,16 +9,13 @@ import {
 } from './neural-speaker'
 
 describe('LayeredNeuralSpeaker', () => {
+  const anyVoice = expect.any(String) as unknown as string
   let fallbackSpeaker: Speaker
   let neuralEngine: NeuralVoiceEngine
-  let fallbackSpeakSpy: ReturnType<
-    typeof vi.fn<(text: string, locale: string) => boolean>
-  >
+  let fallbackSpeakSpy: ReturnType<typeof vi.fn<Speaker['speak']>>
 
   beforeEach(() => {
-    fallbackSpeakSpy = vi
-      .fn<(text: string, locale: string) => boolean>()
-      .mockReturnValue(true)
+    fallbackSpeakSpy = vi.fn<Speaker['speak']>().mockReturnValue(true)
     fallbackSpeaker = {
       supported: vi.fn().mockReturnValue(true),
       speak: fallbackSpeakSpy,
@@ -37,6 +34,7 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).toHaveBeenCalledWith(
       'frase no empaquetada',
       'es-MX',
+      { voice: anyVoice },
     )
   })
 
@@ -74,7 +72,9 @@ describe('LayeredNeuralSpeaker', () => {
 
     const played = speaker.speak('aguacate', 'es-MX')
     expect(played).toBe(true)
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('aguacate', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('aguacate', 'es-MX', {
+      voice: anyVoice,
+    })
   })
 
   it('reports supported when either neural engine or fallback is supported', () => {
@@ -154,7 +154,9 @@ describe('LayeredNeuralSpeaker', () => {
 
     const played = speaker.speak('palabra nueva', 'es-MX')
     expect(played).toBe(true)
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX', {
+      voice: anyVoice,
+    })
     // Short Spanish phrases trigger background fetch for both voices
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     const call0 = fetchSpy.mock.calls[0]
@@ -250,6 +252,7 @@ describe('LayeredNeuralSpeaker', () => {
     await Promise.resolve()
     expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra lenta', 'es-MX', {
       cardSeed: 'card-1',
+      voice: anyVoice,
     })
   })
 
@@ -312,7 +315,9 @@ describe('LayeredNeuralSpeaker', () => {
     speaker.speak('fallback phrase', 'es-MX')
 
     expect(stopAudioSpy).toHaveBeenCalled()
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('fallback phrase', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('fallback phrase', 'es-MX', {
+      voice: anyVoice,
+    })
   })
 
   it('exposes cache and in-flight inspection helpers', () => {
@@ -410,7 +415,9 @@ describe('LayeredNeuralSpeaker', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10))
 
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX', {
+      voice: anyVoice,
+    })
   })
 
   it('delegates pruneUnusedAudio to neural engine', async () => {
@@ -1328,27 +1335,35 @@ describe('Dual-voice playback', () => {
       'es-MX-JorgeNeural',
     )
 
+    const onEndedSpy = vi.fn()
     const playSpy = vi.spyOn(engine, 'playAudio')
-    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural', {
+      onEnded: onEndedSpy,
+    })
 
     expect(mockSource.start).toHaveBeenCalledTimes(1)
     // Simulate first voice audio finishing
     mockSource.onended?.()
 
-    // Alternate voice not played immediately (pause window)
+    // Alternate voice not played immediately (pause window) and onEnded NOT called yet
     expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(onEndedSpy).not.toHaveBeenCalled()
 
     // Advance timers past 320ms pause
     vi.advanceTimersByTime(350)
 
-    // Alternate voice (Jorge) should now have been invoked with dualVoice: false
+    // Alternate voice (Jorge) should now have been invoked with dualVoice: false and onEnded
     expect(playSpy).toHaveBeenCalledTimes(2)
     expect(playSpy).toHaveBeenLastCalledWith(
       'hola',
       'es-MX',
       'es-MX-JorgeNeural',
-      { dualVoice: false },
+      { dualVoice: false, onEnded: onEndedSpy },
     )
+
+    // Simulate second voice finishing
+    mockSource.onended?.()
+    expect(onEndedSpy).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
 

@@ -348,7 +348,6 @@ export class NeuralVoiceEngine {
         if (qualifiesForDualVoice) {
           const alternateVoice = getAlternateVoice(effectiveVoice)
           return this.playBuffer(cachedBuffer, () => {
-            options?.onEnded?.()
             if (this.dualVoiceTimer !== null && typeof window !== 'undefined') {
               window.clearTimeout(this.dualVoiceTimer)
             }
@@ -357,6 +356,7 @@ export class NeuralVoiceEngine {
                 this.dualVoiceTimer = null
                 this.playAudio(text, normLocale, alternateVoice, {
                   dualVoice: false,
+                  onEnded: options?.onEnded,
                 })
               }, DUAL_VOICE_PAUSE_MS)
             }
@@ -904,9 +904,17 @@ export class LayeredNeuralSpeaker implements Speaker {
     options?: SpeakerOptions,
   ): boolean {
     this.neuralEngine.stopAudio()
-    return options
-      ? this.fallbackSpeaker.speak(text, locale, options)
-      : this.fallbackSpeaker.speak(text, locale)
+    return this.fallbackSpeaker.speak(text, locale, options)
+  }
+
+  stop(): void {
+    this.neuralEngine.stopAudio()
+    if (
+      'stop' in this.fallbackSpeaker &&
+      typeof this.fallbackSpeaker.stop === 'function'
+    ) {
+      this.fallbackSpeaker.stop()
+    }
   }
 
   supported(): boolean {
@@ -967,6 +975,10 @@ export class LayeredNeuralSpeaker implements Speaker {
     this.lastSpokenLocale = normLocale
     this.lastSpokenTime = now
     const currentGen = ++this.speakGeneration
+    const fallbackOptions: SpeakerOptions = {
+      ...options,
+      voice,
+    }
 
     // 1. If audio is already cached in memory, play immediately
     if (this.neuralEngine.hasAudio(cleanText, normLocale, voice)) {
@@ -980,7 +992,7 @@ export class LayeredNeuralSpeaker implements Speaker {
         if (played) return true
       } catch {
         // Fall back seamlessly to browser speech synthesis
-        return this.speakFallback(cleanText, normLocale, options)
+        return this.speakFallback(cleanText, normLocale, fallbackOptions)
       }
     }
 
@@ -1021,15 +1033,15 @@ export class LayeredNeuralSpeaker implements Speaker {
               options,
             )
             if (!played) {
-              this.speakFallback(cleanText, normLocale, options)
+              this.speakFallback(cleanText, normLocale, fallbackOptions)
             }
           } else {
-            this.speakFallback(cleanText, normLocale, options)
+            this.speakFallback(cleanText, normLocale, fallbackOptions)
           }
         })
         .catch(() => {
           if (this.speakGeneration !== currentGen) return
-          this.speakFallback(cleanText, normLocale, options)
+          this.speakFallback(cleanText, normLocale, fallbackOptions)
         })
       return true
     }
@@ -1056,6 +1068,6 @@ export class LayeredNeuralSpeaker implements Speaker {
         .catch(() => {})
     }
 
-    return this.speakFallback(cleanText, normLocale, options)
+    return this.speakFallback(cleanText, normLocale, fallbackOptions)
   }
 }
