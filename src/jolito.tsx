@@ -1710,6 +1710,7 @@ export function App({
         window.clearTimeout(revealAudioTimerRef.current)
         revealAudioTimerRef.current = null
       }
+      services.speaker.stop?.()
       if (!currentCard) return
       const now = services.clock.now()
       services.sounds.play(gradeValue)
@@ -1763,6 +1764,7 @@ export function App({
       services.clock,
       services.haptics,
       services.sounds,
+      services.speaker,
     ],
   )
 
@@ -3690,7 +3692,7 @@ export function App({
                       playAudio(
                         currentCard.answer,
                         localeForAnswer(currentCard),
-                        currentCard.id,
+                        `${currentCard.id}:turn${reviewedCount}`,
                       )
                     }
                   />

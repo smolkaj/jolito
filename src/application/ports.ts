@@ -42,6 +42,7 @@ export type Speaker = {
   pruneUnusedAudio?(
     activeItems: Array<{ text: string; locale: string }>,
   ): Promise<number> | number | void
+  stop?(): void
 }
 
 export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'
