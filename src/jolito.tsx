@@ -29,7 +29,6 @@ import {
   isDue,
   orderCardsForReview,
   scheduleReview,
-  shouldRequeueInSession,
   updateStudyCard,
   deleteStudyCard,
   DEFAULT_STUDY_BATCH_SIZE,
@@ -37,6 +36,8 @@ import {
   type StudyCard,
   type UpdateCardParams,
 } from './domain/card'
+import { createStudySession } from './domain/study-session'
+import { useStudySession } from './ui/useStudySession'
 import {
   filterDeckCards,
   getDeckStats,
@@ -995,13 +996,25 @@ export function App({
     }
   }, [])
 
-  const [queue, setQueue] = useState<string[]>(initialResolved.queue)
-  const [sessionTotal, setSessionTotal] = useState<number>(
-    () => initialResolved.queue.length,
+  const initialSession = useMemo(
+    () => createStudySession(initialResolved.queue),
+    [initialResolved.queue],
   )
-  const [reviewedCount, setReviewedCount] = useState(0)
-  const [answer, setAnswer] = useState('')
-  const [revealed, setRevealed] = useState(false)
+  const studySession = useStudySession(initialSession)
+  const {
+    queue,
+    reviewedCount,
+    answer,
+    setAnswer,
+    revealed,
+    reveal: revealSession,
+    resetPromptState,
+    startSession,
+    advanceOnGrade,
+    filterCards,
+    progressPercentage,
+    remainingCount,
+  } = studySession
   const [bidirectional, setBidirectional] = useState(true)
   const [spanishInput, setSpanishInput] = useState('')
   const [englishInput, setEnglishInput] = useState('')
@@ -1152,22 +1165,11 @@ export function App({
       services.cards.save(newCards, deletedIdsArray)
       const now = services.clock.now()
       setReferenceTime(now)
-      setQueue((currentQueue) => {
-        if (currentQueue.length > 0) {
-          const cardIdSet = new Set(newCards.map((c) => c.id))
-          const nextQueue = currentQueue.filter((id) => cardIdSet.has(id))
-          const removedCount = currentQueue.length - nextQueue.length
-          if (removedCount > 0) {
-            setSessionTotal((prev) =>
-              Math.max(nextQueue.length, prev - removedCount),
-            )
-          }
-          if (viewRef.current === 'review' && nextQueue.length === 0) {
-            navigateTo('complete')
-          }
-          return nextQueue
+      const cardIdSet = new Set(newCards.map((c) => c.id))
+      filterCards(cardIdSet, () => {
+        if (viewRef.current === 'review') {
+          navigateTo('complete')
         }
-        return currentQueue
       })
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
@@ -1177,6 +1179,7 @@ export function App({
             if (res.success) setSyncStatus('synced')
             else setSyncStatus('error')
           })
+          .catch(() => setSyncStatus('error'))
       }
 
       if (typeof services.speaker.pruneUnusedAudio === 'function') {
@@ -1207,6 +1210,7 @@ export function App({
       }
     },
     [
+      filterCards,
       navigateTo,
       services.cards,
       services.clock,
@@ -1404,20 +1408,13 @@ export function App({
         setSyncStatus('idle')
         setSelectedCardIds(new Set())
         setEditingCard(null)
-        setDeletingCards(null)
-        setAnswer('')
-        setRevealed(false)
         const now = services.clock.now()
         setReferenceTime(now)
-        setQueue(() => {
-          const due = starterCards
-            .filter((c) => isDue(c, now))
-            .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
-            .map(({ id }) => id)
-          return due
-        })
-        setSessionTotal(() => starterCards.filter((c) => isDue(c, now)).length)
-        setReviewedCount(0)
+        const due = starterCards
+          .filter((c) => isDue(c, now))
+          .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
+          .map(({ id }) => id)
+        startSession(due)
         setIsDemoDeckDismissed(false)
       }
     })
@@ -1427,6 +1424,7 @@ export function App({
     services.clock,
     services.ids,
     services.sync,
+    startSession,
   ])
 
   const isSyncingRef = useRef(false)
@@ -1542,8 +1540,7 @@ export function App({
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
       if (nextView === 'welcome') {
-        setAnswer('')
-        setRevealed(false)
+        resetPromptState()
       } else if (nextView === 'review') {
         if (queueRef.current.length === 0) {
           const now = services.clock.now()
@@ -1552,8 +1549,7 @@ export function App({
             now,
             DEFAULT_STUDY_BATCH_SIZE,
           ).map(({ id }) => id)
-          setSessionTotal(newQueue.length)
-          setQueue(newQueue)
+          startSession(newQueue)
         }
       }
     }
@@ -1563,7 +1559,7 @@ export function App({
       window.removeEventListener('popstate', onPopState)
       window.removeEventListener('hashchange', onPopState)
     }
-  }, [services.clock])
+  }, [resetPromptState, services.clock, startSession])
 
   const playAudio = useCallback(
     (text: string, locale: string, cardSeed?: string) => {
@@ -1724,27 +1720,14 @@ export function App({
       )
       cardsRef.current = nextCards
       setCards(nextCards)
-      const requeue = shouldRequeueInSession(reviewed.schedule)
-      const buriedSet = new Set(buriedCardIds)
-      const nextQueue = queue.slice(1).filter((id) => !buriedSet.has(id))
 
-      if (requeue) {
-        nextQueue.push(currentCard.id)
-      }
-      const buriedInQueueCount = queue
-        .slice(1)
-        .filter((id) => buriedSet.has(id)).length
-      if (buriedInQueueCount > 0) {
-        setSessionTotal((prev) =>
-          Math.max(nextQueue.length, prev - buriedInQueueCount),
-        )
-      }
+      const { isComplete } = advanceOnGrade(
+        currentCard.id,
+        reviewed.schedule,
+        buriedCardIds,
+      )
 
-      setQueue(nextQueue)
-      setReviewedCount((count) => count + 1)
-      setAnswer('')
-      setRevealed(false)
-      if (nextQueue.length === 0) {
+      if (isComplete) {
         services.sounds.play('complete')
         services.haptics?.trigger('complete')
         flushSync()
@@ -1754,10 +1737,10 @@ export function App({
       }
     },
     [
+      advanceOnGrade,
       currentCard,
       flushSync,
       navigateTo,
-      queue,
       scheduleDebouncedSync,
       services.clock,
       services.haptics,
@@ -1846,8 +1829,7 @@ export function App({
   function goHome() {
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
-    setAnswer('')
-    setRevealed(false)
+    resetPromptState()
   }
 
   function handlePractice() {
@@ -1869,19 +1851,15 @@ export function App({
       orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE).map(
         ({ id }) => id,
       )
-    setQueue(nextQueue)
-    setSessionTotal(nextQueue.length)
-    setReviewedCount(0)
+    startSession(nextQueue)
     setReferenceTime(now)
-    setAnswer('')
-    setRevealed(false)
     navigateTo(nextQueue.length > 0 ? 'review' : 'complete')
   }
 
   function reveal(event: FormEvent) {
     event.preventDefault()
     if (revealed || !currentCard) return
-    setRevealed(true)
+    revealSession()
     services.sounds.play('reveal')
     services.haptics?.trigger('selection')
     if (revealAudioTimerRef.current !== null) {
@@ -3572,13 +3550,6 @@ export function App({
 
   if (!currentCard) return null
 
-  const effectiveTotal = Math.max(sessionTotal, queue.length)
-  const completedInSession = Math.max(0, effectiveTotal - queue.length)
-  const progressPercentage =
-    effectiveTotal > 0
-      ? Math.min(100, Math.round((completedInSession / effectiveTotal) * 100))
-      : 0
-
   return (
     <>
       <main className="app-shell review-page">
@@ -3614,7 +3585,7 @@ export function App({
           aria-valuenow={progressPercentage}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuetext={`${queue.length} ${queue.length === 1 ? 'card' : 'cards'} remaining`}
+          aria-valuetext={`${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} remaining`}
         >
           <div
             className="review-progress-bar"
