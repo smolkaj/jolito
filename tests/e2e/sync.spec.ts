@@ -237,6 +237,15 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
           headers: { 'Content-Type': 'application/json' },
         })
       }
+      if (url.includes('/rest/v1/')) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'content-range': '0-0/0',
+          },
+        })
+      }
       return originalFetch(input, init)
     }
     const session = {
@@ -255,9 +264,8 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   await page.goto('/')
 
   // Click connection pill
-  const connectionPill = page.getByRole('button', {
-    name: /synced|learner@example\.com|sign in/i,
-  })
+  const connectionPill = page.locator('.connection-pill')
+  await expect(connectionPill).toBeVisible()
   await connectionPill.click()
 
   // Verify modal is open and displays account email & action buttons
