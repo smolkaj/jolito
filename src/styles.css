@@ -582,13 +582,11 @@ summary:focus-visible {
 }
 
 .welcome-mascot-img {
-  position: absolute;
-  bottom: calc(100% + 14px);
-  left: 0;
   width: 124px;
   height: 124px;
   object-fit: contain;
   display: block;
+  margin-bottom: 16px;
   transform: scaleX(-1);
   user-select: none;
   pointer-events: none;

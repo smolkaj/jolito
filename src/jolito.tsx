@@ -1282,23 +1282,53 @@ export function App({
       authUserRef.current = user
       setAuthUser(user)
       if (user) {
+        let userCards = filterOutStarterCards(cardsRef.current)
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
-          saveCardFromParams(pending)
-        } else {
-          const userCards = filterOutStarterCards(cardsRef.current)
-          const deletedIds = Array.from(deletedCardIdsRef.current)
-          void syncDeckWithCloud({
-            localCards: userCards,
-            localDeletedIds: deletedIds,
-            user,
-            syncService: services.sync,
-            onCardsUpdated: (newCards, newDeletedIds) =>
-              onUpdateCards(newCards, false, newDeletedIds),
-          }).then((res) => {
-            if (res.success) setSyncStatus('synced')
+          const created = createCards(pending, {
+            clock: services.clock,
+            ids: services.ids,
           })
+          if (created.length > 0) {
+            userCards = [...created, ...userCards]
+            const savedSpanish = pending.spanish.trim()
+            setSavedToast(savedSpanish)
+            if (savedToastTimerRef.current !== null) {
+              window.clearTimeout(savedToastTimerRef.current)
+            }
+            savedToastTimerRef.current = window.setTimeout(() => {
+              setSavedToast(null)
+              savedToastTimerRef.current = null
+            }, 3000)
+          }
+
+          setSpanishInput('')
+          setEnglishInput('')
+          setContextInput('')
+          setReversePromptInput('')
+          setReverseAnswerInput('')
+          setSuggestions([])
+          setActiveSuggestionIndex(-1)
+          setPendingCard(null)
+          pendingCardRef.current = null
+          setIsSyncOpen(false)
+
+          const deletedIds = Array.from(deletedCardIdsRef.current)
+          onUpdateCards(userCards, false, deletedIds)
         }
+
+        const deletedIds = Array.from(deletedCardIdsRef.current)
+        void syncDeckWithCloud({
+          localCards: userCards,
+          localDeletedIds: deletedIds,
+          user,
+          syncService: services.sync,
+          onCardsUpdated: (newCards, newDeletedIds) =>
+            onUpdateCards(newCards, false, newDeletedIds),
+        }).then((res) => {
+          if (res.success) setSyncStatus('synced')
+          else setSyncStatus('error')
+        })
       } else if (prevUser !== null) {
         // Explicit transition from signed in to signed out:
         // Clear local user deck and restore clean starter demo deck
@@ -1327,9 +1357,9 @@ export function App({
     })
   }, [
     onUpdateCards,
-    saveCardFromParams,
     services.auth,
     services.clock,
+    services.ids,
     services.sync,
   ])
 
@@ -2216,7 +2246,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2650,7 +2682,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3128,7 +3162,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3275,7 +3311,9 @@ export function App({
           auth={services.auth}
           sync={services.sync}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
+          pendingCardPrompt={
+            pendingCard ? pendingCard.spanish.trim() : undefined
+          }
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3495,7 +3533,7 @@ export function App({
         auth={services.auth}
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-        pendingCardPrompt={pendingCard ? pendingCard.spanish : undefined}
+        pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
       />
       <EditCardModal
         isOpen={editingCard !== null}

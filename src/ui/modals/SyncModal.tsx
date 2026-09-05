@@ -97,11 +97,8 @@ export function SyncModal({
   useEffect(() => {
     return auth.onAuthStateChange((currentUser) => {
       setUser(currentUser)
-      if (currentUser && onSaveLocally) {
-        onClose()
-      }
     })
-  }, [auth, onClose, onSaveLocally])
+  }, [auth])
 
   useEffect(() => {
     if (!isOpen) return
@@ -160,14 +157,10 @@ export function SyncModal({
     const res = await auth.verifyOtp(email.trim(), cleanToken)
     setLoadingAction(null)
     if (res.success) {
-      if (onSaveLocally) {
-        onClose()
-      } else {
-        setStatusMsg({
-          type: 'success',
-          message: 'Signed in! Deck synchronized with cloud.',
-        })
-      }
+      setStatusMsg({
+        type: 'success',
+        message: 'Signed in! Deck synchronized with cloud.',
+      })
     } else {
       setStatusMsg({
         type: 'error',
@@ -263,9 +256,7 @@ export function SyncModal({
                 className="primary-button"
                 onClick={onSaveLocally}
               >
-                {pendingCardPrompt
-                  ? `Save “${pendingCardPrompt}” to this device →`
-                  : 'Save card to this device →'}
+                Save card to this device →
               </button>
             )}
           </div>

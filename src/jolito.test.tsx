@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
 import { createStudyCards, type StudyCard } from './domain/card'
+import { createCards } from './application/create-cards'
 import { starterCards } from './application/starter-cards'
 import { OfflineCardAssistant } from './application/card-assistant'
 import { createTestServices } from './test/services'
@@ -2427,7 +2428,7 @@ describe('Jolito', () => {
 
     // User clicks save locally in preview
     await user.click(
-      screen.getByRole('button', { name: /save “orale” to this device/i }),
+      screen.getByRole('button', { name: /save card to this device/i }),
     )
 
     expect(
@@ -2503,6 +2504,67 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
+  })
+
+  it('reconciles existing cloud deck cards and saves pending card when visitor signs in via guest card modal', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+
+    // Setup an existing remote deck in cloud for the user
+    const remoteCards = createCards(
+      {
+        spanish: 'chela',
+        english: 'beer',
+        context: '',
+        bidirectional: false,
+        reversePrompt: '',
+        reverseAnswer: '',
+      },
+      { clock: services.clock, ids: services.ids },
+    )
+    services.mockSync.remoteCards = remoteCards
+
+    render(<App services={services} />)
+
+    // Guest creates a card
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    const englishInput = screen.getByLabelText(/^english$/i)
+    await user.type(spanishInput, 'chido')
+    await user.type(englishInput, 'cool')
+    await user.click(screen.getByRole('button', { name: /save card/i }))
+
+    // Sign in through modal
+    const emailInput = screen.getByLabelText(/email address/i)
+    await user.type(emailInput, 'existing-user@example.com')
+    await user.click(
+      screen.getByRole('button', { name: /save card & send link/i }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: /paste link manually/i }),
+    )
+    const tokenInput = screen.getByLabelText(/sign-in link/i)
+    await user.type(tokenInput, '123456')
+    await user.click(
+      screen.getByRole('button', { name: /sign in & save card/i }),
+    )
+
+    // Modal closes and saved toast appears
+    expect(
+      screen.queryByRole('heading', {
+        name: /^save your card & start your deck$/i,
+      }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
+
+    // Both the new card (2 cards bidirectional) AND the remote card (1 card) must be present in local storage
+    expect(services.memoryCards.saved).toHaveLength(3)
+    expect(services.memoryCards.saved?.map((c) => c.prompt).sort()).toEqual(
+      ['chido', 'cool', 'chela'].sort(),
+    )
+
+    // Remote sync deck must also contain all 3 reconciled cards
+    expect(services.mockSync.remoteCards).toHaveLength(3)
   })
 
   it('navigates to deck manager, displays deck stats, and filters cards by search and state pills', async () => {
