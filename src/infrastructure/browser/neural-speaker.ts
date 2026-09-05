@@ -438,9 +438,11 @@ export class NeuralVoiceEngine {
   async syncDiskCache(): Promise<void> {
     const cache = await this.getCache()
     if (cache) {
-      this.diskKeysPromise = this.populateDiskKeys(cache).catch(() => {
-        this.diskKeysPromise = null
-      })
+      if (!this.diskKeysPromise) {
+        this.diskKeysPromise = this.populateDiskKeys(cache).catch(() => {
+          this.diskKeysPromise = null
+        })
+      }
       await this.diskKeysPromise
     }
   }

@@ -76,6 +76,7 @@ export class MockSpeaker implements Speaker {
     options?: SpeakerOptions | undefined
   }> = []
   public prefetched: PrefetchItem[] = []
+  public prunedCalls: Array<Array<{ text: string; locale: string }>> = []
   public isSupported = true
 
   supported(): boolean {
@@ -84,6 +85,13 @@ export class MockSpeaker implements Speaker {
 
   prefetch(items: PrefetchItem[]): void {
     this.prefetched.push(...items)
+  }
+
+  pruneUnusedAudio(
+    activeItems: Array<{ text: string; locale: string }>,
+  ): number {
+    this.prunedCalls.push(activeItems)
+    return 0
   }
 
   speak(text: string, locale: string, options?: SpeakerOptions): boolean {

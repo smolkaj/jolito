@@ -973,7 +973,6 @@ describe('NeuralVoiceEngine', () => {
   })
 
   it('populates disk cache keys from CacheStorage and detects disk-cached phrases', async () => {
-    const engine = new NeuralVoiceEngine()
     const mockRequests = [
       new Request(
         'http://localhost/api/tts?text=palabra_en_disco&locale=es-mx&voice=es-MX-DaliaNeural',
@@ -995,6 +994,7 @@ describe('NeuralVoiceEngine', () => {
       writable: true,
     })
 
+    const engine = new NeuralVoiceEngine()
     await engine.syncDiskCache()
 
     expect(engine.hasDiskAudio('palabra_en_disco', 'es-MX')).toBe(true)
@@ -1013,7 +1013,6 @@ describe('NeuralVoiceEngine', () => {
   })
 
   it('prunes unreferenced audio from CacheStorage and cleans up disk/memory caches', async () => {
-    const engine = new NeuralVoiceEngine()
     const req1 = new Request(
       'http://localhost/api/tts?text=active_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
     )
@@ -1035,6 +1034,7 @@ describe('NeuralVoiceEngine', () => {
       writable: true,
     })
 
+    const engine = new NeuralVoiceEngine()
     await engine.syncDiskCache()
     expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
     expect(engine.hasDiskAudio('deleted_phrase', 'es-MX')).toBe(true)
@@ -1057,7 +1057,6 @@ describe('NeuralVoiceEngine', () => {
   })
 
   it('retries disk cache population if an earlier attempt failed', async () => {
-    const engine = new NeuralVoiceEngine()
     let attempt = 0
     const req = new Request(
       'http://localhost/api/tts?text=retry_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
@@ -1080,6 +1079,7 @@ describe('NeuralVoiceEngine', () => {
       writable: true,
     })
 
+    const engine = new NeuralVoiceEngine()
     // First attempt fails transiently
     await engine.syncDiskCache()
     expect(engine.hasDiskAudio('retry_phrase', 'es-MX')).toBe(false)

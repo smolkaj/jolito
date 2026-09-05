@@ -968,7 +968,13 @@ export function App({
     }
   }, [view])
 
+  const revealAudioTimerRef = useRef<number | null>(null)
+
   const navigateTo = useCallback((nextView: View, replace = false) => {
+    if (revealAudioTimerRef.current !== null) {
+      window.clearTimeout(revealAudioTimerRef.current)
+      revealAudioTimerRef.current = null
+    }
     setIsDemoDeckDismissed(false)
     setView(nextView)
     if (typeof window === 'undefined') return
@@ -1053,7 +1059,6 @@ export function App({
   const sampleTimerRef = useRef<number | null>(null)
   const samplerTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
-  const revealAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
   const isScrollingRef = useRef(false)
@@ -1133,6 +1138,7 @@ export function App({
       }
       const deletedIdsArray = Array.from(deletedCardIdsRef.current)
 
+      const previousCards = cardsRef.current
       cardsRef.current = newCards
       setCards(newCards)
       setDeletedCardIds(deletedIdsArray)
@@ -1166,12 +1172,31 @@ export function App({
           })
       }
 
-      if (
-        (newDeletedCardIds !== undefined ||
-          newCards.length < cardsRef.current.length) &&
-        typeof services.speaker.pruneUnusedAudio === 'function'
-      ) {
-        void services.speaker.pruneUnusedAudio(getActiveAudioItems(newCards))
+      if (typeof services.speaker.pruneUnusedAudio === 'function') {
+        const nextActiveItems = getActiveAudioItems(newCards)
+        const previousActiveKeys = new Set(
+          getActiveAudioItems(previousCards).map(
+            (i) => `${i.locale}:${i.text}`,
+          ),
+        )
+        const nextActiveKeys = new Set(
+          nextActiveItems.map((i) => `${i.locale}:${i.text}`),
+        )
+        let hasRemovedAudio =
+          newDeletedCardIds !== undefined ||
+          newCards.length < previousCards.length
+        if (!hasRemovedAudio) {
+          for (const prevKey of previousActiveKeys) {
+            if (!nextActiveKeys.has(prevKey)) {
+              hasRemovedAudio = true
+              break
+            }
+          }
+        }
+
+        if (hasRemovedAudio) {
+          void services.speaker.pruneUnusedAudio(nextActiveItems)
+        }
       }
     },
     [
