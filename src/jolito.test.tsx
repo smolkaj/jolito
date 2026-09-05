@@ -4137,6 +4137,154 @@ describe('Jolito', () => {
     )
   })
 
+  it('advances progress bar when rating bidirectional cards whose siblings are outside the batch', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const services = createTestServices({ clockTime: now })
+
+    // Create 10 bidirectional notes (20 cards total: 10 es-en, 10 en-es)
+    const cards: StudyCard[] = []
+    for (let i = 1; i <= 10; i++) {
+      const idx = String(i).padStart(2, '0')
+      cards.push(
+        {
+          id: `card-${idx}:es-en`,
+          noteId: `note-${idx}`,
+          prompt: `es-${idx}`,
+          answer: `en-${idx}`,
+          direction: 'es-en',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            state: 'new',
+            dueAt: now,
+            intervalDays: 0,
+            easeFactor: 2.5,
+            reviews: 0,
+            lapses: 0,
+          },
+          createdAt: now,
+        },
+        {
+          id: `card-${idx}:en-es`,
+          noteId: `note-${idx}`,
+          prompt: `en-${idx}`,
+          answer: `es-${idx}`,
+          direction: 'en-es',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            state: 'new',
+            dueAt: now,
+            intervalDays: 0,
+            easeFactor: 2.5,
+            reviews: 0,
+            lapses: 0,
+          },
+          createdAt: now,
+        },
+      )
+    }
+
+    services.cards.load = () => cards
+    render(<App services={services} />)
+
+    // Start practice (queue gets 10 es-en cards, en-es siblings are outside the queue)
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(screen.getByRole('heading', { name: 'es-01' })).toBeInTheDocument()
+
+    const progressBar = screen.getByRole('progressbar', {
+      name: /session progress/i,
+    })
+    expect(progressBar).toHaveAttribute('aria-valuenow', '0')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '10 cards remaining')
+
+    // Rate card 1 with Easy (4) -> 1 of 10 completed (10%)
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'es-02' })).toBeInTheDocument()
+    expect(progressBar).toHaveAttribute('aria-valuenow', '10')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '9 cards remaining')
+
+    // Rate card 2 with Easy (4) -> 2 of 10 completed (20%)
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'es-03' })).toBeInTheDocument()
+    expect(progressBar).toHaveAttribute('aria-valuenow', '20')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '8 cards remaining')
+  })
+
+  it('adjusts progress bar correctly when rating bidirectional cards whose siblings are inside the queue', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const services = createTestServices({ clockTime: now })
+
+    // Create 2 bidirectional notes (4 cards total: 2 es-en, 2 en-es)
+    const cards: StudyCard[] = []
+    for (let i = 1; i <= 2; i++) {
+      const idx = String(i).padStart(2, '0')
+      cards.push(
+        {
+          id: `card-${idx}:es-en`,
+          noteId: `note-${idx}`,
+          prompt: `es-${idx}`,
+          answer: `en-${idx}`,
+          direction: 'es-en',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            state: 'new',
+            dueAt: now,
+            intervalDays: 0,
+            easeFactor: 2.5,
+            reviews: 0,
+            lapses: 0,
+          },
+          createdAt: now,
+        },
+        {
+          id: `card-${idx}:en-es`,
+          noteId: `note-${idx}`,
+          prompt: `en-${idx}`,
+          answer: `es-${idx}`,
+          direction: 'en-es',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            state: 'new',
+            dueAt: now,
+            intervalDays: 0,
+            easeFactor: 2.5,
+            reviews: 0,
+            lapses: 0,
+          },
+          createdAt: now,
+        },
+      )
+    }
+
+    services.cards.load = () => cards
+    render(<App services={services} />)
+
+    // Start practice (queue gets 4 cards: es-01, es-02, en-01, en-02)
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(screen.getByRole('heading', { name: 'es-01' })).toBeInTheDocument()
+
+    const progressBar = screen.getByRole('progressbar', {
+      name: /session progress/i,
+    })
+    expect(progressBar).toHaveAttribute('aria-valuenow', '0')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '4 cards remaining')
+
+    // Rate card 1 with Easy (4) -> en-01 in queue is buried, leaving 2 cards remaining in queue
+    // 1 completed out of 3 session total (33%)
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(screen.getByRole('heading', { name: 'es-02' })).toBeInTheDocument()
+    expect(progressBar).toHaveAttribute('aria-valuenow', '33')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
+  })
+
   it('chunks large due backlogs into 10-card sprint batches and offers practice next batch', async () => {
     const user = userEvent.setup({ delay: null })
     const now = 1771632000000

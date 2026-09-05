@@ -1731,9 +1731,12 @@ export function App({
       if (requeue) {
         nextQueue.push(currentCard.id)
       }
-      if (buriedCardIds.length > 0) {
+      const buriedInQueueCount = queue
+        .slice(1)
+        .filter((id) => buriedSet.has(id)).length
+      if (buriedInQueueCount > 0) {
         setSessionTotal((prev) =>
-          Math.max(nextQueue.length, prev - buriedCardIds.length),
+          Math.max(nextQueue.length, prev - buriedInQueueCount),
         )
       }
 
