@@ -45,8 +45,11 @@ export function getAudioUrl(
 }
 
 export class LruAudioCache {
+  public readonly maxSize: number
   private readonly cache = new Map<string, AudioBuffer>()
-  constructor(public readonly maxSize: number = 200) {}
+  constructor(maxSize: number = 200) {
+    this.maxSize = Math.max(1, maxSize)
+  }
 
   get(key: string): AudioBuffer | undefined {
     const val = this.cache.get(key)
@@ -113,6 +116,7 @@ export class NeuralVoiceEngine {
     for (const [key, url] of Object.entries(BUNDLED_NEURAL_AUDIO)) {
       this.audioBlobs.set(key, url)
     }
+    void this.getCache()
   }
 
   private initContext(): void {
@@ -248,6 +252,44 @@ export class NeuralVoiceEngine {
     )
   }
 
+  private diskCacheKeys = new Set<string>()
+  private diskKeysLoaded = false
+
+  hasDiskAudio(text: string, locale: string, voice?: string): boolean {
+    const cleanText = text.trim()
+    if (!cleanText) return false
+    const normLocale = normalizeLocale(locale)
+    const effectiveVoice = voice ?? getDeterministicVoice(cleanText, normLocale)
+    const hasVoiceMatch = this.getCacheKeys(
+      cleanText,
+      normLocale,
+      effectiveVoice,
+    ).some((k) => this.diskCacheKeys.has(k))
+    if (hasVoiceMatch) return true
+
+    return this.getCacheKeys(cleanText, normLocale).some((k) =>
+      this.diskCacheKeys.has(k),
+    )
+  }
+
+  private recordDiskKey(
+    cleanText: string,
+    normLocale: string,
+    voice?: string,
+  ): void {
+    const effectiveVoice = voice ?? getDeterministicVoice(cleanText, normLocale)
+    for (const key of this.getCacheKeys(
+      cleanText,
+      normLocale,
+      effectiveVoice,
+    )) {
+      this.diskCacheKeys.add(key)
+    }
+    for (const key of this.getCacheKeys(cleanText, normLocale)) {
+      this.diskCacheKeys.add(key)
+    }
+  }
+
   registerAudioBuffer(
     text: string,
     locale: string,
@@ -353,12 +395,47 @@ export class NeuralVoiceEngine {
   private async getCache(): Promise<Cache | null> {
     if (typeof window !== 'undefined' && 'caches' in window && window.caches) {
       try {
-        return await window.caches.open(AUDIO_CACHE_NAME)
+        const cache = await window.caches.open(AUDIO_CACHE_NAME)
+        if (!this.diskKeysLoaded) {
+          this.diskKeysLoaded = true
+          void this.populateDiskKeys(cache)
+        }
+        return cache
       } catch {
         return null
       }
     }
     return null
+  }
+
+  private async populateDiskKeys(cache: Cache): Promise<void> {
+    try {
+      if (typeof cache.keys !== 'function') return
+      const requests = await cache.keys()
+      for (const req of requests) {
+        try {
+          const urlStr = typeof req === 'string' ? req : req.url
+          const url = new URL(urlStr, 'http://localhost')
+          const text = url.searchParams.get('text')
+          const locale = url.searchParams.get('locale')
+          const voice = url.searchParams.get('voice') ?? undefined
+          if (text && locale) {
+            this.recordDiskKey(text, locale, voice)
+          }
+        } catch {
+          // Skip malformed URL
+        }
+      }
+    } catch {
+      // Ignore cache keys read failure
+    }
+  }
+
+  async syncDiskCache(): Promise<void> {
+    const cache = await this.getCache()
+    if (cache) {
+      await this.populateDiskKeys(cache)
+    }
   }
 
   private async decodeAudio(
@@ -469,6 +546,7 @@ export class NeuralVoiceEngine {
         try {
           const cachedResp = await cache.match(url)
           if (cachedResp && cachedResp.ok) {
+            this.recordDiskKey(cleanText, normLocale, voice)
             if (
               options?.skipDecodeIfCacheFull &&
               this.audioCache.size >= this.audioCache.maxSize
@@ -504,6 +582,7 @@ export class NeuralVoiceEngine {
         if (cache) {
           try {
             await cache.put(url, response.clone())
+            this.recordDiskKey(cleanText, normLocale, voice)
           } catch {
             // Ignore cache write errors
           }
@@ -749,6 +828,22 @@ export class LayeredNeuralSpeaker implements Speaker {
     await this.neuralEngine.prefetch(items, fetchFn)
   }
 
+  hasAudio(text: string, locale: string, voice?: string): boolean {
+    return this.neuralEngine.hasAudio(text, locale, voice)
+  }
+
+  hasDiskAudio(text: string, locale: string, voice?: string): boolean {
+    return this.neuralEngine.hasDiskAudio(text, locale, voice)
+  }
+
+  isAudioInFlight(text: string, locale: string, voice?: string): boolean {
+    return this.neuralEngine.isAudioInFlight(text, locale, voice)
+  }
+
+  async syncDiskCache(): Promise<void> {
+    await this.neuralEngine.syncDiskCache()
+  }
+
   speak(text: string, locale: string, options?: SpeakerOptions): boolean {
     if (!this.supported()) return false
 
@@ -785,11 +880,33 @@ export class LayeredNeuralSpeaker implements Speaker {
       }
     }
 
-    // 2. If an audio prefetch is already in flight (e.g. Card 0 entering review),
-    // await the in-flight prefetch (up to 200ms) rather than prematurely falling back to robotic speech
-    if (this.neuralEngine.isAudioInFlight(cleanText, normLocale, voice)) {
+    // 2. If an audio prefetch is in flight, or if it is already cached on disk (CacheStorage),
+    // allow a brief grace window to play neural voice rather than prematurely falling back to robotic speech
+    const isDiskCached = this.neuralEngine.hasDiskAudio(
+      cleanText,
+      normLocale,
+      voice,
+    )
+    const isInFlight = this.neuralEngine.isAudioInFlight(
+      cleanText,
+      normLocale,
+      voice,
+    )
+
+    if (isInFlight || isDiskCached) {
+      if (!isInFlight) {
+        // Trigger hydration from disk/network into memory
+        void this.neuralEngine
+          .fetchAndCacheAudio(cleanText, normLocale, {
+            voice,
+            cardSeed: options?.cardSeed,
+          })
+          .catch(() => {})
+      }
+
+      const graceTimeout = isDiskCached ? 150 : 200
       void this.neuralEngine
-        .awaitAudio(cleanText, normLocale, voice, 200)
+        .awaitAudio(cleanText, normLocale, voice, graceTimeout)
         .then((ready) => {
           if (this.speakGeneration !== currentGen) return
           if (ready) {
@@ -812,7 +929,7 @@ export class LayeredNeuralSpeaker implements Speaker {
       return true
     }
 
-    // 3. Uncached and not in-flight: fire background fetch for subsequent plays and speak via fallback
+    // 3. Uncached and not in-flight: fire background fetch for subsequent plays and speak via fallback synchronously
     void this.neuralEngine
       .fetchAndCacheAudio(cleanText, normLocale, {
         voice,
