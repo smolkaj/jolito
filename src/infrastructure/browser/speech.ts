@@ -53,7 +53,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
     )
   }
 
-  speak(text: string, locale: string): boolean {
+  speak(text: string, locale: string, options?: import('../../application/ports').SpeakerOptions): boolean {
     if (!this.supported()) return false
 
     const now = Date.now()
@@ -78,7 +78,15 @@ export class EnhancedBrowserSpeaker implements Speaker {
       const utterance = new window.SpeechSynthesisUtterance(text)
       utterance.lang = locale
 
-      const voice = this.selectBestVoice(locale)
+      const gender =
+        options?.gender ??
+        (options?.voice?.includes('Jorge') || options?.voice?.includes('Guy')
+          ? 'male'
+          : options?.voice?.includes('Dalia') || options?.voice?.includes('Jenny')
+            ? 'female'
+            : undefined)
+
+      const voice = this.selectBestVoice(locale, gender)
       if (voice) {
         utterance.voice = voice
       } else {
@@ -97,11 +105,84 @@ export class EnhancedBrowserSpeaker implements Speaker {
     }
   }
 
-  private selectBestVoice(locale: string): SpeechSynthesisVoice | null {
+  stop(): void {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel()
+      } catch {
+        // Ignore errors
+      }
+    }
+  }
+
+  private selectBestVoice(
+    locale: string,
+    gender?: 'female' | 'male',
+  ): SpeechSynthesisVoice | null {
     if (this.voices.length === 0) return null
 
     const normalizedTarget = locale.toLowerCase().replace(/_/g, '-')
     const isSpanish = normalizedTarget.startsWith('es')
+
+    const maleKeywords = [
+      'jorge',
+      'raul',
+      'carlos',
+      'enrique',
+      'miguel',
+      'pablo',
+      'male',
+      'guy',
+      'tom',
+    ]
+    const femaleKeywords = [
+      'paulina',
+      'dalia',
+      'sabina',
+      'monica',
+      'soledad',
+      'elena',
+      'female',
+      'jenny',
+      'samantha',
+      'ava',
+    ]
+
+    if (gender) {
+      const targetKeywords = gender === 'male' ? maleKeywords : femaleKeywords
+      if (isSpanish) {
+        // Priority 1: Mexican Spanish matching target gender
+        const mxGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          const isMx =
+            lang === 'es-mx' || name.includes('mexic') || lang.includes('mexic')
+          return isMx && targetKeywords.some((k) => name.includes(k))
+        })
+        if (mxGenderMatch) return mxGenderMatch
+
+        // Priority 2: Any Spanish voice matching target gender
+        const esGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          return (
+            (lang.startsWith('es') || name.includes('spanish')) &&
+            targetKeywords.some((k) => name.includes(k))
+          )
+        })
+        if (esGenderMatch) return esGenderMatch
+      } else {
+        const enGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          return (
+            lang.startsWith('en') &&
+            targetKeywords.some((k) => name.includes(k))
+          )
+        })
+        if (enGenderMatch) return enGenderMatch
+      }
+    }
 
     if (isSpanish) {
       // 1. Preferred enhanced / premium / natural / siri Mexican Spanish voices

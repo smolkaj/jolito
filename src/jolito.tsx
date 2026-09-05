@@ -1687,12 +1687,13 @@ export function App({
     if (view !== 'review' || !currentCardId || !currentPrompt) return
     responseInput.current?.focus()
     services.speaker.speak(currentPrompt, currentPromptLocale, {
-      cardSeed: currentCardId,
+      cardSeed: `${currentCardId}:turn${reviewedCount}`,
     })
   }, [
     currentCardId,
     currentPrompt,
     currentPromptLocale,
+    reviewedCount,
     services.speaker,
     view,
   ])
@@ -1709,6 +1710,7 @@ export function App({
         window.clearTimeout(revealAudioTimerRef.current)
         revealAudioTimerRef.current = null
       }
+      services.speaker.stop?.()
       if (!currentCard) return
       const now = services.clock.now()
       services.sounds.play(gradeValue)
@@ -1762,6 +1764,7 @@ export function App({
       services.clock,
       services.haptics,
       services.sounds,
+      services.speaker,
     ],
   )
 
@@ -1797,13 +1800,13 @@ export function App({
           playAudio(
             currentCard.answer,
             localeForAnswer(currentCard),
-            currentCard.id,
+            `${currentCard.id}:turn${reviewedCount}`,
           )
         } else {
           playAudio(
             currentCard.prompt,
             localeForPrompt(currentCard),
-            currentCard.id,
+            `${currentCard.id}:turn${reviewedCount}`,
           )
         }
       }
@@ -1840,6 +1843,7 @@ export function App({
     isFeedbackOpen,
     playAudio,
     revealed,
+    reviewedCount,
     view,
   ])
 
@@ -1892,7 +1896,7 @@ export function App({
       playAudio(
         cardToSpeak.answer,
         localeForAnswer(cardToSpeak),
-        cardToSpeak.id,
+        `${cardToSpeak.id}:turn${reviewedCount}`,
       )
       revealAudioTimerRef.current = null
     }, REVEAL_AUDIO_STAGGER_MS)
@@ -3635,7 +3639,7 @@ export function App({
                 playAudio(
                   currentCard.prompt,
                   localeForPrompt(currentCard),
-                  currentCard.id,
+                  `${currentCard.id}:turn${reviewedCount}`,
                 )
               }
             />
@@ -3688,7 +3692,7 @@ export function App({
                       playAudio(
                         currentCard.answer,
                         localeForAnswer(currentCard),
-                        currentCard.id,
+                        `${currentCard.id}:turn${reviewedCount}`,
                       )
                     }
                   />

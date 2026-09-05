@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getAllVoicesForLocale,
+  getAlternateVoice,
   getDeterministicVoice,
   isValidVoice,
   NEURAL_VOICES,
@@ -101,4 +103,38 @@ describe('voices', () => {
     // Both sides of the card must share the same persona (both female or both male)
     expect(isPromptFemale).toBe(isAnswerFemale)
   })
+
+  it('correctly maps alternate voices between female and male personas', () => {
+    expect(getAlternateVoice('es-MX-DaliaNeural')).toBe('es-MX-JorgeNeural')
+    expect(getAlternateVoice('es-MX-JorgeNeural')).toBe('es-MX-DaliaNeural')
+    expect(getAlternateVoice('en-US-JennyNeural')).toBe('en-US-GuyNeural')
+    expect(getAlternateVoice('en-US-GuyNeural')).toBe('en-US-JennyNeural')
+    expect(getAlternateVoice('unknown-voice')).toBe('unknown-voice')
+  })
+
+  it('retrieves both female and male voices for supported locales', () => {
+    expect(getAllVoicesForLocale('es-MX')).toEqual([
+      'es-MX-DaliaNeural',
+      'es-MX-JorgeNeural',
+    ])
+    expect(getAllVoicesForLocale('en-US')).toEqual([
+      'en-US-JennyNeural',
+      'en-US-GuyNeural',
+    ])
+  })
+
+  it('alternates between male and female voices across consecutive review turns for the same card', () => {
+    const cardId = 'card-1'
+    const prompt = 'apple'
+    const voiceTurn0 = getDeterministicVoice(prompt, 'es-MX', `${cardId}:turn0`)
+    const voiceTurn1 = getDeterministicVoice(prompt, 'es-MX', `${cardId}:turn1`)
+    const voiceTurn2 = getDeterministicVoice(prompt, 'es-MX', `${cardId}:turn2`)
+    const voiceTurn3 = getDeterministicVoice(prompt, 'es-MX', `${cardId}:turn3`)
+
+    expect(voiceTurn0).not.toBe(voiceTurn1)
+    expect(voiceTurn1).not.toBe(voiceTurn2)
+    expect(voiceTurn2).not.toBe(voiceTurn3)
+    expect(voiceTurn0).toBe(voiceTurn2)
+  })
 })
+

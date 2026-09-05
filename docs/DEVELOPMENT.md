@@ -23,7 +23,7 @@ npm run build
 npm run preview
 ```
 
-Open [http://localhost:4173](http://localhost:4173) once while online before testing an offline reload. Jolito pairs a studio-quality neural voice engine with local service worker caching and bundled audio, falling back gracefully to device speech synthesis when offline or for un-cached phrases.
+Open [http://localhost:4173](http://localhost:4173) once while online before testing an offline reload. Jolito pairs a studio-quality neural voice engine with local service worker caching and practice prefetching, falling back gracefully to device speech synthesis when offline or for un-cached phrases.
 
 ## Cloud synchronization & Supabase
 
