@@ -4878,6 +4878,33 @@ describe('Jolito', () => {
       })
       expect(scrollCue).toBeInTheDocument()
 
+      // Feedback button in hero footer is present
+      const feedbackBtn = screen.getByRole('button', {
+        name: /^feedback$/i,
+      })
+      expect(feedbackBtn).toBeInTheDocument()
+
+      // Origin story header is rendered
+      expect(
+        screen.getByRole('heading', {
+          name: /^why another flashcard app\?$/i,
+        }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/moved to mexico city with my mexican wife/i),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('link', { name: /international house/i }),
+      ).toHaveAttribute('href', 'https://ihmexico.com/')
+      expect(
+        screen.getAllByRole('link', { name: /spaced repetition/i })[0],
+      ).toHaveAttribute(
+        'href',
+        'https://en.wikipedia.org/wiki/Spaced_repetition',
+      )
+      expect(screen.queryByText(/condesa/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/forgetting curve/i)).toBeInTheDocument()
+
       // 3 Value pillars are rendered
       expect(
         screen.getByRole('heading', { name: /^type before you flip$/i }),

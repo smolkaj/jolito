@@ -585,6 +585,31 @@ summary:focus-visible {
   gap: clamp(32px, 5vw, 64px);
 }
 
+.welcome-hero-footer {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.welcome-hero-footer-spacer {
+  min-width: 0;
+}
+
+.welcome-hero-footer .hero-scroll-cue {
+  margin-top: 0;
+  grid-column: 2;
+  justify-self: center;
+}
+
+.welcome-hero-footer .app-footer {
+  margin-top: 0;
+  padding-top: 0;
+  grid-column: 3;
+  justify-self: end;
+}
+
 .hero-scroll-cue {
   display: inline-flex;
   align-items: center;
@@ -1040,11 +1065,46 @@ summary:focus-visible {
   color: var(--ink);
 }
 
-.why-subtitle {
-  margin: 16px auto 0;
-  color: var(--ink-soft);
+.why-story {
+  margin: 20px auto 0;
+  max-width: 660px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.why-story p {
+  margin: 0;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
+.why-story p:first-of-type {
+  color: var(--ink);
+}
+
+.why-story a,
+.why-card a {
+  color: var(--rosa-dark);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: color 120ms ease;
+}
+
+.why-story a:hover,
+.why-card a:hover {
+  color: var(--ink);
+}
+
+.why-story a:focus-visible,
+.why-card a:focus-visible {
+  outline: 2px solid var(--maya-dark);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .why-grid {
@@ -1111,14 +1171,6 @@ summary:focus-visible {
   border-color: var(--verde-dark);
 }
 
-.why-badge-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--ink-muted);
-}
-
 .why-card h3 {
   margin: 0 0 8px;
   font-family: var(--font-serif);
@@ -1142,85 +1194,94 @@ summary:focus-visible {
   padding-top: 18px;
 }
 
-/* Card 1: Recall Visual */
-.mini-card-shell {
-  background: var(--paper-subtle);
+/* Card 3: Active Recall Diff Visual */
+.mini-diff-card {
+  padding: 12px 14px;
   border-radius: 12px;
-  padding: 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  box-shadow: 2px 2px 0 var(--cempasuchil);
 }
 
-.mini-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.mini-diff-card .diff-card-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
 }
 
-.mini-card-tag {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: var(--ink-muted);
-}
-
-.mini-card-phrase {
-  font-family: var(--font-serif);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.mini-card-input-box {
-  background: #ffffff;
-  border: 1.5px solid var(--line);
-  border-radius: 8px;
-  padding: 7px 10px;
-  font-size: 13px;
-  font-family: var(--font-sans);
-  color: var(--ink);
-  display: flex;
-  align-items: center;
-}
-
-.mini-typed-correct {
-  color: var(--ink);
-  font-weight: 500;
-}
-
-.mini-typed-space {
-  white-space: pre;
-}
-
-.mini-typed-diff {
-  color: var(--rosa-dark);
-  font-weight: 700;
-  text-decoration: underline;
-  text-decoration-color: var(--cempasuchil);
-  text-decoration-thickness: 3px;
-  text-underline-offset: 3px;
-}
-
-.mini-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+.mini-diff-card .diff-card-title {
   font-size: 11px;
 }
 
-.mini-pill-highlight {
-  color: var(--rosa-dark);
-  font-weight: 700;
+.mini-diff-card .diff-rows {
+  gap: 8px;
 }
 
-.mini-pill-authority {
-  color: var(--ink-muted);
-  font-weight: 600;
+.mini-diff-card .diff-row {
+  grid-template-columns: 68px 1fr;
+  gap: 8px;
 }
 
-/* Card 2: SRS Cadence Visual */
+.mini-diff-card .diff-label {
+  font-size: 10px;
+}
+
+.mini-diff-card .diff-text {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.mini-grade-preview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1.5px dashed var(--line-subtle);
+}
+
+.mini-grade-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  box-shadow: 1.5px 1.5px 0 var(--ink);
+  line-height: 1.2;
+}
+
+.mini-grade-btn.grade-again {
+  background: var(--tezontle);
+  color: #ffffff;
+  border-color: var(--tezontle-dark);
+}
+
+.mini-grade-btn.grade-hard {
+  background: var(--cempasuchil);
+  color: var(--ink);
+  border-color: var(--cempasuchil-dark);
+}
+
+.mini-grade-btn.grade-good {
+  background: var(--maya-dark);
+  color: #ffffff;
+  border-color: #075985;
+}
+
+.mini-grade-btn.grade-easy {
+  background: var(--verde);
+  color: #ffffff;
+  border-color: var(--verde-dark);
+}
+
+.mini-grade-btn.is-selected {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  transform: translateY(-1px);
+  box-shadow: 2px 3px 0 var(--ink);
+}
+
+/* Card 1: SRS Cadence Visual */
 .srs-cadence-track {
   display: flex;
   align-items: center;
@@ -1282,7 +1343,7 @@ summary:focus-visible {
   font-size: 12px;
 }
 
-/* Card 3: Audio Sampler Visual */
+/* Card 2: Audio Sampler Visual */
 .audio-sampler-group {
   display: flex;
   flex-direction: column;
@@ -1341,32 +1402,6 @@ summary:focus-visible {
   font-size: 11px;
   color: var(--ink-muted);
   margin-left: auto;
-}
-
-.why-highlights-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 16px 32px;
-  padding: 8px 0 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-.why-highlight-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.why-highlight-check {
-  color: var(--verde-dark);
-  font-weight: 800;
 }
 
 @media (max-width: 860px) {
@@ -2916,9 +2951,13 @@ kbd {
   }
 
   .welcome-hero {
-    min-height: auto;
+    min-height: calc(100svh - 60px);
     padding-top: 14px;
-    padding-bottom: 20px;
+    padding-bottom: 28px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .welcome-hero-main {
@@ -2931,8 +2970,20 @@ kbd {
     display: none;
   }
 
+  .welcome-hero-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  .welcome-hero-footer-spacer {
+    display: none;
+  }
+
   .welcome-why {
-    margin: 40px calc(-1 * max(16px, env(safe-area-inset-right)))
+    margin: 0 calc(-1 * max(16px, env(safe-area-inset-right)))
       calc(-1 * max(28px, env(safe-area-inset-bottom)))
       calc(-1 * max(16px, env(safe-area-inset-left)));
     padding: 48px max(16px, env(safe-area-inset-right))

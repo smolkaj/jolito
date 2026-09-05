@@ -1015,7 +1015,7 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await scrollCue.click()
 
   await expect(
-    page.getByRole('heading', { name: /^spoken spanish built for memory$/i }),
+    page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
   ).toBeVisible()
   await expect(
     page.getByRole('heading', { name: /^type before you flip$/i }),
@@ -1026,6 +1026,9 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await expect(
     page.getByRole('heading', { name: /^spoken mexican spanish$/i }),
   ).toBeVisible()
+
+  // Topbar feedback is visible
+  await expect(page.getByRole('button', { name: /^feedback$/i })).toBeVisible()
 
   // Test interactive audio sampler pill
   const samplerPill = page.getByRole('button', {
