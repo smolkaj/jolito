@@ -1171,14 +1171,6 @@ summary:focus-visible {
   border-color: var(--verde-dark);
 }
 
-.why-badge-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--ink-muted);
-}
-
 .why-card h3 {
   margin: 0 0 8px;
   font-family: var(--font-serif);
@@ -1410,21 +1402,6 @@ summary:focus-visible {
   font-size: 11px;
   color: var(--ink-muted);
   margin-left: auto;
-}
-
-.why-top-cue {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: -10px;
-}
-
-.why-top-cue .hero-scroll-cue {
-  margin-top: 0;
-}
-
-.why-top-cue .hero-scroll-cue:hover .scroll-cue-arrow {
-  transform: translateY(-2px);
 }
 
 @media (max-width: 860px) {
@@ -3012,10 +2989,6 @@ kbd {
     padding: 48px max(16px, env(safe-area-inset-right))
       max(28px, env(safe-area-inset-bottom))
       max(16px, env(safe-area-inset-left));
-  }
-
-  .why-top-cue .hero-scroll-cue {
-    display: inline-flex;
   }
 
   .welcome-mascot-img {
