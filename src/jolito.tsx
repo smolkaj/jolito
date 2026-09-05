@@ -2303,21 +2303,6 @@ export function App({
             aria-labelledby="why-jolito-title"
           >
             <div className="why-inner">
-              <div className="why-top-cue">
-                <button
-                  type="button"
-                  className="hero-scroll-cue"
-                  onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                >
-                  <span className="scroll-cue-text">Try Jolito now</span>
-                  <span className="scroll-cue-arrow" aria-hidden="true">
-                    ↑
-                  </span>
-                </button>
-              </div>
-
               <div className="why-header">
                 <p className="eyebrow why-eyebrow">BORN IN MEXICO CITY</p>
                 <h2 id="why-jolito-title">Why another flashcard app?</h2>
@@ -2340,16 +2325,9 @@ export function App({
                     everyday Mexican life.
                   </p>
                   <p>
-                    Jolito bridges that gap: the proven retention of{' '}
-                    <a
-                      href="https://en.wikipedia.org/wiki/Spaced_repetition"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      spaced repetition
-                    </a>
-                    , paired with instant card creation, native CDMX audio, and
-                    active typed recall.
+                    Jolito bridges that gap: the proven retention of spaced
+                    repetition, paired with instant card creation, native CDMX
+                    audio, and active typed recall.
                   </p>
                 </div>
               </div>
@@ -2358,7 +2336,6 @@ export function App({
                 <article className="why-card why-card-srs">
                   <div className="why-card-badge">
                     <span className="why-badge-number why-badge-srs">1</span>
-                    <span className="why-badge-label">Memory retention</span>
                   </div>
                   <h3>Spaced repetition that sticks</h3>
                   <p>
@@ -2412,7 +2389,6 @@ export function App({
                 <article className="why-card why-card-audio">
                   <div className="why-card-badge">
                     <span className="why-badge-number why-badge-audio">2</span>
-                    <span className="why-badge-label">Spoken Spanish</span>
                   </div>
                   <h3>Spoken Mexican Spanish</h3>
                   <p>
@@ -2464,7 +2440,6 @@ export function App({
                 <article className="why-card why-card-recall">
                   <div className="why-card-badge">
                     <span className="why-badge-number why-badge-recall">3</span>
-                    <span className="why-badge-label">Active recall</span>
                   </div>
                   <h3>Type before you flip</h3>
                   <p>

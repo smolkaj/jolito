@@ -936,11 +936,8 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
     page.getByRole('heading', { name: /^spoken mexican spanish$/i }),
   ).toBeVisible()
 
-  // Topbar feedback and symmetric return cue are visible
+  // Topbar feedback is visible
   await expect(page.getByRole('button', { name: /^feedback$/i })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /^try jolito now/i }),
-  ).toBeVisible()
 
   // Test interactive audio sampler pill
   const samplerPill = page.getByRole('button', {

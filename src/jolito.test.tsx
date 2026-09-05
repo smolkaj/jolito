@@ -4770,11 +4770,6 @@ describe('Jolito', () => {
         screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
       ).toBeInTheDocument()
 
-      // Symmetric return cue at top of why section is rendered
-      expect(
-        screen.getByRole('button', { name: /^try jolito now/i }),
-      ).toBeInTheDocument()
-
       // Audio sampler buttons are present and interactive
       const oraleButton = screen.getByRole('button', {
         name: /listen to mexican spanish pronunciation for ¡órale!/i,
