@@ -22,6 +22,8 @@ export type CardRepository = {
 export type SpeakerOptions = {
   cardSeed?: string | undefined
   voice?: string | undefined
+  gender?: 'female' | 'male' | undefined
+  dualVoice?: boolean | undefined
 }
 
 export type PrefetchItem = {
@@ -29,6 +31,7 @@ export type PrefetchItem = {
   locale: string
   cardSeed?: string | undefined
   voice?: string | undefined
+  bothVoices?: boolean | undefined
 }
 
 export type Speaker = {

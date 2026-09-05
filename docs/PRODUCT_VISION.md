@@ -82,7 +82,7 @@ Suggested keyboard controls:
 - **Web Application (PWA):** Installable, offline-capable progressive web application at [`joli.to`](https://joli.to) with local browser storage, service worker caching, and full mobile touch compliance.
 - **Unified Card Collection:** Single personal card collection with creation date and alphabetical sorting, duplicate detection and resolution, and instant editing.
 - **Multimodal Mexican Spanish:** Spanish ↔ English reciprocal card creation with lexicon assistance, autocomplete, lemma resolution, and verb conjugation ranking.
-- **Spoken Audio Immersion:** Spoken Mexican Spanish audio on prompts and answers using device/browser speech synthesis (Web Speech API) and pre-bundled audio for starter phrases.
+- **Spoken Audio Immersion:** Spoken Mexican Spanish audio on prompts and answers with dual-voice studio neural synthesis (`/api/tts`), practice prefetching, and graceful offline device speech synthesis fallback.
 - **Active Typed Recall & Flow:** Production-first typed recall with affine gap alignment diffs, case-insensitivity, automatic audio reveal playback, Web Audio earcons, and sprint study batching.
 - **Spaced Repetition & Continuity:** Proven Anki-compatible scheduling, overdue queue prioritization, active study session preservation across navigation, and cross-device daily progress sync.
 - **Interoperability & Data Ownership:** Complete Anki `.apkg` (SQLite collection) and text note import, plus 100% offline JSON deck backup, export, and conflict-free restore/merge.

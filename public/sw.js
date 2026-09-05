@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'jolito-shell-v8'
+const CACHE_NAME = 'jolito-shell-v9'
 const scopePath = new URL(self.registration.scope).pathname
 const shellUrl = scopePath
 const indexUrl = `${scopePath}index.html`
@@ -22,18 +22,6 @@ const PWA_ASSETS = [
   `${scopePath}fonts/bricolage-grotesque-normal-400-800-latin-ext.woff2`,
   `${scopePath}dict/es-en.json`,
   `${scopePath}dict/es-lemmas.json`,
-  `${scopePath}audio/aguacate-es.mp3`,
-  `${scopePath}audio/avocado-en.mp3`,
-  `${scopePath}audio/que-padre-es.mp3`,
-  `${scopePath}audio/how-cool-en.mp3`,
-  `${scopePath}audio/donde-esta-el-metro-es.mp3`,
-  `${scopePath}audio/where-is-the-metro-en.mp3`,
-  `${scopePath}audio/nos-vemos-al-rato-es.mp3`,
-  `${scopePath}audio/see-you-later-en.mp3`,
-  `${scopePath}audio/la-cuenta-por-favor-es.mp3`,
-  `${scopePath}audio/the-bill-please-en.mp3`,
-  `${scopePath}audio/para-llevar-es.mp3`,
-  `${scopePath}audio/to-go-en.mp3`,
 ]
 
 self.addEventListener('install', (event) => {

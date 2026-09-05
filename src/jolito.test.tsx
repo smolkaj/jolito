@@ -4700,27 +4700,27 @@ describe('Jolito', () => {
       // Enter review
       await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
-      // Prompt auto-play should pass cardSeed: 'c1'
+      // Prompt auto-play should pass cardSeed: 'c1:turn0'
       expect(
         services.mockSpeaker.spokenCalls.some(
           (s) =>
             s.text === 'how cool' &&
             s.locale === 'en-US' &&
-            s.options?.cardSeed === 'c1',
+            s.options?.cardSeed === 'c1:turn0',
         ),
       ).toBe(true)
 
       // Reveal card
       await user.keyboard('{Enter}')
 
-      // Answer audio should also pass cardSeed: 'c1' (staggered to prevent earcon chime masking)
+      // Answer audio should also pass cardSeed: 'c1:turn0' (staggered to prevent earcon chime masking)
       await waitFor(() => {
         expect(
           services.mockSpeaker.spokenCalls.some(
             (s) =>
               s.text === '¡qué padre!' &&
               s.locale === 'es-MX' &&
-              s.options?.cardSeed === 'c1',
+              s.options?.cardSeed === 'c1:turn0',
           ),
         ).toBe(true)
       })
