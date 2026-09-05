@@ -86,6 +86,13 @@ const localeForPrompt = (card: StudyCard) =>
 const localeForAnswer = (card: StudyCard) =>
   card.direction === 'es-en' ? 'en-US' : 'es-MX'
 
+/**
+ * Stagger duration (in ms) before speaking the revealed answer.
+ * Allows the reveal earcon chime (C5 -> E5, ~100ms) to finish its attack and harmonic
+ * envelope without frequency-masking the opening consonants/phonemes of the spoken answer.
+ */
+const REVEAL_AUDIO_STAGGER_MS = 120
+
 function getActiveAudioItems(
   cards: StudyCard[],
 ): Array<{ text: string; locale: string }> {
@@ -1183,7 +1190,7 @@ export function App({
           nextActiveItems.map((i) => `${i.locale}:${i.text}`),
         )
         let hasRemovedAudio =
-          newDeletedCardIds !== undefined ||
+          (newDeletedCardIds !== undefined && newDeletedCardIds.length > 0) ||
           newCards.length < previousCards.length
         if (!hasRemovedAudio) {
           for (const prevKey of previousActiveKeys) {
@@ -1527,6 +1534,10 @@ export function App({
 
   useEffect(() => {
     const onPopState = () => {
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
+      }
       setIsDemoDeckDismissed(false)
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
@@ -1556,6 +1567,10 @@ export function App({
 
   const playAudio = useCallback(
     (text: string, locale: string, cardSeed?: string) => {
+      if (revealAudioTimerRef.current !== null) {
+        window.clearTimeout(revealAudioTimerRef.current)
+        revealAudioTimerRef.current = null
+      }
       const played = services.speaker.speak(
         text,
         locale,
@@ -1876,7 +1891,7 @@ export function App({
         cardToSpeak.id,
       )
       revealAudioTimerRef.current = null
-    }, 120)
+    }, REVEAL_AUDIO_STAGGER_MS)
   }
 
   const dismissSuggestions = useCallback(() => {
