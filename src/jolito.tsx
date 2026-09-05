@@ -2277,21 +2277,25 @@ export function App({
                 </button>
               </div>
             </div>
-            <button
-              type="button"
-              className="hero-scroll-cue"
-              onClick={() => {
-                document
-                  .getElementById('why-jolito')
-                  ?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              aria-label="Scroll down to explore Why Jolito"
-            >
-              <span className="scroll-cue-text">Why Jolito?</span>
-              <span className="scroll-cue-arrow" aria-hidden="true">
-                ↓
-              </span>
-            </button>
+            <div className="welcome-hero-footer">
+              <div className="welcome-hero-footer-spacer" aria-hidden="true" />
+              <button
+                type="button"
+                className="hero-scroll-cue"
+                onClick={() => {
+                  document
+                    .getElementById('why-jolito')
+                    ?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                aria-label="Scroll down to explore Why Jolito"
+              >
+                <span className="scroll-cue-text">Why Jolito?</span>
+                <span className="scroll-cue-arrow" aria-hidden="true">
+                  ↓
+                </span>
+              </button>
+              <AppFooter onOpenFeedback={openFeedbackModal} />
+            </div>
           </section>
           <section
             className="welcome-why"
@@ -2300,13 +2304,24 @@ export function App({
           >
             <div className="why-inner">
               <div className="why-header">
-                <p className="eyebrow why-eyebrow">THE JOLITO METHOD</p>
-                <h2 id="why-jolito-title">Spoken Spanish built for memory</h2>
-                <p className="why-subtitle">
-                  Active recall, authentic Mexican audio, and rhythmic spaced
-                  repetition. Jolito bridges effortless card authoring with the
-                  spoken confidence to use words in the real world.
-                </p>
+                <p className="eyebrow why-eyebrow">BORN IN MEXICO CITY</p>
+                <h2 id="why-jolito-title">Why another flashcard app?</h2>
+                <div className="why-story">
+                  <p>
+                    When I moved to Mexico City with my Mexican wife and twin
+                    daughters, I needed a way to make the words I learned in
+                    Condesa stick. Anki’s spaced repetition algorithm was
+                    unbeatable, but creating rich cards by hand felt like an
+                    exhausting chore at the end of the day. Duolingo was fun,
+                    but locked me into rigid beginner lessons without the
+                    real-world phrases I heard on the street.
+                  </p>
+                  <p>
+                    Jolito bridges that gap: the proven retention of spaced
+                    repetition, paired with instant card creation, native CDMX
+                    audio, and active typed recall.
+                  </p>
+                </div>
               </div>
 
               <div className="why-grid">
@@ -2318,28 +2333,71 @@ export function App({
                   <h3>Type before you flip</h3>
                   <p>
                     Produce language from memory instead of passively guessing
-                    multiple-choice options. Instant visual diffs highlight
-                    spelling nuances while you retain full grading authority.
+                    multiple choice. Instant visual diffs catch typos while you
+                    retain full self-grading authority.
                   </p>
                   <div
                     className="bento-visual bento-visual-recall"
                     aria-hidden="true"
                   >
-                    <div className="mini-card-shell">
-                      <div className="mini-card-header">
-                        <span className="mini-card-tag">PROMPT</span>
-                        <span className="mini-card-phrase">¿Qué onda?</span>
-                      </div>
-                      <div className="mini-card-input-box">
-                        <span className="mini-typed-correct">what</span>
-                        <span className="mini-typed-space">&nbsp;</span>
-                        <span className="mini-typed-diff">’s up?</span>
-                      </div>
-                      <div className="mini-card-footer">
-                        <span className="mini-pill-highlight">
-                          Typo diff visual feedback
+                    <div className="diff-card mini-diff-card">
+                      <div className="diff-card-header">
+                        <span className="diff-card-title">
+                          Prompt: ¿Qué onda?
                         </span>
-                        <span className="mini-pill-authority">Self-graded</span>
+                        <span className="diff-badge close">Typo</span>
+                      </div>
+                      <div className="diff-rows">
+                        <div className="diff-row">
+                          <span className="diff-label">You wrote</span>
+                          <p className="diff-text">
+                            <span className="diff-seg diff-seg-match">
+                              what
+                            </span>
+                            <span className="diff-seg diff-seg-match diff-seg-space">
+                              &nbsp;
+                            </span>
+                            <span className="diff-seg diff-seg-incorrect">
+                              up
+                            </span>
+                          </p>
+                        </div>
+                        <div className="diff-row expected-row">
+                          <span className="diff-label">Expected</span>
+                          <div className="diff-row-main">
+                            <p className="diff-text">
+                              <span className="diff-seg diff-seg-match">
+                                what
+                              </span>
+                              <span className="diff-seg diff-seg-match diff-seg-space">
+                                &nbsp;
+                              </span>
+                              <span className="diff-seg diff-seg-missing">
+                                ’s
+                              </span>
+                              <span className="diff-seg diff-seg-match diff-seg-space">
+                                &nbsp;
+                              </span>
+                              <span className="diff-seg diff-seg-match">
+                                up?
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mini-grade-preview">
+                        <span className="mini-grade-btn grade-again">
+                          1 Again
+                        </span>
+                        <span className="mini-grade-btn grade-hard">
+                          2 Hard
+                        </span>
+                        <span className="mini-grade-btn grade-good is-selected">
+                          3 Good
+                        </span>
+                        <span className="mini-grade-btn grade-easy">
+                          4 Easy
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -2352,9 +2410,9 @@ export function App({
                   </div>
                   <h3>Spaced repetition that sticks</h3>
                   <p>
-                    Cards return right when you are on the verge of forgetting
-                    them. Built on proven SRS scheduling so daily practice takes
-                    only a few focused minutes.
+                    Review cards right as you are on the verge of forgetting
+                    them. Proven intervals keep daily practice to a few focused
+                    minutes.
                   </p>
                   <div
                     className="bento-visual bento-visual-srs"
@@ -2383,7 +2441,7 @@ export function App({
                     </div>
                     <div className="srs-cadence-note">
                       <span className="srs-note-icon">⚡</span>
-                      <span>Calculated spacing prevents deck overload</span>
+                      <span>Rhythmic spacing prevents review backlogs</span>
                     </div>
                   </div>
                 </article>
@@ -2395,9 +2453,9 @@ export function App({
                   </div>
                   <h3>Spoken Mexican Spanish</h3>
                   <p>
-                    Listen to natural Mexico City pronunciation with everyday
-                    contextual nuances. Tap any phrase to hear the authentic
-                    CDMX cadence:
+                    Train your ear on authentic Mexico City cadence and everyday
+                    expressions, not robotic textbook audio. Tap any phrase to
+                    listen:
                   </p>
                   <div className="bento-visual bento-visual-audio">
                     <div
@@ -2461,7 +2519,28 @@ export function App({
                   <span>Zero ads, zero subscriptions</span>
                 </div>
               </div>
-              <AppFooter onOpenFeedback={openFeedbackModal} />
+
+              <div className="why-bottom-cta" data-nosnippet>
+                <p className="why-cta-title">Ready to make words stick?</p>
+                <div className="why-cta-actions">
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={handlePractice}
+                  >
+                    Start practicing <span aria-hidden="true">→</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                  >
+                    Try Jolito now ↑
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
         </main>

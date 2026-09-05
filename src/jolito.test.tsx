@@ -4730,6 +4730,22 @@ describe('Jolito', () => {
       })
       expect(scrollCue).toBeInTheDocument()
 
+      // Feedback button in hero footer is present
+      const feedbackBtn = screen.getByRole('button', {
+        name: /^feedback$/i,
+      })
+      expect(feedbackBtn).toBeInTheDocument()
+
+      // Origin story header is rendered
+      expect(
+        screen.getByRole('heading', {
+          name: /^why another flashcard app\?$/i,
+        }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/moved to mexico city with my mexican wife/i),
+      ).toBeInTheDocument()
+
       // 3 Value pillars are rendered
       expect(
         screen.getByRole('heading', { name: /^type before you flip$/i }),
@@ -4741,6 +4757,14 @@ describe('Jolito', () => {
       ).toBeInTheDocument()
       expect(
         screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
+      ).toBeInTheDocument()
+
+      // Symmetric CTA at bottom is rendered
+      expect(
+        screen.getByRole('button', { name: /^start practicing/i }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /^try jolito now/i }),
       ).toBeInTheDocument()
 
       // Audio sampler buttons are present and interactive
