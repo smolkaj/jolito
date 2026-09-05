@@ -917,6 +917,12 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   page,
 }) => {
   await page.goto('/')
+  const scrollCue = page.getByRole('button', {
+    name: /^scroll down to explore why jolito$/i,
+  })
+  await expect(scrollCue).toBeVisible()
+  await scrollCue.click()
+
   await expect(
     page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
   ).toBeVisible()
@@ -929,6 +935,14 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await expect(
     page.getByRole('heading', { name: /^spoken mexican spanish$/i }),
   ).toBeVisible()
+
+  // Test interactive audio sampler pill
+  const samplerPill = page.getByRole('button', {
+    name: /listen to mexican spanish pronunciation for ¡órale!/i,
+  })
+  await expect(samplerPill).toBeVisible()
+  await samplerPill.click()
+  await expect(samplerPill).toHaveClass(/is-playing/)
 
   await page.screenshot({
     path: 'test-results/welcome-landing-page.png',

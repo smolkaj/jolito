@@ -4589,5 +4589,45 @@ describe('Jolito', () => {
         screen.queryByText(/enhanced mexican spanish voice/i),
       ).not.toBeInTheDocument()
     })
+
+    it('renders Why Jolito section with scroll cue and plays CDMX audio sampler phrases on click', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+
+      render(<App services={services} />)
+
+      // Scroll cue is present
+      const scrollCue = screen.getByRole('button', {
+        name: /^scroll down to explore why jolito$/i,
+      })
+      expect(scrollCue).toBeInTheDocument()
+
+      // 3 Value pillars are rendered
+      expect(
+        screen.getByRole('heading', { name: /^type before you flip$/i }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('heading', {
+          name: /^spaced repetition that sticks$/i,
+        }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
+      ).toBeInTheDocument()
+
+      // Audio sampler buttons are present and interactive
+      const oraleButton = screen.getByRole('button', {
+        name: /listen to mexican spanish pronunciation for ¡órale!/i,
+      })
+      expect(oraleButton).toBeInTheDocument()
+      await user.click(oraleButton)
+
+      // Verify audio was requested from speaker service
+      expect(
+        services.mockSpeaker.spokenCalls.some(
+          (s) => s.text === '¡Órale!' && s.locale === 'es-MX',
+        ),
+      ).toBe(true)
+    })
   })
 })
