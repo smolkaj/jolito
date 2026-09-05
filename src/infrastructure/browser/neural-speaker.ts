@@ -453,6 +453,10 @@ export class NeuralVoiceEngine {
     const cache = await this.getCache()
     if (!cache) return 0
 
+    if (this.diskKeysPromise) {
+      await this.diskKeysPromise
+    }
+
     const activeKeys = new Set<string>()
     for (const item of activeItems) {
       const clean = item.text.trim()

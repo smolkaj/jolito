@@ -1056,6 +1056,62 @@ describe('NeuralVoiceEngine', () => {
     expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
   })
 
+  it('awaits in-flight disk key population before pruning unused audio', async () => {
+    let resolveKeys!: (value: Request[]) => void
+    const keysPromise = new Promise<Request[]>((resolve) => {
+      resolveKeys = resolve
+    })
+    const req1 = new Request(
+      'http://localhost/api/tts?text=active_phrase&locale=es-mx&voice=es-MX-DaliaNeural',
+    )
+    const req2 = new Request(
+      'http://localhost/api/tts?text=deleted_phrase&locale=es-mx&voice=es-MX-JorgeNeural',
+    )
+    const mockDelete = vi.fn().mockResolvedValue(true)
+    let callCount = 0
+    const mockCache = {
+      keys: vi.fn().mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          return keysPromise
+        }
+        return Promise.resolve([req1, req2])
+      }),
+      match: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: mockDelete,
+    }
+    Object.defineProperty(window, 'caches', {
+      value: {
+        open: vi.fn().mockResolvedValue(mockCache),
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const engine = new NeuralVoiceEngine()
+    let pruneResolved = false
+    const prunePromise = engine
+      .pruneUnusedAudio([{ text: 'active_phrase', locale: 'es-MX' }])
+      .then((count) => {
+        pruneResolved = true
+        return count
+      })
+
+    // Before keysPromise resolves, pruneUnusedAudio must still be awaiting diskKeysPromise
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(pruneResolved).toBe(false)
+
+    // Resolve the background disk keys population
+    resolveKeys([req1, req2])
+
+    const prunedCount = await prunePromise
+    expect(prunedCount).toBe(1)
+    expect(mockDelete).toHaveBeenCalledTimes(1)
+    expect(engine.hasDiskAudio('deleted_phrase', 'es-MX')).toBe(false)
+    expect(engine.hasDiskAudio('active_phrase', 'es-MX')).toBe(true)
+  })
+
   it('retries disk cache population if an earlier attempt failed', async () => {
     let attempt = 0
     const req = new Request(
