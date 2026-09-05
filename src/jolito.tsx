@@ -2203,14 +2203,12 @@ export function App({
           >
             <div className="why-inner">
               <div className="why-header">
-                <p className="eyebrow why-eyebrow">THE JOLITO WAY</p>
-                <h2 id="why-jolito-title">Why another flashcard app?</h2>
+                <p className="eyebrow why-eyebrow">THE JOLITO METHOD</p>
+                <h2 id="why-jolito-title">Spoken Spanish built for memory</h2>
                 <p className="why-subtitle">
-                  Most apps force you to tap through multiple-choice word banks
-                  or configure complex desktop templates. Jolito bridges the
-                  gap: the proven power of spaced repetition paired with
-                  effortless card authoring, ear-first Mexican Spanish audio,
-                  and an active keyboard flow.
+                  Active recall, authentic Mexican audio, and rhythmic spaced
+                  repetition. Jolito bridges effortless card authoring with the
+                  spoken confidence to use words in the real world.
                 </p>
               </div>
 
@@ -2239,7 +2237,6 @@ export function App({
                         <span className="mini-typed-correct">what</span>
                         <span className="mini-typed-space">&nbsp;</span>
                         <span className="mini-typed-diff">’s up?</span>
-                        <span className="mini-cursor"></span>
                       </div>
                       <div className="mini-card-footer">
                         <span className="mini-pill-highlight">
@@ -2367,9 +2364,9 @@ export function App({
                   <span>Zero ads, zero subscriptions</span>
                 </div>
               </div>
+              <AppFooter onOpenFeedback={openFeedbackModal} />
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
         <SyncModal
           isOpen={isSyncOpen}

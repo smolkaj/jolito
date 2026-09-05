@@ -924,7 +924,7 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await scrollCue.click()
 
   await expect(
-    page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
+    page.getByRole('heading', { name: /^spoken spanish built for memory$/i }),
   ).toBeVisible()
   await expect(
     page.getByRole('heading', { name: /^type before you flip$/i }),
