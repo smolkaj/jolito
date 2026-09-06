@@ -1166,11 +1166,10 @@ export function App({
       const now = services.clock.now()
       setReferenceTime(now)
       const cardIdSet = new Set(newCards.map((c) => c.id))
-      filterCards(cardIdSet, () => {
-        if (viewRef.current === 'review') {
-          navigateTo('complete')
-        }
-      })
+      const { becameEmpty } = filterCards(cardIdSet)
+      if (becameEmpty && viewRef.current === 'review') {
+        navigateTo('complete')
+      }
       if (syncToCloud && authUserRef.current) {
         setSyncStatus('syncing')
         void services.sync
