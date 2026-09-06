@@ -1,4 +1,4 @@
-import type { Speaker } from '../../application/ports'
+import type { Speaker, SpeakerOptions } from '../../application/ports'
 
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
@@ -53,7 +53,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
     )
   }
 
-  speak(text: string, locale: string, options?: import('../../application/ports').SpeakerOptions): boolean {
+  speak(text: string, locale: string, options?: SpeakerOptions): boolean {
     if (!this.supported()) return false
 
     const now = Date.now()

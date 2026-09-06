@@ -987,21 +987,7 @@ export class LayeredNeuralSpeaker implements Speaker {
 
     // 1. If audio is already cached in memory, play immediately
     if (this.neuralEngine.hasAudio(cleanText, normLocale, voice)) {
-      if (
-        normLocale === 'es-MX' &&
-        options?.dualVoice !== false &&
-        isShortPhraseForDualVoice(cleanText)
-      ) {
-        const altVoice = getAlternateVoice(voice)
-        if (!this.neuralEngine.hasAudio(cleanText, normLocale, altVoice)) {
-          void this.neuralEngine
-            .fetchAndCacheAudio(cleanText, normLocale, {
-              voice: altVoice,
-              cardSeed: options?.cardSeed,
-            })
-            .catch(() => {})
-        }
-      }
+      this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       try {
         const played = this.neuralEngine.playAudio(
           cleanText,
@@ -1039,19 +1025,7 @@ export class LayeredNeuralSpeaker implements Speaker {
           })
           .catch(() => {})
 
-        if (
-          normLocale === 'es-MX' &&
-          options?.dualVoice !== false &&
-          isShortPhraseForDualVoice(cleanText)
-        ) {
-          const altVoice = getAlternateVoice(voice)
-          void this.neuralEngine
-            .fetchAndCacheAudio(cleanText, normLocale, {
-              voice: altVoice,
-              cardSeed: options?.cardSeed,
-            })
-            .catch(() => {})
-        }
+        this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
       const graceTimeout = isDiskCached ? 150 : 200
@@ -1088,20 +1062,31 @@ export class LayeredNeuralSpeaker implements Speaker {
       })
       .catch(() => {})
 
+    this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
+
+    return this.speakFallback(cleanText, normLocale, fallbackOptions)
+  }
+
+  private prehydrateAlternateVoice(
+    cleanText: string,
+    normLocale: string,
+    voice: string,
+    options?: SpeakerOptions,
+  ): void {
     if (
       normLocale === 'es-MX' &&
       options?.dualVoice !== false &&
       isShortPhraseForDualVoice(cleanText)
     ) {
       const altVoice = getAlternateVoice(voice)
-      void this.neuralEngine
-        .fetchAndCacheAudio(cleanText, normLocale, {
-          voice: altVoice,
-          cardSeed: options?.cardSeed,
-        })
-        .catch(() => {})
+      if (!this.neuralEngine.hasAudio(cleanText, normLocale, altVoice)) {
+        void this.neuralEngine
+          .fetchAndCacheAudio(cleanText, normLocale, {
+            voice: altVoice,
+            cardSeed: options?.cardSeed,
+          })
+          .catch(() => {})
+      }
     }
-
-    return this.speakFallback(cleanText, normLocale, fallbackOptions)
   }
 }
