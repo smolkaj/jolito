@@ -2236,10 +2236,11 @@ export function App({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      International House
+                      International House Condesa
                     </a>
-                    . While the classes were fantastic, slogging through
-                    vocabulary at home on a busy schedule was dreadful.
+                    . The classes were fantastic, but classes alone don’t make
+                    words stick—you have to memorize vocabulary. And on a busy
+                    schedule, slogging through flashcards at home was dreadful.
                   </p>
                   <p>
                     Jolito is my solution: the proven retention of{' '}

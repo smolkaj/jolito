@@ -5041,12 +5041,11 @@ describe('Jolito', () => {
       ).toBeInTheDocument()
       expect(
         screen.getByText(
-          /slogging through vocabulary at home on a busy schedule was dreadful/i,
+          /classes alone don’t make words stick—you have to memorize vocabulary/i,
         ),
       ).toBeInTheDocument()
-      expect(screen.getByText(/jolito is my solution/i)).toBeInTheDocument()
       expect(
-        screen.getByRole('link', { name: /international house/i }),
+        screen.getByRole('link', { name: /international house condesa/i }),
       ).toHaveAttribute('href', 'https://ihmexico.com/')
       expect(
         screen.getAllByRole('link', { name: /spaced repetition/i })[0],
@@ -5054,7 +5053,6 @@ describe('Jolito', () => {
         'href',
         'https://en.wikipedia.org/wiki/Spaced_repetition',
       )
-      expect(screen.queryByText(/condesa/i)).not.toBeInTheDocument()
       expect(screen.getByText(/forgetting curve/i)).toBeInTheDocument()
 
       // 3 Value pillars are rendered

@@ -1019,12 +1019,17 @@ summary:focus-visible {
 
 /* Welcome "Why Jolito?" Fold */
 .welcome-why {
-  margin: 60px
-    calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-right)))
+  min-height: 100svh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-right)))
     calc(-1 * max(40px, env(safe-area-inset-bottom)))
     calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-left)));
-  padding: 72px max(clamp(20px, 5vw, 80px), env(safe-area-inset-right))
-    max(40px, env(safe-area-inset-bottom))
+  padding: clamp(32px, 4.5vh, 52px)
+    max(clamp(20px, 5vw, 80px), env(safe-area-inset-right))
+    clamp(32px, 4.5vh, 52px)
     max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
   background: linear-gradient(
     180deg,
@@ -1032,6 +1037,7 @@ summary:focus-visible {
     var(--paper-deep) 100%
   );
   border-top: 2px solid var(--line);
+  scroll-margin-top: 0;
 }
 
 .why-inner {
@@ -1039,7 +1045,7 @@ summary:focus-visible {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: clamp(20px, 3vh, 32px);
 }
 
 .why-header {
@@ -1066,18 +1072,18 @@ summary:focus-visible {
 }
 
 .why-story {
-  margin: 20px auto 0;
+  margin: 14px auto 0;
   max-width: 660px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   text-align: left;
 }
 
 .why-story p {
   margin: 0;
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--ink-soft);
 }
 
@@ -1110,14 +1116,14 @@ summary:focus-visible {
 .why-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: clamp(16px, 2.5vw, 24px);
 }
 
 .why-card {
   background: var(--card);
   border: 2px solid var(--line);
   border-radius: 20px;
-  padding: 24px 20px 20px;
+  padding: clamp(18px, 2.2vh, 22px) 18px clamp(16px, 1.8vh, 18px);
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
@@ -2983,6 +2989,8 @@ kbd {
   }
 
   .welcome-why {
+    min-height: auto;
+    display: block;
     margin: 0 calc(-1 * max(16px, env(safe-area-inset-right)))
       calc(-1 * max(28px, env(safe-area-inset-bottom)))
       calc(-1 * max(16px, env(safe-area-inset-left)));
