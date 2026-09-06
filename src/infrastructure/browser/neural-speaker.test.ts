@@ -302,6 +302,39 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
+  it('discards delayed awaitAudio playback and fallback when speaker.stop() is called', async () => {
+    let resolveAwaitAudio!: (ready: boolean) => void
+    const awaitPromise = new Promise<boolean>((resolve) => {
+      resolveAwaitAudio = resolve
+    })
+
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'awaitAudio').mockReturnValue(awaitPromise)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    // 1. Speak starts awaiting in-flight audio
+    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1' })
+
+    // 2. User reveals or grades card, calling speaker.stop()
+    speaker.stop()
+
+    // 3. Earlier awaitAudio completes with ready = true
+    resolveAwaitAudio(true)
+    await Promise.resolve()
+
+    // It should NOT play delayed prompt 1
+    expect(playAudioSpy).not.toHaveBeenCalled()
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
   it('stops active neural audio before delegating to fallback speaker', () => {
     const stopAudioSpy = vi.spyOn(neuralEngine, 'stopAudio')
     vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)

@@ -912,6 +912,7 @@ export class LayeredNeuralSpeaker implements Speaker {
   }
 
   stop(): void {
+    this.speakGeneration++
     this.neuralEngine.stopAudio()
     if (
       'stop' in this.fallbackSpeaker &&
@@ -986,6 +987,21 @@ export class LayeredNeuralSpeaker implements Speaker {
 
     // 1. If audio is already cached in memory, play immediately
     if (this.neuralEngine.hasAudio(cleanText, normLocale, voice)) {
+      if (
+        normLocale === 'es-MX' &&
+        options?.dualVoice !== false &&
+        isShortPhraseForDualVoice(cleanText)
+      ) {
+        const altVoice = getAlternateVoice(voice)
+        if (!this.neuralEngine.hasAudio(cleanText, normLocale, altVoice)) {
+          void this.neuralEngine
+            .fetchAndCacheAudio(cleanText, normLocale, {
+              voice: altVoice,
+              cardSeed: options?.cardSeed,
+            })
+            .catch(() => {})
+        }
+      }
       try {
         const played = this.neuralEngine.playAudio(
           cleanText,
