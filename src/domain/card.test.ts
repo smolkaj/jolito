@@ -10,6 +10,8 @@ import {
   intervalLabel,
   isDue,
   isReviewedToday,
+  localeForAnswer,
+  localeForPrompt,
   nextIntervalDays,
   orderCardsForReview,
   resetCardProgress,
@@ -920,6 +922,20 @@ describe('Anki spaced repetition scheduling', () => {
       expect(batched.map((c) => c.id)).toEqual(
         allDue.slice(0, DEFAULT_STUDY_BATCH_SIZE).map((c) => c.id),
       )
+    })
+  })
+
+  describe('localeForPrompt and localeForAnswer', () => {
+    it('returns es-MX for prompt and en-US for answer when direction is es-en', () => {
+      const card = { direction: 'es-en' as const }
+      expect(localeForPrompt(card)).toBe('es-MX')
+      expect(localeForAnswer(card)).toBe('en-US')
+    })
+
+    it('returns en-US for prompt and es-MX for answer when direction is en-es', () => {
+      const card = { direction: 'en-es' as const }
+      expect(localeForPrompt(card)).toBe('en-US')
+      expect(localeForAnswer(card)).toBe('es-MX')
     })
   })
 })
