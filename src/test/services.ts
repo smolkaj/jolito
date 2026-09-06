@@ -94,6 +94,12 @@ export class MockSpeaker implements Speaker {
     return 0
   }
 
+  public stopCount = 0
+
+  stop(): void {
+    this.stopCount++
+  }
+
   speak(text: string, locale: string, options?: SpeakerOptions): boolean {
     if (!this.isSupported) return false
     this.spoken.push({ text, locale })

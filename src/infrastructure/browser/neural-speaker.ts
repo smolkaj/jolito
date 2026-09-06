@@ -186,22 +186,26 @@ export class NeuralVoiceEngine {
       this.dualVoiceTimer = null
     }
     if (this.currentSource) {
+      const source = this.currentSource
+      this.currentSource = null
       try {
-        this.currentSource.stop()
-        this.currentSource.disconnect()
+        source.onended = null
+        source.stop()
+        source.disconnect()
       } catch {
         // Already stopped
       }
-      this.currentSource = null
     }
     if (this.currentAudioElement) {
+      const audio = this.currentAudioElement
+      this.currentAudioElement = null
       try {
-        this.currentAudioElement.pause()
-        this.currentAudioElement.currentTime = 0
+        audio.onended = null
+        audio.pause()
+        audio.currentTime = 0
       } catch {
         // Ignore pause errors
       }
-      this.currentAudioElement = null
     }
     if (
       typeof window !== 'undefined' &&
@@ -380,8 +384,8 @@ export class NeuralVoiceEngine {
           audio.onended = () => {
             if (this.currentAudioElement === audio) {
               this.currentAudioElement = null
+              options?.onEnded?.()
             }
-            options?.onEnded?.()
           }
           if (typeof audio.play === 'function') {
             void audio.play().catch(() => {})
@@ -866,8 +870,8 @@ export class NeuralVoiceEngine {
       source.onended = () => {
         if (this.currentSource === source) {
           this.currentSource = null
+          onEnded?.()
         }
-        onEnded?.()
       }
       this.currentSource = source
       source.start(0)
@@ -1018,6 +1022,20 @@ export class LayeredNeuralSpeaker implements Speaker {
             cardSeed: options?.cardSeed,
           })
           .catch(() => {})
+
+        if (
+          normLocale === 'es-MX' &&
+          options?.dualVoice !== false &&
+          isShortPhraseForDualVoice(cleanText)
+        ) {
+          const altVoice = getAlternateVoice(voice)
+          void this.neuralEngine
+            .fetchAndCacheAudio(cleanText, normLocale, {
+              voice: altVoice,
+              cardSeed: options?.cardSeed,
+            })
+            .catch(() => {})
+        }
       }
 
       const graceTimeout = isDiskCached ? 150 : 200

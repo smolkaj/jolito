@@ -15,7 +15,12 @@ import { createCards } from './application/create-cards'
 import { importAnkiDeck } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
-import type { AppServices, AuthUser, SyncService } from './application/ports'
+import type {
+  AppServices,
+  AuthUser,
+  SpeakerOptions,
+  SyncService,
+} from './application/ports'
 import {
   filterOutStarterCards,
   starterCards,
@@ -1561,16 +1566,18 @@ export function App({
   }, [resetPromptState, services.clock, startSession])
 
   const playAudio = useCallback(
-    (text: string, locale: string, cardSeed?: string) => {
+    (
+      text: string,
+      locale: string,
+      cardSeed?: string,
+      options?: SpeakerOptions,
+    ) => {
       if (revealAudioTimerRef.current !== null) {
         window.clearTimeout(revealAudioTimerRef.current)
         revealAudioTimerRef.current = null
       }
-      const played = services.speaker.speak(
-        text,
-        locale,
-        cardSeed ? { cardSeed } : undefined,
-      )
+      const speakOptions = cardSeed ? { ...options, cardSeed } : options
+      const played = services.speaker.speak(text, locale, speakOptions)
       setAudioUnavailable(!played)
     },
     [services.speaker],
@@ -1583,9 +1590,9 @@ export function App({
       }
       setSamplePlaying(true)
       if (side === 'spanish') {
-        playAudio('aguacate', 'es-MX', 'sample-aguacate')
+        playAudio('aguacate', 'es-MX', 'sample-aguacate', { dualVoice: false })
       } else {
-        playAudio('avocado', 'en-US', 'sample-aguacate')
+        playAudio('avocado', 'en-US', 'sample-aguacate', { dualVoice: false })
       }
       sampleTimerRef.current = window.setTimeout(() => {
         setSamplePlaying(false)
@@ -1608,7 +1615,7 @@ export function App({
   const handlePlaySampler = useCallback(
     (phrase: string) => {
       setPlayingSamplerPhrase(phrase)
-      playAudio(phrase, 'es-MX')
+      playAudio(phrase, 'es-MX', undefined, { dualVoice: false })
       if (samplerTimerRef.current !== null) {
         window.clearTimeout(samplerTimerRef.current)
       }
@@ -1631,7 +1638,7 @@ export function App({
           : englishInput.trim() || 'English translation'
       const locale = side === 'spanish' ? 'es-MX' : 'en-US'
       setCreatePlaying(true)
-      playAudio(textToPlay, locale)
+      playAudio(textToPlay, locale, undefined, { dualVoice: false })
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
       }
@@ -1677,18 +1684,19 @@ export function App({
   const currentCardId = currentCard?.id
   const currentPrompt = currentCard?.prompt
   const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
+  const currentReviews = currentCard?.schedule.reviews ?? 0
 
   useEffect(() => {
     if (view !== 'review' || !currentCardId || !currentPrompt) return
     responseInput.current?.focus()
     services.speaker.speak(currentPrompt, currentPromptLocale, {
-      cardSeed: `${currentCardId}:turn${reviewedCount}`,
+      cardSeed: `${currentCardId}:turn${currentReviews}`,
     })
   }, [
     currentCardId,
     currentPrompt,
     currentPromptLocale,
-    reviewedCount,
+    currentReviews,
     services.speaker,
     view,
   ])
@@ -1782,13 +1790,13 @@ export function App({
           playAudio(
             currentCard.answer,
             localeForAnswer(currentCard),
-            `${currentCard.id}:turn${reviewedCount}`,
+            `${currentCard.id}:turn${currentCard.schedule.reviews}`,
           )
         } else {
           playAudio(
             currentCard.prompt,
             localeForPrompt(currentCard),
-            `${currentCard.id}:turn${reviewedCount}`,
+            `${currentCard.id}:turn${currentCard.schedule.reviews}`,
           )
         }
       }
@@ -1825,7 +1833,6 @@ export function App({
     isFeedbackOpen,
     playAudio,
     revealed,
-    reviewedCount,
     view,
   ])
 
@@ -1862,6 +1869,7 @@ export function App({
   function reveal(event: FormEvent) {
     event.preventDefault()
     if (revealed || !currentCard) return
+    services.speaker.stop?.()
     revealSession()
     services.sounds.play('reveal')
     services.haptics?.trigger('selection')
@@ -1873,7 +1881,7 @@ export function App({
       playAudio(
         cardToSpeak.answer,
         localeForAnswer(cardToSpeak),
-        `${cardToSpeak.id}:turn${reviewedCount}`,
+        `${cardToSpeak.id}:turn${cardToSpeak.schedule.reviews}`,
       )
       revealAudioTimerRef.current = null
     }, REVEAL_AUDIO_STAGGER_MS)
@@ -3609,7 +3617,7 @@ export function App({
                 playAudio(
                   currentCard.prompt,
                   localeForPrompt(currentCard),
-                  `${currentCard.id}:turn${reviewedCount}`,
+                  `${currentCard.id}:turn${currentCard.schedule.reviews}`,
                 )
               }
             />
@@ -3662,7 +3670,7 @@ export function App({
                       playAudio(
                         currentCard.answer,
                         localeForAnswer(currentCard),
-                        `${currentCard.id}:turn${reviewedCount}`,
+                        `${currentCard.id}:turn${currentCard.schedule.reviews}`,
                       )
                     }
                   />

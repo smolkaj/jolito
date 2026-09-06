@@ -1450,5 +1450,58 @@ describe('Dual-voice playback', () => {
     expect(playSpy).toHaveBeenCalledTimes(2) // 1 previous + 1 current = 2, no extra alternate
     vi.useRealTimers()
   })
+
+  it('does not invoke onEnded or schedule dual voice when stopAudio is called while audio is actively playing', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    // Simulate browser WebAudio behavior where source.stop() fires onended
+    mockSource.stop.mockImplementation(() => {
+      mockSource.onended?.()
+    })
+
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const daliaBuffer = { duration: 0.8 } as unknown as AudioBuffer
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+
+    const onEndedSpy = vi.fn()
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural', {
+      onEnded: onEndedSpy,
+    })
+
+    // Audio is currently playing (first voice)
+    expect(mockSource.start).toHaveBeenCalledTimes(1)
+
+    // Stop audio mid-playback
+    engine.stopAudio()
+
+    // Even after advancing past the dual-voice pause window
+    vi.advanceTimersByTime(500)
+
+    // onEnded should NOT have been called, and second voice should NOT have played
+    expect(onEndedSpy).not.toHaveBeenCalled()
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
 })
 
