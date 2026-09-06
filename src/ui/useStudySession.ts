@@ -79,10 +79,7 @@ export function useStudySession(initialSession: StudySession) {
   )
 
   const filterCards = useCallback(
-    (
-      validCardIds: Set<string>,
-      onSessionEmpty?: () => void,
-    ): FilterCardsResult => {
+    (validCardIds: Set<string>): FilterCardsResult => {
       const { nextSession, removedCount } = filterSessionCards(
         session,
         validCardIds,
@@ -90,9 +87,6 @@ export function useStudySession(initialSession: StudySession) {
       const becameEmpty =
         session.queue.length > 0 && nextSession.queue.length === 0
       setSession(nextSession)
-      if (becameEmpty) {
-        onSessionEmpty?.()
-      }
       return { nextSession, removedCount, becameEmpty }
     },
     [session],
