@@ -422,6 +422,137 @@ describe('EnhancedBrowserSpeaker', () => {
       'Paulina (Enhanced)',
     )
   })
+
+  it('selects male or female Spanish voice based on gender option and voice hint', () => {
+    let selectedVoice: SpeechSynthesisVoice | null = null
+    class MockUtterance {
+      lang = ''
+      set voice(v: SpeechSynthesisVoice | null) {
+        selectedVoice = v
+      }
+      constructor(public text: string) {}
+    }
+
+    const mockVoices: SpeechSynthesisVoice[] = [
+      {
+        lang: 'es-MX',
+        name: 'Paulina (Mexico)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-mx-paulina',
+      },
+      {
+        lang: 'es-MX',
+        name: 'Jorge (Mexico)',
+        default: false,
+        localService: true,
+        voiceURI: 'es-mx-jorge',
+      },
+      {
+        lang: 'en-US',
+        name: 'Guy (US)',
+        default: false,
+        localService: true,
+        voiceURI: 'en-us-guy',
+      },
+      {
+        lang: 'en-US',
+        name: 'Jenny (US)',
+        default: false,
+        localService: true,
+        voiceURI: 'en-us-jenny',
+      },
+    ]
+
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        speak: vi.fn(),
+        cancel: vi.fn(),
+        getVoices: () => mockVoices,
+        onvoiceschanged: null,
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: MockUtterance,
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+
+    // 1. Explicit male gender
+    speaker.speak('hola', 'es-MX', { gender: 'male' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Jorge (Mexico)',
+    )
+
+    // 2. Explicit female gender
+    speaker.speak('adiós', 'es-MX', { gender: 'female' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Paulina (Mexico)',
+    )
+
+    // 3. Voice hint pointing to Jorge Neural resolves male
+    speaker.speak('buenos días', 'es-MX', { voice: 'es-MX-JorgeNeural' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Jorge (Mexico)',
+    )
+
+    // 4. Voice hint pointing to Dalia Neural resolves female
+    speaker.speak('buenas noches', 'es-MX', { voice: 'es-MX-DaliaNeural' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Paulina (Mexico)',
+    )
+
+    // 5. English male and female resolution
+    speaker.speak('hello', 'en-US', { gender: 'male' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Guy (US)',
+    )
+
+    speaker.speak('goodbye', 'en-US', { gender: 'female' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Jenny (US)',
+    )
+  })
+
+  it('cancels speech synthesis when stop() is invoked', () => {
+    const cancelMock = vi.fn()
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        speak: vi.fn(),
+        cancel: cancelMock,
+        getVoices: () => [],
+        onvoiceschanged: null,
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+    speaker.stop()
+    expect(cancelMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('handles stop() gracefully when window.speechSynthesis is unavailable', () => {
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+    expect(() => speaker.stop()).not.toThrow()
+  })
 })
 
 describe('isEnhancedMexicanVoice helper', () => {

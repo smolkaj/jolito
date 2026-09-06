@@ -1,22 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Speaker } from '../../application/ports'
 import {
+  isShortPhraseForDualVoice,
   LayeredNeuralSpeaker,
   LruAudioCache,
   NeuralVoiceEngine,
+  STARTER_PHRASES,
 } from './neural-speaker'
 
 describe('LayeredNeuralSpeaker', () => {
+  const anyVoice = expect.any(String) as unknown as string
   let fallbackSpeaker: Speaker
   let neuralEngine: NeuralVoiceEngine
-  let fallbackSpeakSpy: ReturnType<
-    typeof vi.fn<(text: string, locale: string) => boolean>
-  >
+  let fallbackSpeakSpy: ReturnType<typeof vi.fn<Speaker['speak']>>
 
   beforeEach(() => {
-    fallbackSpeakSpy = vi
-      .fn<(text: string, locale: string) => boolean>()
-      .mockReturnValue(true)
+    fallbackSpeakSpy = vi.fn<Speaker['speak']>().mockReturnValue(true)
     fallbackSpeaker = {
       supported: vi.fn().mockReturnValue(true),
       speak: fallbackSpeakSpy,
@@ -35,6 +34,7 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).toHaveBeenCalledWith(
       'frase no empaquetada',
       'es-MX',
+      { voice: anyVoice },
     )
   })
 
@@ -54,6 +54,7 @@ describe('LayeredNeuralSpeaker', () => {
       'aguacate',
       'es-MX',
       expect.any(String),
+      undefined,
     )
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
@@ -71,7 +72,9 @@ describe('LayeredNeuralSpeaker', () => {
 
     const played = speaker.speak('aguacate', 'es-MX')
     expect(played).toBe(true)
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('aguacate', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('aguacate', 'es-MX', {
+      voice: anyVoice,
+    })
   })
 
   it('reports supported when either neural engine or fallback is supported', () => {
@@ -127,7 +130,9 @@ describe('LayeredNeuralSpeaker', () => {
     expect(mockPlayBuffer).toHaveBeenCalledTimes(2)
   })
   it('delegates prefetch to neural engine', async () => {
-    const prefetchSpy = vi.spyOn(neuralEngine, 'prefetch').mockResolvedValue()
+    const prefetchSpy = vi
+      .spyOn(neuralEngine, 'prefetch')
+      .mockResolvedValue(true)
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
       fallbackSpeaker,
@@ -150,15 +155,21 @@ describe('LayeredNeuralSpeaker', () => {
 
     const played = speaker.speak('palabra nueva', 'es-MX')
     expect(played).toBe(true)
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX')
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-    const call = fetchSpy.mock.calls[0]
-    expect(call?.[0]).toBe('palabra nueva')
-    expect(call?.[1]).toBe('es-MX')
-    expect(typeof call?.[2]).toBe('object')
-    if (call?.[2] && typeof call[2] === 'object') {
-      expect(call[2].voice).toBeDefined()
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra nueva', 'es-MX', {
+      voice: anyVoice,
+    })
+    // Short Spanish phrases trigger background fetch for both voices
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    const call0 = fetchSpy.mock.calls[0]
+    expect(call0?.[0]).toBe('palabra nueva')
+    expect(call0?.[1]).toBe('es-MX')
+    expect(typeof call0?.[2]).toBe('object')
+    if (call0?.[2] && typeof call0[2] === 'object') {
+      expect(call0[2].voice).toBeDefined()
     }
+    const call1 = fetchSpy.mock.calls[1]
+    expect(call1?.[0]).toBe('palabra nueva')
+    expect(call1?.[1]).toBe('es-MX')
   })
 
   it('awaits in-flight prefetch for Card 0 and plays neural audio instead of falling back to robotic speech', async () => {
@@ -196,11 +207,13 @@ describe('LayeredNeuralSpeaker', () => {
       'primer tarjeta',
       'es-MX',
       expect.any(String),
+      expect.anything(),
     )
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
-  it('plays bundled neural audio for starter words like aguacate without mocking hasAudio', () => {
+  it('plays neural audio for starter words like aguacate when in memory cache', () => {
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(true)
     const playAudioSpy = vi
       .spyOn(neuralEngine, 'playAudio')
       .mockReturnValue(true)
@@ -216,6 +229,7 @@ describe('LayeredNeuralSpeaker', () => {
       'aguacate',
       'es-MX',
       expect.any(String),
+      expect.anything(),
     )
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
@@ -237,7 +251,10 @@ describe('LayeredNeuralSpeaker', () => {
 
     // Flush microtasks
     await Promise.resolve()
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra lenta', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra lenta', 'es-MX', {
+      cardSeed: 'card-1',
+      voice: anyVoice,
+    })
   })
 
   it('discards delayed awaitAudio playback and fallback when superseded by another speech action', async () => {
@@ -275,12 +292,47 @@ describe('LayeredNeuralSpeaker', () => {
       'prompt 2',
       'es-MX',
       expect.any(String),
+      expect.anything(),
     )
     expect(playAudioSpy).not.toHaveBeenCalledWith(
       'prompt 1',
       'es-MX',
       expect.any(String),
+      expect.anything(),
     )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('discards delayed awaitAudio playback and fallback when speaker.stop() is called', async () => {
+    let resolveAwaitAudio!: (ready: boolean) => void
+    const awaitPromise = new Promise<boolean>((resolve) => {
+      resolveAwaitAudio = resolve
+    })
+
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'awaitAudio').mockReturnValue(awaitPromise)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    // 1. Speak starts awaiting in-flight audio
+    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1' })
+
+    // 2. User reveals or grades card, calling speaker.stop()
+    speaker.stop()
+
+    // 3. Earlier awaitAudio completes with ready = true
+    resolveAwaitAudio(true)
+    await Promise.resolve()
+
+    // It should NOT play delayed prompt 1
+    expect(playAudioSpy).not.toHaveBeenCalled()
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
@@ -297,7 +349,9 @@ describe('LayeredNeuralSpeaker', () => {
     speaker.speak('fallback phrase', 'es-MX')
 
     expect(stopAudioSpy).toHaveBeenCalled()
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('fallback phrase', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('fallback phrase', 'es-MX', {
+      voice: anyVoice,
+    })
   })
 
   it('exposes cache and in-flight inspection helpers', () => {
@@ -376,6 +430,7 @@ describe('LayeredNeuralSpeaker', () => {
       'en_disco',
       'es-MX',
       'es-MX-DaliaNeural',
+      expect.anything(),
     )
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
@@ -394,7 +449,9 @@ describe('LayeredNeuralSpeaker', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10))
 
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX')
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX', {
+      voice: anyVoice,
+    })
   })
 
   it('delegates pruneUnusedAudio to neural engine', async () => {
@@ -414,13 +471,16 @@ describe('LayeredNeuralSpeaker', () => {
 })
 
 describe('NeuralVoiceEngine', () => {
-  it('bundles pristine neural audio for starter and sample phrases', () => {
-    const engine = new NeuralVoiceEngine()
-    expect(engine.hasAudio('aguacate', 'es-MX')).toBe(true)
-    expect(engine.hasAudio('  AGUACATE  ', 'es_mx')).toBe(true)
-    expect(engine.hasAudio('avocado', 'en-US')).toBe(true)
-    expect(engine.hasAudio('¿Dónde está el metro?', 'es-MX')).toBe(true)
-    expect(engine.hasAudio('Donde esta el metro', 'es-MX')).toBe(true)
+  it('defines starter phrases for prewarming', () => {
+    expect(STARTER_PHRASES.length).toBeGreaterThan(0)
+    expect(
+      STARTER_PHRASES.some(
+        (p) => p.text === 'aguacate' && p.locale === 'es-MX',
+      ),
+    ).toBe(true)
+    expect(
+      STARTER_PHRASES.some((p) => p.text === 'avocado' && p.locale === 'en-US'),
+    ).toBe(true)
   })
 
   it('correctly registers and queries custom audio buffers with locale normalization', () => {
@@ -478,11 +538,8 @@ describe('NeuralVoiceEngine', () => {
 
     expect(mockFetch).toHaveBeenCalled()
     // Should have decoded and registered in audioCache
-    const internalCache = (
-      engine as unknown as { audioCache: Map<string, AudioBuffer> }
-    ).audioCache
-    expect(internalCache.get('es-mx:aguacate')).toBe(mockAudioBuffer)
-    expect(internalCache.get('en-us:avocado')).toBe(mockAudioBuffer)
+    expect(engine.hasAudio('aguacate', 'es-MX')).toBe(true)
+    expect(engine.hasAudio('avocado', 'en-US')).toBe(true)
 
     // Calling prewarm again should be idempotent and not re-fetch
     const callCount = mockFetch.mock.calls.length
@@ -667,8 +724,18 @@ describe('NeuralVoiceEngine', () => {
     // Pass duplicate items for 'palabra repetida'
     await engine.prefetch(
       [
-        { text: 'palabra repetida', locale: 'es-MX', cardSeed: 'seed-1' },
-        { text: 'palabra repetida', locale: 'es-MX', cardSeed: 'seed-1' },
+        {
+          text: 'palabra repetida',
+          locale: 'es-MX',
+          cardSeed: 'seed-1',
+          bothVoices: false,
+        },
+        {
+          text: 'palabra repetida',
+          locale: 'es-MX',
+          cardSeed: 'seed-1',
+          bothVoices: false,
+        },
       ],
       mockFetch,
     )
@@ -692,9 +759,9 @@ describe('NeuralVoiceEngine', () => {
     expect(engine.isAudioInFlight('en vuelo', 'es-MX')).toBe(true)
 
     const mockPrefetchFetch = vi.fn()
-    // Attempt to prefetch 'en vuelo' while it is in-flight
+    // Attempt to prefetch 'en vuelo' while it is in-flight (single voice)
     await engine.prefetch(
-      [{ text: 'en vuelo', locale: 'es-MX' }],
+      [{ text: 'en vuelo', locale: 'es-MX', bothVoices: false }],
       mockPrefetchFetch,
     )
 
@@ -771,8 +838,7 @@ describe('NeuralVoiceEngine', () => {
   })
 
   it('evicts least recently used audio buffers when exceeding maxMemoryBuffers', () => {
-    // Each phrase registers up to 2 keys (voiced and unvoiced), so 4 keys hold 2 phrases
-    const engine = new NeuralVoiceEngine(4)
+    const engine = new NeuralVoiceEngine(2)
     const buf1 = { duration: 1 } as unknown as AudioBuffer
     const buf2 = { duration: 2 } as unknown as AudioBuffer
     const buf3 = { duration: 3 } as unknown as AudioBuffer
@@ -1249,5 +1315,219 @@ describe('LruAudioCache', () => {
     expect(cacheZero.size).toBe(1)
     expect(cacheZero.get('a')).toBeUndefined()
     expect(cacheZero.get('b')).toBe(buf2)
+  })
+})
+
+describe('isShortPhraseForDualVoice', () => {
+  it('identifies short phrases eligible for dual-voice playback', () => {
+    expect(isShortPhraseForDualVoice('hola')).toBe(true)
+    expect(isShortPhraseForDualVoice('buenos días')).toBe(true)
+    expect(isShortPhraseForDualVoice('la cuenta por')).toBe(true)
+    expect(isShortPhraseForDualVoice('la cuenta por favor')).toBe(false) // 4 words
+    expect(isShortPhraseForDualVoice('')).toBe(false)
+    expect(
+      isShortPhraseForDualVoice('supercalifragilisticoexpialidoso extra largo'),
+    ).toBe(false) // > 30 characters
+  })
+})
+
+describe('Dual-voice playback', () => {
+  it('schedules playback of alternate voice for short Spanish phrases with brief pause', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const daliaBuffer = { duration: 0.8 } as unknown as AudioBuffer
+    const jorgeBuffer = { duration: 0.9 } as unknown as AudioBuffer
+
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      jorgeBuffer,
+      'es-MX-JorgeNeural',
+    )
+
+    const onEndedSpy = vi.fn()
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural', {
+      onEnded: onEndedSpy,
+    })
+
+    expect(mockSource.start).toHaveBeenCalledTimes(1)
+    // Simulate first voice audio finishing
+    mockSource.onended?.()
+
+    // Alternate voice not played immediately (pause window) and onEnded NOT called yet
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(onEndedSpy).not.toHaveBeenCalled()
+
+    // Advance timers past 320ms pause
+    vi.advanceTimersByTime(350)
+
+    // Alternate voice (Jorge) should now have been invoked with dualVoice: false and onEnded
+    expect(playSpy).toHaveBeenCalledTimes(2)
+    expect(playSpy).toHaveBeenLastCalledWith(
+      'hola',
+      'es-MX',
+      'es-MX-JorgeNeural',
+      { dualVoice: false, onEnded: onEndedSpy },
+    )
+
+    // Simulate second voice finishing
+    mockSource.onended?.()
+    expect(onEndedSpy).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('cancels pending dual voice playback if stopAudio is called during the pause', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const daliaBuffer = { duration: 0.8 } as unknown as AudioBuffer
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural')
+    mockSource.onended?.()
+
+    // Stop audio before timer fires
+    engine.stopAudio()
+    vi.advanceTimersByTime(400)
+
+    // Second voice should NOT be called
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('does not trigger dual voice playback for long phrases or when dualVoice is false', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const longBuffer = { duration: 2.5 } as unknown as AudioBuffer
+    engine.registerAudioBuffer('hola', 'es-MX', longBuffer, 'es-MX-DaliaNeural')
+
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    // Duration > 1.35s should not qualify
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural')
+    mockSource.onended?.()
+    vi.advanceTimersByTime(500)
+    expect(playSpy).toHaveBeenCalledTimes(1)
+
+    // Explicit dualVoice: false should not qualify
+    const shortBuffer = { duration: 0.5 } as unknown as AudioBuffer
+    engine.registerAudioBuffer('si', 'es-MX', shortBuffer, 'es-MX-DaliaNeural')
+    engine.playAudio('si', 'es-MX', 'es-MX-DaliaNeural', { dualVoice: false })
+    mockSource.onended?.()
+    vi.advanceTimersByTime(500)
+    expect(playSpy).toHaveBeenCalledTimes(2) // 1 previous + 1 current = 2, no extra alternate
+    vi.useRealTimers()
+  })
+
+  it('does not invoke onEnded or schedule dual voice when stopAudio is called while audio is actively playing', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    // Simulate browser WebAudio behavior where source.stop() fires onended
+    mockSource.stop.mockImplementation(() => {
+      mockSource.onended?.()
+    })
+
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const daliaBuffer = { duration: 0.8 } as unknown as AudioBuffer
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+
+    const onEndedSpy = vi.fn()
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural', {
+      onEnded: onEndedSpy,
+    })
+
+    // Audio is currently playing (first voice)
+    expect(mockSource.start).toHaveBeenCalledTimes(1)
+
+    // Stop audio mid-playback
+    engine.stopAudio()
+
+    // Even after advancing past the dual-voice pause window
+    vi.advanceTimersByTime(500)
+
+    // onEnded should NOT have been called, and second voice should NOT have played
+    expect(onEndedSpy).not.toHaveBeenCalled()
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 })

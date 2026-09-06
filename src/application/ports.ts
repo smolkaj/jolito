@@ -22,6 +22,8 @@ export type CardRepository = {
 export type SpeakerOptions = {
   cardSeed?: string | undefined
   voice?: string | undefined
+  gender?: 'female' | 'male' | undefined
+  dualVoice?: boolean | undefined
 }
 
 export type PrefetchItem = {
@@ -29,6 +31,7 @@ export type PrefetchItem = {
   locale: string
   cardSeed?: string | undefined
   voice?: string | undefined
+  bothVoices?: boolean | undefined
 }
 
 export type Speaker = {
@@ -39,6 +42,7 @@ export type Speaker = {
   pruneUnusedAudio?(
     activeItems: Array<{ text: string; locale: string }>,
   ): Promise<number> | number | void
+  stop?(): void
 }
 
 export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'
