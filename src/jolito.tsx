@@ -2228,8 +2228,9 @@ export function App({
                 <h2 id="why-jolito-title">Why another flashcard app?</h2>
                 <div className="why-story">
                   <p>
-                    In July 2026, my wife (Mexican), our twins, and I (German)
-                    moved to Mexico City. I started learning Spanish at the{' '}
+                    In July 2026, my wife (Mexican), our twins (Gexican), and I
+                    (German) moved to Mexico City. I started learning Spanish at
+                    the{' '}
                     <a
                       href="https://ihmexico.com/"
                       target="_blank"

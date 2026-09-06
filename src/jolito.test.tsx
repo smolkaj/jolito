@@ -5036,7 +5036,7 @@ describe('Jolito', () => {
       ).toBeInTheDocument()
       expect(
         screen.getByText(
-          /in july 2026, my wife \(mexican\), our twins, and i \(german\) moved to mexico city/i,
+          /in july 2026, my wife \(mexican\), our twins \(gexican\), and i \(german\) moved to mexico city/i,
         ),
       ).toBeInTheDocument()
       expect(
