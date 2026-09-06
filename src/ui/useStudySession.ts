@@ -11,6 +11,12 @@ import {
   type StudySession,
 } from '../domain/study-session'
 
+export interface FilterCardsResult {
+  nextSession: StudySession
+  removedCount: number
+  becameEmpty: boolean
+}
+
 export function useStudySession(initialSession: StudySession) {
   const [session, setSession] = useState<StudySession>(initialSession)
 
@@ -73,16 +79,23 @@ export function useStudySession(initialSession: StudySession) {
   )
 
   const filterCards = useCallback(
-    (validCardIds: Set<string>, onSessionEmpty?: () => void) => {
-      setSession((current) => {
-        const { nextSession } = filterSessionCards(current, validCardIds)
-        if (current.queue.length > 0 && nextSession.queue.length === 0) {
-          onSessionEmpty?.()
-        }
-        return nextSession
-      })
+    (
+      validCardIds: Set<string>,
+      onSessionEmpty?: () => void,
+    ): FilterCardsResult => {
+      const { nextSession, removedCount } = filterSessionCards(
+        session,
+        validCardIds,
+      )
+      const becameEmpty =
+        session.queue.length > 0 && nextSession.queue.length === 0
+      setSession(nextSession)
+      if (becameEmpty) {
+        onSessionEmpty?.()
+      }
+      return { nextSession, removedCount, becameEmpty }
     },
-    [],
+    [session],
   )
 
   return {

@@ -125,27 +125,70 @@ describe('useStudySession', () => {
       useStudySession(createStudySession(['c1', 'c2', 'c3'])),
     )
 
+    let filterResult: unknown
     act(() => {
-      result.current.filterCards(new Set(['c1', 'c3']))
+      filterResult = result.current.filterCards(new Set(['c1', 'c3']))
     })
 
     expect(result.current.queue).toEqual(['c1', 'c3'])
     expect(result.current.sessionTotal).toBe(2)
+    expect(filterResult).toEqual({
+      nextSession: {
+        queue: ['c1', 'c3'],
+        sessionTotal: 2,
+        reviewedCount: 0,
+      },
+      removedCount: 1,
+      becameEmpty: false,
+    })
   })
 
-  it('triggers onSessionEmpty callback when all remaining cards in queue are filtered out', () => {
+  it('triggers onSessionEmpty callback and sets becameEmpty when all remaining cards in queue are filtered out', () => {
     const { result } = renderHook(() =>
       useStudySession(createStudySession(['c1', 'c2'])),
     )
 
     let emptyCalled = false
+    let filterResult: unknown
     act(() => {
-      result.current.filterCards(new Set(), () => {
+      filterResult = result.current.filterCards(new Set(), () => {
         emptyCalled = true
       })
     })
 
     expect(result.current.queue).toEqual([])
     expect(emptyCalled).toBe(true)
+    expect(filterResult).toEqual({
+      nextSession: {
+        queue: [],
+        sessionTotal: 0,
+        reviewedCount: 0,
+      },
+      removedCount: 2,
+      becameEmpty: true,
+    })
+  })
+
+  it('does not trigger onSessionEmpty or set becameEmpty if queue was already empty', () => {
+    const { result } = renderHook(() => useStudySession(createStudySession([])))
+
+    let emptyCalled = false
+    let filterResult: unknown
+    act(() => {
+      filterResult = result.current.filterCards(new Set(), () => {
+        emptyCalled = true
+      })
+    })
+
+    expect(emptyCalled).toBe(false)
+    expect(filterResult).toEqual({
+      nextSession: {
+        queue: [],
+        sessionTotal: 0,
+        reviewedCount: 0,
+      },
+      removedCount: 0,
+      becameEmpty: false,
+    })
   })
 })
