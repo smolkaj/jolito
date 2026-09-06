@@ -159,7 +159,8 @@ export class NeuralVoiceEngine {
   ): string {
     const normalizedLocale = locale.toLowerCase().replace(/_/g, '-')
     const clean = text.trim().toLowerCase()
-    const effectiveVoice = voice ?? getDeterministicVoice(clean, normalizedLocale)
+    const effectiveVoice =
+      voice ?? getDeterministicVoice(clean, normalizedLocale)
     return `${normalizedLocale}:${clean}:${effectiveVoice}`
   }
 
@@ -358,10 +359,15 @@ export class NeuralVoiceEngine {
             if (typeof window !== 'undefined') {
               this.dualVoiceTimer = window.setTimeout(() => {
                 this.dualVoiceTimer = null
-                const played = this.playAudio(text, normLocale, alternateVoice, {
-                  dualVoice: false,
-                  onEnded: options?.onEnded,
-                })
+                const played = this.playAudio(
+                  text,
+                  normLocale,
+                  alternateVoice,
+                  {
+                    dualVoice: false,
+                    onEnded: options?.onEnded,
+                  },
+                )
                 if (!played) {
                   options?.onEnded?.()
                 }
@@ -699,7 +705,7 @@ export class NeuralVoiceEngine {
           Boolean(options?.requireDecode) &&
           Boolean(
             this.audioContext &&
-              typeof this.audioContext.decodeAudioData === 'function',
+            typeof this.audioContext.decodeAudioData === 'function',
           )
         const arrayBuffer = await response.arrayBuffer()
         return this.registerDecodedBufferOrBlob(

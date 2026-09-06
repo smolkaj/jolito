@@ -82,7 +82,8 @@ export class EnhancedBrowserSpeaker implements Speaker {
         options?.gender ??
         (options?.voice?.includes('Jorge') || options?.voice?.includes('Guy')
           ? 'male'
-          : options?.voice?.includes('Dalia') || options?.voice?.includes('Jenny')
+          : options?.voice?.includes('Dalia') ||
+              options?.voice?.includes('Jenny')
             ? 'female'
             : undefined)
 

@@ -130,8 +130,9 @@ describe('LayeredNeuralSpeaker', () => {
     expect(mockPlayBuffer).toHaveBeenCalledTimes(2)
   })
   it('delegates prefetch to neural engine', async () => {
-    const prefetchSpy =
-      vi.spyOn(neuralEngine, 'prefetch').mockResolvedValue(true)
+    const prefetchSpy = vi
+      .spyOn(neuralEngine, 'prefetch')
+      .mockResolvedValue(true)
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
       fallbackSpeaker,
@@ -478,9 +479,7 @@ describe('NeuralVoiceEngine', () => {
       ),
     ).toBe(true)
     expect(
-      STARTER_PHRASES.some(
-        (p) => p.text === 'avocado' && p.locale === 'en-US',
-      ),
+      STARTER_PHRASES.some((p) => p.text === 'avocado' && p.locale === 'en-US'),
     ).toBe(true)
   })
 
@@ -1460,12 +1459,7 @@ describe('Dual-voice playback', () => {
       mockAudioContext
 
     const longBuffer = { duration: 2.5 } as unknown as AudioBuffer
-    engine.registerAudioBuffer(
-      'hola',
-      'es-MX',
-      longBuffer,
-      'es-MX-DaliaNeural',
-    )
+    engine.registerAudioBuffer('hola', 'es-MX', longBuffer, 'es-MX-DaliaNeural')
 
     const playSpy = vi.spyOn(engine, 'playAudio')
     // Duration > 1.35s should not qualify
@@ -1537,4 +1531,3 @@ describe('Dual-voice playback', () => {
     vi.useRealTimers()
   })
 })
-
