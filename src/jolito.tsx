@@ -2228,8 +2228,8 @@ export function App({
                 <h2 id="why-jolito-title">Why another flashcard app?</h2>
                 <div className="why-story">
                   <p>
-                    When I moved to Mexico City with my Mexican wife and twin
-                    daughters, I studied at{' '}
+                    In July 2026, my wife (Mexican), our twins, and I (German)
+                    moved to Mexico City. I started learning Spanish at the{' '}
                     <a
                       href="https://ihmexico.com/"
                       target="_blank"
@@ -2237,17 +2237,19 @@ export function App({
                     >
                       International House
                     </a>
-                    , but needed a way to make the real-world phrases I met
-                    exploring the city stick. Anki’s algorithm was unbeatable
-                    for memory, yet building rich flashcards by hand after class
-                    felt like an exhausting chore. Duolingo was playful, but
-                    locked me into rigid beginner lessons far removed from
-                    everyday Mexican life.
+                    . While the classes were fantastic, slogging through
+                    vocabulary at home on a busy schedule was dreadful.
                   </p>
                   <p>
-                    Jolito bridges that gap: the proven retention of spaced
-                    repetition, paired with instant card creation, native CDMX
-                    audio, and active typed recall.
+                    Jolito is my solution: the proven retention of{' '}
+                    <a
+                      href="https://en.wikipedia.org/wiki/Spaced_repetition"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      spaced repetition
+                    </a>
+                    , without the dread.
                   </p>
                 </div>
               </div>
@@ -2259,17 +2261,11 @@ export function App({
                   </div>
                   <h3>Spaced repetition that sticks</h3>
                   <p>
-                    <a
-                      href="https://en.wikipedia.org/wiki/Spaced_repetition"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Spaced repetition
-                    </a>{' '}
-                    is an evidence-based cognitive science technique that
-                    schedules reviews right as a phrase is about to slip from
-                    memory. Each successful recall expands the interval, locking
-                    words into permanent recall with just a few minutes a day.
+                    Spaced repetition is an evidence-based cognitive science
+                    technique that schedules reviews right as a phrase is about
+                    to slip from memory. Each successful recall expands the
+                    interval, locking words into permanent recall with just a
+                    few minutes a day.
                   </p>
                   <div
                     className="bento-visual bento-visual-srs"

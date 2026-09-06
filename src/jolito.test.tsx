@@ -5035,8 +5035,16 @@ describe('Jolito', () => {
         }),
       ).toBeInTheDocument()
       expect(
-        screen.getByText(/moved to mexico city with my mexican wife/i),
+        screen.getByText(
+          /in july 2026, my wife \(mexican\), our twins, and i \(german\) moved to mexico city/i,
+        ),
       ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          /slogging through vocabulary at home on a busy schedule was dreadful/i,
+        ),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/jolito is my solution/i)).toBeInTheDocument()
       expect(
         screen.getByRole('link', { name: /international house/i }),
       ).toHaveAttribute('href', 'https://ihmexico.com/')
