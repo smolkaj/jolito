@@ -1121,6 +1121,8 @@ export function App({
     const nonDueCards = cards.filter((c) => !dueIds.has(c.id))
     const allOrderedCards = [...dueCards, ...nonDueCards]
 
+    // Background prefetching defaults to bothVoices !== false, priming both
+    // female and male personas into cache so that any review turn is immediately ready.
     const items: Array<{
       text: string
       locale: string

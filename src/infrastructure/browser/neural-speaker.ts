@@ -358,10 +358,13 @@ export class NeuralVoiceEngine {
             if (typeof window !== 'undefined') {
               this.dualVoiceTimer = window.setTimeout(() => {
                 this.dualVoiceTimer = null
-                this.playAudio(text, normLocale, alternateVoice, {
+                const played = this.playAudio(text, normLocale, alternateVoice, {
                   dualVoice: false,
                   onEnded: options?.onEnded,
                 })
+                if (!played) {
+                  options?.onEnded?.()
+                }
               }, DUAL_VOICE_PAUSE_MS)
             }
           })
@@ -636,6 +639,7 @@ export class NeuralVoiceEngine {
     const fetchPromise = (async () => {
       const url = getAudioUrl(cleanText, normLocale, { voice })
       const cache = await this.getCache()
+      const requireDecode = options?.requireDecode ?? true
 
       if (cache) {
         try {
@@ -654,11 +658,12 @@ export class NeuralVoiceEngine {
               normLocale,
               voice,
               arrayBuffer,
+              { requireDecode },
             )
             if (registered) return true
           }
         } catch {
-          // Cache match failed, proceed to network
+          // Cache storage read failed; fallback to network
         }
       }
 
