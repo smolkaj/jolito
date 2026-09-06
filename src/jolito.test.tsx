@@ -4142,9 +4142,9 @@ describe('Jolito', () => {
     const now = 1771632000000
     const services = createTestServices({ clockTime: now })
 
-    // Create 10 bidirectional notes (20 cards total: 10 es-en, 10 en-es)
+    // Create 15 bidirectional notes (30 cards total: 15 es-en, 15 en-es)
     const cards: StudyCard[] = []
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 15; i++) {
       const idx = String(i).padStart(2, '0')
       cards.push(
         {
@@ -4189,7 +4189,7 @@ describe('Jolito', () => {
     services.cards.load = () => cards
     render(<App services={services} />)
 
-    // Start practice (queue gets 10 es-en cards, en-es siblings are outside the queue)
+    // Start practice (queue gets 15 es-en cards, en-es siblings are outside the queue)
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByRole('heading', { name: 'es-01' })).toBeInTheDocument()
 
@@ -4197,21 +4197,21 @@ describe('Jolito', () => {
       name: /session progress/i,
     })
     expect(progressBar).toHaveAttribute('aria-valuenow', '0')
-    expect(progressBar).toHaveAttribute('aria-valuetext', '10 cards remaining')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '15 cards remaining')
 
-    // Rate card 1 with Easy (4) -> 1 of 10 completed (10%)
+    // Rate card 1 with Easy (4) -> 1 of 15 completed (7%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
     expect(screen.getByRole('heading', { name: 'es-02' })).toBeInTheDocument()
-    expect(progressBar).toHaveAttribute('aria-valuenow', '10')
-    expect(progressBar).toHaveAttribute('aria-valuetext', '9 cards remaining')
+    expect(progressBar).toHaveAttribute('aria-valuenow', '7')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '14 cards remaining')
 
-    // Rate card 2 with Easy (4) -> 2 of 10 completed (20%)
+    // Rate card 2 with Easy (4) -> 2 of 15 completed (13%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
     expect(screen.getByRole('heading', { name: 'es-03' })).toBeInTheDocument()
-    expect(progressBar).toHaveAttribute('aria-valuenow', '20')
-    expect(progressBar).toHaveAttribute('aria-valuetext', '8 cards remaining')
+    expect(progressBar).toHaveAttribute('aria-valuenow', '13')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '13 cards remaining')
   })
 
   it('adjusts progress bar correctly when rating bidirectional cards whose siblings are inside the queue', async () => {
@@ -4285,11 +4285,11 @@ describe('Jolito', () => {
     expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
   })
 
-  it('chunks large due backlogs into 10-card sprint batches and offers practice next batch', async () => {
+  it('chunks large due backlogs into 15-card sprint batches and offers practice next batch', async () => {
     const user = userEvent.setup({ delay: null })
     const now = 1771632000000
-    // Create 12 due cards
-    const cards: StudyCard[] = Array.from({ length: 12 }, (_, i) => {
+    // Create 17 due cards
+    const cards: StudyCard[] = Array.from({ length: 17 }, (_, i) => {
       const idx = String(i + 1).padStart(2, '0')
       return {
         id: `card-${idx}:es-en`,
@@ -4318,14 +4318,14 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    // 1. Click Practice on home screen -> starts batch 1 with 10 cards
+    // 1. Click Practice on home screen -> starts batch 1 with 15 cards
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(
       screen.getByRole('heading', { name: 'palabra-01' }),
     ).toBeInTheDocument()
 
-    // Answer all 10 cards in batch 1 with Easy (4)
-    for (let i = 1; i <= 10; i++) {
+    // Answer all 15 cards in batch 1 with Easy (4)
+    for (let i = 1; i <= 15; i++) {
       const idx = String(i).padStart(2, '0')
       expect(
         screen.getByRole('heading', { name: `palabra-${idx}` }),
@@ -4336,9 +4336,9 @@ describe('Jolito', () => {
 
     // 2. Completion screen for batch 1
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/10 cards practiced\./i)).toBeInTheDocument()
+    expect(screen.getByText(/15 cards practiced\./i)).toBeInTheDocument()
     expect(
-      screen.getByText(/10 cards practiced today across your devices\./i),
+      screen.getByText(/15 cards practiced today across your devices\./i),
     ).toBeInTheDocument()
 
     // 3. Button to practice the remaining 2 cards is shown
@@ -4350,13 +4350,13 @@ describe('Jolito', () => {
     // 4. Click next batch -> starts batch 2 with remaining 2 cards
     await user.click(nextBatchBtn)
     expect(
-      screen.getByRole('heading', { name: 'palabra-11' }),
+      screen.getByRole('heading', { name: 'palabra-16' }),
     ).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
     expect(
-      screen.getByRole('heading', { name: 'palabra-12' }),
+      screen.getByRole('heading', { name: 'palabra-17' }),
     ).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')
@@ -4365,7 +4365,7 @@ describe('Jolito', () => {
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText(/2 cards practiced\./i)).toBeInTheDocument()
     expect(
-      screen.getByText(/12 cards practiced today across your devices\./i),
+      screen.getByText(/17 cards practiced today across your devices\./i),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /create a card/i }),
