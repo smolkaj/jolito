@@ -524,3 +524,11 @@ export function deleteStudyCard(
 ): StudyCard[] {
   return cards.filter((card) => card.id !== cardIdToDelete)
 }
+
+export function localeForPrompt(card: Pick<StudyCard, 'direction'>): string {
+  return card.direction === 'es-en' ? 'es-MX' : 'en-US'
+}
+
+export function localeForAnswer(card: Pick<StudyCard, 'direction'>): string {
+  return card.direction === 'es-en' ? 'en-US' : 'es-MX'
+}

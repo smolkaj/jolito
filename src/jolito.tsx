@@ -15,12 +15,7 @@ import { createCards } from './application/create-cards'
 import { importAnkiDeck } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
-import type {
-  AppServices,
-  AuthUser,
-  SpeakerOptions,
-  SyncService,
-} from './application/ports'
+import type { AppServices, AuthUser, SyncService } from './application/ports'
 import {
   filterOutStarterCards,
   starterCards,
@@ -32,6 +27,8 @@ import {
   grades,
   intervalLabel,
   isDue,
+  localeForAnswer,
+  localeForPrompt,
   orderCardsForReview,
   scheduleReview,
   updateStudyCard,
@@ -43,6 +40,7 @@ import {
 } from './domain/card'
 import { createStudySession } from './domain/study-session'
 import { useStudySession } from './ui/useStudySession'
+import { useStudyAudio } from './ui/useStudyAudio'
 import {
   filterDeckCards,
   getDeckStats,
@@ -85,19 +83,6 @@ const gradeLabels: Record<Grade, string> = {
   good: 'Good',
   easy: 'Easy',
 }
-
-const localeForPrompt = (card: StudyCard) =>
-  card.direction === 'es-en' ? 'es-MX' : 'en-US'
-
-const localeForAnswer = (card: StudyCard) =>
-  card.direction === 'es-en' ? 'en-US' : 'es-MX'
-
-/**
- * Stagger duration (in ms) before speaking the revealed answer.
- * Allows the reveal earcon chime (C5 -> E5, ~100ms) to finish its attack and harmonic
- * envelope without frequency-masking the opening consonants/phonemes of the spoken answer.
- */
-const REVEAL_AUDIO_STAGGER_MS = 120
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -981,26 +966,6 @@ export function App({
     }
   }, [view])
 
-  const revealAudioTimerRef = useRef<number | null>(null)
-
-  const navigateTo = useCallback((nextView: View, replace = false) => {
-    if (revealAudioTimerRef.current !== null) {
-      window.clearTimeout(revealAudioTimerRef.current)
-      revealAudioTimerRef.current = null
-    }
-    setIsDemoDeckDismissed(false)
-    setView(nextView)
-    if (typeof window === 'undefined') return
-    const targetHash = hashForView(nextView)
-    if (window.location.hash !== targetHash) {
-      if (replace) {
-        window.history.replaceState({ view: nextView }, '', targetHash)
-      } else {
-        window.history.pushState({ view: nextView }, '', targetHash)
-      }
-    }
-  }, [])
-
   const initialSession = useMemo(
     () => createStudySession(initialResolved.queue),
     [initialResolved.queue],
@@ -1062,9 +1027,6 @@ export function App({
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   )
-  const [audioUnavailable, setAudioUnavailable] = useState(
-    () => !services.speaker.supported(),
-  )
 
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const [activeSampleSide, setActiveSampleSide] = useState<
@@ -1092,6 +1054,40 @@ export function App({
   const isDraggingRef = useRef(false)
   const currentCard = cards.find(({ id }) => id === queue[0])
   const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
+
+  const {
+    audioUnavailable,
+    cancelPendingAudio,
+    playAudio,
+    playPromptAudio,
+    playAnswerAudio,
+    playRevealSensory,
+    playGradeSensory,
+  } = useStudyAudio({
+    speaker: services.speaker,
+    sounds: services.sounds,
+    haptics: services.haptics,
+    currentCard,
+    view,
+  })
+
+  const navigateTo = useCallback(
+    (nextView: View, replace = false) => {
+      cancelPendingAudio()
+      setIsDemoDeckDismissed(false)
+      setView(nextView)
+      if (typeof window === 'undefined') return
+      const targetHash = hashForView(nextView)
+      if (window.location.hash !== targetHash) {
+        if (replace) {
+          window.history.replaceState({ view: nextView }, '', targetHash)
+        } else {
+          window.history.pushState({ view: nextView }, '', targetHash)
+        }
+      }
+    },
+    [cancelPendingAudio],
+  )
 
   const cardsRef = useRef(cards)
   const viewRef = useRef(view)
@@ -1538,10 +1534,7 @@ export function App({
 
   useEffect(() => {
     const onPopState = () => {
-      if (revealAudioTimerRef.current !== null) {
-        window.clearTimeout(revealAudioTimerRef.current)
-        revealAudioTimerRef.current = null
-      }
+      cancelPendingAudio()
       setIsDemoDeckDismissed(false)
       const nextView = viewFromHash(window.location.hash)
       setView(nextView)
@@ -1565,25 +1558,7 @@ export function App({
       window.removeEventListener('popstate', onPopState)
       window.removeEventListener('hashchange', onPopState)
     }
-  }, [resetPromptState, services.clock, startSession])
-
-  const playAudio = useCallback(
-    (
-      text: string,
-      locale: string,
-      cardSeed?: string,
-      options?: SpeakerOptions,
-    ) => {
-      if (revealAudioTimerRef.current !== null) {
-        window.clearTimeout(revealAudioTimerRef.current)
-        revealAudioTimerRef.current = null
-      }
-      const speakOptions = cardSeed ? { ...options, cardSeed } : options
-      const played = services.speaker.speak(text, locale, speakOptions)
-      setAudioUnavailable(!played)
-    },
-    [services.speaker],
-  )
+  }, [cancelPendingAudio, resetPromptState, services.clock, startSession])
 
   const playSampleAudio = useCallback(
     (side: 'spanish' | 'english') => {
@@ -1663,10 +1638,6 @@ export function App({
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
       }
-      if (revealAudioTimerRef.current !== null) {
-        window.clearTimeout(revealAudioTimerRef.current)
-        revealAudioTimerRef.current = null
-      }
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
       }
@@ -1685,23 +1656,11 @@ export function App({
 
   const currentCardId = currentCard?.id
   const currentPrompt = currentCard?.prompt
-  const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
-  const currentReviews = currentCard?.schedule.reviews ?? 0
 
   useEffect(() => {
     if (view !== 'review' || !currentCardId || !currentPrompt) return
     responseInput.current?.focus()
-    services.speaker.speak(currentPrompt, currentPromptLocale, {
-      cardSeed: `${currentCardId}:turn${currentReviews}`,
-    })
-  }, [
-    currentCardId,
-    currentPrompt,
-    currentPromptLocale,
-    currentReviews,
-    services.speaker,
-    view,
-  ])
+  }, [currentCardId, currentPrompt, view])
 
   useEffect(() => {
     if (view === 'review' && editingCard === null && !revealed) {
@@ -1711,15 +1670,8 @@ export function App({
 
   const grade = useCallback(
     (gradeValue: Grade) => {
-      if (revealAudioTimerRef.current !== null) {
-        window.clearTimeout(revealAudioTimerRef.current)
-        revealAudioTimerRef.current = null
-      }
-      services.speaker.stop?.()
       if (!currentCard) return
       const now = services.clock.now()
-      services.sounds.play(gradeValue)
-      services.haptics?.trigger(gradeValue)
       const reviewed = scheduleReview(currentCard, gradeValue, now)
       const { updatedCards, buriedCardIds } = burySiblingCards(
         cardsRef.current,
@@ -1738,9 +1690,9 @@ export function App({
         buriedCardIds,
       )
 
+      playGradeSensory(gradeValue, isComplete)
+
       if (isComplete) {
-        services.sounds.play('complete')
-        services.haptics?.trigger('complete')
         flushSync()
         navigateTo('complete')
       } else {
@@ -1752,11 +1704,9 @@ export function App({
       currentCard,
       flushSync,
       navigateTo,
+      playGradeSensory,
       scheduleDebouncedSync,
       services.clock,
-      services.haptics,
-      services.sounds,
-      services.speaker,
     ],
   )
 
@@ -1784,22 +1734,10 @@ export function App({
           event.metaKey)
       ) {
         event.preventDefault()
-        if (revealAudioTimerRef.current !== null) {
-          window.clearTimeout(revealAudioTimerRef.current)
-          revealAudioTimerRef.current = null
-        }
         if (revealed) {
-          playAudio(
-            currentCard.answer,
-            localeForAnswer(currentCard),
-            `${currentCard.id}:turn${currentCard.schedule.reviews}`,
-          )
+          playAnswerAudio()
         } else {
-          playAudio(
-            currentCard.prompt,
-            localeForPrompt(currentCard),
-            `${currentCard.id}:turn${currentCard.schedule.reviews}`,
-          )
+          playPromptAudio()
         }
       }
 
@@ -1833,7 +1771,8 @@ export function App({
     isSyncOpen,
     isBackupOpen,
     isFeedbackOpen,
-    playAudio,
+    playAnswerAudio,
+    playPromptAudio,
     revealed,
     view,
   ])
@@ -1853,10 +1792,7 @@ export function App({
   }
 
   function beginReview(cardIds?: string[]) {
-    if (revealAudioTimerRef.current !== null) {
-      window.clearTimeout(revealAudioTimerRef.current)
-      revealAudioTimerRef.current = null
-    }
+    cancelPendingAudio()
     const now = services.clock.now()
     const nextQueue =
       cardIds ??
@@ -1871,22 +1807,8 @@ export function App({
   function reveal(event: FormEvent) {
     event.preventDefault()
     if (revealed || !currentCard) return
-    services.speaker.stop?.()
     revealSession()
-    services.sounds.play('reveal')
-    services.haptics?.trigger('selection')
-    if (revealAudioTimerRef.current !== null) {
-      window.clearTimeout(revealAudioTimerRef.current)
-    }
-    const cardToSpeak = currentCard
-    revealAudioTimerRef.current = window.setTimeout(() => {
-      playAudio(
-        cardToSpeak.answer,
-        localeForAnswer(cardToSpeak),
-        `${cardToSpeak.id}:turn${cardToSpeak.schedule.reviews}`,
-      )
-      revealAudioTimerRef.current = null
-    }, REVEAL_AUDIO_STAGGER_MS)
+    playRevealSensory()
   }
 
   const dismissSuggestions = useCallback(() => {
@@ -3615,13 +3537,7 @@ export function App({
             <AudioButton
               prompt
               label="Play prompt audio"
-              onClick={() =>
-                playAudio(
-                  currentCard.prompt,
-                  localeForPrompt(currentCard),
-                  `${currentCard.id}:turn${currentCard.schedule.reviews}`,
-                )
-              }
+              onClick={() => playPromptAudio()}
             />
           </div>
           <div className="prompt-meta">
@@ -3668,13 +3584,7 @@ export function App({
                   <AnswerComparison
                     typed={answer}
                     expected={currentCard.answer}
-                    onPlayAudio={() =>
-                      playAudio(
-                        currentCard.answer,
-                        localeForAnswer(currentCard),
-                        `${currentCard.id}:turn${currentCard.schedule.reviews}`,
-                      )
-                    }
+                    onPlayAudio={() => playAnswerAudio()}
                   />
                   {currentCard.context && (
                     <div className="reveal-context-block">
