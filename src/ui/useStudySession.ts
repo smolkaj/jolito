@@ -48,9 +48,19 @@ export function useStudySession(initialSession: StudySession) {
   }, [])
 
   const startSession = useCallback(
-    (cardIds: string[], initialTotal?: number, initialReviewedCount = 0) => {
+    (
+      cardIds: string[],
+      initialTotal?: number,
+      initialReviewedCount = 0,
+      initialPracticedCardIds: string[] = [],
+    ) => {
       setSession(
-        createStudySession(cardIds, initialTotal, initialReviewedCount),
+        createStudySession(
+          cardIds,
+          initialTotal,
+          initialReviewedCount,
+          initialPracticedCardIds,
+        ),
       )
       setAnswer('')
       setRevealed(false)
@@ -97,6 +107,8 @@ export function useStudySession(initialSession: StudySession) {
     queue: session.queue,
     sessionTotal: session.sessionTotal,
     reviewedCount: session.reviewedCount,
+    practicedCardIds: session.practicedCardIds,
+    practicedCount: session.practicedCardIds.length,
     currentCardId,
     remainingCount,
     progressPercentage,
