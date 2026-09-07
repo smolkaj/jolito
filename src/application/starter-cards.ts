@@ -1,17 +1,22 @@
 import type { PrefetchItem } from './ports'
 import { createStudyCards, type StudyCard } from '../domain/card'
 
-export const starterHeroPrefetchItems: PrefetchItem[] = [
-  {
+export const starterHeroSampleCards = {
+  spanish: {
     text: 'aguacate',
     locale: 'es-MX',
     cardSeed: 'sample-aguacate',
   },
-  {
+  english: {
     text: 'avocado',
     locale: 'en-US',
     cardSeed: 'sample-aguacate',
   },
+} as const
+
+export const starterHeroPrefetchItems: PrefetchItem[] = [
+  starterHeroSampleCards.spanish,
+  starterHeroSampleCards.english,
 ]
 
 export const starterCards: StudyCard[] = [
