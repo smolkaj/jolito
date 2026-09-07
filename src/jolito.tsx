@@ -68,6 +68,7 @@ import { checkOrRequestStoragePersistence } from './infrastructure/browser/stora
 import {
   type View,
   hashForView,
+  isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
   titleForView,
@@ -1043,7 +1044,11 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(() =>
+    typeof window !== 'undefined'
+      ? isFeedbackHash(window.location.hash)
+      : false,
+  )
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(() =>
     typeof window !== 'undefined' ? isPrivacyHash(window.location.hash) : false,
   )
@@ -1588,6 +1593,9 @@ export function App({
       if (isPrivacyHash(currentHash)) {
         setIsPrivacyOpen(true)
       }
+      if (isFeedbackHash(currentHash)) {
+        setIsFeedbackOpen(true)
+      }
       const nextView = viewFromHash(currentHash)
       setView(nextView)
       if (nextView === 'welcome') {
@@ -2069,7 +2077,10 @@ export function App({
 
   const closeFeedbackModal = useCallback(() => {
     setIsFeedbackOpen(false)
-  }, [])
+    if (typeof window !== 'undefined' && isFeedbackHash(window.location.hash)) {
+      window.history.pushState({ view }, '', hashForView(view))
+    }
+  }, [view])
 
   const openPrivacyModal = useCallback(() => {
     setSuggestions([])
@@ -2389,7 +2400,11 @@ export function App({
           feedbackService={services.feedback}
           currentView={view}
         />
-        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
+        />
       </>
     )
   }
@@ -2830,7 +2845,11 @@ export function App({
           feedbackService={services.feedback}
           currentView={view}
         />
-        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
+        />
       </>
     )
   }
@@ -3320,7 +3339,11 @@ export function App({
           feedbackService={services.feedback}
           currentView={view}
         />
-        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
+        />
       </>
     )
   }
@@ -3461,7 +3484,11 @@ export function App({
           feedbackService={services.feedback}
           currentView={view}
         />
-        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
+        />
       </>
     )
 
@@ -3664,7 +3691,11 @@ export function App({
         feedbackService={services.feedback}
         currentView={view}
       />
-      <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={closePrivacyModal}
+        onOpenFeedback={openFeedbackModal}
+      />
     </>
   )
 }

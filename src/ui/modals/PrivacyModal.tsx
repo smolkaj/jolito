@@ -4,9 +4,14 @@ import { ShieldIcon } from '../icons'
 export interface PrivacyModalProps {
   isOpen: boolean
   onClose: () => void
+  onOpenFeedback?: () => void
 }
 
-export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
+export function PrivacyModal({
+  isOpen,
+  onClose,
+  onOpenFeedback,
+}: PrivacyModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -115,8 +120,19 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               >
                 Steffen Smolka
               </a>
-              . You can open an issue on GitHub or submit feedback directly in
-              the app.
+              . You can open an issue on GitHub or submit feedback{' '}
+              <a
+                href="#/feedback"
+                className="privacy-contact-link"
+                onClick={(e) => {
+                  e.preventDefault()
+                  onClose()
+                  onOpenFeedback?.()
+                }}
+              >
+                directly in the app
+              </a>
+              .
             </p>
           </section>
         </div>

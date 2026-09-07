@@ -52,4 +52,25 @@ describe('PrivacyModal', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('triggers onOpenFeedback and onClose when clicking directly in the app feedback link', () => {
+    const onClose = vi.fn()
+    const onOpenFeedback = vi.fn()
+    render(
+      <PrivacyModal
+        isOpen={true}
+        onClose={onClose}
+        onOpenFeedback={onOpenFeedback}
+      />,
+    )
+
+    const feedbackLink = screen.getByRole('link', {
+      name: /directly in the app/i,
+    })
+    expect(feedbackLink).toBeInTheDocument()
+    fireEvent.click(feedbackLink)
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onOpenFeedback).toHaveBeenCalledTimes(1)
+  })
 })
