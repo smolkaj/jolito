@@ -419,4 +419,86 @@ describe('SupabaseSyncService', () => {
       expect(networkRes.error).toBe('Network offline')
     })
   })
+
+  it('parses structured PostgREST error and logs on pullDeck failure', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const service = new SupabaseSyncService(
+      mockAuthService as SupabaseAuthService,
+      'https://example.supabase.co/',
+      'anon-key',
+      'device-a',
+    )
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              code: 'PGRST205',
+              message: 'relation "public.decks" does not exist',
+            }),
+          ),
+      }),
+    )
+
+    const res = await service.pullDeck({ id: 'usr-1', email: 'u@example.com' })
+    expect(res.success).toBe(false)
+    expect(res.error).toBe('relation "public.decks" does not exist')
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[SyncService] Cloud pull failed:',
+      expect.objectContaining({
+        status: 404,
+        code: 'PGRST205',
+        message: 'relation "public.decks" does not exist',
+      }),
+    )
+  })
+
+  it('parses structured PostgREST error and logs on pushDeck failure', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const service = new SupabaseSyncService(
+      mockAuthService as SupabaseAuthService,
+      'https://example.supabase.co///',
+      'anon-key',
+      'device-a',
+    )
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              code: '42501',
+              message:
+                'new row violates row-level security policy for table "decks"',
+            }),
+          ),
+      }),
+    )
+
+    const res = await service.pushDeck([mockCard], {
+      id: 'usr-1',
+      email: 'u@example.com',
+    })
+    expect(res.success).toBe(false)
+    expect(res.error).toBe(
+      'new row violates row-level security policy for table "decks"',
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[SyncService] Cloud push failed:',
+      expect.objectContaining({
+        status: 403,
+        code: '42501',
+        message: 'new row violates row-level security policy for table "decks"',
+      }),
+    )
+  })
 })

@@ -65,9 +65,14 @@ function FeedbackModalInner({
       if (result.success) {
         setIsSuccess(true)
       } else {
+        console.error('[FeedbackModal] Submission failed:', result.error)
         setError(result.error ?? 'Failed to send feedback. Please try again.')
       }
     } catch (err) {
+      console.error(
+        '[FeedbackModal] Unexpected error submitting feedback:',
+        err,
+      )
       setError(
         err instanceof Error ? err.message : 'Network error sending feedback.',
       )

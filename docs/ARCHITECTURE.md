@@ -29,6 +29,7 @@ infrastructure ────────────┴────────�
 5. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads, import archives) must be validated with runtime Zod schemas.
 6. **Data migrations are mandatory.** When changing storage representations, provide an explicit, tested migration for existing cards.
 7. **Visual verification is mandatory.** DOM presence is not visual correctness. Author and reviewer must visually verify rendered appearance, layering, and contrast on UI changes.
+8. **Zero idle activity & deterministic teardown.** When no user interaction or media playback is active, the application must consume zero CPU cycles and zero battery. No ambient polling loops (`setInterval`), unthrottled `requestAnimationFrame` cycles, or persistent network keep-alives may run during idle. Media pipelines (including Web Audio `AudioContext`) must suspend within seconds of inactivity and immediately upon tab backgrounding (`visibilitychange` / `pagehide`). All observers, listeners, and subsystem handles must implement explicit `destroy()` teardown.
 
 ## Dependency rules
 
@@ -61,10 +62,10 @@ the need.
 
 - React and Vite provide an offline-capable single-page application shell.
 - Local storage (with versioned serialization envelopes) is the UI's immediate, zero-latency source of data.
-- PostgreSQL hosted on Supabase is the canonical synchronized server store, operating under Supabase's permanent free tier ([ADR 0005](adr/0005-cloud-snapshot-sync-supabase.md)).
+- PostgreSQL hosted on Supabase is the canonical synchronized server store, operating under Supabase's permanent free tier ([ADR 0005](adr/0005-cloud-snapshot-sync-supabase.md)). Schema migrations are version-controlled in `supabase/migrations/`, tested locally in CI via pgTAP, and deployed automatically on merge to `main` via GitHub Actions.
 - Supabase provides passwordless authentication (email Magic Link / OTP) and Row-Level Security (RLS) policies for user isolation.
 - PowerSync / operation-log sync remains under evaluation for future fine-grained multi-device concurrent editing ([ADR 0003](adr/0003-offline-sync-evaluation.md)).
-- Cloudflare Workers serve static assets and edge API endpoints (such as `/api/tts` for neural text-to-speech) without requiring a heavy standalone application server. When privileged backend work or long-running jobs require a dedicated Node.js service, adopt Fastify within an npm workspace.
+- Cloudflare Workers serve static assets and edge API endpoints (such as `/api/tts` for neural text-to-speech) without requiring a heavy standalone application server, with automated branch previews on pull requests and production deployment on merge to `main` (`joli.to`). When privileged backend work or long-running jobs require a dedicated Node.js service, adopt Fastify within an npm workspace.
 - Native iOS is delivered via Capacitor (`@capacitor/core`, `@capacitor/ios`), directly reusing the React web shell, local storage, and sound engine while bridging native sensory haptics, keyboard resize behavior, and status bar controls.
 
 ## Data evolution

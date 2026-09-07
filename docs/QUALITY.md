@@ -47,8 +47,11 @@ Documentation is part of the deliverable:
 ## Quality commands
 
 ```sh
-npm run check       # formatting, linting, types, unit coverage, production build
-npm run test:e2e    # browser and mobile touch smoke tests
-npm run cap:sync    # sync web assets to native iOS project
-npm run audit:prod  # local production dependency vulnerability audit
+npm run check            # formatting, linting, types, unit coverage, production build
+npm run test:e2e         # browser and mobile touch smoke tests
+npm run test:db          # pgTAP tests for database migrations, schemas, and RLS policies
+npm run lint:db          # lint database schema for typing and syntax errors
+npm run test:integration # live integration tests against local Supabase REST/Auth API
+npm run cap:sync         # sync web assets to native iOS project
+npm run audit:prod       # local production dependency vulnerability audit
 ```
