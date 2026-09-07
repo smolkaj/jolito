@@ -164,7 +164,7 @@ describe('WebAudioSoundPlayer', () => {
     expect(addListenerSpy).toHaveBeenCalledWith(
       'pointerdown',
       expect.any(Function),
-      { passive: true },
+      { passive: true, once: true },
     )
 
     // Simulate pointerdown

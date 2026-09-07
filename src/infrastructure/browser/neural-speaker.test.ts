@@ -1390,12 +1390,98 @@ describe('Dual-voice playback', () => {
       'hola',
       'es-MX',
       'es-MX-JorgeNeural',
-      { dualVoice: false, onEnded: onEndedSpy },
+      { dualVoice: false, explicit: undefined, onEnded: onEndedSpy },
     )
 
     // Simulate second voice finishing
     mockSource.onended?.()
     expect(onEndedSpy).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('propagates explicit: true through dual voice sequence and preserves playback category until completion', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const daliaBuffer = { duration: 0.8 } as unknown as AudioBuffer
+    const jorgeBuffer = { duration: 0.9 } as unknown as AudioBuffer
+
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      jorgeBuffer,
+      'es-MX-JorgeNeural',
+    )
+
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'auto' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
+    const onEndedSpy = vi.fn()
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural', {
+      explicit: true,
+      onEnded: onEndedSpy,
+    })
+
+    // Category should be set to playback for explicit user request
+    expect(mockAudioSession.type).toBe('playback')
+    expect(mockSource.start).toHaveBeenCalledTimes(1)
+
+    // Simulate first voice audio finishing - category should remain playback across continuation
+    mockSource.onended?.()
+    expect(mockAudioSession.type).toBe('playback')
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(onEndedSpy).not.toHaveBeenCalled()
+
+    // Advance timers past 320ms pause
+    vi.advanceTimersByTime(350)
+
+    // Alternate voice invoked with explicit: true
+    expect(playSpy).toHaveBeenCalledTimes(2)
+    expect(playSpy).toHaveBeenLastCalledWith(
+      'hola',
+      'es-MX',
+      'es-MX-JorgeNeural',
+      { dualVoice: false, explicit: true, onEnded: onEndedSpy },
+    )
+    expect(mockAudioSession.type).toBe('playback')
+
+    // Simulate second voice finishing - category resets to ambient
+    mockSource.onended?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEndedSpy).toHaveBeenCalledTimes(1)
+
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
     vi.useRealTimers()
   })
 

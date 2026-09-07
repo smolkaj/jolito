@@ -1,7 +1,13 @@
 import type { Earcon, SoundPlayer } from '../../application/ports'
 
 interface AudioSession {
-  type?: string
+  type?:
+    | 'ambient'
+    | 'playback'
+    | 'transient'
+    | 'transient-solo'
+    | 'play-and-record'
+    | 'auto'
 }
 
 export function configureAudioSessionCategory(
@@ -36,9 +42,15 @@ export class WebAudioSoundPlayer implements SoundPlayer {
       }
       this.removeUnlockListeners()
     }
-    window.addEventListener('pointerdown', unlock, { passive: true })
-    window.addEventListener('touchstart', unlock, { passive: true })
-    window.addEventListener('keydown', unlock, { passive: true })
+    window.addEventListener('pointerdown', unlock, {
+      passive: true,
+      once: true,
+    })
+    window.addEventListener('touchstart', unlock, {
+      passive: true,
+      once: true,
+    })
+    window.addEventListener('keydown', unlock, { passive: true, once: true })
     this.cleanupGestureListeners = () => {
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('touchstart', unlock)
