@@ -2256,20 +2256,12 @@ export function App({
               <div className="why-actions">
                 <button
                   type="button"
-                  className="primary-button why-primary-button"
-                  onClick={handlePractice}
-                >
-                  Start learning Spanish <span aria-hidden="true">→</span>
-                </button>
-                <button
-                  type="button"
-                  className="why-scroll-top-btn"
+                  className="primary-button why-start-button"
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
-                  aria-label="Scroll back to top"
                 >
-                  Back to top ↑
+                  Start learning <span aria-hidden="true">↑</span>
                 </button>
               </div>
             </div>

@@ -1032,12 +1032,21 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await expect(
     page.getByText(/memorization and i have become friends!/i),
   ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /^start learning spanish/i }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /scroll back to top/i }),
-  ).toBeVisible()
+  const startBtn = page.getByRole('button', { name: /^start learning/i })
+  await expect(startBtn).toBeVisible()
+  await expect(page.getByRole('button', { name: /back to top/i })).toBeHidden()
+
+  // Verify CSS scroll snap is configured on the welcome page
+  const scrollSnapType = await page.evaluate(
+    () => window.getComputedStyle(document.documentElement).scrollSnapType,
+  )
+  expect(scrollSnapType).toMatch(/y mandatory/)
+
+  // Clicking "Start learning" returns cleanly to the top slide
+  await startBtn.click()
+  await expect
+    .poll(async () => page.evaluate(() => window.scrollY))
+    .toBeLessThanOrEqual(5)
 
   // Hero footer feedback button is visible
   await expect(page.getByRole('button', { name: /^feedback$/i })).toBeVisible()

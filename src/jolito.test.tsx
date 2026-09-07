@@ -5054,18 +5054,22 @@ describe('Jolito', () => {
         screen.getByText(/memorization and i have become friends!/i),
       ).toBeInTheDocument()
 
-      // Primary CTA and back to top buttons in why section
+      // Single unified CTA button linking back to top
       const startBtn = screen.getByRole('button', {
-        name: /^start learning spanish/i,
+        name: /^start learning/i,
       })
       expect(startBtn).toBeInTheDocument()
       expect(
-        screen.getByRole('button', { name: /scroll back to top/i }),
-      ).toBeInTheDocument()
+        screen.queryByRole('button', { name: /back to top/i }),
+      ).not.toBeInTheDocument()
 
-      // Clicking start learning launches practice mode
+      // Clicking start learning smooth-scrolls back to the top
+      const scrollToSpy = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => {})
       await user.click(startBtn)
-      expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      scrollToSpy.mockRestore()
     })
   })
 })
