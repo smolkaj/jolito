@@ -4,8 +4,8 @@ import './styles.css'
 import { App } from './jolito'
 import { enforceCanonicalHost } from './infrastructure/browser/host'
 import { createBrowserServices } from './infrastructure/browser/services'
-import celebrateUrl from '../assets/jolito-celebrate.png'
-import logoUrl from '../assets/jolito-welcome.png'
+import celebrateUrl from '../assets/jolito-celebrate.webp'
+import logoUrl from '../assets/jolito-welcome.webp'
 
 const isRedirecting = enforceCanonicalHost()
 

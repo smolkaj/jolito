@@ -2244,7 +2244,7 @@ describe('Jolito', () => {
     // 2. Verify mascot is prominently displayed on the welcome homescreen
     const mascotImg = document.querySelector('.welcome-mascot-img')
     expect(mascotImg).toBeInTheDocument()
-    expect(mascotImg).toHaveAttribute('src', expect.stringContaining('png'))
+    expect(mascotImg).toHaveAttribute('src', expect.stringContaining('webp'))
     expect(mascotImg).toHaveAttribute('aria-hidden', 'true')
   })
 

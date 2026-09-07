@@ -139,7 +139,7 @@ async function generateSplashScreens() {
   mkdirSync(splashDir, { recursive: true })
 
   const welcomeImgBase64 = readFileSync(
-    resolve(rootDir, 'assets/jolito-welcome.png'),
+    resolve(rootDir, 'assets/jolito-welcome.webp'),
   ).toString('base64')
 
   const browser = await chromium.launch()
@@ -188,7 +188,7 @@ async function generateSplashScreens() {
 </head>
 <body>
   <div class="mascot-container">
-    <img class="mascot" src="data:image/png;base64,${welcomeImgBase64}" alt="Jolito" />
+    <img class="mascot" src="data:image/webp;base64,${welcomeImgBase64}" alt="Jolito" />
   </div>
 </body>
 </html>`
