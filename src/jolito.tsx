@@ -61,6 +61,9 @@ import { findDuplicateNoteCards, getDuplicateGroups } from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import { reconcileStudyCards, type SyncStatus } from './domain/sync'
+import { StarterPacksModal } from './ui/modals/StarterPacksModal'
+import type { StarterPack } from './domain/starter-decks'
+import { mergeStudyCardsSemantic } from './domain/card-merge'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
@@ -1044,6 +1047,7 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [isStarterPacksOpen, setIsStarterPacksOpen] = useState(false)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(() =>
     typeof window !== 'undefined'
       ? isFeedbackHash(window.location.hash)
@@ -1386,6 +1390,31 @@ export function App({
       spanishInputRef.current?.focus()
     },
     [onUpdateCards, services.clock, services.ids],
+  )
+
+  const handleAddStarterCards = useCallback(
+    (newCards: StudyCard[]) => {
+      const userCards = filterOutStarterCards(cardsRef.current)
+      const mergeResult = mergeStudyCardsSemantic(userCards, newCards)
+      onUpdateCards(mergeResult.cards, true)
+    },
+    [onUpdateCards],
+  )
+
+  const handleAddStarterPack = useCallback(
+    (pack: StarterPack) => {
+      const now = services.clock.now()
+      handleAddStarterCards(pack.createCards(now))
+    },
+    [handleAddStarterCards, services.clock],
+  )
+
+  const handleAddStarterNote = useCallback(
+    (pack: StarterPack, noteIndex: number) => {
+      const now = services.clock.now()
+      handleAddStarterCards(pack.createNoteCards(noteIndex, now))
+    },
+    [handleAddStarterCards, services.clock],
   )
 
   const handleCopySessionLink = useCallback(async () => {
@@ -1767,6 +1796,7 @@ export function App({
         deletingCards !== null ||
         isSyncOpen ||
         isBackupOpen ||
+        isStarterPacksOpen ||
         isFeedbackOpen
       )
         return
@@ -1818,6 +1848,7 @@ export function App({
     grade,
     isSyncOpen,
     isBackupOpen,
+    isStarterPacksOpen,
     isFeedbackOpen,
     playAnswerAudio,
     playPromptAudio,
@@ -2936,6 +2967,13 @@ export function App({
                 <button
                   type="button"
                   className="secondary-button"
+                  onClick={() => setIsStarterPacksOpen(true)}
+                >
+                  Starter packs
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
                   onClick={() => setIsBackupOpen(true)}
                 >
                   Backup & Import
@@ -3093,9 +3131,16 @@ export function App({
                     <button
                       type="button"
                       className="primary-button"
+                      onClick={() => setIsStarterPacksOpen(true)}
+                    >
+                      Explore starter packs →
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
                       onClick={() => navigateTo('create')}
                     >
-                      Create a card →
+                      Create a card
                     </button>
                     <button
                       type="button"
@@ -3288,6 +3333,14 @@ export function App({
             onOpenPrivacy={openPrivacyModal}
           />
         </main>
+        <StarterPacksModal
+          isOpen={isStarterPacksOpen}
+          onClose={() => setIsStarterPacksOpen(false)}
+          cards={cards}
+          onAddPack={handleAddStarterPack}
+          onAddNote={handleAddStarterNote}
+        />
+
         <DeckBackupModal
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}

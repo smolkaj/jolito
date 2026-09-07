@@ -5346,4 +5346,58 @@ describe('Jolito', () => {
       })
     })
   })
+
+  describe('Curated Starter Packs', () => {
+    it('allows opening starter packs modal from deck manager and adding curated cards', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      // 1. Navigate to deck manager
+      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+      // 2. Dismiss guest demo deck modal if open
+      const exploreDemoBtn = screen.queryByRole('button', {
+        name: /explore demo deck/i,
+      })
+      if (exploreDemoBtn) {
+        await user.click(exploreDemoBtn)
+      }
+
+      // 3. Click "Starter packs" button in deck header actions
+      const starterPacksBtn = screen.getByRole('button', {
+        name: /^starter packs$/i,
+      })
+      await user.click(starterPacksBtn)
+
+      // 4. Modal opens with all packs
+      expect(
+        screen.getByRole('dialog', { name: /curated starter packs/i }),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Mexican Street Phrases')).toBeInTheDocument()
+      expect(screen.getByText('Top Verbs: 1–50')).toBeInTheDocument()
+
+      // 5. Click "Add Mexican Street Phrases"
+      const addStreetBtn = screen.getByRole('button', {
+        name: /^add mexican street phrases/i,
+      })
+      await user.click(addStreetBtn)
+
+      // 6. Button in modal becomes disabled and says "In your deck"
+      expect(
+        screen.getByRole('button', {
+          name: /mexican street phrases is already added to your deck/i,
+        }),
+      ).toBeDisabled()
+
+      // 8. Close modal
+      await user.click(screen.getByLabelText('Close dialog'))
+      expect(
+        screen.queryByRole('dialog', { name: /curated starter packs/i }),
+      ).not.toBeInTheDocument()
+
+      // 9. Deck manager now shows the newly added street phrases (both es-en and en-es reciprocal cards)
+      expect(screen.getAllByText('¿Mande?').length).toBeGreaterThanOrEqual(1)
+    })
+  })
 })
