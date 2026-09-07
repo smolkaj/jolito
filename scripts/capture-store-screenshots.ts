@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { resolve, join, sep } from 'node:path'
 import { createServer } from 'node:http'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, statSync } from 'node:fs'
 
 const SIZES = [
   {
@@ -64,7 +64,8 @@ async function main() {
       return
     }
 
-    if (existsSync(filePath)) {
+    const isFile = statSync(filePath, { throwIfNoEntry: false })?.isFile()
+    if (isFile) {
       const ext = filePath.split('.').pop()
       const contentTypes: Record<string, string> = {
         html: 'text/html',
