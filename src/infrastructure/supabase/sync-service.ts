@@ -8,17 +8,40 @@ import {
 } from '../../domain/sync'
 import type { SupabaseAuthService } from './auth-service'
 
+interface PostgrestErrorPayload {
+  code?: string
+  message?: string
+  details?: string | null
+  hint?: string | null
+}
+
+function parsePostgrestErrorPayload(
+  errorText: string,
+): PostgrestErrorPayload | null {
+  try {
+    if (errorText) {
+      return JSON.parse(errorText) as PostgrestErrorPayload
+    }
+  } catch {
+    // not JSON
+  }
+  return null
+}
+
 export class SupabaseSyncService implements SyncService {
   private status: SyncStatus = 'idle'
   private deviceId: string
+  private supabaseUrl: string
+  private supabaseAnonKey: string
 
   constructor(
     private authService: SupabaseAuthService,
-    private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
-    private supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      '',
+    supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
+    supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
     deviceId?: string,
   ) {
+    this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
+    this.supabaseAnonKey = supabaseAnonKey
     this.deviceId = deviceId || this.getOrCreateDeviceId()
   }
 
@@ -78,14 +101,23 @@ export class SupabaseSyncService implements SyncService {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
+        const errorPayload = parsePostgrestErrorPayload(errorText)
         console.error('[SyncService] Cloud pull failed:', {
           status: res.status,
           statusText: res.statusText,
-          error: errorText,
+          code: errorPayload?.code,
+          message: errorPayload?.message,
+          details: errorPayload?.details,
+          hint: errorPayload?.hint,
+          rawError: errorText,
         })
+        const displayError =
+          errorPayload?.message ||
+          (errorText && !errorText.startsWith('{') ? errorText : null) ||
+          `Cloud fetch failed (HTTP ${res.status}).`
         return {
           success: false,
-          error: `Cloud fetch failed (HTTP ${res.status}).`,
+          error: displayError,
         }
       }
 
@@ -197,14 +229,23 @@ export class SupabaseSyncService implements SyncService {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
+        const errorPayload = parsePostgrestErrorPayload(errorText)
         console.error('[SyncService] Cloud push failed:', {
           status: res.status,
           statusText: res.statusText,
-          error: errorText,
+          code: errorPayload?.code,
+          message: errorPayload?.message,
+          details: errorPayload?.details,
+          hint: errorPayload?.hint,
+          rawError: errorText,
         })
+        const displayError =
+          errorPayload?.message ||
+          (errorText && !errorText.startsWith('{') ? errorText : null) ||
+          `Cloud push failed (HTTP ${res.status}).`
         return {
           success: false,
-          error: `Cloud push failed (HTTP ${res.status}).`,
+          error: displayError,
         }
       }
 

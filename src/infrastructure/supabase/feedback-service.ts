@@ -8,12 +8,17 @@ import type {
 import { feedbackSubmissionSchema } from '../../domain/feedback'
 
 export class SupabaseFeedbackService implements FeedbackService {
+  private supabaseUrl: string
+  private supabaseAnonKey: string
+
   constructor(
     private authService: AuthService,
-    private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
-    private supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      '',
-  ) {}
+    supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
+    supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+  ) {
+    this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
+    this.supabaseAnonKey = supabaseAnonKey
+  }
 
   private async getAuthHeaders(): Promise<Record<string, string> | null> {
     const token = (await this.authService.getAccessToken?.()) ?? null

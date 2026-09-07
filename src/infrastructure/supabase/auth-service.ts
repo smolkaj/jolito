@@ -53,15 +53,20 @@ export class SupabaseAuthService implements AuthService {
   private inFlightRefresh: Promise<string | null> | null = null
   private boundVisibilityHandler: (() => void) | null = null
   private boundOnlineHandler: (() => void) | null = null
+  private supabaseUrl: string
+  private supabaseAnonKey: string
+  private storage: Storage
 
   constructor(
-    private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
-    private supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      '',
-    private storage: Storage = typeof window !== 'undefined'
+    supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
+    supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    storage: Storage = typeof window !== 'undefined'
       ? window.localStorage
       : ({} as Storage),
   ) {
+    this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
+    this.supabaseAnonKey = supabaseAnonKey
+    this.storage = storage
     this.currentUser = this.loadStoredUser()
     this.setupLifecycleListeners()
     this.scheduleNextRefresh()
@@ -640,6 +645,11 @@ export class SupabaseAuthService implements AuthService {
           error_description?: string
           message?: string
         }
+        console.error('[AuthService] OTP verification attempt failed:', {
+          status: res.status,
+          type: otpType,
+          errorData,
+        })
         const rawError =
           errorData.msg ||
           errorData.error_description ||
@@ -653,6 +663,10 @@ export class SupabaseAuthService implements AuthService {
           lastError = rawError
         }
       } catch (err) {
+        console.error(
+          '[AuthService] Unexpected error during OTP verification:',
+          err,
+        )
         return {
           success: false,
           error:
