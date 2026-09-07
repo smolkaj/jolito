@@ -20,6 +20,12 @@ git worktree remove ../jolito-<task> && git worktree prune
 - After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
 - For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 
+# Visual verification & remote inspection
+
+- The user connects remotely over `ghostty` + `mosh` + `zellij`.
+- Because `mosh` synchronizes character cells and drops terminal graphics protocols (Kitty / Sixel), terminal `chafa` previews render via Unicode character glyphs with low resolution (insufficient for fine typography).
+- For UI inspections and visual verification, always upload rendered preview images to a viewable web host with at least 24–72h persistence (e.g. Litterbox 72h: `curl -s -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@<path>" https://litterbox.catbox.moe/resources/internals/api.php`, or GitHub PR attachments / commit links) alongside live Cloudflare branch previews, so the user can inspect high-resolution visuals directly in the browser without links expiring.
+
 # Independent review loop
 
 Every PR must pass the [independent PR review loop](.agents/skills/independent-pr-review) before merge.
