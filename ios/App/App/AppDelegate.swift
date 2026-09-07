@@ -11,7 +11,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Configure AVAudioSession for ambient audio: respect the physical silent switch
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.ambient, options: [.duckOthers])
+            try audioSession.setCategory(.ambient)
             try audioSession.setActive(true)
         } catch {
             print("Failed to configure AVAudioSession category: \(error)")

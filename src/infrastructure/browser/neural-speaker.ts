@@ -204,6 +204,7 @@ export class NeuralVoiceEngine {
       this.currentAudioElement = null
       try {
         audio.onended = null
+        audio.onerror = null
         audio.pause()
         audio.currentTime = 0
       } catch {
@@ -413,15 +414,19 @@ export class NeuralVoiceEngine {
           )
           const audio = new window.Audio(cachedUrl)
           this.currentAudioElement = audio
-          audio.onended = () => {
+          const cleanup = () => {
             if (this.currentAudioElement === audio) {
               this.currentAudioElement = null
               configureAudioSessionCategory('ambient')
               options?.onEnded?.()
             }
           }
+          audio.onended = cleanup
+          audio.onerror = cleanup
           if (typeof audio.play === 'function') {
-            void audio.play().catch(() => {})
+            void audio.play().catch(() => {
+              cleanup()
+            })
           }
           return true
         } catch {

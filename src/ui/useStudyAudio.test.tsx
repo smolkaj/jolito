@@ -103,6 +103,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn3',
+      explicit: false,
     })
   })
 
@@ -160,6 +161,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledTimes(2)
     expect(speakMock).toHaveBeenLastCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn4',
+      explicit: false,
     })
   })
 
@@ -290,6 +292,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hello', 'en-US', {
       cardSeed: 'card-1:turn3',
+      explicit: false,
     })
   })
 
@@ -402,7 +405,33 @@ describe('useStudyAudio', () => {
       result.current.playAudio('hola', 'es-MX')
     })
 
+    expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
+      explicit: true,
+    })
     expect(result.current.audioUnavailable).toBe(true)
+  })
+
+  it('preserves options and allows overriding explicit in playAudio', () => {
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+      }),
+    )
+
+    act(() => {
+      result.current.playAudio('hola', 'es-MX', 'seed-1', {
+        dualVoice: false,
+        explicit: false,
+      })
+    })
+
+    expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
+      cardSeed: 'seed-1',
+      dualVoice: false,
+      explicit: false,
+    })
   })
 
   it('cleans up pending timer on unmount', () => {

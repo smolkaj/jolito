@@ -1616,4 +1616,93 @@ describe('Dual-voice playback', () => {
     expect(playSpy).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
+
+  it('handles HTMLAudioElement fallback cleanup on end, error, and play rejection', async () => {
+    const engine = new NeuralVoiceEngine()
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'auto' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
+    const mockAudio: {
+      src: string
+      onended: (() => void) | null
+      onerror: (() => void) | null
+      currentTime: number
+      play: ReturnType<typeof vi.fn>
+      pause: ReturnType<typeof vi.fn>
+    } = {
+      src: '',
+      onended: null,
+      onerror: null,
+      currentTime: 0,
+      play: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn(),
+    }
+
+    const audioSpy = vi.spyOn(window, 'Audio').mockImplementation(function (
+      this: unknown,
+    ) {
+      return mockAudio as unknown as HTMLAudioElement
+    })
+
+    engine.registerAudioDataUrl(
+      'fallback-phrase',
+      'es-MX',
+      'data:audio/mp3;base64,123',
+    )
+
+    // 1. Success path: onended resets category to ambient and calls onEnded
+    const onEnded1 = vi.fn()
+    const played1 = engine.playAudio('fallback-phrase', 'es-MX', undefined, {
+      explicit: true,
+      onEnded: onEnded1,
+    })
+    expect(played1).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    mockAudio.onended?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded1).toHaveBeenCalledTimes(1)
+
+    // 2. Error path: onerror resets category to ambient and calls onEnded
+    const onEnded2 = vi.fn()
+    const played2 = engine.playAudio('fallback-phrase', 'es-MX', undefined, {
+      explicit: true,
+      onEnded: onEnded2,
+    })
+    expect(played2).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    mockAudio.onerror?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded2).toHaveBeenCalledTimes(1)
+
+    // 3. Play rejection path: resets category to ambient and calls onEnded
+    mockAudio.play = vi.fn().mockRejectedValue(new Error('Autoplay blocked'))
+
+    const onEnded3 = vi.fn()
+    const played3 = engine.playAudio('fallback-phrase', 'es-MX', undefined, {
+      explicit: true,
+      onEnded: onEnded3,
+    })
+    expect(played3).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    // Wait for promise rejection to settle
+    await Promise.resolve()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded3).toHaveBeenCalledTimes(1)
+
+    // Restore
+    audioSpy.mockRestore()
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
+  })
 })
