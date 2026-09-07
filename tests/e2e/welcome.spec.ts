@@ -1014,29 +1014,37 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await expect(scrollCue).toBeVisible()
   await scrollCue.click()
 
+  const familyImg = page.getByAltText(
+    /the jolito family: german dad, mexican mom, and twin gexican toddlers/i,
+  )
+  await expect(familyImg).toBeVisible()
   await expect(
     page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
   ).toBeVisible()
+  await expect(page.getByText(/born in mexico city/i)).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: /^type before you flip$/i }),
+    page.getByRole('link', { name: /international house in condesa/i }),
+  ).toBeVisible()
+  await expect(page.getByText(/my archenemy/i)).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: /spaced repetition/i }),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: /^spaced repetition that sticks$/i }),
+    page.getByText(/memorization and i have become friends!/i),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: /^spoken mexican spanish$/i }),
+    page.getByRole('button', { name: /^start learning spanish/i }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /scroll back to top/i }),
   ).toBeVisible()
 
-  // Topbar feedback is visible
+  // Hero footer feedback button is visible
   await expect(page.getByRole('button', { name: /^feedback$/i })).toBeVisible()
 
-  // Test interactive audio sampler pill
-  const samplerPill = page.getByRole('button', {
-    name: /listen to mexican spanish pronunciation for ¡órale!/i,
+  await page.locator('#why-jolito').screenshot({
+    path: 'test-results/why-jolito-desktop.png',
   })
-  await expect(samplerPill).toBeVisible()
-  await samplerPill.click()
-  await expect(samplerPill).toHaveClass(/is-playing/)
 
   await page.screenshot({
     path: 'test-results/welcome-landing-page.png',

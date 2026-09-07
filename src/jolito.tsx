@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import celebrateUrl from '../assets/jolito-celebrate.png'
+import familyLogoUrl from '../assets/jolito-family.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
@@ -1041,14 +1042,10 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
-  const [playingSamplerPhrase, setPlayingSamplerPhrase] = useState<
-    string | null
-  >(null)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
-  const samplerTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
@@ -1593,21 +1590,6 @@ export function App({
     [activeSampleSide, playSampleAudio],
   )
 
-  const handlePlaySampler = useCallback(
-    (phrase: string) => {
-      setPlayingSamplerPhrase(phrase)
-      playAudio(phrase, 'es-MX', undefined, { dualVoice: false })
-      if (samplerTimerRef.current !== null) {
-        window.clearTimeout(samplerTimerRef.current)
-      }
-      samplerTimerRef.current = window.setTimeout(() => {
-        setPlayingSamplerPhrase(null)
-        samplerTimerRef.current = null
-      }, 1200)
-    },
-    [playAudio],
-  )
-
   const onCreateCardClick = useCallback(
     (side: 'spanish' | 'english') => {
       if (activeCreateSide !== side) {
@@ -1635,9 +1617,6 @@ export function App({
     return () => {
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
-      }
-      if (samplerTimerRef.current !== null) {
-        window.clearTimeout(samplerTimerRef.current)
       }
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
@@ -2223,217 +2202,75 @@ export function App({
             aria-labelledby="why-jolito-title"
           >
             <div className="why-inner">
+              <div className="why-family-hero">
+                <img
+                  src={familyLogoUrl}
+                  alt="The Jolito family: German dad, Mexican mom, and twin Gexican toddlers"
+                  className="why-family-img"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+
               <div className="why-header">
                 <p className="eyebrow why-eyebrow">BORN IN MEXICO CITY</p>
                 <h2 id="why-jolito-title">Why another flashcard app?</h2>
-                <div className="why-story">
-                  <p>
-                    In July 2026, my wife (Mexican), our twins (Gexican), and I
-                    (German) moved to Mexico City. I started learning Spanish at
-                    the{' '}
-                    <a
-                      href="https://ihmexico.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      International House in Condesa
-                    </a>
-                    . The classes were fantastic, but classes alone don’t make
-                    words stick—you have to memorize vocabulary. And on a busy
-                    schedule, slogging through flashcards at home was dreadful.
-                  </p>
-                  <p>
-                    I built Jolito to make memorization something to look
-                    forward to: fast, tactile, immersive. Jolito games your
-                    memory with{' '}
-                    <a
-                      href="https://en.wikipedia.org/wiki/Spaced_repetition"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      spaced repetition
-                    </a>
-                    —legally! It brings things back just before you forget them,
-                    so they stick almost effortlessly.
-                  </p>
-                </div>
               </div>
 
-              <div className="why-grid">
-                <article className="why-card why-card-srs">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-srs">1</span>
-                  </div>
-                  <h3>Spaced repetition that sticks</h3>
-                  <p>
-                    Spaced repetition is an evidence-based cognitive science
-                    technique that schedules reviews right as a phrase is about
-                    to slip from memory. Each successful recall expands the
-                    interval, locking words into permanent recall with just a
-                    few minutes a day.
-                  </p>
-                  <div
-                    className="bento-visual bento-visual-srs"
-                    aria-hidden="true"
+              <div className="why-story">
+                <p>
+                  In July 2026, my wife <em>(Mexican)</em>, our twins{' '}
+                  <em>(Gexican)</em>, and I <em>(German)</em> moved to Mexico
+                  City. I started learning Spanish at the{' '}
+                  <a
+                    href="https://ihmexico.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <div className="srs-cadence-track">
-                      <div className="srs-cadence-node">
-                        <span className="srs-node-pill">10m</span>
-                        <span className="srs-node-sub">Learn</span>
-                      </div>
-                      <div className="srs-cadence-line"></div>
-                      <div className="srs-cadence-node">
-                        <span className="srs-node-pill">1d</span>
-                        <span className="srs-node-sub">Recall</span>
-                      </div>
-                      <div className="srs-cadence-line"></div>
-                      <div className="srs-cadence-node">
-                        <span className="srs-node-pill">4d</span>
-                        <span className="srs-node-sub">Lock-in</span>
-                      </div>
-                      <div className="srs-cadence-line"></div>
-                      <div className="srs-cadence-node is-mastered">
-                        <span className="srs-node-pill">2w+</span>
-                        <span className="srs-node-sub">Fluent</span>
-                      </div>
-                    </div>
-                    <div className="srs-cadence-note">
-                      <span className="srs-note-icon">⚡</span>
-                      <span>
-                        Expanding intervals match your brain’s natural
-                        forgetting curve
-                      </span>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="why-card why-card-audio">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-audio">2</span>
-                  </div>
-                  <h3>Spoken Mexican Spanish</h3>
-                  <p>
-                    You choose whatever phrases, slang, or nuances you want to
-                    learn—Jolito gives each card authentic Mexico City
-                    pronunciation, not robotic textbook audio. Tap to listen:
-                  </p>
-                  <div className="bento-visual bento-visual-audio">
-                    <div
-                      className="audio-sampler-group"
-                      role="group"
-                      aria-label="Interactive Mexican Spanish audio samples"
-                    >
-                      {[
-                        { es: '¡Órale!', en: 'Right on / wow' },
-                        { es: '¿Qué onda?', en: "What's up?" },
-                        { es: 'No manches', en: 'No way!' },
-                      ].map((item) => (
-                        <button
-                          key={item.es}
-                          type="button"
-                          className={`sampler-pill ${playingSamplerPhrase === item.es ? 'is-playing' : ''}`}
-                          onClick={() => handlePlaySampler(item.es)}
-                          aria-label={`Listen to Mexican Spanish pronunciation for ${item.es}: ${item.en}`}
-                        >
-                          <span
-                            className="sampler-speaker-icon"
-                            aria-hidden="true"
-                          >
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                              <path
-                                d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                          <span className="sampler-text-es">{item.es}</span>
-                          <span className="sampler-text-en">{item.en}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </article>
-
-                <article className="why-card why-card-recall">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-recall">3</span>
-                  </div>
-                  <h3>Type before you flip</h3>
-                  <p>
-                    Produce Spanish from memory instead of passively guessing
-                    multiple choice. Instant visual diffs catch typos while you
-                    retain full self-grading authority.
-                  </p>
-                  <div
-                    className="bento-visual bento-visual-recall"
-                    aria-hidden="true"
+                    International House in Condesa
+                  </a>
+                  . The classes were fantastic—but memorizing vocabulary?{' '}
+                  <strong>My archenemy.</strong> The absolute worst part of
+                  learning a new language!
+                </p>
+                <p>
+                  I built Jolito to make memorization something to look forward
+                  to: <strong>fast, tactile, immersive</strong>. Jolito uses{' '}
+                  <a
+                    href="https://en.wikipedia.org/wiki/Spaced_repetition"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <div className="diff-card mini-diff-card">
-                      <div className="diff-card-header">
-                        <span className="diff-card-title">
-                          Prompt: “What’s up?”
-                        </span>
-                        <span className="diff-badge close">Typo</span>
-                      </div>
-                      <div className="diff-rows">
-                        <div className="diff-row">
-                          <span className="diff-label">You wrote</span>
-                          <p className="diff-text">
-                            <span className="diff-seg diff-seg-match">que</span>
-                            <span className="diff-seg diff-seg-match diff-seg-space">
-                              &nbsp;
-                            </span>
-                            <span className="diff-seg diff-seg-match">
-                              onda
-                            </span>
-                          </p>
-                        </div>
-                        <div className="diff-row expected-row">
-                          <span className="diff-label">Expected</span>
-                          <div className="diff-row-main">
-                            <p className="diff-text">
-                              <span className="diff-seg diff-seg-missing">
-                                ¿
-                              </span>
-                              <span className="diff-seg diff-seg-match">Q</span>
-                              <span className="diff-seg diff-seg-match">u</span>
-                              <span className="diff-seg diff-seg-accent">
-                                é
-                              </span>
-                              <span className="diff-seg diff-seg-match diff-seg-space">
-                                &nbsp;
-                              </span>
-                              <span className="diff-seg diff-seg-match">
-                                onda
-                              </span>
-                              <span className="diff-seg diff-seg-missing">
-                                ?
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mini-grade-preview">
-                        <span className="mini-grade-btn grade-again">
-                          1 Again
-                        </span>
-                        <span className="mini-grade-btn grade-hard">
-                          2 Hard
-                        </span>
-                        <span className="mini-grade-btn grade-good is-selected">
-                          3 Good
-                        </span>
-                        <span className="mini-grade-btn grade-easy">
-                          4 Easy
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
+                    spaced repetition
+                  </a>{' '}
+                  to game your memory—<strong>legally!</strong> It resurfaces
+                  words just before you forget them, so they stick almost
+                  effortlessly.
+                </p>
+                <p className="why-resolution">
+                  I am glad to report:{' '}
+                  <strong>Memorization and I have become friends!</strong>
+                </p>
+              </div>
+
+              <div className="why-actions">
+                <button
+                  type="button"
+                  className="primary-button why-primary-button"
+                  onClick={handlePractice}
+                >
+                  Start learning Spanish <span aria-hidden="true">→</span>
+                </button>
+                <button
+                  type="button"
+                  className="why-scroll-top-btn"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  aria-label="Scroll back to top"
+                >
+                  Back to top ↑
+                </button>
               </div>
             </div>
           </section>

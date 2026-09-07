@@ -5010,7 +5010,7 @@ describe('Jolito', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('renders Why Jolito section with scroll cue and plays CDMX audio sampler phrases on click', async () => {
+    it('renders Why Jolito editorial section with family illustration and navigates on start learning click', async () => {
       const user = userEvent.setup()
       const services = createTestServices()
 
@@ -5028,67 +5028,44 @@ describe('Jolito', () => {
       })
       expect(feedbackBtn).toBeInTheDocument()
 
-      // Origin story header is rendered
+      // Family illustration and origin story header are rendered
+      expect(
+        screen.getByAltText(
+          /the jolito family: german dad, mexican mom, and twin gexican toddlers/i,
+        ),
+      ).toBeInTheDocument()
       expect(
         screen.getByRole('heading', {
           name: /^why another flashcard app\?$/i,
         }),
       ).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          /in july 2026, my wife \(mexican\), our twins \(gexican\), and i \(german\) moved to mexico city/i,
-        ),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          /classes alone don’t make words stick—you have to memorize vocabulary/i,
-        ),
-      ).toBeInTheDocument()
+      expect(screen.getByText(/born in mexico city/i)).toBeInTheDocument()
       expect(
         screen.getByRole('link', { name: /international house in condesa/i }),
       ).toHaveAttribute('href', 'https://ihmexico.com/')
+      expect(screen.getByText(/my archenemy\./i)).toBeInTheDocument()
       expect(
-        screen.getAllByRole('link', { name: /spaced repetition/i })[0],
+        screen.getByRole('link', { name: /spaced repetition/i }),
       ).toHaveAttribute(
         'href',
         'https://en.wikipedia.org/wiki/Spaced_repetition',
       )
       expect(
-        screen.getByText(/jolito games your memory with/i),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          /brings things back just before you forget them, so they stick almost effortlessly/i,
-        ),
-      ).toBeInTheDocument()
-      expect(screen.getByText(/forgetting curve/i)).toBeInTheDocument()
-
-      // 3 Value pillars are rendered
-      expect(
-        screen.getByRole('heading', { name: /^type before you flip$/i }),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('heading', {
-          name: /^spaced repetition that sticks$/i,
-        }),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
+        screen.getByText(/memorization and i have become friends!/i),
       ).toBeInTheDocument()
 
-      // Audio sampler buttons are present and interactive
-      const oraleButton = screen.getByRole('button', {
-        name: /listen to mexican spanish pronunciation for ¡órale!/i,
+      // Primary CTA and back to top buttons in why section
+      const startBtn = screen.getByRole('button', {
+        name: /^start learning spanish/i,
       })
-      expect(oraleButton).toBeInTheDocument()
-      await user.click(oraleButton)
-
-      // Verify audio was requested from speaker service
+      expect(startBtn).toBeInTheDocument()
       expect(
-        services.mockSpeaker.spokenCalls.some(
-          (s) => s.text === '¡Órale!' && s.locale === 'es-MX',
-        ),
-      ).toBe(true)
+        screen.getByRole('button', { name: /scroll back to top/i }),
+      ).toBeInTheDocument()
+
+      // Clicking start learning launches practice mode
+      await user.click(startBtn)
+      expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()
     })
   })
 })
