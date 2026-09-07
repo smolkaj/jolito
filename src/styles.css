@@ -4359,6 +4359,18 @@ kbd {
   overflow-y: auto;
 }
 
+.starter-packs-modal.is-inspecting {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.starter-packs-modal.is-inspecting .modal-header,
+.starter-packs-modal.is-inspecting .starter-pack-inspect-toolbar,
+.starter-packs-modal.is-inspecting .starter-pack-inspect-search-wrap {
+  flex-shrink: 0;
+}
+
 .starter-packs-list {
   display: flex;
   flex-direction: column;
@@ -4418,9 +4430,12 @@ kbd {
 
 .starter-pack-card.is-added {
   background: var(--paper-subtle);
-  border-color: var(--line-light);
+  border-top-color: var(--line-light);
+  border-right-color: var(--line-light);
+  border-bottom-color: var(--line-light);
   box-shadow: none;
   transform: none;
+  opacity: 0.88;
 }
 
 .starter-pack-head {
@@ -4671,9 +4686,12 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 480px;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   padding-right: 4px;
+  padding-bottom: 8px;
 }
 
 .starter-pack-inspect-list:focus-visible {
@@ -4700,6 +4718,11 @@ kbd {
 .starter-pack-inspect-item.is-in-deck {
   background: var(--turquesa-soft);
   border-color: var(--turquesa-border);
+}
+
+.starter-pack-inspect-item.is-partial-deck {
+  background: var(--sand);
+  border-color: var(--cempasuchil);
 }
 
 .inspect-item-content {
@@ -4759,6 +4782,12 @@ kbd {
   background: var(--card);
   color: var(--turquesa-deep);
   border: 1px solid var(--turquesa-border);
+}
+
+.inspect-badge.partial-deck {
+  background: var(--sand);
+  color: var(--cempasuchil-deep);
+  border: 1px solid var(--cempasuchil);
 }
 
 .inspect-badge.new-card {

@@ -73,7 +73,7 @@ describe('StarterPacksModal', () => {
       />,
     )
 
-    expect(screen.getByText(/2 already in your deck/i)).toBeInTheDocument()
+    expect(screen.getByText(/2 of 72 cards in deck/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', {
         name: /Add remaining 70 cards from Mexican Street Phrases/i,
@@ -203,7 +203,7 @@ describe('StarterPacksModal', () => {
       screen.getByRole('button', { name: /Back to all starter packs/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/1 of 36 already in your deck/i),
+      screen.getByText(/2 of 72 cards in your deck \(70 cards to add\)/i),
     ).toBeInTheDocument()
 
     // 3. Check presence of "¿Mande?" in inspect list
@@ -219,7 +219,7 @@ describe('StarterPacksModal', () => {
 
     // 5. Add pack from within inspect view
     const addFromInspectBtn = screen.getByRole('button', {
-      name: /Add remaining \(\+70\)/i,
+      name: /Add remaining 70 cards from Mexican Street Phrases/i,
     })
     fireEvent.click(addFromInspectBtn)
     expect(onAddPack).toHaveBeenCalledWith(
@@ -232,5 +232,33 @@ describe('StarterPacksModal', () => {
     expect(
       screen.queryByRole('button', { name: /Back to all starter packs/i }),
     ).toBeNull()
+  })
+
+  it('displays partial badge (1 of 2 in deck) when only one directional card exists', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    // Only have 1 card of the first reciprocal pair
+    const singleCard = allStreetCards.slice(0, 1)
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={singleCard}
+        onAddPack={vi.fn()}
+      />,
+    )
+
+    // Inspect Mexican Street Phrases
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+
+    expect(
+      screen.getByText(/1 of 72 cards in your deck \(71 cards to add\)/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText('1 of 2 in deck')).toBeInTheDocument()
   })
 })

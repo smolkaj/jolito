@@ -184,11 +184,8 @@ function StarterPacksModalInner({
                   <div className="starter-pack-inspect-summary">
                     <p className="starter-pack-inspect-status">
                       {existingCount > 0
-                        ? `${existingCount / 2} of ${inspectingPack.noteCount} already in your deck (${remainingCount} cards to add)`
-                        : `All ${inspectingPack.noteCount} items (${inspectingPack.cardCount} cards) are new`}
-                    </p>
-                    <p className="starter-pack-inspect-caption">
-                      Existing review schedules are strictly preserved.
+                        ? `${existingCount} of ${inspectingPack.cardCount} cards in your deck (${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} to add)`
+                        : `All ${inspectingPack.cardCount} cards are new`}
                     </p>
                   </div>
                   <div className="starter-pack-inspect-actions">
@@ -207,6 +204,11 @@ function StarterPacksModalInner({
                         className="primary-button starter-pack-btn"
                         disabled={addingPackId === inspectingPack.id}
                         onClick={() => handleAdd(inspectingPack)}
+                        aria-label={
+                          existingCount > 0
+                            ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${inspectingPack.title}`
+                            : `Add ${inspectingPack.title} (${inspectingPack.cardCount} cards)`
+                        }
                       >
                         {addingPackId === inspectingPack.id
                           ? 'Adding…'
@@ -238,13 +240,21 @@ function StarterPacksModalInner({
               aria-label="Cards in this pack"
             >
               {filteredInspectNotes.map((note, idx) => {
-                const isPresent = existingKeys.has(
+                const hasEsEn = existingKeys.has(
                   normalizeCardKey(note.spanish, 'es-en'),
                 )
+                const isBidirectional = note.bidirectional !== false
+                const hasEnEs = isBidirectional
+                  ? existingKeys.has(normalizeCardKey(note.english, 'en-es'))
+                  : true
+                const isFullyInDeck = hasEsEn && hasEnEs
+                const isPartiallyInDeck =
+                  !isFullyInDeck && (hasEsEn || (!isBidirectional && hasEnEs))
+
                 return (
                   <div
                     key={idx}
-                    className={`starter-pack-inspect-item ${isPresent ? 'is-in-deck' : ''}`}
+                    className={`starter-pack-inspect-item ${isFullyInDeck ? 'is-in-deck' : isPartiallyInDeck ? 'is-partial-deck' : ''}`}
                     role="listitem"
                   >
                     <div className="inspect-item-content">
@@ -264,12 +274,19 @@ function StarterPacksModalInner({
                       )}
                     </div>
                     <div className="inspect-item-badge-wrap">
-                      {isPresent ? (
+                      {isFullyInDeck ? (
                         <span
                           className="inspect-badge in-deck"
-                          title="Already in your deck. Schedule preserved."
+                          title="Both cards already in your deck. Schedule preserved."
                         >
                           ✓ In deck
+                        </span>
+                      ) : isPartiallyInDeck ? (
+                        <span
+                          className="inspect-badge partial-deck"
+                          title="1 card already in your deck. Missing reciprocal card will be added."
+                        >
+                          1 of 2 in deck
                         </span>
                       ) : (
                         <span className="inspect-badge new-card">+ New</span>
@@ -346,13 +363,13 @@ function StarterPacksModalInner({
                         }}
                         aria-label={`Inspect ${pack.title} cards`}
                       >
-                        Inspect pack 👁
+                        Inspect pack
                       </button>
 
                       <div className="starter-pack-action-right">
                         {existingCount > 0 && !isAllAdded && (
                           <span className="starter-pack-conflict-info">
-                            {existingCount} already in your deck
+                            {existingCount} of {pack.cardCount} cards in deck
                           </span>
                         )}
                         {isAllAdded ? (
@@ -372,7 +389,7 @@ function StarterPacksModalInner({
                             onClick={() => handleAdd(pack)}
                             aria-label={
                               existingCount > 0
-                                ? `Add remaining ${remainingCount} cards from ${pack.title}`
+                                ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${pack.title}`
                                 : `Add ${pack.title} (${pack.cardCount} cards)`
                             }
                           >

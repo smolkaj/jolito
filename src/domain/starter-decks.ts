@@ -301,7 +301,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
     subtitle: 'Core Foundations',
     description:
       'Foundational high-frequency verbs that power everyday conversation.',
-    badge: '1–50',
+    badge: 'Verbs',
     themeColor: 'maya',
     notes: [
       {
@@ -632,7 +632,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
     subtitle: 'Routines & Interactions',
     description:
       'Essential verbs for daily routines, requests, and social interactions.',
-    badge: '51–100',
+    badge: 'Verbs',
     themeColor: 'turquesa',
     notes: [
       {
@@ -954,7 +954,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
     subtitle: 'Daily Life & Nuance',
     description:
       'Practical verbs for home life, food, travel, and expressing emotion.',
-    badge: '101–150',
+    badge: 'Verbs',
     themeColor: 'cempasuchil',
     notes: [
       {
@@ -1267,7 +1267,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
     subtitle: 'Spoken Fluency',
     description:
       'Nuanced verbs for lively spoken conversation and natural fluency.',
-    badge: '151–200',
+    badge: 'Verbs',
     themeColor: 'tezontle',
     notes: [
       {
