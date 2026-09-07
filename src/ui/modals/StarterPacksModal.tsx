@@ -31,7 +31,6 @@ function StarterPacksModalInner({
   const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
-  const [inspectSearch, setInspectSearch] = useState('')
   const [addingPackId, setAddingPackId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -71,7 +70,6 @@ function StarterPacksModalInner({
       if (e.key === 'Escape') {
         if (inspectingPackId !== null) {
           setInspectingPackId(null)
-          setInspectSearch('')
           return
         }
         onClose()
@@ -145,21 +143,13 @@ function StarterPacksModalInner({
     onAddNote(inspectingPack, originalIndex)
   }
 
-  const filteredInspectNotes = useMemo(() => {
+  const inspectNotes = useMemo(() => {
     if (!inspectingPack) return []
-    const indexed = inspectingPack.notes.map((note, originalIndex) => ({
+    return inspectingPack.notes.map((note, originalIndex) => ({
       note,
       originalIndex,
     }))
-    const q = inspectSearch.trim().toLowerCase()
-    if (!q) return indexed
-    return indexed.filter(
-      ({ note }) =>
-        note.spanish.toLowerCase().includes(q) ||
-        note.english.toLowerCase().includes(q) ||
-        note.context.toLowerCase().includes(q),
-    )
-  }, [inspectingPack, inspectSearch])
+  }, [inspectingPack])
 
   return (
     <div
@@ -186,7 +176,6 @@ function StarterPacksModalInner({
                   className="secondary-button starter-pack-back-btn"
                   onClick={() => {
                     setInspectingPackId(null)
-                    setInspectSearch('')
                   }}
                   aria-label="Back to all starter packs"
                 >
@@ -265,24 +254,13 @@ function StarterPacksModalInner({
               )
             })()}
 
-            <div className="starter-pack-inspect-search-wrap">
-              <input
-                type="search"
-                className="starter-pack-inspect-search"
-                placeholder={`Search ${inspectingPack.notes.length} ${inspectingPack.id === 'mexican-street-phrases' ? 'phrases' : 'verbs'} in this pack…`}
-                value={inspectSearch}
-                onChange={(e) => setInspectSearch(e.target.value)}
-                aria-label="Search cards in this pack"
-              />
-            </div>
-
             <div
               className="starter-pack-inspect-list"
               role="list"
               tabIndex={0}
               aria-label="Cards in this pack"
             >
-              {filteredInspectNotes.map(({ note, originalIndex }) => {
+              {inspectNotes.map(({ note, originalIndex }) => {
                 const isBidirectional = note.bidirectional !== false
                 const hasEsEn = existingKeys.has(
                   normalizeCardKey(note.spanish, 'es-en'),
@@ -414,7 +392,6 @@ function StarterPacksModalInner({
                         onClick={() => {
                           lastInspectedPackIdRef.current = pack.id
                           setInspectingPackId(pack.id)
-                          setInspectSearch('')
                         }}
                         aria-label={`Inspect ${pack.title} cards`}
                       >

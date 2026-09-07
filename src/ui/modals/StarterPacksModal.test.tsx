@@ -213,13 +213,7 @@ describe('StarterPacksModal', () => {
       screen.getAllByRole('button', { name: /Add .* to deck/i }).length,
     ).toBeGreaterThan(0)
 
-    // 4. Test search input in inspect view
-    const searchInput = screen.getByLabelText(/Search cards in this pack/i)
-    fireEvent.change(searchInput, { target: { value: 'Ahorita' } })
-    expect(screen.getByText('Ahorita')).toBeInTheDocument()
-    expect(screen.queryByText('¿Mande?')).toBeNull()
-
-    // 5. Add pack from within inspect view
+    // 4. Add pack from within inspect view
     const addFromInspectBtn = screen.getByRole('button', {
       name: /Add remaining 70 cards from Mexican Street Phrases/i,
     })
