@@ -2236,7 +2236,7 @@ export function App({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      International House Condesa
+                      International House in Condesa
                     </a>
                     . The classes were fantastic, but classes alone don’t make
                     words stick—you have to memorize vocabulary. And on a busy
@@ -2253,7 +2253,7 @@ export function App({
                     >
                       spaced repetition
                     </a>
-                    —legally. It brings things back just before you forget them,
+                    —legally! It brings things back just before you forget them,
                     so they stick almost effortlessly.
                   </p>
                 </div>

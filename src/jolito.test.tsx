@@ -5045,7 +5045,7 @@ describe('Jolito', () => {
         ),
       ).toBeInTheDocument()
       expect(
-        screen.getByRole('link', { name: /international house condesa/i }),
+        screen.getByRole('link', { name: /international house in condesa/i }),
       ).toHaveAttribute('href', 'https://ihmexico.com/')
       expect(
         screen.getAllByRole('link', { name: /spaced repetition/i })[0],
