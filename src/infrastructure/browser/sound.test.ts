@@ -115,7 +115,9 @@ describe('WebAudioSoundPlayer', () => {
 
   let activePlayers: WebAudioSoundPlayer[] = []
 
-  function createPlayer(options?: ConstructorParameters<typeof WebAudioSoundPlayer>[0]) {
+  function createPlayer(
+    options?: ConstructorParameters<typeof WebAudioSoundPlayer>[0],
+  ) {
     const player = new WebAudioSoundPlayer(options)
     activePlayers.push(player)
     return player

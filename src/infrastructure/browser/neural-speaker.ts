@@ -9,7 +9,10 @@ import {
   normalizeLocale,
 } from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
-import { configureAudioSessionCategory, DEFAULT_AUDIO_IDLE_DELAY_MS } from './sound'
+import {
+  configureAudioSessionCategory,
+  DEFAULT_AUDIO_IDLE_DELAY_MS,
+} from './sound'
 
 export const AUDIO_CACHE_NAME = 'jolito-audio-v1'
 
@@ -1237,7 +1240,7 @@ export class LayeredNeuralSpeaker implements Speaker {
       typeof (this.fallbackSpeaker as { destroy?: () => void }).destroy ===
         'function'
     ) {
-      (this.fallbackSpeaker as { destroy: () => void }).destroy()
+      ;(this.fallbackSpeaker as { destroy: () => void }).destroy()
     }
   }
 }
