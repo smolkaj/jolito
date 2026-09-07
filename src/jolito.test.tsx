@@ -5122,11 +5122,31 @@ describe('Jolito', () => {
 
       render(<App services={services} />)
 
-      // Scroll cue is present
-      const scrollCue = screen.getByRole('button', {
+      // Scroll cue is an anchor link to #why-jolito
+      const scrollCue = screen.getByRole('link', {
         name: /^scroll down to explore why jolito$/i,
       })
       expect(scrollCue).toBeInTheDocument()
+      expect(scrollCue).toHaveAttribute('href', '#why-jolito')
+
+      // Clicking scroll cue pushes #why-jolito to history and smooth scrolls
+      const whySection = document.getElementById('why-jolito')
+      const scrollIntoViewSpy = vi
+        .spyOn(whySection!, 'scrollIntoView')
+        .mockImplementation(() => {})
+      const pushStateSpy = vi
+        .spyOn(window.history, 'pushState')
+        .mockImplementation(() => {})
+
+      await user.click(scrollCue)
+      expect(pushStateSpy).toHaveBeenCalledWith(
+        { view: 'welcome' },
+        '',
+        '#why-jolito',
+      )
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      scrollIntoViewSpy.mockRestore()
+      pushStateSpy.mockRestore()
 
       // Feedback button in hero footer is present
       const feedbackBtn = screen.getByRole('button', {
@@ -5169,13 +5189,54 @@ describe('Jolito', () => {
         screen.queryByRole('button', { name: /back to top/i }),
       ).not.toBeInTheDocument()
 
-      // Clicking start learning smooth-scrolls back to the top
+      // Clicking start learning smooth-scrolls back to the top and resets hash if at #why-jolito
+      window.location.hash = '#why-jolito'
       const scrollToSpy = vi
         .spyOn(window, 'scrollTo')
         .mockImplementation(() => {})
+      const pushStateSpy2 = vi
+        .spyOn(window.history, 'pushState')
+        .mockImplementation(() => {})
       await user.click(startBtn)
+      expect(pushStateSpy2).toHaveBeenCalledWith({ view: 'welcome' }, '', '#/')
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
       scrollToSpy.mockRestore()
+      pushStateSpy2.mockRestore()
+    })
+
+    it('scrolls to why-jolito anchor on initial load or popstate hashchange', () => {
+      vi.useFakeTimers()
+      window.location.hash = '#why-jolito'
+      const services = createTestServices()
+
+      render(<App services={services} />)
+
+      const whySection = document.getElementById('why-jolito')
+      expect(whySection).toBeInTheDocument()
+      const scrollIntoViewSpy = vi
+        .spyOn(whySection!, 'scrollIntoView')
+        .mockImplementation(() => {})
+
+      vi.advanceTimersByTime(100)
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+
+      // Simulating popstate back to #/ triggers scrollTo top
+      const scrollToSpy = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => {})
+      window.location.hash = '#/'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+
+      // Simulating popstate forward to #/why-jolito triggers scrollIntoView
+      window.location.hash = '#/why-jolito'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+
+      scrollIntoViewSpy.mockRestore()
+      scrollToSpy.mockRestore()
+      vi.useRealTimers()
     })
   })
 })

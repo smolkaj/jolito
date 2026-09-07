@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { hashForView, titleForView, viewFromHash } from './navigation'
+import {
+  hashForView,
+  isWhyJolitoHash,
+  titleForView,
+  viewFromHash,
+} from './navigation'
 
 describe('navigation', () => {
   it('maps url hashes to view names', () => {
@@ -35,5 +40,20 @@ describe('navigation', () => {
 
     expect(titleForView('complete')).toBe('¡Hecho! • Jolito')
     expect(titleForView('welcome')).toBe('Jolito — Mexican Spanish that sticks')
+  })
+
+  it('identifies Why Jolito anchor hashes', () => {
+    expect(isWhyJolitoHash('#why-jolito')).toBe(true)
+    expect(isWhyJolitoHash('#/why-jolito')).toBe(true)
+    expect(isWhyJolitoHash('#/why-jolito/')).toBe(true)
+    expect(isWhyJolitoHash('#why')).toBe(true)
+    expect(isWhyJolitoHash('#/why')).toBe(true)
+
+    expect(isWhyJolitoHash('#/')).toBe(false)
+    expect(isWhyJolitoHash('')).toBe(false)
+    expect(isWhyJolitoHash('#/create')).toBe(false)
+    expect(isWhyJolitoHash('#/study')).toBe(false)
+    expect(isWhyJolitoHash('#/deck')).toBe(false)
+    expect(isWhyJolitoHash('#unknown')).toBe(false)
   })
 })
