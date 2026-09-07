@@ -503,7 +503,7 @@ test('all pills and badges have consistent heights across views and within the s
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  expect(reviewProgress?.height).toBeCloseTo(3, 1)
+  expect(reviewProgress?.height).toBeCloseTo(4, 1)
   expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 

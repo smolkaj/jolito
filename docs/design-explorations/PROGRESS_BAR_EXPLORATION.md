@@ -39,3 +39,14 @@ This document explores design variations for the review session progress bar in 
 ![In-Context Comparison](./in-context-comparison.png)
 
 This comparison places each progress bar directly above the study card to evaluate how much visual weight each variant draws relative to the main prompt and answer field.
+
+---
+
+## 3. Hairline Thickness: 1px Increments
+
+![Hairline Thickness Increments](./thickness-increments.png)
+
+* **3px (Baseline):** The ultra-subtle baseline.
+* **4px (+1px bump):** The minimum possible physical increase on a pixel grid (+33% volume). Retains 100% of the quiet ambient character while slightly improving edge definition against the paper canvas.
+* **5px (+2px bump):** Noticeable step up (+66% volume), slightly clearer track boundary.
+
