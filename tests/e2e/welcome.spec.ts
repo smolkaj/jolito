@@ -1465,3 +1465,42 @@ test('aligns study card quick actions with card container and supports keyboard 
   await page.keyboard.press('Escape')
   await expect(editModal).not.toBeVisible()
 })
+
+test('displays cards practiced across reviews when repetitions occur and passes WCAG audits', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await page.getByRole('button', { name: /^practice$/i }).click()
+
+  // Card 1: aguacate -> Again (requeued)
+  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('1')
+
+  // Card 2: qué padre -> Easy (graduated)
+  await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+
+  // Card 1 re-appears: aguacate -> Easy (graduated)
+  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('4')
+
+  // Reach session complete screen
+  await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
+  await expect(
+    page.getByText('2 cards practiced across 3 reviews.'),
+  ).toBeVisible()
+
+  // Take screenshot for visual verification
+  await page.screenshot({ path: '/tmp/hecho-screen-repetitions.png' })
+
+  // Accessibility audit
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+})

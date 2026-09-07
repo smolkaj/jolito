@@ -38,7 +38,10 @@ import {
   type StudyCard,
   type UpdateCardParams,
 } from './domain/card'
-import { createStudySession } from './domain/study-session'
+import {
+  createStudySession,
+  formatPracticedSummary,
+} from './domain/study-session'
 import { useStudySession } from './ui/useStudySession'
 import { useStudyAudio } from './ui/useStudyAudio'
 import {
@@ -974,6 +977,7 @@ export function App({
   const {
     queue,
     reviewedCount,
+    practicedCount,
     answer,
     setAnswer,
     revealed,
@@ -3379,12 +3383,12 @@ export function App({
             <p className="eyebrow">
               {authUser ? 'SESSION COMPLETE' : 'DEMO SESSION COMPLETE'}
             </p>
-            <h1>{reviewedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
+            <h1>{practicedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
             {authUser ? (
               <div className="complete-copy">
                 <p>
-                  {reviewedCount > 0
-                    ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced. Your next reviews are scheduled.`
+                  {practicedCount > 0
+                    ? `${formatPracticedSummary(practicedCount, reviewedCount)}. Your next reviews are scheduled.`
                     : 'Nothing is due right now. Add something from your day in CDMX?'}
                 </p>
                 {studiedTodayCount > 0 && (
@@ -3398,8 +3402,8 @@ export function App({
             ) : (
               <div className="complete-copy">
                 <p>
-                  {reviewedCount > 0
-                    ? `${reviewedCount} ${reviewedCount === 1 ? 'card' : 'cards'} practiced.`
+                  {practicedCount > 0
+                    ? `${formatPracticedSummary(practicedCount, reviewedCount)}.`
                     : 'You’re exploring demo cards.'}
                 </p>
                 <p className="complete-subtext">

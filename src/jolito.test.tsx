@@ -123,7 +123,9 @@ describe('Jolito', () => {
     await user.keyboard('4') // Easy -> graduates
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/1 card practiced across 2 reviews/i),
+    ).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
 
@@ -263,7 +265,9 @@ describe('Jolito', () => {
     await user.keyboard('4')
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/2 cards practiced across 3 reviews/i),
+    ).toBeInTheDocument()
   })
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
@@ -4369,6 +4373,71 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /create a card/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('displays unique card count with repetitions note when reviews exceed cards', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const cards = [
+      ...createStudyCards(
+        {
+          spanish: 'hola',
+          english: 'hello',
+          context: '',
+          bidirectional: false,
+        },
+        'note-1',
+        now,
+      ),
+      ...createStudyCards(
+        {
+          spanish: 'adiós',
+          english: 'goodbye',
+          context: '',
+          bidirectional: false,
+        },
+        'note-2',
+        now,
+      ),
+    ]
+    const services = createTestServices({
+      cards,
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+
+    // First card: rate Again (requeued)
+    expect(screen.getByRole('heading', { name: 'hola' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('1')
+
+    // Second card: rate Easy (graduated)
+    expect(screen.getByRole('heading', { name: 'adiós' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // First card re-appears: rate Again once more (requeued second time)
+    expect(screen.getByRole('heading', { name: 'hola' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('1')
+
+    // First card re-appears: rate Easy (graduated)
+    expect(screen.getByRole('heading', { name: 'hola' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // Completion screen shows 2 cards practiced across 4 reviews
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        '2 cards practiced across 4 reviews. Your next reviews are scheduled.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('2 cards practiced today across your devices.'),
     ).toBeInTheDocument()
   })
 

@@ -5,6 +5,7 @@ export const studySessionSchema = z.object({
   queue: z.array(z.string()),
   sessionTotal: z.number().int().nonnegative(),
   reviewedCount: z.number().int().nonnegative(),
+  practicedCardIds: z.array(z.string()).default([]),
 })
 
 export type StudySession = z.infer<typeof studySessionSchema>
@@ -13,6 +14,7 @@ export function createStudySession(
   cardIds: string[],
   initialTotal?: number,
   initialReviewedCount = 0,
+  initialPracticedCardIds: string[] = [],
 ): StudySession {
   const queue = [...cardIds]
   const sessionTotal =
@@ -24,6 +26,7 @@ export function createStudySession(
     queue,
     sessionTotal,
     reviewedCount: Math.max(0, initialReviewedCount),
+    practicedCardIds: [...initialPracticedCardIds],
   }
 }
 
@@ -75,10 +78,16 @@ export function advanceSessionOnGrade(
       ? Math.max(nextQueue.length, session.sessionTotal - buriedInSessionCount)
       : session.sessionTotal
 
+  const practicedCardIds = session.practicedCardIds ?? []
+  const nextPracticedCardIds = practicedCardIds.includes(currentCardId)
+    ? practicedCardIds
+    : [...practicedCardIds, currentCardId]
+
   const nextSession: StudySession = {
     queue: nextQueue,
     sessionTotal: nextTotal,
     reviewedCount: session.reviewedCount + 1,
+    practicedCardIds: nextPracticedCardIds,
   }
 
   return {
@@ -87,6 +96,22 @@ export function advanceSessionOnGrade(
     buriedInSessionCount,
     isComplete: nextQueue.length === 0,
   }
+}
+
+export function sessionPracticedCount(session: StudySession): number {
+  return session.practicedCardIds?.length ?? 0
+}
+
+export function formatPracticedSummary(
+  practicedCount: number,
+  reviewedCount: number,
+): string {
+  const cardLabel = `${practicedCount} ${practicedCount === 1 ? 'card' : 'cards'} practiced`
+  if (reviewedCount > practicedCount) {
+    const reviewLabel = `${reviewedCount} ${reviewedCount === 1 ? 'review' : 'reviews'}`
+    return `${cardLabel} across ${reviewLabel}`
+  }
+  return cardLabel
 }
 
 export function filterSessionCards(

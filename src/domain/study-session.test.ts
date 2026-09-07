@@ -4,8 +4,10 @@ import {
   advanceSessionOnGrade,
   createStudySession,
   filterSessionCards,
+  formatPracticedSummary,
   sessionCompletedCount,
   sessionEffectiveTotal,
+  sessionPracticedCount,
   sessionProgressPercentage,
 } from './study-session'
 
@@ -124,8 +126,54 @@ describe('studySession', () => {
       expect(result.nextSession.queue).toEqual([])
       expect(result.nextSession.sessionTotal).toBe(1)
       expect(result.nextSession.reviewedCount).toBe(1)
+      expect(result.nextSession.practicedCardIds).toEqual(['c1'])
+      expect(sessionPracticedCount(result.nextSession)).toBe(1)
       expect(sessionCompletedCount(result.nextSession)).toBe(1)
       expect(sessionProgressPercentage(result.nextSession)).toBe(100)
+    })
+
+    it('tracks unique practiced cards without duplicates across repetitions', () => {
+      const initial = createStudySession(['c1'])
+      const step1 = advanceSessionOnGrade(initial, 'c1', learningSchedule, [])
+      expect(step1.nextSession.practicedCardIds).toEqual(['c1'])
+      expect(step1.nextSession.reviewedCount).toBe(1)
+      expect(sessionPracticedCount(step1.nextSession)).toBe(1)
+
+      const step2 = advanceSessionOnGrade(
+        step1.nextSession,
+        'c1',
+        graduatedSchedule,
+        [],
+      )
+      expect(step2.nextSession.practicedCardIds).toEqual(['c1'])
+      expect(step2.nextSession.reviewedCount).toBe(2)
+      expect(sessionPracticedCount(step2.nextSession)).toBe(1)
+    })
+  })
+
+  describe('formatPracticedSummary', () => {
+    it('formats singular card without repetitions', () => {
+      expect(formatPracticedSummary(1, 1)).toBe('1 card practiced')
+    })
+
+    it('formats plural cards without repetitions', () => {
+      expect(formatPracticedSummary(15, 15)).toBe('15 cards practiced')
+    })
+
+    it('formats singular card with multiple reviews', () => {
+      expect(formatPracticedSummary(1, 2)).toBe(
+        '1 card practiced across 2 reviews',
+      )
+    })
+
+    it('formats plural cards with multiple reviews', () => {
+      expect(formatPracticedSummary(15, 22)).toBe(
+        '15 cards practiced across 22 reviews',
+      )
+    })
+
+    it('formats 0 cards correctly', () => {
+      expect(formatPracticedSummary(0, 0)).toBe('0 cards practiced')
     })
   })
 
