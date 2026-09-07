@@ -90,6 +90,7 @@ export type AuthService = {
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }>
   signOut(): Promise<void>
+  deleteAccount?(): Promise<{ success: boolean; error?: string | undefined }>
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void
   destroy?(): void
 }
@@ -115,6 +116,9 @@ export type SyncService = {
     user: AuthUser,
     localDeletedIds?: string[],
   ): Promise<SyncResult>
+  deleteRemoteDeck?(
+    user: AuthUser,
+  ): Promise<{ success: boolean; error?: string | undefined }>
 }
 
 export type FeedbackResult = {

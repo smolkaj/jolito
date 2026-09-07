@@ -1,6 +1,18 @@
 default_platform(:ios)
 
 platform :ios do
+  desc "Build the iOS archive (.ipa) without uploading"
+  lane :build do
+    build_app(
+      project: "ios/App/App.xcodeproj",
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "Jolito.ipa",
+      clean: true
+    )
+  end
+
   desc "Build and push a new beta build to Apple TestFlight"
   lane :beta do
     # 1. Sync project capabilities and certificates if configured
@@ -25,6 +37,54 @@ platform :ios do
 
     # 3. Upload to TestFlight
     upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build and submit release build to the Apple App Store"
+  lane :release do |options|
+    # 1. Sync project capabilities and certificates if configured
+    if ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
+      app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
+        is_key_content_base64: true
+      )
+    end
+
+    # 2. Build the iOS archive (.ipa)
+    build_app(
+      project: "ios/App/App.xcodeproj",
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "Jolito.ipa",
+      clean: true
+    )
+
+    # 3. Upload to App Store Connect
+    upload_to_app_store(
+      skip_screenshots: options[:upload_screenshots] != true && options[:upload_screenshots] != "true",
+      skip_metadata: options[:upload_metadata] != true && options[:upload_metadata] != "true",
+      skip_waiting_for_build_processing: true,
+      submit_for_review: false
+    )
+  end
+
+  desc "Upload App Store metadata and screenshots without building a binary"
+  lane :metadata do
+    if ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
+      app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
+        is_key_content_base64: true
+      )
+    end
+
+    upload_to_app_store(
+      skip_binary_upload: true,
       skip_waiting_for_build_processing: true
     )
   end
