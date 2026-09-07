@@ -157,6 +157,7 @@ export function useStudyAudio({
     ) {
       return
     }
+    // Use primitive ID and review count to avoid re-triggering autoplay on object reference changes
     speaker.speak(currentPrompt, currentPromptLocale, {
       cardSeed: `${currentCardId}:turn${currentReviews}`,
       explicit: false,

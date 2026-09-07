@@ -332,8 +332,6 @@ export class NeuralVoiceEngine {
   ): boolean {
     if (!this.supported()) return false
 
-    configureAudioSessionCategory(options?.explicit ? 'playback' : 'ambient')
-
     const normLocale = normalizeLocale(locale)
     const effectiveVoice = voice ?? getDeterministicVoice(text, normLocale)
     const cacheKeys = this.getCacheKeys(text, normLocale, effectiveVoice)
@@ -927,6 +925,8 @@ export class NeuralVoiceEngine {
       source.start(0)
       return true
     } catch {
+      this.currentSource = null
+      configureAudioSessionCategory('ambient')
       return false
     }
   }
@@ -1012,8 +1012,6 @@ export class LayeredNeuralSpeaker implements Speaker {
 
     const cleanText = text.trim()
     if (!cleanText) return false
-
-    configureAudioSessionCategory(options?.explicit ? 'playback' : 'ambient')
 
     const normLocale = normalizeLocale(locale)
     const voice =

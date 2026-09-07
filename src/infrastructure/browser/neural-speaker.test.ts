@@ -506,9 +506,28 @@ describe('NeuralVoiceEngine', () => {
     expect(engine.hasAudio('custom english phrase', 'en_US')).toBe(true)
   })
 
-  it('returns false on playAudio when phrase is not in cache', () => {
+  it('returns false on playAudio when phrase is not in cache without elevating audio session', () => {
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'auto' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
     const engine = new NeuralVoiceEngine()
-    expect(engine.playAudio('unregistered-phrase-xyz', 'es-MX')).toBe(false)
+    expect(
+      engine.playAudio('unregistered-phrase-xyz', 'es-MX', undefined, {
+        explicit: true,
+      }),
+    ).toBe(false)
+    expect(mockAudioSession.type).toBe('auto')
+
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
   })
 
   it('prewarms bundled audio by fetching and decoding audio into memory', async () => {

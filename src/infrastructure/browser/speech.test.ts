@@ -662,3 +662,182 @@ describe('isEnhancedMexicanVoice helper', () => {
     ).toBe(false)
   })
 })
+
+describe('AudioSession category lifecycle in EnhancedBrowserSpeaker', () => {
+  const originalSpeechSynthesis = window.speechSynthesis
+  const originalUtterance = window.SpeechSynthesisUtterance
+  const originalNavigator = globalThis.navigator
+
+  let speakMock: ReturnType<typeof vi.fn>
+  let cancelMock: ReturnType<typeof vi.fn>
+  let mockAudioSession: { type: string }
+  class MockUtterance {
+    static instances: MockUtterance[] = []
+    text: string
+    lang = ''
+    voice: SpeechSynthesisVoice | null = null
+    rate = 1
+    pitch = 1
+    onend: (() => void) | null = null
+    onerror: (() => void) | null = null
+
+    constructor(text: string) {
+      this.text = text
+      MockUtterance.instances.push(this)
+    }
+  }
+
+  beforeEach(() => {
+    MockUtterance.instances = []
+    speakMock = vi.fn()
+    cancelMock = vi.fn()
+    mockAudioSession = { type: 'auto' }
+
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        speak: speakMock,
+        cancel: cancelMock,
+        getVoices: () => [],
+        onvoiceschanged: null,
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: MockUtterance,
+      writable: true,
+      configurable: true,
+    })
+  })
+
+  afterEach(() => {
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: originalSpeechSynthesis,
+      writable: true,
+      configurable: true,
+    })
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: originalUtterance,
+      writable: true,
+      configurable: true,
+    })
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
+  })
+
+  it('elevates audioSession category to playback on explicit speak and resets to ambient on onend', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    const onEndedSpy = vi.fn()
+
+    const played = speaker.speak('hello', 'en-US', {
+      explicit: true,
+      onEnded: onEndedSpy,
+    })
+    expect(played).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    const lastUtterance =
+      MockUtterance.instances[MockUtterance.instances.length - 1]
+    lastUtterance?.onend?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEndedSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('sets audioSession category to ambient when speak is not explicit', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    const played = speaker.speak('hello', 'en-US', { explicit: false })
+    expect(played).toBe(true)
+    expect(mockAudioSession.type).toBe('ambient')
+  })
+
+  it('resets audioSession category to ambient on onerror and invokes onEnded', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    const onEndedSpy = vi.fn()
+
+    speaker.speak('hello', 'en-US', {
+      explicit: true,
+      onEnded: onEndedSpy,
+    })
+    expect(mockAudioSession.type).toBe('playback')
+
+    const lastUtterance =
+      MockUtterance.instances[MockUtterance.instances.length - 1]
+    lastUtterance?.onerror?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEndedSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('resets audioSession category to ambient on stop and prevents subsequent utterance events from firing', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    const onEndedSpy = vi.fn()
+
+    speaker.speak('hello', 'en-US', {
+      explicit: true,
+      onEnded: onEndedSpy,
+    })
+    expect(mockAudioSession.type).toBe('playback')
+    const activeUtterance =
+      MockUtterance.instances[MockUtterance.instances.length - 1]
+
+    speaker.stop()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(cancelMock).toHaveBeenCalled()
+
+    // Simulate delayed onerror/onend from WebKit cancel
+    activeUtterance?.onerror?.()
+    activeUtterance?.onend?.()
+    expect(onEndedSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not demote audio session or fire duplicate callbacks when cancelling earlier utterance on rapid speak', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    const onEnded1 = vi.fn()
+    const onEnded2 = vi.fn()
+
+    speaker.speak('phrase 1', 'en-US', {
+      explicit: true,
+      onEnded: onEnded1,
+    })
+    expect(mockAudioSession.type).toBe('playback')
+    const utterance1 = MockUtterance.instances[0]
+
+    speaker.speak('phrase 2', 'en-US', {
+      explicit: true,
+      onEnded: onEnded2,
+    })
+    expect(mockAudioSession.type).toBe('playback')
+    const utterance2 = MockUtterance.instances[1]
+
+    // WebKit fires onerror asynchronously on cancelled utterance1
+    utterance1?.onerror?.()
+    // Audio session should still be playback for utterance 2, and utterance 1 onEnded should not fire
+    expect(mockAudioSession.type).toBe('playback')
+    expect(onEnded1).not.toHaveBeenCalled()
+
+    // When utterance 2 finishes, category resets and onEnded2 fires
+    utterance2?.onend?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded2).toHaveBeenCalledTimes(1)
+  })
+
+  it('resets audioSession category to ambient if speak throws', () => {
+    speakMock.mockImplementation(() => {
+      throw new Error('Synthesis engine crashed')
+    })
+    const speaker = new EnhancedBrowserSpeaker()
+
+    const played = speaker.speak('hello', 'en-US', { explicit: true })
+    expect(played).toBe(false)
+    expect(mockAudioSession.type).toBe('ambient')
+  })
+})

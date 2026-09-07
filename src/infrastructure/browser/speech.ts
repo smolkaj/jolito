@@ -8,6 +8,8 @@ export class EnhancedBrowserSpeaker implements Speaker {
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
 
+  private currentUtterance: SpeechSynthesisUtterance | null = null
+
   constructor() {
     this.initVoices()
   }
@@ -72,6 +74,11 @@ export class EnhancedBrowserSpeaker implements Speaker {
       this.lastSpokenLocale = locale
       this.lastSpokenTime = now
 
+      if (this.currentUtterance) {
+        this.currentUtterance.onend = null
+        this.currentUtterance.onerror = null
+        this.currentUtterance = null
+      }
       window.speechSynthesis.cancel()
 
       // Always query latest voices to capture newly registered or async system voice packs
@@ -103,23 +110,37 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
       configureAudioSessionCategory(options?.explicit ? 'playback' : 'ambient')
 
+      this.currentUtterance = utterance
       utterance.onend = () => {
-        configureAudioSessionCategory('ambient')
-        options?.onEnded?.()
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null
+          configureAudioSessionCategory('ambient')
+          options?.onEnded?.()
+        }
       }
       utterance.onerror = () => {
-        configureAudioSessionCategory('ambient')
-        options?.onEnded?.()
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null
+          configureAudioSessionCategory('ambient')
+          options?.onEnded?.()
+        }
       }
 
       window.speechSynthesis.speak(utterance)
       return true
     } catch {
+      this.currentUtterance = null
+      configureAudioSessionCategory('ambient')
       return false
     }
   }
 
   stop(): void {
+    if (this.currentUtterance) {
+      this.currentUtterance.onend = null
+      this.currentUtterance.onerror = null
+      this.currentUtterance = null
+    }
     configureAudioSessionCategory('ambient')
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
