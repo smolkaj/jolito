@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
 } from 'react'
-import celebrateUrl from '../assets/jolito-celebrate.png'
+import celebrateUrl from '../assets/jolito-celebrate.webp'
 import familyLogoUrl from '../assets/jolito-family.webp'
-import logoUrl from '../assets/jolito-welcome.png'
-import sampleAguacateUrl from '../assets/sample-aguacate.png'
+import logoUrl from '../assets/jolito-welcome.webp'
+import sampleAguacateUrl from '../assets/sample-aguacate.webp'
 import { createCards } from './application/create-cards'
 import { importAnkiDeck } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'

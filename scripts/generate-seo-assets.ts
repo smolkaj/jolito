@@ -85,7 +85,7 @@ async function main() {
   const ogPage = await ogContext.newPage()
 
   const welcomeImgBase64 = readFileSync(
-    resolve(process.cwd(), 'assets/jolito-welcome.png'),
+    resolve(process.cwd(), 'assets/jolito-welcome.webp'),
   ).toString('base64')
   const fontBase64 = readFileSync(
     resolve(
@@ -206,7 +206,7 @@ async function main() {
       <h1 class="headline">Mexican Spanish<br />that <em>sticks.</em></h1>
     </div>
     <div class="right">
-      <img class="mascot" src="data:image/png;base64,${welcomeImgBase64}" alt="Jolito Mascot" />
+      <img class="mascot" src="data:image/webp;base64,${welcomeImgBase64}" alt="Jolito Mascot" />
     </div>
   </div>
 </body>

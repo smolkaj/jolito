@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/jolito-welcome.png" alt="Jolito the Axolotl mascot logo" width="180">
+  <img src="assets/jolito-welcome.webp" alt="Jolito the Axolotl mascot logo" width="180">
   <br>
   <strong>Spoken Mexican Spanish at your rhythm.</strong>
   <br>
