@@ -45,11 +45,18 @@ export const corsHeaders: Record<string, string> = {
 }
 
 export function formatPlainTextEmail(payload: FeedbackPayload): string {
-  const senderEmail = payload.email || 'guest@jolito.app'
-  const userId = payload.user_id || 'Anonymous Guest'
+  const isGuest = !payload.email || payload.email === 'guest@jolito.app'
+  const senderDisplay = isGuest
+    ? 'Anonymous Guest (no email provided)'
+    : payload.email!
+  const accountDisplay = payload.user_id
+    ? `Authenticated (${payload.user_id})`
+    : isGuest
+      ? 'Guest (no account)'
+      : 'Guest (email provided)'
   const timestamp = new Date().toISOString()
   const contextStr =
-    Object.keys(payload.context).length > 0
+    payload.context && Object.keys(payload.context).length > 0
       ? JSON.stringify(payload.context, null, 2)
       : 'None'
 
@@ -63,8 +70,8 @@ export function formatPlainTextEmail(payload: FeedbackPayload): string {
     '----------------------------------------',
     '',
     'Submission Details:',
-    `- Sender: ${senderEmail}`,
-    `- User ID: ${userId}`,
+    `- Sender: ${senderDisplay}`,
+    `- Account: ${accountDisplay}`,
     `- Submitted At: ${timestamp}`,
     '',
     'Context:',
@@ -85,11 +92,25 @@ export function escapeHtml(str: string): string {
 }
 
 export function formatHtmlEmail(payload: FeedbackPayload): string {
-  const senderEmail = escapeHtml(payload.email || 'guest@jolito.app')
-  const userId = escapeHtml(payload.user_id || 'Anonymous Guest')
+  const isGuest = !payload.email || payload.email === 'guest@jolito.app'
+  const senderDisplay = isGuest
+    ? '<span style="color: #64748b; font-style: italic;">Anonymous Guest (no email provided)</span>'
+    : `<strong>${escapeHtml(payload.email!)}</strong>`
+
+  const accountDisplay = payload.user_id
+    ? `Authenticated <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #64748b;">(${escapeHtml(payload.user_id)})</span>`
+    : isGuest
+      ? '<span style="color: #64748b;">Guest (no account)</span>'
+      : '<span style="color: #64748b;">Guest (email provided)</span>'
+
   const timestamp = escapeHtml(new Date().toISOString())
   const escapedMessage = escapeHtml(payload.message)
-  const contextJson = escapeHtml(JSON.stringify(payload.context, null, 2))
+  const hasContext = Boolean(
+    payload.context && Object.keys(payload.context).length > 0,
+  )
+  const contextJson = hasContext
+    ? escapeHtml(JSON.stringify(payload.context, null, 2))
+    : ''
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -107,7 +128,7 @@ export function formatHtmlEmail(payload: FeedbackPayload): string {
     .meta-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px; }
     .meta-table th, .meta-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
     .meta-table th { color: #64748b; font-weight: 500; width: 120px; }
-    .meta-table td { color: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
+    .meta-table td { color: #0f172a; font-size: 13px; }
     .context-box { background-color: #0f172a; color: #f8fafc; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; overflow-x: auto; }
     .footer { text-align: center; font-size: 12px; color: #94a3b8; padding: 16px 24px; border-top: 1px solid #f1f5f9; }
   </style>
@@ -123,19 +144,23 @@ export function formatHtmlEmail(payload: FeedbackPayload): string {
       <table class="meta-table">
         <tr>
           <th>Sender</th>
-          <td>${senderEmail}</td>
+          <td>${senderDisplay}</td>
         </tr>
         <tr>
-          <th>User ID</th>
-          <td>${userId}</td>
+          <th>Account</th>
+          <td>${accountDisplay}</td>
         </tr>
         <tr>
           <th>Timestamp</th>
-          <td>${timestamp}</td>
+          <td><span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px;">${timestamp}</span></td>
         </tr>
       </table>
-      <div style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Client Context</div>
-      <pre class="context-box">${contextJson}</pre>
+      ${
+        hasContext
+          ? `<div style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">Client Context</div>
+      <pre class="context-box">${contextJson}</pre>`
+          : ''
+      }
     </div>
     <div class="footer">
       Jolito Edge Notifications • Operating cost: $0.00 • Cloudflare Workers
@@ -152,7 +177,8 @@ export async function sendFeedbackNotification(
   const recipient =
     env?.FEEDBACK_NOTIFICATION_EMAIL || 'steffen.smolka+jolito@gmail.com'
   const sender = env?.FEEDBACK_SENDER_EMAIL || 'feedback@joli.to'
-  const replyTo = payload.email || undefined
+  const isGuest = !payload.email || payload.email === 'guest@jolito.app'
+  const replyTo = !isGuest && payload.email ? payload.email : undefined
   const previewText = payload.message.slice(0, 50).replace(/[\r\n]+/g, ' ')
   const subject = `[Jolito Feedback] ${previewText}${payload.message.length > 50 ? '...' : ''}`
   const text = formatPlainTextEmail(payload)

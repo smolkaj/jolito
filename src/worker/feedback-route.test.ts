@@ -44,22 +44,49 @@ describe('feedback-route', () => {
       expect(text).toContain('Jolito User Feedback')
       expect(text).toContain('Need dark mode toggle')
       expect(text).toContain('Sender: user@example.com')
-      expect(text).toContain('User ID: usr_123')
+      expect(text).toContain('Account: Authenticated (usr_123)')
       expect(text).toContain('#/settings')
     })
 
-    it('formats html email with styled table and escaped message', () => {
+    it('formats plain text email for anonymous guest cleanly', () => {
+      const payload: FeedbackPayload = {
+        message: 'Great app!',
+        email: 'guest@jolito.app',
+        user_id: null,
+        context: {},
+      }
+      const text = formatPlainTextEmail(payload)
+      expect(text).toContain('Sender: Anonymous Guest (no email provided)')
+      expect(text).toContain('Account: Guest (no account)')
+    })
+
+    it('formats html email with styled table and escaped message for authenticated user', () => {
       const payload: FeedbackPayload = {
         message: 'Could you add <b>audio speed</b> controls?',
         email: 'speedy@example.com',
-        user_id: null,
+        user_id: 'usr_789',
         context: { speed: 1.0 },
       }
       const html = formatHtmlEmail(payload)
       expect(html).toContain('&lt;b&gt;audio speed&lt;/b&gt;')
       expect(html).toContain('speedy@example.com')
-      expect(html).toContain('Anonymous Guest')
+      expect(html).toContain('Authenticated')
+      expect(html).toContain('usr_789')
       expect(html).toContain('Client Context')
+    })
+
+    it('formats html email for anonymous guest without misleading placeholders or empty context drawer', () => {
+      const payload: FeedbackPayload = {
+        message: 'Hello from a guest',
+        email: null,
+        user_id: null,
+        context: {},
+      }
+      const html = formatHtmlEmail(payload)
+      expect(html).toContain('Anonymous Guest (no email provided)')
+      expect(html).toContain('Guest (no account)')
+      expect(html).not.toContain('Client Context')
+      expect(html).not.toContain('guest@jolito.app')
     })
   })
 
