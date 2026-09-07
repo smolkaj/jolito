@@ -6,11 +6,18 @@ export interface PostgrestErrorPayload {
 }
 
 export function parsePostgrestErrorPayload(
-  errorText: string,
+  errorText?: string | null,
 ): PostgrestErrorPayload | null {
   try {
-    if (errorText) {
-      return JSON.parse(errorText) as PostgrestErrorPayload
+    if (typeof errorText === 'string' && errorText.trim().length > 0) {
+      const parsed: unknown = JSON.parse(errorText)
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
+        return parsed
+      }
     }
   } catch {
     // not JSON

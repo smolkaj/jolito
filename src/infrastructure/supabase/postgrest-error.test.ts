@@ -19,8 +19,11 @@ describe('parsePostgrestErrorPayload', () => {
     })
   })
 
-  it('returns null for empty string or nullish input', () => {
+  it('returns null for empty string, whitespace, or nullish input', () => {
     expect(parsePostgrestErrorPayload('')).toBeNull()
+    expect(parsePostgrestErrorPayload('   ')).toBeNull()
+    expect(parsePostgrestErrorPayload(null)).toBeNull()
+    expect(parsePostgrestErrorPayload(undefined)).toBeNull()
   })
 
   it('returns null for non-JSON string', () => {
@@ -28,6 +31,15 @@ describe('parsePostgrestErrorPayload', () => {
     expect(
       parsePostgrestErrorPayload('<html><body>502 Bad Gateway</body></html>'),
     ).toBeNull()
+  })
+
+  it('returns null for JSON primitives and arrays', () => {
+    expect(parsePostgrestErrorPayload('123')).toBeNull()
+    expect(parsePostgrestErrorPayload('true')).toBeNull()
+    expect(parsePostgrestErrorPayload('false')).toBeNull()
+    expect(parsePostgrestErrorPayload('"raw error string"')).toBeNull()
+    expect(parsePostgrestErrorPayload('["error1", "error2"]')).toBeNull()
+    expect(parsePostgrestErrorPayload('null')).toBeNull()
   })
 
   it('handles partial fields gracefully', () => {
