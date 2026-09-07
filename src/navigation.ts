@@ -23,6 +23,24 @@ export function isWhyJolitoHash(hash: string): boolean {
   return clean === 'why-jolito' || clean === 'why'
 }
 
+export function isPrivacyHash(hash: string): boolean {
+  const clean = hash
+    .replace(/^#\/?/, '')
+    .replace(/\/+$/, '')
+    .trim()
+    .toLowerCase()
+  return clean === 'privacy' || clean === 'privacy-policy'
+}
+
+export function isFeedbackHash(hash: string): boolean {
+  const clean = hash
+    .replace(/^#\/?/, '')
+    .replace(/\/+$/, '')
+    .trim()
+    .toLowerCase()
+  return clean === 'feedback' || clean === 'contact'
+}
+
 export function hashForView(view: View): string {
   switch (view) {
     case 'create':

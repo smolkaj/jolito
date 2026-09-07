@@ -53,15 +53,20 @@ export class SupabaseAuthService implements AuthService {
   private inFlightRefresh: Promise<string | null> | null = null
   private boundVisibilityHandler: (() => void) | null = null
   private boundOnlineHandler: (() => void) | null = null
+  private supabaseUrl: string
+  private supabaseAnonKey: string
+  private storage: Storage
 
   constructor(
-    private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
-    private supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      '',
-    private storage: Storage = typeof window !== 'undefined'
+    supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
+    supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    storage: Storage = typeof window !== 'undefined'
       ? window.localStorage
       : ({} as Storage),
   ) {
+    this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
+    this.supabaseAnonKey = supabaseAnonKey
+    this.storage = storage
     this.currentUser = this.loadStoredUser()
     this.setupLifecycleListeners()
     this.scheduleNextRefresh()
@@ -416,6 +421,10 @@ export class SupabaseAuthService implements AuthService {
           error_description?: string
           message?: string
         }
+        console.error('[AuthService] Magic link request failed:', {
+          status: res.status,
+          errorData,
+        })
         return {
           success: false,
           error:
@@ -428,6 +437,10 @@ export class SupabaseAuthService implements AuthService {
 
       return { success: true }
     } catch (err) {
+      console.error(
+        '[AuthService] Unexpected error requesting magic link:',
+        err,
+      )
       return {
         success: false,
         error:
@@ -632,6 +645,11 @@ export class SupabaseAuthService implements AuthService {
           error_description?: string
           message?: string
         }
+        console.error('[AuthService] OTP verification attempt failed:', {
+          status: res.status,
+          type: otpType,
+          errorData,
+        })
         const rawError =
           errorData.msg ||
           errorData.error_description ||
@@ -645,6 +663,10 @@ export class SupabaseAuthService implements AuthService {
           lastError = rawError
         }
       } catch (err) {
+        console.error(
+          '[AuthService] Unexpected error during OTP verification:',
+          err,
+        )
         return {
           success: false,
           error:
@@ -673,6 +695,71 @@ export class SupabaseAuthService implements AuthService {
             Authorization: `Bearer ${token}`,
           },
         }).catch(() => {})
+      }
+    } finally {
+      this.clearSession()
+    }
+  }
+
+  async deleteAccount(): Promise<{
+    success: boolean
+    error?: string | undefined
+  }> {
+    const session = this.loadStoredSession()
+    const token = session?.accessToken
+
+    if (!token || !this.supabaseUrl || !this.supabaseAnonKey) {
+      this.clearSession()
+      return { success: true }
+    }
+
+    try {
+      // 1. Permanently delete the user account in Supabase auth.users via RPC.
+      // Cascades to public.decks and public.feedback via foreign key ON DELETE CASCADE.
+      const rpcRes = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/delete_user_account`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: this.supabaseAnonKey,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        },
+      )
+
+      if (!rpcRes.ok && rpcRes.status !== 404) {
+        const errorData = (await rpcRes.json().catch(() => ({}))) as {
+          message?: string
+          details?: string
+          msg?: string
+        }
+        return {
+          success: false,
+          error:
+            errorData.message ||
+            errorData.details ||
+            errorData.msg ||
+            `Failed to delete account (HTTP ${rpcRes.status}).`,
+        }
+      }
+
+      // 2. Invalidate session tokens on the auth server
+      await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
+        method: 'POST',
+        headers: {
+          apikey: this.supabaseAnonKey,
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => {})
+
+      return { success: true }
+    } catch (err) {
+      return {
+        success: false,
+        error:
+          err instanceof Error ? err.message : 'Error deleting cloud account.',
       }
     } finally {
       this.clearSession()

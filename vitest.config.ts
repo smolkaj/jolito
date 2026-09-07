@@ -2,6 +2,12 @@ import { defineConfig } from 'vitest/config'
 import { searchForWorkspaceRoot } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const isIntegration = process.argv.some(
+  (arg) =>
+    arg.includes('tests/integration') ||
+    arg.includes('supabase.integration.test'),
+)
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -11,7 +17,12 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: isIntegration
+      ? ['tests/integration/**/*.test.ts']
+      : ['src/**/*.test.{ts,tsx}'],
+    exclude: isIntegration
+      ? ['src/**', '**/node_modules/**', '**/.git/**']
+      : ['tests/**', '**/node_modules/**', '**/.git/**'],
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',

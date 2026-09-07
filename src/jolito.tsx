@@ -71,6 +71,8 @@ import { checkOrRequestStoragePersistence } from './infrastructure/browser/stora
 import {
   type View,
   hashForView,
+  isFeedbackHash,
+  isPrivacyHash,
   isWhyJolitoHash,
   titleForView,
   viewFromHash,
@@ -89,6 +91,7 @@ import { AudioButton } from './ui/AudioButton'
 import { EditCardModal } from './ui/modals/EditCardModal'
 import { SyncModal } from './ui/modals/SyncModal'
 import { FeedbackModal } from './ui/modals/FeedbackModal'
+import { PrivacyModal } from './ui/modals/PrivacyModal'
 import { handleFocusSelect } from './ui/utils'
 
 const gradeLabels: Record<Grade, string> = {
@@ -750,10 +753,28 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
   )
 }
 
-function AppFooter({ onOpenFeedback }: { onOpenFeedback: () => void }) {
+function AppFooter({
+  onOpenFeedback,
+  onOpenPrivacy,
+}: {
+  onOpenFeedback: () => void
+  onOpenPrivacy?: (() => void) | undefined
+}) {
   return (
     <footer className="app-footer" aria-label="Site footer">
       <div className="app-footer-inner" data-nosnippet>
+        <button
+          type="button"
+          className="footer-link-button"
+          onClick={
+            onOpenPrivacy ??
+            (() => {
+              window.location.hash = '#/privacy'
+            })
+          }
+        >
+          Privacy
+        </button>
         <button
           type="button"
           className="footer-link-button"
@@ -1027,7 +1048,14 @@ export function App({
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [isStarterPacksOpen, setIsStarterPacksOpen] = useState(false)
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(() =>
+    typeof window !== 'undefined'
+      ? isFeedbackHash(window.location.hash)
+      : false,
+  )
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(() =>
+    typeof window !== 'undefined' ? isPrivacyHash(window.location.hash) : false,
+  )
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
@@ -1591,6 +1619,12 @@ export function App({
       cancelPendingAudio()
       setIsDemoDeckDismissed(false)
       const currentHash = window.location.hash
+      if (isPrivacyHash(currentHash)) {
+        setIsPrivacyOpen(true)
+      }
+      if (isFeedbackHash(currentHash)) {
+        setIsFeedbackOpen(true)
+      }
       const nextView = viewFromHash(currentHash)
       setView(nextView)
       if (nextView === 'welcome') {
@@ -2074,7 +2108,22 @@ export function App({
 
   const closeFeedbackModal = useCallback(() => {
     setIsFeedbackOpen(false)
+    if (typeof window !== 'undefined' && isFeedbackHash(window.location.hash)) {
+      window.history.pushState({ view }, '', hashForView(view))
+    }
+  }, [view])
+
+  const openPrivacyModal = useCallback(() => {
+    setSuggestions([])
+    setIsPrivacyOpen(true)
   }, [])
+
+  const closePrivacyModal = useCallback(() => {
+    setIsPrivacyOpen(false)
+    if (typeof window !== 'undefined' && isPrivacyHash(window.location.hash)) {
+      window.history.pushState({ view }, '', hashForView(view))
+    }
+  }, [view])
 
   const handleSavePendingLocally = useCallback(() => {
     if (pendingCardRef.current) {
@@ -2267,7 +2316,10 @@ export function App({
                   ↓
                 </span>
               </a>
-              <AppFooter onOpenFeedback={openFeedbackModal} />
+              <AppFooter
+                onOpenFeedback={openFeedbackModal}
+                onOpenPrivacy={openPrivacyModal}
+              />
             </div>
           </section>
           <section
@@ -2356,6 +2408,7 @@ export function App({
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
+          onOpenPrivacy={openPrivacyModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2377,6 +2430,11 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
       </>
     )
@@ -2778,7 +2836,10 @@ export function App({
               </div>
             </form>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenPrivacy={openPrivacyModal}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -2792,6 +2853,7 @@ export function App({
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
+          onOpenPrivacy={openPrivacyModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2813,6 +2875,11 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
       </>
     )
@@ -3261,7 +3328,10 @@ export function App({
               </div>
             )}
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenPrivacy={openPrivacyModal}
+          />
         </main>
         <StarterPacksModal
           isOpen={isStarterPacksOpen}
@@ -3294,6 +3364,7 @@ export function App({
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
+          onOpenPrivacy={openPrivacyModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3320,6 +3391,11 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
       </>
     )
@@ -3421,7 +3497,10 @@ export function App({
               )}
             </div>
           </section>
-          <AppFooter onOpenFeedback={openFeedbackModal} />
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenPrivacy={openPrivacyModal}
+          />
         </main>
         <SyncModal
           isOpen={isSyncOpen}
@@ -3435,6 +3514,7 @@ export function App({
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
+          onOpenPrivacy={openPrivacyModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3456,6 +3536,11 @@ export function App({
           user={authUser}
           feedbackService={services.feedback}
           currentView={view}
+        />
+        <PrivacyModal
+          isOpen={isPrivacyOpen}
+          onClose={closePrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
       </>
     )
@@ -3636,6 +3721,7 @@ export function App({
         sync={services.sync}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
+        onOpenPrivacy={openPrivacyModal}
       />
       <EditCardModal
         isOpen={editingCard !== null}
@@ -3657,6 +3743,11 @@ export function App({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
+      />
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={closePrivacyModal}
+        onOpenFeedback={openFeedbackModal}
       />
     </>
   )

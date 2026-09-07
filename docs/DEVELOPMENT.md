@@ -53,35 +53,76 @@ The remote database schema, Row-Level Security (RLS) policies, and project authe
 - [`supabase/config.toml`](../supabase/config.toml): Defines local development project settings, site URL, allowed redirect wildcard patterns, token expiry, and passwordless authentication.
 - [`supabase/migrations/`](../supabase/migrations/): Contains versioned SQL schema migrations with RLS policies ensuring users can only read and write their own deck.
 
-To link and push database migrations:
+### Local Supabase development & integration testing
+
+You can run the full local Supabase Postgres and PostgREST stack via Docker for $0 operating costs:
 
 ```sh
-# 1. Log in to Supabase CLI (or export SUPABASE_ACCESS_TOKEN)
-npx supabase login
+# 1. Start local Supabase containers (applies all migrations automatically)
+npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
 
-# 2. Link your project reference
-npx supabase link --project-ref <project-ref>
+# 2. Run pgTAP database tests (verifies tables and PostgreSQL RLS policies; 20 assertions)
+npm run test:db
 
-# 3. Push schema migrations
-npx supabase db push
+# 3. Lint local database schema
+npm run lint:db
+
+# 4. Run live integration test suite (verifies guest/authenticated feedback & sync against local PostgREST)
+npm run test:integration
+
+# 5. Stop local Supabase when done
+npx supabase stop
 ```
 
-#### Supabase Auth URL Configuration (Remote)
+## Deployment & continuous delivery
 
-For hosted Supabase projects, Auth URL settings (`Site URL` and `Redirect URLs`) are managed in the Supabase Dashboard or via the Management API:
+Jolito uses a dual, strictly zero-cost continuous delivery architecture: static web assets and edge endpoints build and deploy to Cloudflare Workers, while PostgreSQL schema migrations and Row-Level Security policies deploy to Supabase Cloud via GitHub Actions.
 
-1. Open **Supabase Dashboard** > **Authentication** > **URL Configuration**.
-2. **Site URL:** `https://joli.to`
-3. **Redirect URLs:**
-   - `https://joli.to/**`
-   - `https://*-jolito.smolkaj.workers.dev/**`
-   - `https://jolito.smolkaj.workers.dev/**`
-   - `http://localhost:*/**`
-   - `http://127.0.0.1:*/**`
+```mermaid
+flowchart TD
+  subgraph PullRequest["Pull Request Verification"]
+    PR[Pull Request Opened / Updated] --> CF_Preview[Cloudflare Workers<br/>Branch & Commit Previews]
+    PR --> GHA_CI[GitHub Actions CI]
+    GHA_CI --> Quality[Quality Gates<br/>Typecheck, Lint, Unit Coverage]
+    GHA_CI --> E2E[Playwright E2E<br/>Browser Smoke Tests]
+    GHA_CI --> iOS[Native iOS Gate<br/>Xcode Compilation]
+    GHA_CI --> Local_Supa[Local Supabase Container<br/>Schema Lint, pgTAP 20/20, Integration Tests]
+  end
 
-Alternatively, `npm run setup:domain` automatically provisions these Auth URL settings when `SUPABASE_ACCESS_TOKEN` is set.
+  subgraph MergeToMain["Merge to main"]
+    Main[Merged to main] --> CF_Prod[Cloudflare Workers<br/>Automatic Deploy to joli.to]
+    Main --> GHA_Deploy[GitHub Actions Migrations Workflow<br/>.github/workflows/supabase-migration.yml]
+    GHA_Deploy --> Supa_Push[npx supabase db push --linked --yes<br/>Applies pending migrations to production]
+  end
+```
 
-## Cloudflare deployment
+### GitHub Actions secrets reference
+
+Automated schema deployment on merge to `main` relies on GitHub repository secrets (**Settings > Secrets and variables > Actions**):
+
+| Secret                  | Required | Purpose                                                        | Source / Notes                                                |
+| :---------------------- | :------- | :------------------------------------------------------------- | :------------------------------------------------------------ |
+| `SUPABASE_ACCESS_TOKEN` | **Yes**  | Authenticates Supabase CLI via Management API                  | Generated at Supabase Dashboard > Account > Access Tokens     |
+| `SUPABASE_PROJECT_ID`   | **Yes**  | Identifies hosted project reference (`xwqjelkfdcfzyxxblvhp`)   | Project ref in Supabase Dashboard (or `SUPABASE_PROJECT_REF`) |
+| `SUPABASE_DB_PASSWORD`  | No       | Database password if connecting directly via connection string | Optional; linking and migrations use Management API           |
+
+> [!NOTE]
+> If these secrets are omitted (e.g. in a personal fork), the migration deployment step on `main` emits an informative warning and cleanly skips execution rather than breaking the build on `main`.
+
+### Automated CI/CD database migrations & checks
+
+To prevent database drift and guarantee zero unapplied schema changes:
+
+1. **Pull Requests (`.github/workflows/supabase-migration.yml`):**
+   - Spins up a minimal local Supabase container (PostgreSQL + PostgREST + GoTrue Auth) with unused auxiliary services disabled to preserve speed and memory.
+   - Applies migrations from scratch and lints schema via `npm run lint:db`.
+   - Runs 20 pgTAP test assertions (`npm run test:db`) verifying table columns and RLS permission matrices.
+   - Runs live HTTP integration tests (`npm run test:integration`) verifying guest/authenticated feedback and deck sync.
+   - Performs a non-mutating `supabase db push --dry-run` when repository secrets are present.
+2. **Merge to `main`:** Automatically deploys new SQL migrations using `npx supabase db push --linked --yes`.
+3. **Local Supabase in PR Quality Gates (`.github/workflows/quality.yml`):** Every pull request runs the `supabase-integration` job, executing real Playwright E2E form submissions against the local PostgREST backend alongside pure in-memory unit tests.
+
+### Cloudflare deployment
 
 The [production app](https://joli.to) tracks `main` through Cloudflare Workers Git integration. Cloudflare runs `npm run build`, then:
 
@@ -131,6 +172,18 @@ TestFlight beta builds are automatically deployed via GitHub Actions on the `mac
 
 ```sh
 fastlane ios beta
+```
+
+### Deploying to the Apple App Store
+
+For complete App Store Connect release instructions, metadata copy, and privacy nutrition declarations, see the [App Store Release Guide](APP_STORE.md):
+
+```sh
+# Generate App Store screenshots
+npm run capture:screenshots
+
+# Submit release build to App Store Connect
+fastlane ios release
 ```
 
 ## Before opening a PR

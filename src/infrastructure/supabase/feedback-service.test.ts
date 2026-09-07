@@ -252,4 +252,47 @@ describe('SupabaseFeedbackService', () => {
     expect(result.success).toBe(false)
     expect(refreshSessionSpy).not.toHaveBeenCalled()
   })
+
+  it('parses structured PostgREST JSON errors and logs details', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const postgrestErrorJson = JSON.stringify({
+      code: 'PGRST205',
+      details: null,
+      hint: null,
+      message: "Could not find the table 'public.feedback' in the schema cache",
+    })
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(postgrestErrorJson, {
+        status: 404,
+        statusText: 'Not Found',
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    const service = new SupabaseFeedbackService(
+      mockAuth,
+      'https://supabase.example.com',
+      'anon-key',
+    )
+
+    const result = await service.submitFeedback(
+      { message: 'Feedback on unmigrated table' },
+      null,
+    )
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe(
+      "Could not find the table 'public.feedback' in the schema cache",
+    )
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[FeedbackService] Submission failed:',
+      expect.objectContaining({
+        status: 404,
+        code: 'PGRST205',
+        message:
+          "Could not find the table 'public.feedback' in the schema cache",
+      }),
+    )
+  })
 })
