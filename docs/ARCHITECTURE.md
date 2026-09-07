@@ -62,10 +62,10 @@ the need.
 
 - React and Vite provide an offline-capable single-page application shell.
 - Local storage (with versioned serialization envelopes) is the UI's immediate, zero-latency source of data.
-- PostgreSQL hosted on Supabase is the canonical synchronized server store, operating under Supabase's permanent free tier ([ADR 0005](adr/0005-cloud-snapshot-sync-supabase.md)).
+- PostgreSQL hosted on Supabase is the canonical synchronized server store, operating under Supabase's permanent free tier ([ADR 0005](adr/0005-cloud-snapshot-sync-supabase.md)). Schema migrations are version-controlled in `supabase/migrations/`, tested locally in CI via pgTAP, and deployed automatically on merge to `main` via GitHub Actions.
 - Supabase provides passwordless authentication (email Magic Link / OTP) and Row-Level Security (RLS) policies for user isolation.
 - PowerSync / operation-log sync remains under evaluation for future fine-grained multi-device concurrent editing ([ADR 0003](adr/0003-offline-sync-evaluation.md)).
-- Cloudflare Workers serve static assets and edge API endpoints (such as `/api/tts` for neural text-to-speech) without requiring a heavy standalone application server. When privileged backend work or long-running jobs require a dedicated Node.js service, adopt Fastify within an npm workspace.
+- Cloudflare Workers serve static assets and edge API endpoints (such as `/api/tts` for neural text-to-speech) without requiring a heavy standalone application server, with automated branch previews on pull requests and production deployment on merge to `main` (`joli.to`). When privileged backend work or long-running jobs require a dedicated Node.js service, adopt Fastify within an npm workspace.
 - Native iOS is delivered via Capacitor (`@capacitor/core`, `@capacitor/ios`), directly reusing the React web shell, local storage, and sound engine while bridging native sensory haptics, keyboard resize behavior, and status bar controls.
 
 ## Data evolution
