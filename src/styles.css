@@ -2308,29 +2308,18 @@ kbd {
   -webkit-box-decoration-break: clone;
 }
 
-/* Matching characters: soft calm turquoise green highlight */
+/* Matching characters in "You wrote": soft calm turquoise green highlight */
 .diff-seg-match {
   background: var(--turquesa-soft);
   color: var(--turquesa-dark);
-}
-
-/* Accent nuance (diacritics / inverted marks): uniform green text with subtle 1.5px dashed underline */
-.diff-seg-accent {
-  background: var(--turquesa-soft);
-  color: var(--turquesa-dark);
-  border-bottom: 1.5px dashed var(--cempasuchil);
-}
-
-/* Missing characters in expected: warm soft terracotta highlight */
-.diff-seg-missing {
-  background: #ffedd5;
-  color: #9a3412;
 }
 
 /* Extra / incorrect characters in what you wrote: soft pastel red */
 .diff-seg-extra {
   background: var(--tezontle-soft);
   color: var(--tezontle-dark);
+  padding: 1px 3px;
+  border-radius: 3px;
 }
 
 /* Extra space: distinct soft red space badge */
@@ -2341,6 +2330,28 @@ kbd {
   padding: 1px 5px;
   margin: 0 2px;
   border-radius: 4px;
+}
+
+/* Missing characters in expected: calm soft turquoise highlight */
+.diff-seg-missing {
+  background: var(--turquesa-soft);
+  color: var(--turquesa-dark);
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
+/* Accent nuance (diacritics / inverted marks): subtle dashed marigold underline */
+.diff-seg-accent {
+  background: transparent;
+  color: var(--ink-muted);
+  border-bottom: 2px dashed var(--cempasuchil);
+}
+
+/* Expected row hierarchy: de-emphasize redundant matching characters so target fixes pop */
+.expected-row .diff-seg-match {
+  background: transparent;
+  color: var(--ink-muted);
 }
 
 /* Subtle Always-Visible Additional Context Block (Pronounced on Hover) */

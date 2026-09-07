@@ -173,7 +173,7 @@ function AnswerComparison({
     <div className="diff-card" aria-label="Answer comparison">
       <div className="diff-rows">
         {hasTyped && (
-          <div className="diff-row">
+          <div className="diff-row typed-row">
             <span className="diff-label">You wrote</span>
             <p className="diff-text">
               {renderDiffSegments(comparison.typedSegments)}
