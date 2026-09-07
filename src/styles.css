@@ -4790,10 +4790,51 @@ kbd {
   border: 1px solid var(--cempasuchil);
 }
 
-.inspect-badge.new-card {
-  background: var(--paper-deep);
-  color: var(--ink-soft);
-  border: 1px solid var(--line-subtle);
+.inspect-item-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line-subtle);
+  background: var(--paper);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 120ms ease;
+}
+
+.inspect-item-add-btn:hover {
+  background: var(--turquesa-soft);
+  border-color: var(--turquesa-border);
+  color: var(--turquesa-deep);
+  transform: translateY(-1px);
+}
+
+.inspect-item-add-btn:active {
+  transform: translateY(0);
+}
+
+.inspect-item-add-btn:focus-visible {
+  outline: 2px solid var(--line);
+  outline-offset: 2px;
+}
+
+.inspect-item-add-btn.is-partial {
+  background: var(--cempasuchil-soft);
+  border-color: var(--cempasuchil);
+  color: var(--cempasuchil-dark);
+}
+
+.inspect-item-add-btn.is-partial:hover {
+  background: var(--cempasuchil);
+  border-color: var(--cempasuchil-dark);
+  color: #ffffff;
 }
 
 .edit-card-form {

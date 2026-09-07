@@ -9,16 +9,19 @@ interface StarterPacksModalProps {
   onClose: () => void
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => void
+  onAddCards?: (cards: StudyCard[]) => void
 }
 
 function StarterPacksModalInner({
   onClose,
   cards,
   onAddPack,
+  onAddCards,
 }: {
   onClose: () => void
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => void
+  onAddCards?: (cards: StudyCard[]) => void
 }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -126,15 +129,29 @@ function StarterPacksModalInner({
     [inspectingPackId],
   )
 
+  const handleAddNote = (originalIndex: number) => {
+    if (!inspectingPack) return
+    const noteCards = inspectingPack.createNoteCards(originalIndex, 0)
+    if (onAddCards) {
+      onAddCards(noteCards)
+    } else {
+      onAddPack(inspectingPack)
+    }
+  }
+
   const filteredInspectNotes = useMemo(() => {
     if (!inspectingPack) return []
+    const indexed = inspectingPack.notes.map((note, originalIndex) => ({
+      note,
+      originalIndex,
+    }))
     const q = inspectSearch.trim().toLowerCase()
-    if (!q) return inspectingPack.notes
-    return inspectingPack.notes.filter(
-      (n) =>
-        n.spanish.toLowerCase().includes(q) ||
-        n.english.toLowerCase().includes(q) ||
-        n.context.toLowerCase().includes(q),
+    if (!q) return indexed
+    return indexed.filter(
+      ({ note }) =>
+        note.spanish.toLowerCase().includes(q) ||
+        note.english.toLowerCase().includes(q) ||
+        note.context.toLowerCase().includes(q),
     )
   }, [inspectingPack, inspectSearch])
 
@@ -259,7 +276,7 @@ function StarterPacksModalInner({
               tabIndex={0}
               aria-label="Cards in this pack"
             >
-              {filteredInspectNotes.map((note, idx) => {
+              {filteredInspectNotes.map(({ note, originalIndex }) => {
                 const isBidirectional = note.bidirectional !== false
                 const hasEsEn = existingKeys.has(
                   normalizeCardKey(note.spanish, 'es-en'),
@@ -274,7 +291,7 @@ function StarterPacksModalInner({
 
                 return (
                   <div
-                    key={idx}
+                    key={originalIndex}
                     className={`starter-pack-inspect-item ${isFullyInDeck ? 'is-in-deck' : isPartiallyInDeck ? 'is-partial-deck' : ''}`}
                     role="listitem"
                   >
@@ -303,14 +320,25 @@ function StarterPacksModalInner({
                           ✓ In deck
                         </span>
                       ) : isPartiallyInDeck ? (
-                        <span
-                          className="inspect-badge partial-deck"
-                          title="1 card in your deck. Missing reciprocal card will be added."
+                        <button
+                          type="button"
+                          className="inspect-item-add-btn is-partial"
+                          onClick={() => handleAddNote(originalIndex)}
+                          aria-label={`Add reverse card for ${note.spanish}`}
+                          title="Add missing reciprocal card to your deck"
                         >
-                          1 of 2 in deck
-                        </span>
+                          + Add reverse
+                        </button>
                       ) : (
-                        <span className="inspect-badge new-card">+ New</span>
+                        <button
+                          type="button"
+                          className="inspect-item-add-btn"
+                          onClick={() => handleAddNote(originalIndex)}
+                          aria-label={`Add ${note.spanish} to deck`}
+                          title="Add to your deck"
+                        >
+                          + Add
+                        </button>
                       )}
                     </div>
                   </div>

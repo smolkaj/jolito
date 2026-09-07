@@ -79,4 +79,29 @@ describe('starterPacks', () => {
       expect(card.schedule.intervalDays).toBe(0)
     }
   })
+
+  it('creates individual note cards by index and handles out-of-bounds', () => {
+    const street = findStarterPack('mexican-street-phrases')!
+    // Default now = 0
+    const firstNoteCards = street.createNoteCards(0)
+    expect(firstNoteCards).toHaveLength(2)
+    expect(firstNoteCards[0]?.noteId).toBe('curated-mexican-street-phrases-001')
+    expect(firstNoteCards[0]?.schedule.dueAt).toBe(0)
+
+    // Explicit now parameter
+    const noteCardsWithTimestamp = street.createNoteCards(1, 99999)
+    expect(noteCardsWithTimestamp).toHaveLength(2)
+    expect(noteCardsWithTimestamp[0]?.noteId).toBe(
+      'curated-mexican-street-phrases-002',
+    )
+    expect(noteCardsWithTimestamp[0]?.schedule.dueAt).toBe(99999)
+
+    // Out of bounds returns empty array
+    expect(street.createNoteCards(-1)).toEqual([])
+    expect(street.createNoteCards(999)).toEqual([])
+  })
+
+  it('returns undefined for non-existent pack id', () => {
+    expect(findStarterPack('non-existent-pack')).toBeUndefined()
+  })
 })

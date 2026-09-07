@@ -1364,12 +1364,10 @@ export function App({
     [onUpdateCards, services.clock, services.ids],
   )
 
-  const handleAddStarterPack = useCallback(
-    (pack: StarterPack) => {
-      const now = services.clock.now()
-      const packCards = pack.createCards(now)
+  const handleAddStarterCards = useCallback(
+    (newCards: StudyCard[]) => {
       const userCards = filterOutStarterCards(cardsRef.current)
-      const mergeResult = mergeStudyCardsSemantic(userCards, packCards)
+      const mergeResult = mergeStudyCardsSemantic(userCards, newCards)
 
       onUpdateCards(mergeResult.cards, false)
 
@@ -1384,7 +1382,15 @@ export function App({
         })
       }
     },
-    [onUpdateCards, services.clock, services.sync],
+    [onUpdateCards, services.sync],
+  )
+
+  const handleAddStarterPack = useCallback(
+    (pack: StarterPack) => {
+      const now = services.clock.now()
+      handleAddStarterCards(pack.createCards(now))
+    },
+    [handleAddStarterCards, services.clock],
   )
 
   const handleCopySessionLink = useCallback(async () => {
@@ -3266,6 +3272,7 @@ export function App({
           onClose={() => setIsStarterPacksOpen(false)}
           cards={cards}
           onAddPack={handleAddStarterPack}
+          onAddCards={handleAddStarterCards}
         />
 
         <DeckBackupModal

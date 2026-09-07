@@ -209,7 +209,9 @@ describe('StarterPacksModal', () => {
     // 3. Check presence of "¿Mande?" in inspect list
     expect(screen.getByText('¿Mande?')).toBeInTheDocument()
     expect(screen.getByText('✓ In deck')).toBeInTheDocument()
-    expect(screen.getAllByText('+ New').length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByRole('button', { name: /Add .* to deck/i }).length,
+    ).toBeGreaterThan(0)
 
     // 4. Test search input in inspect view
     const searchInput = screen.getByLabelText(/Search cards in this pack/i)
@@ -234,7 +236,7 @@ describe('StarterPacksModal', () => {
     ).toBeNull()
   })
 
-  it('displays partial badge (1 of 2 in deck) when only the reverse en-es directional card exists', () => {
+  it('displays partial button (+ Add reverse) when only the reverse en-es directional card exists', () => {
     const streetPack = findStarterPack('mexican-street-phrases')!
     const allStreetCards = streetPack.createCards(0)
     // Only have the second card (en-es direction) of the first reciprocal pair
@@ -259,7 +261,9 @@ describe('StarterPacksModal', () => {
     expect(
       screen.getByText(/1 of 72 cards in your deck \(71 cards to add\)/i),
     ).toBeInTheDocument()
-    expect(screen.getByText('1 of 2 in deck')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Add reverse card for/i }),
+    ).toBeInTheDocument()
   })
 
   it('displays clean status copy when all cards in pack are in deck', () => {
@@ -313,5 +317,38 @@ describe('StarterPacksModal', () => {
         name: /Inspect Mexican Street Phrases cards/i,
       }),
     )
+  })
+
+  it('allows adding individual words/notes directly from inspect view', () => {
+    const onAddCards = vi.fn<(cards: unknown[]) => void>()
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onAddPack={vi.fn()}
+        onAddCards={onAddCards}
+      />,
+    )
+
+    // Inspect Mexican Street Phrases
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+
+    // Find the "+ Add" button for ¿Mande?
+    const addMandeBtn = screen.getByRole('button', {
+      name: /Add ¿Mande\? to deck/i,
+    })
+    fireEvent.click(addMandeBtn)
+
+    expect(onAddCards).toHaveBeenCalledTimes(1)
+    const callArgs = onAddCards.mock.calls[0]
+    expect(callArgs).toBeDefined()
+    const addedCards = (callArgs?.[0] as Array<{ prompt: string }>) ?? []
+    expect(addedCards).toHaveLength(2)
+    expect(addedCards.some((c) => c.prompt === '¿Mande?')).toBe(true)
   })
 })

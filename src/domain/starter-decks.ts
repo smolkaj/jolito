@@ -11,7 +11,7 @@ export interface StarterPackSeed {
     spanish: string
     english: string
     context: string
-    bidirectional?: boolean
+    bidirectional: boolean
   }>
 }
 
@@ -28,9 +28,10 @@ export interface StarterPack {
     spanish: string
     english: string
     context: string
-    bidirectional?: boolean
+    bidirectional: boolean
   }>
   createCards: (now?: number) => StudyCard[]
+  createNoteCards: (noteIndex: number, now?: number) => StudyCard[]
 }
 
 export const starterPackSeeds: StarterPackSeed[] = [
@@ -1588,11 +1589,23 @@ export const starterPackSeeds: StarterPackSeed[] = [
 
 export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {
   const noteCount = seed.notes.length
-  // Calculate total cards created (bidirectional notes create 2 cards, one-way notes create 1)
-  const cardCount = seed.notes.reduce(
-    (acc, note) => acc + (note.bidirectional ? 2 : 1),
-    0,
-  )
+  const cardCount = seed.notes.length * 2
+
+  const createNoteCards = (noteIndex: number, now = 0): StudyCard[] => {
+    const note = seed.notes[noteIndex]
+    if (!note) return []
+    const noteId = `curated-${seed.id}-${String(noteIndex + 1).padStart(3, '0')}`
+    return createStudyCards(
+      {
+        spanish: note.spanish,
+        english: note.english,
+        context: note.context,
+        bidirectional: note.bidirectional,
+      },
+      noteId,
+      now,
+    )
+  }
 
   return {
     id: seed.id,
@@ -1604,21 +1617,11 @@ export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {
     notes: seed.notes,
     noteCount,
     cardCount,
+    createNoteCards,
     createCards: (now = 0) => {
       const cards: StudyCard[] = []
-      seed.notes.forEach((note, index) => {
-        const noteId = `curated-${seed.id}-${String(index + 1).padStart(3, '0')}`
-        const created = createStudyCards(
-          {
-            spanish: note.spanish,
-            english: note.english,
-            context: note.context,
-            bidirectional: note.bidirectional ?? true,
-          },
-          noteId,
-          now,
-        )
-        cards.push(...created)
+      seed.notes.forEach((_, index) => {
+        cards.push(...createNoteCards(index, now))
       })
       return cards
     },
