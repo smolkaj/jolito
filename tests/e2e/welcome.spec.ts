@@ -517,12 +517,16 @@ test('all pills and badges have consistent heights across views and within the s
     .locator('.nav-actions .connection-pill')
     .boundingBox()
   const deckFilterPills = page.locator('.deck-filter-pills .deck-filter-pill')
+  const deckStarterPacksBtn = await page
+    .getByRole('button', { name: /^starter packs$/i })
+    .boundingBox()
   const deckBackupBtn = await page
-    .locator('.deck-header-actions .secondary-button')
+    .getByRole('button', { name: /^backup & import$/i })
     .boundingBox()
 
   expect(deckNewCardBtn?.height).toBeCloseTo(32, 1)
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
+  expect(deckStarterPacksBtn?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
 
   // Verify all filter pills have identical 32px height on the toolbar line
