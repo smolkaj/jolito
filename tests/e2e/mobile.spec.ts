@@ -75,11 +75,15 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     // Capture mobile welcome snapshot
     await page.screenshot({ path: 'test-results/mobile-welcome.png' })
 
-    // Verify scroll cue is hidden on mobile to avoid redundant button farm
+    // Verify Why Jolito scroll cue button is visible and meets Apple HIG touch targets on mobile
     const scrollCue = page.getByRole('link', {
       name: /^scroll down to explore why jolito$/i,
     })
-    await expect(scrollCue).toBeHidden()
+    await expect(scrollCue).toBeVisible()
+    const cueBox = await scrollCue.boundingBox()
+    expect(cueBox).not.toBeNull()
+    expect(cueBox!.height).toBeGreaterThanOrEqual(44)
+    expect(cueBox!.width).toBeGreaterThanOrEqual(44)
 
     // Initial accessibility check on mobile welcome screen
     const welcomeAxe = await new AxeBuilder({ page })
@@ -189,5 +193,52 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
         name: /^save your card & start your deck$/i,
       }),
     ).toBeVisible()
+  })
+
+  test('supports Why Jolito navigation and clean seamless fold presentation on mobile iPhone viewports', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    const scrollCue = page.getByRole('link', {
+      name: /^scroll down to explore why jolito$/i,
+    })
+    await expect(scrollCue).toBeVisible()
+    await expect(scrollCue).toHaveText(/why jolito\?/i)
+
+    // Capture mobile landing view showing the centered Why Jolito button
+    await page.screenshot({ path: 'test-results/mobile-why-jolito-button.png' })
+
+    // Tap Why Jolito button to smoothly scroll to editorial fold
+    await scrollCue.click()
+    await expect(page).toHaveURL(/#why-jolito$/)
+    await expect
+      .poll(async () => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(100)
+    await page.waitForTimeout(400)
+
+    const whyFold = page.locator('#why-jolito')
+    await expect(whyFold).toBeInViewport()
+    await expect(
+      page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
+    ).toBeVisible()
+
+    // Verify border-top is none / 0px on .welcome-why
+    const borderTopWidth = await page.evaluate(() => {
+      const el = document.querySelector('.welcome-why')
+      return el ? window.getComputedStyle(el).borderTopWidth : null
+    })
+    expect(borderTopWidth).toBe('0px')
+
+    // Capture mobile fold snapshot
+    await page.screenshot({ path: 'test-results/mobile-why-jolito-fold.png' })
+
+    // Tap Start learning button to return to top
+    const startBtn = page.getByRole('button', { name: /^start learning/i })
+    await expect(startBtn).toBeVisible()
+    await startBtn.click()
+    await expect
+      .poll(async () => page.evaluate(() => window.scrollY))
+      .toBeLessThanOrEqual(5)
   })
 })
