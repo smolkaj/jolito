@@ -23,6 +23,7 @@
     "ingest:dict": "python3 scripts/ingest-wiktionary.py",
     "setup:domain": "node scripts/setup-domain.ts",
     "generate:seo": "node scripts/generate-seo-assets.ts",
+    "generate:splash": "node scripts/generate-splash-screens.ts",
     "build:favicons": "node scripts/build-favicons.mjs",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
