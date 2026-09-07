@@ -111,16 +111,8 @@ export function sessionPracticedCount(session: StudySession): number {
   return session.practicedCardIds?.length ?? 0
 }
 
-export function formatPracticedSummary(
-  practicedCount: number,
-  reviewedCount: number,
-): string {
-  const cardLabel = `${practicedCount} ${practicedCount === 1 ? 'card' : 'cards'} practiced`
-  if (reviewedCount > practicedCount) {
-    const reviewLabel = `${reviewedCount} ${reviewedCount === 1 ? 'review' : 'reviews'}`
-    return `${cardLabel} across ${reviewLabel}`
-  }
-  return cardLabel
+export function formatPracticedSummary(practicedCount: number): string {
+  return `${practicedCount} ${practicedCount === 1 ? 'card' : 'cards'} practiced`
 }
 
 export function filterSessionCards(

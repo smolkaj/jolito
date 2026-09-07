@@ -213,28 +213,16 @@ describe('studySession', () => {
   })
 
   describe('formatPracticedSummary', () => {
-    it('formats singular card without repetitions', () => {
-      expect(formatPracticedSummary(1, 1)).toBe('1 card practiced')
+    it('formats singular card', () => {
+      expect(formatPracticedSummary(1)).toBe('1 card practiced')
     })
 
-    it('formats plural cards without repetitions', () => {
-      expect(formatPracticedSummary(15, 15)).toBe('15 cards practiced')
-    })
-
-    it('formats singular card with multiple reviews', () => {
-      expect(formatPracticedSummary(1, 2)).toBe(
-        '1 card practiced across 2 reviews',
-      )
-    })
-
-    it('formats plural cards with multiple reviews', () => {
-      expect(formatPracticedSummary(15, 22)).toBe(
-        '15 cards practiced across 22 reviews',
-      )
+    it('formats plural cards', () => {
+      expect(formatPracticedSummary(15)).toBe('15 cards practiced')
     })
 
     it('formats 0 cards correctly', () => {
-      expect(formatPracticedSummary(0, 0)).toBe('0 cards practiced')
+      expect(formatPracticedSummary(0)).toBe('0 cards practiced')
     })
   })
 
