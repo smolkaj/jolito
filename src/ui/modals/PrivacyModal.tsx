@@ -99,19 +99,16 @@ export function PrivacyModal({
           <section className="privacy-section">
             <h3>4. Open Source & Contact</h3>
             <p>
-              Jolito is open-source (Apache-2.0). The code is on{' '}
+              Jolito is{' '}
               <a
                 href="https://github.com/smolkaj/jolito"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="privacy-contact-link"
               >
-                GitHub
-              </a>
-              .
-            </p>
-            <p>
-              Created by{' '}
+                open-source
+              </a>{' '}
+              (Apache-2.0), created by{' '}
               <a
                 href="https://smolka.st"
                 target="_blank"
@@ -120,7 +117,19 @@ export function PrivacyModal({
               >
                 Steffen Smolka
               </a>
-              . You can open an issue on GitHub or submit feedback{' '}
+              .
+            </p>
+            <p>
+              You can open an issue{' '}
+              <a
+                href="https://github.com/smolkaj/jolito"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="privacy-contact-link"
+              >
+                on GitHub
+              </a>{' '}
+              or submit feedback{' '}
               <a
                 href="#/feedback"
                 className="privacy-contact-link"
