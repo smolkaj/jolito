@@ -17,11 +17,8 @@ git worktree remove ../jolito-<task> && git worktree prune
 - Open PRs proactively and early; share them with the user for review.
 - Always proactively provide the live branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
 - Never merge PRs without explicit user approval.
-- After merging a PR, only propose follow-up work if you have a high-conviction, concrete improvement. Default to proposing nothing.
-- Strictly forbid list-padding: never suggest low-value ideas, hypothetical optimizations, or filler just to provide a list. If you find only one good idea, propose only one; if zero, state that the task is complete.
-- Mandatory verification gate: before proposing any technical follow-up, you MUST inspect the codebase first to verify:
-  1. The exact limitation or friction actually exists in the current code.
-  2. The suggestion does not violate our core invariants (simplicity above all, reject ambient magic, zero operating costs).
+- After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
+- For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 
 # Independent review loop
 
