@@ -29,6 +29,7 @@ infrastructure ────────────┴────────�
 5. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads, import archives) must be validated with runtime Zod schemas.
 6. **Data migrations are mandatory.** When changing storage representations, provide an explicit, tested migration for existing cards.
 7. **Visual verification is mandatory.** DOM presence is not visual correctness. Author and reviewer must visually verify rendered appearance, layering, and contrast on UI changes.
+8. **Zero idle activity & deterministic teardown.** When no user interaction or media playback is active, the application must consume zero CPU cycles and zero battery. No ambient polling loops (`setInterval`), unthrottled `requestAnimationFrame` cycles, or persistent network keep-alives may run during idle. Media pipelines (including Web Audio `AudioContext`) must suspend within seconds of inactivity and immediately upon tab backgrounding (`visibilitychange` / `pagehide`). All observers, listeners, and subsystem handles must implement explicit `destroy()` teardown.
 
 ## Dependency rules
 
