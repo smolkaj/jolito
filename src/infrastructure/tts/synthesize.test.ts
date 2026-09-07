@@ -47,6 +47,11 @@ class MockEdgeWebSocket implements EdgeWebSocketLike {
   simulateTurnEnd(): void {
     this.emit('message', { data: 'Path:turn.end\r\n' })
   }
+
+  simulateClose(code = 1000, reason = 'Normal Closure'): void {
+    this.readyState = 3 // CLOSED
+    this.emit('close', { code, reason })
+  }
 }
 
 function createMockEnvironment(initialReadyState = 0) {
@@ -196,6 +201,66 @@ describe('synthesizeSpeech', () => {
 
     const result = await promise
     expect(result).toEqual(new Uint8Array([1, 2, 3]))
+  })
+
+  it('handles Blob audio frames in WebSocket messages (Cloudflare Workers runtime)', async () => {
+    const { mockWs, wsFactory, attachedPromise } = createMockEnvironment(1)
+
+    const promise = synthesizeSpeech({
+      text: 'Hola Jolito',
+      timeoutMs: 1000,
+      wsFactory,
+    })
+
+    await attachedPromise
+
+    const payload = new Uint8Array([10, 20, 30])
+    const headerStr = 'Path:audio\r\n'
+    const headerBytes = new TextEncoder().encode(headerStr)
+    const frame = new Uint8Array(2 + headerBytes.length + payload.length)
+    frame[0] = (headerBytes.length >> 8) & 0xff
+    frame[1] = headerBytes.length & 0xff
+    frame.set(headerBytes, 2)
+    frame.set(payload, 2 + headerBytes.length)
+
+    const blob = new Blob([frame.buffer])
+    mockWs.emit('message', { data: blob })
+    mockWs.simulateTurnEnd()
+
+    const result = await promise
+    expect(result).toEqual(new Uint8Array([10, 20, 30]))
+  })
+
+  it('handles multiple sequential Blob audio frames maintaining arrival order', async () => {
+    const { mockWs, wsFactory, attachedPromise } = createMockEnvironment(1)
+
+    const promise = synthesizeSpeech({
+      text: 'Hola Jolito',
+      timeoutMs: 1000,
+      wsFactory,
+    })
+
+    await attachedPromise
+
+    const createAudioBlob = (payload: number[]) => {
+      const headerStr = 'Path:audio\r\n'
+      const headerBytes = new TextEncoder().encode(headerStr)
+      const frame = new Uint8Array(2 + headerBytes.length + payload.length)
+      frame[0] = (headerBytes.length >> 8) & 0xff
+      frame[1] = headerBytes.length & 0xff
+      frame.set(headerBytes, 2)
+      frame.set(new Uint8Array(payload), 2 + headerBytes.length)
+      return new Blob([frame.buffer])
+    }
+
+    mockWs.emit('message', { data: createAudioBlob([1, 2]) })
+    mockWs.emit('message', { data: createAudioBlob([3, 4]) })
+    mockWs.emit('message', { data: createAudioBlob([5, 6]) })
+    mockWs.simulateTurnEnd()
+    mockWs.simulateClose(1000, 'Normal Closure')
+
+    const result = await promise
+    expect(result).toEqual(new Uint8Array([1, 2, 3, 4, 5, 6]))
   })
 
   describe('defaultWsFactory', () => {

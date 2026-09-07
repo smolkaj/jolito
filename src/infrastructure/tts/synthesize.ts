@@ -53,10 +53,16 @@ export async function defaultWsFactory(
       },
     })
     const ws = (resp as unknown as { webSocket?: unknown }).webSocket as
-      (EdgeWebSocketLike & { accept?: () => void }) | undefined
+      | (EdgeWebSocketLike & { accept?: () => void; binaryType?: string })
+      | undefined
     if (ws) {
       if (typeof ws.accept === 'function') {
         ws.accept()
+      }
+      try {
+        ws.binaryType = 'arraybuffer'
+      } catch {
+        // Ignore if binaryType property is not writable
       }
       return ws
     }
@@ -115,6 +121,7 @@ export async function synthesizeSpeech(
 
   return new Promise<Uint8Array>((resolve, reject) => {
     const audioChunks: Uint8Array[] = []
+    let processingChain = Promise.resolve()
     let isSettled = false
 
     const timer = setTimeout(() => {
@@ -134,6 +141,7 @@ export async function synthesizeSpeech(
     }
 
     function finish() {
+      if (isSettled) return
       cleanup()
       if (audioChunks.length === 0) {
         reject(new Error('No audio received from Edge TTS service'))
@@ -171,30 +179,45 @@ export async function synthesizeSpeech(
       sendHandshake()
     }
 
+    const processBinary = (rawBytes: ArrayBuffer | Uint8Array) => {
+      const { isAudio, audioData } = parseBinaryAudioFrame(rawBytes)
+      if (isAudio && audioData.length > 0) {
+        audioChunks.push(new Uint8Array(audioData))
+      }
+    }
+
     const onMessage = (event: unknown) => {
       const data =
         event !== null && typeof event === 'object' && 'data' in event
           ? event.data
           : event
+
       if (typeof data === 'string') {
         if (data.includes('Path:turn.end')) {
-          finish()
+          void processingChain.then(() => {
+            finish()
+          })
         }
       } else if (data instanceof ArrayBuffer) {
-        const { isAudio, audioData } = parseBinaryAudioFrame(data)
-        if (isAudio && audioData.length > 0) {
-          audioChunks.push(new Uint8Array(audioData))
-        }
+        processingChain = processingChain.then(() => {
+          processBinary(data)
+        })
       } else if (ArrayBuffer.isView(data)) {
         const viewBytes = new Uint8Array(
           data.buffer,
           data.byteOffset,
           data.byteLength,
         )
-        const { isAudio, audioData } = parseBinaryAudioFrame(viewBytes)
-        if (isAudio && audioData.length > 0) {
-          audioChunks.push(new Uint8Array(audioData))
-        }
+        processingChain = processingChain.then(() => {
+          processBinary(viewBytes)
+        })
+      } else if (typeof Blob !== 'undefined' && data instanceof Blob) {
+        processingChain = processingChain
+          .then(() => data.arrayBuffer())
+          .then((buf) => {
+            processBinary(buf)
+          })
+          .catch(() => {})
       }
     }
 
@@ -208,17 +231,20 @@ export async function synthesizeSpeech(
     }
 
     const onClose = (event: unknown) => {
-      if (audioChunks.length > 0) {
-        finish()
-      } else if (!isSettled) {
-        const closeEvt = event as { code?: number; reason?: string }
-        cleanup()
-        reject(
-          new Error(
-            `WebSocket closed without audio (code=${closeEvt?.code ?? 'unknown'}, reason=${closeEvt?.reason || 'none'})`,
-          ),
-        )
-      }
+      void processingChain.then(() => {
+        if (isSettled) return
+        if (audioChunks.length > 0) {
+          finish()
+        } else {
+          const closeEvt = event as { code?: number; reason?: string }
+          cleanup()
+          reject(
+            new Error(
+              `WebSocket closed without audio (code=${closeEvt?.code ?? 'unknown'}, reason=${closeEvt?.reason || 'none'})`,
+            ),
+          )
+        }
+      })
     }
 
     if ('onmessage' in ws) {

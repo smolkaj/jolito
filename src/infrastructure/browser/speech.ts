@@ -132,9 +132,15 @@ export class EnhancedBrowserSpeaker implements Speaker {
       'enrique',
       'miguel',
       'pablo',
+      'diego',
+      'juan',
       'male',
       'guy',
       'tom',
+      'alex',
+      'fred',
+      'aaron',
+      'nathan',
     ]
     const femaleKeywords = [
       'paulina',
@@ -173,6 +179,17 @@ export class EnhancedBrowserSpeaker implements Speaker {
         })
         if (esGenderMatch) return esGenderMatch
       } else {
+        // Priority 1: US English matching target gender
+        const usGenderMatch = this.voices.find((v) => {
+          const lang = v.lang.toLowerCase().replace(/_/g, '-')
+          const name = v.name.toLowerCase()
+          return (
+            lang === 'en-us' && targetKeywords.some((k) => name.includes(k))
+          )
+        })
+        if (usGenderMatch) return usGenderMatch
+
+        // Priority 2: Any English voice matching target gender
         const enGenderMatch = this.voices.find((v) => {
           const lang = v.lang.toLowerCase().replace(/_/g, '-')
           const name = v.name.toLowerCase()
@@ -246,12 +263,12 @@ export class EnhancedBrowserSpeaker implements Speaker {
       })
       if (esFallback) return esFallback
     } else {
-      // US English selection
-      const enNatural = this.voices.find((v) => {
+      // 1. Preferred US English natural/enhanced voices
+      const enUsNatural = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
-          (lang === 'en-us' || lang.startsWith('en')) &&
+          lang === 'en-us' &&
           (name.includes('natural') ||
             name.includes('enhanced') ||
             name.includes('premium') ||
@@ -260,16 +277,32 @@ export class EnhancedBrowserSpeaker implements Speaker {
             name.includes('google') ||
             name.includes('allison') ||
             name.includes('siri') ||
+            name.includes('alex') ||
             name.includes('tom'))
         )
       })
-      if (enNatural) return enNatural
+      if (enUsNatural) return enUsNatural
 
+      // 2. Any exact US English voice
       const enUs = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         return lang === 'en-us'
       })
       if (enUs) return enUs
+
+      // 3. Fallback to any natural English voice across regions
+      const enNatural = this.voices.find((v) => {
+        const lang = v.lang.toLowerCase().replace(/_/g, '-')
+        const name = v.name.toLowerCase()
+        return (
+          lang.startsWith('en') &&
+          (name.includes('natural') ||
+            name.includes('enhanced') ||
+            name.includes('premium') ||
+            name.includes('siri'))
+        )
+      })
+      if (enNatural) return enNatural
 
       const enFallback = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')

@@ -525,6 +525,68 @@ describe('EnhancedBrowserSpeaker', () => {
     )
   })
 
+  it('prioritizes US English male voices over Australian or British male voices', () => {
+    let selectedVoice: SpeechSynthesisVoice | null = null
+    class MockUtterance {
+      lang = ''
+      set voice(v: SpeechSynthesisVoice | null) {
+        selectedVoice = v
+      }
+      constructor(public text: string) {}
+    }
+
+    const mockVoices: SpeechSynthesisVoice[] = [
+      {
+        lang: 'en-AU',
+        name: 'Russell (Male)',
+        default: false,
+        localService: true,
+        voiceURI: 'en-au-russell',
+      },
+      {
+        lang: 'en-US',
+        name: 'Alex (US Male)',
+        default: false,
+        localService: true,
+        voiceURI: 'en-us-alex',
+      },
+      {
+        lang: 'en-GB',
+        name: 'Oliver (Male)',
+        default: false,
+        localService: true,
+        voiceURI: 'en-gb-oliver',
+      },
+    ]
+
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: {
+        speak: vi.fn(),
+        cancel: vi.fn(),
+        getVoices: () => mockVoices,
+        onvoiceschanged: null,
+      },
+      writable: true,
+      configurable: true,
+    })
+
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      value: MockUtterance,
+      writable: true,
+      configurable: true,
+    })
+
+    const speaker = new EnhancedBrowserSpeaker()
+    speaker.speak('hello', 'en-US', { gender: 'male' })
+    expect(selectedVoice).not.toBeNull()
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).name).toBe(
+      'Alex (US Male)',
+    )
+    expect((selectedVoice as unknown as SpeechSynthesisVoice).lang).toBe(
+      'en-US',
+    )
+  })
+
   it('cancels speech synthesis when stop() is invoked', () => {
     const cancelMock = vi.fn()
     Object.defineProperty(window, 'speechSynthesis', {
