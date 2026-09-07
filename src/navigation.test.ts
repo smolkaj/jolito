@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   hashForView,
+  isFeedbackHash,
+  isPrivacyHash,
   isWhyJolitoHash,
   titleForView,
   viewFromHash,
@@ -55,5 +57,31 @@ describe('navigation', () => {
     expect(isWhyJolitoHash('#/study')).toBe(false)
     expect(isWhyJolitoHash('#/deck')).toBe(false)
     expect(isWhyJolitoHash('#unknown')).toBe(false)
+  })
+
+  it('identifies Privacy Policy anchor hashes', () => {
+    expect(isPrivacyHash('#privacy')).toBe(true)
+    expect(isPrivacyHash('#/privacy')).toBe(true)
+    expect(isPrivacyHash('#/privacy/')).toBe(true)
+    expect(isPrivacyHash('#privacy-policy')).toBe(true)
+    expect(isPrivacyHash('#/privacy-policy')).toBe(true)
+
+    expect(isPrivacyHash('#/')).toBe(false)
+    expect(isPrivacyHash('')).toBe(false)
+    expect(isPrivacyHash('#/create')).toBe(false)
+    expect(isPrivacyHash('#why-jolito')).toBe(false)
+  })
+
+  it('identifies Feedback anchor hashes', () => {
+    expect(isFeedbackHash('#feedback')).toBe(true)
+    expect(isFeedbackHash('#/feedback')).toBe(true)
+    expect(isFeedbackHash('#/feedback/')).toBe(true)
+    expect(isFeedbackHash('#contact')).toBe(true)
+    expect(isFeedbackHash('#/contact')).toBe(true)
+
+    expect(isFeedbackHash('#/')).toBe(false)
+    expect(isFeedbackHash('')).toBe(false)
+    expect(isFeedbackHash('#/create')).toBe(false)
+    expect(isFeedbackHash('#privacy')).toBe(false)
   })
 })

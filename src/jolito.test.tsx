@@ -5315,5 +5315,35 @@ describe('Jolito', () => {
       scrollToSpy.mockRestore()
       vi.useRealTimers()
     })
+
+    it('opens Privacy modal via footer link and via #/privacy hash navigation', async () => {
+      window.location.hash = '#/'
+      const services = createTestServices()
+
+      render(<App services={services} />)
+
+      const privacyBtn = screen.getByRole('button', { name: /^privacy$/i })
+      expect(privacyBtn).toBeInTheDocument()
+
+      fireEvent.click(privacyBtn)
+      expect(
+        screen.getByRole('heading', { name: /privacy policy/i }),
+      ).toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /close privacy policy/i }),
+      )
+      expect(
+        screen.queryByRole('heading', { name: /privacy policy/i }),
+      ).toBeNull()
+
+      window.location.hash = '#/privacy'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /privacy policy/i }),
+        ).toBeInTheDocument()
+      })
+    })
   })
 })

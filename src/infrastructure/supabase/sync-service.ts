@@ -286,4 +286,56 @@ export class SupabaseSyncService implements SyncService {
       syncedAt: pushRes.syncedAt,
     }
   }
+
+  async deleteRemoteDeck(
+    user: AuthUser,
+  ): Promise<{ success: boolean; error?: string | undefined }> {
+    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+      return { success: false, error: 'Cloud sync backend is not configured.' }
+    }
+
+    let headers = await this.getAuthHeaders()
+    if (!headers) {
+      return { success: false, error: 'Sign in to delete your cloud deck.' }
+    }
+
+    try {
+      const deleteUrl = `${this.supabaseUrl}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}`
+      let res = await fetch(deleteUrl, {
+        method: 'DELETE',
+        headers,
+      })
+
+      if (res.status === 401 && this.authService.refreshSession) {
+        const refreshedToken = await this.authService.refreshSession()
+        if (refreshedToken) {
+          headers = {
+            ...headers,
+            Authorization: `Bearer ${refreshedToken}`,
+          }
+          res = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers,
+          })
+        }
+      }
+
+      if (!res.ok) {
+        return {
+          success: false,
+          error: `Failed to delete cloud deck (HTTP ${res.status}).`,
+        }
+      }
+
+      return { success: true }
+    } catch (err) {
+      return {
+        success: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : 'Network error deleting cloud deck.',
+      }
+    }
+  }
 }

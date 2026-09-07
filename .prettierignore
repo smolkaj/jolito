@@ -13,3 +13,5 @@ public/*.png
 public/*.ico
 public/*.svg
 public/*.wasm
+supabase/.temp/
+fastlane/screenshots/
