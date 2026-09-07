@@ -23,6 +23,8 @@ function StarterPacksModalInner({
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const inspectBackBtnRef = useRef<HTMLButtonElement>(null)
+  const lastInspectedPackIdRef = useRef<string | null>(null)
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
   const [inspectSearch, setInspectSearch] = useState('')
@@ -36,6 +38,21 @@ function StarterPacksModalInner({
       previousFocusRef.current?.focus()
     }
   }, [])
+
+  useEffect(() => {
+    if (inspectingPackId) {
+      inspectBackBtnRef.current?.focus()
+    } else if (lastInspectedPackIdRef.current) {
+      const packCard = modalRef.current?.querySelector(
+        `[data-pack-id="${lastInspectedPackIdRef.current}"]`,
+      )
+      const inspectBtn = packCard?.querySelector<HTMLButtonElement>(
+        '.starter-pack-inspect-btn',
+      )
+      inspectBtn?.focus()
+      lastInspectedPackIdRef.current = null
+    }
+  }, [inspectingPackId])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -141,6 +158,7 @@ function StarterPacksModalInner({
             <div className="modal-header starter-pack-inspect-header">
               <div className="starter-pack-inspect-nav">
                 <button
+                  ref={inspectBackBtnRef}
                   type="button"
                   className="secondary-button starter-pack-back-btn"
                   onClick={() => {
@@ -183,9 +201,11 @@ function StarterPacksModalInner({
                 <div className="starter-pack-inspect-toolbar">
                   <div className="starter-pack-inspect-summary">
                     <p className="starter-pack-inspect-status">
-                      {existingCount > 0
-                        ? `${existingCount} of ${inspectingPack.cardCount} cards in your deck (${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} to add)`
-                        : `All ${inspectingPack.cardCount} cards are new`}
+                      {isAllAdded
+                        ? `All ${inspectingPack.cardCount} cards are in your deck`
+                        : existingCount > 0
+                          ? `${existingCount} of ${inspectingPack.cardCount} cards in your deck (${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} to add)`
+                          : `All ${inspectingPack.cardCount} cards are new`}
                     </p>
                   </div>
                   <div className="starter-pack-inspect-actions">
@@ -240,16 +260,17 @@ function StarterPacksModalInner({
               aria-label="Cards in this pack"
             >
               {filteredInspectNotes.map((note, idx) => {
+                const isBidirectional = note.bidirectional !== false
                 const hasEsEn = existingKeys.has(
                   normalizeCardKey(note.spanish, 'es-en'),
                 )
-                const isBidirectional = note.bidirectional !== false
-                const hasEnEs = isBidirectional
-                  ? existingKeys.has(normalizeCardKey(note.english, 'en-es'))
-                  : true
-                const isFullyInDeck = hasEsEn && hasEnEs
-                const isPartiallyInDeck =
-                  !isFullyInDeck && (hasEsEn || (!isBidirectional && hasEnEs))
+                const hasEnEs =
+                  isBidirectional &&
+                  existingKeys.has(normalizeCardKey(note.english, 'en-es'))
+                const isFullyInDeck = isBidirectional
+                  ? hasEsEn && hasEnEs
+                  : hasEsEn
+                const isPartiallyInDeck = !isFullyInDeck && (hasEsEn || hasEnEs)
 
                 return (
                   <div
@@ -333,6 +354,7 @@ function StarterPacksModalInner({
                 return (
                   <div
                     key={pack.id}
+                    data-pack-id={pack.id}
                     className={`starter-pack-card theme-${pack.themeColor} ${isAllAdded ? 'is-added' : ''}`}
                     role="listitem"
                   >
@@ -358,6 +380,7 @@ function StarterPacksModalInner({
                         type="button"
                         className="secondary-button starter-pack-inspect-btn"
                         onClick={() => {
+                          lastInspectedPackIdRef.current = pack.id
                           setInspectingPackId(pack.id)
                           setInspectSearch('')
                         }}

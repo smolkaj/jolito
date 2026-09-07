@@ -234,17 +234,17 @@ describe('StarterPacksModal', () => {
     ).toBeNull()
   })
 
-  it('displays partial badge (1 of 2 in deck) when only one directional card exists', () => {
+  it('displays partial badge (1 of 2 in deck) when only the reverse en-es directional card exists', () => {
     const streetPack = findStarterPack('mexican-street-phrases')!
     const allStreetCards = streetPack.createCards(0)
-    // Only have 1 card of the first reciprocal pair
-    const singleCard = allStreetCards.slice(0, 1)
+    // Only have the second card (en-es direction) of the first reciprocal pair
+    const reverseCard = allStreetCards.slice(1, 2)
 
     render(
       <StarterPacksModal
         isOpen={true}
         onClose={vi.fn()}
-        cards={singleCard}
+        cards={reverseCard}
         onAddPack={vi.fn()}
       />,
     )
@@ -260,5 +260,58 @@ describe('StarterPacksModal', () => {
       screen.getByText(/1 of 72 cards in your deck \(71 cards to add\)/i),
     ).toBeInTheDocument()
     expect(screen.getByText('1 of 2 in deck')).toBeInTheDocument()
+  })
+
+  it('displays clean status copy when all cards in pack are in deck', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={allStreetCards}
+        onAddPack={vi.fn()}
+      />,
+    )
+
+    // Inspect Mexican Street Phrases
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+
+    expect(
+      screen.getByText('All 72 cards are in your deck'),
+    ).toBeInTheDocument()
+  })
+
+  it('manages focus between pack list and inspect view', () => {
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onAddPack={vi.fn()}
+      />,
+    )
+
+    const inspectBtn = screen.getByRole('button', {
+      name: /Inspect Mexican Street Phrases cards/i,
+    })
+    fireEvent.click(inspectBtn)
+
+    const backBtn = screen.getByRole('button', {
+      name: /Back to all starter packs/i,
+    })
+    expect(document.activeElement).toBe(backBtn)
+
+    fireEvent.click(backBtn)
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
   })
 })

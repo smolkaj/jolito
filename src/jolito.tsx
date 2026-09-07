@@ -1371,7 +1371,7 @@ export function App({
       const userCards = filterOutStarterCards(cardsRef.current)
       const mergeResult = mergeStudyCardsSemantic(userCards, packCards)
 
-      onUpdateCards(mergeResult.cards)
+      onUpdateCards(mergeResult.cards, false)
 
       if (authUserRef.current) {
         void syncDeckWithCloud({

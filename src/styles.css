@@ -4557,6 +4557,8 @@ kbd {
 .starter-pack-action-right {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
   margin-left: auto;
 }
@@ -4721,7 +4723,7 @@ kbd {
 }
 
 .starter-pack-inspect-item.is-partial-deck {
-  background: var(--sand);
+  background: var(--cempasuchil-soft);
   border-color: var(--cempasuchil);
 }
 
@@ -4785,8 +4787,8 @@ kbd {
 }
 
 .inspect-badge.partial-deck {
-  background: var(--sand);
-  color: var(--cempasuchil-deep);
+  background: var(--card);
+  color: var(--cempasuchil-dark);
   border: 1px solid var(--cempasuchil);
 }
 
