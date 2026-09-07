@@ -30,11 +30,40 @@ describe('compareAnswer (character-level affine diff)', () => {
     ])
   })
 
-  it('gently highlights missing accents as accent guidance without marking words as wrong', () => {
+  it('treats missing inverted marks as exact matches when rest of answer matches', () => {
+    const question = compareAnswer(
+      'Dónde está el metro?',
+      '¿Dónde está el metro?',
+    )
+    expect(question.isExact).toBe(true)
+    expect(question.expectedSegments).toEqual([
+      { value: '¿Dónde está el metro?', status: 'match' },
+    ])
+    expect(question.typedSegments).toEqual([
+      { value: 'Dónde está el metro?', status: 'match' },
+    ])
+
+    const exclamation = compareAnswer('Genial!', '¡Genial!')
+    expect(exclamation.isExact).toBe(true)
+    expect(exclamation.expectedSegments).toEqual([
+      { value: '¡Genial!', status: 'match' },
+    ])
+    expect(exclamation.typedSegments).toEqual([
+      { value: 'Genial!', status: 'match' },
+    ])
+
+    const midSentence = compareAnswer('Hola, cómo estás?', 'Hola, ¿cómo estás?')
+    expect(midSentence.isExact).toBe(true)
+    expect(midSentence.expectedSegments).toEqual([
+      { value: 'Hola, ¿cómo estás?', status: 'match' },
+    ])
+  })
+
+  it('gently highlights missing accents and inverted marks as accent guidance without marking words as wrong', () => {
     const result = compareAnswer('Donde esta', '¿Dónde está?')
     expect(result.isExact).toBe(false)
     expect(result.expectedSegments).toEqual([
-      { value: '¿', status: 'missing' },
+      { value: '¿', status: 'accent' },
       { value: 'D', status: 'match' },
       { value: 'ó', status: 'accent' },
       { value: 'nde est', status: 'match' },

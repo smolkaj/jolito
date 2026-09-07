@@ -17,6 +17,9 @@ export const stripDiacritics = (text: string): string =>
 export const stripPunctuation = (text: string): string =>
   text.replace(/[^\p{L}\p{M}\p{N}]/gu, '')
 
+export const stripInvertedPunctuation = (text: string): string =>
+  text.replace(/[¿¡]/gu, '')
+
 /** Replace common OS-level typographic substitutions with ASCII equivalents and normalize delimiter spacing. */
 export const normalizeTypography = (text: string): string =>
   text
@@ -73,7 +76,13 @@ export function compareAnswer(
   const tTrim = normalizeTypography(typed.trim())
   const eTrim = normalizeTypography(expected.trim())
 
-  if (tTrim === eTrim) {
+  const tNormInverted = stripInvertedPunctuation(tTrim)
+  const eNormInverted = stripInvertedPunctuation(eTrim)
+
+  if (
+    tTrim === eTrim ||
+    (tNormInverted.length > 0 && tNormInverted === eNormInverted)
+  ) {
     return {
       typedSegments: tTrim ? [{ value: tTrim, status: 'match' }] : [],
       expectedSegments: eTrim ? [{ value: eTrim, status: 'match' }] : [],
@@ -228,7 +237,8 @@ export function compareAnswer(
       i++
     } else {
       const ec = eChars[j]!
-      expectedRaw.push({ value: ec, status: 'missing' })
+      const status: DiffStatus = ec === '¿' || ec === '¡' ? 'accent' : 'missing'
+      expectedRaw.push({ value: ec, status })
 
       const yPenalty = isWhitespace(ec)
         ? GAP_OPEN_SPACE_PENALTY
