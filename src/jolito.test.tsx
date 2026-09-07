@@ -4771,8 +4771,18 @@ describe('Jolito', () => {
 
       render(<App services={services} />)
 
-      // Both due and future cards must be prefetched for offline readiness
+      // Both due and future cards must be prefetched for offline readiness, preceded by hero sample card on welcome screen
       expect(services.mockSpeaker.prefetched).toEqual([
+        expect.objectContaining({
+          text: 'aguacate',
+          locale: 'es-MX',
+          cardSeed: 'sample-aguacate',
+        }),
+        expect.objectContaining({
+          text: 'avocado',
+          locale: 'en-US',
+          cardSeed: 'sample-aguacate',
+        }),
         expect.objectContaining({
           text: 'palabra urgente',
           locale: 'es-MX',
@@ -4792,6 +4802,123 @@ describe('Jolito', () => {
           text: 'future word',
           locale: 'en-US',
           cardSeed: 'future-1',
+        }),
+      ])
+    })
+
+    it('eagerly prefetches starter screen sample audio on welcome screen even when cards collection is empty', () => {
+      const services = createTestServices({ cards: [] })
+
+      render(<App services={services} />)
+
+      expect(services.mockSpeaker.prefetched).toEqual([
+        {
+          text: 'aguacate',
+          locale: 'es-MX',
+          cardSeed: 'sample-aguacate',
+        },
+        {
+          text: 'avocado',
+          locale: 'en-US',
+          cardSeed: 'sample-aguacate',
+        },
+      ])
+    })
+
+    it('prioritizes starter screen hero sample audio before collection review cards on welcome screen', () => {
+      const services = createTestServices({
+        cards: [
+          {
+            id: 'card-1',
+            noteId: 'n1',
+            prompt: 'hola',
+            answer: 'hello',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            schedule: {
+              dueAt: 0,
+              intervalDays: 0,
+              easeFactor: 2.5,
+              state: 'new',
+              reviews: 0,
+              lapses: 0,
+            },
+            createdAt: 1000,
+          },
+        ],
+      })
+
+      render(<App services={services} />)
+
+      expect(services.mockSpeaker.prefetched.slice(0, 2)).toEqual([
+        {
+          text: 'aguacate',
+          locale: 'es-MX',
+          cardSeed: 'sample-aguacate',
+        },
+        {
+          text: 'avocado',
+          locale: 'en-US',
+          cardSeed: 'sample-aguacate',
+        },
+      ])
+      expect(services.mockSpeaker.prefetched.slice(2)).toEqual([
+        expect.objectContaining({
+          text: 'hola',
+          locale: 'es-MX',
+          cardSeed: 'card-1',
+        }),
+        expect.objectContaining({
+          text: 'hello',
+          locale: 'en-US',
+          cardSeed: 'card-1',
+        }),
+      ])
+    })
+
+    it('does not include starter hero sample audio when opening directly into review view', () => {
+      window.location.hash = '#/review'
+      const services = createTestServices({
+        cards: [
+          {
+            id: 'c1',
+            noteId: 'n1',
+            prompt: 'gracias',
+            answer: 'thank you',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            schedule: {
+              dueAt: 0,
+              intervalDays: 0,
+              easeFactor: 2.5,
+              state: 'new',
+              reviews: 0,
+              lapses: 0,
+            },
+            createdAt: 1000,
+          },
+        ],
+      })
+
+      render(<App services={services} />)
+
+      expect(
+        services.mockSpeaker.prefetched.some(
+          (item) => item.cardSeed === 'sample-aguacate',
+        ),
+      ).toBe(false)
+      expect(services.mockSpeaker.prefetched).toEqual([
+        expect.objectContaining({
+          text: 'gracias',
+          locale: 'es-MX',
+          cardSeed: 'c1',
+        }),
+        expect.objectContaining({
+          text: 'thank you',
+          locale: 'en-US',
+          cardSeed: 'c1',
         }),
       ])
     })
