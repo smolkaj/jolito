@@ -1833,8 +1833,8 @@ export function App({
     cueState: homeCueState,
   } = useHomeSwipeGesture({
     enabled: view === 'welcome' && !isAnyModalOpen,
-    onSwipeLeft: () => navigateTo('create'),
-    onSwipeRight: () => handlePractice(),
+    onSwipeRight: () => navigateTo('create'),
+    onSwipeLeft: () => handlePractice(),
     onHaptic: () => services.haptics.trigger('selection'),
   })
 
@@ -2109,19 +2109,19 @@ export function App({
       <>
         <div
           ref={leftCueRef}
-          className={`home-swipe-cue home-swipe-cue-practice ${homeCueState.isReady && homeCueState.direction === 'right' ? 'is-ready' : ''}`}
+          className={`home-swipe-cue home-swipe-cue-create ${homeCueState.isReady && homeCueState.direction === 'right' ? 'is-ready' : ''}`}
           aria-hidden="true"
         >
-          <span>Practice</span> <span className="cue-arrow">→</span>
+          <span>Create a card</span> <span className="cue-arrow">→</span>
         </div>
         <div
           ref={rightCueRef}
-          className={`home-swipe-cue home-swipe-cue-create ${homeCueState.isReady && homeCueState.direction === 'left' ? 'is-ready' : ''}`}
+          className={`home-swipe-cue home-swipe-cue-practice ${homeCueState.isReady && homeCueState.direction === 'left' ? 'is-ready' : ''}`}
           aria-hidden="true"
         >
-          <span className="cue-arrow">←</span> <span>Create a card</span>
+          <span className="cue-arrow">←</span> <span>Practice</span>
         </div>
-        <main ref={homeContainerRef} className="app-shell welcome-page">
+        <main className="app-shell welcome-page">
           <nav className="topbar" aria-label="Main navigation">
             <Brand />
             <div className="nav-actions" data-nosnippet>
@@ -2144,7 +2144,7 @@ export function App({
             onDismiss={() => setRedirectAuthBanner(null)}
             onCopySessionLink={handleCopySessionLink}
           />
-          <section className="welcome-hero">
+          <section ref={homeContainerRef} className="welcome-hero">
             <div className="welcome-hero-main">
               <div className="hero-copy">
                 <img

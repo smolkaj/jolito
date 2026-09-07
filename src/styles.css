@@ -2382,7 +2382,7 @@ kbd {
   margin: 4px 0 0;
   font-size: 13.5px;
   line-height: 1.45;
-  color: var(--ink-soft);
+  color: var(--ink-muted);
   transition: color 180ms ease;
 }
 
@@ -4760,15 +4760,15 @@ kbd {
 }
 
 /* Home Screen Direct Manipulation Cues */
-.welcome-page {
+.welcome-hero {
   touch-action: pan-y;
   will-change: transform;
 }
 
 .home-swipe-cue {
   position: fixed;
-  top: 50%;
-  transform: translateY(-50%) scale(0.9);
+  top: 38%;
+  transform: translateY(-50%) scale(0.92);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4786,17 +4786,18 @@ kbd {
   z-index: 99;
   transition:
     opacity 120ms ease,
-    transform 120ms var(--ease-spring),
+    transform 140ms var(--ease-spring),
     background 120ms ease,
-    box-shadow 120ms ease;
+    box-shadow 120ms ease,
+    border-color 120ms ease;
 }
 
 .home-swipe-cue-create {
-  right: max(16px, env(safe-area-inset-right));
+  left: max(16px, env(safe-area-inset-left));
 }
 
 .home-swipe-cue-practice {
-  left: max(16px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
 }
 
 .home-swipe-cue.is-ready {
@@ -4804,7 +4805,7 @@ kbd {
   border-color: var(--turquesa-dark);
   color: var(--turquesa-dark);
   box-shadow: 3px 3px 0 var(--turquesa-dark);
-  transform: translateY(-50%) scale(1.06);
+  transform: translateY(-50%) scale(1.05);
 }
 
 .home-swipe-cue .cue-arrow {

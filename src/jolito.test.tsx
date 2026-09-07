@@ -5341,12 +5341,15 @@ describe('Jolito', () => {
         targetElement.dispatchEvent(event)
       }
 
-      // 1. Swiping left on welcome screen navigates to Create view
+      // 1. Swiping right on welcome screen navigates to Create view (aligned with Create a card →)
       expect(
         screen.getByRole('heading', { level: 1, name: /make the words/i }),
       ).toBeInTheDocument()
-      dispatchTouch('touchstart', [{ clientX: 250, clientY: 200 }])
-      dispatchTouch('touchend', [{ clientX: 100, clientY: 205 }])
+      const hero = document.querySelector('.welcome-hero')!
+      dispatchTouch('touchstart', [
+        { clientX: 100, clientY: 200, target: hero },
+      ])
+      dispatchTouch('touchend', [{ clientX: 250, clientY: 205, target: hero }])
 
       await waitFor(() => {
         expect(
@@ -5366,9 +5369,14 @@ describe('Jolito', () => {
         ).toBeInTheDocument()
       })
 
-      // 3. Swiping right on welcome screen starts Practice
-      dispatchTouch('touchstart', [{ clientX: 100, clientY: 200 }])
-      dispatchTouch('touchend', [{ clientX: 250, clientY: 205 }])
+      // 3. Swiping left on welcome screen starts Practice (aligned with ← Practice)
+      const nextHero = document.querySelector('.welcome-hero')!
+      dispatchTouch('touchstart', [
+        { clientX: 250, clientY: 200, target: nextHero },
+      ])
+      dispatchTouch('touchend', [
+        { clientX: 100, clientY: 205, target: nextHero },
+      ])
 
       await waitFor(() => {
         expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()

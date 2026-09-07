@@ -251,68 +251,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       page.getByRole('heading', { level: 1, name: /make the words/i }),
     ).toBeVisible()
 
-    // 1. Swipe left on welcome screen to navigate to Create view
-    await page.evaluate(() => {
-      const hero = document.querySelector('.welcome-hero') ?? document.body
-      const start = new Touch({
-        identifier: 1,
-        target: hero,
-        clientX: 300,
-        clientY: 300,
-      })
-      window.dispatchEvent(
-        new TouchEvent('touchstart', {
-          touches: [start],
-          changedTouches: [start],
-          bubbles: true,
-        }),
-      )
-      const move = new Touch({
-        identifier: 1,
-        target: hero,
-        clientX: 120,
-        clientY: 302,
-      })
-      window.dispatchEvent(
-        new TouchEvent('touchmove', {
-          touches: [move],
-          changedTouches: [move],
-          bubbles: true,
-          cancelable: true,
-        }),
-      )
-    })
-    await page.screenshot({ path: '/tmp/mobile-home-swipe-left-cue.png' })
-
-    await page.evaluate(() => {
-      const hero = document.querySelector('.welcome-hero') ?? document.body
-      const end = new Touch({
-        identifier: 1,
-        target: hero,
-        clientX: 100,
-        clientY: 305,
-      })
-      window.dispatchEvent(
-        new TouchEvent('touchend', {
-          touches: [],
-          changedTouches: [end],
-          bubbles: true,
-        }),
-      )
-    })
-
-    await expect(
-      page.getByRole('heading', { name: /^new flashcard$/i }),
-    ).toBeVisible()
-    await page.screenshot({ path: '/tmp/mobile-swipe-create.png' })
-
-    // 2. Return to Welcome via Brand logo
-    await page.getByRole('button', { name: /jolito home/i }).click()
-    await expect(
-      page.getByRole('heading', { level: 1, name: /make the words/i }),
-    ).toBeVisible()
-
-    // 3. Swipe right on welcome screen to start Practice
+    // 1. Swipe right on welcome screen to navigate to Create view (Create a card →)
     await page.evaluate(() => {
       const hero = document.querySelector('.welcome-hero') ?? document.body
       const start = new Touch({
@@ -351,6 +290,67 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
         identifier: 1,
         target: hero,
         clientX: 280,
+        clientY: 305,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          changedTouches: [end],
+          bubbles: true,
+        }),
+      )
+    })
+
+    await expect(
+      page.getByRole('heading', { name: /^new flashcard$/i }),
+    ).toBeVisible()
+    await page.screenshot({ path: '/tmp/mobile-swipe-create.png' })
+
+    // 2. Return to Welcome via Brand logo
+    await page.getByRole('button', { name: /jolito home/i }).click()
+    await expect(
+      page.getByRole('heading', { level: 1, name: /make the words/i }),
+    ).toBeVisible()
+
+    // 3. Swipe left on welcome screen to start Practice (← Practice)
+    await page.evaluate(() => {
+      const hero = document.querySelector('.welcome-hero') ?? document.body
+      const start = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 300,
+        clientY: 300,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: [start],
+          changedTouches: [start],
+          bubbles: true,
+        }),
+      )
+      const move = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 120,
+        clientY: 302,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: [move],
+          changedTouches: [move],
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await page.screenshot({ path: '/tmp/mobile-home-swipe-left-cue.png' })
+
+    await page.evaluate(() => {
+      const hero = document.querySelector('.welcome-hero') ?? document.body
+      const end = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 100,
         clientY: 305,
       })
       window.dispatchEvent(

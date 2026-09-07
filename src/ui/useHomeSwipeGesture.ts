@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface UseHomeSwipeGestureOptions {
   enabled?: boolean
-  onSwipeLeft: () => void // Drag left reveals/navigates to 'create'
-  onSwipeRight: () => void // Drag right reveals/navigates to 'practice'
+  onSwipeRight: () => void // Drag right reveals/navigates to 'create' (Create a card →)
+  onSwipeLeft: () => void // Drag left reveals/navigates to 'practice' (← Practice)
   onHaptic?: () => void
   threshold?: number // Default 80px
   edgeMargin?: number // Default 24px
@@ -39,6 +39,7 @@ export function useHomeSwipeGesture({
   edgeMargin = 24,
 }: UseHomeSwipeGestureOptions) {
   const containerRef = useRef<HTMLElement | null>(null)
+
   const leftCueRef = useRef<HTMLDivElement | null>(null)
   const rightCueRef = useRef<HTMLDivElement | null>(null)
   const commitTimerRef = useRef<number | null>(null)
@@ -68,22 +69,56 @@ export function useHomeSwipeGesture({
       window.clearTimeout(commitTimerRef.current)
       commitTimerRef.current = null
     }
+    isNavigatingRef.current = false
   }
 
+  const resetCuesAndContainer = useCallback(() => {
+    clearCommitTimer()
+    touchStartRef.current = null
+    directionLockedRef.current = null
+    thresholdPassedRef.current = false
+    isNavigatingRef.current = false
+
+    if (containerRef.current) {
+      containerRef.current.style.transition =
+        'transform 260ms cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 200ms ease'
+      containerRef.current.style.transform = 'translate3d(0, 0, 0)'
+      containerRef.current.style.opacity = '1'
+    }
+
+    if (leftCueRef.current) {
+      leftCueRef.current.style.opacity = '0'
+    }
+    if (rightCueRef.current) {
+      rightCueRef.current.style.opacity = '0'
+    }
+
+    setCueState({
+      active: false,
+      direction: null,
+      isReady: false,
+    })
+  }, [])
+
   useEffect(() => {
-    if (!enabled || typeof window === 'undefined') return
+    if (!enabled || typeof window === 'undefined') {
+      clearCommitTimer()
+      isNavigatingRef.current = false
+      return
+    }
 
     const handleTouchStart = (e: TouchEvent) => {
+      // If a second finger touches while dragging, safely spring back to center
       if (isNavigatingRef.current || e.touches.length !== 1) {
+        if (touchStartRef.current !== null) {
+          resetCuesAndContainer()
+        }
         touchStartRef.current = null
         return
       }
 
-      // If user has scrolled down into Why Jolito, preserve vertical reading experience
-      if (window.scrollY > 60) {
-        touchStartRef.current = null
-        return
-      }
+      const container = containerRef.current
+      if (!container) return
 
       if (hasActiveTextSelection()) {
         touchStartRef.current = null
@@ -104,18 +139,10 @@ export function useHomeSwipeGesture({
 
       const rawTarget = touch.target ?? e.target
       const target = rawTarget instanceof Node ? rawTarget : null
-      if (isInteractiveTarget(target)) {
-        touchStartRef.current = null
-        return
-      }
-
-      // Check if touch is within container element if ref is attached
       if (
-        containerRef.current &&
-        target &&
-        !containerRef.current.contains(target) &&
-        target !== document.body &&
-        target !== document.documentElement
+        !target ||
+        !container.contains(target) ||
+        isInteractiveTarget(target)
       ) {
         touchStartRef.current = null
         return
@@ -150,7 +177,7 @@ export function useHomeSwipeGesture({
           directionLockedRef.current = 'horizontal'
         } else if (absY >= 12 && absY >= absX) {
           directionLockedRef.current = 'vertical'
-          return // Let native vertical scroll to #why-jolito handle it
+          return // Let native vertical scroll handle it
         } else {
           return // Ambiguous diagonal movement
         }
@@ -183,28 +210,24 @@ export function useHomeSwipeGesture({
         thresholdPassedRef.current = false
       }
 
-      // Update cues directly for 60/120fps performance
-      const cueOpacity = Math.min(
-        1,
-        Math.max(0, (absDx - 15) / (threshold - 15)),
-      )
-      if (direction === 'left') {
-        // Dragging left reveals "Create a card" on the right
-        if (rightCueRef.current) {
-          rightCueRef.current.style.opacity = `${cueOpacity}`
-          rightCueRef.current.style.transform = `translateY(-50%) scale(${isReady ? 1.05 : 0.9 + cueOpacity * 0.1})`
-        }
-        if (leftCueRef.current) {
-          leftCueRef.current.style.opacity = '0'
-        }
-      } else {
-        // Dragging right reveals "Practice" on the left
+      // Readable, high-contrast cue visibility without fractional text washout
+      const cueOpacity = absDx >= 30 ? 1 : Math.max(0, (absDx - 10) / 20)
+
+      if (direction === 'right') {
+        // Dragging right reveals "Create a card →" on the left
         if (leftCueRef.current) {
           leftCueRef.current.style.opacity = `${cueOpacity}`
-          leftCueRef.current.style.transform = `translateY(-50%) scale(${isReady ? 1.05 : 0.9 + cueOpacity * 0.1})`
         }
         if (rightCueRef.current) {
           rightCueRef.current.style.opacity = '0'
+        }
+      } else {
+        // Dragging left reveals "← Practice" on the right
+        if (rightCueRef.current) {
+          rightCueRef.current.style.opacity = `${cueOpacity}`
+        }
+        if (leftCueRef.current) {
+          leftCueRef.current.style.opacity = '0'
         }
       }
 
@@ -221,35 +244,6 @@ export function useHomeSwipeGesture({
           direction,
           isReady,
         }
-      })
-    }
-
-    const resetCuesAndContainer = () => {
-      clearCommitTimer()
-      touchStartRef.current = null
-      directionLockedRef.current = null
-      thresholdPassedRef.current = false
-
-      if (containerRef.current) {
-        containerRef.current.style.transition =
-          'transform 260ms cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 200ms ease'
-        containerRef.current.style.transform = 'translate3d(0, 0, 0)'
-        containerRef.current.style.opacity = '1'
-      }
-
-      if (leftCueRef.current) {
-        leftCueRef.current.style.opacity = '0'
-        leftCueRef.current.style.transform = 'translateY(-50%) scale(0.9)'
-      }
-      if (rightCueRef.current) {
-        rightCueRef.current.style.opacity = '0'
-        rightCueRef.current.style.transform = 'translateY(-50%) scale(0.9)'
-      }
-
-      setCueState({
-        active: false,
-        direction: null,
-        isReady: false,
       })
     }
 
@@ -314,31 +308,47 @@ export function useHomeSwipeGesture({
       if (prefersReducedMotion) {
         resetCuesAndContainer()
         isNavigatingRef.current = false
-        if (commitDir === 'left') {
-          callbacksRef.current.onSwipeLeft()
-        } else {
+        if (commitDir === 'right') {
           callbacksRef.current.onSwipeRight()
+        } else {
+          callbacksRef.current.onSwipeLeft()
         }
         return
       }
 
-      // Smooth whole-container exit transition
+      // Smooth hero exit transition
       if (containerRef.current) {
         containerRef.current.style.transition =
           'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease'
-        containerRef.current.style.transform = `translate3d(${commitDir === 'left' ? -100 : 100}vw, 0, 0)`
+        containerRef.current.style.transform = `translate3d(${commitDir === 'right' ? 100 : -100}vw, 0, 0)`
         containerRef.current.style.opacity = '0'
       }
 
       clearCommitTimer()
       commitTimerRef.current = window.setTimeout(() => {
         commitTimerRef.current = null
-        resetCuesAndContainer()
         isNavigatingRef.current = false
-        if (commitDir === 'left') {
-          callbacksRef.current.onSwipeLeft()
-        } else {
+        // Reset container resting styles silently without spring-bounce stutter
+        if (containerRef.current) {
+          containerRef.current.style.transition = 'none'
+          containerRef.current.style.transform = 'translate3d(0, 0, 0)'
+          containerRef.current.style.opacity = '1'
+        }
+        if (leftCueRef.current) {
+          leftCueRef.current.style.opacity = '0'
+        }
+        if (rightCueRef.current) {
+          rightCueRef.current.style.opacity = '0'
+        }
+        setCueState({
+          active: false,
+          direction: null,
+          isReady: false,
+        })
+        if (commitDir === 'right') {
           callbacksRef.current.onSwipeRight()
+        } else {
+          callbacksRef.current.onSwipeLeft()
         }
       }, 180)
     }
@@ -350,20 +360,22 @@ export function useHomeSwipeGesture({
     window.addEventListener('touchstart', handleTouchStart, { passive: true })
     window.addEventListener('touchmove', handleTouchMove, { passive: false })
     window.addEventListener('touchend', handleTouchEnd, { passive: true })
-    window.addEventListener('touchcancel', handleTouchCancel, { passive: true })
+    window.addEventListener('touchcancel', handleTouchCancel, {
+      passive: true,
+    })
 
     return () => {
       clearCommitTimer()
+      isNavigatingRef.current = false
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchCancel)
     }
-  }, [edgeMargin, enabled, threshold])
+  }, [edgeMargin, enabled, resetCuesAndContainer, threshold])
 
   return {
     containerRef,
-    heroRef: containerRef, // Backward-compatible alias
     leftCueRef,
     rightCueRef,
     cueState,
