@@ -16,10 +16,16 @@ import { createCards } from './application/create-cards'
 import { importAnkiDeck } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
-import type { AppServices, AuthUser, SyncService } from './application/ports'
+import type {
+  AppServices,
+  AuthUser,
+  PrefetchItem,
+  SyncService,
+} from './application/ports'
 import {
   filterOutStarterCards,
   starterCards,
+  starterHeroPrefetchItems,
 } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
@@ -1104,47 +1110,52 @@ export function App({
     queueRef.current = queue
   })
 
-  // Eagerly prefetch entire collection in background, prioritizing due review cards first
+  // Eagerly prefetch starter screen sample audio and review collection in background,
+  // prioritizing hero starter card and due review cards first
   useEffect(() => {
-    if (cards.length === 0 || typeof services.speaker.prefetch !== 'function') {
+    if (typeof services.speaker.prefetch !== 'function') {
       return
     }
 
-    const now = services.clock.now()
-    const dueCards = orderCardsForReview(cards, now)
-    const dueIds = new Set(dueCards.map((c) => c.id))
-    const nonDueCards = cards.filter((c) => !dueIds.has(c.id))
-    const allOrderedCards = [...dueCards, ...nonDueCards]
+    const items: PrefetchItem[] = []
 
-    // Background prefetching defaults to bothVoices !== false, priming both
-    // female and male personas into cache so that any review turn is immediately ready.
-    const items: Array<{
-      text: string
-      locale: string
-      cardSeed?: string
-    }> = []
+    // 1. Prioritize starter screen hero sample audio when on welcome screen
+    if (view === 'welcome') {
+      items.push(...starterHeroPrefetchItems)
+    }
 
-    for (const card of allOrderedCards) {
-      if (card.prompt.trim()) {
-        items.push({
-          text: card.prompt,
-          locale: localeForPrompt(card),
-          cardSeed: card.id,
-        })
-      }
-      if (card.answer.trim()) {
-        items.push({
-          text: card.answer,
-          locale: localeForAnswer(card),
-          cardSeed: card.id,
-        })
+    // 2. Prioritize due cards first, followed by remaining cards in collection
+    if (cards.length > 0) {
+      const now = services.clock.now()
+      const dueCards = orderCardsForReview(cards, now)
+      const dueIds = new Set(dueCards.map((c) => c.id))
+      const nonDueCards = cards.filter((c) => !dueIds.has(c.id))
+      const allOrderedCards = [...dueCards, ...nonDueCards]
+
+      // Background prefetching defaults to bothVoices !== false, priming both
+      // female and male personas into cache so that any review turn is immediately ready.
+      for (const card of allOrderedCards) {
+        if (card.prompt.trim()) {
+          items.push({
+            text: card.prompt,
+            locale: localeForPrompt(card),
+            cardSeed: card.id,
+          })
+        }
+        if (card.answer.trim()) {
+          items.push({
+            text: card.answer,
+            locale: localeForAnswer(card),
+            cardSeed: card.id,
+          })
+        }
       }
     }
 
     if (items.length > 0) {
       void services.speaker.prefetch(items)
     }
-  }, [cards, services.clock, services.speaker])
+  }, [cards, services.clock, services.speaker, view])
 
   const onUpdateCards = useCallback(
     (

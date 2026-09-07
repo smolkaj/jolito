@@ -3,10 +3,25 @@ import {
   filterOutStarterCards,
   isStarterCard,
   starterCards,
+  starterHeroPrefetchItems,
 } from './starter-cards'
 import { createStudyCards } from '../domain/card'
 
 describe('starterCards', () => {
+  it('provides hero sample prefetch items for the starter screen', () => {
+    expect(starterHeroPrefetchItems).toEqual([
+      {
+        text: 'aguacate',
+        locale: 'es-MX',
+        cardSeed: 'sample-aguacate',
+      },
+      {
+        text: 'avocado',
+        locale: 'en-US',
+        cardSeed: 'sample-aguacate',
+      },
+    ])
+  })
   it('provides 4 starter cards with starter noteId prefixes', () => {
     expect(starterCards).toHaveLength(4)
     expect(starterCards.every(isStarterCard)).toBe(true)
