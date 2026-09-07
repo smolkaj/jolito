@@ -5053,6 +5053,14 @@ describe('Jolito', () => {
         'href',
         'https://en.wikipedia.org/wiki/Spaced_repetition',
       )
+      expect(
+        screen.getByText(/jolito games your memory with/i),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          /brings things back just before you forget them, so they stick almost effortlessly/i,
+        ),
+      ).toBeInTheDocument()
       expect(screen.getByText(/forgetting curve/i)).toBeInTheDocument()
 
       // 3 Value pillars are rendered

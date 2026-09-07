@@ -2243,7 +2243,9 @@ export function App({
                     schedule, slogging through flashcards at home was dreadful.
                   </p>
                   <p>
-                    Jolito is my solution: the proven retention of{' '}
+                    I built Jolito to make memorization something to look
+                    forward to: fast, tactile, immersive. Jolito games your
+                    memory with{' '}
                     <a
                       href="https://en.wikipedia.org/wiki/Spaced_repetition"
                       target="_blank"
@@ -2251,7 +2253,8 @@ export function App({
                     >
                       spaced repetition
                     </a>
-                    , without the dread.
+                    —legally. It brings things back just before you forget them,
+                    so they stick almost effortlessly.
                   </p>
                 </div>
               </div>

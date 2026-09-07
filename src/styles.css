@@ -571,19 +571,19 @@ summary:focus-visible {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  padding: 24px 0 20px;
+  padding: clamp(16px, 2.5vh, 32px) 0 20px;
   box-sizing: border-box;
 }
 
 .welcome-hero-main {
   width: 100%;
-  flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: center;
   gap: clamp(32px, 5vw, 64px);
+  margin-top: clamp(8px, 2vh, 28px);
 }
 
 .welcome-hero-footer {
@@ -591,7 +591,8 @@ summary:focus-visible {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  margin-top: 24px;
+  margin-top: auto;
+  padding-top: 24px;
 }
 
 .welcome-hero-footer-spacer {
@@ -1024,13 +1025,13 @@ summary:focus-visible {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   margin: 0 calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-right)))
     calc(-1 * max(40px, env(safe-area-inset-bottom)))
     calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-left)));
-  padding: clamp(32px, 4.5vh, 52px)
+  padding: clamp(40px, 6vh, 64px)
     max(clamp(20px, 5vw, 80px), env(safe-area-inset-right))
-    clamp(32px, 4.5vh, 52px)
+    clamp(40px, 6vh, 64px)
     max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
   background: linear-gradient(
     180deg,
