@@ -77,6 +77,12 @@ export class SupabaseSyncService implements SyncService {
       }
 
       if (!res.ok) {
+        const errorText = await res.text().catch(() => '')
+        console.error('[SyncService] Cloud pull failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorText,
+        })
         return {
           success: false,
           error: `Cloud fetch failed (HTTP ${res.status}).`,
@@ -100,6 +106,10 @@ export class SupabaseSyncService implements SyncService {
 
       const parseResult = deckSyncPayloadSchema.safeParse(first.data)
       if (!parseResult.success) {
+        console.error(
+          '[SyncService] Remote deck validation failed:',
+          parseResult.error,
+        )
         return {
           success: false,
           error: 'Remote deck data did not match the Jolito sync schema.',
@@ -113,6 +123,7 @@ export class SupabaseSyncService implements SyncService {
         syncedAt: new Date(first.updated_at).getTime(),
       }
     } catch (err) {
+      console.error('[SyncService] Unexpected error pulling cloud deck:', err)
       return {
         success: false,
         error:
@@ -185,6 +196,12 @@ export class SupabaseSyncService implements SyncService {
       }
 
       if (!res.ok) {
+        const errorText = await res.text().catch(() => '')
+        console.error('[SyncService] Cloud push failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorText,
+        })
         return {
           success: false,
           error: `Cloud push failed (HTTP ${res.status}).`,
@@ -198,6 +215,7 @@ export class SupabaseSyncService implements SyncService {
         syncedAt: new Date(nowIso).getTime(),
       }
     } catch (err) {
+      console.error('[SyncService] Unexpected error pushing cloud deck:', err)
       return {
         success: false,
         error:

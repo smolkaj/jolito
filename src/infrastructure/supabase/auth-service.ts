@@ -416,6 +416,10 @@ export class SupabaseAuthService implements AuthService {
           error_description?: string
           message?: string
         }
+        console.error('[AuthService] Magic link request failed:', {
+          status: res.status,
+          errorData,
+        })
         return {
           success: false,
           error:
@@ -428,6 +432,10 @@ export class SupabaseAuthService implements AuthService {
 
       return { success: true }
     } catch (err) {
+      console.error(
+        '[AuthService] Unexpected error requesting magic link:',
+        err,
+      )
       return {
         success: false,
         error:

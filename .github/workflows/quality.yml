@@ -55,6 +55,39 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  supabase-integration:
+    name: Local Supabase integration & RLS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit
+      - name: Start local Supabase
+        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+      - name: Run pgTAP migration and RLS tests
+        run: npm run test:db
+      - name: Lint local database schema
+        run: npm run lint:db
+      - name: Run live integration test suite
+        run: npm run test:integration
+      - uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - name: Run feedback E2E test against local Supabase
+        env:
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+        run: npx playwright test tests/e2e/feedback.spec.ts
+
   dependency-review:
     name: Dependency review
     if: ${{ github.event_name == 'pull_request' }}

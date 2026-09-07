@@ -34,16 +34,21 @@ export class SupabaseFeedbackService implements FeedbackService {
   ): Promise<FeedbackResult> {
     const validation = feedbackSubmissionSchema.safeParse(submission)
     if (!validation.success) {
+      const errorMsg =
+        validation.error.issues?.[0]?.message ??
+        validation.error.message ??
+        'Invalid feedback submission.'
+      console.error('[FeedbackService] Validation error:', errorMsg)
       return {
         success: false,
-        error:
-          validation.error.issues?.[0]?.message ??
-          validation.error.message ??
-          'Invalid feedback submission.',
+        error: errorMsg,
       }
     }
 
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
+      console.error(
+        '[FeedbackService] Feedback service is not configured (missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY).',
+      )
       return {
         success: false,
         error: 'Feedback service is not configured.',
@@ -54,6 +59,9 @@ export class SupabaseFeedbackService implements FeedbackService {
     if (user) {
       const authHeaders = await this.getAuthHeaders()
       if (!authHeaders) {
+        console.error(
+          '[FeedbackService] Cannot submit authenticated feedback: missing access token.',
+        )
         return { success: false, error: 'Sign in to send feedback.' }
       }
       headers = authHeaders
@@ -99,16 +107,52 @@ export class SupabaseFeedbackService implements FeedbackService {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
+        let errorPayload: {
+          code?: string
+          message?: string
+          details?: string | null
+          hint?: string | null
+        } | null = null
+        try {
+          if (errorText) {
+            errorPayload = JSON.parse(errorText) as {
+              code?: string
+              message?: string
+              details?: string | null
+              hint?: string | null
+            }
+          }
+        } catch {
+          // not JSON
+        }
+
+        console.error('[FeedbackService] Submission failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          code: errorPayload?.code,
+          message: errorPayload?.message,
+          details: errorPayload?.details,
+          hint: errorPayload?.hint,
+          rawError: errorText,
+        })
+
+        const displayError =
+          errorPayload?.message ||
+          (errorText && !errorText.startsWith('{') ? errorText : null) ||
+          `Failed to send feedback (HTTP ${res.status}). Please try again.`
+
         return {
           success: false,
-          error:
-            errorText ||
-            `Failed to send feedback (HTTP ${res.status}). Please try again.`,
+          error: displayError,
         }
       }
 
       return { success: true }
     } catch (err) {
+      console.error(
+        '[FeedbackService] Unexpected network or client error:',
+        err,
+      )
       return {
         success: false,
         error:

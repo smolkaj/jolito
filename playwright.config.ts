@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const port = process.env.PLAYWRIGHT_PORT || '4187'
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://mock.supabase.co'
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'mock-key'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -15,12 +17,12 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `VITE_SUPABASE_URL=https://mock.supabase.co VITE_SUPABASE_ANON_KEY=mock-key npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
+    command: `VITE_SUPABASE_URL=${supabaseUrl} VITE_SUPABASE_ANON_KEY=${supabaseAnonKey} npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     env: {
-      VITE_SUPABASE_URL: 'https://mock.supabase.co',
-      VITE_SUPABASE_ANON_KEY: 'mock-key',
+      VITE_SUPABASE_URL: supabaseUrl,
+      VITE_SUPABASE_ANON_KEY: supabaseAnonKey,
     },
   },
 })

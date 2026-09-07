@@ -1,0 +1,86 @@
+name: Database Migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/supabase-migration.yml'
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/supabase-migration.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-migrations:
+    name: Verify migrations (Local & Lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit
+
+      - name: Start local Supabase and apply migrations
+        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+
+      - name: Lint local database schema
+        run: npm run lint:db
+
+      - name: Run pgTAP migration and RLS tests
+        run: npm run test:db
+
+      - name: Run live integration test suite
+        run: npm run test:integration
+
+      - name: Verify remote migration dry-run (if credentials configured)
+        if: ${{ env.SUPABASE_ACCESS_TOKEN != '' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -n "$SUPABASE_PROJECT_ID" ]; then
+            npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+            npx supabase db push --dry-run
+          fi
+
+  deploy-migrations:
+    name: Deploy migrations to production Supabase
+    needs: [verify-migrations]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit
+
+      - name: Check required credentials
+        run: |
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN secret is not set. Migrations cannot be deployed."
+            exit 1
+          fi
+
+      - name: Link project and deploy migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID || secrets.SUPABASE_PROJECT_REF || 'jolito' }}
+        run: |
+          npx supabase link --project-ref "$SUPABASE_PROJECT_ID"
+          npx supabase db push --linked --yes
