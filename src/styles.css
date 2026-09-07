@@ -567,13 +567,14 @@ summary:focus-visible {
 
 .welcome-hero {
   width: min(1080px, 100%);
-  min-height: calc(100svh - 110px);
+  min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 46px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 24px 0 20px;
+  box-sizing: border-box;
 }
 
 .welcome-hero-main {
@@ -2957,7 +2958,7 @@ kbd {
   }
 
   .welcome-hero {
-    min-height: calc(100svh - 60px);
+    min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 32px);
     padding-top: 14px;
     padding-bottom: 28px;
     box-sizing: border-box;
