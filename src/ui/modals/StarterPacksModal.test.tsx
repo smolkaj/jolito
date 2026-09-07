@@ -236,17 +236,17 @@ describe('StarterPacksModal', () => {
     ).toBeNull()
   })
 
-  it('displays partial button (+ Add reverse) when only the reverse en-es directional card exists', () => {
+  it('displays partial button (+ Add reverse) when only the forward es-en directional card exists', () => {
     const streetPack = findStarterPack('mexican-street-phrases')!
     const allStreetCards = streetPack.createCards(0)
-    // Only have the second card (en-es direction) of the first reciprocal pair
-    const reverseCard = allStreetCards.slice(1, 2)
+    // Only have the first card (es-en direction) of the first reciprocal pair
+    const forwardCard = allStreetCards.slice(0, 1)
 
     render(
       <StarterPacksModal
         isOpen={true}
         onClose={vi.fn()}
-        cards={reverseCard}
+        cards={forwardCard}
         onAddPack={vi.fn()}
       />,
     )
@@ -263,7 +263,7 @@ describe('StarterPacksModal', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Add reverse card for/i }),
-    ).toBeInTheDocument()
+    ).toHaveTextContent('+ Add reverse')
   })
 
   it('displays clean status copy when all cards in pack are in deck', () => {
@@ -320,14 +320,14 @@ describe('StarterPacksModal', () => {
   })
 
   it('allows adding individual words/notes directly from inspect view', () => {
-    const onAddCards = vi.fn<(cards: unknown[]) => void>()
+    const onAddNote = vi.fn()
     render(
       <StarterPacksModal
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
         onAddPack={vi.fn()}
-        onAddCards={onAddCards}
+        onAddNote={onAddNote}
       />,
     )
 
@@ -344,11 +344,41 @@ describe('StarterPacksModal', () => {
     })
     fireEvent.click(addMandeBtn)
 
-    expect(onAddCards).toHaveBeenCalledTimes(1)
-    const callArgs = onAddCards.mock.calls[0]
-    expect(callArgs).toBeDefined()
-    const addedCards = (callArgs?.[0] as Array<{ prompt: string }>) ?? []
-    expect(addedCards).toHaveLength(2)
-    expect(addedCards.some((c) => c.prompt === '¿Mande?')).toBe(true)
+    expect(onAddNote).toHaveBeenCalledTimes(1)
+    expect(onAddNote).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+      0,
+    )
+  })
+
+  it('renders "+ Add missing" button when only reverse card exists in deck', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    // Only keep en-es card for ¿Mande? (index 0)
+    const reverseOnly = allStreetCards.filter(
+      (c) => c.direction === 'en-es' && c.answer === '¿Mande?',
+    )
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={reverseOnly}
+        onAddPack={vi.fn()}
+        onAddNote={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+
+    expect(
+      screen.getByRole('button', {
+        name: /Add missing card for ¿Mande\?/i,
+      }),
+    ).toHaveTextContent('+ Add missing')
   })
 })

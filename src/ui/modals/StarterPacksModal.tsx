@@ -9,29 +9,38 @@ interface StarterPacksModalProps {
   onClose: () => void
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => void
-  onAddCards?: (cards: StudyCard[]) => void
+  onAddNote?: (pack: StarterPack, noteIndex: number) => void
 }
 
 function StarterPacksModalInner({
   onClose,
   cards,
   onAddPack,
-  onAddCards,
+  onAddNote,
 }: {
   onClose: () => void
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => void
-  onAddCards?: (cards: StudyCard[]) => void
+  onAddNote?: (pack: StarterPack, noteIndex: number) => void
 }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const inspectBackBtnRef = useRef<HTMLButtonElement>(null)
   const lastInspectedPackIdRef = useRef<string | null>(null)
+  const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
   const [inspectSearch, setInspectSearch] = useState('')
   const [addingPackId, setAddingPackId] = useState<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (addTimerRef.current) {
+        clearTimeout(addTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     previousFocusRef.current = (document.activeElement as HTMLElement) || null
@@ -118,8 +127,10 @@ function StarterPacksModalInner({
   const handleAdd = (pack: StarterPack) => {
     setAddingPackId(pack.id)
     onAddPack(pack)
-    // Clear adding state after short moment
-    setTimeout(() => {
+    if (addTimerRef.current) {
+      clearTimeout(addTimerRef.current)
+    }
+    addTimerRef.current = setTimeout(() => {
       setAddingPackId(null)
     }, 400)
   }
@@ -130,13 +141,8 @@ function StarterPacksModalInner({
   )
 
   const handleAddNote = (originalIndex: number) => {
-    if (!inspectingPack) return
-    const noteCards = inspectingPack.createNoteCards(originalIndex, 0)
-    if (onAddCards) {
-      onAddCards(noteCards)
-    } else {
-      onAddPack(inspectingPack)
-    }
+    if (!inspectingPack || !onAddNote) return
+    onAddNote(inspectingPack, originalIndex)
   }
 
   const filteredInspectNotes = useMemo(() => {
@@ -324,10 +330,14 @@ function StarterPacksModalInner({
                           type="button"
                           className="inspect-item-add-btn is-partial"
                           onClick={() => handleAddNote(originalIndex)}
-                          aria-label={`Add reverse card for ${note.spanish}`}
+                          aria-label={
+                            hasEsEn
+                              ? `Add reverse card for ${note.spanish}`
+                              : `Add missing card for ${note.spanish}`
+                          }
                           title="Add missing reciprocal card to your deck"
                         >
-                          + Add reverse
+                          {hasEsEn ? '+ Add reverse' : '+ Add missing'}
                         </button>
                       ) : (
                         <button

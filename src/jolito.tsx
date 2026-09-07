@@ -1368,27 +1368,23 @@ export function App({
     (newCards: StudyCard[]) => {
       const userCards = filterOutStarterCards(cardsRef.current)
       const mergeResult = mergeStudyCardsSemantic(userCards, newCards)
-
-      onUpdateCards(mergeResult.cards, false)
-
-      if (authUserRef.current) {
-        void syncDeckWithCloud({
-          localCards: mergeResult.cards,
-          localDeletedIds: Array.from(deletedCardIdsRef.current),
-          user: authUserRef.current,
-          syncService: services.sync,
-          onCardsUpdated: (newCards, newDeletedIds) =>
-            onUpdateCards(newCards, false, newDeletedIds),
-        })
-      }
+      onUpdateCards(mergeResult.cards, true)
     },
-    [onUpdateCards, services.sync],
+    [onUpdateCards],
   )
 
   const handleAddStarterPack = useCallback(
     (pack: StarterPack) => {
       const now = services.clock.now()
       handleAddStarterCards(pack.createCards(now))
+    },
+    [handleAddStarterCards, services.clock],
+  )
+
+  const handleAddStarterNote = useCallback(
+    (pack: StarterPack, noteIndex: number) => {
+      const now = services.clock.now()
+      handleAddStarterCards(pack.createNoteCards(noteIndex, now))
     },
     [handleAddStarterCards, services.clock],
   )
@@ -3272,7 +3268,7 @@ export function App({
           onClose={() => setIsStarterPacksOpen(false)}
           cards={cards}
           onAddPack={handleAddStarterPack}
-          onAddCards={handleAddStarterCards}
+          onAddNote={handleAddStarterNote}
         />
 
         <DeckBackupModal
