@@ -103,4 +103,41 @@ describe('SEO search snippet and favicon compliance', () => {
     expect(swContent).toContain('favicon.ico')
     expect(swContent).toContain('apple-touch-icon.png')
   })
+
+  it('declares iOS splash screen links with fallback and light color-scheme baseline', () => {
+    const html = readFileSync(indexPath, 'utf-8')
+
+    // Root html and meta must enforce light color scheme and Jolito paper background
+    expect(html).toContain(
+      'style="background-color: #fdf5f8; color-scheme: light"',
+    )
+    expect(html).toMatch(/<meta\s+name="color-scheme"\s+content="light"\s*\/>/)
+    expect(html).toMatch(
+      /<meta\s+name="mobile-web-app-capable"\s+content="yes"\s*\/>/,
+    )
+
+    // Apple startup images must be declared
+    expect(html).toContain('rel="apple-touch-startup-image"')
+    expect(html).toContain('apple-splash-fallback.png')
+    expect(
+      existsSync(resolve(publicDir, 'splash/apple-splash-fallback.png')),
+    ).toBe(true)
+
+    // Key iPhone resolutions must exist on disk and be linked
+    const expectedSplashes = [
+      'apple-splash-1320-2868.png', // iPhone 16 Pro Max
+      'apple-splash-1290-2796.png', // iPhone 15 Pro Max
+      'apple-splash-1179-2556.png', // iPhone 15/16
+      'apple-splash-1170-2532.png', // iPhone 12/13/14
+      'apple-splash-750-1334.png', // iPhone SE
+    ]
+
+    for (const splash of expectedSplashes) {
+      expect(html).toContain(splash)
+      expect(
+        existsSync(resolve(publicDir, `splash/${splash}`)),
+        `Expected splash/${splash} to exist`,
+      ).toBe(true)
+    }
+  })
 })
