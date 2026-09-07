@@ -7,18 +7,22 @@ import {
   type SyncStatus,
 } from '../../domain/sync'
 import type { SupabaseAuthService } from './auth-service'
+import { parsePostgrestErrorPayload } from './postgrest-error'
 
 export class SupabaseSyncService implements SyncService {
   private status: SyncStatus = 'idle'
   private deviceId: string
+  private supabaseUrl: string
+  private supabaseAnonKey: string
 
   constructor(
     private authService: SupabaseAuthService,
-    private supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
-    private supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      '',
+    supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
+    supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
     deviceId?: string,
   ) {
+    this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
+    this.supabaseAnonKey = supabaseAnonKey
     this.deviceId = deviceId || this.getOrCreateDeviceId()
   }
 
@@ -77,9 +81,24 @@ export class SupabaseSyncService implements SyncService {
       }
 
       if (!res.ok) {
+        const errorText = await res.text().catch(() => '')
+        const errorPayload = parsePostgrestErrorPayload(errorText)
+        console.error('[SyncService] Cloud pull failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          code: errorPayload?.code,
+          message: errorPayload?.message,
+          details: errorPayload?.details,
+          hint: errorPayload?.hint,
+          rawError: errorText,
+        })
+        const displayError =
+          errorPayload?.message ||
+          (errorText && !errorText.startsWith('{') ? errorText : null) ||
+          `Cloud fetch failed (HTTP ${res.status}).`
         return {
           success: false,
-          error: `Cloud fetch failed (HTTP ${res.status}).`,
+          error: displayError,
         }
       }
 
@@ -100,6 +119,10 @@ export class SupabaseSyncService implements SyncService {
 
       const parseResult = deckSyncPayloadSchema.safeParse(first.data)
       if (!parseResult.success) {
+        console.error(
+          '[SyncService] Remote deck validation failed:',
+          parseResult.error,
+        )
         return {
           success: false,
           error: 'Remote deck data did not match the Jolito sync schema.',
@@ -113,6 +136,7 @@ export class SupabaseSyncService implements SyncService {
         syncedAt: new Date(first.updated_at).getTime(),
       }
     } catch (err) {
+      console.error('[SyncService] Unexpected error pulling cloud deck:', err)
       return {
         success: false,
         error:
@@ -185,9 +209,24 @@ export class SupabaseSyncService implements SyncService {
       }
 
       if (!res.ok) {
+        const errorText = await res.text().catch(() => '')
+        const errorPayload = parsePostgrestErrorPayload(errorText)
+        console.error('[SyncService] Cloud push failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          code: errorPayload?.code,
+          message: errorPayload?.message,
+          details: errorPayload?.details,
+          hint: errorPayload?.hint,
+          rawError: errorText,
+        })
+        const displayError =
+          errorPayload?.message ||
+          (errorText && !errorText.startsWith('{') ? errorText : null) ||
+          `Cloud push failed (HTTP ${res.status}).`
         return {
           success: false,
-          error: `Cloud push failed (HTTP ${res.status}).`,
+          error: displayError,
         }
       }
 
@@ -198,6 +237,7 @@ export class SupabaseSyncService implements SyncService {
         syncedAt: new Date(nowIso).getTime(),
       }
     } catch (err) {
+      console.error('[SyncService] Unexpected error pushing cloud deck:', err)
       return {
         success: false,
         error:
