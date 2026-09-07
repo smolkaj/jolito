@@ -1056,7 +1056,6 @@ body:has(.welcome-page) {
     var(--paper-subtle) 0%,
     var(--paper-deep) 100%
   );
-  border-top: 2px solid var(--line);
 }
 
 .why-inner {
@@ -2748,20 +2747,35 @@ kbd {
     gap: 20px;
   }
 
-  .hero-scroll-cue {
-    display: none;
-  }
-
   .welcome-hero-footer {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: flex-end;
-    margin-top: 16px;
+    margin-top: clamp(12px, 2vh, 20px);
     width: 100%;
   }
 
   .welcome-hero-footer-spacer {
-    display: none;
+    min-width: 0;
+  }
+
+  .welcome-hero-footer .hero-scroll-cue {
+    grid-column: 2;
+    justify-self: center;
+    min-height: 48px;
+    padding: 10px 22px;
+    font-size: 14px;
+  }
+
+  .welcome-hero-footer .app-footer {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .why-start-button {
+    min-height: 48px;
+    padding: 10px 22px;
+    font-size: 14px;
   }
 
   .welcome-why {
