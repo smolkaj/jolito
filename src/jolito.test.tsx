@@ -13,7 +13,7 @@ import { createStudyCards, type StudyCard } from './domain/card'
 import { createCards } from './application/create-cards'
 import { starterCards } from './application/starter-cards'
 import { OfflineCardAssistant } from './application/card-assistant'
-import { createTestServices } from './test/services'
+import { createTestServices, MockHapticsPlayer } from './test/services'
 
 class SpeechSynthesisUtteranceMock {
   lang = ''
@@ -5314,6 +5314,111 @@ describe('Jolito', () => {
       scrollIntoViewSpy.mockRestore()
       scrollToSpy.mockRestore()
       vi.useRealTimers()
+    })
+
+    it('supports swipe navigation between views with sensory haptic feedback', async () => {
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      function dispatchTouch(
+        type: 'touchstart' | 'touchend',
+        points: { clientX: number; clientY: number; target?: Element }[],
+      ) {
+        const targetElement = points[0]?.target ?? document.body
+        const touches = points.map((p) => ({
+          clientX: p.clientX,
+          clientY: p.clientY,
+          target: p.target ?? targetElement,
+        })) as unknown as Touch[]
+        const event = new UIEvent(type, {
+          bubbles: true,
+          cancelable: true,
+        })
+        Object.defineProperties(event, {
+          touches: { value: type === 'touchstart' ? touches : [] },
+          changedTouches: { value: touches },
+        })
+        targetElement.dispatchEvent(event)
+      }
+
+      // 1. Swiping left on welcome screen navigates to Create view
+      expect(
+        screen.getByRole('heading', { level: 1, name: /make the words/i }),
+      ).toBeInTheDocument()
+      dispatchTouch('touchstart', [{ clientX: 250, clientY: 200 }])
+      dispatchTouch('touchend', [{ clientX: 100, clientY: 205 }])
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /new flashcard/i }),
+        ).toBeInTheDocument()
+      })
+      expect((services.haptics as MockHapticsPlayer).triggered).toContain(
+        'selection',
+      )
+
+      // 2. Return to Welcome via Brand logo
+      const brandLogo = screen.getByRole('button', { name: /jolito home/i })
+      await userEvent.setup().click(brandLogo)
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { level: 1, name: /make the words/i }),
+        ).toBeInTheDocument()
+      })
+
+      // 3. Swiping right on welcome screen starts Practice
+      dispatchTouch('touchstart', [{ clientX: 100, clientY: 200 }])
+      dispatchTouch('touchend', [{ clientX: 250, clientY: 205 }])
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()
+      })
+
+      // 4. Reveal card in Practice
+      const answerInput = screen.getByLabelText(/your answer/i)
+      await userEvent.setup().type(answerInput, 'aguacate{enter}')
+      await waitFor(() => {
+        expect(screen.getByText(/how did that feel\?/i)).toBeInTheDocument()
+      })
+
+      // 5. Swipe card right to grade as "Hard" (conservative lowest passing grade)
+      const studyCard = document.querySelector('.study-card')!
+      dispatchTouch('touchstart', [
+        { clientX: 150, clientY: 250, target: studyCard },
+      ])
+      dispatchTouch('touchend', [
+        { clientX: 280, clientY: 252, target: studyCard },
+      ])
+
+      await waitFor(() => {
+        expect((services.haptics as MockHapticsPlayer).triggered).toContain(
+          'hard',
+        )
+      })
+
+      // 6. On the next card, reveal and swipe left to grade as "Again" (worst grade / lapse)
+      await waitFor(() => {
+        expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()
+      })
+      const nextAnswerInput = screen.getByLabelText(/your answer/i)
+      await userEvent.setup().type(nextAnswerInput, 'palabra{enter}')
+      await waitFor(() => {
+        expect(screen.getByText(/how did that feel\?/i)).toBeInTheDocument()
+      })
+
+      const nextStudyCard = document.querySelector('.study-card')!
+      dispatchTouch('touchstart', [
+        { clientX: 250, clientY: 250, target: nextStudyCard },
+      ])
+      dispatchTouch('touchend', [
+        { clientX: 120, clientY: 252, target: nextStudyCard },
+      ])
+
+      await waitFor(() => {
+        expect((services.haptics as MockHapticsPlayer).triggered).toContain(
+          'again',
+        )
+      })
     })
   })
 })

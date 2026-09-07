@@ -51,6 +51,8 @@ import {
 } from './domain/study-session'
 import { useStudySession } from './ui/useStudySession'
 import { useStudyAudio } from './ui/useStudyAudio'
+import { useHomeSwipeGesture } from './ui/useHomeSwipeGesture'
+import { useCardSwipeGesture } from './ui/useCardSwipeGesture'
 import {
   filterDeckCards,
   getDeckStats,
@@ -1818,6 +1820,38 @@ export function App({
     navigateTo(nextQueue.length > 0 ? 'review' : 'complete')
   }
 
+  const isAnyModalOpen =
+    isSyncOpen ||
+    isBackupOpen ||
+    isFeedbackOpen ||
+    editingCard !== null ||
+    deletingCards !== null
+
+  const {
+    heroRef,
+    leftCueRef,
+    rightCueRef,
+    cueState: homeCueState,
+  } = useHomeSwipeGesture({
+    enabled: view === 'welcome' && !isAnyModalOpen,
+    onSwipeLeft: () => navigateTo('create'),
+    onSwipeRight: () => handlePractice(),
+    onHaptic: () => services.haptics.trigger('selection'),
+  })
+
+  const {
+    cardRef,
+    againStampRef,
+    hardStampRef,
+    swipeState: cardSwipeState,
+  } = useCardSwipeGesture({
+    enabled: view === 'review' && revealed && !isAnyModalOpen,
+    cardId: currentCard?.id,
+    onGradeAgain: () => grade('again'),
+    onGradeHard: () => grade('hard'),
+    onHaptic: () => services.haptics.trigger('selection'),
+  })
+
   function reveal(event: FormEvent) {
     event.preventDefault()
     if (revealed || !currentCard) return
@@ -2110,7 +2144,21 @@ export function App({
             onDismiss={() => setRedirectAuthBanner(null)}
             onCopySessionLink={handleCopySessionLink}
           />
-          <section className="welcome-hero">
+          <div
+            ref={leftCueRef}
+            className={`home-swipe-cue home-swipe-cue-practice ${homeCueState.isReady && homeCueState.direction === 'right' ? 'is-ready' : ''}`}
+            aria-hidden="true"
+          >
+            <span className="cue-arrow">←</span> <span>Practice</span>
+          </div>
+          <div
+            ref={rightCueRef}
+            className={`home-swipe-cue home-swipe-cue-create ${homeCueState.isReady && homeCueState.direction === 'left' ? 'is-ready' : ''}`}
+            aria-hidden="true"
+          >
+            <span>Create a card</span> <span className="cue-arrow">→</span>
+          </div>
+          <section ref={heroRef} className="welcome-hero">
             <div className="welcome-hero-main">
               <div className="hero-copy">
                 <img
@@ -3451,7 +3499,28 @@ export function App({
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
-        <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
+        <section
+          ref={cardRef}
+          className={`study-card ${revealed ? 'is-revealed' : ''}`}
+        >
+          {revealed && (
+            <>
+              <div
+                ref={againStampRef}
+                className={`card-swipe-stamp card-swipe-stamp-again ${cardSwipeState.isReady && cardSwipeState.direction === 'again' ? 'is-ready' : ''}`}
+                aria-hidden="true"
+              >
+                <span>AGAIN</span>
+              </div>
+              <div
+                ref={hardStampRef}
+                className={`card-swipe-stamp card-swipe-stamp-hard ${cardSwipeState.isReady && cardSwipeState.direction === 'hard' ? 'is-ready' : ''}`}
+                aria-hidden="true"
+              >
+                <span>HARD</span>
+              </div>
+            </>
+          )}
           <div className="study-prompt-wrap">
             <h1
               className={`study-prompt ${currentCard.prompt.trim().length > 100 ? 'is-long' : currentCard.prompt.trim().length > 50 ? 'is-medium' : ''}`.trim()}

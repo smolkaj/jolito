@@ -241,4 +241,252 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       .poll(async () => page.evaluate(() => window.scrollY))
       .toBeLessThanOrEqual(5)
   })
+
+  test('supports mobile swipe gestures to navigate between views with visual captures', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: /make the words/i }),
+    ).toBeVisible()
+
+    // 1. Swipe left on welcome screen to navigate to Create view
+    await page.evaluate(() => {
+      const hero = document.querySelector('.welcome-hero') ?? document.body
+      const start = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 300,
+        clientY: 300,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: [start],
+          changedTouches: [start],
+          bubbles: true,
+        }),
+      )
+      const move = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 120,
+        clientY: 302,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: [move],
+          changedTouches: [move],
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await page.screenshot({ path: '/tmp/mobile-home-swipe-left-cue.png' })
+
+    await page.evaluate(() => {
+      const hero = document.querySelector('.welcome-hero') ?? document.body
+      const end = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 100,
+        clientY: 305,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          changedTouches: [end],
+          bubbles: true,
+        }),
+      )
+    })
+
+    await expect(
+      page.getByRole('heading', { name: /^new flashcard$/i }),
+    ).toBeVisible()
+    await page.screenshot({ path: '/tmp/mobile-swipe-create.png' })
+
+    // 2. Return to Welcome via Brand logo
+    await page.getByRole('button', { name: /jolito home/i }).click()
+    await expect(
+      page.getByRole('heading', { level: 1, name: /make the words/i }),
+    ).toBeVisible()
+
+    // 3. Swipe right on welcome screen to start Practice
+    await page.evaluate(() => {
+      const hero = document.querySelector('.welcome-hero') ?? document.body
+      const start = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 100,
+        clientY: 300,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: [start],
+          changedTouches: [start],
+          bubbles: true,
+        }),
+      )
+      const move = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 260,
+        clientY: 302,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: [move],
+          changedTouches: [move],
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await page.screenshot({ path: '/tmp/mobile-home-swipe-right-cue.png' })
+
+    await page.evaluate(() => {
+      const hero = document.querySelector('.welcome-hero') ?? document.body
+      const end = new Touch({
+        identifier: 1,
+        target: hero,
+        clientX: 280,
+        clientY: 305,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          changedTouches: [end],
+          bubbles: true,
+        }),
+      )
+    })
+
+    const answerInput = page.getByLabel(/your answer/i)
+    await expect(answerInput).toBeVisible()
+    await page.screenshot({ path: '/tmp/mobile-swipe-practice.png' })
+
+    // 4. Reveal answer and swipe card right to grade "Hard" (conservative lowest passing grade)
+    await answerInput.fill('avocado')
+    await answerInput.press('Enter')
+    await expect(page.getByText(/how did that feel\?/i)).toBeVisible()
+    await page.waitForTimeout(250)
+
+    // Verify accessibility on revealed study card
+    const reviewAxe = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze()
+    expect(reviewAxe.violations).toEqual([])
+
+    await page.evaluate(() => {
+      const card = document.querySelector('.study-card') ?? document.body
+      const start = new Touch({
+        identifier: 1,
+        target: card,
+        clientX: 120,
+        clientY: 250,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: [start],
+          changedTouches: [start],
+          bubbles: true,
+        }),
+      )
+      const move = new Touch({
+        identifier: 1,
+        target: card,
+        clientX: 260,
+        clientY: 252,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: [move],
+          changedTouches: [move],
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await page.screenshot({ path: '/tmp/mobile-card-swipe-hard-stamp.png' })
+
+    await page.evaluate(() => {
+      const card = document.querySelector('.study-card') ?? document.body
+      const end = new Touch({
+        identifier: 1,
+        target: card,
+        clientX: 280,
+        clientY: 255,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          changedTouches: [end],
+          bubbles: true,
+        }),
+      )
+    })
+
+    // 5. Next card appears; reveal and swipe card left to grade "Again" (worst grade / lapse)
+    const nextInput = page.getByLabel(/your answer/i)
+    await expect(nextInput).toBeVisible()
+    await page.screenshot({ path: '/tmp/mobile-card-swipe-hard.png' })
+
+    await nextInput.fill('test')
+    await nextInput.press('Enter')
+    await expect(page.getByText(/how did that feel\?/i)).toBeVisible()
+
+    await page.evaluate(() => {
+      const card = document.querySelector('.study-card') ?? document.body
+      const start = new Touch({
+        identifier: 1,
+        target: card,
+        clientX: 280,
+        clientY: 250,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: [start],
+          changedTouches: [start],
+          bubbles: true,
+        }),
+      )
+      const move = new Touch({
+        identifier: 1,
+        target: card,
+        clientX: 120,
+        clientY: 252,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: [move],
+          changedTouches: [move],
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await page.screenshot({ path: '/tmp/mobile-card-swipe-again-stamp.png' })
+
+    await page.evaluate(() => {
+      const card = document.querySelector('.study-card') ?? document.body
+      const end = new Touch({
+        identifier: 1,
+        target: card,
+        clientX: 100,
+        clientY: 255,
+      })
+      window.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          changedTouches: [end],
+          bubbles: true,
+        }),
+      )
+    })
+
+    // Next card loads or completes
+    await page.waitForTimeout(300)
+    await page.screenshot({ path: '/tmp/mobile-card-swipe-again.png' })
+  })
 })
