@@ -25,6 +25,7 @@
     "generate:seo": "node scripts/generate-seo-assets.ts",
     "generate:splash": "node scripts/generate-splash-screens.ts",
     "build:favicons": "node scripts/build-favicons.mjs",
+    "capture:screenshots": "node scripts/capture-store-screenshots.ts",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "deploy": "npm run build && wrangler deploy",

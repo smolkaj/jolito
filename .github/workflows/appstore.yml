@@ -1,0 +1,46 @@
+name: App Store Production Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_note:
+        description: 'Release note or version reference'
+        required: false
+        default: 'Official App Store release'
+
+permissions:
+  contents: read
+
+jobs:
+  appstore:
+    name: Build & Upload to App Store Connect
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Ruby for Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: false
+
+      - name: Install dependencies
+        run: |
+          npm ci --no-audit
+          npm run build
+          npm run cap:sync
+          gem install fastlane --no-document
+
+      - name: Run Fastlane Release
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+          APPLE_CERTIFICATE_PASS: ${{ secrets.APPLE_CERTIFICATE_PASS }}
+        run: |
+          fastlane ios release

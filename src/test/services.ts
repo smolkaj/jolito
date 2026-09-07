@@ -201,6 +201,12 @@ export class MockAuthService implements AuthService {
     return Promise.resolve()
   }
 
+  deleteAccount(): Promise<{ success: boolean; error?: string | undefined }> {
+    this.user = null
+    this.listeners.forEach((l) => l(null))
+    return Promise.resolve({ success: true })
+  }
+
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void {
     this.listeners.add(callback)
     callback(this.user)
@@ -268,6 +274,15 @@ export class MockSyncService implements SyncService {
       deletedCardIds: [...this.remoteDeletedCardIds],
       syncedAt: Date.now(),
     })
+  }
+
+  deleteRemoteDeck(
+    user: AuthUser,
+  ): Promise<{ success: boolean; error?: string | undefined }> {
+    void user
+    this.remoteCards = []
+    this.remoteDeletedCardIds = []
+    return Promise.resolve({ success: true })
   }
 }
 

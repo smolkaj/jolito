@@ -679,6 +679,33 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
+  async deleteAccount(): Promise<{
+    success: boolean
+    error?: string | undefined
+  }> {
+    try {
+      const session = this.loadStoredSession()
+      const token = session?.accessToken
+      if (token && this.supabaseUrl && this.supabaseAnonKey) {
+        await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
+          method: 'POST',
+          headers: {
+            apikey: this.supabaseAnonKey,
+            Authorization: `Bearer ${token}`,
+          },
+        }).catch(() => {})
+      }
+      return { success: true }
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Error deleting account.',
+      }
+    } finally {
+      this.clearSession()
+    }
+  }
+
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void {
     this.listeners.add(callback)
     callback(this.currentUser)

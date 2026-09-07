@@ -133,6 +133,18 @@ TestFlight beta builds are automatically deployed via GitHub Actions on the `mac
 fastlane ios beta
 ```
 
+### Deploying to the Apple App Store
+
+For complete App Store Connect release instructions, metadata copy, and privacy nutrition declarations, see the [App Store Release Guide](APP_STORE.md):
+
+```sh
+# Generate App Store screenshots
+npm run capture:screenshots
+
+# Submit release build to App Store Connect
+fastlane ios release
+```
+
 ## Before opening a PR
 
 ```sh

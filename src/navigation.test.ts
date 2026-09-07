@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   hashForView,
+  isPrivacyHash,
   isWhyJolitoHash,
   titleForView,
   viewFromHash,
@@ -55,5 +56,18 @@ describe('navigation', () => {
     expect(isWhyJolitoHash('#/study')).toBe(false)
     expect(isWhyJolitoHash('#/deck')).toBe(false)
     expect(isWhyJolitoHash('#unknown')).toBe(false)
+  })
+
+  it('identifies Privacy Policy anchor hashes', () => {
+    expect(isPrivacyHash('#privacy')).toBe(true)
+    expect(isPrivacyHash('#/privacy')).toBe(true)
+    expect(isPrivacyHash('#/privacy/')).toBe(true)
+    expect(isPrivacyHash('#privacy-policy')).toBe(true)
+    expect(isPrivacyHash('#/privacy-policy')).toBe(true)
+
+    expect(isPrivacyHash('#/')).toBe(false)
+    expect(isPrivacyHash('')).toBe(false)
+    expect(isPrivacyHash('#/create')).toBe(false)
+    expect(isPrivacyHash('#why-jolito')).toBe(false)
   })
 })

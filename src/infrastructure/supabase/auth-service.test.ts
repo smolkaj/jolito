@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AuthUser } from '../../application/ports'
 import { SupabaseAuthService } from './auth-service'
 
 describe('SupabaseAuthService', () => {
@@ -804,5 +805,74 @@ describe('SupabaseAuthService', () => {
     expect(parsedBody.token_hash).toBe(
       '45ae542bee094273c7281342ece45eed55c2289034b7f15ed7a25e6b',
     )
+  })
+
+  describe('deleteAccount', () => {
+    it('clears stored session, notifies listeners, and calls server logout', async () => {
+      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+        accessToken: 'token-logout-1',
+        refreshToken: 'refresh-logout-1',
+        expiresAt: Date.now() + 600000,
+        user: { id: 'u1', email: 'delete@example.com' },
+      })
+
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      let notifiedUser: AuthUser | null | undefined = undefined
+      service.onAuthStateChange((u) => {
+        notifiedUser = u
+      })
+
+      const res = await service.deleteAccount()
+      expect(res.success).toBe(true)
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/auth/v1/logout',
+        expect.objectContaining({
+          method: 'POST',
+        }),
+      )
+      const call = fetchSpy.mock.calls[0] as [
+        string,
+        { headers: Record<string, string> },
+      ]
+      expect(call[1].headers).toMatchObject({
+        Authorization: 'Bearer token-logout-1',
+      })
+      expect(await service.getUser()).toBeNull()
+      expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+      expect(notifiedUser).toBeNull()
+    })
+
+    it('clears session and returns success even if network logout fails', async () => {
+      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+        accessToken: 'token-err',
+        refreshToken: 'refresh-err',
+        expiresAt: Date.now() + 600000,
+        user: { id: 'u2', email: 'delete-err@example.com' },
+      })
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('Network error')),
+      )
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const res = await service.deleteAccount()
+      expect(res.success).toBe(true)
+      expect(await service.getUser()).toBeNull()
+      expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+    })
   })
 })

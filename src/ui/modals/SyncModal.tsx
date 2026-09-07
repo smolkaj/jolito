@@ -28,6 +28,7 @@ export interface SyncModalProps {
   sync: SyncService
   onSaveLocally?: (() => void) | undefined
   pendingCardPrompt?: string | undefined
+  onOpenPrivacy?: (() => void) | undefined
 }
 
 export function SyncModal({
@@ -40,11 +41,13 @@ export function SyncModal({
   sync,
   onSaveLocally,
   pendingCardPrompt,
+  onOpenPrivacy,
 }: SyncModalProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [showPasteLink, setShowPasteLink] = useState(
     () => isStandalone() && isIOS(),
   )
@@ -52,7 +55,7 @@ export function SyncModal({
     'synced' | 'resent' | 'pasted' | null
   >(null)
   const [loadingAction, setLoadingAction] = useState<
-    'send' | 'verify' | 'sync' | 'signout' | null
+    'send' | 'verify' | 'sync' | 'signout' | 'delete' | null
   >(null)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -202,6 +205,45 @@ export function SyncModal({
     setStatusMsg(null)
   }
 
+  const handleDeleteAccount = async () => {
+    if (!user) return
+    clearTransientFeedback()
+    setLoadingAction('delete')
+    setStatusMsg(null)
+    try {
+      if (sync.deleteRemoteDeck) {
+        const deleteRes = await sync.deleteRemoteDeck(user)
+        if (!deleteRes.success) {
+          setStatusMsg({
+            type: 'error',
+            message: deleteRes.error || 'Failed to delete cloud deck.',
+          })
+          setLoadingAction(null)
+          return
+        }
+      }
+      if (auth.deleteAccount) {
+        await auth.deleteAccount()
+      } else {
+        await auth.signOut()
+      }
+      setIsOtpSent(false)
+      setToken('')
+      setIsConfirmingDelete(false)
+      setStatusMsg({
+        type: 'info',
+        message: 'Cloud account and backup data deleted.',
+      })
+    } catch {
+      setStatusMsg({
+        type: 'error',
+        message: 'Failed to delete cloud account. Please try again.',
+      })
+    } finally {
+      setLoadingAction(null)
+    }
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
@@ -311,6 +353,48 @@ export function SyncModal({
                 {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
               </button>
             </div>
+
+            {isConfirmingDelete ? (
+              <div className="sync-delete-confirm-box" role="alert">
+                <p className="delete-confirm-text">
+                  Permanently delete your cloud backup from Jolito servers?
+                  Local flashcards on this device remain untouched.
+                </p>
+                <div className="delete-confirm-actions">
+                  <button
+                    type="button"
+                    className="danger-button confirm-delete-btn"
+                    onClick={() => {
+                      void handleDeleteAccount()
+                    }}
+                    disabled={loading}
+                  >
+                    {loadingAction === 'delete'
+                      ? 'Deleting…'
+                      : 'Yes, delete cloud data'}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button cancel-delete-btn"
+                    onClick={() => setIsConfirmingDelete(false)}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="sync-account-footer">
+                <button
+                  type="button"
+                  className="modal-link-btn delete-account-link"
+                  onClick={() => setIsConfirmingDelete(true)}
+                  disabled={loading}
+                >
+                  Delete cloud account & data
+                </button>
+              </div>
+            )}
           </div>
         ) : !isOtpSent ? (
           <form
@@ -519,6 +603,22 @@ export function SyncModal({
           {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
           {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
           {isPasted ? 'Pasted link from clipboard.' : ''}
+        </div>
+        <div className="sync-modal-legal">
+          <button
+            type="button"
+            className="modal-link-btn sync-privacy-link"
+            onClick={() => {
+              onClose()
+              if (onOpenPrivacy) {
+                onOpenPrivacy()
+              } else {
+                window.location.hash = '#/privacy'
+              }
+            }}
+          >
+            Privacy Policy
+          </button>
         </div>
       </div>
     </div>
