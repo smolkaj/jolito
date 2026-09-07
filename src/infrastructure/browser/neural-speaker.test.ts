@@ -506,9 +506,28 @@ describe('NeuralVoiceEngine', () => {
     expect(engine.hasAudio('custom english phrase', 'en_US')).toBe(true)
   })
 
-  it('returns false on playAudio when phrase is not in cache', () => {
+  it('returns false on playAudio when phrase is not in cache without elevating audio session', () => {
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'auto' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
     const engine = new NeuralVoiceEngine()
-    expect(engine.playAudio('unregistered-phrase-xyz', 'es-MX')).toBe(false)
+    expect(
+      engine.playAudio('unregistered-phrase-xyz', 'es-MX', undefined, {
+        explicit: true,
+      }),
+    ).toBe(false)
+    expect(mockAudioSession.type).toBe('auto')
+
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
   })
 
   it('prewarms bundled audio by fetching and decoding audio into memory', async () => {
@@ -1390,12 +1409,98 @@ describe('Dual-voice playback', () => {
       'hola',
       'es-MX',
       'es-MX-JorgeNeural',
-      { dualVoice: false, onEnded: onEndedSpy },
+      { dualVoice: false, explicit: undefined, onEnded: onEndedSpy },
     )
 
     // Simulate second voice finishing
     mockSource.onended?.()
     expect(onEndedSpy).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('propagates explicit: true through dual voice sequence and preserves playback category until completion', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockAudioContext = {
+      state: 'running',
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+    } as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const daliaBuffer = { duration: 0.8 } as unknown as AudioBuffer
+    const jorgeBuffer = { duration: 0.9 } as unknown as AudioBuffer
+
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      daliaBuffer,
+      'es-MX-DaliaNeural',
+    )
+    engine.registerAudioBuffer(
+      'hola',
+      'es-MX',
+      jorgeBuffer,
+      'es-MX-JorgeNeural',
+    )
+
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'auto' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
+    const onEndedSpy = vi.fn()
+    const playSpy = vi.spyOn(engine, 'playAudio')
+    engine.playAudio('hola', 'es-MX', 'es-MX-DaliaNeural', {
+      explicit: true,
+      onEnded: onEndedSpy,
+    })
+
+    // Category should be set to playback for explicit user request
+    expect(mockAudioSession.type).toBe('playback')
+    expect(mockSource.start).toHaveBeenCalledTimes(1)
+
+    // Simulate first voice audio finishing - category should remain playback across continuation
+    mockSource.onended?.()
+    expect(mockAudioSession.type).toBe('playback')
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    expect(onEndedSpy).not.toHaveBeenCalled()
+
+    // Advance timers past 320ms pause
+    vi.advanceTimersByTime(350)
+
+    // Alternate voice invoked with explicit: true
+    expect(playSpy).toHaveBeenCalledTimes(2)
+    expect(playSpy).toHaveBeenLastCalledWith(
+      'hola',
+      'es-MX',
+      'es-MX-JorgeNeural',
+      { dualVoice: false, explicit: true, onEnded: onEndedSpy },
+    )
+    expect(mockAudioSession.type).toBe('playback')
+
+    // Simulate second voice finishing - category resets to ambient
+    mockSource.onended?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEndedSpy).toHaveBeenCalledTimes(1)
+
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
     vi.useRealTimers()
   })
 
@@ -1529,5 +1634,94 @@ describe('Dual-voice playback', () => {
     expect(onEndedSpy).not.toHaveBeenCalled()
     expect(playSpy).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
+  })
+
+  it('handles HTMLAudioElement fallback cleanup on end, error, and play rejection', async () => {
+    const engine = new NeuralVoiceEngine()
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'auto' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
+    const mockAudio: {
+      src: string
+      onended: (() => void) | null
+      onerror: (() => void) | null
+      currentTime: number
+      play: ReturnType<typeof vi.fn>
+      pause: ReturnType<typeof vi.fn>
+    } = {
+      src: '',
+      onended: null,
+      onerror: null,
+      currentTime: 0,
+      play: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn(),
+    }
+
+    const audioSpy = vi.spyOn(window, 'Audio').mockImplementation(function (
+      this: unknown,
+    ) {
+      return mockAudio as unknown as HTMLAudioElement
+    })
+
+    engine.registerAudioDataUrl(
+      'fallback-phrase',
+      'es-MX',
+      'data:audio/mp3;base64,123',
+    )
+
+    // 1. Success path: onended resets category to ambient and calls onEnded
+    const onEnded1 = vi.fn()
+    const played1 = engine.playAudio('fallback-phrase', 'es-MX', undefined, {
+      explicit: true,
+      onEnded: onEnded1,
+    })
+    expect(played1).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    mockAudio.onended?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded1).toHaveBeenCalledTimes(1)
+
+    // 2. Error path: onerror resets category to ambient and calls onEnded
+    const onEnded2 = vi.fn()
+    const played2 = engine.playAudio('fallback-phrase', 'es-MX', undefined, {
+      explicit: true,
+      onEnded: onEnded2,
+    })
+    expect(played2).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    mockAudio.onerror?.()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded2).toHaveBeenCalledTimes(1)
+
+    // 3. Play rejection path: resets category to ambient and calls onEnded
+    mockAudio.play = vi.fn().mockRejectedValue(new Error('Autoplay blocked'))
+
+    const onEnded3 = vi.fn()
+    const played3 = engine.playAudio('fallback-phrase', 'es-MX', undefined, {
+      explicit: true,
+      onEnded: onEnded3,
+    })
+    expect(played3).toBe(true)
+    expect(mockAudioSession.type).toBe('playback')
+
+    // Wait for promise rejection to settle
+    await Promise.resolve()
+    expect(mockAudioSession.type).toBe('ambient')
+    expect(onEnded3).toHaveBeenCalledTimes(1)
+
+    // Restore
+    audioSpy.mockRestore()
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
   })
 })

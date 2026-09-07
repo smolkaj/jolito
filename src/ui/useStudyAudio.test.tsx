@@ -103,6 +103,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn3',
+      explicit: false,
     })
   })
 
@@ -160,6 +161,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledTimes(2)
     expect(speakMock).toHaveBeenLastCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn4',
+      explicit: false,
     })
   })
 
@@ -181,6 +183,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn3',
+      explicit: true,
     })
   })
 
@@ -202,6 +205,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hello', 'en-US', {
       cardSeed: 'card-1:turn3',
+      explicit: true,
     })
   })
 
@@ -232,6 +236,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledWith('dog', 'en-US', {
       cardSeed: 'card-2:turn1',
       dualVoice: false,
+      explicit: true,
     })
 
     act(() => {
@@ -239,6 +244,7 @@ describe('useStudyAudio', () => {
     })
     expect(speakMock).toHaveBeenCalledWith('perro', 'es-MX', {
       cardSeed: 'card-2:turn1',
+      explicit: true,
     })
   })
 
@@ -286,6 +292,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hello', 'en-US', {
       cardSeed: 'card-1:turn3',
+      explicit: false,
     })
   })
 
@@ -365,13 +372,15 @@ describe('useStudyAudio', () => {
     expect(hapticTriggerMock).toHaveBeenCalledWith('good')
     expect(soundPlayMock).not.toHaveBeenCalledWith('complete')
 
-    // When session is complete
+    // When session is complete, complete cue supersedes individual grade
+    soundPlayMock.mockClear()
+    hapticTriggerMock.mockClear()
     act(() => {
       result.current.playGradeSensory('easy', true)
     })
 
-    expect(soundPlayMock).toHaveBeenCalledWith('easy')
-    expect(hapticTriggerMock).toHaveBeenCalledWith('easy')
+    expect(soundPlayMock).not.toHaveBeenCalledWith('easy')
+    expect(hapticTriggerMock).not.toHaveBeenCalledWith('easy')
     expect(soundPlayMock).toHaveBeenCalledWith('complete')
     expect(hapticTriggerMock).toHaveBeenCalledWith('complete')
   })
@@ -396,7 +405,33 @@ describe('useStudyAudio', () => {
       result.current.playAudio('hola', 'es-MX')
     })
 
+    expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
+      explicit: true,
+    })
     expect(result.current.audioUnavailable).toBe(true)
+  })
+
+  it('preserves options and allows overriding explicit in playAudio', () => {
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+      }),
+    )
+
+    act(() => {
+      result.current.playAudio('hola', 'es-MX', 'seed-1', {
+        dualVoice: false,
+        explicit: false,
+      })
+    })
+
+    expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
+      cardSeed: 'seed-1',
+      dualVoice: false,
+      explicit: false,
+    })
   })
 
   it('cleans up pending timer on unmount', () => {

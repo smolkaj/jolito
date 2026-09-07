@@ -24,6 +24,8 @@ export type SpeakerOptions = {
   voice?: string | undefined
   gender?: 'female' | 'male' | undefined
   dualVoice?: boolean | undefined
+  explicit?: boolean | undefined
+  onEnded?: (() => void) | undefined
 }
 
 export type PrefetchItem = {

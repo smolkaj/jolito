@@ -1,10 +1,14 @@
 import type { Speaker, SpeakerOptions } from '../../application/ports'
 
+import { configureAudioSessionCategory } from './sound'
+
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
+
+  private currentUtterance: SpeechSynthesisUtterance | null = null
 
   constructor() {
     this.initVoices()
@@ -70,6 +74,11 @@ export class EnhancedBrowserSpeaker implements Speaker {
       this.lastSpokenLocale = locale
       this.lastSpokenTime = now
 
+      if (this.currentUtterance) {
+        this.currentUtterance.onend = null
+        this.currentUtterance.onerror = null
+        this.currentUtterance = null
+      }
       window.speechSynthesis.cancel()
 
       // Always query latest voices to capture newly registered or async system voice packs
@@ -99,14 +108,40 @@ export class EnhancedBrowserSpeaker implements Speaker {
       utterance.rate = locale.toLowerCase().startsWith('es') ? 0.88 : 0.92
       utterance.pitch = 1.0
 
+      configureAudioSessionCategory(options?.explicit ? 'playback' : 'ambient')
+
+      this.currentUtterance = utterance
+      utterance.onend = () => {
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null
+          configureAudioSessionCategory('ambient')
+          options?.onEnded?.()
+        }
+      }
+      utterance.onerror = () => {
+        if (this.currentUtterance === utterance) {
+          this.currentUtterance = null
+          configureAudioSessionCategory('ambient')
+          options?.onEnded?.()
+        }
+      }
+
       window.speechSynthesis.speak(utterance)
       return true
     } catch {
+      this.currentUtterance = null
+      configureAudioSessionCategory('ambient')
       return false
     }
   }
 
   stop(): void {
+    if (this.currentUtterance) {
+      this.currentUtterance.onend = null
+      this.currentUtterance.onerror = null
+      this.currentUtterance = null
+    }
+    configureAudioSessionCategory('ambient')
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel()

@@ -57,7 +57,11 @@ export function useStudyAudio({
       options?: SpeakerOptions,
     ) => {
       cancelPendingAudio()
-      const speakOptions = cardSeed ? { ...options, cardSeed } : options
+      const speakOptions: SpeakerOptions = {
+        explicit: true,
+        ...options,
+        ...(cardSeed ? { cardSeed } : {}),
+      }
       const played = speaker.speak(text, locale, speakOptions)
       setAudioUnavailable(!played)
       return played
@@ -73,7 +77,7 @@ export function useStudyAudio({
         targetCard.prompt,
         localeForPrompt(targetCard),
         cardReviewSeed(targetCard),
-        options,
+        { explicit: true, ...options },
       )
     },
     [currentCard, playAudio],
@@ -87,7 +91,7 @@ export function useStudyAudio({
         targetCard.answer,
         localeForAnswer(targetCard),
         cardReviewSeed(targetCard),
-        options,
+        { explicit: true, ...options },
       )
     },
     [currentCard, playAudio],
@@ -106,6 +110,7 @@ export function useStudyAudio({
             targetCard.answer,
             localeForAnswer(targetCard),
             cardReviewSeed(targetCard),
+            { explicit: false },
           )
           revealAudioTimerRef.current = null
         }, staggerMs)
@@ -126,11 +131,12 @@ export function useStudyAudio({
     (grade: Grade, isComplete: boolean) => {
       cancelPendingAudio()
       speaker.stop?.()
-      sounds.play(grade)
-      haptics?.trigger(grade)
       if (isComplete) {
         sounds.play('complete')
         haptics?.trigger('complete')
+      } else {
+        sounds.play(grade)
+        haptics?.trigger(grade)
       }
     },
     [cancelPendingAudio, haptics, sounds, speaker],
@@ -151,8 +157,10 @@ export function useStudyAudio({
     ) {
       return
     }
+    // Use primitive ID and review count to avoid re-triggering autoplay on object reference changes
     speaker.speak(currentPrompt, currentPromptLocale, {
       cardSeed: `${currentCardId}:turn${currentReviews}`,
+      explicit: false,
     })
   }, [
     autoplayPrompt,

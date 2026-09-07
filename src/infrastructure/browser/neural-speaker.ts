@@ -9,6 +9,7 @@ import {
   normalizeLocale,
 } from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
+import { configureAudioSessionCategory } from './sound'
 
 export const AUDIO_CACHE_NAME = 'jolito-audio-v1'
 
@@ -186,6 +187,7 @@ export class NeuralVoiceEngine {
       }
       this.dualVoiceTimer = null
     }
+    configureAudioSessionCategory('ambient')
     if (this.currentSource) {
       const source = this.currentSource
       this.currentSource = null
@@ -202,6 +204,7 @@ export class NeuralVoiceEngine {
       this.currentAudioElement = null
       try {
         audio.onended = null
+        audio.onerror = null
         audio.pause()
         audio.currentTime = 0
       } catch {
@@ -323,6 +326,7 @@ export class NeuralVoiceEngine {
     voice?: string,
     options?: {
       dualVoice?: boolean | undefined
+      explicit?: boolean | undefined
       onEnded?: (() => void) | undefined
     },
   ): boolean {
@@ -352,31 +356,46 @@ export class NeuralVoiceEngine {
 
         if (qualifiesForDualVoice) {
           const alternateVoice = getAlternateVoice(effectiveVoice)
-          return this.playBuffer(cachedBuffer, () => {
-            if (this.dualVoiceTimer !== null && typeof window !== 'undefined') {
-              window.clearTimeout(this.dualVoiceTimer)
-            }
-            if (typeof window !== 'undefined') {
-              this.dualVoiceTimer = window.setTimeout(() => {
-                this.dualVoiceTimer = null
-                const played = this.playAudio(
-                  text,
-                  normLocale,
-                  alternateVoice,
-                  {
-                    dualVoice: false,
-                    onEnded: options?.onEnded,
-                  },
-                )
-                if (!played) {
-                  options?.onEnded?.()
-                }
-              }, DUAL_VOICE_PAUSE_MS)
-            }
-          })
+          return this.playBuffer(
+            cachedBuffer,
+            () => {
+              if (
+                this.dualVoiceTimer !== null &&
+                typeof window !== 'undefined'
+              ) {
+                window.clearTimeout(this.dualVoiceTimer)
+              }
+              if (typeof window !== 'undefined') {
+                this.dualVoiceTimer = window.setTimeout(() => {
+                  this.dualVoiceTimer = null
+                  const played = this.playAudio(
+                    text,
+                    normLocale,
+                    alternateVoice,
+                    {
+                      dualVoice: false,
+                      explicit: options?.explicit,
+                      onEnded: options?.onEnded,
+                    },
+                  )
+                  if (!played) {
+                    configureAudioSessionCategory('ambient')
+                    options?.onEnded?.()
+                  }
+                }, DUAL_VOICE_PAUSE_MS)
+              }
+            },
+            true,
+            options?.explicit,
+          )
         }
 
-        return this.playBuffer(cachedBuffer, options?.onEnded)
+        return this.playBuffer(
+          cachedBuffer,
+          options?.onEnded,
+          false,
+          options?.explicit,
+        )
       }
 
       // 2. Audio element playback (data URL)
@@ -388,19 +407,29 @@ export class NeuralVoiceEngine {
       ) {
         try {
           this.stopAudio()
+          configureAudioSessionCategory(
+            options?.explicit ? 'playback' : 'ambient',
+          )
           const audio = new window.Audio(cachedUrl)
           this.currentAudioElement = audio
-          audio.onended = () => {
+          const cleanup = () => {
             if (this.currentAudioElement === audio) {
               this.currentAudioElement = null
+              configureAudioSessionCategory('ambient')
               options?.onEnded?.()
             }
           }
+          audio.onended = cleanup
+          audio.onerror = cleanup
           if (typeof audio.play === 'function') {
-            void audio.play().catch(() => {})
+            void audio.play().catch(() => {
+              cleanup()
+            })
           }
           return true
         } catch {
+          this.currentAudioElement = null
+          configureAudioSessionCategory('ambient')
           return false
         }
       }
@@ -862,7 +891,12 @@ export class NeuralVoiceEngine {
     return this.inFlightPrewarm
   }
 
-  private playBuffer(buffer: AudioBuffer, onEnded?: () => void): boolean {
+  private playBuffer(
+    buffer: AudioBuffer,
+    onEnded?: () => void,
+    hasContinuation = false,
+    explicit = false,
+  ): boolean {
     try {
       if (!this.audioContext) {
         this.initContext()
@@ -875,12 +909,17 @@ export class NeuralVoiceEngine {
 
       this.stopAudio()
 
+      configureAudioSessionCategory(explicit ? 'playback' : 'ambient')
+
       const source = this.audioContext.createBufferSource()
       source.buffer = buffer
       source.connect(this.audioContext.destination)
       source.onended = () => {
         if (this.currentSource === source) {
           this.currentSource = null
+          if (!hasContinuation) {
+            configureAudioSessionCategory('ambient')
+          }
           onEnded?.()
         }
       }
@@ -888,6 +927,8 @@ export class NeuralVoiceEngine {
       source.start(0)
       return true
     } catch {
+      this.currentSource = null
+      configureAudioSessionCategory('ambient')
       return false
     }
   }
@@ -923,6 +964,7 @@ export class LayeredNeuralSpeaker implements Speaker {
   }
 
   stop(): void {
+    configureAudioSessionCategory('ambient')
     this.speakGeneration++
     this.neuralEngine.stopAudio()
     if (

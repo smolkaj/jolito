@@ -8,10 +8,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Configure AVAudioSession for language learning: play pronunciation audio even if the physical silent switch is engaged
+        // Configure AVAudioSession for ambient audio: respect the physical silent switch
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try audioSession.setCategory(.ambient)
             try audioSession.setActive(true)
         } catch {
             print("Failed to configure AVAudioSession category: \(error)")
