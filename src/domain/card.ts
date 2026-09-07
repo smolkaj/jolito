@@ -368,7 +368,7 @@ export function burySiblingCards(
   return { updatedCards, buriedCardIds }
 }
 
-export const DEFAULT_STUDY_BATCH_SIZE = 10
+export const DEFAULT_STUDY_BATCH_SIZE = 15
 export const DEFAULT_ROLLOVER_HOUR = 4
 
 export function orderCardsForReview(

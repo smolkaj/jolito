@@ -214,7 +214,7 @@ test('advances progress bar visibly during practice with bidirectional cards', a
 }) => {
   const now = Date.now()
   const cards = []
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 15; i++) {
     const idx = String(i).padStart(2, '0')
     cards.push(
       {
@@ -268,27 +268,27 @@ test('advances progress bar visibly during practice with bidirectional cards', a
   await expect(progressBar).toHaveAttribute('aria-valuenow', '0')
   await expect(progressBar).toHaveAttribute(
     'aria-valuetext',
-    '10 cards remaining',
+    '15 cards remaining',
   )
 
   // Reveal answer and rate Easy (4)
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 
-  // Progress bar advances to 10% (1 completed out of 10 in batch, 9 remaining)
-  await expect(progressBar).toHaveAttribute('aria-valuenow', '10')
+  // Progress bar advances to 7% (1 completed out of 15 in batch, 14 remaining)
+  await expect(progressBar).toHaveAttribute('aria-valuenow', '7')
   await expect(progressBar).toHaveAttribute(
     'aria-valuetext',
-    '9 cards remaining',
+    '14 cards remaining',
   )
 
   // Rate second card Easy (4)
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
-  await expect(progressBar).toHaveAttribute('aria-valuenow', '20')
+  await expect(progressBar).toHaveAttribute('aria-valuenow', '13')
   await expect(progressBar).toHaveAttribute(
     'aria-valuetext',
-    '8 cards remaining',
+    '13 cards remaining',
   )
 
   await page.screenshot({ path: '/tmp/jolito-progress-bar-active.png' })

@@ -897,7 +897,7 @@ describe('Anki spaced repetition scheduling', () => {
 
   describe('orderCardsForReview with batch limit', () => {
     it('limits returned cards to batch limit when requested', () => {
-      const cards = Array.from({ length: 15 }, (_, i) => ({
+      const cards = Array.from({ length: 25 }, (_, i) => ({
         ...createStudyCards(
           {
             spanish: `p-${i}`,
@@ -913,7 +913,7 @@ describe('Anki spaced repetition scheduling', () => {
       }))
 
       const allDue = orderCardsForReview(cards, now)
-      expect(allDue).toHaveLength(15)
+      expect(allDue).toHaveLength(25)
 
       const batched = orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE)
       expect(batched).toHaveLength(DEFAULT_STUDY_BATCH_SIZE)
