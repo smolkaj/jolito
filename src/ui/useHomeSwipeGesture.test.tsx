@@ -236,4 +236,100 @@ describe('useHomeSwipeGesture', () => {
 
     expect(onSwipeLeft).not.toHaveBeenCalled()
   })
+
+  it('disables gestures when user has scrolled down into why-jolito fold', () => {
+    const onSwipeLeft = vi.fn()
+    Object.defineProperty(window, 'scrollY', {
+      writable: true,
+      configurable: true,
+      value: 120,
+    })
+
+    const { result } = renderHook(() =>
+      useHomeSwipeGesture({
+        onSwipeLeft,
+        onSwipeRight: vi.fn(),
+      }),
+    )
+
+    act(() => {
+      result.current.containerRef.current = heroElement
+    })
+
+    dispatchTouch('touchstart', [{ clientX: 200, clientY: 150 }])
+    dispatchTouch('touchmove', [{ clientX: 100, clientY: 150 }])
+    dispatchTouch('touchend', [{ clientX: 100, clientY: 150 }])
+
+    expect(onSwipeLeft).not.toHaveBeenCalled()
+    expect(heroElement.style.transform).toBe('')
+
+    // Reset scrollY
+    window.scrollY = 0
+  })
+
+  it('disables gestures when active text selection exists', () => {
+    const onSwipeLeft = vi.fn()
+    const getSelectionSpy = vi.spyOn(window, 'getSelection').mockReturnValue({
+      toString: () => 'selected phrase',
+    } as Selection)
+
+    const { result } = renderHook(() =>
+      useHomeSwipeGesture({
+        onSwipeLeft,
+        onSwipeRight: vi.fn(),
+      }),
+    )
+
+    act(() => {
+      result.current.containerRef.current = heroElement
+    })
+
+    dispatchTouch('touchstart', [{ clientX: 200, clientY: 150 }])
+    dispatchTouch('touchmove', [{ clientX: 100, clientY: 150 }])
+    dispatchTouch('touchend', [{ clientX: 100, clientY: 150 }])
+
+    expect(onSwipeLeft).not.toHaveBeenCalled()
+
+    getSelectionSpy.mockRestore()
+  })
+
+  it('updates cue elements directly during drag and cleans up on unmount', () => {
+    const leftCue = document.createElement('div')
+    const rightCue = document.createElement('div')
+    document.body.appendChild(leftCue)
+    document.body.appendChild(rightCue)
+
+    const onSwipeLeft = vi.fn()
+    const { result, unmount } = renderHook(() =>
+      useHomeSwipeGesture({
+        onSwipeLeft,
+        onSwipeRight: vi.fn(),
+        threshold: 80,
+      }),
+    )
+
+    act(() => {
+      result.current.containerRef.current = heroElement
+      result.current.leftCueRef.current = leftCue
+      result.current.rightCueRef.current = rightCue
+    })
+
+    // Drag left
+    dispatchTouch('touchstart', [{ clientX: 250, clientY: 150 }])
+    dispatchTouch('touchmove', [{ clientX: 150, clientY: 150 }])
+
+    // Right cue ("Create a card") becomes visible
+    expect(Number.parseFloat(rightCue.style.opacity)).toBeGreaterThan(0)
+    expect(leftCue.style.opacity).toBe('0')
+
+    // Release to commit
+    dispatchTouch('touchend', [{ clientX: 150, clientY: 150 }])
+
+    // Unmount before timer fires - ensures no memory leak or error
+    unmount()
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+    expect(onSwipeLeft).not.toHaveBeenCalled()
+  })
 })

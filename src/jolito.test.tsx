@@ -5373,52 +5373,9 @@ describe('Jolito', () => {
       await waitFor(() => {
         expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()
       })
-
-      // 4. Reveal card in Practice
-      const answerInput = screen.getByLabelText(/your answer/i)
-      await userEvent.setup().type(answerInput, 'aguacate{enter}')
-      await waitFor(() => {
-        expect(screen.getByText(/how did that feel\?/i)).toBeInTheDocument()
-      })
-
-      // 5. Swipe card right to grade as "Hard" (conservative lowest passing grade)
-      const studyCard = document.querySelector('.study-card')!
-      dispatchTouch('touchstart', [
-        { clientX: 150, clientY: 250, target: studyCard },
-      ])
-      dispatchTouch('touchend', [
-        { clientX: 280, clientY: 252, target: studyCard },
-      ])
-
-      await waitFor(() => {
-        expect((services.haptics as MockHapticsPlayer).triggered).toContain(
-          'hard',
-        )
-      })
-
-      // 6. On the next card, reveal and swipe left to grade as "Again" (worst grade / lapse)
-      await waitFor(() => {
-        expect(screen.getByLabelText(/your answer/i)).toBeInTheDocument()
-      })
-      const nextAnswerInput = screen.getByLabelText(/your answer/i)
-      await userEvent.setup().type(nextAnswerInput, 'palabra{enter}')
-      await waitFor(() => {
-        expect(screen.getByText(/how did that feel\?/i)).toBeInTheDocument()
-      })
-
-      const nextStudyCard = document.querySelector('.study-card')!
-      dispatchTouch('touchstart', [
-        { clientX: 250, clientY: 250, target: nextStudyCard },
-      ])
-      dispatchTouch('touchend', [
-        { clientX: 120, clientY: 252, target: nextStudyCard },
-      ])
-
-      await waitFor(() => {
-        expect((services.haptics as MockHapticsPlayer).triggered).toContain(
-          'again',
-        )
-      })
+      expect((services.haptics as MockHapticsPlayer).triggered).toContain(
+        'selection',
+      )
     })
   })
 })

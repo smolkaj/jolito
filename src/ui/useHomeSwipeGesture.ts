@@ -5,7 +5,7 @@ export interface UseHomeSwipeGestureOptions {
   onSwipeLeft: () => void // Drag left reveals/navigates to 'create'
   onSwipeRight: () => void // Drag right reveals/navigates to 'practice'
   onHaptic?: () => void
-  threshold?: number // Default 75px
+  threshold?: number // Default 80px
   edgeMargin?: number // Default 24px
 }
 
@@ -13,6 +13,12 @@ export interface HomeSwipeCueState {
   active: boolean
   direction: 'left' | 'right' | null
   isReady: boolean
+}
+
+function hasActiveTextSelection(): boolean {
+  if (typeof window === 'undefined') return false
+  const selection = window.getSelection()
+  return Boolean(selection && selection.toString().trim().length > 0)
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -29,12 +35,13 @@ export function useHomeSwipeGesture({
   onSwipeLeft,
   onSwipeRight,
   onHaptic,
-  threshold = 75,
+  threshold = 80,
   edgeMargin = 24,
 }: UseHomeSwipeGestureOptions) {
-  const heroRef = useRef<HTMLElement | null>(null)
+  const containerRef = useRef<HTMLElement | null>(null)
   const leftCueRef = useRef<HTMLDivElement | null>(null)
   const rightCueRef = useRef<HTMLDivElement | null>(null)
+  const commitTimerRef = useRef<number | null>(null)
 
   const [cueState, setCueState] = useState<HomeSwipeCueState>({
     active: false,
@@ -56,6 +63,13 @@ export function useHomeSwipeGesture({
   const thresholdPassedRef = useRef(false)
   const isNavigatingRef = useRef(false)
 
+  const clearCommitTimer = () => {
+    if (commitTimerRef.current !== null) {
+      window.clearTimeout(commitTimerRef.current)
+      commitTimerRef.current = null
+    }
+  }
+
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return
 
@@ -65,10 +79,21 @@ export function useHomeSwipeGesture({
         return
       }
 
+      // If user has scrolled down into Why Jolito, preserve vertical reading experience
+      if (window.scrollY > 60) {
+        touchStartRef.current = null
+        return
+      }
+
+      if (hasActiveTextSelection()) {
+        touchStartRef.current = null
+        return
+      }
+
       const touch = e.touches[0]
       if (!touch) return
 
-      // Ignore edge swipes to preserve system history navigation
+      // Ignore edge swipes to preserve system back/forward navigation
       if (
         touch.clientX < edgeMargin ||
         touch.clientX > window.innerWidth - edgeMargin
@@ -84,11 +109,11 @@ export function useHomeSwipeGesture({
         return
       }
 
-      // Check if touch is within hero element if ref is attached
+      // Check if touch is within container element if ref is attached
       if (
-        heroRef.current &&
+        containerRef.current &&
         target &&
-        !heroRef.current.contains(target) &&
+        !containerRef.current.contains(target) &&
         target !== document.body &&
         target !== document.documentElement
       ) {
@@ -115,17 +140,19 @@ export function useHomeSwipeGesture({
       const dx = touch.clientX - start.x
       const dy = touch.clientY - start.y
 
-      // Direction lock decision
+      // Direction lock decision: require horizontal movement to strongly dominate
       if (directionLockedRef.current === null) {
         const absX = Math.abs(dx)
         const absY = Math.abs(dy)
         if (absX < 8 && absY < 8) return // Deadzone
 
-        if (absY >= absX) {
+        if (absX >= 16 && absX > 1.5 * absY) {
+          directionLockedRef.current = 'horizontal'
+        } else if (absY >= 12 && absY >= absX) {
           directionLockedRef.current = 'vertical'
           return // Let native vertical scroll to #why-jolito handle it
         } else {
-          directionLockedRef.current = 'horizontal'
+          return // Ambiguous diagonal movement
         }
       }
 
@@ -135,15 +162,15 @@ export function useHomeSwipeGesture({
         e.preventDefault()
       }
 
-      // Physical resistance: 1:1 up to 120px, then smooth dampening
+      // Physical resistance: 1:1 up to 120px, then smooth logarithmic dampening
       const absDx = Math.abs(dx)
       const sign = Math.sign(dx)
       const effectiveDx =
         absDx <= 120 ? dx : sign * (120 + (absDx - 120) * 0.35)
 
-      if (heroRef.current) {
-        heroRef.current.style.transform = `translate3d(${effectiveDx}px, 0, 0)`
-        heroRef.current.style.transition = 'none'
+      if (containerRef.current) {
+        containerRef.current.style.transform = `translate3d(${effectiveDx}px, 0, 0)`
+        containerRef.current.style.transition = 'none'
       }
 
       const isReady = absDx >= threshold
@@ -197,16 +224,17 @@ export function useHomeSwipeGesture({
       })
     }
 
-    const resetCuesAndHero = () => {
+    const resetCuesAndContainer = () => {
+      clearCommitTimer()
       touchStartRef.current = null
       directionLockedRef.current = null
       thresholdPassedRef.current = false
 
-      if (heroRef.current) {
-        heroRef.current.style.transition =
+      if (containerRef.current) {
+        containerRef.current.style.transition =
           'transform 260ms cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 200ms ease'
-        heroRef.current.style.transform = 'translate3d(0, 0, 0)'
-        heroRef.current.style.opacity = '1'
+        containerRef.current.style.transform = 'translate3d(0, 0, 0)'
+        containerRef.current.style.opacity = '1'
       }
 
       if (leftCueRef.current) {
@@ -231,9 +259,14 @@ export function useHomeSwipeGesture({
         return
       }
 
+      if (hasActiveTextSelection()) {
+        resetCuesAndContainer()
+        return
+      }
+
       const touch = e.changedTouches[0]
       if (!touch) {
-        resetCuesAndHero()
+        resetCuesAndContainer()
         return
       }
 
@@ -243,14 +276,14 @@ export function useHomeSwipeGesture({
       if (directionLockedRef.current === null) {
         const absX = Math.abs(dx)
         const absY = Math.abs(dy)
-        if (absX >= 8 && absX > absY) {
+        if (absX >= 16 && absX > 1.5 * absY) {
           directionLockedRef.current = 'horizontal'
         }
       }
 
       const isHorizontal = directionLockedRef.current === 'horizontal'
       if (!isHorizontal) {
-        resetCuesAndHero()
+        resetCuesAndContainer()
         return
       }
       const elapsed = Math.max(1, Date.now() - start.time)
@@ -258,10 +291,10 @@ export function useHomeSwipeGesture({
       const absDx = Math.abs(dx)
 
       const isCommitted =
-        absDx >= threshold || (absDx >= 35 && Math.abs(vx) > 0.45)
+        absDx >= threshold || (absDx >= 40 && Math.abs(vx) > 0.45)
 
       if (!isCommitted) {
-        resetCuesAndHero()
+        resetCuesAndContainer()
         return
       }
 
@@ -279,7 +312,7 @@ export function useHomeSwipeGesture({
         window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
       if (prefersReducedMotion) {
-        resetCuesAndHero()
+        resetCuesAndContainer()
         isNavigatingRef.current = false
         if (commitDir === 'left') {
           callbacksRef.current.onSwipeLeft()
@@ -289,16 +322,18 @@ export function useHomeSwipeGesture({
         return
       }
 
-      // Smooth exit transition
-      if (heroRef.current) {
-        heroRef.current.style.transition =
+      // Smooth whole-container exit transition
+      if (containerRef.current) {
+        containerRef.current.style.transition =
           'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease'
-        heroRef.current.style.transform = `translate3d(${commitDir === 'left' ? -100 : 100}vw, 0, 0)`
-        heroRef.current.style.opacity = '0'
+        containerRef.current.style.transform = `translate3d(${commitDir === 'left' ? -100 : 100}vw, 0, 0)`
+        containerRef.current.style.opacity = '0'
       }
 
-      window.setTimeout(() => {
-        resetCuesAndHero()
+      clearCommitTimer()
+      commitTimerRef.current = window.setTimeout(() => {
+        commitTimerRef.current = null
+        resetCuesAndContainer()
         isNavigatingRef.current = false
         if (commitDir === 'left') {
           callbacksRef.current.onSwipeLeft()
@@ -309,7 +344,7 @@ export function useHomeSwipeGesture({
     }
 
     const handleTouchCancel = () => {
-      resetCuesAndHero()
+      resetCuesAndContainer()
     }
 
     window.addEventListener('touchstart', handleTouchStart, { passive: true })
@@ -318,6 +353,7 @@ export function useHomeSwipeGesture({
     window.addEventListener('touchcancel', handleTouchCancel, { passive: true })
 
     return () => {
+      clearCommitTimer()
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
@@ -326,7 +362,8 @@ export function useHomeSwipeGesture({
   }, [edgeMargin, enabled, threshold])
 
   return {
-    heroRef,
+    containerRef,
+    heroRef: containerRef, // Backward-compatible alias
     leftCueRef,
     rightCueRef,
     cueState,

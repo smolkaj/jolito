@@ -4760,7 +4760,7 @@ kbd {
 }
 
 /* Home Screen Direct Manipulation Cues */
-.welcome-hero {
+.welcome-page {
   touch-action: pan-y;
   will-change: transform;
 }
@@ -4810,74 +4810,6 @@ kbd {
 .home-swipe-cue .cue-arrow {
   font-size: 16px;
   line-height: 1;
-}
-
-/* Study Card Direct Manipulation & Stamps */
-.study-card {
-  touch-action: pan-y;
-  will-change: transform;
-  transition: box-shadow 160ms ease;
-}
-
-.study-card.is-swiping-again {
-  box-shadow: 0 4px 28px rgba(220, 38, 38, 0.18);
-}
-
-.study-card.is-swiping-hard {
-  box-shadow: 0 4px 28px rgba(13, 148, 136, 0.18);
-}
-
-.card-swipe-stamp {
-  position: absolute;
-  top: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border-radius: 12px;
-  font-family: var(--font-mono);
-  font-size: 17px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  pointer-events: none;
-  opacity: 0;
-  z-index: 60;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
-  transition:
-    transform 120ms var(--ease-spring),
-    opacity 100ms ease,
-    box-shadow 120ms ease;
-  will-change: transform, opacity;
-}
-
-.card-swipe-stamp-again {
-  right: 20px;
-  color: var(--tezontle-dark);
-  border: 3px solid var(--tezontle-dark);
-  background: rgba(254, 242, 242, 0.96);
-  transform: rotate(-10deg) scale(0.9);
-}
-
-.card-swipe-stamp-again.is-ready {
-  transform: rotate(-12deg) scale(1.08) !important;
-  background: #fee2e2;
-  box-shadow: 4px 4px 0 var(--tezontle-dark);
-}
-
-.card-swipe-stamp-hard {
-  left: 20px;
-  color: var(--turquesa-dark);
-  border: 3px solid var(--turquesa-dark);
-  background: rgba(240, 253, 250, 0.96);
-  transform: rotate(10deg) scale(0.9);
-}
-
-.card-swipe-stamp-hard.is-ready {
-  transform: rotate(12deg) scale(1.08) !important;
-  background: #ccfbf1;
-  box-shadow: 4px 4px 0 var(--turquesa-dark);
 }
 
 @media (prefers-reduced-motion: reduce) {
