@@ -1014,26 +1014,46 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   await expect(scrollCue).toBeVisible()
   await scrollCue.click()
 
+  const familyImg = page.getByAltText(
+    /the jolito family: german dad, mexican mom, and twin gexican toddlers/i,
+  )
+  await expect(familyImg).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: /^spoken spanish built for memory$/i }),
+    page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
+  ).toBeVisible()
+  await expect(page.getByText(/born in mexico city/i)).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: /international house in condesa/i }),
+  ).toBeVisible()
+  await expect(page.getByText(/my archenemy/i)).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: /spaced repetition/i }),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: /^type before you flip$/i }),
+    page.getByText(/memorization and i have become friends!/i),
   ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: /^spaced repetition that sticks$/i }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('heading', { name: /^spoken mexican spanish$/i }),
-  ).toBeVisible()
+  const startBtn = page.getByRole('button', { name: /^start learning/i })
+  await expect(startBtn).toBeVisible()
+  await expect(page.getByRole('button', { name: /back to top/i })).toBeHidden()
 
-  // Test interactive audio sampler pill
-  const samplerPill = page.getByRole('button', {
-    name: /listen to mexican spanish pronunciation for ¡órale!/i,
+  // Verify CSS scroll snap is configured on the welcome page
+  const scrollSnapType = await page.evaluate(
+    () => window.getComputedStyle(document.documentElement).scrollSnapType,
+  )
+  expect(scrollSnapType).toMatch(/y mandatory/)
+
+  // Clicking "Start learning" returns cleanly to the top slide
+  await startBtn.click()
+  await expect
+    .poll(async () => page.evaluate(() => window.scrollY))
+    .toBeLessThanOrEqual(5)
+
+  // Hero footer feedback button is visible
+  await expect(page.getByRole('button', { name: /^feedback$/i })).toBeVisible()
+
+  await page.locator('#why-jolito').screenshot({
+    path: 'test-results/why-jolito-desktop.png',
   })
-  await expect(samplerPill).toBeVisible()
-  await samplerPill.click()
-  await expect(samplerPill).toHaveClass(/is-playing/)
 
   await page.screenshot({
     path: 'test-results/welcome-landing-page.png',

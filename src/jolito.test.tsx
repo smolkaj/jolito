@@ -5010,7 +5010,7 @@ describe('Jolito', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('renders Why Jolito section with scroll cue and plays CDMX audio sampler phrases on click', async () => {
+    it('renders Why Jolito editorial section with family illustration and navigates on start learning click', async () => {
       const user = userEvent.setup()
       const services = createTestServices()
 
@@ -5022,32 +5022,54 @@ describe('Jolito', () => {
       })
       expect(scrollCue).toBeInTheDocument()
 
-      // 3 Value pillars are rendered
+      // Feedback button in hero footer is present
+      const feedbackBtn = screen.getByRole('button', {
+        name: /^feedback$/i,
+      })
+      expect(feedbackBtn).toBeInTheDocument()
+
+      // Family illustration and origin story header are rendered
       expect(
-        screen.getByRole('heading', { name: /^type before you flip$/i }),
+        screen.getByAltText(
+          /the jolito family: german dad, mexican mom, and twin gexican toddlers/i,
+        ),
       ).toBeInTheDocument()
       expect(
         screen.getByRole('heading', {
-          name: /^spaced repetition that sticks$/i,
+          name: /^why another flashcard app\?$/i,
         }),
       ).toBeInTheDocument()
+      expect(screen.getByText(/born in mexico city/i)).toBeInTheDocument()
       expect(
-        screen.getByRole('heading', { name: /^spoken mexican spanish$/i }),
+        screen.getByRole('link', { name: /international house in condesa/i }),
+      ).toHaveAttribute('href', 'https://ihmexico.mx/')
+      expect(screen.getByText(/my archenemy\./i)).toBeInTheDocument()
+      expect(
+        screen.getByRole('link', { name: /spaced repetition/i }),
+      ).toHaveAttribute(
+        'href',
+        'https://en.wikipedia.org/wiki/Spaced_repetition',
+      )
+      expect(
+        screen.getByText(/memorization and i have become friends!/i),
       ).toBeInTheDocument()
 
-      // Audio sampler buttons are present and interactive
-      const oraleButton = screen.getByRole('button', {
-        name: /listen to mexican spanish pronunciation for ¡órale!/i,
+      // Single unified CTA button linking back to top
+      const startBtn = screen.getByRole('button', {
+        name: /^start learning/i,
       })
-      expect(oraleButton).toBeInTheDocument()
-      await user.click(oraleButton)
-
-      // Verify audio was requested from speaker service
+      expect(startBtn).toBeInTheDocument()
       expect(
-        services.mockSpeaker.spokenCalls.some(
-          (s) => s.text === '¡Órale!' && s.locale === 'es-MX',
-        ),
-      ).toBe(true)
+        screen.queryByRole('button', { name: /back to top/i }),
+      ).not.toBeInTheDocument()
+
+      // Clicking start learning smooth-scrolls back to the top
+      const scrollToSpy = vi
+        .spyOn(window, 'scrollTo')
+        .mockImplementation(() => {})
+      await user.click(startBtn)
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      scrollToSpy.mockRestore()
     })
   })
 })

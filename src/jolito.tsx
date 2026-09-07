@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import celebrateUrl from '../assets/jolito-celebrate.png'
+import familyLogoUrl from '../assets/jolito-family.png'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
@@ -1041,14 +1042,10 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
-  const [playingSamplerPhrase, setPlayingSamplerPhrase] = useState<
-    string | null
-  >(null)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
-  const samplerTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
   const savedToastTimerRef = useRef<number | null>(null)
   const suggestionsBlurTimerRef = useRef<number | null>(null)
@@ -1593,21 +1590,6 @@ export function App({
     [activeSampleSide, playSampleAudio],
   )
 
-  const handlePlaySampler = useCallback(
-    (phrase: string) => {
-      setPlayingSamplerPhrase(phrase)
-      playAudio(phrase, 'es-MX', undefined, { dualVoice: false })
-      if (samplerTimerRef.current !== null) {
-        window.clearTimeout(samplerTimerRef.current)
-      }
-      samplerTimerRef.current = window.setTimeout(() => {
-        setPlayingSamplerPhrase(null)
-        samplerTimerRef.current = null
-      }, 1200)
-    },
-    [playAudio],
-  )
-
   const onCreateCardClick = useCallback(
     (side: 'spanish' | 'english') => {
       if (activeCreateSide !== side) {
@@ -1635,9 +1617,6 @@ export function App({
     return () => {
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
-      }
-      if (samplerTimerRef.current !== null) {
-        window.clearTimeout(samplerTimerRef.current)
       }
       if (createAudioTimerRef.current !== null) {
         window.clearTimeout(createAudioTimerRef.current)
@@ -2197,21 +2176,25 @@ export function App({
                 </button>
               </div>
             </div>
-            <button
-              type="button"
-              className="hero-scroll-cue"
-              onClick={() => {
-                document
-                  .getElementById('why-jolito')
-                  ?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              aria-label="Scroll down to explore Why Jolito"
-            >
-              <span className="scroll-cue-text">Why Jolito?</span>
-              <span className="scroll-cue-arrow" aria-hidden="true">
-                ↓
-              </span>
-            </button>
+            <div className="welcome-hero-footer">
+              <div className="welcome-hero-footer-spacer" aria-hidden="true" />
+              <button
+                type="button"
+                className="hero-scroll-cue"
+                onClick={() => {
+                  document
+                    .getElementById('why-jolito')
+                    ?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                aria-label="Scroll down to explore Why Jolito"
+              >
+                <span className="scroll-cue-text">Why Jolito?</span>
+                <span className="scroll-cue-arrow" aria-hidden="true">
+                  ↓
+                </span>
+              </button>
+              <AppFooter onOpenFeedback={openFeedbackModal} />
+            </div>
           </section>
           <section
             className="welcome-why"
@@ -2219,169 +2202,68 @@ export function App({
             aria-labelledby="why-jolito-title"
           >
             <div className="why-inner">
+              <div className="why-family-hero">
+                <img
+                  src={familyLogoUrl}
+                  alt="The Jolito family: German dad, Mexican mom, and twin Gexican toddlers"
+                  className="why-family-img"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+
               <div className="why-header">
-                <p className="eyebrow why-eyebrow">THE JOLITO METHOD</p>
-                <h2 id="why-jolito-title">Spoken Spanish built for memory</h2>
-                <p className="why-subtitle">
-                  Active recall, authentic Mexican audio, and rhythmic spaced
-                  repetition. Jolito bridges effortless card authoring with the
-                  spoken confidence to use words in the real world.
+                <p className="eyebrow why-eyebrow">BORN IN MEXICO CITY</p>
+                <h2 id="why-jolito-title">Why another flashcard app?</h2>
+              </div>
+
+              <div className="why-story">
+                <p>
+                  In July 2026, my wife <em>(Mexican)</em>, our twins{' '}
+                  <em>(Gexican)</em>, and I <em>(German)</em> moved to Mexico
+                  City. I started learning Spanish at the{' '}
+                  <a
+                    href="https://ihmexico.mx/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    International House in Condesa
+                  </a>
+                  . The classes were fantastic—but memorizing vocabulary?{' '}
+                  <strong>My archenemy.</strong> The absolute worst part of
+                  learning a new language!
+                </p>
+                <p>
+                  I built Jolito to make memorization something to look forward
+                  to: <strong>fast, tactile, immersive</strong>. Jolito uses{' '}
+                  <a
+                    href="https://en.wikipedia.org/wiki/Spaced_repetition"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    spaced repetition
+                  </a>{' '}
+                  to game your memory—<strong>legally!</strong> It resurfaces
+                  words just before you forget them, so they stick almost
+                  effortlessly.
+                </p>
+                <p className="why-resolution">
+                  I am glad to report:{' '}
+                  <strong>Memorization and I have become friends!</strong>
                 </p>
               </div>
 
-              <div className="why-grid">
-                <article className="why-card why-card-recall">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-recall">1</span>
-                    <span className="why-badge-label">Active recall</span>
-                  </div>
-                  <h3>Type before you flip</h3>
-                  <p>
-                    Produce language from memory instead of passively guessing
-                    multiple-choice options. Instant visual diffs highlight
-                    spelling nuances while you retain full grading authority.
-                  </p>
-                  <div
-                    className="bento-visual bento-visual-recall"
-                    aria-hidden="true"
-                  >
-                    <div className="mini-card-shell">
-                      <div className="mini-card-header">
-                        <span className="mini-card-tag">PROMPT</span>
-                        <span className="mini-card-phrase">¿Qué onda?</span>
-                      </div>
-                      <div className="mini-card-input-box">
-                        <span className="mini-typed-correct">what</span>
-                        <span className="mini-typed-space">&nbsp;</span>
-                        <span className="mini-typed-diff">’s up?</span>
-                      </div>
-                      <div className="mini-card-footer">
-                        <span className="mini-pill-highlight">
-                          Typo diff visual feedback
-                        </span>
-                        <span className="mini-pill-authority">Self-graded</span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="why-card why-card-srs">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-srs">2</span>
-                    <span className="why-badge-label">Memory retention</span>
-                  </div>
-                  <h3>Spaced repetition that sticks</h3>
-                  <p>
-                    Cards return right when you are on the verge of forgetting
-                    them. Built on proven SRS scheduling so daily practice takes
-                    only a few focused minutes.
-                  </p>
-                  <div
-                    className="bento-visual bento-visual-srs"
-                    aria-hidden="true"
-                  >
-                    <div className="srs-cadence-track">
-                      <div className="srs-cadence-node">
-                        <span className="srs-node-pill">10m</span>
-                        <span className="srs-node-sub">Learn</span>
-                      </div>
-                      <div className="srs-cadence-line"></div>
-                      <div className="srs-cadence-node">
-                        <span className="srs-node-pill">1d</span>
-                        <span className="srs-node-sub">Recall</span>
-                      </div>
-                      <div className="srs-cadence-line"></div>
-                      <div className="srs-cadence-node">
-                        <span className="srs-node-pill">4d</span>
-                        <span className="srs-node-sub">Lock-in</span>
-                      </div>
-                      <div className="srs-cadence-line"></div>
-                      <div className="srs-cadence-node is-mastered">
-                        <span className="srs-node-pill">2w+</span>
-                        <span className="srs-node-sub">Fluent</span>
-                      </div>
-                    </div>
-                    <div className="srs-cadence-note">
-                      <span className="srs-note-icon">⚡</span>
-                      <span>Calculated spacing prevents deck overload</span>
-                    </div>
-                  </div>
-                </article>
-
-                <article className="why-card why-card-audio">
-                  <div className="why-card-badge">
-                    <span className="why-badge-number why-badge-audio">3</span>
-                    <span className="why-badge-label">Ear-first audio</span>
-                  </div>
-                  <h3>Spoken Mexican Spanish</h3>
-                  <p>
-                    Listen to natural Mexico City pronunciation with everyday
-                    contextual nuances. Tap any phrase to hear the authentic
-                    CDMX cadence:
-                  </p>
-                  <div className="bento-visual bento-visual-audio">
-                    <div
-                      className="audio-sampler-group"
-                      role="group"
-                      aria-label="Interactive Mexican Spanish audio samples"
-                    >
-                      {[
-                        { es: '¡Órale!', en: 'Right on / wow' },
-                        { es: '¿Qué onda?', en: "What's up?" },
-                        { es: 'No manches', en: 'No way!' },
-                      ].map((item) => (
-                        <button
-                          key={item.es}
-                          type="button"
-                          className={`sampler-pill ${playingSamplerPhrase === item.es ? 'is-playing' : ''}`}
-                          onClick={() => handlePlaySampler(item.es)}
-                          aria-label={`Listen to Mexican Spanish pronunciation for ${item.es}: ${item.en}`}
-                        >
-                          <span
-                            className="sampler-speaker-icon"
-                            aria-hidden="true"
-                          >
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                              <path
-                                d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                          <span className="sampler-text-es">{item.es}</span>
-                          <span className="sampler-text-en">{item.en}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </article>
+              <div className="why-actions">
+                <button
+                  type="button"
+                  className="primary-button why-start-button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  Start learning <span aria-hidden="true">↑</span>
+                </button>
               </div>
-
-              <div className="why-highlights-bar" data-nosnippet>
-                <div className="why-highlight-item">
-                  <span className="why-highlight-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>100% local-first & offline</span>
-                </div>
-                <div className="why-highlight-item">
-                  <span className="why-highlight-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>Anki (.apkg) import in seconds</span>
-                </div>
-                <div className="why-highlight-item">
-                  <span className="why-highlight-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>Zero ads, zero subscriptions</span>
-                </div>
-              </div>
-              <AppFooter onOpenFeedback={openFeedbackModal} />
             </div>
           </section>
         </main>
