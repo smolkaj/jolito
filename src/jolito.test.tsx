@@ -491,7 +491,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    ).toHaveAttribute('aria-valuetext', '2 cards remaining')
 
     // Navigate back to welcome
     act(() => {
@@ -512,7 +512,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    ).toHaveAttribute('aria-valuetext', '2 cards remaining')
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation without populating context on selection', async () => {
@@ -2065,20 +2065,20 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
 
-    // Initial state: 4 cards in queue, 0% progress
+    // Initial state: 2 cards in queue, 0% progress
     const progress = screen.getByRole('progressbar', {
       name: 'Session progress',
     })
     expect(progress).toHaveAttribute('aria-valuenow', '0')
-    expect(progress).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
     const bar = progress.querySelector('.review-progress-bar') as HTMLElement
     expect(bar).toHaveStyle({ width: '0%' })
 
-    // Card 1: fail with Again (1) -> moves to learn queue (requeued at end), sibling is buried (-1 total)
+    // Card 1: fail with Again (1) -> moves to learn queue (requeued at end)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
     expect(progress).toHaveAttribute('aria-valuenow', '0')
-    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
+    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
     expect(bar).toHaveStyle({ width: '0%' })
 
     // Card 2: pass with Easy (4) -> graduates out of session, sibling is buried (1/2 completed = 50%)
@@ -3126,7 +3126,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '3 cards remaining')
+    ).toHaveAttribute('aria-valuetext', '1 card remaining')
   })
 
   it('opens edit modal via Ctrl+E when input is active and "e" when revealed during study session', async () => {
@@ -4285,7 +4285,7 @@ describe('Jolito', () => {
     expect(progressBar).toHaveAttribute('aria-valuetext', '13 cards remaining')
   })
 
-  it('adjusts progress bar correctly when rating bidirectional cards whose siblings are inside the queue', async () => {
+  it('separates bidirectional card siblings so only one direction enters the queue at a time', async () => {
     const user = userEvent.setup({ delay: null })
     const now = 1771632000000
     const services = createTestServices({ clockTime: now })
@@ -4337,7 +4337,7 @@ describe('Jolito', () => {
     services.cards.load = () => cards
     render(<App services={services} />)
 
-    // Start practice (queue gets 4 cards: es-01, es-02, en-01, en-02)
+    // Start practice (queue gets 2 cards: es-01, es-02; en-01 and en-02 are separated into secondary cohort)
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
     expect(screen.getByRole('heading', { name: 'es-01' })).toBeInTheDocument()
 
@@ -4345,15 +4345,14 @@ describe('Jolito', () => {
       name: /session progress/i,
     })
     expect(progressBar).toHaveAttribute('aria-valuenow', '0')
-    expect(progressBar).toHaveAttribute('aria-valuetext', '4 cards remaining')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
 
-    // Rate card 1 with Easy (4) -> en-01 in queue is buried, leaving 2 cards remaining in queue
-    // 1 completed out of 3 session total (33%)
+    // Rate card 1 with Easy (4) -> en-01 (outside queue) is buried, 1 completed out of 2 (50%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
     expect(screen.getByRole('heading', { name: 'es-02' })).toBeInTheDocument()
-    expect(progressBar).toHaveAttribute('aria-valuenow', '33')
-    expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(progressBar).toHaveAttribute('aria-valuenow', '50')
+    expect(progressBar).toHaveAttribute('aria-valuetext', '1 card remaining')
   })
 
   it('chunks large due backlogs into 15-card sprint batches and offers practice next batch', async () => {
@@ -4432,6 +4431,84 @@ describe('Jolito', () => {
     // 5. Final completion screen
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText('2 cards practiced.')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /create a card/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('does not offer doomed sibling cards in the next batch button after completing all active notes', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    // Create 14 bidirectional notes (28 cards total: 14 es-en, 14 en-es)
+    const cards: StudyCard[] = []
+    for (let i = 1; i <= 14; i++) {
+      const idx = String(i).padStart(2, '0')
+      cards.push(
+        {
+          id: `card-${idx}:es-en`,
+          noteId: `note-${idx}`,
+          prompt: `palabra-${idx}`,
+          answer: `word-${idx}`,
+          direction: 'es-en',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            state: 'review',
+            dueAt: now,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            reviews: 1,
+            lapses: 0,
+            lastReviewedAt: now - 86400000,
+          },
+          createdAt: now - 86400000,
+        },
+        {
+          id: `card-${idx}:en-es`,
+          noteId: `note-${idx}`,
+          prompt: `word-${idx}`,
+          answer: `palabra-${idx}`,
+          direction: 'en-es',
+          context: '',
+          scene: 'conversation',
+          schedule: {
+            state: 'review',
+            dueAt: now,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            reviews: 1,
+            lapses: 0,
+            lastReviewedAt: now - 86400000,
+          },
+          createdAt: now - 86400000,
+        },
+      )
+    }
+
+    const services = createTestServices({ cards, clockTime: now })
+    render(<App services={services} />)
+
+    // Start practice -> queues exactly 14 cards (all 14 primary active cards, 0 secondary siblings)
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toHaveAttribute('aria-valuetext', '14 cards remaining')
+
+    // Practice all 14 cards
+    for (let i = 1; i <= 14; i++) {
+      await user.keyboard('{Enter}')
+      await user.keyboard('3')
+    }
+
+    // Session completes
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+    expect(screen.getByText('14 cards practiced.')).toBeInTheDocument()
+
+    // All 14 secondary cards are buried until tomorrow, so next batch count is 0
+    // Completion screen shows "Create a card" rather than false "Practice next" button
+    expect(
+      screen.queryByRole('button', { name: /practice next/i }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /create a card/i }),
     ).toBeInTheDocument()

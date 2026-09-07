@@ -459,13 +459,24 @@ export function orderCardsForReview(
 
   const ordered = [
     ...primaryActive,
-    ...secondaryActive,
     ...primaryNew,
+    ...secondaryActive,
     ...secondaryNew,
   ]
 
   if (typeof limit === 'number' && limit > 0) {
-    return ordered.slice(0, limit)
+    const sprint: StudyCard[] = []
+    const seenNotes = new Set<string>()
+    for (const card of ordered) {
+      if (!seenNotes.has(card.noteId)) {
+        sprint.push(card)
+        seenNotes.add(card.noteId)
+        if (sprint.length === limit) {
+          break
+        }
+      }
+    }
+    return sprint
   }
   return ordered
 }
