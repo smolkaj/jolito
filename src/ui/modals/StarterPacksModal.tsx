@@ -298,14 +298,14 @@ function StarterPacksModalInner({
                       {isFullyInDeck ? (
                         <span
                           className="inspect-badge in-deck"
-                          title="Both cards already in your deck. Schedule preserved."
+                          title="Both cards are in your deck"
                         >
                           ✓ In deck
                         </span>
                       ) : isPartiallyInDeck ? (
                         <span
                           className="inspect-badge partial-deck"
-                          title="1 card already in your deck. Missing reciprocal card will be added."
+                          title="1 card in your deck. Missing reciprocal card will be added."
                         >
                           1 of 2 in deck
                         </span>
@@ -325,8 +325,7 @@ function StarterPacksModalInner({
               <div className="modal-header-copy">
                 <h2 id="starter-packs-modal-title">Curated starter packs</h2>
                 <p className="modal-subtitle">
-                  Pick a pack to expand your deck. Existing review schedules are
-                  strictly preserved.
+                  Pick a pack to expand your deck.
                 </p>
               </div>
               <button
@@ -348,8 +347,6 @@ function StarterPacksModalInner({
                 ).length
                 const remainingCount = packCards.length - existingCount
                 const isAllAdded = remainingCount === 0
-                const itemType =
-                  pack.id === 'mexican-street-phrases' ? 'phrases' : 'verbs'
 
                 return (
                   <div
@@ -368,9 +365,6 @@ function StarterPacksModalInner({
                           </span>
                           <h3 className="starter-pack-title">{pack.title}</h3>
                         </div>
-                        <span className="starter-pack-meta">
-                          {pack.noteCount} {itemType} · {pack.cardCount} cards
-                        </span>
                       </div>
                       <p className="starter-pack-desc">{pack.description}</p>
                     </div>

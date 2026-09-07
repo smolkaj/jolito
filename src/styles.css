@@ -4507,17 +4507,6 @@ kbd {
   line-height: 1.25;
 }
 
-.starter-pack-meta {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  background: var(--paper-subtle);
-  border: 1px solid var(--line-subtle);
-  border-radius: 999px;
-  padding: 2px 9px;
-  white-space: nowrap;
-}
-
 .starter-pack-desc {
   font-size: 13.5px;
   line-height: 1.45;
@@ -4606,18 +4595,27 @@ kbd {
 .starter-pack-back-btn {
   font-size: 13px;
   font-weight: 700;
-  height: var(--pill-height);
-  padding: 0 12px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 14px;
   border-radius: 999px;
   border: 1.5px solid var(--line-subtle);
   background: var(--paper);
   color: var(--ink);
   white-space: nowrap;
+  box-shadow: none;
 }
 
 .starter-pack-back-btn:hover {
   border-color: var(--line);
   background: var(--paper-subtle);
+  transform: none;
+  box-shadow: none;
+}
+
+.starter-pack-back-btn:active {
+  transform: none;
+  box-shadow: none;
 }
 
 .starter-pack-inspect-title-wrap {
