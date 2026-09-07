@@ -236,7 +236,6 @@ describe('feedback-route', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-skip-db': 'true',
         },
         body: JSON.stringify({
           message: 'Great pronunciation guide!',
@@ -255,15 +254,20 @@ describe('feedback-route', () => {
       expect(sendSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('persists to Supabase when SUPABASE_URL is configured and x-skip-db is not set', async () => {
-      const fetchSpy = vi
-        .spyOn(globalThis, 'fetch')
-        .mockResolvedValue(new Response(null, { status: 201 }))
-      const sendSpy = vi.fn().mockResolvedValue(undefined)
-
+    it('passes user email as replyTo when available', async () => {
+      const sendSpy = vi
+        .fn<
+          (msg: {
+            from: string
+            to: string
+            subject: string
+            text: string
+            html: string
+            replyTo?: string | undefined
+          }) => Promise<void>
+        >()
+        .mockResolvedValue(undefined)
       const mockEnv = {
-        SUPABASE_URL: 'https://test-project.supabase.co',
-        SUPABASE_ANON_KEY: 'test-anon-key',
         SEND_EMAIL: { send: sendSpy },
       }
 
@@ -273,8 +277,8 @@ describe('feedback-route', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: 'Database persistence check',
-          email: 'db@example.com',
+          message: 'Please reply to my question',
+          email: 'inquiry@example.com',
           user_id: null,
           context: {},
         }),
@@ -282,48 +286,8 @@ describe('feedback-route', () => {
 
       const res = await handleFeedbackRequest(req, mockEnv)
       expect(res.status).toBe(200)
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://test-project.supabase.co/rest/v1/feedback',
-        expect.anything(),
-      )
-      const callArgs = fetchSpy.mock.calls[0]
-      const callOptions = callArgs?.[1]
-      const reqHeaders = callOptions?.headers as
-        Record<string, string> | undefined
-      expect(callOptions?.method).toBe('POST')
-      expect(reqHeaders?.apikey).toBe('test-anon-key')
-      expect(reqHeaders?.Authorization).toBe('Bearer test-anon-key')
-      expect(sendSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it('returns error when Supabase persistence fails and aborts email dispatch', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({ message: 'permission denied' }), {
-          status: 403,
-        }),
-      )
-      const sendSpy = vi.fn()
-
-      const mockEnv = {
-        SUPABASE_URL: 'https://test-project.supabase.co',
-        SEND_EMAIL: { send: sendSpy },
-      }
-
-      const req = new Request('https://joli.to/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: 'This will fail DB',
-        }),
-      })
-
-      const res = await handleFeedbackRequest(req, mockEnv)
-      expect(res.status).toBe(403)
-      const body = (await res.json()) as FeedbackResponseBody
-      expect(body.error).toContain('Database persistence failed')
-      expect(sendSpy).not.toHaveBeenCalled()
+      const callArgs = sendSpy.mock.calls[0]?.[0]
+      expect(callArgs?.replyTo).toBe('inquiry@example.com')
     })
 
     it('does not fail request if email dispatch encounters an exception', async () => {
@@ -338,7 +302,6 @@ describe('feedback-route', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-skip-db': 'true',
         },
         body: JSON.stringify({
           message: 'Feedback should survive email outage',

@@ -322,12 +322,52 @@ describe('SupabaseFeedbackService', () => {
     expect(fetchCalls[0]?.url).toBe(
       'https://supabase.example.com/rest/v1/feedback',
     )
-    // Second call: Edge notification route with x-skip-db
+    // Second call: Edge notification route
     expect(fetchCalls[1]?.url).toContain('/api/feedback')
     expect(fetchCalls[1]?.options?.headers).toMatchObject({
       'Content-Type': 'application/json',
-      'x-skip-db': 'true',
     })
+    expect(fetchCalls[1]?.options?.keepalive).toBe(true)
+  })
+
+  it('resolves https://joli.to origin when running in native Capacitor on iOS', async () => {
+    const fetchCalls: { url: string }[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      fetchCalls.push({ url })
+      return Promise.resolve(new Response(null, { status: 201 }))
+    })
+
+    const originalLocation = window.location
+    try {
+      Object.defineProperty(window, 'location', {
+        value: {
+          protocol: 'capacitor:',
+          origin: 'capacitor://localhost',
+        },
+        writable: true,
+      })
+
+      const service = new SupabaseFeedbackService(
+        mockAuth,
+        'https://supabase.example.com',
+        'anon-key',
+        '/api/feedback',
+      )
+
+      await service.submitFeedback(
+        { message: 'Feedback from iOS native app' },
+        mockUser,
+      )
+
+      expect(fetchCalls.length).toBe(2)
+      expect(fetchCalls[1]?.url).toBe('https://joli.to/api/feedback')
+    } finally {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      })
+    }
   })
 
   it('tolerates notification dispatch errors without failing feedback submission', async () => {

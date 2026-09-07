@@ -49,13 +49,7 @@ function createFeedbackMiddleware(): Connect.NextHandleFunction {
         const fullUrl = new URL(reqUrl, origin)
         const chunks: Buffer[] = []
         for await (const chunk of req as AsyncIterable<Uint8Array | string>) {
-          chunks.push(
-            Buffer.isBuffer(chunk)
-              ? chunk
-              : typeof chunk === 'string'
-                ? Buffer.from(chunk)
-                : Buffer.from(chunk),
-          )
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
         }
         const bodyBuf = Buffer.concat(chunks)
         const reqInit: RequestInit = {

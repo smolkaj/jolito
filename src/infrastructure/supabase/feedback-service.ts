@@ -169,19 +169,22 @@ export class SupabaseFeedbackService implements FeedbackService {
       if (
         !targetUrl.startsWith('http://') &&
         !targetUrl.startsWith('https://') &&
-        typeof window !== 'undefined' &&
-        window.location?.origin
+        typeof window !== 'undefined'
       ) {
-        targetUrl = new URL(targetUrl, window.location.origin).toString()
+        const isCapacitor = window.location?.protocol === 'capacitor:'
+        const baseOrigin = isCapacitor
+          ? 'https://joli.to'
+          : window.location?.origin || 'https://joli.to'
+        targetUrl = new URL(targetUrl, baseOrigin).toString()
       }
 
       await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-skip-db': 'true',
         },
         body: JSON.stringify(payload),
+        keepalive: true,
       })
     } catch (err) {
       console.warn(

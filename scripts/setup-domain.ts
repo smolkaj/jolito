@@ -388,28 +388,26 @@ async function main() {
     )
 
     if (!existingDest) {
-      console.log(
-        `➕ Adding verified destination email: ${destinationEmail}...`,
-      )
+      console.log('➕ Adding verified destination email for notifications...')
       await cfApi(
         `/accounts/${accountId}/email/routing/addresses`,
         cfToken,
         'POST',
         { email: destinationEmail },
-      ).catch((err: unknown) => {
+      ).catch(() => {
         console.warn(
-          `ℹ️  Notice adding destination address: ${err instanceof Error ? err.message : String(err)}`,
+          'ℹ️  Notice: Destination address already registered or requires manual verification.',
         )
       })
       console.log(
-        `✉️  Verification email dispatched to ${destinationEmail}. Please click the verification link in your inbox if prompted!`,
+        '✉️  Verification email dispatched. Please check your inbox and click the verification link if prompted!',
       )
     } else if (!existingDest.verified) {
       console.log(
-        `⏳ Destination email ${destinationEmail} is pending verification. Please check your inbox!`,
+        '⏳ Destination email is pending verification. Please check your inbox!',
       )
     } else {
-      console.log(`✔ Verified destination email confirmed: ${destinationEmail}`)
+      console.log('✔ Verified destination email confirmed active.')
     }
 
     // 10b. Enable Email Routing on Zone
@@ -444,26 +442,24 @@ async function main() {
         ),
       )
       if (!ruleExists) {
-        console.log(
-          `➕ Creating email forward rule: ${addr} -> ${destinationEmail}...`,
-        )
+        console.log(`➕ Creating email forward rule: ${addr}...`)
         await cfApi(`/zones/${zone.id}/email/routing/rules`, cfToken, 'POST', {
           name: `Forward ${addr}`,
           enabled: true,
           matchers: [{ type: 'literal', field: 'to', value: addr }],
           actions: [{ type: 'forward', value: [destinationEmail] }],
-        }).catch((err: unknown) => {
+        }).catch(() => {
           console.warn(
-            `ℹ️  Notice creating rule for ${addr}: ${err instanceof Error ? err.message : String(err)}`,
+            `ℹ️  Notice: Forwarding rule for ${addr} already exists or was skipped.`,
           )
         })
       } else {
-        console.log(`✔ Forward rule active: ${addr} -> ${destinationEmail}`)
+        console.log(`✔ Forward rule active: ${addr}`)
       }
     }
-  } catch (err: unknown) {
+  } catch {
     console.warn(
-      `⚠️  Could not complete automatic Email Routing setup: ${err instanceof Error ? err.message : String(err)}`,
+      '⚠️  Notice: Could not complete automatic Email Routing setup.',
     )
   }
 

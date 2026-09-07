@@ -26,6 +26,7 @@ export interface SendEmailBinding {
     subject: string
     text: string
     html: string
+    replyTo?: string | undefined
   }) => Promise<void>
 }
 
@@ -33,8 +34,6 @@ export interface FeedbackWorkerEnv {
   SEND_EMAIL?: SendEmailBinding | undefined
   FEEDBACK_NOTIFICATION_EMAIL?: string | undefined
   FEEDBACK_SENDER_EMAIL?: string | undefined
-  SUPABASE_URL?: string | undefined
-  SUPABASE_ANON_KEY?: string | undefined
   RESEND_API_KEY?: string | undefined
   [key: string]: unknown
 }
@@ -42,8 +41,7 @@ export interface FeedbackWorkerEnv {
 export const corsHeaders: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'Content-Type, Authorization, apikey, x-supabase-url, x-skip-db',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey',
 }
 
 export function formatPlainTextEmail(payload: FeedbackPayload): string {
@@ -101,11 +99,11 @@ export function formatHtmlEmail(payload: FeedbackPayload): string {
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; padding: 24px; line-height: 1.5; }
     .card { background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .header { background-color: #4f46e5; color: #ffffff; padding: 20px 24px; }
+    .header { background-color: #b30060; color: #ffffff; padding: 20px 24px; }
     .header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
     .header p { margin: 4px 0 0 0; font-size: 13px; opacity: 0.9; }
     .content { padding: 24px; }
-    .message-box { background-color: #f1f5f9; border-left: 4px solid #4f46e5; border-radius: 4px; padding: 16px; font-size: 15px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: #1e293b; margin-bottom: 24px; }
+    .message-box { background-color: #fdf2f8; border-left: 4px solid #e4007c; border-radius: 4px; padding: 16px; font-size: 15px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: #1e293b; margin-bottom: 24px; }
     .meta-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 24px; }
     .meta-table th, .meta-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
     .meta-table th { color: #64748b; font-weight: 500; width: 120px; }
@@ -154,6 +152,7 @@ export async function sendFeedbackNotification(
   const recipient =
     env?.FEEDBACK_NOTIFICATION_EMAIL || 'steffen.smolka+jolito@gmail.com'
   const sender = env?.FEEDBACK_SENDER_EMAIL || 'feedback@joli.to'
+  const replyTo = payload.email || undefined
   const previewText = payload.message.slice(0, 50).replace(/[\r\n]+/g, ' ')
   const subject = `[Jolito Feedback] ${previewText}${payload.message.length > 50 ? '...' : ''}`
   const text = formatPlainTextEmail(payload)
@@ -166,6 +165,7 @@ export async function sendFeedbackNotification(
       subject,
       text,
       html,
+      ...(replyTo ? { replyTo } : {}),
     })
     return { dispatched: true, provider: 'cloudflare-send-email' }
   }
@@ -183,6 +183,7 @@ export async function sendFeedbackNotification(
         subject,
         text,
         html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
       }),
     })
     if (!res.ok) {
@@ -198,6 +199,7 @@ export async function sendFeedbackNotification(
       to: recipient,
       from: sender,
       subject,
+      replyTo,
     },
   )
   return { dispatched: false, provider: 'simulated-console' }
@@ -265,82 +267,6 @@ export async function handleFeedbackRequest(
   }
 
   const payload = parsed.data
-
-  // If x-skip-db is not true, persist to Supabase if Supabase configuration is present
-  const skipDb = request.headers.get('x-skip-db') === 'true'
-  const supabaseUrl =
-    (typeof env?.SUPABASE_URL === 'string' ? env.SUPABASE_URL : null) ??
-    (typeof env?.VITE_SUPABASE_URL === 'string'
-      ? env.VITE_SUPABASE_URL
-      : null) ??
-    request.headers.get('x-supabase-url')
-
-  if (!skipDb && supabaseUrl) {
-    const postUrl = `${supabaseUrl.replace(/\/+$/, '')}/rest/v1/feedback`
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    }
-    const apikey =
-      request.headers.get('apikey') ??
-      (typeof env?.SUPABASE_ANON_KEY === 'string' ? env.SUPABASE_ANON_KEY : '')
-    if (apikey) headers['apikey'] = apikey
-    const auth = request.headers.get('authorization')
-    if (auth) headers['Authorization'] = auth
-    else if (apikey) headers['Authorization'] = `Bearer ${apikey}`
-
-    try {
-      const dbRes = await fetch(postUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          user_id: payload.user_id ?? null,
-          email: payload.email || 'guest@jolito.app',
-          message: payload.message,
-          context: payload.context,
-        }),
-      })
-
-      if (!dbRes.ok) {
-        const errorText = await dbRes.text().catch(() => '')
-        console.error('[FeedbackRoute] Database persistence failed:', {
-          status: dbRes.status,
-          error: errorText,
-        })
-        return new Response(
-          JSON.stringify({
-            error: `Database persistence failed (HTTP ${dbRes.status}).`,
-            details: errorText,
-          }),
-          {
-            status:
-              dbRes.status >= 400 && dbRes.status < 600 ? dbRes.status : 500,
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-          },
-        )
-      }
-    } catch (dbErr) {
-      console.error('[FeedbackRoute] Database network error:', dbErr)
-      return new Response(
-        JSON.stringify({
-          error:
-            dbErr instanceof Error
-              ? dbErr.message
-              : 'Failed to connect to database.',
-        }),
-        {
-          status: 502,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        },
-      )
-    }
-  }
 
   // Dispatch email notification (non-fatal error handling: submission succeeds even if email fails)
   let emailDispatched = false
