@@ -1725,3 +1725,162 @@ describe('Dual-voice playback', () => {
     })
   })
 })
+
+describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNeuralSpeaker', () => {
+  it('suspends audio context after idle delay when buffer playback finishes', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine(200, 2000)
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockCtxObj = {
+      state: 'running' as AudioContextState,
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockImplementation(() => {
+        mockCtxObj.state = 'suspended'
+        return Promise.resolve()
+      }),
+    }
+    const mockAudioContext = mockCtxObj as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const buffer = { duration: 1.0 } as unknown as AudioBuffer
+    engine.registerAudioBuffer('hola', 'es-MX', buffer)
+
+    engine.playAudio('hola', 'es-MX')
+    expect(mockSource.start).toHaveBeenCalled()
+
+    // Playback finishes
+    mockSource.onended?.()
+    expect(mockCtxObj.suspend).not.toHaveBeenCalled()
+
+    // Halfway through idle delay
+    vi.advanceTimersByTime(1000)
+    expect(mockCtxObj.suspend).not.toHaveBeenCalled()
+
+    // After idle delay
+    vi.advanceTimersByTime(1000)
+    expect(mockCtxObj.suspend).toHaveBeenCalled()
+
+    engine.destroy()
+    vi.useRealTimers()
+  })
+
+  it('immediately stops audio and suspends audio context on visibilitychange when hidden', () => {
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockCtxObj = {
+      state: 'running' as AudioContextState,
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockImplementation(() => {
+        mockCtxObj.state = 'suspended'
+        return Promise.resolve()
+      }),
+    }
+    const mockAudioContext = mockCtxObj as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const buffer = { duration: 1.0 } as unknown as AudioBuffer
+    engine.registerAudioBuffer('hola', 'es-MX', buffer)
+    engine.playAudio('hola', 'es-MX')
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'hidden',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(mockSource.stop).toHaveBeenCalled()
+    expect(mockCtxObj.suspend).toHaveBeenCalled()
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    engine.destroy()
+  })
+
+  it('immediately stops audio and suspends audio context on pagehide', () => {
+    const engine = new NeuralVoiceEngine()
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockCtxObj = {
+      state: 'running' as AudioContextState,
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockImplementation(() => {
+        mockCtxObj.state = 'suspended'
+        return Promise.resolve()
+      }),
+    }
+    const mockAudioContext = mockCtxObj as unknown as AudioContext
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockAudioContext
+
+    const buffer = { duration: 1.0 } as unknown as AudioBuffer
+    engine.registerAudioBuffer('hola', 'es-MX', buffer)
+    engine.playAudio('hola', 'es-MX')
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(mockSource.stop).toHaveBeenCalled()
+    expect(mockCtxObj.suspend).toHaveBeenCalled()
+
+    engine.destroy()
+  })
+
+  it('LayeredNeuralSpeaker delegates suspend and destroy to its engines', async () => {
+    const suspendSpy = vi.fn().mockResolvedValue(undefined)
+    const destroySpy = vi.fn()
+    const fallbackDestroySpy = vi.fn()
+    const mockNeuralEngine = {
+      suspend: suspendSpy,
+      destroy: destroySpy,
+      stopAudio: vi.fn(),
+      supported: vi.fn().mockReturnValue(true),
+    } as unknown as NeuralVoiceEngine
+    const mockFallbackSpeaker = {
+      speak: vi.fn(),
+      supported: vi.fn().mockReturnValue(true),
+      stop: vi.fn(),
+      destroy: fallbackDestroySpy,
+    }
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine: mockNeuralEngine,
+      fallbackSpeaker: mockFallbackSpeaker,
+    })
+
+    await speaker.suspend()
+    expect(suspendSpy).toHaveBeenCalled()
+
+    speaker.destroy()
+    expect(destroySpy).toHaveBeenCalled()
+    expect(fallbackDestroySpy).toHaveBeenCalled()
+  })
+})

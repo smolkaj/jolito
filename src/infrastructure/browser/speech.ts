@@ -7,11 +7,32 @@ export class EnhancedBrowserSpeaker implements Speaker {
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
   private lastSpokenTime = 0
+  private cleanupLifecycleListeners: (() => void) | null = null
 
   private currentUtterance: SpeechSynthesisUtterance | null = null
 
   constructor() {
     this.initVoices()
+    this.installLifecycleListeners()
+  }
+
+  private installLifecycleListeners(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    const handleHidden = () => {
+      if (document.visibilityState === 'hidden') {
+        this.stop()
+      }
+    }
+    const handlePageHide = () => {
+      this.stop()
+    }
+    document.addEventListener('visibilitychange', handleHidden)
+    window.addEventListener('pagehide', handlePageHide)
+    this.cleanupLifecycleListeners = () => {
+      document.removeEventListener('visibilitychange', handleHidden)
+      window.removeEventListener('pagehide', handlePageHide)
+      this.cleanupLifecycleListeners = null
+    }
   }
 
   private refreshVoices(): SpeechSynthesisVoice[] {
@@ -149,6 +170,11 @@ export class EnhancedBrowserSpeaker implements Speaker {
         // Ignore errors
       }
     }
+  }
+
+  destroy(): void {
+    this.stop()
+    this.cleanupLifecycleListeners?.()
   }
 
   private selectBestVoice(

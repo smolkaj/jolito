@@ -835,9 +835,50 @@ describe('AudioSession category lifecycle in EnhancedBrowserSpeaker', () => {
       throw new Error('Synthesis engine crashed')
     })
     const speaker = new EnhancedBrowserSpeaker()
-
     const played = speaker.speak('hello', 'en-US', { explicit: true })
     expect(played).toBe(false)
+    expect(mockAudioSession.type).toBe('ambient')
+  })
+
+  it('stops and resets on visibilitychange when hidden', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    speaker.speak('hello', 'en-US', { explicit: true })
+    expect(mockAudioSession.type).toBe('playback')
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'hidden',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(cancelMock).toHaveBeenCalled()
+    expect(mockAudioSession.type).toBe('ambient')
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    speaker.destroy()
+  })
+
+  it('stops on pagehide event', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    speaker.speak('hello', 'en-US', { explicit: true })
+    expect(mockAudioSession.type).toBe('playback')
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(cancelMock).toHaveBeenCalled()
+    expect(mockAudioSession.type).toBe('ambient')
+    speaker.destroy()
+  })
+
+  it('cleans up lifecycle listeners on destroy', () => {
+    const speaker = new EnhancedBrowserSpeaker()
+    speaker.speak('hello', 'en-US', { explicit: true })
+    speaker.destroy()
+
+    expect(cancelMock).toHaveBeenCalled()
     expect(mockAudioSession.type).toBe('ambient')
   })
 })

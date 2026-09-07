@@ -9,7 +9,7 @@ import {
   normalizeLocale,
 } from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
-import { configureAudioSessionCategory } from './sound'
+import { configureAudioSessionCategory, DEFAULT_AUDIO_IDLE_DELAY_MS } from './sound'
 
 export const AUDIO_CACHE_NAME = 'jolito-audio-v1'
 
@@ -119,11 +119,78 @@ export class NeuralVoiceEngine {
   private audioContext: AudioContext | null = null
   private audioCache: LruAudioCache
   private audioBlobs = new Map<string, string>()
+  private idleTimer: number | null = null
+  private cleanupLifecycleListeners: (() => void) | null = null
+  private readonly idleDelayMs: number
 
-  constructor(maxMemoryBuffers = 200) {
+  constructor(
+    maxMemoryBuffers = 200,
+    idleDelayMs = DEFAULT_AUDIO_IDLE_DELAY_MS,
+  ) {
     this.audioCache = new LruAudioCache(maxMemoryBuffers)
+    this.idleDelayMs = idleDelayMs
     this.initContext()
     void this.getCache()
+    this.installLifecycleListeners()
+  }
+
+  private installLifecycleListeners(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        this.stopAudio()
+        void this.suspend()
+      }
+    }
+    const handlePageHide = () => {
+      this.stopAudio()
+      void this.suspend()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', handlePageHide)
+    this.cleanupLifecycleListeners = () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePageHide)
+      this.cleanupLifecycleListeners = null
+    }
+  }
+
+  async suspend(): Promise<void> {
+    this.cancelIdleSuspend()
+    if (
+      this.audioContext &&
+      this.audioContext.state === 'running' &&
+      typeof this.audioContext.suspend === 'function'
+    ) {
+      try {
+        await this.audioContext.suspend()
+      } catch {
+        // Audio is non-critical; never fail loudly
+      }
+    }
+  }
+
+  private scheduleIdleSuspend(): void {
+    this.cancelIdleSuspend()
+    if (
+      this.currentSource !== null ||
+      this.currentAudioElement !== null ||
+      typeof window === 'undefined'
+    ) {
+      return
+    }
+    this.idleTimer = window.setTimeout(() => {
+      void this.suspend()
+    }, this.idleDelayMs)
+  }
+
+  private cancelIdleSuspend(): void {
+    if (this.idleTimer !== null) {
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(this.idleTimer)
+      }
+      this.idleTimer = null
+    }
   }
 
   private initContext(): void {
@@ -222,6 +289,7 @@ export class NeuralVoiceEngine {
         // Ignore cancel errors
       }
     }
+    this.scheduleIdleSuspend()
   }
 
   hasAudio(text: string, locale: string, voice?: string): boolean {
@@ -416,6 +484,7 @@ export class NeuralVoiceEngine {
             if (this.currentAudioElement === audio) {
               this.currentAudioElement = null
               configureAudioSessionCategory('ambient')
+              this.scheduleIdleSuspend()
               options?.onEnded?.()
             }
           }
@@ -903,11 +972,15 @@ export class NeuralVoiceEngine {
       }
       if (!this.audioContext) return false
 
-      if (this.audioContext.state === 'suspended') {
+      this.stopAudio()
+      this.cancelIdleSuspend()
+
+      if (
+        this.audioContext.state === 'suspended' &&
+        typeof this.audioContext.resume === 'function'
+      ) {
         this.audioContext.resume().catch(() => {})
       }
-
-      this.stopAudio()
 
       configureAudioSessionCategory(explicit ? 'playback' : 'ambient')
 
@@ -920,6 +993,7 @@ export class NeuralVoiceEngine {
           if (!hasContinuation) {
             configureAudioSessionCategory('ambient')
           }
+          this.scheduleIdleSuspend()
           onEnded?.()
         }
       }
@@ -929,8 +1003,16 @@ export class NeuralVoiceEngine {
     } catch {
       this.currentSource = null
       configureAudioSessionCategory('ambient')
+      this.scheduleIdleSuspend()
       return false
     }
+  }
+
+  destroy(): void {
+    this.cancelIdleSuspend()
+    this.cleanupLifecycleListeners?.()
+    this.stopAudio()
+    void this.suspend()
   }
 }
 
@@ -1140,6 +1222,21 @@ export class LayeredNeuralSpeaker implements Speaker {
           })
           .catch(() => {})
       }
+    }
+  }
+
+  async suspend(): Promise<void> {
+    await this.neuralEngine.suspend()
+  }
+
+  destroy(): void {
+    this.neuralEngine.destroy()
+    if (
+      'destroy' in this.fallbackSpeaker &&
+      typeof (this.fallbackSpeaker as { destroy?: () => void }).destroy ===
+        'function'
+    ) {
+      (this.fallbackSpeaker as { destroy: () => void }).destroy()
     }
   }
 }

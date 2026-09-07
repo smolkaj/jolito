@@ -51,9 +51,10 @@ describe('WebAudioSoundPlayer', () => {
     state: AudioContextState
     currentTime: number
     destination: Record<string, unknown>
-    createOscillator: ReturnType<typeof vi.fn>
-    createGain: ReturnType<typeof vi.fn>
-    resume: ReturnType<typeof vi.fn>
+    createOscillator: ReturnType<typeof vi.fn<() => OscillatorNode>>
+    createGain: ReturnType<typeof vi.fn<() => GainNode>>
+    resume: ReturnType<typeof vi.fn<() => Promise<void>>>
+    suspend: ReturnType<typeof vi.fn<() => Promise<void>>>
   }
 
   beforeEach(() => {
@@ -84,7 +85,14 @@ describe('WebAudioSoundPlayer', () => {
         () => mockOscillator as unknown as OscillatorNode,
       ),
       createGain: vi.fn(() => mockGain as unknown as GainNode),
-      resume: vi.fn().mockResolvedValue(undefined),
+      resume: vi.fn().mockImplementation(() => {
+        mockAudioContext.state = 'running'
+        return Promise.resolve()
+      }),
+      suspend: vi.fn().mockImplementation(() => {
+        mockAudioContext.state = 'suspended'
+        return Promise.resolve()
+      }),
     }
 
     class MockAudioContextClass {
@@ -95,22 +103,35 @@ describe('WebAudioSoundPlayer', () => {
         return mockAudioContext.currentTime
       }
       destination = mockAudioContext.destination
-      createOscillator = mockAudioContext.createOscillator
-      createGain = mockAudioContext.createGain
-      resume = mockAudioContext.resume
+      createOscillator = () => mockAudioContext.createOscillator()
+      createGain = () => mockAudioContext.createGain()
+      resume = () => mockAudioContext.resume()
+      suspend = () => mockAudioContext.suspend()
     }
 
     window.AudioContext =
       MockAudioContextClass as unknown as typeof AudioContext
   })
 
+  let activePlayers: WebAudioSoundPlayer[] = []
+
+  function createPlayer(options?: ConstructorParameters<typeof WebAudioSoundPlayer>[0]) {
+    const player = new WebAudioSoundPlayer(options)
+    activePlayers.push(player)
+    return player
+  }
+
   afterEach(() => {
+    for (const player of activePlayers) {
+      player.destroy()
+    }
+    activePlayers = []
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
   it('plays all earcons cleanly when context is running', () => {
-    const player = new WebAudioSoundPlayer()
+    const player = createPlayer()
 
     player.play('reveal')
     expect(mockAudioContext.createOscillator).toHaveBeenCalled()
@@ -139,7 +160,7 @@ describe('WebAudioSoundPlayer', () => {
 
   it('resumes and delays dispatch if context is suspended', async () => {
     mockAudioContext.state = 'suspended'
-    const player = new WebAudioSoundPlayer()
+    const player = createPlayer()
 
     player.play('good')
 
@@ -159,7 +180,7 @@ describe('WebAudioSoundPlayer', () => {
     const addListenerSpy = vi.spyOn(window, 'addEventListener')
     const removeListenerSpy = vi.spyOn(window, 'removeEventListener')
 
-    new WebAudioSoundPlayer()
+    createPlayer()
 
     expect(addListenerSpy).toHaveBeenCalledWith(
       'pointerdown',
@@ -185,7 +206,7 @@ describe('WebAudioSoundPlayer', () => {
   })
 
   it('disconnects oscillator and gain nodes on ended', () => {
-    const player = new WebAudioSoundPlayer()
+    const player = createPlayer()
     player.play('reveal')
 
     expect(mockOscillator.onended).toBeDefined()
@@ -199,7 +220,115 @@ describe('WebAudioSoundPlayer', () => {
     mockAudioContext.createOscillator.mockImplementation(() => {
       throw new Error('AudioHardwareException')
     })
-    const player = new WebAudioSoundPlayer()
+    const player = createPlayer()
     expect(() => player.play('reveal')).not.toThrow()
+  })
+
+  it('suspends audio context after idle delay when tone ends', () => {
+    vi.useFakeTimers()
+    const player = createPlayer({ idleDelayMs: 2000 })
+    player.play('reveal')
+
+    expect(mockOscillator.onended).toBeDefined()
+    // Tone 1 ends
+    mockOscillator.onended!()
+    // Tone 2 ends
+    mockOscillator.onended!()
+
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    // Advance halfway through idle delay
+    vi.advanceTimersByTime(1000)
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    // Advance past idle delay
+    vi.advanceTimersByTime(1000)
+    expect(mockAudioContext.suspend).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('resets idle timer if another earcon is played before idle delay', () => {
+    vi.useFakeTimers()
+    const player = createPlayer({ idleDelayMs: 2000 })
+    player.play('again')
+    mockOscillator.onended!()
+
+    vi.advanceTimersByTime(1500)
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    // Play another earcon
+    player.play('good')
+    // Reset timer
+    mockOscillator.onended!()
+    mockOscillator.onended!()
+
+    vi.advanceTimersByTime(1500)
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(500)
+    expect(mockAudioContext.suspend).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('immediately suspends audio context on visibilitychange when hidden', () => {
+    const player = createPlayer()
+    player.play('reveal')
+
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'hidden',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(mockAudioContext.suspend).toHaveBeenCalled()
+
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+  })
+
+  it('immediately suspends audio context on pagehide event', () => {
+    const player = createPlayer()
+    player.play('reveal')
+
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(mockAudioContext.suspend).toHaveBeenCalled()
+  })
+
+  it('schedules idle suspend after initial gesture unlock', async () => {
+    vi.useFakeTimers()
+    mockAudioContext.state = 'suspended'
+    createPlayer({ idleDelayMs: 1500 })
+
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(mockAudioContext.resume).toHaveBeenCalled()
+
+    // Flush resume promise microtasks so scheduleIdleSuspend is called
+    await Promise.resolve()
+
+    vi.advanceTimersByTime(1500)
+    expect(mockAudioContext.suspend).toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('cleans up lifecycle listeners, pending timer, and suspends on destroy', () => {
+    vi.useFakeTimers()
+    const player = createPlayer({ idleDelayMs: 2000 })
+    player.play('again')
+    mockOscillator.onended!()
+
+    player.destroy()
+    expect(mockAudioContext.suspend).toHaveBeenCalled()
+
+    // Advance timers to verify no duplicate suspend
+    vi.advanceTimersByTime(3000)
+    expect(mockAudioContext.suspend).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 })
