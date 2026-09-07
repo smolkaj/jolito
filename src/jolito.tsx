@@ -1291,8 +1291,10 @@ export function App({
     [cards, referenceTime],
   )
 
-  const remainingDueCount = useMemo(
-    () => orderCardsForReview(cards, referenceTime).length,
+  const nextBatchCount = useMemo(
+    () =>
+      orderCardsForReview(cards, referenceTime, DEFAULT_STUDY_BATCH_SIZE)
+        .length,
     [cards, referenceTime],
   )
 
@@ -3338,14 +3340,13 @@ export function App({
               </div>
             )}
             <div className="complete-actions">
-              {remainingDueCount > 0 ? (
+              {nextBatchCount > 0 ? (
                 <>
                   <button
                     className="primary-button"
                     onClick={() => beginReview()}
                   >
-                    Practice next{' '}
-                    {Math.min(remainingDueCount, DEFAULT_STUDY_BATCH_SIZE)}{' '}
+                    Practice next {nextBatchCount}{' '}
                     <span aria-hidden="true">→</span>
                   </button>
                   <button className="secondary-button" onClick={goHome}>

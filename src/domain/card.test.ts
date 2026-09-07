@@ -808,6 +808,115 @@ describe('Anki spaced repetition scheduling', () => {
       // Next 10 cards are all secondary (en-es)
       const nextTen = allDue.slice(10, 20)
       expect(nextTen.every((c) => c.direction === 'en-es')).toBe(true)
+
+      // When limited to a sprint batch (e.g. 15), same-note siblings are deduplicated
+      // so the sprint only contains 10 cards (one per note) rather than pulling doomed siblings
+      const sprint = orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE)
+      expect(sprint).toHaveLength(10)
+      const sprintNoteIds = new Set(sprint.map((c) => c.noteId))
+      expect(sprintNoteIds.size).toBe(10)
+      expect(sprint.every((c) => c.direction === 'es-en')).toBe(true)
+    })
+
+    it('fills a review sprint with new backlog notes rather than secondary siblings of active notes', () => {
+      // 14 active notes (both directions due = 28 cards)
+      // 5 new backlog notes (both directions due = 10 cards)
+      const cards: StudyCard[] = []
+      for (let i = 1; i <= 14; i++) {
+        const id = String(i).padStart(2, '0')
+        const noteCards = createStudyCards(
+          {
+            spanish: `activa-${id}`,
+            english: `active-${id}`,
+            context: '',
+            bidirectional: true,
+          },
+          `note-active-${id}`,
+          now - 5 * DAY,
+        )
+        noteCards[0]!.schedule = {
+          ...noteCards[0]!.schedule,
+          state: 'review',
+          reviews: 2,
+          dueAt: now - DAY,
+        }
+        noteCards[1]!.schedule = {
+          ...noteCards[1]!.schedule,
+          state: 'review',
+          reviews: 1,
+          dueAt: now - 2 * DAY,
+        }
+        cards.push(...noteCards)
+      }
+
+      for (let i = 1; i <= 5; i++) {
+        const id = String(i).padStart(2, '0')
+        const noteCards = createStudyCards(
+          {
+            spanish: `nueva-${id}`,
+            english: `new-${id}`,
+            context: '',
+            bidirectional: true,
+          },
+          `note-new-${id}`,
+          now,
+        )
+        noteCards[0]!.schedule.dueAt = now
+        noteCards[1]!.schedule.dueAt = now
+        cards.push(...noteCards)
+      }
+
+      const sprint = orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE)
+      expect(sprint).toHaveLength(DEFAULT_STUDY_BATCH_SIZE) // exactly 15 cards
+
+      // All 15 cards in the sprint must belong to distinct notes (0 intra-sprint siblings)
+      const sprintNotes = new Set(sprint.map((c) => c.noteId))
+      expect(sprintNotes.size).toBe(15)
+
+      // First 14 are the primary cards of the 14 active notes
+      expect(
+        sprint.slice(0, 14).every((c) => c.noteId.startsWith('note-active-')),
+      ).toBe(true)
+
+      // The 15th card is from the new backlog cohort (note-new-01), NOT a secondary sibling of an active note
+      expect(sprint[14]!.noteId).toBe('note-new-01')
+    })
+
+    it('does not include doomed secondary siblings when fewer than batch limit notes are due', () => {
+      // 14 active notes (28 cards)
+      const cards: StudyCard[] = []
+      for (let i = 1; i <= 14; i++) {
+        const id = String(i).padStart(2, '0')
+        const noteCards = createStudyCards(
+          {
+            spanish: `activa-${id}`,
+            english: `active-${id}`,
+            context: '',
+            bidirectional: true,
+          },
+          `note-active-${id}`,
+          now - 5 * DAY,
+        )
+        noteCards[0]!.schedule = {
+          ...noteCards[0]!.schedule,
+          state: 'review',
+          reviews: 2,
+          dueAt: now,
+        }
+        noteCards[1]!.schedule = {
+          ...noteCards[1]!.schedule,
+          state: 'review',
+          reviews: 1,
+          dueAt: now,
+        }
+        cards.push(...noteCards)
+      }
+
+      const sprint = orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE)
+      // Exactly 14 cards (not 15), preventing intra-session sibling eviction
+      expect(sprint).toHaveLength(14)
+      const sprintNotes = new Set(sprint.map((c) => c.noteId))
+      expect(sprintNotes.size).toBe(14)
     })
 
     it('handles active notes with multiple due directions by ordering more overdue direction first', () => {
