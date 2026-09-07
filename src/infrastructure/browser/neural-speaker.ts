@@ -475,6 +475,7 @@ export class NeuralVoiceEngine {
       ) {
         try {
           this.stopAudio()
+          this.cancelIdleSuspend()
           configureAudioSessionCategory(
             options?.explicit ? 'playback' : 'ambient',
           )
@@ -1009,9 +1010,9 @@ export class NeuralVoiceEngine {
   }
 
   destroy(): void {
+    this.stopAudio()
     this.cancelIdleSuspend()
     this.cleanupLifecycleListeners?.()
-    this.stopAudio()
     void this.suspend()
   }
 }

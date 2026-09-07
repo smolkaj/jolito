@@ -231,7 +231,6 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     gainValue: number,
     type: OscillatorType = 'sine',
   ) {
-    this.activeTones++
     this.cancelIdleSuspend()
 
     const osc = ctx.createOscillator()
@@ -260,6 +259,7 @@ export class WebAudioSoundPlayer implements SoundPlayer {
       }
     }
 
+    this.activeTones++
     osc.start(startTime)
     osc.stop(startTime + duration)
   }
