@@ -115,8 +115,7 @@ function StarterPacksModalInner({
           <div className="modal-header-copy">
             <h2 id="starter-packs-modal-title">Curated starter packs</h2>
             <p className="modal-subtitle">
-              Expand your deck with authentic Mexican street phrases and the 200
-              most common Spanish verbs. Existing cards and review schedules are
+              Pick a pack to expand your deck. Existing review schedules are
               strictly preserved.
             </p>
           </div>
@@ -139,6 +138,8 @@ function StarterPacksModalInner({
             ).length
             const remainingCount = packCards.length - existingCount
             const isAllAdded = remainingCount === 0
+            const itemType =
+              pack.id === 'mexican-street-phrases' ? 'phrases' : 'verbs'
 
             return (
               <div
@@ -147,17 +148,14 @@ function StarterPacksModalInner({
                 role="listitem"
               >
                 <div className="starter-pack-head">
-                  <div className="starter-pack-badge-row">
-                    <span className="starter-pack-badge">{pack.badge}</span>
+                  <div className="starter-pack-header-row">
+                    <h3 className="starter-pack-title">{pack.title}</h3>
                     <span className="starter-pack-meta">
-                      {pack.noteCount} words/phrases · {pack.cardCount} cards
+                      {pack.noteCount} {itemType} · {pack.cardCount} cards
                     </span>
                   </div>
-                  <h3 className="starter-pack-title">{pack.title}</h3>
-                  <p className="starter-pack-subtitle">{pack.subtitle}</p>
+                  <p className="starter-pack-desc">{pack.description}</p>
                 </div>
-
-                <p className="starter-pack-desc">{pack.description}</p>
 
                 <div className="starter-pack-actions">
                   {existingCount > 0 && !isAllAdded && (

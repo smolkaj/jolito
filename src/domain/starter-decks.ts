@@ -31,8 +31,8 @@ export const starterPackSeeds: StarterPackSeed[] = [
     title: 'Mexican Street Phrases',
     subtitle: 'Everyday Spoken CDMX Spanish',
     description:
-      'The essential colloquial phrases and courteous spoken etiquette you hear every day in the streets, cafés, and mercados of Mexico City.',
-    badge: '🇲🇽 Essential CDMX',
+      'Everyday street slang and polite spoken etiquette (¿mande?, ahorita, no manches, qué padre).',
+    badge: '🇲🇽 CDMX',
     notes: [
       {
         spanish: '¿Mande?',
@@ -289,10 +289,10 @@ export const starterPackSeeds: StarterPackSeed[] = [
   {
     id: 'common-verbs-1',
     title: 'Top Verbs: 1–50',
-    subtitle: 'Core Foundation & Irregulars',
+    subtitle: 'Core Foundations',
     description:
-      'The 50 most essential Spanish verbs: irregular anchors, high-frequency actions, and auxiliary verbs that power everyday conversation.',
-    badge: '⚡ Verbs 1–50',
+      'The core anchors of daily Spanish (ser, estar, tener, hacer, ir, comer, salir).',
+    badge: '1–50',
     notes: [
       {
         spanish: 'ser',
@@ -596,15 +596,16 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'mantener',
-        english: 'to maintain / to sustain',
-        context: 'Keeping conditions stable or supporting a family.',
+        spanish: 'salir',
+        english: 'to leave / to go out',
+        context: 'Leaving a room, going out with friends, or exiting transit.',
         bidirectional: true,
       },
       {
-        spanish: 'resultar',
-        english: 'to turn out / to result',
-        context: 'The outcome of a process or event (resultó muy fácil).',
+        spanish: 'comer',
+        english: 'to eat',
+        context:
+          'Having meals, street food, and dining with family or friends.',
         bidirectional: true,
       },
       {
@@ -618,10 +619,10 @@ export const starterPackSeeds: StarterPackSeed[] = [
   {
     id: 'common-verbs-2',
     title: 'Top Verbs: 51–100',
-    subtitle: 'Everyday Interaction & Action',
+    subtitle: 'Routines & Interactions',
     description:
-      'The next 50 most common verbs for daily interactions, practical routines, social exchanges, and active decisions.',
-    badge: '⚡ Verbs 51–100',
+      'Everyday actions, requests, and social dynamics (llegar, pedir, traer, escuchar, probar).',
+    badge: '51–100',
     notes: [
       {
         spanish: 'caer',
@@ -655,9 +656,10 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'considerar',
-        english: 'to consider',
-        context: 'Weighing options or regarding someone with respect.',
+        spanish: 'quitar',
+        english: 'to remove / to take off',
+        context:
+          'Taking off clothes or removing an item (quitarse los zapatos).',
         bidirectional: true,
       },
       {
@@ -680,15 +682,17 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'formar',
-        english: 'to form / to shape',
-        context: 'Constituting groups, forming habits, or queuing up.',
+        spanish: 'enseñar',
+        english: 'to teach / to show',
+        context:
+          'Showing how something works or teaching a subject (enséñame).',
         bidirectional: true,
       },
       {
-        spanish: 'partir',
-        english: 'to depart / to split',
-        context: 'Leaving a station or dividing portions.',
+        spanish: 'traer',
+        english: 'to bring',
+        context:
+          'Bringing an item or person toward the speaker (tráeme un vaso).',
         bidirectional: true,
       },
       {
@@ -717,9 +721,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'comprender',
-        english: 'to understand / to comprehend',
-        context: 'Grasping meaning or showing empathy.',
+        spanish: 'probar',
+        english: 'to try / to taste / to try on',
+        context: 'Tasting food or trying on clothes (pruébalo, está rico).',
         bidirectional: true,
       },
       {
@@ -778,9 +782,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'utilizar',
-        english: 'to use / to utilize',
-        context: 'Employing tools, methods, or resources.',
+        spanish: 'escuchar',
+        english: 'to listen to',
+        context: 'Listening to music, podcasts, or paying attention to speech.',
         bidirectional: true,
       },
       {
@@ -865,9 +869,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'producir',
-        english: 'to produce',
-        context: 'Manufacturing goods, creating art, or generating results.',
+        spanish: 'recibir',
+        english: 'to receive',
+        context: 'Receiving packages, messages, visitors, or news.',
         bidirectional: true,
       },
       {
@@ -936,10 +940,10 @@ export const starterPackSeeds: StarterPackSeed[] = [
   {
     id: 'common-verbs-3',
     title: 'Top Verbs: 101–150',
-    subtitle: 'Daily Life, Movement & Nuance',
+    subtitle: 'Daily Life & Nuance',
     description:
-      'High-utility verbs for food, transit, household routines, and expressive Mexican social interactions.',
-    badge: '⚡ Verbs 101–150',
+      'Food, home life, travel, and feelings (cocinar, platicar, sentar, preocupar, extrañar).',
+    badge: '101–150',
     notes: [
       {
         spanish: 'jugar',
@@ -1172,9 +1176,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'representar',
-        english: 'to represent',
-        context: 'Symbolizing ideas or representing organizations.',
+        spanish: 'sentar',
+        english: 'to sit / to seat',
+        context: 'Sitting down or taking a seat (siéntate aquí).',
         bidirectional: true,
       },
       {
@@ -1190,10 +1194,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'fijar',
-        english: 'to fix / to notice',
-        context:
-          'Setting rules; reflexively fijarse means to pay attention (fíjate).',
+        spanish: 'preocupar',
+        english: 'to worry',
+        context: 'Feeling anxious; reflexively preocuparse (no te preocupes).',
         bidirectional: true,
       },
       {
@@ -1249,15 +1252,16 @@ export const starterPackSeeds: StarterPackSeed[] = [
   {
     id: 'common-verbs-4',
     title: 'Top Verbs: 151–200',
-    subtitle: 'Spoken Proficiency & Idiomatic Verbs',
+    subtitle: 'Spoken Fluency',
     description:
-      'Expressive, idiomatic verbs that bring natural fluency, conversational confidence, and spoken richness to your Spanish.',
-    badge: '⚡ Verbs 151–200',
+      'Expressive spoken verbs and conversational nuance (aguantar, antojar, aprovechar, equivocar).',
+    badge: '151–200',
     notes: [
       {
-        spanish: 'convenir',
-        english: 'to suit / to be advisable',
-        context: 'Being convenient or beneficial (te conviene hacerlo).',
+        spanish: 'recomendar',
+        english: 'to recommend',
+        context:
+          'Suggesting restaurants, books, places, or tips (te recomiendo esto).',
         bidirectional: true,
       },
       {
@@ -1285,9 +1289,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'botar',
-        english: 'to discard / to bounce',
-        context: 'Bouncing a ball, or tossing something out.',
+        spanish: 'devolver',
+        english: 'to return / to give back',
+        context: 'Returning borrowed items, refunds, or returning calls.',
         bidirectional: true,
       },
       {
@@ -1334,15 +1338,15 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'componer',
-        english: 'to repair / to compose',
-        context: 'Composing music or fixing broken machinery.',
+        spanish: 'equivocar',
+        english: 'to make a mistake / to be mistaken',
+        context: 'Making an error; reflexively equivocarse (me equivoqué).',
         bidirectional: true,
       },
       {
-        spanish: 'encender',
-        english: 'to ignite / to turn on',
-        context: 'Lighting a candle, stove, or turning on a device.',
+        spanish: 'bailar',
+        english: 'to dance',
+        context: 'Dancing at social gatherings, fiestas, and celebrations.',
         bidirectional: true,
       },
       {
@@ -1359,9 +1363,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'girar',
-        english: 'to rotate / to spin',
-        context: 'Rotating wheels or turning directions.',
+        spanish: 'llenar',
+        english: 'to fill',
+        context: 'Filling a glass, vehicle gas tank, or completing forms.',
         bidirectional: true,
       },
       {
@@ -1390,9 +1394,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'resistir',
-        english: 'to resist / to hold up',
-        context: 'Withstanding physical strain or emotional temptation.',
+        spanish: 'alegrar',
+        english: 'to make happy / to be glad',
+        context: 'Bringing joy; reflexively alegrarse (me alegro mucho).',
         bidirectional: true,
       },
       {
@@ -1542,15 +1546,15 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'distribuir',
-        english: 'to distribute',
-        context: 'Sharing resources or spreading tasks across a team.',
+        spanish: 'revisar',
+        english: 'to check / to review',
+        context: 'Checking messages, inspecting a bill, or proofreading work.',
         bidirectional: true,
       },
       {
-        spanish: 'exigir',
-        english: 'to demand',
-        context: 'Requiring standards or demanding accountability.',
+        spanish: 'elegir',
+        english: 'to choose / to pick',
+        context: 'Selecting options from a menu or making decisions.',
         bidirectional: true,
       },
       {
