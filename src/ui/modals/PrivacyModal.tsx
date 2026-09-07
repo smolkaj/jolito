@@ -94,28 +94,28 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
           <section className="privacy-section">
             <h3>4. Open Source & Contact</h3>
             <p>
-              Jolito is open-source (Apache-2.0). The code is on GitHub at{' '}
+              Jolito is open-source (Apache-2.0). The code is on{' '}
               <a
                 href="https://github.com/smolkaj/jolito"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="privacy-contact-link"
               >
-                github.com/smolkaj/jolito
+                GitHub
               </a>
               .
             </p>
             <p>
-              Created by Steffen Smolka (
+              Created by{' '}
               <a
                 href="https://smolka.st"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="privacy-contact-link"
               >
-                smolka.st
+                Steffen Smolka
               </a>
-              ). You can open an issue on GitHub or submit feedback directly in
+              . You can open an issue on GitHub or submit feedback directly in
               the app.
             </p>
           </section>
