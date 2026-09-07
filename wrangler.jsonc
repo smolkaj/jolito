@@ -18,4 +18,10 @@
       "custom_domain": true,
     },
   ],
+  "send_email": [
+    {
+      "name": "SEND_EMAIL",
+      "destination_address": "steffen.smolka+jolito@gmail.com",
+    },
+  ],
 }

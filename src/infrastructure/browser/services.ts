@@ -39,7 +39,12 @@ export function createBrowserServices(): AppServices {
 
   const auth = new SupabaseAuthService()
   const sync = new SupabaseSyncService(auth)
-  const feedback = new SupabaseFeedbackService(auth)
+  const feedback = new SupabaseFeedbackService(
+    auth,
+    undefined,
+    undefined,
+    '/api/feedback',
+  )
 
   return {
     clock: new SystemClock(),

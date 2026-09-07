@@ -11,14 +11,17 @@ import { parsePostgrestErrorPayload } from './postgrest-error'
 export class SupabaseFeedbackService implements FeedbackService {
   private supabaseUrl: string
   private supabaseAnonKey: string
+  private notifyEndpoint: string | null
 
   constructor(
     private authService: AuthService,
     supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
     supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    notifyEndpoint: string | null = null,
   ) {
     this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
     this.supabaseAnonKey = supabaseAnonKey
+    this.notifyEndpoint = notifyEndpoint
   }
 
   private async getAuthHeaders(): Promise<Record<string, string> | null> {
@@ -136,6 +139,8 @@ export class SupabaseFeedbackService implements FeedbackService {
         }
       }
 
+      void this.dispatchNotification(payload)
+
       return { success: true }
     } catch (err) {
       console.error(
@@ -149,6 +154,40 @@ export class SupabaseFeedbackService implements FeedbackService {
             ? err.message
             : 'Network error sending feedback.',
       }
+    }
+  }
+
+  private async dispatchNotification(payload: {
+    user_id: string | null
+    email: string
+    message: string
+    context: Record<string, unknown>
+  }): Promise<void> {
+    if (!this.notifyEndpoint) return
+    try {
+      let targetUrl = this.notifyEndpoint
+      if (
+        !targetUrl.startsWith('http://') &&
+        !targetUrl.startsWith('https://') &&
+        typeof window !== 'undefined' &&
+        window.location?.origin
+      ) {
+        targetUrl = new URL(targetUrl, window.location.origin).toString()
+      }
+
+      await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-skip-db': 'true',
+        },
+        body: JSON.stringify(payload),
+      })
+    } catch (err) {
+      console.warn(
+        '[FeedbackService] Non-fatal notification dispatch error:',
+        err,
+      )
     }
   }
 }
