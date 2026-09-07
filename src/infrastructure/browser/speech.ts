@@ -184,8 +184,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
           const lang = v.lang.toLowerCase().replace(/_/g, '-')
           const name = v.name.toLowerCase()
           return (
-            (lang === 'en-us' || lang === 'en_us') &&
-            targetKeywords.some((k) => name.includes(k))
+            lang === 'en-us' && targetKeywords.some((k) => name.includes(k))
           )
         })
         if (usGenderMatch) return usGenderMatch
@@ -269,7 +268,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
         const name = v.name.toLowerCase()
         return (
-          (lang === 'en-us' || lang === 'en_us') &&
+          lang === 'en-us' &&
           (name.includes('natural') ||
             name.includes('enhanced') ||
             name.includes('premium') ||
@@ -287,7 +286,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       // 2. Any exact US English voice
       const enUs = this.voices.find((v) => {
         const lang = v.lang.toLowerCase().replace(/_/g, '-')
-        return lang === 'en-us' || lang === 'en_us'
+        return lang === 'en-us'
       })
       if (enUs) return enUs
 

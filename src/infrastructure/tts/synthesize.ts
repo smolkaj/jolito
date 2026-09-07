@@ -121,7 +121,7 @@ export async function synthesizeSpeech(
 
   return new Promise<Uint8Array>((resolve, reject) => {
     const audioChunks: Uint8Array[] = []
-    const pendingProcessing: Promise<void>[] = []
+    let processingChain = Promise.resolve()
     let isSettled = false
 
     const timer = setTimeout(() => {
@@ -141,6 +141,7 @@ export async function synthesizeSpeech(
     }
 
     function finish() {
+      if (isSettled) return
       cleanup()
       if (audioChunks.length === 0) {
         reject(new Error('No audio received from Edge TTS service'))
@@ -193,24 +194,30 @@ export async function synthesizeSpeech(
 
       if (typeof data === 'string') {
         if (data.includes('Path:turn.end')) {
-          void Promise.all(pendingProcessing).then(() => {
+          void processingChain.then(() => {
             finish()
           })
         }
       } else if (data instanceof ArrayBuffer) {
-        processBinary(data)
+        processingChain = processingChain.then(() => {
+          processBinary(data)
+        })
       } else if (ArrayBuffer.isView(data)) {
-        processBinary(
-          new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+        const viewBytes = new Uint8Array(
+          data.buffer,
+          data.byteOffset,
+          data.byteLength,
         )
+        processingChain = processingChain.then(() => {
+          processBinary(viewBytes)
+        })
       } else if (typeof Blob !== 'undefined' && data instanceof Blob) {
-        const promise = data
-          .arrayBuffer()
+        processingChain = processingChain
+          .then(() => data.arrayBuffer())
           .then((buf) => {
             processBinary(buf)
           })
           .catch(() => {})
-        pendingProcessing.push(promise)
       }
     }
 
@@ -224,10 +231,11 @@ export async function synthesizeSpeech(
     }
 
     const onClose = (event: unknown) => {
-      void Promise.all(pendingProcessing).then(() => {
+      void processingChain.then(() => {
+        if (isSettled) return
         if (audioChunks.length > 0) {
           finish()
-        } else if (!isSettled) {
+        } else {
           const closeEvt = event as { code?: number; reason?: string }
           cleanup()
           reject(
