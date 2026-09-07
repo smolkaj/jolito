@@ -131,22 +131,18 @@ describe('Jolito', () => {
 
     expect(services.mockSounds.played).toEqual([
       'reveal',
-      'easy',
       'complete',
       'reveal',
       'again',
       'reveal',
-      'easy',
       'complete',
     ])
     expect(services.mockHaptics.triggered).toEqual([
       'selection',
-      'easy',
       'complete',
       'selection',
       'again',
       'selection',
-      'easy',
       'complete',
     ])
     expect(services.memoryCards.saved).toHaveLength(2)

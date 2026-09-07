@@ -9,6 +9,7 @@ import {
   normalizeLocale,
 } from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
+import { configureAudioSessionCategory } from './sound'
 
 export const AUDIO_CACHE_NAME = 'jolito-audio-v1'
 
@@ -393,6 +394,7 @@ export class NeuralVoiceEngine {
           audio.onended = () => {
             if (this.currentAudioElement === audio) {
               this.currentAudioElement = null
+              configureAudioSessionCategory('ambient')
               options?.onEnded?.()
             }
           }
@@ -881,6 +883,7 @@ export class NeuralVoiceEngine {
       source.onended = () => {
         if (this.currentSource === source) {
           this.currentSource = null
+          configureAudioSessionCategory('ambient')
           onEnded?.()
         }
       }
@@ -923,6 +926,7 @@ export class LayeredNeuralSpeaker implements Speaker {
   }
 
   stop(): void {
+    configureAudioSessionCategory('ambient')
     this.speakGeneration++
     this.neuralEngine.stopAudio()
     if (
@@ -972,6 +976,8 @@ export class LayeredNeuralSpeaker implements Speaker {
 
     const cleanText = text.trim()
     if (!cleanText) return false
+
+    configureAudioSessionCategory(options?.explicit ? 'playback' : 'ambient')
 
     const normLocale = normalizeLocale(locale)
     const voice =

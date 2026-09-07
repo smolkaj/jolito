@@ -1,5 +1,7 @@
 import type { Speaker, SpeakerOptions } from '../../application/ports'
 
+import { configureAudioSessionCategory } from './sound'
+
 export class EnhancedBrowserSpeaker implements Speaker {
   private voices: SpeechSynthesisVoice[] = []
   private lastSpokenText: string | null = null
@@ -99,6 +101,17 @@ export class EnhancedBrowserSpeaker implements Speaker {
       utterance.rate = locale.toLowerCase().startsWith('es') ? 0.88 : 0.92
       utterance.pitch = 1.0
 
+      configureAudioSessionCategory(options?.explicit ? 'playback' : 'ambient')
+
+      utterance.onend = () => {
+        configureAudioSessionCategory('ambient')
+        options?.onEnded?.()
+      }
+      utterance.onerror = () => {
+        configureAudioSessionCategory('ambient')
+        options?.onEnded?.()
+      }
+
       window.speechSynthesis.speak(utterance)
       return true
     } catch {
@@ -107,6 +120,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
   }
 
   stop(): void {
+    configureAudioSessionCategory('ambient')
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel()

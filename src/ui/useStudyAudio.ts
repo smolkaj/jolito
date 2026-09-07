@@ -73,7 +73,7 @@ export function useStudyAudio({
         targetCard.prompt,
         localeForPrompt(targetCard),
         cardReviewSeed(targetCard),
-        options,
+        { ...options, explicit: true },
       )
     },
     [currentCard, playAudio],
@@ -87,7 +87,7 @@ export function useStudyAudio({
         targetCard.answer,
         localeForAnswer(targetCard),
         cardReviewSeed(targetCard),
-        options,
+        { ...options, explicit: true },
       )
     },
     [currentCard, playAudio],
@@ -126,11 +126,12 @@ export function useStudyAudio({
     (grade: Grade, isComplete: boolean) => {
       cancelPendingAudio()
       speaker.stop?.()
-      sounds.play(grade)
-      haptics?.trigger(grade)
       if (isComplete) {
         sounds.play('complete')
         haptics?.trigger('complete')
+      } else {
+        sounds.play(grade)
+        haptics?.trigger(grade)
       }
     },
     [cancelPendingAudio, haptics, sounds, speaker],
