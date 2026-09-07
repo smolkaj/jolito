@@ -24,12 +24,24 @@ export function configureAudioSessionCategory(
   }
 }
 
+export interface WebAudioSoundPlayerOptions {
+  idleDelayMs?: number
+}
+
+export const DEFAULT_AUDIO_IDLE_DELAY_MS = 3000
+
 export class WebAudioSoundPlayer implements SoundPlayer {
   private ctx: AudioContext | null = null
   private cleanupGestureListeners: (() => void) | null = null
+  private cleanupLifecycleListeners: (() => void) | null = null
+  private idleTimer: number | null = null
+  private activeTones = 0
+  private readonly idleDelayMs: number
 
-  constructor() {
+  constructor(options?: WebAudioSoundPlayerOptions) {
+    this.idleDelayMs = options?.idleDelayMs ?? DEFAULT_AUDIO_IDLE_DELAY_MS
     this.installUnlockListeners()
+    this.installLifecycleListeners()
   }
 
   private installUnlockListeners(): void {
@@ -38,7 +50,16 @@ export class WebAudioSoundPlayer implements SoundPlayer {
       configureAudioSessionCategory('ambient')
       const ctx = this.getContext()
       if (ctx && ctx.state === 'suspended') {
-        void ctx.resume().catch(() => {})
+        void ctx
+          .resume()
+          .then(() => {
+            if (this.activeTones === 0) {
+              this.scheduleIdleSuspend()
+            }
+          })
+          .catch(() => {})
+      } else if (this.activeTones === 0) {
+        this.scheduleIdleSuspend()
       }
       this.removeUnlockListeners()
     }
@@ -63,6 +84,25 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     this.cleanupGestureListeners?.()
   }
 
+  private installLifecycleListeners(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        void this.suspend()
+      }
+    }
+    const handlePageHide = () => {
+      void this.suspend()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', handlePageHide)
+    this.cleanupLifecycleListeners = () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePageHide)
+      this.cleanupLifecycleListeners = null
+    }
+  }
+
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null
     if (!this.ctx) {
@@ -78,10 +118,39 @@ export class WebAudioSoundPlayer implements SoundPlayer {
         }
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {})
-    }
     return this.ctx
+  }
+
+  async suspend(): Promise<void> {
+    this.cancelIdleSuspend()
+    if (
+      this.ctx &&
+      this.ctx.state === 'running' &&
+      typeof this.ctx.suspend === 'function'
+    ) {
+      try {
+        await this.ctx.suspend()
+      } catch {
+        // Audio is non-critical; never fail loudly
+      }
+    }
+  }
+
+  private scheduleIdleSuspend(): void {
+    this.cancelIdleSuspend()
+    if (this.activeTones > 0 || typeof window === 'undefined') return
+    this.idleTimer = window.setTimeout(() => {
+      void this.suspend()
+    }, this.idleDelayMs)
+  }
+
+  private cancelIdleSuspend(): void {
+    if (this.idleTimer !== null) {
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(this.idleTimer)
+      }
+      this.idleTimer = null
+    }
   }
 
   play(earcon: Earcon): void {
@@ -89,6 +158,8 @@ export class WebAudioSoundPlayer implements SoundPlayer {
       configureAudioSessionCategory('ambient')
       const ctx = this.getContext()
       if (!ctx) return
+
+      this.cancelIdleSuspend()
 
       if (ctx.state === 'suspended') {
         void ctx
@@ -160,6 +231,8 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     gainValue: number,
     type: OscillatorType = 'sine',
   ) {
+    this.cancelIdleSuspend()
+
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
 
@@ -180,9 +253,21 @@ export class WebAudioSoundPlayer implements SoundPlayer {
       } catch {
         // Ignore errors during node disconnection
       }
+      this.activeTones = Math.max(0, this.activeTones - 1)
+      if (this.activeTones === 0) {
+        this.scheduleIdleSuspend()
+      }
     }
 
+    this.activeTones++
     osc.start(startTime)
     osc.stop(startTime + duration)
+  }
+
+  destroy(): void {
+    this.cancelIdleSuspend()
+    this.removeUnlockListeners()
+    this.cleanupLifecycleListeners?.()
+    void this.suspend()
   }
 }
