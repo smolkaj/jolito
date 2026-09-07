@@ -10,8 +10,14 @@ select columns_are('public', 'decks', array['user_id', 'updated_at', 'device_id'
 select columns_are('public', 'feedback', array['id', 'user_id', 'email', 'message', 'context', 'created_at'], 'feedback has expected columns');
 
 -- 3. Verify RLS is enabled
-select ok(row_security_active('public.decks'), 'public.decks has RLS active');
-select ok(row_security_active('public.feedback'), 'public.feedback has RLS active');
+select ok(
+  (select relrowsecurity from pg_class where oid = 'public.decks'::regclass),
+  'public.decks has row security enabled'
+);
+select ok(
+  (select relrowsecurity from pg_class where oid = 'public.feedback'::regclass),
+  'public.feedback has row security enabled'
+);
 
 -- Setup test users in auth.users
 insert into auth.users (id, email) values
