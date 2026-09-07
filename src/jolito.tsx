@@ -26,6 +26,7 @@ import {
   filterOutStarterCards,
   starterCards,
   starterHeroPrefetchItems,
+  starterHeroSampleCards,
 } from './application/starter-cards'
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
@@ -1596,11 +1597,10 @@ export function App({
         window.clearTimeout(sampleTimerRef.current)
       }
       setSamplePlaying(true)
-      if (side === 'spanish') {
-        playAudio('aguacate', 'es-MX', 'sample-aguacate', { dualVoice: false })
-      } else {
-        playAudio('avocado', 'en-US', 'sample-aguacate', { dualVoice: false })
-      }
+      const sample = starterHeroSampleCards[side]
+      playAudio(sample.text, sample.locale, sample.cardSeed, {
+        dualVoice: false,
+      })
       sampleTimerRef.current = window.setTimeout(() => {
         setSamplePlaying(false)
         sampleTimerRef.current = null
@@ -2146,8 +2146,8 @@ export function App({
                   onClick={() => onSampleCardClick('english')}
                   aria-label={
                     activeSampleSide === 'english'
-                      ? 'Play pronunciation for English card: avocado'
-                      : 'Show English card: avocado'
+                      ? `Play pronunciation for English card: ${starterHeroSampleCards.english.text}`
+                      : `Show English card: ${starterHeroSampleCards.english.text}`
                   }
                 >
                   <div className="sample-card-header">
@@ -2168,7 +2168,9 @@ export function App({
                         className="sample-art-image"
                       />
                     </div>
-                    <p className="sample-phrase">avocado</p>
+                    <p className="sample-phrase">
+                      {starterHeroSampleCards.english.text}
+                    </p>
                   </div>
                 </button>
                 {/* Mexican Spanish Card */}
@@ -2178,8 +2180,8 @@ export function App({
                   onClick={() => onSampleCardClick('spanish')}
                   aria-label={
                     activeSampleSide === 'spanish'
-                      ? 'Play pronunciation for Mexican Spanish card: aguacate'
-                      : 'Show Mexican Spanish card: aguacate'
+                      ? `Play pronunciation for Mexican Spanish card: ${starterHeroSampleCards.spanish.text}`
+                      : `Show Mexican Spanish card: ${starterHeroSampleCards.spanish.text}`
                   }
                 >
                   <div className="sample-card-header">
@@ -2200,7 +2202,9 @@ export function App({
                         className="sample-art-image"
                       />
                     </div>
-                    <p className="sample-phrase">aguacate</p>
+                    <p className="sample-phrase">
+                      {starterHeroSampleCards.spanish.text}
+                    </p>
                   </div>
                 </button>
               </div>

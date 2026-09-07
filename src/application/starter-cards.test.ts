@@ -4,22 +4,27 @@ import {
   isStarterCard,
   starterCards,
   starterHeroPrefetchItems,
+  starterHeroSampleCards,
 } from './starter-cards'
 import { createStudyCards } from '../domain/card'
 
 describe('starterCards', () => {
-  it('provides hero sample prefetch items for the starter screen', () => {
-    expect(starterHeroPrefetchItems).toEqual([
-      {
+  it('provides hero sample card definitions and prefetch items for the starter screen', () => {
+    expect(starterHeroSampleCards).toEqual({
+      spanish: {
         text: 'aguacate',
         locale: 'es-MX',
         cardSeed: 'sample-aguacate',
       },
-      {
+      english: {
         text: 'avocado',
         locale: 'en-US',
         cardSeed: 'sample-aguacate',
       },
+    })
+    expect(starterHeroPrefetchItems).toEqual([
+      starterHeroSampleCards.spanish,
+      starterHeroSampleCards.english,
     ])
   })
   it('provides 4 starter cards with starter noteId prefixes', () => {
