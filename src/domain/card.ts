@@ -375,21 +375,88 @@ export function orderCardsForReview(
   now: number,
   limit?: number,
 ): StudyCard[] {
-  const due = cards
-    .filter((card) => isDue(card, now))
-    .sort((left, right) => {
-      if (left.direction !== right.direction) {
-        return left.direction === 'es-en' ? -1 : 1
+  const due = cards.filter((card) => isDue(card, now))
+  if (due.length === 0) return []
+
+  // Active notes have already been reviewed at least once
+  const activeNoteIds = new Set(
+    cards
+      .filter((c) => c.schedule.reviews > 0 || c.schedule.state !== 'new')
+      .map((c) => c.noteId),
+  )
+
+  const activeCards = due.filter((c) => activeNoteIds.has(c.noteId))
+  const newCards = due.filter((c) => !activeNoteIds.has(c.noteId))
+
+  function organizeNoteCards(
+    noteCardsList: StudyCard[],
+    isNew: boolean,
+  ): { primary: StudyCard[]; secondary: StudyCard[] } {
+    const byNote = new Map<string, StudyCard[]>()
+    for (const card of noteCardsList) {
+      const list = byNote.get(card.noteId)
+      if (list) {
+        list.push(card)
+      } else {
+        byNote.set(card.noteId, [card])
       }
-      if (left.schedule.dueAt !== right.schedule.dueAt) {
-        return left.schedule.dueAt - right.schedule.dueAt
+    }
+
+    const sortedNotes = Array.from(byNote.entries()).sort(
+      ([noteIdA, cardsA], [noteIdB, cardsB]) => {
+        const minDueA = Math.min(...cardsA.map((c) => c.schedule.dueAt))
+        const minDueB = Math.min(...cardsB.map((c) => c.schedule.dueAt))
+        if (minDueA !== minDueB) return minDueA - minDueB
+
+        return noteIdA.localeCompare(noteIdB)
+      },
+    )
+
+    const primary: StudyCard[] = []
+    const secondary: StudyCard[] = []
+
+    sortedNotes.forEach(([, nCards]) => {
+      if (nCards.length === 1) {
+        primary.push(nCards[0]!)
+        return
       }
-      return left.id.localeCompare(right.id)
+
+      // For new cards: recognition (es-en) is primary, production (en-es) is secondary.
+      // For active cards: sort by urgency (dueAt), with es-en as tiebreaker.
+      const sorted = isNew
+        ? [...nCards].sort((a) => (a.direction === 'es-en' ? -1 : 1))
+        : [...nCards].sort((a, b) => {
+            if (a.schedule.dueAt !== b.schedule.dueAt) {
+              return a.schedule.dueAt - b.schedule.dueAt
+            }
+            return a.direction === 'es-en' ? -1 : 1
+          })
+
+      primary.push(sorted[0]!)
+      secondary.push(sorted[1]!)
     })
-  if (typeof limit === 'number' && limit > 0) {
-    return due.slice(0, limit)
+
+    return { primary, secondary }
   }
-  return due
+
+  const { primary: primaryActive, secondary: secondaryActive } =
+    organizeNoteCards(activeCards, false)
+  const { primary: primaryNew, secondary: secondaryNew } = organizeNoteCards(
+    newCards,
+    true,
+  )
+
+  const ordered = [
+    ...primaryActive,
+    ...primaryNew,
+    ...secondaryActive,
+    ...secondaryNew,
+  ]
+
+  if (typeof limit === 'number' && limit > 0) {
+    return ordered.slice(0, limit)
+  }
+  return ordered
 }
 
 export function intervalLabel(card: StudyCard, grade: Grade): string {

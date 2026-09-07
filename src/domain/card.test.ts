@@ -18,6 +18,7 @@ import {
   updateStudyCard,
   DEFAULT_STUDY_BATCH_SIZE,
   type ReviewSchedule,
+  type StudyCard,
 } from './card'
 
 const now = Date.UTC(2026, 7, 21)
@@ -710,6 +711,205 @@ describe('Anki spaced repetition scheduling', () => {
         'note-0:es-en', // es-en, overdue (-5000)
         'note-1:es-en', // es-en, due now (0)
         'note-2:en-es', // en-es, due now (0)
+      ])
+    })
+
+    it('prioritizes active in-progress reviews (including reverse recall) over unstarted backlog cards', () => {
+      // Learner has a backlog of 30 notes created 5 days ago (all cards due now).
+      // Note 1 was reviewed yesterday in es-en, so note-1:en-es is due today for reverse active recall.
+      // Notes 2..30 are unstarted backlog cards.
+      const past = now - 5 * DAY
+      const cards: StudyCard[] = []
+
+      // Note 1: es-en was studied yesterday, en-es is due today
+      const note1Cards = createStudyCards(
+        { spanish: 'gato', english: 'cat', context: '', bidirectional: true },
+        'note-01',
+        past,
+      )
+      // note-01:es-en reviewed yesterday with Good
+      note1Cards[0]!.schedule = {
+        state: 'review',
+        dueAt: now + 3 * DAY,
+        intervalDays: 4,
+        easeFactor: 2.5,
+        reviews: 1,
+        lapses: 0,
+        lastReviewedAt: now - DAY,
+      }
+      // note-01:en-es is due today for reverse recall
+      note1Cards[1]!.schedule = {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      }
+      cards.push(...note1Cards)
+
+      // Notes 2..20 are unstarted backlog notes (both directions due)
+      for (let i = 2; i <= 20; i++) {
+        const id = String(i).padStart(2, '0')
+        const noteCards = createStudyCards(
+          {
+            spanish: `palabra-${id}`,
+            english: `word-${id}`,
+            context: '',
+            bidirectional: true,
+          },
+          `note-${id}`,
+          past,
+        )
+        noteCards[0]!.schedule.dueAt = past
+        noteCards[1]!.schedule.dueAt = past + DAY
+        cards.push(...noteCards)
+      }
+
+      // In a 15-card sprint, note-01:en-es MUST be served first ahead of new backlog cards!
+      const sprint = orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE)
+      expect(sprint[0]!.id).toBe('note-01:en-es')
+      expect(sprint[0]!.direction).toBe('en-es')
+
+      // The remaining 14 cards in the sprint are unstarted cards (es-en recognition cohort)
+      for (let i = 1; i < 15; i++) {
+        expect(sprint[i]!.direction).toBe('es-en')
+      }
+    })
+
+    it('separates same-note siblings into primary and secondary cohorts so no sprint contains intra-session siblings', () => {
+      const cards: StudyCard[] = []
+      for (let i = 1; i <= 10; i++) {
+        const id = String(i).padStart(2, '0')
+        const noteCards = createStudyCards(
+          {
+            spanish: `palabra-${id}`,
+            english: `word-${id}`,
+            context: '',
+            bidirectional: true,
+          },
+          `note-${id}`,
+          now - 2 * DAY,
+        )
+        noteCards[0]!.schedule.dueAt = now
+        noteCards[1]!.schedule.dueAt = now
+        cards.push(...noteCards)
+      }
+
+      const allDue = orderCardsForReview(cards, now)
+      expect(allDue).toHaveLength(20)
+
+      // First 10 cards are all primary (es-en), one per note
+      const firstTen = allDue.slice(0, 10)
+      const noteIds = new Set(firstTen.map((c) => c.noteId))
+      expect(noteIds.size).toBe(10)
+      expect(firstTen.every((c) => c.direction === 'es-en')).toBe(true)
+
+      // Next 10 cards are all secondary (en-es)
+      const nextTen = allDue.slice(10, 20)
+      expect(nextTen.every((c) => c.direction === 'en-es')).toBe(true)
+    })
+
+    it('handles active notes with multiple due directions by ordering more overdue direction first', () => {
+      const activeCards: StudyCard[] = [
+        {
+          ...createStudyCards(
+            {
+              spanish: 'perro',
+              english: 'dog',
+              context: '',
+              bidirectional: false,
+            },
+            'note-diff',
+            now - 10 * DAY,
+          )[0]!,
+          id: 'note-diff:es-en',
+          direction: 'es-en',
+          schedule: {
+            state: 'review',
+            dueAt: now - 5000,
+            intervalDays: 5,
+            easeFactor: 2.5,
+            reviews: 2,
+            lapses: 0,
+          },
+        },
+        {
+          ...createStudyCards(
+            {
+              spanish: 'perro',
+              english: 'dog',
+              context: '',
+              bidirectional: false,
+            },
+            'note-diff',
+            now - 10 * DAY,
+          )[0]!,
+          id: 'note-diff:en-es',
+          direction: 'en-es',
+          schedule: {
+            state: 'review',
+            dueAt: now - 10000, // more overdue
+            intervalDays: 3,
+            easeFactor: 2.5,
+            reviews: 2,
+            lapses: 0,
+          },
+        },
+        {
+          ...createStudyCards(
+            {
+              spanish: 'gato',
+              english: 'cat',
+              context: '',
+              bidirectional: false,
+            },
+            'note-tied',
+            now - 10 * DAY,
+          )[0]!,
+          id: 'note-tied:es-en',
+          direction: 'es-en',
+          schedule: {
+            state: 'review',
+            dueAt: now,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            reviews: 1,
+            lapses: 0,
+          },
+        },
+        {
+          ...createStudyCards(
+            {
+              spanish: 'gato',
+              english: 'cat',
+              context: '',
+              bidirectional: false,
+            },
+            'note-tied',
+            now - 10 * DAY,
+          )[0]!,
+          id: 'note-tied:en-es',
+          direction: 'en-es',
+          schedule: {
+            state: 'review',
+            dueAt: now,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            reviews: 1,
+            lapses: 0,
+          },
+        },
+      ]
+
+      const ordered = orderCardsForReview(activeCards, now)
+      // note-diff has more overdue en-es (-10000) so note-diff:en-es is primary, note-diff:es-en is secondary
+      // note-tied is due now (tied) so es-en is primary tiebreaker, en-es is secondary
+      expect(ordered.map((c) => c.id)).toEqual([
+        'note-diff:en-es',
+        'note-tied:es-en',
+        'note-diff:es-en',
+        'note-tied:en-es',
       ])
     })
   })

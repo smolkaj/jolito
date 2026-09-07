@@ -4757,7 +4757,7 @@ describe('Jolito', () => {
             context: '',
             scene: 'conversation',
             schedule: {
-              dueAt: 99999999999, // scheduled far into the future
+              dueAt: 9999999999999, // scheduled far into the future
               intervalDays: 10,
               easeFactor: 2.5,
               state: 'review',
