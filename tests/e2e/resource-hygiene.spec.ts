@@ -108,6 +108,7 @@ test.describe('Resource & Energy Hygiene', () => {
         }
       ).__hygiene.getAudioContextStates(),
     )
+    expect(states.length).toBeGreaterThanOrEqual(1)
     for (const state of states) {
       expect(state).toBe('suspended')
     }
@@ -151,6 +152,7 @@ test.describe('Resource & Energy Hygiene', () => {
         window as unknown as { __hygiene: { stopRafTracking: () => number } }
       ).__hygiene.stopRafTracking(),
     )
+    await client.detach()
 
     // In a quiescent web app, script and task execution during idle dwell should be negligible (< 50ms)
     // and no requestAnimationFrame loops should be running continuously
@@ -218,6 +220,8 @@ test.describe('Resource & Energy Hygiene', () => {
     const deltaTask =
       getMetric(finalMetrics.metrics, 'TaskDuration') - initialTask
 
+    await client.detach()
+
     // CPU activity after audio suspension must remain near zero (< 50ms)
     expect(deltaTask).toBeLessThan(0.05)
   })
@@ -245,15 +249,24 @@ test.describe('Resource & Energy Hygiene', () => {
     })
 
     // Assert that contexts immediately suspend without waiting for 3s idle timer
-    const states = await page.evaluate(() =>
-      (
-        window as unknown as {
-          __hygiene: { getAudioContextStates: () => string[] }
-        }
-      ).__hygiene.getAudioContextStates(),
-    )
-    for (const state of states) {
-      expect(state).toBe('suspended')
-    }
+    await expect
+      .poll(
+        async () => {
+          const states = await page.evaluate(() =>
+            (
+              window as unknown as {
+                __hygiene: { getAudioContextStates: () => string[] }
+              }
+            ).__hygiene.getAudioContextStates(),
+          )
+          return states.length > 0 && states.every((s) => s === 'suspended')
+        },
+        {
+          message:
+            'Expected all AudioContexts to immediately suspend upon visibility change to hidden',
+          timeout: 1000,
+        },
+      )
+      .toBe(true)
   })
 })
