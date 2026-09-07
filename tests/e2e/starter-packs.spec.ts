@@ -27,7 +27,10 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
   ).toBeVisible()
 
   // Capture visual screenshot of modal
-  await page.screenshot({ path: '/tmp/jolito-starter-packs-modal.png' })
+  await page.screenshot({
+    path: '/tmp/jolito-starter-packs-modal.png',
+    animations: 'disabled',
+  })
 
   // Verify zero WCAG 2.1 A/AA violations in the modal
   const axeResults = await new AxeBuilder({ page })
@@ -49,7 +52,10 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
   ).toBeDisabled()
 
   // Capture visual screenshot after adding pack
-  await page.screenshot({ path: '/tmp/jolito-starter-packs-added.png' })
+  await page.screenshot({
+    path: '/tmp/jolito-starter-packs-added.png',
+    animations: 'disabled',
+  })
 
   // Close modal
   await page.getByLabel('Close dialog').click()

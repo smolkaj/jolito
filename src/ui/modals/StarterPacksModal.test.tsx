@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { starterCards } from '../../application/starter-cards'
 import { findStarterPack } from '../../domain/starter-decks'
 import { StarterPacksModal } from './StarterPacksModal'
 
@@ -112,5 +113,67 @@ describe('StarterPacksModal', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores ephemeral demo starter cards so they do not collide with curated packs', () => {
+    // Guest starts with ephemeral starterCards including 'qué padre'
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={starterCards}
+        onAddPack={vi.fn()}
+      />,
+    )
+
+    // Mexican Street Phrases has 72 cards. Since the ephemeral card is ignored,
+    // all 72 are available to add (0 already in deck).
+    expect(screen.queryByText(/already in your deck/i)).toBeNull()
+    expect(
+      screen.getByRole('button', {
+        name: /Add Mexican Street Phrases \(72 cards\)/i,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('traps focus and restores focus to the previously active element', () => {
+    // Create an external trigger button in the document
+    const triggerBtn = document.createElement('button')
+    triggerBtn.textContent = 'Open Starter Packs'
+    document.body.appendChild(triggerBtn)
+    triggerBtn.focus()
+    expect(document.activeElement).toBe(triggerBtn)
+
+    const onClose = vi.fn()
+    const { unmount } = render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={onClose}
+        cards={[]}
+        onAddPack={vi.fn()}
+      />,
+    )
+
+    // Focus should be directed to the close button on mount
+    const closeBtn = screen.getByLabelText('Close dialog')
+    expect(document.activeElement).toBe(closeBtn)
+
+    // Test Tab key wrapping
+    // When Shift+Tab is pressed on the first element (closeBtn), focus wraps to the last focusable element
+    const allButtons = screen.getAllByRole('button')
+    const lastButton = allButtons[allButtons.length - 1]
+
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(lastButton)
+
+    // When Tab is pressed on the last element, focus wraps back to the first
+    fireEvent.keyDown(window, { key: 'Tab' })
+    expect(document.activeElement).toBe(closeBtn)
+
+    // Unmounting modal should restore focus to triggerBtn
+    unmount()
+    expect(document.activeElement).toBe(triggerBtn)
+
+    document.body.removeChild(triggerBtn)
   })
 })

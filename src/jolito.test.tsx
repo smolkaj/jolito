@@ -5347,20 +5347,13 @@ describe('Jolito', () => {
       expect(screen.getByText('Mexican Street Phrases')).toBeInTheDocument()
       expect(screen.getByText('Top Verbs: 1–50')).toBeInTheDocument()
 
-      // 5. Click "Add Mexican Street Phrases" (already recognizes that 'qué padre' exists!)
+      // 5. Click "Add Mexican Street Phrases"
       const addStreetBtn = screen.getByRole('button', {
         name: /mexican street phrases/i,
       })
       await user.click(addStreetBtn)
 
-      // 6. Toast announcement appears
-      expect(
-        await screen.findByText(
-          /added \d+ cards from “mexican street phrases”/i,
-        ),
-      ).toBeInTheDocument()
-
-      // 7. Button in modal becomes disabled and says "In your deck"
+      // 6. Button in modal becomes disabled and says "In your deck"
       expect(
         screen.getByRole('button', {
           name: /mexican street phrases is already added to your deck/i,

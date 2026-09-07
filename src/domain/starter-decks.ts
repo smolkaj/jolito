@@ -1503,9 +1503,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'agradecer',
-        english: 'to show appreciation',
-        context: 'Expressing gratitude for kindness received.',
+        spanish: 'permitir',
+        english: 'to allow / to permit',
+        context: 'Allowing actions or permitting entry (permíteme ayudarte).',
         bidirectional: true,
       },
       {

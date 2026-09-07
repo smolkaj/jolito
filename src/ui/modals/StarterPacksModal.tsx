@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { filterOutStarterCards } from '../../application/starter-cards'
 import type { StudyCard } from '../../domain/card'
 import { normalizeCardKey } from '../../domain/duplicate'
 import { starterPacks, type StarterPack } from '../../domain/starter-decks'
@@ -19,17 +20,67 @@ function StarterPacksModalInner({
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => void
 }) {
+  const modalRef = useRef<HTMLDivElement>(null)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    previousFocusRef.current = (document.activeElement as HTMLElement) || null
+    closeBtnRef.current?.focus()
+
+    return () => {
+      previousFocusRef.current?.focus()
+    }
+  }, [])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (e.key === 'Tab') {
+        const container = modalRef.current
+        if (!container) return
+
+        const focusable = container.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )
+        if (focusable.length === 0) return
+
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (!first || !last) return
+
+        if (e.shiftKey) {
+          if (
+            document.activeElement === first ||
+            !container.contains(document.activeElement)
+          ) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (
+            document.activeElement === last ||
+            !container.contains(document.activeElement)
+          ) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
     }
+
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
   const existingKeys = useMemo(() => {
     const set = new Set<string>()
-    for (const card of cards) {
+    const permanentCards = filterOutStarterCards(cards)
+    for (const card of permanentCards) {
       set.add(normalizeCardKey(card.prompt, card.direction))
     }
     return set
@@ -53,6 +104,7 @@ function StarterPacksModalInner({
       role="presentation"
     >
       <div
+        ref={modalRef}
         className="modal-content starter-packs-modal"
         role="dialog"
         aria-modal="true"
@@ -69,6 +121,7 @@ function StarterPacksModalInner({
             </p>
           </div>
           <button
+            ref={closeBtnRef}
             type="button"
             className="modal-close"
             onClick={onClose}

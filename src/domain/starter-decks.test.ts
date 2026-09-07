@@ -56,6 +56,15 @@ describe('starterPacks', () => {
 
     expect(totalVerbs).toBe(200)
     expect(totalCards).toBe(400)
+
+    // Verify all 200 verbs are unique across the 4 packs
+    const allVerbs = verbPacks.flatMap((p) =>
+      p!
+        .createCards(0)
+        .filter((c) => c.direction === 'es-en')
+        .map((c) => c.prompt.toLowerCase().trim()),
+    )
+    expect(new Set(allVerbs).size).toBe(200)
   })
 
   it('creates cards with valid schedules and non-empty contexts', () => {
