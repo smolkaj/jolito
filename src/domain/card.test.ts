@@ -5,11 +5,8 @@ import {
   createNewReviewSchedule,
   createStudyCards,
   deleteStudyCard,
-  getCardsStudiedToday,
-  getStudyDayStart,
   intervalLabel,
   isDue,
-  isReviewedToday,
   localeForAnswer,
   localeForPrompt,
   nextIntervalDays,
@@ -19,7 +16,6 @@ import {
   shouldRequeueInSession,
   reviewScheduleSchema,
   updateStudyCard,
-  DEFAULT_ROLLOVER_HOUR,
   DEFAULT_STUDY_BATCH_SIZE,
   type ReviewSchedule,
 } from './card'
@@ -770,130 +766,6 @@ describe('Anki spaced repetition scheduling', () => {
 
       expect(result.buriedCardIds).toEqual([])
       expect(result.updatedCards).toEqual(cards)
-    })
-  })
-
-  describe('daily study tracking and rollover', () => {
-    it('calculates study day start accurately before and after 4 AM rollover', () => {
-      // 2026-08-30 02:30 UTC -> local time calculation
-      const nightTime = new Date(2026, 7, 30, 2, 30).getTime()
-      const startForNight = getStudyDayStart(nightTime, 4)
-      const startForNightDate = new Date(startForNight)
-      expect(startForNightDate.getDate()).toBe(29)
-      expect(startForNightDate.getHours()).toBe(4)
-      expect(startForNightDate.getMinutes()).toBe(0)
-
-      // 2026-08-30 10:15
-      const morningTime = new Date(2026, 7, 30, 10, 15).getTime()
-      const startForMorning = getStudyDayStart(morningTime, 4)
-      const startForMorningDate = new Date(startForMorning)
-      expect(startForMorningDate.getDate()).toBe(30)
-      expect(startForMorningDate.getHours()).toBe(4)
-      expect(startForMorningDate.getMinutes()).toBe(0)
-    })
-
-    it('identifies whether a card was reviewed during today study window', () => {
-      const todayMorning = new Date(2026, 7, 30, 9, 0).getTime()
-      const reviewedEarlierToday = new Date(2026, 7, 30, 8, 0).getTime()
-      const reviewedYesterday = new Date(2026, 7, 29, 14, 0).getTime()
-
-      const baseCard = createStudyCards(
-        {
-          spanish: 'hola',
-          english: 'hello',
-          context: '',
-          bidirectional: false,
-        },
-        'note-1',
-        now,
-      )[0]!
-
-      const cardToday = {
-        ...baseCard,
-        schedule: {
-          ...baseCard.schedule,
-          lastReviewedAt: reviewedEarlierToday,
-        },
-      }
-      const cardYesterday = {
-        ...baseCard,
-        schedule: {
-          ...baseCard.schedule,
-          lastReviewedAt: reviewedYesterday,
-        },
-      }
-      const cardNever = { ...baseCard }
-
-      expect(
-        isReviewedToday(cardToday, todayMorning, DEFAULT_ROLLOVER_HOUR),
-      ).toBe(true)
-      expect(
-        isReviewedToday(cardYesterday, todayMorning, DEFAULT_ROLLOVER_HOUR),
-      ).toBe(false)
-      expect(
-        isReviewedToday(cardNever, todayMorning, DEFAULT_ROLLOVER_HOUR),
-      ).toBe(false)
-    })
-
-    it('counts total cards studied today across the deck', () => {
-      const todayTime = new Date(2026, 7, 30, 11, 0).getTime()
-      const reviewed1 = new Date(2026, 7, 30, 9, 30).getTime()
-      const reviewed2 = new Date(2026, 7, 30, 10, 0).getTime()
-      const reviewedOld = new Date(2026, 7, 28, 10, 0).getTime()
-
-      const base = createStudyCards(
-        { spanish: 'a', english: 'a', context: '', bidirectional: false },
-        'note-a',
-        now,
-      )[0]!
-
-      const cards = [
-        {
-          ...base,
-          id: 'card-1',
-          schedule: { ...base.schedule, lastReviewedAt: reviewed1 },
-        },
-        {
-          ...base,
-          id: 'card-2',
-          schedule: { ...base.schedule, lastReviewedAt: reviewed2 },
-        },
-        {
-          ...base,
-          id: 'card-3',
-          schedule: { ...base.schedule, lastReviewedAt: reviewedOld },
-        },
-        {
-          ...base,
-          id: 'card-4',
-          schedule: { ...base.schedule },
-        },
-      ]
-
-      expect(
-        getCardsStudiedToday(cards, todayTime, DEFAULT_ROLLOVER_HOUR),
-      ).toBe(2)
-    })
-
-    it('sets lastReviewedAt on every review rating in scheduleReview', () => {
-      const card = createStudyCards(
-        { spanish: 'taco', english: 'taco', context: '', bidirectional: false },
-        'note-taco',
-        now,
-      )[0]!
-
-      const reviewTime = now + 5000
-      const againCard = scheduleReview(card, 'again', reviewTime)
-      expect(againCard.schedule.lastReviewedAt).toBe(reviewTime)
-
-      const hardCard = scheduleReview(card, 'hard', reviewTime)
-      expect(hardCard.schedule.lastReviewedAt).toBe(reviewTime)
-
-      const goodCard = scheduleReview(card, 'good', reviewTime)
-      expect(goodCard.schedule.lastReviewedAt).toBe(reviewTime)
-
-      const easyCard = scheduleReview(card, 'easy', reviewTime)
-      expect(easyCard.schedule.lastReviewedAt).toBe(reviewTime)
     })
   })
 

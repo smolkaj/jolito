@@ -123,9 +123,7 @@ describe('Jolito', () => {
     await user.keyboard('4') // Easy -> graduates
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(
-      screen.getByText(/1 card practiced across 2 reviews/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText('1 card practiced.')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
 
@@ -261,9 +259,7 @@ describe('Jolito', () => {
     await user.keyboard('4')
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(
-      screen.getByText(/2 cards practiced across 3 reviews/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText('2 cards practiced.')).toBeInTheDocument()
   })
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
@@ -4411,10 +4407,7 @@ describe('Jolito', () => {
 
     // 2. Completion screen for batch 1
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/15 cards practiced\./i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/15 cards practiced today across your devices\./i),
-    ).toBeInTheDocument()
+    expect(screen.getByText('15 cards practiced.')).toBeInTheDocument()
 
     // 3. Button to practice the remaining 2 cards is shown
     const nextBatchBtn = screen.getByRole('button', {
@@ -4438,16 +4431,13 @@ describe('Jolito', () => {
 
     // 5. Final completion screen
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText(/2 cards practiced\./i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/17 cards practiced today across your devices\./i),
-    ).toBeInTheDocument()
+    expect(screen.getByText('2 cards practiced.')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /create a card/i }),
     ).toBeInTheDocument()
   })
 
-  it('displays unique card count with repetitions note when reviews exceed cards', async () => {
+  it('displays unique card count cleanly even when reviews exceed cards due to repetitions', async () => {
     const user = userEvent.setup({ delay: null })
     const now = 1771632000000
     const cards = [
@@ -4500,16 +4490,9 @@ describe('Jolito', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
-    // Completion screen shows 2 cards practiced across 4 reviews
+    // Completion screen shows clean 2 cards practiced
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        '2 cards practiced across 4 reviews. Your next reviews are scheduled.',
-      ),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('2 cards practiced today across your devices.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('2 cards practiced.')).toBeInTheDocument()
   })
 
   it('triggers cloud sync on card review grading and flushes on tab hide', async () => {

@@ -1486,7 +1486,7 @@ test('aligns study card quick actions with card container and supports keyboard 
   await expect(editModal).not.toBeVisible()
 })
 
-test('displays cards practiced across reviews when repetitions occur and passes WCAG audits', async ({
+test('displays cards practiced cleanly when repetitions occur and passes WCAG audits', async ({
   page,
 }) => {
   await page.goto('/')
@@ -1511,12 +1511,13 @@ test('displays cards practiced across reviews when repetitions occur and passes 
 
   // Reach session complete screen
   await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
-  await expect(
-    page.getByText('2 cards practiced across 3 reviews.'),
-  ).toBeVisible()
+  await expect(page.getByText('2 cards practiced.')).toBeVisible()
 
   // Take screenshot for visual verification
-  await page.screenshot({ path: '/tmp/hecho-screen-repetitions.png' })
+  await page.screenshot({
+    path: '/tmp/hecho-screen-repetitions.png',
+    animations: 'disabled',
+  })
 
   // Accessibility audit
   const results = await new AxeBuilder({ page })

@@ -369,7 +369,6 @@ export function burySiblingCards(
 }
 
 export const DEFAULT_STUDY_BATCH_SIZE = 15
-export const DEFAULT_ROLLOVER_HOUR = 4
 
 export function orderCardsForReview(
   cards: StudyCard[],
@@ -391,49 +390,6 @@ export function orderCardsForReview(
     return due.slice(0, limit)
   }
   return due
-}
-
-export function getStudyDayStart(
-  now: number,
-  rolloverHour: number = DEFAULT_ROLLOVER_HOUR,
-): number {
-  const date = new Date(now)
-  const currentHour = date.getHours()
-  const start = new Date(date)
-  if (currentHour < rolloverHour) {
-    start.setDate(start.getDate() - 1)
-  }
-  start.setHours(rolloverHour, 0, 0, 0)
-  return start.getTime()
-}
-
-export function isReviewedToday(
-  card: StudyCard,
-  now: number,
-  rolloverHour: number = DEFAULT_ROLLOVER_HOUR,
-): boolean {
-  if (card.schedule.lastReviewedAt === undefined) {
-    return false
-  }
-  return card.schedule.lastReviewedAt >= getStudyDayStart(now, rolloverHour)
-}
-
-export function getCardsStudiedToday(
-  cards: StudyCard[],
-  now: number,
-  rolloverHour: number = DEFAULT_ROLLOVER_HOUR,
-): number {
-  const dayStart = getStudyDayStart(now, rolloverHour)
-  let count = 0
-  for (const card of cards) {
-    if (
-      card.schedule.lastReviewedAt !== undefined &&
-      card.schedule.lastReviewedAt >= dayStart
-    ) {
-      count++
-    }
-  }
-  return count
 }
 
 export function intervalLabel(card: StudyCard, grade: Grade): string {

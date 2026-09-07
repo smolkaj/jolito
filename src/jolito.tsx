@@ -24,7 +24,6 @@ import {
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   burySiblingCards,
-  getCardsStudiedToday,
   grades,
   intervalLabel,
   isDue,
@@ -977,7 +976,6 @@ export function App({
   const studySession = useStudySession(initialSession)
   const {
     queue,
-    reviewedCount,
     practicedCount,
     answer,
     setAnswer,
@@ -1261,11 +1259,6 @@ export function App({
 
   const deckStats = useMemo(
     () => getDeckStats(cards, referenceTime),
-    [cards, referenceTime],
-  )
-
-  const studiedTodayCount = useMemo(
-    () => getCardsStudiedToday(cards, referenceTime),
     [cards, referenceTime],
   )
 
@@ -3270,22 +3263,15 @@ export function App({
               <div className="complete-copy">
                 <p>
                   {practicedCount > 0
-                    ? `${formatPracticedSummary(practicedCount, reviewedCount)}. Your next reviews are scheduled.`
+                    ? `${formatPracticedSummary(practicedCount)}.`
                     : 'Nothing is due right now. Add something from your day in CDMX?'}
                 </p>
-                {studiedTodayCount > 0 && (
-                  <p className="complete-subtext">
-                    {studiedTodayCount}{' '}
-                    {studiedTodayCount === 1 ? 'card' : 'cards'} practiced today
-                    across your devices.
-                  </p>
-                )}
               </div>
             ) : (
               <div className="complete-copy">
                 <p>
                   {practicedCount > 0
-                    ? `${formatPracticedSummary(practicedCount, reviewedCount)}.`
+                    ? `${formatPracticedSummary(practicedCount)}.`
                     : 'You’re exploring demo cards.'}
                 </p>
                 <p className="complete-subtext">
