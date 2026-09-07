@@ -61,6 +61,9 @@ import { findDuplicateNoteCards, getDuplicateGroups } from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck } from './domain/anki-import'
 import { reconcileStudyCards, type SyncStatus } from './domain/sync'
+import { StarterPacksModal } from './ui/modals/StarterPacksModal'
+import type { StarterPack } from './domain/starter-decks'
+import { mergeStudyCardsSemantic } from './domain/card-merge'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
 import { createBrowserServices } from './infrastructure/browser/services'
@@ -347,6 +350,7 @@ function DeckBackupModalInner({
   clock,
   user,
   sync,
+  onOpenStarterPacks,
 }: {
   onClose: () => void
   cards: StudyCard[]
@@ -359,6 +363,7 @@ function DeckBackupModalInner({
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
+  onOpenStarterPacks?: () => void
 }) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -652,6 +657,28 @@ function DeckBackupModalInner({
               </button>
             )}
           </div>
+
+          {onOpenStarterPacks && (
+            <div className="backup-section starter-packs-callout">
+              <div className="backup-section-header">
+                <h3>Curated starter packs</h3>
+                <p>
+                  Explore Mexican street phrases or the 200 most common verbs,
+                  pre-chunked into manageable batches.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  onClose()
+                  onOpenStarterPacks()
+                }}
+              >
+                Explore starter packs →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -671,6 +698,7 @@ function DeckBackupModal(props: {
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
+  onOpenStarterPacks?: () => void
 }) {
   if (!props.isOpen) return null
   return <DeckBackupModalInner {...props} />
@@ -1023,7 +1051,18 @@ export function App({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [isStarterPacksOpen, setIsStarterPacksOpen] = useState(false)
+  const [starterPackToast, setStarterPackToast] = useState<string | null>(null)
+  const starterPackToastTimerRef = useRef<number | null>(null)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      if (starterPackToastTimerRef.current !== null) {
+        window.clearTimeout(starterPackToastTimerRef.current)
+      }
+    }
+  }, [])
   const [redirectAuthBanner, setRedirectAuthBanner] = useState<string | null>(
     () => {
       if (services.auth.consumeRedirectAuth?.()) {
@@ -1358,6 +1397,42 @@ export function App({
       spanishInputRef.current?.focus()
     },
     [onUpdateCards, services.clock, services.ids],
+  )
+
+  const handleAddStarterPack = useCallback(
+    (pack: StarterPack) => {
+      const now = services.clock.now()
+      const packCards = pack.createCards(now)
+      const mergeResult = mergeStudyCardsSemantic(cardsRef.current, packCards)
+
+      onUpdateCards(mergeResult.cards)
+
+      if (authUserRef.current) {
+        void syncDeckWithCloud({
+          localCards: mergeResult.cards,
+          localDeletedIds: Array.from(deletedCardIdsRef.current),
+          user: authUserRef.current,
+          syncService: services.sync,
+          onCardsUpdated: (newCards, newDeletedIds) =>
+            onUpdateCards(newCards, false, newDeletedIds),
+        })
+      }
+
+      const skippedInfo =
+        mergeResult.skippedCount > 0
+          ? ` (${mergeResult.skippedCount} existing cards preserved)`
+          : ''
+      const toastMsg = `Added ${mergeResult.addedCount} cards from “${pack.title}”${skippedInfo}`
+      setStarterPackToast(toastMsg)
+      if (starterPackToastTimerRef.current !== null) {
+        window.clearTimeout(starterPackToastTimerRef.current)
+      }
+      starterPackToastTimerRef.current = window.setTimeout(() => {
+        setStarterPackToast(null)
+        starterPackToastTimerRef.current = null
+      }, 4000)
+    },
+    [onUpdateCards, services.clock, services.sync],
   )
 
   const handleCopySessionLink = useCallback(async () => {
@@ -1733,6 +1808,7 @@ export function App({
         deletingCards !== null ||
         isSyncOpen ||
         isBackupOpen ||
+        isStarterPacksOpen ||
         isFeedbackOpen
       )
         return
@@ -1784,6 +1860,7 @@ export function App({
     grade,
     isSyncOpen,
     isBackupOpen,
+    isStarterPacksOpen,
     isFeedbackOpen,
     playAnswerAudio,
     playPromptAudio,
@@ -2869,12 +2946,29 @@ export function App({
                 <button
                   type="button"
                   className="secondary-button"
+                  onClick={() => setIsStarterPacksOpen(true)}
+                >
+                  Starter packs
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
                   onClick={() => setIsBackupOpen(true)}
                 >
                   Backup & Import
                 </button>
               </div>
             </header>
+
+            {starterPackToast && (
+              <div
+                className="status-banner status-success"
+                role="status"
+                aria-live="polite"
+              >
+                <p>{starterPackToast}</p>
+              </div>
+            )}
 
             <div className="deck-toolbar">
               <div className="deck-search-wrap">
@@ -3026,9 +3120,16 @@ export function App({
                     <button
                       type="button"
                       className="primary-button"
+                      onClick={() => setIsStarterPacksOpen(true)}
+                    >
+                      Explore starter packs →
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
                       onClick={() => navigateTo('create')}
                     >
-                      Create a card →
+                      Create a card
                     </button>
                     <button
                       type="button"
@@ -3218,6 +3319,13 @@ export function App({
           </section>
           <AppFooter onOpenFeedback={openFeedbackModal} />
         </main>
+        <StarterPacksModal
+          isOpen={isStarterPacksOpen}
+          onClose={() => setIsStarterPacksOpen(false)}
+          cards={cards}
+          onAddPack={handleAddStarterPack}
+        />
+
         <DeckBackupModal
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}
@@ -3227,6 +3335,7 @@ export function App({
           clock={services.clock}
           user={authUser}
           sync={services.sync}
+          onOpenStarterPacks={() => setIsStarterPacksOpen(true)}
         />
 
         <SyncModal

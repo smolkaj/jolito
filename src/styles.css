@@ -4353,6 +4353,128 @@ kbd {
   overflow-y: auto;
 }
 
+.starter-packs-modal {
+  width: min(660px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.starter-packs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.starter-pack-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--paper);
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 18px;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.starter-pack-card:hover {
+  border-color: var(--line);
+}
+
+.starter-pack-card.is-added {
+  background: var(--card);
+  border-color: var(--line-light);
+  opacity: 0.85;
+}
+
+.starter-pack-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.starter-pack-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.starter-pack-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--turquesa-soft);
+  color: var(--turquesa-deep);
+  border: 1px solid var(--turquesa-border);
+}
+
+.starter-pack-meta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.starter-pack-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.starter-pack-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.starter-pack-desc {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0;
+}
+
+.starter-pack-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-light);
+}
+
+.starter-pack-conflict-info {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.starter-pack-btn {
+  margin-left: auto;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.starter-pack-btn.is-complete {
+  background: var(--turquesa-soft);
+  color: var(--turquesa-deep);
+  border: 1.5px solid var(--turquesa-border);
+  opacity: 0.9;
+  cursor: default;
+}
+
 .edit-card-form {
   display: flex;
   flex-direction: column;

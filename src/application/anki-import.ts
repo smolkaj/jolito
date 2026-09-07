@@ -1,5 +1,5 @@
 import type { StudyCard } from '../domain/card'
-import { mergeStudyCards } from '../domain/deck-backup'
+import { mergeStudyCardsSemantic } from '../domain/card-merge'
 import { parseAnkiDeck, type AnkiImportStats } from '../domain/anki-import'
 import type { RestoreMode } from './deck-backup'
 import type { Clock } from './ports'
@@ -39,7 +39,7 @@ export async function importAnkiDeck(
   const finalCards =
     mode === 'replace'
       ? importedCards
-      : mergeStudyCards(currentCards, importedCards)
+      : mergeStudyCardsSemantic(currentCards, importedCards).cards
 
   return {
     success: true,

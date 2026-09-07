@@ -67,6 +67,24 @@ describe('importAnkiDeck application service', () => {
     expect(result.cards.some((c) => c.prompt === 'gato')).toBe(true)
   })
 
+  it('preserves existing card and schedule when importing duplicate prompt on merge', async () => {
+    const text = 'perro\tdog' // identical prompt
+    const result = await importAnkiDeck(
+      existingCards,
+      text,
+      'merge',
+      mockClock,
+      'deck.txt',
+    )
+
+    expect(result.success).toBe(true)
+    if (!result.success) return
+
+    expect(result.count).toBe(1)
+    expect(result.cards[0]?.id).toBe('existing-1:es-en')
+    expect(result.cards[0]?.schedule.reviews).toBe(3)
+  })
+
   it('fails gracefully with error when content is invalid', async () => {
     const result = await importAnkiDeck(
       existingCards,
