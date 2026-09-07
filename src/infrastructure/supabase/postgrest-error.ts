@@ -1,26 +1,28 @@
-export interface PostgrestErrorPayload {
-  code?: string
-  message?: string
-  details?: string | null
-  hint?: string | null
-}
+import { z } from 'zod'
+
+export const postgrestErrorPayloadSchema = z
+  .object({
+    code: z.string().optional(),
+    message: z.string().optional(),
+    details: z.string().nullable().optional(),
+    hint: z.string().nullable().optional(),
+  })
+  .passthrough()
+
+export type PostgrestErrorPayload = z.infer<typeof postgrestErrorPayloadSchema>
 
 export function parsePostgrestErrorPayload(
   errorText?: string | null,
 ): PostgrestErrorPayload | null {
+  if (typeof errorText !== 'string') return null
+  const trimmed = errorText.trim()
+  if (trimmed.length === 0) return null
+
   try {
-    if (typeof errorText === 'string' && errorText.trim().length > 0) {
-      const parsed: unknown = JSON.parse(errorText)
-      if (
-        typeof parsed === 'object' &&
-        parsed !== null &&
-        !Array.isArray(parsed)
-      ) {
-        return parsed
-      }
-    }
+    const parsed: unknown = JSON.parse(trimmed)
+    const result = postgrestErrorPayloadSchema.safeParse(parsed)
+    return result.success ? result.data : null
   } catch {
-    // not JSON
+    return null
   }
-  return null
 }

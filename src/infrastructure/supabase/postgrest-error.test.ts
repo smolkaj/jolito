@@ -53,4 +53,38 @@ describe('parsePostgrestErrorPayload', () => {
     expect(result?.message).toBe('table not found')
     expect(result?.details).toBeUndefined()
   })
+
+  it('rejects payloads where code or message are not strings (prevents React render crashes)', () => {
+    // Non-string message (e.g. nested object from non-standard error responses)
+    expect(
+      parsePostgrestErrorPayload(
+        JSON.stringify({
+          message: { detail: 'nested object error' },
+        }),
+      ),
+    ).toBeNull()
+
+    // Non-string code
+    expect(
+      parsePostgrestErrorPayload(
+        JSON.stringify({
+          code: 42501,
+          message: 'Numeric code error',
+        }),
+      ),
+    ).toBeNull()
+  })
+
+  it('passes through extra PostgREST fields safely', () => {
+    const json = JSON.stringify({
+      code: '42501',
+      message: 'permission denied',
+      extra_info: 'allowed through passthrough',
+    })
+
+    const result = parsePostgrestErrorPayload(json)
+    expect(result?.code).toBe('42501')
+    expect(result?.message).toBe('permission denied')
+    expect(result?.['extra_info']).toBe('allowed through passthrough')
+  })
 })
