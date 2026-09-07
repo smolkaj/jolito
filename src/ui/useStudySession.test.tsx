@@ -120,6 +120,32 @@ describe('useStudySession', () => {
     expect(result.current.progressPercentage).toBe(0)
   })
 
+  it('requeues card 5 cards ahead when remaining queue has more than 5 cards', () => {
+    const { result } = renderHook(() =>
+      useStudySession(
+        createStudySession(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']),
+      ),
+    )
+
+    let gradeResult: ReturnType<typeof result.current.advanceOnGrade>
+    act(() => {
+      gradeResult = result.current.advanceOnGrade('c0', learningSchedule, [])
+    })
+
+    expect(gradeResult!.requeued).toBe(true)
+    expect(gradeResult!.isComplete).toBe(false)
+    expect(result.current.queue).toEqual([
+      'c1',
+      'c2',
+      'c3',
+      'c4',
+      'c5',
+      'c0',
+      'c6',
+      'c7',
+    ])
+  })
+
   it('filters cards when deck is modified and adjusts sessionTotal', () => {
     const { result } = renderHook(() =>
       useStudySession(createStudySession(['c1', 'c2', 'c3'])),

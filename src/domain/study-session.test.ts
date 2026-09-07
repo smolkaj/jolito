@@ -3,6 +3,7 @@ import type { ReviewSchedule } from './card'
 import {
   advanceSessionOnGrade,
   createStudySession,
+  DEFAULT_REQUEUE_OFFSET,
   filterSessionCards,
   formatPracticedSummary,
   sessionCompletedCount,
@@ -104,7 +105,40 @@ describe('studySession', () => {
       expect(sessionProgressPercentage(result.nextSession)).toBe(33)
     })
 
-    it('requeues card at end of queue when schedule indicates requeue', () => {
+    it('requeues card 5 cards ahead when remaining queue has more than 5 cards', () => {
+      expect(DEFAULT_REQUEUE_OFFSET).toBe(5)
+      const initial = createStudySession([
+        'c0',
+        'c1',
+        'c2',
+        'c3',
+        'c4',
+        'c5',
+        'c6',
+        'c7',
+      ])
+      const result = advanceSessionOnGrade(initial, 'c0', learningSchedule, [])
+
+      expect(result.requeued).toBe(true)
+      expect(result.isComplete).toBe(false)
+      // c0 is placed after 5 cards: c1, c2, c3, c4, c5, then c0, then c6, c7
+      expect(result.nextSession.queue).toEqual([
+        'c1',
+        'c2',
+        'c3',
+        'c4',
+        'c5',
+        'c0',
+        'c6',
+        'c7',
+      ])
+      expect(result.nextSession.sessionTotal).toBe(8)
+      expect(result.nextSession.reviewedCount).toBe(1)
+      expect(sessionCompletedCount(result.nextSession)).toBe(0)
+      expect(sessionProgressPercentage(result.nextSession)).toBe(0)
+    })
+
+    it('requeues card at end of queue when remaining queue has fewer than 5 cards', () => {
       const initial = createStudySession(['c1', 'c2', 'c3'])
       const result = advanceSessionOnGrade(initial, 'c1', learningSchedule, [])
 
@@ -114,7 +148,34 @@ describe('studySession', () => {
       expect(result.nextSession.sessionTotal).toBe(3)
       expect(result.nextSession.reviewedCount).toBe(1)
       expect(sessionCompletedCount(result.nextSession)).toBe(0)
+    })
+
+    it('requeues card immediately when it is the sole remaining card in session', () => {
+      const initial = createStudySession(['c1'])
+      const result = advanceSessionOnGrade(initial, 'c1', learningSchedule, [])
+
+      expect(result.requeued).toBe(true)
+      expect(result.isComplete).toBe(false)
+      expect(result.nextSession.queue).toEqual(['c1'])
+      expect(result.nextSession.sessionTotal).toBe(1)
+      expect(result.nextSession.reviewedCount).toBe(1)
+      expect(sessionCompletedCount(result.nextSession)).toBe(0)
       expect(sessionProgressPercentage(result.nextSession)).toBe(0)
+    })
+
+    it('supports custom requeueOffset parameter', () => {
+      const initial = createStudySession(['c0', 'c1', 'c2', 'c3', 'c4'])
+      const result = advanceSessionOnGrade(
+        initial,
+        'c0',
+        learningSchedule,
+        [],
+        2,
+      )
+
+      expect(result.requeued).toBe(true)
+      // inserted after 2 cards
+      expect(result.nextSession.queue).toEqual(['c1', 'c2', 'c0', 'c3', 'c4'])
     })
 
     it('flags isComplete when last card is graduated', () => {

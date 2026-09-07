@@ -3924,6 +3924,81 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
+  it('requeues failed card 5 cards ahead rather than at the end of the sprint session', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    // Create 8 single-direction due cards so siblings do not interfere
+    const cards: StudyCard[] = Array.from({ length: 8 }, (_, i) => {
+      const idx = String(i + 1).padStart(2, '0')
+      return {
+        id: `card-${idx}`,
+        noteId: `note-${idx}`,
+        prompt: `palabra-${idx}`,
+        answer: `word-${idx}`,
+        direction: 'es-en',
+        context: '',
+        scene: 'conversation',
+        schedule: {
+          state: 'new',
+          dueAt: now,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+        createdAt: now,
+      }
+    })
+
+    const services = createTestServices({
+      cards,
+      clockTime: now,
+    })
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('heading', { name: 'palabra-01' }),
+    ).toBeInTheDocument()
+
+    // 1. Fail card 1 with Again (1) -> should be requeued 5 cards ahead (after cards 02, 03, 04, 05, 06)
+    await user.keyboard('{Enter}')
+    await user.keyboard('1')
+
+    // 2. Intervening cards 02 through 06
+    for (let i = 2; i <= 6; i++) {
+      const idx = String(i).padStart(2, '0')
+      expect(
+        screen.getByRole('heading', { name: `palabra-${idx}` }),
+      ).toBeInTheDocument()
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+    }
+
+    // 3. Spaced re-test: palabra-01 reappears right after the 5 intervening cards!
+    expect(
+      screen.getByRole('heading', { name: 'palabra-01' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // 4. Remaining cards 07 and 08
+    expect(
+      screen.getByRole('heading', { name: 'palabra-07' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    expect(
+      screen.getByRole('heading', { name: 'palabra-08' }),
+    ).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
+    // 5. Session completes
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
+  })
+
   it('resumes an active study session when clicking Practice on the home screen', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
