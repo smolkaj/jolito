@@ -6,6 +6,7 @@ import type {
   FeedbackSubmission,
 } from '../../application/ports'
 import { feedbackSubmissionSchema } from '../../domain/feedback'
+import { parsePostgrestErrorPayload } from './postgrest-error'
 
 export class SupabaseFeedbackService implements FeedbackService {
   private supabaseUrl: string
@@ -112,24 +113,7 @@ export class SupabaseFeedbackService implements FeedbackService {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
-        let errorPayload: {
-          code?: string
-          message?: string
-          details?: string | null
-          hint?: string | null
-        } | null = null
-        try {
-          if (errorText) {
-            errorPayload = JSON.parse(errorText) as {
-              code?: string
-              message?: string
-              details?: string | null
-              hint?: string | null
-            }
-          }
-        } catch {
-          // not JSON
-        }
+        const errorPayload = parsePostgrestErrorPayload(errorText)
 
         console.error('[FeedbackService] Submission failed:', {
           status: res.status,

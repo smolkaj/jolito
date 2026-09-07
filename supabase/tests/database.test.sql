@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(20);
 
 -- 1. Verify tables exist
 select has_table('public', 'decks', 'public.decks table exists');

@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
-import type { AuthService, AuthUser } from '../../application/ports'
-import type { StudyCard } from '../../domain/card'
-import type { SupabaseAuthService } from './auth-service'
-import { SupabaseFeedbackService } from './feedback-service'
-import { SupabaseSyncService } from './sync-service'
+import { beforeAll, describe, expect, it } from 'vitest'
+import type { AuthService, AuthUser } from '../../src/application/ports'
+import type { StudyCard } from '../../src/domain/card'
+import type { SupabaseAuthService } from '../../src/infrastructure/supabase/auth-service'
+import { SupabaseFeedbackService } from '../../src/infrastructure/supabase/feedback-service'
+import { SupabaseSyncService } from '../../src/infrastructure/supabase/sync-service'
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://127.0.0.1:54321'
 const SUPABASE_ANON_KEY =
@@ -12,21 +12,35 @@ const SUPABASE_ANON_KEY =
 const SUPABASE_SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
-async function isLocalSupabaseRunning(): Promise<boolean> {
+async function ensureLocalSupabaseRunning(): Promise<void> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/`, {
       headers: { apikey: SUPABASE_ANON_KEY },
-      signal: AbortSignal.timeout(1500),
+      signal: AbortSignal.timeout(2000),
     })
-    return res.status === 200 || res.status === 401
-  } catch {
-    return false
+    if (res.status === 200 || res.status === 401) {
+      return
+    }
+    throw new Error(
+      `Unexpected HTTP status ${res.status} from local Supabase at ${SUPABASE_URL}/rest/v1/`,
+    )
+  } catch (err) {
+    throw new Error(
+      `Local Supabase is offline or unreachable at ${SUPABASE_URL}.\n` +
+        `Live integration tests require a running local Supabase stack.\n` +
+        `Start local Supabase with:\n` +
+        `  npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor\n` +
+        `Caused by: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
+    )
   }
 }
 
-const supabaseRunning = await isLocalSupabaseRunning()
+describe('Supabase Live Stack Integration', () => {
+  beforeAll(async () => {
+    await ensureLocalSupabaseRunning()
+  })
 
-describe.runIf(supabaseRunning)('Supabase Live Stack Integration', () => {
   async function createRealTestUser(prefix: string): Promise<{
     user: AuthUser
     accessToken: string

@@ -61,7 +61,7 @@ You can run the full local Supabase Postgres and PostgREST stack via Docker for 
 # 1. Start local Supabase containers (applies all migrations automatically)
 npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
 
-# 2. Run pgTAP database tests (verifies tables and PostgreSQL RLS policies)
+# 2. Run pgTAP database tests (verifies tables and PostgreSQL RLS policies; 20 assertions)
 npm run test:db
 
 # 3. Lint local database schema
@@ -79,7 +79,7 @@ npx supabase stop
 To prevent database drift and ensure migrations are never forgotten:
 
 1. **Pull Requests:** Any PR modifying `supabase/migrations/**` triggers `.github/workflows/supabase-migration.yml` which spins up a fresh local Supabase instance, applies migrations from scratch, runs `npm run lint:db`, `npm run test:db`, and performs a `supabase db push --dry-run` if credentials are provided.
-2. **Merge to `main`:** When a commit touching `supabase/migrations/**` merges into `main`, GitHub Actions runs `npx supabase db push --linked --yes` using `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, and `SUPABASE_DB_PASSWORD` secrets. If the token is missing, the workflow fails loudly ("Never fail silently").
+2. **Merge to `main`:** When a commit touching `supabase/migrations/**` merges into `main`, GitHub Actions runs `npx supabase db push --linked --yes` using `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, and `SUPABASE_DB_PASSWORD` secrets. If credentials are not yet configured in GitHub repository secrets, it emits a warning and cleanly skips deployment until secrets are added.
 3. **Local Supabase in CI:** Every pull request runs the `supabase-integration` job in `.github/workflows/quality.yml`, executing pgTAP tests, schema linting, integration tests, and Playwright E2E tests against the local Supabase container.
 
 To link and push database migrations manually:
