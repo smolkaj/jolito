@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import { resolve, join, sep } from 'node:path'
 import { createServer } from 'node:http'
 import { readFileSync, existsSync } from 'node:fs'
 
@@ -36,11 +36,34 @@ async function main() {
 
   // Simple static HTTP server serving dist/
   const server = createServer((req, res) => {
-    let reqPath = (req.url || '/').split('?')[0] || '/'
+    let reqPath: string
+    try {
+      reqPath = decodeURIComponent((req.url || '/').split('?')[0] || '/')
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain' })
+      res.end('Bad Request')
+      return
+    }
+
+    if (reqPath.includes('\0')) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' })
+      res.end('Bad Request')
+      return
+    }
+
     if (reqPath === '/' || !reqPath.includes('.')) {
       reqPath = '/index.html'
     }
-    const filePath = join(distDir, reqPath)
+
+    const normalizedRelative = reqPath.startsWith('/') ? reqPath : `/${reqPath}`
+    const filePath = resolve(distDir, `.${normalizedRelative}`)
+
+    if (!filePath.startsWith(distDir + sep)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' })
+      res.end('Forbidden')
+      return
+    }
+
     if (existsSync(filePath)) {
       const ext = filePath.split('.').pop()
       const contentTypes: Record<string, string> = {
