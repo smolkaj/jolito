@@ -67,6 +67,7 @@ import { checkOrRequestStoragePersistence } from './infrastructure/browser/stora
 import {
   type View,
   hashForView,
+  isWhyJolitoHash,
   titleForView,
   viewFromHash,
 } from './navigation'
@@ -975,6 +976,22 @@ export function App({
     }
   }, [view])
 
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      view !== 'welcome' ||
+      !isWhyJolitoHash(window.location.hash)
+    ) {
+      return undefined
+    }
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById('why-jolito')
+        ?.scrollIntoView({ behavior: 'smooth' })
+    }, 50)
+    return () => window.clearTimeout(timer)
+  }, [view])
+
   const initialSession = useMemo(
     () => createStudySession(initialResolved.queue),
     [initialResolved.queue],
@@ -1541,10 +1558,18 @@ export function App({
     const onPopState = () => {
       cancelPendingAudio()
       setIsDemoDeckDismissed(false)
-      const nextView = viewFromHash(window.location.hash)
+      const currentHash = window.location.hash
+      const nextView = viewFromHash(currentHash)
       setView(nextView)
       if (nextView === 'welcome') {
         resetPromptState()
+        if (isWhyJolitoHash(currentHash)) {
+          document
+            .getElementById('why-jolito')
+            ?.scrollIntoView({ behavior: 'smooth' })
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       } else if (nextView === 'review') {
         if (queueRef.current.length === 0) {
           const now = services.clock.now()
@@ -2182,10 +2207,18 @@ export function App({
             </div>
             <div className="welcome-hero-footer">
               <div className="welcome-hero-footer-spacer" aria-hidden="true" />
-              <button
-                type="button"
+              <a
+                href="#why-jolito"
                 className="hero-scroll-cue"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (window.location.hash !== '#why-jolito') {
+                    window.history.pushState(
+                      { view: 'welcome' },
+                      '',
+                      '#why-jolito',
+                    )
+                  }
                   document
                     .getElementById('why-jolito')
                     ?.scrollIntoView({ behavior: 'smooth' })
@@ -2196,7 +2229,7 @@ export function App({
                 <span className="scroll-cue-arrow" aria-hidden="true">
                   ↓
                 </span>
-              </button>
+              </a>
               <AppFooter onOpenFeedback={openFeedbackModal} />
             </div>
           </section>
@@ -2262,6 +2295,9 @@ export function App({
                   type="button"
                   className="primary-button why-start-button"
                   onClick={() => {
+                    if (isWhyJolitoHash(window.location.hash)) {
+                      window.history.pushState({ view: 'welcome' }, '', '#/')
+                    }
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
                 >

@@ -1008,11 +1008,13 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   page,
 }) => {
   await page.goto('/')
-  const scrollCue = page.getByRole('button', {
+  const scrollCue = page.getByRole('link', {
     name: /^scroll down to explore why jolito$/i,
   })
   await expect(scrollCue).toBeVisible()
+  await expect(scrollCue).toHaveAttribute('href', '#why-jolito')
   await scrollCue.click()
+  await expect(page).toHaveURL(/#why-jolito$/)
 
   const familyImg = page.getByAltText(
     /the jolito family: german dad, mexican mom, and twin gexican toddlers/i,
@@ -1042,11 +1044,12 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
   )
   expect(scrollSnapType).toMatch(/y mandatory/)
 
-  // Clicking "Start learning" returns cleanly to the top slide
+  // Clicking "Start learning" returns cleanly to the top slide and cleans hash to #/
   await startBtn.click()
   await expect
     .poll(async () => page.evaluate(() => window.scrollY))
     .toBeLessThanOrEqual(5)
+  await expect(page).toHaveURL(/#\/?$/)
 
   // Hero footer feedback button is visible
   await expect(page.getByRole('button', { name: /^feedback$/i })).toBeVisible()
@@ -1064,6 +1067,28 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
   expect(results.violations).toEqual([])
+})
+
+test('navigates directly to "#why-jolito" and "#/why-jolito" deep links on initial load', async ({
+  page,
+}) => {
+  await page.goto('/#why-jolito')
+  await expect(page.locator('#why-jolito')).toBeInViewport()
+  await expect(
+    page.getByRole('heading', { name: /^why another flashcard app\?$/i }),
+  ).toBeVisible()
+
+  // Clicking "Start learning" returns to the hero fold and resets URL to #/
+  const startBtn = page.getByRole('button', { name: /^start learning/i })
+  await startBtn.click()
+  await expect
+    .poll(async () => page.evaluate(() => window.scrollY))
+    .toBeLessThanOrEqual(5)
+  await expect(page).toHaveURL(/#\/?$/)
+
+  // Direct load with #/why-jolito syntax also scrolls to why-jolito
+  await page.goto('/#/why-jolito')
+  await expect(page.locator('#why-jolito')).toBeInViewport()
 })
 
 test('hides card preview on tablet and mobile viewports (<= 860px) so it does not crowd form inputs', async ({

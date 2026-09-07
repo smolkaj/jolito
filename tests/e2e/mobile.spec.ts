@@ -76,7 +76,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.screenshot({ path: 'test-results/mobile-welcome.png' })
 
     // Verify scroll cue is hidden on mobile to avoid redundant button farm
-    const scrollCue = page.getByRole('button', {
+    const scrollCue = page.getByRole('link', {
       name: /^scroll down to explore why jolito$/i,
     })
     await expect(scrollCue).toBeHidden()

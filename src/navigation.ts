@@ -14,6 +14,15 @@ export function viewFromHash(hash: string): View {
   return 'welcome'
 }
 
+export function isWhyJolitoHash(hash: string): boolean {
+  const clean = hash
+    .replace(/^#\/?/, '')
+    .replace(/\/+$/, '')
+    .trim()
+    .toLowerCase()
+  return clean === 'why-jolito' || clean === 'why'
+}
+
 export function hashForView(view: View): string {
   switch (view) {
     case 'create':
