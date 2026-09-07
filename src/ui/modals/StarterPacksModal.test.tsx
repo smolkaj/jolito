@@ -176,4 +176,61 @@ describe('StarterPacksModal', () => {
 
     document.body.removeChild(triggerBtn)
   })
+  it('allows inspecting a pack, searching cards, and seeing in-deck duplicate badges', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    // User already has 2 of the cards
+    const partialCards = allStreetCards.slice(0, 2)
+    const onAddPack = vi.fn()
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={partialCards}
+        onAddPack={onAddPack}
+      />,
+    )
+
+    // 1. Click "Inspect pack" for Mexican Street Phrases
+    const inspectBtn = screen.getByRole('button', {
+      name: /Inspect Mexican Street Phrases cards/i,
+    })
+    fireEvent.click(inspectBtn)
+
+    // 2. We are now in the inspect view
+    expect(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/1 of 36 already in your deck/i),
+    ).toBeInTheDocument()
+
+    // 3. Check presence of "¿Mande?" in inspect list
+    expect(screen.getByText('¿Mande?')).toBeInTheDocument()
+    expect(screen.getByText('✓ In deck')).toBeInTheDocument()
+    expect(screen.getAllByText('+ New').length).toBeGreaterThan(0)
+
+    // 4. Test search input in inspect view
+    const searchInput = screen.getByLabelText(/Search cards in this pack/i)
+    fireEvent.change(searchInput, { target: { value: 'Ahorita' } })
+    expect(screen.getByText('Ahorita')).toBeInTheDocument()
+    expect(screen.queryByText('¿Mande?')).toBeNull()
+
+    // 5. Add pack from within inspect view
+    const addFromInspectBtn = screen.getByRole('button', {
+      name: /Add remaining \(\+70\)/i,
+    })
+    fireEvent.click(addFromInspectBtn)
+    expect(onAddPack).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+    )
+
+    // 6. Pressing Escape while inspecting returns to pack list
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.getByText('Curated starter packs')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Back to all starter packs/i }),
+    ).toBeNull()
+  })
 })

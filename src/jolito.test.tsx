@@ -5349,7 +5349,7 @@ describe('Jolito', () => {
 
       // 5. Click "Add Mexican Street Phrases"
       const addStreetBtn = screen.getByRole('button', {
-        name: /mexican street phrases/i,
+        name: /^add mexican street phrases/i,
       })
       await user.click(addStreetBtn)
 

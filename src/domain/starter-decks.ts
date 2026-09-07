@@ -6,6 +6,7 @@ export interface StarterPackSeed {
   subtitle: string
   description: string
   badge: string
+  themeColor: 'rosa' | 'maya' | 'turquesa' | 'cempasuchil' | 'tezontle'
   notes: Array<{
     spanish: string
     english: string
@@ -20,8 +21,15 @@ export interface StarterPack {
   subtitle: string
   description: string
   badge: string
+  themeColor: 'rosa' | 'maya' | 'turquesa' | 'cempasuchil' | 'tezontle'
   noteCount: number
   cardCount: number
+  notes: Array<{
+    spanish: string
+    english: string
+    context: string
+    bidirectional?: boolean
+  }>
   createCards: (now?: number) => StudyCard[]
 }
 
@@ -31,8 +39,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
     title: 'Mexican Street Phrases',
     subtitle: 'Everyday Spoken CDMX Spanish',
     description:
-      'Everyday street slang and polite spoken etiquette (¿mande?, ahorita, no manches, qué padre).',
+      'Authentic street slang and polite spoken etiquette from Mexico City.',
     badge: '🇲🇽 CDMX',
+    themeColor: 'rosa',
     notes: [
       {
         spanish: '¿Mande?',
@@ -291,8 +300,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
     title: 'Top Verbs: 1–50',
     subtitle: 'Core Foundations',
     description:
-      'The core anchors of daily Spanish (ser, estar, tener, hacer, ir, comer, salir).',
+      'Foundational high-frequency verbs that power everyday conversation.',
     badge: '1–50',
+    themeColor: 'maya',
     notes: [
       {
         spanish: 'ser',
@@ -621,8 +631,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
     title: 'Top Verbs: 51–100',
     subtitle: 'Routines & Interactions',
     description:
-      'Everyday actions, requests, and social dynamics (llegar, pedir, traer, escuchar, probar).',
+      'Essential verbs for daily routines, requests, and social interactions.',
     badge: '51–100',
+    themeColor: 'turquesa',
     notes: [
       {
         spanish: 'caer',
@@ -942,8 +953,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
     title: 'Top Verbs: 101–150',
     subtitle: 'Daily Life & Nuance',
     description:
-      'Food, home life, travel, and feelings (cocinar, platicar, sentar, preocupar, extrañar).',
+      'Practical verbs for home life, food, travel, and expressing emotion.',
     badge: '101–150',
+    themeColor: 'cempasuchil',
     notes: [
       {
         spanish: 'jugar',
@@ -1254,8 +1266,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
     title: 'Top Verbs: 151–200',
     subtitle: 'Spoken Fluency',
     description:
-      'Expressive spoken verbs and conversational nuance (aguantar, antojar, aprovechar, equivocar).',
+      'Nuanced verbs for lively spoken conversation and natural fluency.',
     badge: '151–200',
+    themeColor: 'tezontle',
     notes: [
       {
         spanish: 'recomendar',
@@ -1587,6 +1600,8 @@ export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {
     subtitle: seed.subtitle,
     description: seed.description,
     badge: seed.badge,
+    themeColor: seed.themeColor,
+    notes: seed.notes,
     noteCount,
     cardCount,
     createCards: (now = 0) => {

@@ -26,13 +26,39 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
     page.getByRole('dialog', { name: /curated starter packs/i }),
   ).toBeVisible()
 
-  // Capture visual screenshot of modal
+  // Capture visual screenshot of modal (main packs view)
   await page.screenshot({
     path: '/tmp/jolito-starter-packs-modal.png',
     animations: 'disabled',
   })
 
-  // Verify zero WCAG 2.1 A/AA violations in the modal
+  // Inspect the first pack
+  await page
+    .getByRole('button', { name: /inspect mexican street phrases/i })
+    .click()
+  await expect(
+    page.getByRole('button', { name: /back to all starter packs/i }),
+  ).toBeVisible()
+
+  // Capture visual screenshot of pack inspection view
+  await page.screenshot({
+    path: '/tmp/jolito-starter-packs-inspect.png',
+    animations: 'disabled',
+  })
+
+  // Verify zero WCAG violations in the inspection view
+  const inspectAxe = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(inspectAxe.violations).toEqual([])
+
+  // Return to all packs view
+  await page.getByRole('button', { name: /back to all starter packs/i }).click()
+  await expect(
+    page.getByRole('button', { name: /back to all starter packs/i }),
+  ).not.toBeVisible()
+
+  // Verify zero WCAG 2.1 A/AA violations in the modal main view
   const axeResults = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -40,7 +66,7 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
 
   // Add Mexican street phrases pack
   const addBtn = page.getByRole('button', {
-    name: /mexican street phrases/i,
+    name: /^add mexican street phrases/i,
   })
   await addBtn.click()
 
