@@ -38,9 +38,6 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               </span>
               <h2 id="privacy-modal-title">Privacy Policy</h2>
             </div>
-            <p className="modal-subtitle">
-              Plain English. No ads, no trackers, no BS.
-            </p>
           </div>
           <button
             type="button"
@@ -81,34 +78,45 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
           </section>
 
           <section className="privacy-section">
-            <h3>3. What We Never Do</h3>
+            <h3>3. Data Export & Account Deletion</h3>
             <p>
-              Zero ads. Zero third-party trackers or analytics SDKs. Zero
-              microphone recording (all audio is playback only).
+              You can export your complete deck to a JSON file anytime under{' '}
+              <strong>Manage deck → Backup & export</strong>.
+            </p>
+            <p>
+              To permanently delete your cloud data, tap{' '}
+              <strong>Cloud sync → Delete cloud account & data</strong> in the
+              app. We immediately and permanently delete your user record, cloud
+              decks, and feedback from our servers.
             </p>
           </section>
 
           <section className="privacy-section">
-            <h3>4. Permanent Account & Data Deletion</h3>
+            <h3>4. Open Source & Contact</h3>
             <p>
-              Tap <strong>Cloud sync → Delete cloud account & data</strong> in
-              the app anytime. We immediately and permanently delete your user
-              record, cloud decks, and feedback from our servers.
-            </p>
-          </section>
-
-          <section className="privacy-section">
-            <h3>5. Open Source & Contact</h3>
-            <p>
-              Jolito is open-source (Apache-2.0). Questions? Contact Steffen
-              Smolka at{' '}
+              Jolito is open-source (Apache-2.0). The code is on GitHub at{' '}
               <a
-                href="mailto:steffen.smolka@gmail.com"
+                href="https://github.com/smolkaj/jolito"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="privacy-contact-link"
               >
-                steffen.smolka@gmail.com
+                github.com/smolkaj/jolito
               </a>
               .
+            </p>
+            <p>
+              Created by Steffen Smolka (
+              <a
+                href="https://smolka.st"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="privacy-contact-link"
+              >
+                smolka.st
+              </a>
+              ). You can open an issue on GitHub or submit feedback directly in
+              the app.
             </p>
           </section>
         </div>

@@ -22,12 +22,12 @@ describe('PrivacyModal', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
-        name: /what we never do/i,
+        name: /data export & account deletion/i,
       }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
-        name: /permanent account & data deletion/i,
+        name: /open source & contact/i,
       }),
     ).toBeInTheDocument()
   })
