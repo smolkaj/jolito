@@ -223,7 +223,15 @@ export function SyncModal({
         }
       }
       if (auth.deleteAccount) {
-        await auth.deleteAccount()
+        const authRes = await auth.deleteAccount()
+        if (!authRes.success) {
+          setStatusMsg({
+            type: 'error',
+            message: authRes.error || 'Failed to delete cloud account.',
+          })
+          setLoadingAction(null)
+          return
+        }
       } else {
         await auth.signOut()
       }

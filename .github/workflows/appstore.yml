@@ -7,6 +7,16 @@ on:
         description: 'Release note or version reference'
         required: false
         default: 'Official App Store release'
+      upload_metadata:
+        description: 'Upload App Store Connect metadata'
+        type: boolean
+        required: false
+        default: false
+      upload_screenshots:
+        description: 'Upload App Store Connect screenshots'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -43,4 +53,4 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
           APPLE_CERTIFICATE_PASS: ${{ secrets.APPLE_CERTIFICATE_PASS }}
         run: |
-          fastlane ios release
+          fastlane ios release upload_metadata:${{ inputs.upload_metadata }} upload_screenshots:${{ inputs.upload_screenshots }}

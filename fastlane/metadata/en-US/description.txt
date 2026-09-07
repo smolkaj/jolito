@@ -1,0 +1,12 @@
+Learn the Mexican Spanish you actually want to use.
+
+Jolito combines active recall spaced repetition with native Mexico City (CDMX) audio and tactile, responsive design. Built for learners who want authentic slang, street idioms, and daily phrasing to stick effortlessly.
+
+KEY FEATURES:
+
+• Mexican Spanish Focus: Practice authentic Mexican phrasing, colloquial idioms, and everyday Condesa and Roma vocabulary.
+• Active Spaced Repetition: Intelligent review queues resurface cards right before you forget them, transforming vocabulary memorization into a fast, tactile habit.
+• Studio-Quality Pronunciations: Hear authentic CDMX pronunciation with seamless dual-voice options and sensory haptic feedback.
+• Local-First & Offline Ready: All flashcards, schedules, and audio caches are stored directly on your device. Study on flights, the Metro, or off the grid with zero lag.
+• Optional Cloud Sync: Sign in passwordlessly to sync your personal deck seamlessly across all your Apple devices.
+• Privacy-First & Zero Ads: No advertising, no third-party tracking pixels, and no data harvesting. Just focused learning.

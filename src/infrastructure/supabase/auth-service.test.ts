@@ -808,15 +808,15 @@ describe('SupabaseAuthService', () => {
   })
 
   describe('deleteAccount', () => {
-    it('clears stored session, notifies listeners, and calls server logout', async () => {
+    it('calls delete_user_account RPC, server logout, clears session, and notifies listeners', async () => {
       mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'token-logout-1',
-        refreshToken: 'refresh-logout-1',
+        accessToken: 'token-delete-1',
+        refreshToken: 'refresh-delete-1',
         expiresAt: Date.now() + 600000,
         user: { id: 'u1', email: 'delete@example.com' },
       })
 
-      const fetchSpy = vi.fn().mockResolvedValue({ ok: true })
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 })
       vi.stubGlobal('fetch', fetchSpy)
 
       const service = new SupabaseAuthService(
@@ -832,25 +832,100 @@ describe('SupabaseAuthService', () => {
 
       const res = await service.deleteAccount()
       expect(res.success).toBe(true)
+
+      // First call should be RPC delete_user_account
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/rest/v1/rpc/delete_user_account',
+        expect.anything(),
+      )
+      const firstCallArgs = fetchSpy.mock.calls[0] as unknown as [
+        string,
+        { method: string; headers: Record<string, string> },
+      ]
+      expect(firstCallArgs[1].method).toBe('POST')
+      expect(firstCallArgs[1].headers).toMatchObject({
+        apikey: 'anon-key',
+        Authorization: 'Bearer token-delete-1',
+        'Content-Type': 'application/json',
+      })
+
+      // Second call should be auth logout
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://example.supabase.co/auth/v1/logout',
-        expect.objectContaining({
-          method: 'POST',
-        }),
+        expect.anything(),
       )
-      const call = fetchSpy.mock.calls[0] as [
+      const secondCallArgs = fetchSpy.mock.calls[1] as unknown as [
         string,
-        { headers: Record<string, string> },
+        { method: string; headers: Record<string, string> },
       ]
-      expect(call[1].headers).toMatchObject({
-        Authorization: 'Bearer token-logout-1',
+      expect(secondCallArgs[1].method).toBe('POST')
+      expect(secondCallArgs[1].headers).toMatchObject({
+        apikey: 'anon-key',
+        Authorization: 'Bearer token-delete-1',
       })
+
       expect(await service.getUser()).toBeNull()
       expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
       expect(notifiedUser).toBeNull()
     })
 
-    it('clears session and returns success even if network logout fails', async () => {
+    it('returns error if delete_user_account RPC returns non-404 failure', async () => {
+      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+        accessToken: 'token-fail',
+        refreshToken: 'refresh-fail',
+        expiresAt: Date.now() + 600000,
+        user: { id: 'u-err', email: 'fail@example.com' },
+      })
+
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Database deletion error' }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const res = await service.deleteAccount()
+      expect(res.success).toBe(false)
+      expect(res.error).toBe('Database deletion error')
+      // Local session is cleared even on failure
+      expect(await service.getUser()).toBeNull()
+    })
+
+    it('tolerates 404 RPC on unmigrated backends and falls back gracefully to logout', async () => {
+      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+        accessToken: 'token-404',
+        refreshToken: 'refresh-404',
+        expiresAt: Date.now() + 600000,
+        user: { id: 'u-404', email: 'legacy@example.com' },
+      })
+
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce({ ok: true, status: 200 })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const res = await service.deleteAccount()
+      expect(res.success).toBe(true)
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/auth/v1/logout',
+        expect.objectContaining({ method: 'POST' }),
+      )
+    })
+
+    it('clears session and returns error if network throws during deletion', async () => {
       mockStorage['jolito-auth-session-v1'] = JSON.stringify({
         accessToken: 'token-err',
         refreshToken: 'refresh-err',
@@ -870,7 +945,8 @@ describe('SupabaseAuthService', () => {
       )
 
       const res = await service.deleteAccount()
-      expect(res.success).toBe(true)
+      expect(res.success).toBe(false)
+      expect(res.error).toBe('Network error')
       expect(await service.getUser()).toBeNull()
       expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
     })

@@ -69,6 +69,45 @@ describe('SyncModal Account Deletion and Legal', () => {
     })
   })
 
+  it('displays error banner if deleteAccount returns failure', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+    auth.user = { id: 'user-fail-del', email: 'fail-del@example.com' }
+
+    vi.spyOn(auth, 'deleteAccount').mockResolvedValue({
+      success: false,
+      error: 'Cloud account deletion failed on server.',
+    })
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /delete cloud account & data/i,
+      }),
+    )
+
+    const confirmBtn = screen.getByRole('button', {
+      name: /yes, delete cloud data/i,
+    })
+    fireEvent.click(confirmBtn)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/cloud account deletion failed on server/i),
+      ).toBeInTheDocument()
+    })
+  })
+
   it('invokes onOpenPrivacy callback when clicking Privacy Policy link', () => {
     const auth = new MockAuthService()
     const sync = new MockSyncService()

@@ -683,23 +683,61 @@ export class SupabaseAuthService implements AuthService {
     success: boolean
     error?: string | undefined
   }> {
+    const session = this.loadStoredSession()
+    const token = session?.accessToken
+
+    if (!token || !this.supabaseUrl || !this.supabaseAnonKey) {
+      this.clearSession()
+      return { success: true }
+    }
+
     try {
-      const session = this.loadStoredSession()
-      const token = session?.accessToken
-      if (token && this.supabaseUrl && this.supabaseAnonKey) {
-        await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
+      // 1. Permanently delete the user account in Supabase auth.users via RPC.
+      // Cascades to public.decks and public.feedback via foreign key ON DELETE CASCADE.
+      const rpcRes = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/delete_user_account`,
+        {
           method: 'POST',
           headers: {
             apikey: this.supabaseAnonKey,
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
-        }).catch(() => {})
+          body: JSON.stringify({}),
+        },
+      )
+
+      if (!rpcRes.ok && rpcRes.status !== 404) {
+        const errorData = (await rpcRes.json().catch(() => ({}))) as {
+          message?: string
+          details?: string
+          msg?: string
+        }
+        return {
+          success: false,
+          error:
+            errorData.message ||
+            errorData.details ||
+            errorData.msg ||
+            `Failed to delete account (HTTP ${rpcRes.status}).`,
+        }
       }
+
+      // 2. Invalidate session tokens on the auth server
+      await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
+        method: 'POST',
+        headers: {
+          apikey: this.supabaseAnonKey,
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => {})
+
       return { success: true }
     } catch (err) {
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Error deleting account.',
+        error:
+          err instanceof Error ? err.message : 'Error deleting cloud account.',
       }
     } finally {
       this.clearSession()

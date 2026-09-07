@@ -7,6 +7,7 @@ import { readFileSync, existsSync } from 'node:fs'
 const SIZES = [
   {
     name: 'iphone-6.7',
+    deviceKeyword: 'IPHONE_67',
     width: 430,
     height: 932,
     deviceScaleFactor: 3, // renders 1290 x 2796 px (Apple App Store standard)
@@ -14,6 +15,7 @@ const SIZES = [
   },
   {
     name: 'ipad-12.9',
+    deviceKeyword: 'IPAD_PRO_3GEN_129',
     width: 1024,
     height: 1366,
     deviceScaleFactor: 2, // renders 2048 x 2732 px (Apple App Store standard)
@@ -73,6 +75,9 @@ async function main() {
   const browser = await chromium.launch()
 
   try {
+    const deliverDir = join(rootDir, 'fastlane/screenshots/en-US')
+    mkdirSync(deliverDir, { recursive: true })
+
     for (const size of SIZES) {
       console.log(`Capturing screenshots for ${size.name}...`)
       const targetDir = join(rootDir, size.outputDir)
@@ -91,31 +96,60 @@ async function main() {
       await page.goto(`${baseUrl}/#/`)
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
-      await page.screenshot({ path: join(targetDir, '01-welcome.png') })
+      const welcomeFile = '01-welcome.png'
+      const welcomeDeliver = `01-${size.deviceKeyword}-welcome.png`
+      await page.screenshot({ path: join(targetDir, welcomeFile) })
+      await page.screenshot({ path: join(deliverDir, welcomeDeliver) })
 
-      // 2. Create Screen
+      // 2. Create Screen with realistic card preview
       await page.goto(`${baseUrl}/#/create`)
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
-      await page.screenshot({ path: join(targetDir, '02-create.png') })
+      const spanishInput = page.locator('#spanish')
+      if (await spanishInput.isVisible()) {
+        await spanishInput.fill('¡Qué padre!')
+        await page.locator('#english').fill('How cool! / That’s awesome!')
+        await page
+          .locator('#context')
+          .fill('¡Qué padre que viniste a la fiesta!')
+        await page.waitForTimeout(300)
+      }
+      const createFile = '02-create.png'
+      const createDeliver = `02-${size.deviceKeyword}-create.png`
+      await page.screenshot({ path: join(targetDir, createFile) })
+      await page.screenshot({ path: join(deliverDir, createDeliver) })
 
       // 3. Study / Practice Screen
       await page.goto(`${baseUrl}/#/study`)
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
-      await page.screenshot({ path: join(targetDir, '03-study.png') })
+      const answerInput = page.locator('#answer')
+      if (await answerInput.isVisible()) {
+        await answerInput.fill('aguacate')
+        await page.waitForTimeout(200)
+      }
+      const studyFile = '03-study.png'
+      const studyDeliver = `03-${size.deviceKeyword}-study.png`
+      await page.screenshot({ path: join(targetDir, studyFile) })
+      await page.screenshot({ path: join(deliverDir, studyDeliver) })
 
       // 4. Deck Management Screen
       await page.goto(`${baseUrl}/#/deck`)
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
-      await page.screenshot({ path: join(targetDir, '04-deck.png') })
+      const deckFile = '04-deck.png'
+      const deckDeliver = `04-${size.deviceKeyword}-deck.png`
+      await page.screenshot({ path: join(targetDir, deckFile) })
+      await page.screenshot({ path: join(deliverDir, deckDeliver) })
 
       // 5. Complete Screen
       await page.goto(`${baseUrl}/#/complete`)
       await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
-      await page.screenshot({ path: join(targetDir, '05-complete.png') })
+      const completeFile = '05-complete.png'
+      const completeDeliver = `05-${size.deviceKeyword}-complete.png`
+      await page.screenshot({ path: join(targetDir, completeFile) })
+      await page.screenshot({ path: join(deliverDir, completeDeliver) })
 
       await context.close()
     }
