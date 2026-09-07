@@ -378,7 +378,10 @@ export function orderCardsForReview(
   const due = cards.filter((card) => isDue(card, now))
   if (due.length === 0) return []
 
-  // Active notes have already been reviewed at least once
+  // Active notes are notes where at least one card has been reviewed.
+  // We scan all cards (rather than just due cards) so that reverse-direction cards
+  // whose forward sibling was studied previously are recognized as active reviews,
+  // even if the forward card is not due today.
   const activeNoteIds = new Set(
     cards
       .filter((c) => c.schedule.reviews > 0 || c.schedule.state !== 'new')
@@ -424,16 +427,24 @@ export function orderCardsForReview(
       // For new cards: recognition (es-en) is primary, production (en-es) is secondary.
       // For active cards: sort by urgency (dueAt), with es-en as tiebreaker.
       const sorted = isNew
-        ? [...nCards].sort((a) => (a.direction === 'es-en' ? -1 : 1))
+        ? [...nCards].sort((a, b) => {
+            if (a.direction !== b.direction) {
+              return a.direction === 'es-en' ? -1 : 1
+            }
+            return a.id.localeCompare(b.id)
+          })
         : [...nCards].sort((a, b) => {
             if (a.schedule.dueAt !== b.schedule.dueAt) {
               return a.schedule.dueAt - b.schedule.dueAt
             }
-            return a.direction === 'es-en' ? -1 : 1
+            if (a.direction !== b.direction) {
+              return a.direction === 'es-en' ? -1 : 1
+            }
+            return a.id.localeCompare(b.id)
           })
 
       primary.push(sorted[0]!)
-      secondary.push(sorted[1]!)
+      secondary.push(...sorted.slice(1))
     })
 
     return { primary, secondary }
@@ -448,8 +459,8 @@ export function orderCardsForReview(
 
   const ordered = [
     ...primaryActive,
-    ...primaryNew,
     ...secondaryActive,
+    ...primaryNew,
     ...secondaryNew,
   ]
 

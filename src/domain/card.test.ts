@@ -900,16 +900,100 @@ describe('Anki spaced repetition scheduling', () => {
             lapses: 0,
           },
         },
+        {
+          ...createStudyCards(
+            {
+              spanish: 'cloze a',
+              english: 'cloze a',
+              context: '',
+              bidirectional: false,
+            },
+            'note-same-dir',
+            now - 10 * DAY,
+          )[0]!,
+          id: 'note-same-dir:c2',
+          direction: 'es-en',
+          schedule: {
+            state: 'review',
+            dueAt: now,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            reviews: 1,
+            lapses: 0,
+          },
+        },
+        {
+          ...createStudyCards(
+            {
+              spanish: 'cloze b',
+              english: 'cloze b',
+              context: '',
+              bidirectional: false,
+            },
+            'note-same-dir',
+            now - 10 * DAY,
+          )[0]!,
+          id: 'note-same-dir:c1',
+          direction: 'es-en',
+          schedule: {
+            state: 'review',
+            dueAt: now,
+            intervalDays: 1,
+            easeFactor: 2.5,
+            reviews: 1,
+            lapses: 0,
+          },
+        },
       ]
 
       const ordered = orderCardsForReview(activeCards, now)
       // note-diff has more overdue en-es (-10000) so note-diff:en-es is primary, note-diff:es-en is secondary
+      // note-same-dir has two es-en cards tied at now, ordered by id (c1 before c2)
       // note-tied is due now (tied) so es-en is primary tiebreaker, en-es is secondary
       expect(ordered.map((c) => c.id)).toEqual([
         'note-diff:en-es',
+        'note-same-dir:c1',
         'note-tied:es-en',
         'note-diff:es-en',
+        'note-same-dir:c2',
         'note-tied:en-es',
+      ])
+    })
+
+    it('preserves all cards for notes with 3+ cards (e.g. multi-cloze) without dropping cards 3+ from secondary cohort', () => {
+      // Create a note with 4 cloze cards (c1, c2, c3, c4) all due at now
+      const clozeCards: StudyCard[] = [1, 2, 3, 4].map((num) => ({
+        ...createStudyCards(
+          {
+            spanish: `oracion con cloze ${num}`,
+            english: `sentence with cloze ${num}`,
+            context: '',
+            bidirectional: false,
+          },
+          'note-cloze',
+          now,
+        )[0]!,
+        id: `note-cloze:c${num}`,
+        direction: 'es-en' as const,
+        schedule: {
+          state: 'new' as const,
+          dueAt: now,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+      }))
+
+      const ordered = orderCardsForReview(clozeCards, now)
+      expect(ordered).toHaveLength(4)
+      // First card in primary cohort
+      expect(ordered[0]!.id).toBe('note-cloze:c1')
+      // Remaining 3 cards preserved in secondary cohort (none dropped)
+      expect(ordered.slice(1).map((c) => c.id)).toEqual([
+        'note-cloze:c2',
+        'note-cloze:c3',
+        'note-cloze:c4',
       ])
     })
   })
