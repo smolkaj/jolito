@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 import celebrateUrl from '../assets/jolito-celebrate.png'
-import familyLogoUrl from '../assets/jolito-family.png'
+import familyLogoUrl from '../assets/jolito-family.webp'
 import logoUrl from '../assets/jolito-welcome.png'
 import sampleAguacateUrl from '../assets/sample-aguacate.png'
 import { createCards } from './application/create-cards'
