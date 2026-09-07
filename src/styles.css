@@ -2315,10 +2315,10 @@ kbd {
   color: var(--turquesa-dark);
 }
 
-/* Accent nuance (diacritics / inverted marks): uniform green with warm marigold tone & subtle 1.5px dashed underline */
+/* Accent nuance (diacritics / inverted marks): uniform green text with subtle 1.5px dashed underline */
 .diff-seg-accent {
   background: var(--turquesa-soft);
-  color: var(--cempasuchil-dark);
+  color: var(--turquesa-dark);
   border-bottom: 1.5px dashed var(--cempasuchil);
 }
 
