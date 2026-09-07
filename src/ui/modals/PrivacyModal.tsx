@@ -39,7 +39,7 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               <h2 id="privacy-modal-title">Privacy Policy</h2>
             </div>
             <p className="modal-subtitle">
-              Local-first by design. Zero tracking, zero ads.
+              Plain English. No ads, no trackers, no BS.
             </p>
           </div>
           <button
@@ -54,66 +54,61 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
 
         <div className="privacy-modal-body">
           <section className="privacy-section">
-            <h3>1. Local-first by default</h3>
+            <h3>1. The Demo vs. Your Account</h3>
             <p>
-              Your flashcards, review history, learning intervals, and audio
-              cache remain entirely on your device (stored safely in IndexedDB
-              and Web Storage). Jolito never sends your practice activity to any
-              server unless you explicitly enable optional Cloud Sync.
+              You can try the starter demo deck without an account. To create
+              cards, import decks, and save progress, you sign in with your
+              email. Once signed in, Jolito works offline on your device and
+              syncs changes to the cloud when connected.
             </p>
           </section>
 
           <section className="privacy-section">
-            <h3>2. Optional Cloud Sync</h3>
+            <h3>2. What We Collect</h3>
             <p>
-              If you choose to sync flashcards across devices, you provide an
-              email address to receive a secure passwordless sign-in link. Your
-              deck is synchronized to a private PostgreSQL database protected by
-              Row Level Security (RLS) policies. Only your authenticated user ID
-              can access or modify your cloud deck.
+              <strong>Email:</strong> Used only to send your passwordless
+              sign-in link. Never shared, sold, or used for marketing.
+            </p>
+            <p>
+              <strong>Your Decks & Progress:</strong> Synced to your private
+              cloud database so your cards and reviews are backed up across
+              devices.
+            </p>
+            <p>
+              <strong>Optional Feedback:</strong> If you send in-app feedback,
+              we receive your message and email to follow up.
             </p>
           </section>
 
           <section className="privacy-section">
-            <h3>3. Complete Data & Account Deletion</h3>
+            <h3>3. What We Never Do</h3>
             <p>
-              In accordance with Apple App Store Review Guideline 5.1.1(v) and
-              privacy regulations, you can permanently delete your cloud account
-              and all backed-up deck data at any time directly within the app
-              from the Cloud Sync menu.
+              Zero ads. Zero third-party trackers or analytics SDKs. Zero
+              microphone recording (all audio is playback only).
             </p>
           </section>
 
           <section className="privacy-section">
-            <h3>4. Speech & Pronunciation Audio</h3>
+            <h3>4. Permanent Account & Data Deletion</h3>
             <p>
-              Mexican Spanish audio pronunciations use on-device speech
-              synthesis or edge text-to-speech. Jolito does not record your
-              microphone, analyze your voice, or store any biometric data.
+              Tap <strong>Cloud sync → Delete cloud account & data</strong> in
+              the app anytime. We immediately and permanently delete your user
+              record, cloud decks, and feedback from our servers.
             </p>
           </section>
 
           <section className="privacy-section">
-            <h3>5. Zero Third-Party Tracking</h3>
+            <h3>5. Open Source & Contact</h3>
             <p>
-              Jolito contains no third-party tracking scripts, no commercial
-              analytics SDKs, no advertising identifiers (IDFA), and no data
-              brokers. We never sell, rent, or monetize personal data.
-            </p>
-          </section>
-
-          <section className="privacy-section">
-            <h3>6. Open Source & Contact</h3>
-            <p>
-              Jolito is open-source under the Apache-2.0 license. For questions
-              or privacy requests, contact Steffen Smolka at{' '}
+              Jolito is open-source (Apache-2.0). Questions? Contact Steffen
+              Smolka at{' '}
               <a
                 href="mailto:steffen.smolka@gmail.com"
                 className="privacy-contact-link"
               >
                 steffen.smolka@gmail.com
-              </a>{' '}
-              or submit feedback directly within the app.
+              </a>
+              .
             </p>
           </section>
         </div>

@@ -83,7 +83,7 @@ In App Store Connect under **App Privacy**:
 1. **Do you or your third-party partners collect data from this app?**
    - Select **Yes**.
 2. **Select Data Types:**
-   - **Contact Info:** Check **Email Address** (collected only when optionally creating a Cloud Sync account).
+   - **Contact Info:** Check **Email Address** (collected when signing in to create personal decks and sync progress).
    - **User Content:** Check **Other User Content** (flashcards, review schedules, and learning logs).
 3. **Configure Email Address:**
    - **Used for:** _App Functionality_
@@ -91,7 +91,7 @@ In App Store Connect under **App Privacy**:
    - **Used for tracking purposes?** _No_
 4. **Configure User Content:**
    - **Used for:** _App Functionality_
-   - **Linked to user's identity?** _Yes_ (if signed in) / _No_ (if guest)
+   - **Linked to user's identity?** _Yes_ (when signed in) / _No_ (starter demo deck)
    - **Used for tracking purposes?** _No_
 
 ---

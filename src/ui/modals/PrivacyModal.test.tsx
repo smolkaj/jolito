@@ -15,18 +15,20 @@ describe('PrivacyModal', () => {
       screen.getByRole('heading', { name: /privacy policy/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /local-first by default/i }),
+      screen.getByRole('heading', { name: /the demo vs\. your account/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /optional cloud sync/i }),
+      screen.getByRole('heading', { name: /what we collect/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
-        name: /complete data & account deletion/i,
+        name: /what we never do/i,
       }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /zero third-party tracking/i }),
+      screen.getByRole('heading', {
+        name: /permanent account & data deletion/i,
+      }),
     ).toBeInTheDocument()
   })
 
