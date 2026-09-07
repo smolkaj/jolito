@@ -2586,14 +2586,6 @@ kbd {
   font-size: clamp(44px, 5.5vw, 64px);
 }
 
-.complete-card > p:not(.eyebrow) {
-  max-width: 440px;
-  margin: 18px auto 30px;
-  color: var(--ink-soft);
-  font-size: 17px;
-  line-height: 1.55;
-}
-
 .complete-copy {
   max-width: 440px;
   margin: 18px auto 30px;
