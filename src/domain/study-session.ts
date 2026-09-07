@@ -53,11 +53,14 @@ export interface SessionGradeResult {
   isComplete: boolean
 }
 
+export const DEFAULT_REQUEUE_OFFSET = 5
+
 export function advanceSessionOnGrade(
   session: StudySession,
   currentCardId: string,
   reviewedSchedule: ReviewSchedule,
   buriedCardIds: string[],
+  requeueOffset = DEFAULT_REQUEUE_OFFSET,
 ): SessionGradeResult {
   const requeued = shouldRequeueInSession(reviewedSchedule)
   const buriedSet = new Set(buriedCardIds)
@@ -65,9 +68,15 @@ export function advanceSessionOnGrade(
     .slice(1)
     .filter((id) => !buriedSet.has(id))
 
-  const nextQueue = requeued
-    ? [...remainingQueue, currentCardId]
-    : remainingQueue
+  let nextQueue = remainingQueue
+  if (requeued) {
+    const insertIndex = Math.min(remainingQueue.length, requeueOffset)
+    nextQueue = [
+      ...remainingQueue.slice(0, insertIndex),
+      currentCardId,
+      ...remainingQueue.slice(insertIndex),
+    ]
+  }
 
   const buriedInSessionCount = session.queue
     .slice(1)
