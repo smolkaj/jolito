@@ -198,6 +198,34 @@ describe('synthesizeSpeech', () => {
     expect(result).toEqual(new Uint8Array([1, 2, 3]))
   })
 
+  it('handles Blob audio frames in WebSocket messages (Cloudflare Workers runtime)', async () => {
+    const { mockWs, wsFactory, attachedPromise } = createMockEnvironment(1)
+
+    const promise = synthesizeSpeech({
+      text: 'Hola Jolito',
+      timeoutMs: 1000,
+      wsFactory,
+    })
+
+    await attachedPromise
+
+    const payload = new Uint8Array([10, 20, 30])
+    const headerStr = 'Path:audio\r\n'
+    const headerBytes = new TextEncoder().encode(headerStr)
+    const frame = new Uint8Array(2 + headerBytes.length + payload.length)
+    frame[0] = (headerBytes.length >> 8) & 0xff
+    frame[1] = headerBytes.length & 0xff
+    frame.set(headerBytes, 2)
+    frame.set(payload, 2 + headerBytes.length)
+
+    const blob = new Blob([frame.buffer])
+    mockWs.emit('message', { data: blob })
+    mockWs.simulateTurnEnd()
+
+    const result = await promise
+    expect(result).toEqual(new Uint8Array([10, 20, 30]))
+  })
+
   describe('defaultWsFactory', () => {
     it('rewrites wss scheme to https for Cloudflare Workers fetch WebSocket upgrade', async () => {
       const mockWs = { accept: vi.fn(), binaryType: '' }
