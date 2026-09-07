@@ -428,6 +428,8 @@ export class NeuralVoiceEngine {
           }
           return true
         } catch {
+          this.currentAudioElement = null
+          configureAudioSessionCategory('ambient')
           return false
         }
       }
