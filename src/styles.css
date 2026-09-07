@@ -615,23 +615,25 @@ summary:focus-visible {
 .hero-scroll-cue {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-top: 24px;
-  padding: 8px 18px;
-  font-size: 13px;
+  min-height: 50px;
+  padding: 12px 28px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.2px;
-  color: var(--ink-soft);
+  letter-spacing: -0.2px;
+  color: var(--ink);
   background: var(--card);
   border: 2px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--pill-radius);
   box-shadow: 2px 2px 0 var(--ink);
   cursor: pointer;
   transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    background-color 120ms ease,
-    color 120ms ease;
+    transform 140ms var(--ease-spring),
+    box-shadow 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
 }
 
 .hero-scroll-cue:hover {
@@ -647,13 +649,13 @@ summary:focus-visible {
 }
 
 .scroll-cue-arrow {
-  font-size: 14px;
-  line-height: 1;
-  transition: transform 140ms ease;
+  font-size: 15px;
+  line-height: 0;
+  transition: transform 150ms ease;
 }
 
 .hero-scroll-cue:hover .scroll-cue-arrow {
-  transform: translateY(2px);
+  transform: translateY(3px);
 }
 
 .hero-copy {
@@ -1164,12 +1166,27 @@ body:has(.welcome-page) {
 }
 
 .why-start-button {
-  font-size: 16px;
+  min-height: 50px;
   padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
   border-radius: var(--pill-radius);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+}
+
+.why-start-button span {
+  font-size: 15px;
+  line-height: 0;
+  margin-left: 0;
+  transition: transform 150ms ease;
+}
+
+.why-start-button:hover span {
+  transform: translateY(-3px);
 }
 
 @media (max-height: 520px) {

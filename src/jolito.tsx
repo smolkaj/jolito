@@ -2223,7 +2223,7 @@ export function App({
                   <em>(Gexican)</em>, and I <em>(German)</em> moved to Mexico
                   City. I started learning Spanish at the{' '}
                   <a
-                    href="https://ihmexico.com/"
+                    href="https://ihmexico.mx/"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

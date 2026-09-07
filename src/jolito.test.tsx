@@ -5042,7 +5042,7 @@ describe('Jolito', () => {
       expect(screen.getByText(/born in mexico city/i)).toBeInTheDocument()
       expect(
         screen.getByRole('link', { name: /international house in condesa/i }),
-      ).toHaveAttribute('href', 'https://ihmexico.com/')
+      ).toHaveAttribute('href', 'https://ihmexico.mx/')
       expect(screen.getByText(/my archenemy\./i)).toBeInTheDocument()
       expect(
         screen.getByRole('link', { name: /spaced repetition/i }),
