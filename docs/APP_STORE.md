@@ -42,7 +42,7 @@ Copy and paste the following verified metadata directly into your App Store Conn
 ### URLs
 
 - **Privacy Policy URL:** `https://joli.to/privacy`
-- **Support URL:** `https://joli.to/#/feedback` _(or https://github.com/smolkaj/jolito/issues)_
+- **Support URL:** `https://joli.to/#/feedback` _(or `a@joli.to` / https://github.com/smolkaj/jolito/issues)_
 - **Marketing URL:** `https://joli.to`
 
 ### Keywords _(89 / 100 characters)_
