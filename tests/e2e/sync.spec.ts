@@ -213,12 +213,8 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
       path: 'test-results/sync-modal-sent-step.png',
     })
 
-    // Toggle paste link manually
-    const pasteToggle = page.getByRole('button', {
-      name: /paste link manually/i,
-    })
-    await pasteToggle.click()
-    await expect(page.getByLabel(/sign-in link/i)).toBeVisible()
+    // 6-digit code or sign-in link input is immediately visible
+    await expect(page.getByLabel(/6-digit code or sign-in link/i)).toBeVisible()
 
     // Capture screenshot of link entry step
     await page.screenshot({
@@ -425,11 +421,15 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     await expect(
       page.getByRole('button', { name: /change email/i }),
     ).toBeVisible()
+
+    const linkInput = page.getByLabel(/6-digit code or sign-in link/i)
+    await expect(linkInput).toBeVisible()
+    await expect(linkInput).toBeFocused()
     await expect(
-      page.getByRole('button', { name: /paste link manually/i }),
+      page.getByRole('button', { name: /sign in & sync/i }),
     ).toBeVisible()
 
-    // Capture screenshot of sent confirmation
+    // Capture screenshot of sent confirmation / code entry
     await page.screenshot({
       path: 'test-results/sync-modal-sent-step.png',
       animations: 'disabled',
@@ -440,21 +440,6 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze()
     expect(sentResults.violations).toEqual([])
-
-    // Toggle paste link manually
-    await page.getByRole('button', { name: /paste link manually/i }).click()
-    const linkInput = page.getByLabel(/sign-in link/i)
-    await expect(linkInput).toBeVisible()
-    await expect(linkInput).toBeFocused()
-    await expect(
-      page.getByRole('button', { name: /sign in & sync/i }),
-    ).toBeVisible()
-
-    // Capture screenshot of paste form
-    await page.screenshot({
-      path: 'test-results/sync-modal-link-step.png',
-      animations: 'disabled',
-    })
   } else {
     // Check accessibility of unconfigured state after sign-out
     const postSignOutResults = await new AxeBuilder({ page })

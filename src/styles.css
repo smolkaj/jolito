@@ -3477,12 +3477,11 @@ kbd {
   width: 100%;
   padding-right: 76px !important;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .link-input.otp-code-input {
   font-family: var(--font-mono);
-  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.16em;
 }

@@ -622,18 +622,6 @@ export function SyncModal({
                   type="button"
                   className="modal-link-btn"
                   onClick={() => {
-                    pasteInputRef.current?.focus()
-                  }}
-                >
-                  Paste link manually
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
                     setIsOtpSent(false)
                     setToken('')
                     setStatusMsg(null)

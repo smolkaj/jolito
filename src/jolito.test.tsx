@@ -1679,10 +1679,6 @@ describe('Jolito', () => {
     await user.type(emailInput, 'pasted-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
-
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(
       tokenInput,
@@ -1706,10 +1702,6 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'pasted-magiclink@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
-
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
 
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(
@@ -1746,10 +1738,6 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'clipboard-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
-
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
 
     const pasteBtn = screen.getByRole('button', {
       name: /paste from clipboard/i,
@@ -2018,10 +2006,6 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
-
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
 
     const pasteBtn = screen.getByRole('button', {
       name: /paste from clipboard/i,
@@ -2380,10 +2364,7 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /save card & send link/i }),
     )
 
-    // 4. Guest toggles paste input and enters link / code
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
+    // 4. Guest enters OTP code directly into visible input
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(
@@ -2540,10 +2521,6 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /save card & send link/i }),
     )
 
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
-
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(
@@ -2613,9 +2590,6 @@ describe('Jolito', () => {
     await user.type(emailInput, 'existing-user@example.com')
     await user.click(
       screen.getByRole('button', { name: /save card & send link/i }),
-    )
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
     )
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
