@@ -5453,6 +5453,12 @@ kbd {
   color: var(--rosa);
 }
 
+.privacy-contact-link:focus-visible {
+  outline: 2px solid var(--maya-dark);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .privacy-modal-footer {
   display: flex;
   justify-content: flex-end;

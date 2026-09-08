@@ -71,7 +71,8 @@
         background-color: var(--papel);
         color: var(--ink);
         line-height: 1.6;
-        padding: 24px 16px 64px;
+        padding: 24px max(16px, env(safe-area-inset-right)) 64px
+          max(16px, env(safe-area-inset-left));
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -159,11 +160,15 @@
       a:hover {
         color: var(--ink);
       }
-      a:focus-visible,
-      .return-link:focus-visible {
+      a:focus-visible {
         outline: 2.5px solid var(--maya-dark);
         outline-offset: 2px;
         border-radius: 4px;
+      }
+      .return-link:focus-visible {
+        outline: 2.5px solid var(--maya-dark);
+        outline-offset: 2px;
+        border-radius: 9999px;
       }
       .return-link {
         display: inline-flex;
@@ -372,7 +377,7 @@
       <section>
         <h2>❤️ Community &amp; Inspiration</h2>
         <p>
-          Special thanks to the patient Spanish teachers at
+          A big shoutout to my friends and teachers at
           <a
             href="https://ihmexico.mx/"
             target="_blank"
