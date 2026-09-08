@@ -698,7 +698,7 @@ export function SyncModal({
         <div className="sync-modal-legal">
           <button
             type="button"
-            className="modal-link-btn sync-privacy-link"
+            className="sync-privacy-link"
             onClick={() => {
               handleClose()
               if (onOpenPrivacy) {

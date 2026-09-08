@@ -298,4 +298,31 @@ describe('SyncModal Account Deletion and Legal', () => {
     expect(ackLink).toHaveAttribute('target', '_blank')
     expect(ackLink).toHaveAttribute('rel', 'noopener noreferrer')
   })
+
+  it('applies uniform legal link styling without competing button utility classes', () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    const privacyBtn = screen.getByRole('button', { name: /privacy policy/i })
+    const ackLink = screen.getByRole('link', { name: /acknowledgements/i })
+
+    // Both legal links must share the dedicated link class
+    expect(privacyBtn).toHaveClass('sync-privacy-link')
+    expect(ackLink).toHaveClass('sync-privacy-link')
+
+    // Neither element should carry .modal-link-btn, which introduces weight: 600 divergence
+    expect(privacyBtn).not.toHaveClass('modal-link-btn')
+    expect(ackLink).not.toHaveClass('modal-link-btn')
+  })
 })
