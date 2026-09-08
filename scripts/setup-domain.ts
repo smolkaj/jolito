@@ -286,7 +286,7 @@ async function main() {
     })
   } catch {
     console.warn(
-      '⚠️  Notice: Could not complete automatic Email Routing setup.',
+      '⚠️  Notice: Could not complete automatic Email Routing setup. Run `npm run setup:email` for dedicated setup.',
     )
   }
 

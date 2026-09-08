@@ -75,11 +75,24 @@ export async function cfApi<T>(
     reqInit,
   )
 
-  const data = (await res.json()) as {
+  const rawText = await res.text()
+  let data: {
     success: boolean
     result: T
     errors?: { code?: number; message: string }[]
   }
+  try {
+    data = JSON.parse(rawText) as {
+      success: boolean
+      result: T
+      errors?: { code?: number; message: string }[]
+    }
+  } catch {
+    throw new Error(
+      `Cloudflare API error (${path}): HTTP ${res.status} ${res.statusText} - non-JSON response: ${rawText.slice(0, 200)}`,
+    )
+  }
+
   if (!data.success) {
     const errMsg =
       data.errors?.map((e) => e.message).join(', ') ?? res.statusText

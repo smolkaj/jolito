@@ -261,10 +261,9 @@ async function main(): Promise<void> {
 // Run directly if invoked as entrypoint
 const currentFilePath = fileURLToPath(import.meta.url)
 if (process.argv[1] && resolve(process.argv[1]) === currentFilePath) {
-  main().catch((err) => {
+  main().catch(() => {
     console.error(
-      '\n❌ Email setup failed:',
-      err instanceof Error ? err.message : err,
+      '\n❌ Email setup failed. Check credentials, zone status, and permissions.',
     )
     process.exit(1)
   })
