@@ -1797,7 +1797,8 @@ export function App({
         isSyncOpen ||
         isBackupOpen ||
         isStarterPacksOpen ||
-        isFeedbackOpen
+        isFeedbackOpen ||
+        isPrivacyOpen
       )
         return
 
@@ -1850,6 +1851,7 @@ export function App({
     isBackupOpen,
     isStarterPacksOpen,
     isFeedbackOpen,
+    isPrivacyOpen,
     playAnswerAudio,
     playPromptAudio,
     revealed,

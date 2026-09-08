@@ -3730,16 +3730,15 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('provides feedback and privacy buttons in footer during active practice', async () => {
+  it('provides feedback and privacy buttons in footer during active practice and suppresses hotkeys when modals are open', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
     render(<App services={services} />)
 
     // Navigate to practice
     await user.click(screen.getByRole('button', { name: /^practice$/i }))
-    expect(
-      screen.getByRole('textbox', { name: /your answer/i }),
-    ).toBeInTheDocument()
+    const answerInput = screen.getByRole('textbox', { name: /your answer/i })
+    expect(answerInput).toBeInTheDocument()
 
     // Footer buttons are present during active practice
     const feedbackBtn = screen.getByRole('button', {
@@ -3751,7 +3750,29 @@ describe('Jolito', () => {
     expect(feedbackBtn).toBeInTheDocument()
     expect(privacyBtn).toBeInTheDocument()
 
-    // Clicking feedback opens the feedback modal
+    // Reveal answer to have grading hotkeys active
+    await user.click(screen.getByRole('button', { name: /reveal answer/i }))
+    expect(screen.getByRole('button', { name: /good/i })).toBeInTheDocument()
+
+    // Clicking privacy opens PrivacyModal
+    await user.click(privacyBtn)
+    expect(
+      screen.getByRole('heading', { name: /privacy policy/i }),
+    ).toBeInTheDocument()
+
+    // Rating hotkeys (e.g. '3' for Good) are suppressed while privacy modal is open
+    await user.keyboard('3')
+    expect(
+      screen.getByRole('heading', { name: /privacy policy/i }),
+    ).toBeInTheDocument()
+
+    // Close privacy modal with Escape
+    await user.keyboard('{Escape}')
+    expect(
+      screen.queryByRole('heading', { name: /privacy policy/i }),
+    ).not.toBeInTheDocument()
+
+    // Clicking feedback opens FeedbackModal
     await user.click(feedbackBtn)
     expect(
       screen.getByRole('heading', { name: /share feedback/i }),
