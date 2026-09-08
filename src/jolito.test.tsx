@@ -5339,6 +5339,9 @@ describe('Jolito', () => {
       expect(
         screen.getByText(/memorization and i have become friends!/i),
       ).toBeInTheDocument()
+      expect(
+        screen.getByRole('link', { name: /see our acknowledgements/i }),
+      ).toHaveAttribute('href', '/acknowledgements')
 
       // Single unified CTA button linking back to top
       const startBtn = screen.getByRole('button', {

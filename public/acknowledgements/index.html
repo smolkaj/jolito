@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en" style="background-color: #fdf5f8; color-scheme: light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fdf5f8" />
+    <title>Acknowledgements • Jolito</title>
+    <meta
+      name="description"
+      content="Jolito Acknowledgements: Grateful credit to the open-source projects, dictionary communities, typographers, and neural voice creators that power Jolito."
+    />
+    <link rel="canonical" href="https://joli.to/acknowledgements" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      :root {
+        --papel: #fdf5f8;
+        --card: #ffffff;
+        --ink: #1f1b18;
+        --ink-light: #645b53;
+        --line: #2b2520;
+        --rosa: #d94a7a;
+        --rosa-dark: #b83561;
+        --verde: #1b8a5a;
+        --verde-dark: #126340;
+        --shadow: 4px 4px 0 var(--line);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: var(--papel);
+        color: var(--ink);
+        line-height: 1.6;
+        padding: 24px 16px 64px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .ack-container {
+        width: 100%;
+        max-width: 680px;
+        background: var(--card);
+        border: 2.5px solid var(--line);
+        border-radius: 24px;
+        padding: clamp(24px, 5vw, 40px);
+        box-shadow: var(--shadow);
+      }
+      header {
+        margin-bottom: 28px;
+        border-bottom: 2px solid #f0e6eb;
+        padding-bottom: 20px;
+      }
+      .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .brand-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 32px);
+        font-weight: 800;
+        line-height: 1.2;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        color: var(--ink-light);
+        font-size: 15px;
+      }
+      section {
+        margin-bottom: 24px;
+      }
+      h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 10px;
+      }
+      p {
+        font-size: 15px;
+        color: var(--ink);
+        line-height: 1.65;
+        margin-bottom: 10px;
+      }
+      ul {
+        margin-left: 20px;
+        margin-bottom: 10px;
+      }
+      li {
+        font-size: 15px;
+        margin-bottom: 6px;
+        line-height: 1.6;
+      }
+      a {
+        color: var(--rosa-dark);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      a:hover {
+        color: var(--rosa);
+      }
+      .return-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 24px;
+        padding: 10px 20px;
+        background: var(--papel);
+        border: 2px solid var(--line);
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--ink);
+        text-decoration: none;
+        box-shadow: 2px 2px 0 var(--line);
+        transition: transform 120ms ease;
+      }
+      .return-link:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 var(--line);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="ack-container">
+      <header>
+        <div class="brand-row">
+          <a href="https://joli.to" class="brand-title">Jolito</a>
+        </div>
+        <h1>Acknowledgements</h1>
+        <p class="subtitle">
+          Jolito is built with genuine gratitude on the shoulders of generous
+          creators, open communities, and open-source software.
+        </p>
+      </header>
+
+      <section>
+        <h2>🌮 The Living Spanish Language</h2>
+        <ul>
+          <li>
+            <strong
+              ><a
+                href="https://www.wiktionary.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Wiktionary</a
+              >
+              &amp;
+              <a
+                href="https://kaikki.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Kaikki.org</a
+              >:</strong
+            >
+            Countless volunteer lexicographers and the Kaikki extraction project
+            made the rich dictionary data that powers Jolito’s offline
+            translation and verb inflection assistance. Content licensed under
+            <a
+              href="https://creativecommons.org/licenses/by-sa/3.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >CC BY-SA 3.0</a
+            >.
+          </li>
+          <li>
+            <strong
+              ><a
+                href="https://github.com/hermitdave/FrequencyWords"
+                target="_blank"
+                rel="noopener noreferrer"
+                >HermitDave</a
+              >
+              &amp;
+              <a
+                href="https://www.opensubtitles.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >OpenSubtitles</a
+              >:</strong
+            >
+            Real-world subtitle word frequency data that helps Jolito highlight
+            the colloquial phrases and everyday words people actually speak on
+            the street.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>🎨 Typography &amp; Design</h2>
+        <ul>
+          <li>
+            <strong
+              ><a
+                href="https://mathieutriay.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Mathieu Triay</a
+              >:</strong
+            >
+            Designer of
+            <strong
+              ><a
+                href="https://bricolage-grotesque.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Bricolage Grotesque</a
+              ></strong
+            >, the delightfully expressive, rhythmic typeface that gives Jolito
+            its bold CDMX modernist character. Distributed under the
+            <a
+              href="https://openfontlicense.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >SIL Open Font License 1.1</a
+            >.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>🎙️ Spoken Voices</h2>
+        <ul>
+          <li>
+            <strong
+              ><a
+                href="https://learn.microsoft.com/azure/ai-services/speech-service/language-support?tabs=tts"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Microsoft Neural Speech</a
+              >:</strong
+            >
+            High-definition Mexican Spanish voices (<em>Dalia</em> &amp;
+            <em>Jorge</em>) and English prompts (<em>Jenny</em> &amp;
+            <em>Guy</em>) that give Jolito its natural spoken cadence.
+          </li>
+          <li>
+            <strong>Browser Speech Engines:</strong>
+            The device-native speech synthesis engines built into iOS, macOS,
+            and Android that keep pronunciation instant and reliable even when
+            completely offline.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>🛠️ The Open-Source Engine</h2>
+        <p>
+          Jolito operates local-first, offline, and with zero tracking thanks to
+          these foundation libraries:
+        </p>
+        <ul>
+          <li>
+            <strong
+              ><a
+                href="https://sql.js.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >sql.js</a
+              >:</strong
+            >
+            SQLite compiled to WebAssembly, keeping cards and review history
+            securely stored directly in your browser. (MIT)
+          </li>
+          <li>
+            <strong
+              ><a
+                href="https://github.com/101arrowz/fflate"
+                target="_blank"
+                rel="noopener noreferrer"
+                >fflate</a
+              >:</strong
+            >
+            Super-fast ZIP parsing for Anki deck packages. (MIT)
+          </li>
+          <li>
+            <strong
+              ><a
+                href="https://react.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >React</a
+              >,
+              <a
+                href="https://capacitorjs.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Capacitor</a
+              >, &amp;
+              <a
+                href="https://zod.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Zod</a
+              >:</strong
+            >
+            The reactive UI, native iOS container, and strict runtime contract
+            validations. (MIT)
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>❤️ Community &amp; Inspiration</h2>
+        <p>
+          Special thanks to the patient Spanish teachers at
+          <a
+            href="https://ihmexico.mx/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >International House Mexico</a
+          >
+          in Condesa, and to Mexico City itself—the street stalls, metro rides,
+          and daily neighborhood chats that inspired this project.
+        </p>
+      </section>
+
+      <a href="https://joli.to" class="return-link">← Return to Jolito</a>
+    </main>
+  </body>
+</html>

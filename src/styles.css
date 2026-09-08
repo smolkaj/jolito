@@ -1159,6 +1159,12 @@ body:has(.welcome-page) {
   padding-top: 4px;
 }
 
+.why-acknowledgements {
+  font-size: clamp(14px, 1.6vw, 15px) !important;
+  color: var(--ink-muted) !important;
+  line-height: 1.6;
+}
+
 .why-actions {
   display: flex;
   align-items: center;
