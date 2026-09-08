@@ -34,7 +34,6 @@ describe('SyncModal Account Deletion and Legal', () => {
     // Click trigger to show confirmation
     fireEvent.click(deleteTrigger)
 
-    expect(screen.getByText('Irreversible')).toBeInTheDocument()
     expect(
       screen.getByText(/permanently deletes your account and backups/i),
     ).toBeInTheDocument()
@@ -113,7 +112,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     )
 
     const checkbox = screen.getByRole('checkbox', {
-      name: /download offline deck backup/i,
+      name: /download an offline backup/i,
     })
     expect(checkbox).toBeChecked()
 
@@ -156,7 +155,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     )
 
     const checkbox = screen.getByRole('checkbox', {
-      name: /download offline deck backup/i,
+      name: /download an offline backup/i,
     })
     fireEvent.click(checkbox)
     expect(checkbox).not.toBeChecked()
@@ -172,6 +171,41 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     await waitFor(() => {
       expect(onDownloadBackup).not.toHaveBeenCalled()
+    })
+  })
+
+  it('submits deletion via form submit (Enter key) when DELETE is typed', async () => {
+    const auth = new MockAuthService()
+    auth.user = { id: 'user-del-enter', email: 'enter@example.com' }
+    const sync = new MockSyncService()
+    const deleteAccountSpy = vi.spyOn(auth, 'deleteAccount')
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /delete cloud account & data/i,
+      }),
+    )
+
+    const input = screen.getByPlaceholderText('DELETE')
+    fireEvent.change(input, { target: { value: 'DELETE' } })
+
+    const form = input.closest('form')!
+    expect(form).toBeInTheDocument()
+    fireEvent.submit(form)
+
+    await waitFor(() => {
+      expect(deleteAccountSpy).toHaveBeenCalled()
     })
   })
 

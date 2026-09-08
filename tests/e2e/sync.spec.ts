@@ -421,15 +421,18 @@ test('displays guarded account deletion flow with zero WCAG violations', async (
     .getByRole('button', { name: /delete cloud account & data/i })
     .click()
 
-  // Verify Irreversible badge and warning text
-  await expect(page.getByText('Irreversible')).toBeVisible()
+  // Verify warning text
   await expect(
     page.getByText(/permanently deletes your account and backups/i),
   ).toBeVisible()
 
+  // Verify input is auto-focused
+  const confirmInput = page.getByPlaceholder('DELETE')
+  await expect(confirmInput).toBeFocused()
+
   // Verify backup checkbox is checked by default
   const backupCheckbox = page.getByRole('checkbox', {
-    name: /download offline deck backup/i,
+    name: /download an offline backup/i,
   })
   await expect(backupCheckbox).toBeChecked()
 
@@ -452,7 +455,6 @@ test('displays guarded account deletion flow with zero WCAG violations', async (
   })
 
   // Typing non-matching text keeps button disabled
-  const confirmInput = page.getByPlaceholder('DELETE')
   await confirmInput.fill('del')
   await expect(confirmBtn).toBeDisabled()
 
