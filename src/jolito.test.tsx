@@ -543,6 +543,89 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('supports typing English first: shows suggestions under English field with English primary and auto-fills Spanish on selection', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const englishInput = screen.getByLabelText(/english/i)
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(englishInput, 'avocado')
+
+    const listbox = screen.getByRole('listbox', {
+      name: /english suggestions/i,
+    })
+    expect(listbox).toBeInTheDocument()
+
+    // Assert that the suggestion container is inside the English field group, not Spanish
+    expect(englishInput.closest('.field-group')).toContainElement(listbox)
+    expect(spanishInput.closest('.field-group')).not.toContainElement(listbox)
+
+    // Check English primary term and Spanish secondary translation
+    const option = screen.getByRole('option')
+    const primary = option.querySelector('.suggestion-primary')
+    const secondary = option.querySelector('.suggestion-secondary')
+    expect(primary).toHaveTextContent('avocado')
+    expect(secondary).toHaveTextContent('aguacate')
+
+    // Click suggestion item
+    await user.click(option)
+
+    // Verifies auto-fill of Spanish and English
+    expect(spanishInput).toHaveValue('aguacate')
+    expect(englishInput).toHaveValue('avocado')
+    expect(
+      screen.queryByRole('listbox', { name: /english suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports keyboard navigation (ArrowDown + Enter) on English suggestions', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const englishInput = screen.getByLabelText(/english/i)
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(englishInput, 'beer')
+
+    expect(
+      screen.getByRole('listbox', { name: /english suggestions/i }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('option', { selected: true })).toBeInTheDocument()
+
+    await user.keyboard('{Enter}')
+    expect(spanishInput).toHaveValue('chela')
+    expect(englishInput).toHaveValue('beer')
+    expect(
+      screen.queryByRole('listbox', { name: /english suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('dismisses English suggestions when focusing Spanish input', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const englishInput = screen.getByLabelText(/english/i)
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(englishInput, 'beer')
+
+    expect(
+      screen.getByRole('listbox', { name: /english suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Focus Spanish input
+    await user.click(spanishInput)
+    expect(
+      screen.queryByRole('listbox', { name: /english suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('resolves conjugated verb inputs to base lemma suggestions with origin badge', async () => {
     const user = userEvent.setup({ delay: null })
     const assistant = new OfflineCardAssistant(
