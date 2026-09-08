@@ -250,19 +250,20 @@ describe('compareAnswer (character-level affine diff)', () => {
   })
 
   it('generates sequence-aligned slots preserving whole word shapes without whitespace highlighting', () => {
-    // Missing word "the": "Where is " aligns, "the" is a missing badge (space unhighlighted), "metro" aligns
+    // Missing word "the": "Where " aligns, "is " aligns, "the " is missing, "metro" aligns
     const res1 = compareAnswer('Where is metro', 'Where is the metro')
     expect(res1.alignedSlots).toEqual([
       {
-        typedSegments: [{ value: 'Where is ', status: 'match' }],
-        expectedSegments: [{ value: 'Where is ', status: 'match' }],
+        typedSegments: [{ value: 'Where ', status: 'match' }],
+        expectedSegments: [{ value: 'Where ', status: 'match' }],
+      },
+      {
+        typedSegments: [{ value: 'is ', status: 'match' }],
+        expectedSegments: [{ value: 'is ', status: 'match' }],
       },
       {
         typedSegments: [],
-        expectedSegments: [
-          { value: 'the', status: 'missing' },
-          { value: ' ', status: 'match' },
-        ],
+        expectedSegments: [{ value: 'the ', status: 'missing' }],
       },
       {
         typedSegments: [{ value: 'metro', status: 'match' }],
@@ -419,7 +420,7 @@ describe('compareAnswer (character-level affine diff)', () => {
     expect(res.alignedSlots.length).toBeGreaterThan(0)
     expect(res.alignedSlots[0]).toEqual({
       typedSegments: [],
-      expectedSegments: [{ value: '¿', status: 'missing' }],
+      expectedSegments: [{ value: '¿', status: 'accent' }],
     })
   })
 

@@ -2290,7 +2290,9 @@ kbd {
   grid-template-rows: 32px 32px;
   row-gap: 4px;
   vertical-align: top;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .diff-pair-top,
@@ -2302,46 +2304,19 @@ kbd {
 }
 
 .diff-audio-col {
-  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 5px;
   flex-shrink: 0;
+}
+
+.diff-audio-spacer {
+  height: 32px;
 }
 
 .diff-audio-col-single {
-  margin-top: 0;
-}
-
-.diff-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.diff-row {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  gap: 12px;
-  align-items: baseline;
-}
-
-.diff-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-.diff-row-main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.diff-row-main .audio-button {
-  margin-top: 2px;
-  flex-shrink: 0;
+  padding-top: 0;
 }
 
 .diff-text {
@@ -2956,10 +2931,6 @@ kbd {
   .reveal-panel {
     padding: 18px 16px 16px;
     border-radius: 18px;
-  }
-
-  .diff-row {
-    grid-template-columns: 68px minmax(0, 1fr);
   }
 
   .grade-buttons {

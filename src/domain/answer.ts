@@ -53,56 +53,6 @@ function groupSegments(segments: DiffSegment[]): DiffSegment[] {
   return result
 }
 
-function separateTrailingWhitespace(segments: DiffSegment[]): DiffSegment[] {
-  const result: DiffSegment[] = []
-  for (const seg of segments) {
-    if (
-      seg.status !== 'match' &&
-      seg.value.endsWith(' ') &&
-      !/^ +$/.test(seg.value)
-    ) {
-      const match = seg.value.match(/^(.*?)(\s+)$/)
-      if (match) {
-        result.push({ value: match[1]!, status: seg.status })
-        result.push({ value: match[2]!, status: 'match' })
-        continue
-      }
-    }
-    result.push(seg)
-  }
-  return result
-}
-
-function isPureMatch(slot: AlignedDiffSlot): boolean {
-  const tPure = slot.typedSegments.every((s) => s.status === 'match')
-  const ePure = slot.expectedSegments.every((s) => s.status === 'match')
-  if (!tPure || !ePure) return false
-  const tText = slot.typedSegments.map((s) => s.value).join('')
-  const eText = slot.expectedSegments.map((s) => s.value).join('')
-  return tText.length > 0 && tText === eText
-}
-
-function mergePureMatchSlots(slots: AlignedDiffSlot[]): AlignedDiffSlot[] {
-  const result: AlignedDiffSlot[] = []
-  for (const slot of slots) {
-    const last = result[result.length - 1]
-    if (last && isPureMatch(last) && isPureMatch(slot)) {
-      last.typedSegments[0]!.value += slot.typedSegments
-        .map((s) => s.value)
-        .join('')
-      last.expectedSegments[0]!.value += slot.expectedSegments
-        .map((s) => s.value)
-        .join('')
-    } else {
-      result.push({
-        typedSegments: slot.typedSegments.map((s) => ({ ...s })),
-        expectedSegments: slot.expectedSegments.map((s) => ({ ...s })),
-      })
-    }
-  }
-  return result
-}
-
 const MATCH_SCORE_EXACT = 4
 const MATCH_SCORE_ACCENT = 3
 const CONTINUOUS_MATCH_BONUS = 4
@@ -171,7 +121,7 @@ export function compareAnswer(
       alignedSlots: [
         {
           typedSegments: [],
-          expectedSegments: separateTrailingWhitespace(expectedSegs),
+          expectedSegments: expectedSegs,
         },
       ],
     }
@@ -185,7 +135,7 @@ export function compareAnswer(
       isExact: false,
       alignedSlots: [
         {
-          typedSegments: separateTrailingWhitespace(typedSegs),
+          typedSegments: typedSegs,
           expectedSegments: [],
         },
       ],
@@ -366,12 +316,8 @@ export function compareAnswer(
   const flush = () => {
     if (cur.typedSegments.length > 0 || cur.expectedSegments.length > 0) {
       rawSlots.push({
-        typedSegments: separateTrailingWhitespace(
-          groupSegments(cur.typedSegments),
-        ),
-        expectedSegments: separateTrailingWhitespace(
-          groupSegments(cur.expectedSegments),
-        ),
+        typedSegments: groupSegments(cur.typedSegments),
+        expectedSegments: groupSegments(cur.expectedSegments),
       })
       cur = { typedSegments: [], expectedSegments: [] }
     }
@@ -380,7 +326,7 @@ export function compareAnswer(
   for (let k = 0; k < trace.length; k++) {
     const step = trace[k]!
     if (step.type === 'inverted') {
-      cur.expectedSegments.push({ value: step.e, status: 'missing' })
+      cur.expectedSegments.push({ value: step.e, status: 'accent' })
       flush()
       continue
     }
@@ -402,7 +348,6 @@ export function compareAnswer(
   }
   flush()
 
-  const alignedSlots = mergePureMatchSlots(rawSlots)
   const typedSegments = groupSegments(typedRaw)
   const expectedSegments = groupSegments(expectedRaw)
 
@@ -410,6 +355,6 @@ export function compareAnswer(
     typedSegments,
     expectedSegments,
     isExact: false,
-    alignedSlots,
+    alignedSlots: rawSlots,
   }
 }

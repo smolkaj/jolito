@@ -134,15 +134,36 @@ function Brand({ onClick }: { onClick?: () => void }) {
 
 function renderDiffSegments(segments: DiffSegment[]) {
   return segments.map((seg, i) => {
+    if (seg.status === 'match') {
+      return (
+        <span className="diff-seg diff-seg-match" key={i}>
+          {seg.value}
+        </span>
+      )
+    }
+    if (seg.status === 'accent') {
+      return (
+        <span className="diff-seg diff-seg-accent" key={i}>
+          {seg.value}
+        </span>
+      )
+    }
     const isSpaceOnly = /^ +$/.test(seg.value)
+    if (isSpaceOnly) {
+      return (
+        <span className="diff-seg diff-seg-space" key={i}>
+          {seg.value}
+        </span>
+      )
+    }
+    const trimmed = seg.value.trimEnd()
+    const trailingSpaces = seg.value.slice(trimmed.length)
     return (
-      <span
-        className={`diff-seg diff-seg-${seg.status}${
-          isSpaceOnly ? ' diff-seg-space' : ''
-        }`}
-        key={i}
-      >
-        {isSpaceOnly && seg.status === 'extra' ? '␣' : seg.value}
+      <span key={i}>
+        {trimmed.length > 0 && (
+          <span className={`diff-seg diff-seg-${seg.status}`}>{trimmed}</span>
+        )}
+        {trailingSpaces}
       </span>
     )
   })
@@ -189,12 +210,22 @@ function AnswerComparison({
 
   return (
     <div className="diff-card" aria-label="Answer comparison">
+      <div className="sr-only">
+        <p>
+          Submitted answer:{' '}
+          {comparison.typedSegments.map((s) => s.value).join('')}
+        </p>
+        <p>
+          Correct answer:{' '}
+          {comparison.expectedSegments.map((s) => s.value).join('')}
+        </p>
+      </div>
       <div className="diff-card-body">
-        <div className="diff-labels-col">
+        <div className="diff-labels-col" aria-hidden="true">
           <span className="diff-label">You wrote</span>
           <span className="diff-label">Expected</span>
         </div>
-        <div className="diff-flow-content">
+        <div className="diff-flow-content" aria-hidden="true">
           {comparison.alignedSlots.map((slot, i) => (
             <span className="diff-pair" key={i}>
               <span className="diff-pair-top">
@@ -211,6 +242,7 @@ function AnswerComparison({
           ))}
         </div>
         <div className="diff-audio-col">
+          <div className="diff-audio-spacer" aria-hidden="true" />
           <AudioButton label="Play answer audio" onClick={onPlayAudio} />
         </div>
       </div>
