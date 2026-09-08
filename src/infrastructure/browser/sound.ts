@@ -32,6 +32,7 @@ export const DEFAULT_AUDIO_IDLE_DELAY_MS = 3000
 
 export class WebAudioSoundPlayer implements SoundPlayer {
   private ctx: AudioContext | null = null
+  private isDestroyed = false
   private cleanupGestureListeners: (() => void) | null = null
   private cleanupLifecycleListeners: (() => void) | null = null
   private idleTimer: number | null = null
@@ -45,7 +46,7 @@ export class WebAudioSoundPlayer implements SoundPlayer {
   }
 
   private installUnlockListeners(): void {
-    if (typeof window === 'undefined') return
+    if (this.isDestroyed || typeof window === 'undefined') return
     if (this.cleanupGestureListeners) return
     const unlock = () => {
       configureAudioSessionCategory('ambient')
@@ -150,12 +151,19 @@ export class WebAudioSoundPlayer implements SoundPlayer {
         // Audio is non-critical; never fail loudly
       }
     }
-    this.installUnlockListeners()
+    if (!this.isDestroyed) {
+      this.installUnlockListeners()
+    }
   }
 
   private scheduleIdleSuspend(): void {
     this.cancelIdleSuspend()
-    if (this.activeTones > 0 || typeof window === 'undefined') return
+    if (
+      this.isDestroyed ||
+      this.activeTones > 0 ||
+      typeof window === 'undefined'
+    )
+      return
     this.idleTimer = window.setTimeout(() => {
       void this.suspend()
     }, this.idleDelayMs)
@@ -283,6 +291,7 @@ export class WebAudioSoundPlayer implements SoundPlayer {
   }
 
   destroy(): void {
+    this.isDestroyed = true
     this.cancelIdleSuspend()
     this.removeUnlockListeners()
     this.cleanupLifecycleListeners?.()

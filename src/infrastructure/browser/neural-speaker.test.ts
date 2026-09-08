@@ -1965,4 +1965,42 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
     engine.destroy()
     vi.useRealTimers()
   })
+
+  it('does not re-install unlock listeners or resume audio context after destroy', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine(200, 2000)
+    const mockCtxObj = {
+      state: 'suspended' as AudioContextState,
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockResolvedValue(undefined),
+    }
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockCtxObj as unknown as AudioContext
+
+    engine.destroy()
+    mockCtxObj.resume.mockClear()
+    mockCtxObj.suspend.mockClear()
+
+    // Gestures should not resume
+    window.dispatchEvent(new Event('pointerdown'))
+    window.dispatchEvent(new Event('touchstart'))
+    window.dispatchEvent(new Event('keydown'))
+    expect(mockCtxObj.resume).not.toHaveBeenCalled()
+
+    // Lifecycle events should not re-arm listeners
+    window.dispatchEvent(new Event('orientationchange'))
+    window.dispatchEvent(new Event('pageshow'))
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(mockCtxObj.resume).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(5000)
+    expect(mockCtxObj.suspend).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
 })

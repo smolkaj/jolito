@@ -122,6 +122,7 @@ export class NeuralVoiceEngine {
   private audioContext: AudioContext | null = null
   private audioCache: LruAudioCache
   private audioBlobs = new Map<string, string>()
+  private isDestroyed = false
   private idleTimer: number | null = null
   private cleanupGestureListeners: (() => void) | null = null
   private cleanupLifecycleListeners: (() => void) | null = null
@@ -140,7 +141,7 @@ export class NeuralVoiceEngine {
   }
 
   private installUnlockListeners(): void {
-    if (typeof window === 'undefined') return
+    if (this.isDestroyed || typeof window === 'undefined') return
     if (this.cleanupGestureListeners) return
     const unlock = () => {
       configureAudioSessionCategory('ambient')
@@ -238,12 +239,15 @@ export class NeuralVoiceEngine {
         // Audio is non-critical; never fail loudly
       }
     }
-    this.installUnlockListeners()
+    if (!this.isDestroyed) {
+      this.installUnlockListeners()
+    }
   }
 
   private scheduleIdleSuspend(): void {
     this.cancelIdleSuspend()
     if (
+      this.isDestroyed ||
       this.currentSource !== null ||
       this.currentAudioElement !== null ||
       typeof window === 'undefined'
@@ -1081,6 +1085,7 @@ export class NeuralVoiceEngine {
   }
 
   destroy(): void {
+    this.isDestroyed = true
     this.stopAudio()
     this.cancelIdleSuspend()
     this.removeUnlockListeners()

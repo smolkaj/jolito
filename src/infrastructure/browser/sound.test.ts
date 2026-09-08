@@ -373,4 +373,36 @@ describe('WebAudioSoundPlayer', () => {
     player.destroy()
     vi.useRealTimers()
   })
+
+  it('does not re-install unlock listeners or resume audio context after destroy', () => {
+    vi.useFakeTimers()
+    const player = createPlayer({ idleDelayMs: 2000 })
+    player.destroy()
+
+    mockAudioContext.resume.mockClear()
+    mockAudioContext.suspend.mockClear()
+
+    // Subsequent user gestures should NOT trigger resume or schedule timers
+    window.dispatchEvent(new Event('pointerdown'))
+    window.dispatchEvent(new Event('touchstart'))
+    window.dispatchEvent(new Event('keydown'))
+
+    expect(mockAudioContext.resume).not.toHaveBeenCalled()
+
+    // Subsequent orientation or visibility changes should NOT re-install listeners
+    window.dispatchEvent(new Event('orientationchange'))
+    window.dispatchEvent(new Event('pageshow'))
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(mockAudioContext.resume).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(5000)
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
 })
