@@ -1161,38 +1161,9 @@ body:has(.welcome-page) {
 
 .why-actions {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-top: clamp(16px, 2.5vh, 24px);
-}
-
-.why-acknowledgements {
-  margin: 0;
-  font-size: clamp(13px, 1.5vw, 14px);
-  color: var(--ink-muted);
-  line-height: 1.5;
-  text-align: center;
-}
-
-.why-acknowledgements a {
-  color: var(--rosa-dark);
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
-  font-weight: 600;
-  transition: color 120ms ease;
-}
-
-.why-acknowledgements a:hover {
-  color: var(--ink);
-}
-
-.why-acknowledgements a:focus-visible {
-  outline: 2px solid var(--maya-dark);
-  outline-offset: 2px;
-  border-radius: 2px;
+  margin-top: clamp(8px, 1.5vh, 16px);
 }
 
 .why-start-button {
