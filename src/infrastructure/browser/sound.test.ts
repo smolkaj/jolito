@@ -333,4 +333,44 @@ describe('WebAudioSoundPlayer', () => {
     expect(mockAudioContext.suspend).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
+
+  it('re-arms unlock listeners after suspension so subsequent gestures wake the audio context', async () => {
+    const player = createPlayer()
+
+    // 1. Initial gesture unlocks and removes initial listeners
+    window.dispatchEvent(new Event('pointerdown'))
+
+    // 2. Suspend player (e.g. from idle timeout or background)
+    await player.suspend()
+    expect(mockAudioContext.state).toBe('suspended')
+
+    // 3. Next gesture should wake context back up
+    mockAudioContext.resume.mockClear()
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(mockAudioContext.resume).toHaveBeenCalledTimes(1)
+  })
+
+  it('re-arms unlock listeners and cancels idle suspend on orientationchange and visibility visible', () => {
+    vi.useFakeTimers()
+    const player = createPlayer({ idleDelayMs: 2000 })
+    player.play('reveal')
+    mockOscillator.onended!()
+
+    // Simulate screen rotation: orientationchange occurs
+    window.dispatchEvent(new Event('orientationchange'))
+
+    // Advance halfway through idle delay
+    vi.advanceTimersByTime(1000)
+    expect(mockAudioContext.suspend).not.toHaveBeenCalled()
+
+    // Simulate visibility change to visible
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    player.destroy()
+    vi.useRealTimers()
+  })
 })

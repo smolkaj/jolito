@@ -1435,6 +1435,14 @@ export function App({
     }
   }, [services.auth])
 
+  const onUpdateCardsRef = useRef(onUpdateCards)
+  const startSessionRef = useRef(startSession)
+
+  useEffect(() => {
+    onUpdateCardsRef.current = onUpdateCards
+    startSessionRef.current = startSession
+  })
+
   useEffect(() => {
     return services.auth.onAuthStateChange((user) => {
       const prevUser = authUserRef.current
@@ -1474,7 +1482,7 @@ export function App({
           setIsSyncOpen(false)
 
           const deletedIds = Array.from(deletedCardIdsRef.current)
-          onUpdateCards(userCards, false, deletedIds)
+          onUpdateCardsRef.current(userCards, false, deletedIds)
         }
 
         const deletedIds = Array.from(deletedCardIdsRef.current)
@@ -1484,7 +1492,7 @@ export function App({
           user,
           syncService: services.sync,
           onCardsUpdated: (newCards, newDeletedIds) =>
-            onUpdateCards(newCards, false, newDeletedIds),
+            onUpdateCardsRef.current(newCards, false, newDeletedIds),
         }).then((res) => {
           if (res.success) setSyncStatus('synced')
           else setSyncStatus('error')
@@ -1504,18 +1512,11 @@ export function App({
           .filter((c) => isDue(c, now))
           .sort((left, right) => left.schedule.dueAt - right.schedule.dueAt)
           .map(({ id }) => id)
-        startSession(due)
+        startSessionRef.current(due)
         setIsDemoDeckDismissed(false)
       }
     })
-  }, [
-    onUpdateCards,
-    services.auth,
-    services.clock,
-    services.ids,
-    services.sync,
-    startSession,
-  ])
+  }, [services.auth, services.clock, services.ids, services.sync])
 
   const isSyncingRef = useRef(false)
   const syncDebounceTimerRef = useRef<number | null>(null)
@@ -1560,6 +1561,11 @@ export function App({
     void performSync()
   }, [performSync])
 
+  const flushSyncRef = useRef(flushSync)
+  useEffect(() => {
+    flushSyncRef.current = flushSync
+  })
+
   const scheduleDebouncedSync = useCallback(() => {
     if (!authUserRef.current) return
     if (syncDebounceTimerRef.current !== null) {
@@ -1575,7 +1581,7 @@ export function App({
     if (typeof window === 'undefined') return
     const onOnline = () => {
       setIsOnline(true)
-      flushSync()
+      flushSyncRef.current()
     }
     const onOffline = () => setIsOnline(false)
     window.addEventListener('online', onOnline)
@@ -1584,37 +1590,41 @@ export function App({
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
     }
-  }, [flushSync])
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        flushSync()
+        flushSyncRef.current()
       } else if (document.visibilityState === 'visible') {
-        flushSync()
+        flushSyncRef.current()
       }
     }
 
     const handleFocus = () => {
       if (document.visibilityState === 'visible') {
-        flushSync()
+        flushSyncRef.current()
       }
+    }
+
+    const handlePageHide = () => {
+      flushSyncRef.current()
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
-    window.addEventListener('pagehide', flushSync)
+    window.addEventListener('pagehide', handlePageHide)
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
-      window.removeEventListener('pagehide', flushSync)
+      window.removeEventListener('pagehide', handlePageHide)
       if (syncDebounceTimerRef.current !== null) {
         window.clearTimeout(syncDebounceTimerRef.current)
       }
     }
-  }, [flushSync])
+  }, [])
 
   useEffect(() => {
     void checkOrRequestStoragePersistence()

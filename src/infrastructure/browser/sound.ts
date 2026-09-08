@@ -46,10 +46,11 @@ export class WebAudioSoundPlayer implements SoundPlayer {
 
   private installUnlockListeners(): void {
     if (typeof window === 'undefined') return
+    if (this.cleanupGestureListeners) return
     const unlock = () => {
       configureAudioSessionCategory('ambient')
       const ctx = this.getContext()
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && ctx.state !== 'running') {
         void ctx
           .resume()
           .then(() => {
@@ -89,16 +90,31 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         void this.suspend()
+      } else if (document.visibilityState === 'visible') {
+        this.cancelIdleSuspend()
+        this.installUnlockListeners()
       }
     }
     const handlePageHide = () => {
       void this.suspend()
     }
+    const handlePageShow = () => {
+      this.cancelIdleSuspend()
+      this.installUnlockListeners()
+    }
+    const handleOrientation = () => {
+      this.cancelIdleSuspend()
+      this.installUnlockListeners()
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', handlePageShow)
+    window.addEventListener('orientationchange', handleOrientation)
     this.cleanupLifecycleListeners = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('orientationchange', handleOrientation)
       this.cleanupLifecycleListeners = null
     }
   }
@@ -134,6 +150,7 @@ export class WebAudioSoundPlayer implements SoundPlayer {
         // Audio is non-critical; never fail loudly
       }
     }
+    this.installUnlockListeners()
   }
 
   private scheduleIdleSuspend(): void {
@@ -161,7 +178,8 @@ export class WebAudioSoundPlayer implements SoundPlayer {
 
       this.cancelIdleSuspend()
 
-      if (ctx.state === 'suspended') {
+      if (ctx.state !== 'running') {
+        this.installUnlockListeners()
         void ctx
           .resume()
           .then(() => {

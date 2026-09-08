@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReviewSchedule } from '../domain/card'
 import {
   advanceSessionOnGrade,
@@ -19,6 +19,11 @@ export interface FilterCardsResult {
 
 export function useStudySession(initialSession: StudySession) {
   const [session, setSession] = useState<StudySession>(initialSession)
+  const sessionRef = useRef(initialSession)
+
+  useEffect(() => {
+    sessionRef.current = session
+  }, [session])
 
   const [answer, setAnswer] = useState('')
   const [revealed, setRevealed] = useState(false)
@@ -54,14 +59,14 @@ export function useStudySession(initialSession: StudySession) {
       initialReviewedCount = 0,
       initialPracticedCardIds: string[] = [],
     ) => {
-      setSession(
-        createStudySession(
-          cardIds,
-          initialTotal,
-          initialReviewedCount,
-          initialPracticedCardIds,
-        ),
+      const nextSession = createStudySession(
+        cardIds,
+        initialTotal,
+        initialReviewedCount,
+        initialPracticedCardIds,
       )
+      sessionRef.current = nextSession
+      setSession(nextSession)
       setAnswer('')
       setRevealed(false)
     },
@@ -75,31 +80,36 @@ export function useStudySession(initialSession: StudySession) {
       buriedCardIds: string[],
     ): SessionGradeResult => {
       const result = advanceSessionOnGrade(
-        session,
+        sessionRef.current,
         cardId,
         reviewedSchedule,
         buriedCardIds,
       )
+      sessionRef.current = result.nextSession
       setSession(result.nextSession)
       setAnswer('')
       setRevealed(false)
       return result
     },
-    [session],
+    [],
   )
 
   const filterCards = useCallback(
     (validCardIds: Set<string>): FilterCardsResult => {
+      const current = sessionRef.current
       const { nextSession, removedCount } = filterSessionCards(
-        session,
+        current,
         validCardIds,
       )
       const becameEmpty =
-        session.queue.length > 0 && nextSession.queue.length === 0
-      setSession(nextSession)
+        current.queue.length > 0 && nextSession.queue.length === 0
+      if (removedCount > 0) {
+        sessionRef.current = nextSession
+        setSession(nextSession)
+      }
       return { nextSession, removedCount, becameEmpty }
     },
-    [session],
+    [],
   )
 
   return {
