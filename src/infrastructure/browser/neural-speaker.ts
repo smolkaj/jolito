@@ -26,9 +26,13 @@ export function isShortPhraseForDualVoice(text: string): boolean {
   return words.length > 0 && words.length <= 3 && clean.length <= 30
 }
 
-export const STARTER_PHRASES: Array<{ text: string; locale: string }> = [
-  { text: 'aguacate', locale: 'es-MX' },
-  { text: 'avocado', locale: 'en-US' },
+export const STARTER_PHRASES: Array<{
+  text: string
+  locale: string
+  cardSeed?: string | undefined
+}> = [
+  { text: 'aguacate', locale: 'es-MX', cardSeed: 'sample-aguacate' },
+  { text: 'avocado', locale: 'en-US', cardSeed: 'sample-aguacate' },
   { text: 'qué padre', locale: 'es-MX' },
   { text: 'how cool', locale: 'en-US' },
   { text: '¿dónde está el metro?', locale: 'es-MX' },
@@ -1020,6 +1024,7 @@ export class NeuralVoiceEngine {
           STARTER_PHRASES.map((p) => ({
             text: p.text,
             locale: p.locale,
+            cardSeed: p.cardSeed,
             bothVoices: true,
           })),
           fetchFn,
@@ -1227,8 +1232,11 @@ export class LayeredNeuralSpeaker implements Speaker {
       normLocale,
       voice,
     )
+    const isExplicitOnline =
+      Boolean(options?.explicit) &&
+      (typeof navigator === 'undefined' || navigator.onLine !== false)
 
-    if (isInFlight || isDiskCached) {
+    if (isInFlight || isDiskCached || isExplicitOnline) {
       if (!isInFlight) {
         // Trigger hydration from disk/network into memory
         void this.neuralEngine
@@ -1241,7 +1249,8 @@ export class LayeredNeuralSpeaker implements Speaker {
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
-      const graceTimeout = isDiskCached ? 150 : 200
+      const graceTimeout = options?.explicit ? 1500 : isDiskCached ? 150 : 1000
+
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
         .then((ready) => {
@@ -1267,7 +1276,7 @@ export class LayeredNeuralSpeaker implements Speaker {
       return true
     }
 
-    // 3. Uncached and not in-flight: fire background fetch for subsequent plays and speak via fallback synchronously
+    // Fire background fetch for subsequent plays and speak via fallback synchronously
     void this.neuralEngine
       .fetchAndCacheAudio(cleanText, normLocale, {
         voice,
