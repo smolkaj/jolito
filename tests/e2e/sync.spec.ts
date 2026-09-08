@@ -5,6 +5,7 @@ test('keeps words visible and explains when the browser cannot retain a sign-in 
   page,
 }) => {
   await page.addInitScript(() => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- Rebound with call(this, ...) below.
     const original = Storage.prototype.setItem
     Storage.prototype.setItem = function (key: string, value: string) {
       if (key === 'jolito-pending-card-v1')
