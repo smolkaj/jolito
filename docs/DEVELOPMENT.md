@@ -46,12 +46,17 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...
 
 If these variables are omitted, Jolito operates 100% offline with local storage and displays a friendly notice that cloud sync is disabled.
 
-### Configuration as Code (`supabase/`)
+### Configuration as Code & zero manual drift
 
-The remote database schema, Row-Level Security (RLS) policies, and project authentication settings are version-controlled in the repository:
+All application and cloud infrastructure settings are 100% version-controlled in the repository to guarantee reproducible deployments and eliminate manual configuration drift:
 
-- [`supabase/config.toml`](../supabase/config.toml): Defines local development project settings, site URL, allowed redirect wildcard patterns, token expiry, and passwordless authentication.
-- [`supabase/migrations/`](../supabase/migrations/): Contains versioned SQL schema migrations with RLS policies ensuring users can only read and write their own deck.
+- **Database schema & RLS policies ([`supabase/migrations/`](../supabase/migrations/)):** Contains versioned SQL schema migrations with RLS policies ensuring users can only read and write their own deck. Applied automatically in CI and on merge to `main`.
+- **Local development settings ([`supabase/config.toml`](../supabase/config.toml)):** Defines local development project settings, ports, site URL, allowed redirect wildcard patterns, token expiry, and local Inbucket passwordless email testing.
+- **Hosting & edge Workers ([`wrangler.jsonc`](../wrangler.jsonc)):** Declares Worker configuration, static asset routing, SPA fallback, compatibility flags, and environment bindings.
+- **Domain, DNS, email & auth orchestration ([`scripts/setup-domain.ts`](../scripts/setup-domain.ts), [`scripts/setup-email.ts`](../scripts/setup-email.ts)):** Automated, idempotent scripts calling Cloudflare, Spaceship, Resend, and Supabase Management APIs. They configure Cloudflare DNS zones, custom domain bindings (`joli.to`), Resend DKIM/SPF/MX records, Cloudflare Email Routing rules (`signin@joli.to`, `a@joli.to`), and hosted Supabase Auth settings (site URL, redirect URI allowlists, custom Resend SMTP credentials, and transactional email templates).
+
+> [!IMPORTANT]
+> Never configure remote services (Cloudflare, Supabase, Resend) via manual dashboard clicks or uncommitted curl commands. Every configuration detail must be codified in version-controlled scripts or configuration files.
 
 ### Local Supabase development & integration testing
 
@@ -149,21 +154,17 @@ npm run setup:email
 
 Jolito uses Supabase Auth for passwordless 1-click magic link and 6-digit OTP verification.
 
-1. **Email Templates:** The custom responsive email template is version-controlled at `supabase/templates/magic_link.html` and configured in `supabase/config.toml` (`[auth.email.template.magic_link]`). It features:
+1. **Email Templates:** The custom responsive email template is version-controlled at [`supabase/templates/magic_link.html`](../supabase/templates/magic_link.html) and configured in `supabase/config.toml` (`[auth.email.template.magic_link]`). It features:
+   - Official Jolito brand badge with dark-mode contrast protection.
    - Primary 1-click login button (`{{ .ConfirmationURL }}`).
    - Prominent letter-spaced 6-digit OTP code (`{{ .Token }}`) for cross-device and standalone PWA logins.
    - Dynamic subject line: `Sign in to Jolito: {{ .Token }}`.
    - Inlined CSS with dark mode support (`prefers-color-scheme: dark`) and inbox preheader text to prevent snippet leakage.
 2. **Sender Domain (`signin@joli.to`) via Custom SMTP:**
-   - In the Supabase Dashboard, navigate to **Project Settings > Authentication > SMTP Settings**.
-   - Enable **Custom SMTP**:
-     - **Sender email:** `signin@joli.to`
-     - **Sender name:** `Jolito`
-     - **Host:** `smtp.resend.com` (using Resend)
-     - **Port:** `465` (SSL) or `587` (TLS)
-     - **Username:** `resend`
-     - **Password:** `<RESEND_API_KEY>` (same key used in Cloudflare Workers)
-3. **Inbound Reply Forwarding:** Running `npm run setup:email` provisions Cloudflare Email Routing rules for `signin@joli.to` in addition to `a@joli.to`, ensuring user replies to auth emails route directly to the maintainer destination inbox.
+   - Transactional authentication emails route through Resend SMTP (`smtp.resend.com`) from `signin@joli.to`.
+   - **Automated sync:** `npm run setup:domain` provisions the Resend domain, syncs DKIM/SPF DNS records to Cloudflare, and applies custom SMTP settings (`smtp_host`, `smtp_port`, `smtp_admin_email`, `smtp_sender_name`, `smtp_user`, `smtp_pass`) and the branded magic link template directly to the hosted Supabase project via the Supabase Management API.
+   - **Zero manual drift:** In accordance with the 100% config-as-code invariant, never manually edit SMTP settings or email templates in the Supabase Dashboard. All remote settings are codified in [`scripts/setup-domain.ts`](../scripts/setup-domain.ts).
+3. **Inbound Reply Forwarding:** Running `npm run setup:email` (or `npm run setup:domain`) provisions Cloudflare Email Routing rules for `signin@joli.to` and `a@joli.to`, ensuring user replies to auth emails route directly to the maintainer destination inbox.
 
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality, browser, and iOS native compilation checks remain the code-quality gates.
 
