@@ -383,3 +383,82 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     expect(postSignOutResults.violations).toEqual([])
   }
 })
+
+test('displays guarded account deletion flow with zero WCAG violations', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const session = {
+      accessToken:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWRlbC05OSIsImVtYWlsIjoibGVhcm5lckBleGFtcGxlLmNvbSJ9.signature',
+      refreshToken: 'refresh-99',
+      expiresAt: Date.now() + 3600 * 1000,
+      user: {
+        id: 'user-del-99',
+        email: 'learner@example.com',
+      },
+    }
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify(session),
+    )
+  })
+
+  await page.goto('/')
+
+  // Open sync modal from header
+  await page
+    .getByRole('button', { name: /signed in|tap to sync|sync/i })
+    .first()
+    .click()
+  await expect(
+    page.getByRole('heading', { name: /^cloud sync$/i }),
+  ).toBeVisible()
+  await expect(page.getByText('learner@example.com')).toBeVisible()
+
+  // Click Delete cloud account & data
+  await page
+    .getByRole('button', { name: /delete cloud account & data/i })
+    .click()
+
+  // Verify warning text
+  await expect(
+    page.getByText(/permanently deletes your account and backups/i),
+  ).toBeVisible()
+
+  // Verify input is auto-focused
+  const confirmInput = page.getByPlaceholder('DELETE')
+  await expect(confirmInput).toBeFocused()
+
+  // Verify backup checkbox is checked by default
+  const backupCheckbox = page.getByRole('checkbox', {
+    name: /download an offline backup/i,
+  })
+  await expect(backupCheckbox).toBeChecked()
+
+  // Verify confirm button is disabled initially
+  const confirmBtn = page.getByRole('button', {
+    name: /yes, delete cloud data/i,
+  })
+  await expect(confirmBtn).toBeDisabled()
+
+  // Verify zero WCAG violations on confirmation UI
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+
+  // Capture screenshot of modal for visual inspection
+  await page.locator('.modal-content.sync-modal').screenshot({
+    path: '/tmp/sync-delete-confirm.png',
+    animations: 'disabled',
+  })
+
+  // Typing non-matching text keeps button disabled
+  await confirmInput.fill('del')
+  await expect(confirmBtn).toBeDisabled()
+
+  // Typing DELETE enables confirm button
+  await confirmInput.fill('DELETE')
+  await expect(confirmBtn).toBeEnabled()
+})

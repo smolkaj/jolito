@@ -1,11 +1,14 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { createDeckBackup } from '../../application/deck-backup'
 import { syncDeckWithCloud } from '../../application/deck-sync'
 import type {
   AuthService,
   AuthUser,
+  Clock,
   SyncService,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
+import { downloadJsonFile } from '../../infrastructure/browser/download'
 import { isIOS, isStandalone } from '../../infrastructure/browser/environment'
 import {
   ClipboardIcon,
@@ -26,6 +29,8 @@ export interface SyncModalProps {
   ) => void
   auth: AuthService
   sync: SyncService
+  clock?: Clock | undefined
+  onDownloadBackup?: ((cards: StudyCard[]) => void) | undefined
   onSaveLocally?: (() => void) | undefined
   pendingCardPrompt?: string | undefined
   onOpenPrivacy?: (() => void) | undefined
@@ -39,6 +44,8 @@ export function SyncModal({
   onUpdateCards,
   auth,
   sync,
+  clock,
+  onDownloadBackup,
   onSaveLocally,
   pendingCardPrompt,
   onOpenPrivacy,
@@ -48,6 +55,8 @@ export function SyncModal({
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [backupBeforeDelete, setBackupBeforeDelete] = useState(true)
   const [showPasteLink, setShowPasteLink] = useState(
     () => isStandalone() && isIOS(),
   )
@@ -64,6 +73,22 @@ export function SyncModal({
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
+  const deleteInputRef = useRef<HTMLInputElement | null>(null)
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
+
+  const handleOpenDeleteConfirm = () => {
+    setIsConfirmingDelete(true)
+    setDeleteConfirmText('')
+    setBackupBeforeDelete(true)
+    setTimeout(() => deleteInputRef.current?.focus(), 0)
+  }
+
+  const handleCancelDeleteConfirm = () => {
+    setIsConfirmingDelete(false)
+    setDeleteConfirmText('')
+    setBackupBeforeDelete(true)
+    setTimeout(() => deleteTriggerRef.current?.focus(), 0)
+  }
 
   const loading = loadingAction !== null
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
@@ -103,12 +128,19 @@ export function SyncModal({
     })
   }, [auth])
 
+  const handleClose = () => {
+    setIsConfirmingDelete(false)
+    setDeleteConfirmText('')
+    setBackupBeforeDelete(true)
+    onClose()
+  }
+
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        handleClose()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -211,6 +243,15 @@ export function SyncModal({
     setLoadingAction('delete')
     setStatusMsg(null)
     try {
+      if (backupBeforeDelete) {
+        if (onDownloadBackup) {
+          onDownloadBackup(cards)
+        } else {
+          const backupClock = clock ?? { now: () => Date.now() }
+          const backup = createDeckBackup(cards, backupClock)
+          downloadJsonFile(backup.filename, backup.json)
+        }
+      }
       if (sync.deleteRemoteDeck) {
         const deleteRes = await sync.deleteRemoteDeck(user)
         if (!deleteRes.success) {
@@ -237,6 +278,7 @@ export function SyncModal({
       }
       setIsOtpSent(false)
       setToken('')
+      setDeleteConfirmText('')
       setIsConfirmingDelete(false)
       setStatusMsg({
         type: 'info',
@@ -253,7 +295,7 @@ export function SyncModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
+    <div className="modal-backdrop" onClick={handleClose} role="presentation">
       <div
         className="modal-content sync-modal"
         role="dialog"
@@ -277,7 +319,7 @@ export function SyncModal({
           <button
             type="button"
             className="modal-close"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close dialog"
           >
             ✕
@@ -363,40 +405,82 @@ export function SyncModal({
             </div>
 
             {isConfirmingDelete ? (
-              <div className="sync-delete-confirm-box" role="alert">
+              <form
+                className="sync-delete-confirm-box"
+                role="group"
+                aria-label="Confirm cloud account deletion"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (deleteConfirmText.trim() === 'DELETE' && !loading) {
+                    void handleDeleteAccount()
+                  }
+                }}
+              >
                 <p className="delete-confirm-text">
-                  Permanently delete your cloud backup from Jolito servers?
-                  Local flashcards on this device remain untouched.
+                  Permanently deletes your account and backups from Jolito
+                  servers. Other connected devices will stop syncing. Local
+                  cards on this device remain untouched.
                 </p>
+
+                <label className="delete-backup-option">
+                  <input
+                    type="checkbox"
+                    checked={backupBeforeDelete}
+                    onChange={(e) => setBackupBeforeDelete(e.target.checked)}
+                  />
+                  <span>
+                    Download an offline backup to this device before deleting
+                  </span>
+                </label>
+
+                <div className="delete-confirm-input-wrap">
+                  <label
+                    htmlFor="delete-confirm-input"
+                    className="delete-input-label"
+                  >
+                    Type <strong>DELETE</strong> to confirm:
+                  </label>
+                  <input
+                    ref={deleteInputRef}
+                    id="delete-confirm-input"
+                    type="text"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder="DELETE"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="delete-input"
+                  />
+                </div>
+
                 <div className="delete-confirm-actions">
                   <button
                     type="button"
-                    className="danger-button confirm-delete-btn"
-                    onClick={() => {
-                      void handleDeleteAccount()
-                    }}
+                    className="secondary-button cancel-delete-btn"
+                    onClick={handleCancelDeleteConfirm}
                     disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="danger-button confirm-delete-btn"
+                    disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
                   >
                     {loadingAction === 'delete'
                       ? 'Deleting…'
                       : 'Yes, delete cloud data'}
                   </button>
-                  <button
-                    type="button"
-                    className="secondary-button cancel-delete-btn"
-                    onClick={() => setIsConfirmingDelete(false)}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
                 </div>
-              </div>
+              </form>
             ) : (
               <div className="sync-account-footer">
                 <button
+                  ref={deleteTriggerRef}
                   type="button"
                   className="modal-link-btn delete-account-link"
-                  onClick={() => setIsConfirmingDelete(true)}
+                  onClick={handleOpenDeleteConfirm}
                   disabled={loading}
                 >
                   Delete cloud account & data
@@ -617,7 +701,7 @@ export function SyncModal({
             type="button"
             className="modal-link-btn sync-privacy-link"
             onClick={() => {
-              onClose()
+              handleClose()
               if (onOpenPrivacy) {
                 onOpenPrivacy()
               } else {
