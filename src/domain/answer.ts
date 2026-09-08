@@ -28,6 +28,7 @@ export const normalizeTypography = (text: string): string =>
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
     .replace(/\//g, ' / ')
+    .replace(/;/g, ' ; ')
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -37,6 +38,7 @@ export const baseNormalize = (text: string): string =>
 function groupSegments(segments: DiffSegment[]): DiffSegment[] {
   const result: DiffSegment[] = []
   for (const seg of segments) {
+    if (seg.value.length === 0) continue
     const last = result[result.length - 1]
     if (last && last.status === seg.status) {
       last.value += seg.value
@@ -115,21 +117,16 @@ function itemSimilarity(t: string, e: string): number {
   return 1 - dist / maxLen
 }
 
-function isDigitComma(text: string, i: number): boolean {
-  if (i === 0 || i + 1 >= text.length) return false
-  return /\d/.test(text[i - 1]!) && /\d/.test(text[i + 1]!)
-}
-
 export type ParsedEnumeration = {
   items: string[]
   delimiters: string[]
   primaryDelim: string
-  primaryDelimChar: '/' | ';' | ','
+  primaryDelimChar: '/' | ';'
 }
 
 /**
- * Splits text into enumeration items if it contains delimiters ('/', ';', ',') outside parentheses.
- * Uses precedence: '/' > ';' > ',' so commas inside slash-delimited phrases are preserved.
+ * Splits text into enumeration items if it contains alternative delimiters ('/' or ';') outside parentheses or brackets.
+ * Grammatical commas are preserved so standard sentences ("To go, please", "No, gracias") are not scrambled.
  */
 export function splitEnumeration(text: string): ParsedEnumeration | null {
   const trimmed = text.trim()
@@ -138,15 +135,14 @@ export function splitEnumeration(text: string): ParsedEnumeration | null {
   let parenDepth = 0
   let slashCount = 0
   let semiCount = 0
-  let commaCount = 0
 
   for (let i = 0; i < trimmed.length; i++) {
     const ch = trimmed[i]
-    if (ch === '(') {
+    if (ch === '(' || ch === '[') {
       parenDepth++
       continue
     }
-    if (ch === ')') {
+    if (ch === ')' || ch === ']') {
       parenDepth = Math.max(0, parenDepth - 1)
       continue
     }
@@ -156,22 +152,18 @@ export function splitEnumeration(text: string): ParsedEnumeration | null {
         slashCount++
       } else if (ch === ';') {
         semiCount++
-      } else if (ch === ',' && !isDigitComma(trimmed, i)) {
-        commaCount++
       }
     }
   }
 
-  const primaryDelimChar: '/' | ';' | ',' | null =
-    slashCount > 0 ? '/' : semiCount > 0 ? ';' : commaCount > 0 ? ',' : null
+  const primaryDelimChar: '/' | ';' | null =
+    slashCount > 0 ? '/' : semiCount > 0 ? ';' : null
 
   if (!primaryDelimChar) {
     return null
   }
 
-  const primaryDelim =
-    primaryDelimChar === '/' ? ' / ' : primaryDelimChar === ';' ? '; ' : ', '
-
+  const primaryDelim = primaryDelimChar === '/' ? ' / ' : '; '
   const rawItems: string[] = []
   let itemStart = 0
   parenDepth = 0
@@ -179,33 +171,26 @@ export function splitEnumeration(text: string): ParsedEnumeration | null {
   let i = 0
   while (i < trimmed.length) {
     const ch = trimmed[i]
-    if (ch === '(') {
+    if (ch === '(' || ch === '[') {
       parenDepth++
       i++
       continue
     }
-    if (ch === ')') {
+    if (ch === ')' || ch === ']') {
       parenDepth = Math.max(0, parenDepth - 1)
       i++
       continue
     }
 
-    if (parenDepth === 0) {
-      const isMatch =
-        primaryDelimChar === ','
-          ? ch === ',' && !isDigitComma(trimmed, i)
-          : ch === primaryDelimChar
-
-      if (isMatch) {
-        rawItems.push(trimmed.slice(itemStart, i).trim())
-        let nextI = i + 1
-        while (nextI < trimmed.length && /\s/.test(trimmed[nextI]!)) {
-          nextI++
-        }
-        itemStart = nextI
-        i = nextI
-        continue
+    if (parenDepth === 0 && ch === primaryDelimChar) {
+      rawItems.push(trimmed.slice(itemStart, i).trim())
+      let nextI = i + 1
+      while (nextI < trimmed.length && /\s/.test(trimmed[nextI]!)) {
+        nextI++
       }
+      itemStart = nextI
+      i = nextI
+      continue
     }
     i++
   }
@@ -234,14 +219,66 @@ function parseTypedItems(text: string): {
   items: string[]
   delimiters: string[]
 } {
-  const parsed = splitEnumeration(text)
-  if (parsed) {
-    return parsed
+  const trimmed = text.trim()
+  if (!trimmed) return { items: [], delimiters: [] }
+
+  let slashCount = 0
+  let semiCount = 0
+  let commaCount = 0
+
+  for (let i = 0; i < trimmed.length; i++) {
+    const ch = trimmed[i]
+    if (ch === '/') slashCount++
+    else if (ch === ';') semiCount++
+    else if (ch === ',') commaCount++
   }
-  return {
-    items: [text],
-    delimiters: [],
+
+  const delimChar: '/' | ';' | ',' | null =
+    slashCount > 0 ? '/' : semiCount > 0 ? ';' : commaCount > 0 ? ',' : null
+
+  if (!delimChar) {
+    return { items: [trimmed], delimiters: [] }
   }
+
+  const delimStr = delimChar === '/' ? ' / ' : delimChar === ';' ? '; ' : ', '
+  const rawItems: string[] = []
+  let itemStart = 0
+
+  let i = 0
+  while (i < trimmed.length) {
+    if (trimmed[i] === delimChar) {
+      rawItems.push(trimmed.slice(itemStart, i).trim())
+      let nextI = i + 1
+      while (nextI < trimmed.length && /\s/.test(trimmed[nextI]!)) {
+        nextI++
+      }
+      itemStart = nextI
+      i = nextI
+      continue
+    }
+    i++
+  }
+
+  rawItems.push(trimmed.slice(itemStart).trim())
+  const validItems = rawItems.filter((it) => it.length > 0)
+  if (validItems.length < 2) {
+    return { items: [trimmed], delimiters: [] }
+  }
+
+  const delimiters = Array.from(
+    { length: validItems.length - 1 },
+    () => delimStr,
+  )
+
+  return { items: validItems, delimiters }
+}
+
+function missingItemSegments(item: string): DiffSegment[] {
+  const raw: DiffSegment[] = Array.from(item).map((ch) => ({
+    value: ch,
+    status: ch === '¿' || ch === '¡' ? 'accent' : 'missing',
+  }))
+  return groupSegments(raw)
 }
 
 function compareSequential(tTrim: string, eTrim: string): AnswerComparison {
@@ -584,8 +621,7 @@ export function compareAnswer(
       status: 'missing',
     })
 
-    const missingDiff = compareSequential('', E[j]!)
-    expectedRaw.push(...missingDiff.expectedSegments)
+    expectedRaw.push(...missingItemSegments(E[j]!))
   }
 
   return {
