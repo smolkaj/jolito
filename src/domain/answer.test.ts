@@ -659,10 +659,32 @@ describe('compareAnswer (enumeration commutativity & missing words)', () => {
     expect(consecutive.isExact).toBe(false)
     expect(consecutive.typedSegments).toEqual([
       { value: 'take', status: 'match' },
-      { value: ' / /', status: 'extra' },
+      { value: ' // ', status: 'extra' },
       { value: 'drink', status: 'match' },
     ])
     expect(consecutive.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Multiple leading delimiters
+    const multiLeading = compareAnswer('// take / drink', 'take / drink')
+    expect(multiLeading.isExact).toBe(false)
+    expect(multiLeading.typedSegments).toEqual([
+      { value: '// ', status: 'extra' },
+      { value: 'take / drink', status: 'match' },
+    ])
+    expect(multiLeading.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Multiple trailing delimiters
+    const multiTrailing = compareAnswer('take / drink //', 'take / drink')
+    expect(multiTrailing.isExact).toBe(false)
+    expect(multiTrailing.typedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+      { value: ' //', status: 'extra' },
+    ])
+    expect(multiTrailing.expectedSegments).toEqual([
       { value: 'take / drink', status: 'match' },
     ])
   })

@@ -304,15 +304,21 @@ function parseTypedItems(text: string): ParsedTypedEnumeration {
   let leadingDelim: string | undefined
   let trailingDelim: string | undefined
 
-  if (rawItems[0] === '') {
+  while (rawItems.length > 0 && rawItems[0] === '') {
     hasMalformedDelimiters = true
-    leadingDelim = rawDelims.shift()
+    const d = rawDelims.shift()
+    if (d) {
+      leadingDelim = (leadingDelim ?? '') + d
+    }
     rawItems.shift()
   }
 
-  if (rawItems.length > 0 && rawItems[rawItems.length - 1] === '') {
+  while (rawItems.length > 0 && rawItems[rawItems.length - 1] === '') {
     hasMalformedDelimiters = true
-    trailingDelim = rawDelims.pop()
+    const d = rawDelims.pop()
+    if (d) {
+      trailingDelim = d + (trailingDelim ?? '')
+    }
     rawItems.pop()
   }
 
@@ -323,8 +329,8 @@ function parseTypedItems(text: string): ParsedTypedEnumeration {
     const it = rawItems[idx]!
     if (it.length === 0) {
       hasMalformedDelimiters = true
-      if (delimiters.length > 0 && idx - 1 < rawDelims.length) {
-        delimiters[delimiters.length - 1] += rawDelims[idx - 1]!
+      if (delimiters.length > 0 && idx < rawDelims.length) {
+        delimiters[delimiters.length - 1] += rawDelims[idx]!
       }
     } else {
       items.push(it)
