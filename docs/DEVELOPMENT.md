@@ -139,7 +139,7 @@ The Cloudflare DNS zone, edge TLS settings, custom domain bindings for `joli.to`
 npm run setup:domain
 ```
 
-To configure or re-provision Cloudflare Email Routing (verifying destination address, provisioning MX/SPF DNS records, and activating forwarding rules for `a@joli.to`, `signin@joli.to`, and `login@joli.to`) independently without running the full registrar pipeline:
+To configure or re-provision Cloudflare Email Routing (verifying destination address, provisioning MX/SPF DNS records, and activating forwarding rules for `a@joli.to` and `signin@joli.to`) independently without running the full registrar pipeline:
 
 ```sh
 npm run setup:email
@@ -163,7 +163,7 @@ Jolito uses Supabase Auth for passwordless 1-click magic link and 6-digit OTP ve
      - **Port:** `465` (SSL) or `587` (TLS)
      - **Username:** `resend`
      - **Password:** `<RESEND_API_KEY>` (same key used in Cloudflare Workers)
-3. **Inbound Reply Forwarding:** Running `npm run setup:email` provisions Cloudflare Email Routing rules for `signin@joli.to` and `login@joli.to` in addition to `a@joli.to`, ensuring user replies to auth emails route directly to the maintainer destination inbox.
+3. **Inbound Reply Forwarding:** Running `npm run setup:email` provisions Cloudflare Email Routing rules for `signin@joli.to` in addition to `a@joli.to`, ensuring user replies to auth emails route directly to the maintainer destination inbox.
 
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality, browser, and iOS native compilation checks remain the code-quality gates.
 

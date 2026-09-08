@@ -37,7 +37,7 @@ export interface SetupEmailRoutingOptions {
 }
 
 export function getManagedSenders(domain: string): string[] {
-  return ['a', 'signin', 'login'].map((p) => `${p}@${domain}`)
+  return ['a', 'signin'].map((p) => `${p}@${domain}`)
 }
 
 export async function setupEmailRouting({

@@ -35,6 +35,10 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toContain('Jolito')
     expect(content).toMatch(/Spoken Mexican Spanish/i)
     expect(content).toContain('joli.to')
+    // Official geometric brand logo with protective badge container and presentation role
+    expect(content).toContain('https://joli.to/favicon-96x96.png')
+    expect(content).toMatch(/<img[^>]*role="presentation"/i)
+    expect(content).toContain('class="brand-logo-badge"')
     // Rosa Mexicano brand accent
     expect(content).toContain('#e4007c')
   })
@@ -50,9 +54,8 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toContain('@media (prefers-color-scheme: dark)')
     expect(content).toContain('@media only screen and (max-width: 600px)')
 
-    // Verify dark mode preserves header brand wordmark & subtitle contrast
+    // Verify dark mode preserves header brand wordmark contrast
     expect(content).toMatch(/\.brand-wordmark\s*\{[^}]*color:\s*#fdf5f8/i)
-    expect(content).toMatch(/\.brand-subtitle\s*\{[^}]*color:\s*#8d9c94/i)
 
     // Verify dark mode aligns OTP code container with brand palette
     expect(content).toMatch(
