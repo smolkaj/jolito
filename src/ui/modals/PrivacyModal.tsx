@@ -118,6 +118,18 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               </a>
               .
             </p>
+            <p>
+              See our{' '}
+              <a
+                href="/acknowledgements"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="privacy-contact-link"
+              >
+                acknowledgements
+              </a>{' '}
+              for the open-source projects and creators that power Jolito.
+            </p>
           </section>
         </div>
 

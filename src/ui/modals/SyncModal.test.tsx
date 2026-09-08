@@ -276,4 +276,26 @@ describe('SyncModal Account Deletion and Legal', () => {
     expect(onClose).toHaveBeenCalled()
     expect(onOpenPrivacy).toHaveBeenCalled()
   })
+
+  it('renders Acknowledgements link pointing to /acknowledgements in a new tab', () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    const ackLink = screen.getByRole('link', { name: /acknowledgements/i })
+    expect(ackLink).toBeInTheDocument()
+    expect(ackLink).toHaveAttribute('href', '/acknowledgements')
+    expect(ackLink).toHaveAttribute('target', '_blank')
+    expect(ackLink).toHaveAttribute('rel', 'noopener noreferrer')
+  })
 })

@@ -710,6 +710,17 @@ export function SyncModal({
           >
             Privacy Policy
           </button>
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>
+          <a
+            href="/acknowledgements"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sync-privacy-link"
+          >
+            Acknowledgements
+          </a>
         </div>
       </div>
     </div>

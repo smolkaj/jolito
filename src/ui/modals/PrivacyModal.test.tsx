@@ -75,4 +75,13 @@ describe('PrivacyModal', () => {
     expect(emailLink).toBeInTheDocument()
     expect(emailLink).toHaveAttribute('href', 'mailto:a@joli.to')
   })
+
+  it('renders acknowledgements link pointing to /acknowledgements', () => {
+    render(<PrivacyModal isOpen={true} onClose={vi.fn()} />)
+
+    const ackLink = screen.getByRole('link', { name: 'acknowledgements' })
+    expect(ackLink).toBeInTheDocument()
+    expect(ackLink).toHaveAttribute('href', '/acknowledgements')
+    expect(ackLink).toHaveAttribute('target', '_blank')
+  })
 })
