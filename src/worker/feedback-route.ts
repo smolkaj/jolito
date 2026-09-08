@@ -175,8 +175,8 @@ export async function sendFeedbackNotification(
   env?: FeedbackWorkerEnv,
 ): Promise<{ dispatched: boolean; provider: string }> {
   const recipient =
-    env?.FEEDBACK_NOTIFICATION_EMAIL || 'steffen.smolka+jolito@gmail.com'
-  const sender = env?.FEEDBACK_SENDER_EMAIL || 'feedback@joli.to'
+    env?.FEEDBACK_NOTIFICATION_EMAIL || 'a@joli.to'
+  const sender = env?.FEEDBACK_SENDER_EMAIL || 'a@joli.to'
   const isGuest = !payload.email || payload.email === 'guest@jolito.app'
   const replyTo = !isGuest && payload.email ? payload.email : undefined
   const previewText = payload.message.slice(0, 50).replace(/[\r\n]+/g, ' ')

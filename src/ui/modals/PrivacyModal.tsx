@@ -142,8 +142,8 @@ export function PrivacyModal({
                 directly in the app
               </a>
               , or email us at{' '}
-              <a href="mailto:contact@joli.to" className="privacy-contact-link">
-                contact@joli.to
+              <a href="mailto:a@joli.to" className="privacy-contact-link">
+                a@joli.to
               </a>
               .
             </p>
