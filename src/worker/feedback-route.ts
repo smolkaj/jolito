@@ -76,9 +76,6 @@ export function formatPlainTextEmail(payload: FeedbackPayload): string {
     '',
     'Context:',
     contextStr,
-    '',
-    '-- ',
-    'Sent automatically by Jolito Cloudflare Edge Worker',
   ].join('\n')
 }
 
@@ -130,7 +127,6 @@ export function formatHtmlEmail(payload: FeedbackPayload): string {
     .meta-table th { color: #64748b; font-weight: 500; width: 120px; }
     .meta-table td { color: #0f172a; font-size: 13px; }
     .context-box { background-color: #0f172a; color: #f8fafc; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; overflow-x: auto; }
-    .footer { text-align: center; font-size: 12px; color: #94a3b8; padding: 16px 24px; border-top: 1px solid #f1f5f9; }
   </style>
 </head>
 <body>
@@ -161,9 +157,6 @@ export function formatHtmlEmail(payload: FeedbackPayload): string {
       <pre class="context-box">${contextJson}</pre>`
           : ''
       }
-    </div>
-    <div class="footer">
-      Jolito Edge Notifications • Operating cost: $0.00 • Cloudflare Workers
     </div>
   </div>
 </body>
