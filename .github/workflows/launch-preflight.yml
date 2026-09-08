@@ -1,0 +1,19 @@
+name: Launch preflight
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-signup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --ignore-scripts
+      - run: npm run launch:preflight
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}

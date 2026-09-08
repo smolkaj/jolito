@@ -1,0 +1,25 @@
+Jolito dictionary credits
+
+Definitions and word forms are adapted from English Wiktionary contributors,
+via Kaikki.org / Wiktextract (Tatu Ylonen and contributors).
+Source: https://kaikki.org/dictionary/Spanish/
+Clickable source pages for every bundled headword: https://joli.to/dict/sources.html
+Per-entry source and contributor history:
+https://en.wiktionary.org/wiki/<URL-encoded Spanish headword>#Spanish
+https://en.wiktionary.org/w/index.php?title=<URL-encoded Spanish headword>&action=history
+
+Frequency ranking: Hermit Dave's FrequencyWords, OpenSubtitles 2018 Spanish.
+https://github.com/hermitdave/FrequencyWords/tree/master/content/2018/es
+FrequencyWords licenses its content (distinct from its MIT-licensed code)
+under Creative Commons Attribution-ShareAlike 4.0 International.
+
+Jolito filters, combines and shortens definitions, selects common/Mexican senses,
+and compacts inflections. The adapted dictionary files es-en.json and
+es-lemmas.json are licensed under CC BY-SA 4.0, not the code's Apache license.
+License: https://creativecommons.org/licenses/by-sa/4.0/
+Legal text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+Retain attribution, indicate changes, and use the same license for adaptations.
+This does not assert ownership of individual words or public-domain facts.
+
+The existing snapshot's extraction date was not recorded. The regeneration
+script documents source URLs; future releases must record the retrieval date.

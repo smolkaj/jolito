@@ -666,8 +666,13 @@ describe('NeuralVoiceEngine', () => {
     expect(engine.hasAudio(phrase, 'es-MX')).toBe(true)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     const calledUrl = mockFetch.mock.calls[0]![0] as string
-    expect(calledUrl).toContain('/api/tts?text=buenos+d%C3%ADas+amigos')
-    expect(calledUrl).toMatch(/voice=es-MX-(Dalia|Jorge)Neural/)
+    expect(calledUrl).toBe('/api/tts')
+    const init = mockFetch.mock.calls[0]![1] as RequestInit
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      text: phrase,
+      locale: 'es-MX',
+    })
     expect(mockCache.put).toHaveBeenCalledTimes(1)
 
     // Second call should retrieve from CacheStorage without calling fetch

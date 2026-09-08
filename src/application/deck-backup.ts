@@ -5,6 +5,7 @@ import {
   type DeckBackupEnvelope,
 } from '../domain/deck-backup'
 import type { Clock } from './ports'
+import { dictionaryAttribution } from '../domain/dictionary-license'
 
 export type RestoreMode = 'replace' | 'merge'
 
@@ -34,6 +35,7 @@ export function createDeckBackup(
     app: 'jolito',
     exportedAt: isoDate,
     cards,
+    dictionaryAttribution,
   }
 
   const json = JSON.stringify(payload, null, 2)

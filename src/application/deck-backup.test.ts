@@ -55,10 +55,12 @@ describe('createDeckBackup', () => {
       app: string
       exportedAt: string
       cards: StudyCard[]
+      dictionaryAttribution: string
     }
     expect(parsed.version).toBe(1)
     expect(parsed.app).toBe('jolito')
     expect(parsed.exportedAt).toBe('2026-08-23T14:30:00.000Z')
+    expect(parsed.dictionaryAttribution).toContain('CC BY-SA 4.0')
     expect(parsed.cards).toHaveLength(2)
     expect(parsed.cards[0]?.id).toBe('card-a')
   })

@@ -44,7 +44,7 @@ export function SyncModal({
   pendingCardPrompt,
   onOpenPrivacy,
 }: SyncModalProps) {
-  const dialogRef = useDialogFocus(isOpen)
+  const dialogRef = useDialogFocus(isOpen, onClose)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
@@ -104,18 +104,6 @@ export function SyncModal({
       setUser(currentUser)
     })
   }, [auth])
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -414,7 +402,7 @@ export function SyncModal({
                 id="sync-email"
                 type="email"
                 required
-                autoFocus
+                data-dialog-autofocus
                 placeholder="learner@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -610,6 +598,12 @@ export function SyncModal({
           {isPasted ? 'Pasted link from clipboard.' : ''}
         </div>
         <div className="sync-modal-legal">
+          {!user && (
+            <p className="legal-summary">
+              Your email signs you in and keeps your deck in sync. No marketing
+              emails.
+            </p>
+          )}
           <button
             type="button"
             className="modal-link-btn sync-privacy-link"

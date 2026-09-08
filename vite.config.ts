@@ -1,105 +1,104 @@
 import type { Connect, Plugin } from 'vite'
 import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import react from '@vitejs/plugin-react'
+import { legalPageHtml, dictionarySourcesHtml } from './scripts/legal-page.tsx'
 
-function createTtsMiddleware(): Connect.NextHandleFunction {
-  return (req, res, next) => {
-    const reqUrl = req.url
-    if (!reqUrl || !reqUrl.startsWith('/api/tts')) {
-      next()
-      return
-    }
-    void (async () => {
-      try {
-        const { handleTtsRequest } = await import('./src/worker/tts-route.ts')
-        const hostHeader = req.headers.host
-        const origin = `http://${typeof hostHeader === 'string' ? hostHeader : 'localhost'}`
-        const fullUrl = new URL(reqUrl, origin)
-        const webReq = new Request(fullUrl.toString(), {
-          method: req.method ?? 'GET',
-          headers: req.headers as HeadersInit,
-        })
-        const webRes = await handleTtsRequest(webReq)
-        res.statusCode = webRes.status
-        webRes.headers.forEach((val, key) => {
-          res.setHeader(key, val)
-        })
-        const buf = Buffer.from(await webRes.arrayBuffer())
-        res.end(buf)
-      } catch (err) {
-        next(err)
-      }
-    })()
-  }
-}
-
-function createFeedbackMiddleware(): Connect.NextHandleFunction {
-  return (req, res, next) => {
-    const reqUrl = req.url
-    if (!reqUrl || !reqUrl.startsWith('/api/feedback')) {
-      next()
-      return
-    }
-    void (async () => {
-      try {
-        const { handleFeedbackRequest } =
-          await import('./src/worker/feedback-route.ts')
-        const hostHeader = req.headers.host
-        const origin = `http://${typeof hostHeader === 'string' ? hostHeader : 'localhost'}`
-        const fullUrl = new URL(reqUrl, origin)
-        const chunks: Buffer[] = []
-        for await (const chunk of req as AsyncIterable<Uint8Array | string>) {
-          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-        }
-        const bodyBuf = Buffer.concat(chunks)
-        const reqInit: RequestInit = {
-          method: req.method ?? 'GET',
-          headers: req.headers as HeadersInit,
+function legalPagePlugin(): Plugin {
+  return {
+    name: 'jolito-legal-page',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if ((req.url ?? '').split('?')[0] === '/dict/sources.html') {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.end(dictionarySourcesHtml())
+          return
         }
         if (
-          req.method !== 'GET' &&
-          req.method !== 'HEAD' &&
-          bodyBuf.length > 0
-        ) {
-          reqInit.body = bodyBuf
-        }
-        const webReq = new Request(fullUrl.toString(), reqInit)
-        const webRes = await handleFeedbackRequest(webReq, {
-          FEEDBACK_NOTIFICATION_EMAIL: process.env.FEEDBACK_NOTIFICATION_EMAIL,
-          FEEDBACK_SENDER_EMAIL: process.env.FEEDBACK_SENDER_EMAIL,
-          RESEND_API_KEY: process.env.RESEND_API_KEY,
-        })
-        res.statusCode = webRes.status
-        webRes.headers.forEach((val, key) => {
-          res.setHeader(key, val)
-        })
-        const buf = Buffer.from(await webRes.arrayBuffer())
-        res.end(buf)
-      } catch (err) {
-        next(err)
+          ![
+            '/privacy',
+            '/privacy/',
+            '/privacy.html',
+            '/privacy/index.html',
+          ].includes((req.url ?? '').split('?')[0]!)
+        )
+          return next()
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.end(legalPageHtml())
+      })
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'dict/sources.html',
+        source: dictionarySourcesHtml(),
+      })
+      for (const fileName of ['privacy.html', 'privacy/index.html']) {
+        this.emitFile({ type: 'asset', fileName, source: legalPageHtml() })
       }
-    })()
+    },
   }
 }
 
 function apiDevPlugin(): Plugin {
-  const ttsMiddleware = createTtsMiddleware()
-  const feedbackMiddleware = createFeedbackMiddleware()
+  const middleware: Connect.NextHandleFunction = (req, res, next) => {
+    const pathname = new URL(
+      req.url ?? '/',
+      'http://localhost',
+    ).pathname.replace(/\/+$/, '')
+    if (pathname !== '/api/tts' && pathname !== '/api/feedback') return next()
+    void (async () => {
+      const chunks: Buffer[] = []
+      let size = 0
+      for await (const chunk of req as AsyncIterable<Uint8Array | string>) {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+        size += bytes.byteLength
+        if (size > 32768) {
+          res.statusCode = 413
+          res.end('Request is too large.')
+          return
+        }
+        chunks.push(bytes)
+      }
+      const origin = `http://${req.headers.host ?? 'localhost'}`
+      const method = req.method ?? 'GET'
+      const request = new Request(new URL(req.url ?? '/', origin), {
+        method,
+        headers: req.headers as HeadersInit,
+        ...(method === 'GET' || method === 'HEAD'
+          ? {}
+          : { body: Buffer.concat(chunks) }),
+      })
+      const response =
+        pathname === '/api/tts'
+          ? await (
+              await import('./src/worker/tts-route.ts')
+            ).handleTtsRequest(request)
+          : await (
+              await import('./src/worker/feedback-route.ts')
+            ).handleFeedbackRequest(request, {
+              FEEDBACK_NOTIFICATION_EMAIL:
+                process.env.FEEDBACK_NOTIFICATION_EMAIL,
+              FEEDBACK_SENDER_EMAIL: process.env.FEEDBACK_SENDER_EMAIL,
+              RESEND_API_KEY: process.env.RESEND_API_KEY,
+            })
+      res.statusCode = response.status
+      response.headers.forEach((value, key) => res.setHeader(key, value))
+      res.end(Buffer.from(await response.arrayBuffer()))
+    })().catch(next)
+  }
   return {
     name: 'jolito-api-dev',
     configureServer(server) {
-      server.middlewares.use(ttsMiddleware)
-      server.middlewares.use(feedbackMiddleware)
+      server.middlewares.use(middleware)
     },
     configurePreviewServer(server) {
-      server.middlewares.use(ttsMiddleware)
-      server.middlewares.use(feedbackMiddleware)
+      server.middlewares.use(middleware)
     },
   }
 }
 
 export default defineConfig({
-  plugins: [react(), apiDevPlugin()],
+  plugins: [react(), apiDevPlugin(), legalPagePlugin()],
   server: {
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), '..'],

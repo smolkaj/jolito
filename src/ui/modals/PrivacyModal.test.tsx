@@ -77,9 +77,9 @@ describe('PrivacyModal', () => {
   it('renders official contact email mailto link to a@joli.to', () => {
     render(<PrivacyModal isOpen={true} onClose={vi.fn()} />)
 
-    const emailLink = screen.getByRole('link', {
+    const emailLink = screen.getAllByRole('link', {
       name: 'a@joli.to',
-    })
+    })[0]
     expect(emailLink).toBeInTheDocument()
     expect(emailLink).toHaveAttribute('href', 'mailto:a@joli.to')
   })

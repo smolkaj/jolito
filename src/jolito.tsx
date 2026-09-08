@@ -18,6 +18,7 @@ import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
 import type {
   AppServices,
+  PendingCard,
   AuthUser,
   PrefetchItem,
   SyncService,
@@ -31,6 +32,7 @@ import {
 import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   burySiblingCards,
+  createStudyCards,
   grades,
   intervalLabel,
   isDue,
@@ -43,6 +45,7 @@ import {
   DEFAULT_STUDY_BATCH_SIZE,
   type Grade,
   type StudyCard,
+  type NewNote,
   type UpdateCardParams,
 } from './domain/card'
 import {
@@ -199,14 +202,6 @@ function AnswerComparison({
       </div>
     </div>
   )
-}
-interface PendingCardParams {
-  spanish: string
-  english: string
-  context: string
-  bidirectional: boolean
-  reversePrompt: string
-  reverseAnswer: string
 }
 
 function getCardScheduleBadge(
@@ -964,6 +959,20 @@ export function App({
     () => services.cards.load(starterCards),
     [services.cards],
   )
+  const initialPending = useMemo(() => {
+    try {
+      return { card: services.pendingCard.load(), error: null }
+    } catch {
+      return {
+        card: null,
+        error:
+          'Your unfinished card could not be restored. Please keep a copy of your words before signing in.',
+      }
+    }
+  }, [services.pendingCard])
+  const [draftError, setDraftError] = useState<string | null>(
+    initialPending.error,
+  )
   const initialResolved = useMemo<{
     view: View
     queue: string[]
@@ -1036,19 +1045,31 @@ export function App({
     progressPercentage,
     remainingCount,
   } = studySession
-  const [bidirectional, setBidirectional] = useState(true)
-  const [spanishInput, setSpanishInput] = useState('')
-  const [englishInput, setEnglishInput] = useState('')
-  const [contextInput, setContextInput] = useState('')
-  const [reversePromptInput, setReversePromptInput] = useState('')
-  const [reverseAnswerInput, setReverseAnswerInput] = useState('')
+  const [bidirectional, setBidirectional] = useState(
+    initialPending.card?.bidirectional ?? true,
+  )
+  const [spanishInput, setSpanishInput] = useState(
+    initialPending.card?.spanish ?? '',
+  )
+  const [englishInput, setEnglishInput] = useState(
+    initialPending.card?.english ?? '',
+  )
+  const [contextInput, setContextInput] = useState(
+    initialPending.card?.context ?? '',
+  )
+  const [reversePromptInput, setReversePromptInput] = useState(
+    initialPending.card?.reversePrompt ?? '',
+  )
+  const [reverseAnswerInput, setReverseAnswerInput] = useState(
+    initialPending.card?.reverseAnswer ?? '',
+  )
   const [savedToast, setSavedToast] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([])
   const [suggestionTarget, setSuggestionTarget] = useState<'es' | 'en' | null>(
     null,
   )
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
-  const [isSyncOpen, setIsSyncOpen] = useState(false)
+  const [isSyncOpen, setIsSyncOpen] = useState(initialPending.card !== null)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [isStarterPacksOpen, setIsStarterPacksOpen] = useState(false)
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(() =>
@@ -1070,7 +1091,9 @@ export function App({
     },
   )
 
-  const [pendingCard, setPendingCard] = useState<PendingCardParams | null>(null)
+  const [pendingCard, setPendingCard] = useState<PendingCard | null>(
+    initialPending.card,
+  )
   const [editingCard, setEditingCard] = useState<StudyCard | null>(null)
   const [deletingCards, setDeletingCards] = useState<StudyCard[] | null>(null)
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(
@@ -1356,22 +1379,34 @@ export function App({
   )
 
   const saveCardFromParams = useCallback(
-    (params: {
-      spanish: string
-      english: string
-      context: string
-      bidirectional: boolean
-      reversePrompt: string
-      reverseAnswer: string
-    }) => {
-      const created = createCards(params, {
-        clock: services.clock,
-        ids: services.ids,
-      })
-      if (created.length === 0) return
+    (params: NewNote | PendingCard) => {
+      const created =
+        'id' in params
+          ? createStudyCards(params, params.id, params.createdAt)
+          : createCards(params, {
+              clock: services.clock,
+              ids: services.ids,
+            })
+      if (created.length === 0) return false
 
       const userCards = filterOutStarterCards(cardsRef.current)
-      onUpdateCards([...created, ...userCards])
+      const nextCards = [
+        ...created.filter(
+          (card) => !userCards.some((existing) => existing.id === card.id),
+        ),
+        ...userCards,
+      ]
+      try {
+        services.cards.save(nextCards, Array.from(deletedCardIdsRef.current))
+        services.pendingCard.clear()
+      } catch {
+        setDraftError(
+          'Your card could not be saved. Please copy your words and try again.',
+        )
+        return false
+      }
+      setDraftError(null)
+      onUpdateCards(nextCards)
       const savedSpanish = params.spanish.trim()
       setSavedToast(savedSpanish)
       if (savedToastTimerRef.current !== null) {
@@ -1393,8 +1428,15 @@ export function App({
       setPendingCard(null)
       pendingCardRef.current = null
       spanishInputRef.current?.focus()
+      return true
     },
-    [onUpdateCards, services.clock, services.ids],
+    [
+      onUpdateCards,
+      services.clock,
+      services.ids,
+      services.cards,
+      services.pendingCard,
+    ],
   )
 
   const handleAddStarterCards = useCallback(
@@ -1452,12 +1494,33 @@ export function App({
         let userCards = filterOutStarterCards(cardsRef.current)
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
-          const created = createCards(pending, {
-            clock: services.clock,
-            ids: services.ids,
-          })
+          const created = createStudyCards(
+            pending,
+            pending.id,
+            pending.createdAt,
+          )
           if (created.length > 0) {
-            userCards = [...created, ...userCards]
+            userCards = [
+              ...created.filter(
+                (card) =>
+                  !userCards.some((existing) => existing.id === card.id),
+              ),
+              ...userCards,
+            ]
+            try {
+              services.cards.save(
+                userCards,
+                Array.from(deletedCardIdsRef.current),
+              )
+              services.pendingCard.clear()
+            } catch {
+              setDraftError(
+                'Your card is still in this browser, but could not be saved to your deck. Please copy your words and try again.',
+              )
+              setIsSyncOpen(false)
+              navigateTo('create')
+              return
+            }
             const savedSpanish = pending.spanish.trim()
             setSavedToast(savedSpanish)
             if (savedToastTimerRef.current !== null) {
@@ -1516,7 +1579,15 @@ export function App({
         setIsDemoDeckDismissed(false)
       }
     })
-  }, [services.auth, services.clock, services.ids, services.sync])
+  }, [
+    services.auth,
+    services.clock,
+    services.ids,
+    services.sync,
+    services.cards,
+    services.pendingCard,
+    navigateTo,
+  ])
 
   const isSyncingRef = useRef(false)
   const syncDebounceTimerRef = useRef<number | null>(null)
@@ -2237,8 +2308,6 @@ export function App({
 
   const closeSyncModal = useCallback(() => {
     setIsSyncOpen(false)
-    setPendingCard(null)
-    pendingCardRef.current = null
   }, [])
 
   const openFeedbackModal = useCallback(() => {
@@ -2269,9 +2338,7 @@ export function App({
 
   const handleSavePendingLocally = useCallback(() => {
     if (pendingCardRef.current) {
-      saveCardFromParams(pendingCardRef.current)
-      pendingCardRef.current = null
-      setPendingCard(null)
+      if (!saveCardFromParams(pendingCardRef.current)) return
     }
     setIsSyncOpen(false)
   }, [saveCardFromParams])
@@ -2297,8 +2364,22 @@ export function App({
     }
 
     if (!authUserRef.current) {
-      setPendingCard(cardParams)
-      pendingCardRef.current = cardParams
+      const pending = {
+        ...cardParams,
+        id: services.ids.nextId('note'),
+        createdAt: services.clock.now(),
+      }
+      try {
+        services.pendingCard.save(pending)
+        setDraftError(null)
+      } catch {
+        setDraftError(
+          'This browser could not keep your draft. Please copy your words before signing in.',
+        )
+        return
+      }
+      setPendingCard(pending)
+      pendingCardRef.current = pending
       setIsSyncOpen(true)
       return
     }
@@ -2735,6 +2816,7 @@ export function App({
               </div>
             </div>
             <form className="create-form" onSubmit={createCard}>
+              {draftError && <p role="alert">{draftError}</p>}
               <div className="field-group field-group-relative">
                 <label htmlFor="spanish">
                   <MexicoFlag /> Mexican Spanish

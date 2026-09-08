@@ -1,7 +1,29 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import worker from './index'
 
 describe('worker fetch handler', () => {
+  it('stops rate-limited feedback before dispatching any email', async () => {
+    const send = vi.fn()
+    const res = await worker.fetch(
+      new Request('https://joli.to/api/feedback', {
+        method: 'POST',
+        body: '{"message":"hello"}',
+      }),
+      {
+        FEEDBACK_RATE_LIMIT: {
+          limit: () => Promise.resolve({ success: false }),
+        },
+        SEND_EMAIL: { send },
+      },
+    )
+    expect(res.status).toBe(429)
+    expect(res.headers.get('Retry-After')).toBe('60')
+    expect(send).not.toHaveBeenCalled()
+  })
+  it('fails visibly when deployed without abuse protection', async () => {
+    const res = await worker.fetch(new Request('https://joli.to/api/tts'), {})
+    expect(res.status).toBe(503)
+  })
   it('routes /api/tts to TTS handler', async () => {
     const req = new Request('https://joli.to/api/tts')
     const res = await worker.fetch(req)

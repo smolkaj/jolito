@@ -1847,7 +1847,7 @@ body:has(.welcome-page) {
   gap: 8px;
   max-width: 100%;
   padding: 0 4px;
-  animation: saveTextFade 200ms ease-out;
+  animation: saveTextSlide 200ms ease-out;
 }
 
 .save-button-check {
@@ -1877,13 +1877,11 @@ body:has(.welcome-page) {
   }
 }
 
-@keyframes saveTextFade {
+@keyframes saveTextSlide {
   0% {
-    opacity: 0;
     transform: translateY(4px);
   }
   100% {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -2534,7 +2532,16 @@ kbd {
   border-radius: 28px;
   background: var(--card);
   box-shadow: var(--shadow-card);
-  animation: slideUp 240ms var(--ease-spring);
+  animation: complete-slide-up 240ms var(--ease-spring);
+}
+
+@keyframes complete-slide-up {
+  from {
+    transform: translateY(12px);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .complete-mascot-frame {
@@ -2930,7 +2937,6 @@ kbd {
   justify-content: center;
   padding: 20px;
   z-index: 1000;
-  animation: fade-in 160ms ease-out;
 }
 
 .modal-content {
@@ -2951,21 +2957,10 @@ kbd {
 
 @keyframes modal-pop {
   0% {
-    opacity: 0;
     transform: scale(0.95) translateY(10px);
   }
   100% {
-    opacity: 1;
     transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
   }
 }
 
@@ -3118,7 +3113,7 @@ kbd {
   justify-content: center;
   gap: 6px;
   max-width: 100%;
-  animation: saveTextFade 200ms ease-out;
+  animation: saveTextSlide 200ms ease-out;
 }
 
 .export-button-check {
@@ -3411,7 +3406,7 @@ kbd {
   justify-content: center;
   gap: 6px;
   max-width: 100%;
-  animation: saveTextFade 200ms ease-out;
+  animation: saveTextSlide 200ms ease-out;
 }
 
 .sync-button-check {
@@ -3552,7 +3547,7 @@ kbd {
   justify-content: center;
   gap: 6px;
   max-width: 100%;
-  animation: saveTextFade 200ms ease-out;
+  animation: saveTextSlide 200ms ease-out;
 }
 
 .resend-button-check {
@@ -5291,6 +5286,8 @@ kbd {
 
 .sync-modal-legal {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   padding-top: 8px;
   border-top: 1px solid #f0e6eb;
@@ -5304,6 +5301,29 @@ kbd {
 
 .sync-privacy-link:hover {
   color: var(--ink-soft);
+}
+
+.legal-summary {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.legal-summary a {
+  color: var(--rosa-dark);
+}
+.privacy-section summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 12px 0;
+}
+.privacy-section a {
+  color: var(--rosa-dark);
+  text-underline-offset: 3px;
+}
+.privacy-section p {
+  overflow-wrap: anywhere;
 }
 
 /* Privacy Modal Specific Styles */

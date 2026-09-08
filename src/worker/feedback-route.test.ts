@@ -45,7 +45,9 @@ describe('feedback-route', () => {
       expect(text).toContain('Jolito User Feedback')
       expect(text).toContain('Need dark mode toggle')
       expect(text).toContain('Sender: user@example.com')
-      expect(text).toContain('Account: Authenticated (usr_123)')
+      expect(text).toContain(
+        'Account: Client-reported account, not verified (usr_123)',
+      )
       expect(text).toContain('#/settings')
     })
 
@@ -71,7 +73,7 @@ describe('feedback-route', () => {
       const html = formatHtmlEmail(payload)
       expect(html).toContain('&lt;b&gt;audio speed&lt;/b&gt;')
       expect(html).toContain('speedy@example.com')
-      expect(html).toContain('Authenticated')
+      expect(html).toContain('Client-reported account, not verified')
       expect(html).toContain('usr_789')
       expect(html).toContain('Client Context')
     })

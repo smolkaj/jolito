@@ -1,4 +1,4 @@
-import type { StudyCard } from '../domain/card'
+import type { StudyCard, NewNote } from '../domain/card'
 import type { FeedbackSubmission } from '../domain/feedback'
 import type { AutocompleteSuggestion, LexiconEntry } from '../domain/lexicon'
 import type { SyncStatus } from '../domain/sync'
@@ -17,6 +17,13 @@ export type CardRepository = {
   load(fallback: StudyCard[]): StudyCard[]
   getDeletedCardIds(): string[]
   save(cards: StudyCard[], deletedCardIds?: string[]): void
+}
+
+export type PendingCard = NewNote & { id: string; createdAt: number }
+export type PendingCardRepository = {
+  load(): PendingCard | null
+  save(card: PendingCard): void
+  clear(): void
 }
 
 export type SpeakerOptions = {
@@ -137,6 +144,7 @@ export type AppServices = {
   clock: Clock
   ids: IdGenerator
   cards: CardRepository
+  pendingCard: PendingCardRepository
   speaker: Speaker
   sounds: SoundPlayer
   haptics: HapticsPlayer

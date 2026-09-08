@@ -10,6 +10,7 @@ export const deckBackupEnvelopeSchema = z.object({
   version: z.literal(1),
   app: z.string().optional(),
   exportedAt: z.string().optional(),
+  dictionaryAttribution: z.string().optional(),
   cards: z.array(studyCardSchema),
 })
 

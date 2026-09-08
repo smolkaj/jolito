@@ -856,7 +856,11 @@ export class NeuralVoiceEngine {
       }
 
       try {
-        const response = await fetchFn(url)
+        const response = await fetchFn('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cleanText, locale: normLocale, voice }),
+        })
         if (!response.ok) return false
 
         if (cache) {

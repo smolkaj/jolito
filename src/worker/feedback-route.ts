@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { readJsonBody, RequestBodyError } from './request-body.ts'
 
 export const feedbackPayloadSchema = z.object({
   message: z
@@ -50,7 +51,7 @@ export function formatPlainTextEmail(payload: FeedbackPayload): string {
     ? 'Anonymous Guest (no email provided)'
     : payload.email!
   const accountDisplay = payload.user_id
-    ? `Authenticated (${payload.user_id})`
+    ? `Client-reported account, not verified (${payload.user_id})`
     : isGuest
       ? 'Guest (no account)'
       : 'Guest (email provided)'
@@ -98,7 +99,7 @@ export function formatHtmlEmail(payload: FeedbackPayload): string {
     : `<strong>${escapeHtml(payload.email!)}</strong>`
 
   const accountDisplay = payload.user_id
-    ? `Authenticated <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #64748b;">(${escapeHtml(payload.user_id)})</span>`
+    ? `Client-reported account, not verified <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #64748b;">(${escapeHtml(payload.user_id)})</span>`
     : isGuest
       ? '<span style="color: #64748b;">Guest (no account)</span>'
       : '<span style="color: #64748b;">Guest (email provided)</span>'
@@ -254,14 +255,15 @@ export async function handleFeedbackRequest(
 
   let body: unknown
   try {
-    body = await request.json()
-  } catch {
+    body = await readJsonBody(request, 32768)
+  } catch (error) {
     return new Response(
       JSON.stringify({
-        error: 'Invalid JSON request body.',
+        error:
+          error instanceof Error ? error.message : 'Invalid JSON request body.',
       }),
       {
-        status: 400,
+        status: error instanceof RequestBodyError ? error.status : 400,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',

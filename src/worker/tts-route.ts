@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { readJsonBody, RequestBodyError } from './request-body.ts'
 import { synthesizeSpeech } from '../infrastructure/tts/synthesize.ts'
 import {
   getDeterministicVoice,
@@ -46,7 +47,7 @@ export async function handleTtsRequest(
 ): Promise<Response> {
   const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   }
 
@@ -57,23 +58,37 @@ export async function handleTtsRequest(
     })
   }
 
-  if (request.method !== 'GET') {
+  if (request.method !== 'GET' && request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
       headers: {
         ...corsHeaders,
-        Allow: 'GET, OPTIONS',
+        Allow: 'GET, POST, OPTIONS',
         'Content-Type': 'application/json',
       },
     })
   }
 
   const url = new URL(request.url)
-  const parsed = ttsQuerySchema.safeParse({
+  let input: unknown = {
     text: url.searchParams.get('text') ?? undefined,
     locale: url.searchParams.get('locale') ?? undefined,
     voice: url.searchParams.get('voice') ?? undefined,
-  })
+  }
+  if (request.method === 'POST') {
+    try {
+      input = await readJsonBody(request, 4096)
+    } catch (error) {
+      return Response.json(
+        { error: error instanceof Error ? error.message : 'Invalid request.' },
+        {
+          status: error instanceof RequestBodyError ? error.status : 400,
+          headers: corsHeaders,
+        },
+      )
+    }
+  }
+  const parsed = ttsQuerySchema.safeParse(input)
 
   if (!parsed.success) {
     return new Response(
@@ -89,22 +104,6 @@ export async function handleTtsRequest(
         },
       },
     )
-  }
-
-  const edgeCache =
-    typeof caches !== 'undefined' && 'default' in caches
-      ? (caches as unknown as { default: Cache }).default
-      : null
-
-  if (edgeCache) {
-    try {
-      const cached = await edgeCache.match(request)
-      if (cached) {
-        return cached
-      }
-    } catch {
-      // Ignore cache lookup errors
-    }
   }
 
   const { text, locale, voice: requestedVoice } = parsed.data
@@ -128,17 +127,9 @@ export async function handleTtsRequest(
         ...corsHeaders,
         'Content-Type': 'audio/mpeg',
         'Content-Length': String(audioBytes.byteLength),
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'private, no-store',
       },
     })
-
-    if (edgeCache) {
-      try {
-        await edgeCache.put(request, response.clone())
-      } catch {
-        // Ignore cache storage errors
-      }
-    }
 
     return response
   } catch (err) {

@@ -2,6 +2,34 @@ import { describe, expect, it } from 'vitest'
 import { handleTtsRequest } from './tts-route'
 
 describe('handleTtsRequest', () => {
+  it('accepts phrases in a bounded POST body without exposing them in the URL', async () => {
+    let captured: unknown
+    const response = await handleTtsRequest(
+      new Request('https://joli.to/api/tts', {
+        method: 'POST',
+        body: JSON.stringify({ text: 'hola', locale: 'es-MX' }),
+      }),
+      {
+        synthesizeFn: (options) => {
+          captured = options
+          return Promise.resolve(new Uint8Array([1]))
+        },
+      },
+    )
+    expect(response.status).toBe(200)
+    expect(captured).toMatchObject({ text: 'hola', locale: 'es-MX' })
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  it('rejects oversized POST bodies before synthesis', async () => {
+    const response = await handleTtsRequest(
+      new Request('https://joli.to/api/tts', {
+        method: 'POST',
+        body: 'x'.repeat(4097),
+      }),
+    )
+    expect(response.status).toBe(413)
+  })
   it('returns 400 if text query parameter is missing', async () => {
     const request = new Request('https://joli.to/api/tts')
     const response = await handleTtsRequest(request)
@@ -25,7 +53,7 @@ describe('handleTtsRequest', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
   })
 
-  it('returns synthesized audio with immutable caching headers on success', async () => {
+  it('returns audio without allowing shared HTTP caches to retain personal phrases', async () => {
     const mockSynthesize = () =>
       Promise.resolve(new Uint8Array([0xff, 0xfb, 1, 2, 3]))
 
@@ -38,9 +66,7 @@ describe('handleTtsRequest', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('Content-Type')).toBe('audio/mpeg')
-    expect(response.headers.get('Cache-Control')).toBe(
-      'public, max-age=31536000, immutable',
-    )
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
 
     const body = new Uint8Array(await response.arrayBuffer())
@@ -118,11 +144,11 @@ describe('handleTtsRequest', () => {
 
   it('returns 405 Method Not Allowed for non-GET non-OPTIONS requests', async () => {
     const request = new Request('https://joli.to/api/tts?text=hola', {
-      method: 'POST',
+      method: 'DELETE',
     })
     const response = await handleTtsRequest(request)
     expect(response.status).toBe(405)
-    expect(response.headers.get('Allow')).toBe('GET, OPTIONS')
+    expect(response.headers.get('Allow')).toBe('GET, POST, OPTIONS')
     const json = (await response.json()) as { error?: string }
     expect(json.error).toBe('Method not allowed')
   })

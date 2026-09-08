@@ -1,5 +1,6 @@
 import type {
   AppServices,
+  PendingCard,
   AuthService,
   AuthUser,
   CardAssistant,
@@ -354,9 +355,19 @@ export function createTestServices(options?: {
     mockSync.remoteDeletedCardIds = [...options.remoteDeletedCardIds]
   }
   const mockFeedback = new MockFeedbackService()
+  let pendingCard: PendingCard | null = null
 
   return {
     cards: memoryCards,
+    pendingCard: {
+      load: () => pendingCard,
+      save: (card) => {
+        pendingCard = card
+      },
+      clear: () => {
+        pendingCard = null
+      },
+    },
     speaker: mockSpeaker,
     sounds: mockSounds,
     haptics: mockHaptics,

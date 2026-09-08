@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { LegalContent } from '../../content/LegalContent'
 import { ShieldIcon } from '../icons'
 import { useDialogFocus } from '../useDialogFocus'
 
@@ -13,18 +13,7 @@ export function PrivacyModal({
   onClose,
   onOpenFeedback,
 }: PrivacyModalProps) {
-  const dialogRef = useDialogFocus(isOpen)
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  const dialogRef = useDialogFocus(isOpen, onClose)
 
   if (!isOpen) return null
 
@@ -59,99 +48,12 @@ export function PrivacyModal({
         </div>
 
         <div className="privacy-modal-body">
-          <section className="privacy-section">
-            <h3>1. The Demo vs. Your Account</h3>
-            <p>
-              You can try the starter demo deck without an account. To create
-              cards, import decks, and save progress, you sign in with your
-              email. Once signed in, Jolito works offline on your device and
-              syncs changes to the cloud when connected.
-            </p>
-          </section>
-
-          <section className="privacy-section">
-            <h3>2. What We Collect</h3>
-            <p>
-              <strong>Email:</strong> Used only to send your passwordless
-              sign-in link. Never shared, sold, or used for marketing.
-            </p>
-            <p>
-              <strong>Your Decks & Progress:</strong> Synced to your private
-              cloud database so your cards and reviews are backed up across
-              devices.
-            </p>
-            <p>
-              <strong>Optional Feedback:</strong> If you send in-app feedback,
-              we receive your message and email to follow up.
-            </p>
-          </section>
-
-          <section className="privacy-section">
-            <h3>3. Data Export & Account Deletion</h3>
-            <p>
-              You can export your complete deck to a JSON file anytime under{' '}
-              <strong>Manage deck → Backup & export</strong>.
-            </p>
-            <p>
-              To permanently delete your cloud data, tap{' '}
-              <strong>Cloud sync → Delete cloud account & data</strong> in the
-              app. We immediately and permanently delete your user record, cloud
-              decks, and feedback from our servers.
-            </p>
-          </section>
-
-          <section className="privacy-section">
-            <h3>4. Open Source & Contact</h3>
-            <p>
-              Jolito is{' '}
-              <a
-                href="https://github.com/smolkaj/jolito"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="privacy-contact-link"
-              >
-                open-source
-              </a>{' '}
-              (Apache-2.0), created by{' '}
-              <a
-                href="https://smolka.st"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="privacy-contact-link"
-              >
-                Steffen Smolka
-              </a>
-              .
-            </p>
-            <p>
-              You can open an issue{' '}
-              <a
-                href="https://github.com/smolkaj/jolito"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="privacy-contact-link"
-              >
-                on GitHub
-              </a>
-              , submit feedback{' '}
-              <a
-                href="#/feedback"
-                className="privacy-contact-link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  onClose()
-                  onOpenFeedback?.()
-                }}
-              >
-                directly in the app
-              </a>
-              , or email us at{' '}
-              <a href="mailto:a@joli.to" className="privacy-contact-link">
-                a@joli.to
-              </a>
-              .
-            </p>
-          </section>
+          <LegalContent
+            onOpenFeedback={() => {
+              onClose()
+              onOpenFeedback?.()
+            }}
+          />
         </div>
 
         <div className="privacy-modal-footer">

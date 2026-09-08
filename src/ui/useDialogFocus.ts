@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 /** Keep keyboard navigation in the active dialog and return focus on close. */
-export function useDialogFocus(isOpen = true) {
+export function useDialogFocus(isOpen: boolean, onClose: () => void) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const dialog = ref.current
@@ -19,14 +19,23 @@ export function useDialogFocus(isOpen = true) {
           element.getClientRects().length > 0,
       )
     if (!dialog.contains(document.activeElement)) {
-      ;(focusable()[0] ?? dialog).focus()
+      ;(
+        dialog.querySelector<HTMLElement>('[data-dialog-autofocus]') ??
+        focusable()[0] ??
+        dialog
+      ).focus()
     }
     const handleTab = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return
+      if (event.key !== 'Tab' && event.key !== 'Escape') return
       const dialogs = document.querySelectorAll(
         '[role="dialog"][aria-modal="true"]',
       )
       if (dialogs[dialogs.length - 1] !== dialog) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
       const items = focusable()
       const first = items[0] ?? dialog
       const last = items[items.length - 1] ?? dialog
@@ -39,12 +48,12 @@ export function useDialogFocus(isOpen = true) {
         ;(event.shiftKey ? last : first).focus()
       }
     }
-    document.addEventListener('keydown', handleTab)
+    window.addEventListener('keydown', handleTab)
     return () => {
-      document.removeEventListener('keydown', handleTab)
+      window.removeEventListener('keydown', handleTab)
       if (previous instanceof HTMLElement && previous.isConnected)
         previous.focus()
     }
-  }, [isOpen])
+  }, [isOpen, onClose])
   return ref
 }

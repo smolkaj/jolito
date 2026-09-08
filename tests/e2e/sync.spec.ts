@@ -1,6 +1,75 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
+test('keeps words visible and explains when the browser cannot retain a sign-in draft', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === 'jolito-pending-card-v1')
+        throw new Error('Storage unavailable')
+      original.call(this, key, value)
+    }
+  })
+  await page.goto('/#/create')
+  await page.getByLabel(/mexican spanish/i).fill('buen provecho')
+  await page.getByLabel('English', { exact: true }).fill('Enjoy your meal')
+  await page.getByRole('button', { name: 'Sign in to save card' }).click()
+  await expect(page.getByRole('alert')).toContainText(
+    'copy your words before signing in',
+  )
+  await expect(page.getByLabel(/mexican spanish/i)).toHaveValue('buen provecho')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('keeps the pending card through reload and saves it once when the email opens another tab', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/#/create')
+  await page.getByLabel(/mexican spanish/i).fill('buen provecho')
+  await page.getByLabel('English', { exact: true }).fill('Enjoy your meal')
+  await page.getByRole('button', { name: 'Sign in to save card' }).click()
+  await page.reload()
+  await expect(page.getByRole('dialog')).toContainText('buen provecho')
+  await expect(page.getByLabel(/mexican spanish/i)).toHaveValue('buen provecho')
+  await context.route('**/rest/v1/decks*', (route) =>
+    route.fulfill({ json: [] }),
+  )
+  const signedIn = await context.newPage()
+  await signedIn.goto('/')
+  await signedIn.evaluate(() =>
+    localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify({
+        accessToken: 'mock-token',
+        refreshToken: 'mock-refresh',
+        expiresAt: Date.now() + 3600000,
+        user: { id: 'learner-draft', email: 'learner@example.com' },
+      }),
+    ),
+  )
+  await signedIn.reload()
+  await expect
+    .poll(() =>
+      signedIn.evaluate(() => localStorage.getItem('jolito-pending-card-v1')),
+    )
+    .toBeNull()
+  await page.reload()
+  const cards = await page.evaluate(
+    () =>
+      (
+        JSON.parse(localStorage.getItem('jolito-library-v1')!) as {
+          cards: Array<{ prompt: string }>
+        }
+      ).cards,
+  )
+  expect(
+    cards.filter((card: { prompt: string }) => card.prompt === 'buen provecho'),
+  ).toHaveLength(1)
+})
+
 test('card sign-in keeps focus inside the dialog and restores it on close', async ({
   page,
 }) => {
@@ -21,7 +90,14 @@ test('card sign-in keeps focus inside the dialog and restores it on close', asyn
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
   expect(results.violations).toEqual([])
+  const privacy = dialog.getByRole('button', { name: /privacy/i })
+  await privacy.click()
+  await expect(page.getByRole('dialog')).toHaveCount(1)
+  await expect(
+    page.getByRole('heading', { name: 'Privacy Policy' }),
+  ).toBeVisible()
   await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(save).toBeFocused()
 })
 

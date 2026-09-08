@@ -1,0 +1,2 @@
+export const dictionaryAttribution =
+  'Dictionary-derived definitions and word forms: English Wiktionary contributors, via Kaikki / Wiktextract; frequency data: Hermit Dave / FrequencyWords (OpenSubtitles 2018). Adapted by Jolito under CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ . Sources and contributor histories: https://joli.to/dict/sources.html . Preserve credit and license when sharing adaptations. This notice applies to dictionary-derived material, not to your original writing or separately imported content.'
