@@ -445,6 +445,7 @@ export function SyncModal({
                     id="delete-confirm-input"
                     type="text"
                     autoComplete="off"
+                    autoCapitalize="characters"
                     spellCheck={false}
                     placeholder="DELETE"
                     value={deleteConfirmText}
