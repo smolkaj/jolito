@@ -27,8 +27,8 @@ export const normalizeTypography = (text: string): string =>
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
-    .replace(/\//g, ' / ')
-    .replace(/;/g, ' ; ')
+    .replace(/\s*(\/+)\s*/g, ' $1 ')
+    .replace(/\s*(;+)\s*/g, '$1 ')
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -198,7 +198,7 @@ export function splitEnumeration(text: string): ParsedEnumeration | null {
   rawItems.push(trimmed.slice(itemStart).trim())
 
   const validItems = rawItems.filter((item) => item.length > 0)
-  if (validItems.length < 2) {
+  if (validItems.length < 2 || rawItems.length !== validItems.length) {
     return null
   }
 
@@ -215,43 +215,82 @@ export function splitEnumeration(text: string): ParsedEnumeration | null {
   }
 }
 
-function parseTypedItems(text: string): {
+interface ParsedTypedEnumeration {
   items: string[]
   delimiters: string[]
-} {
-  const trimmed = text.trim()
-  if (!trimmed) return { items: [], delimiters: [] }
+  leadingDelim?: string | undefined
+  trailingDelim?: string | undefined
+  hasMalformedDelimiters: boolean
+}
 
+function parseTypedItems(text: string): ParsedTypedEnumeration {
+  const trimmed = text.trim()
+
+  let parenDepth = 0
   let slashCount = 0
   let semiCount = 0
   let commaCount = 0
 
   for (let i = 0; i < trimmed.length; i++) {
     const ch = trimmed[i]
-    if (ch === '/') slashCount++
-    else if (ch === ';') semiCount++
-    else if (ch === ',') commaCount++
+    if (ch === '(' || ch === '[') {
+      parenDepth++
+      continue
+    }
+    if (ch === ')' || ch === ']') {
+      parenDepth = Math.max(0, parenDepth - 1)
+      continue
+    }
+
+    if (parenDepth === 0) {
+      if (ch === '/') slashCount++
+      else if (ch === ';') semiCount++
+      else if (ch === ',') commaCount++
+    }
   }
 
   const delimChar: '/' | ';' | ',' | null =
     slashCount > 0 ? '/' : semiCount > 0 ? ';' : commaCount > 0 ? ',' : null
 
   if (!delimChar) {
-    return { items: [trimmed], delimiters: [] }
+    return {
+      items: [trimmed],
+      delimiters: [],
+      hasMalformedDelimiters: false,
+    }
   }
 
-  const delimStr = delimChar === '/' ? ' / ' : delimChar === ';' ? '; ' : ', '
   const rawItems: string[] = []
+  const rawDelims: string[] = []
   let itemStart = 0
+  parenDepth = 0
 
   let i = 0
   while (i < trimmed.length) {
-    if (trimmed[i] === delimChar) {
-      rawItems.push(trimmed.slice(itemStart, i).trim())
+    const ch = trimmed[i]
+    if (ch === '(' || ch === '[') {
+      parenDepth++
+      i++
+      continue
+    }
+    if (ch === ')' || ch === ']') {
+      parenDepth = Math.max(0, parenDepth - 1)
+      i++
+      continue
+    }
+
+    if (parenDepth === 0 && ch === delimChar) {
+      let itemEnd = i
+      while (itemEnd > itemStart && /\s/.test(trimmed[itemEnd - 1]!)) {
+        itemEnd--
+      }
+      rawItems.push(trimmed.slice(itemStart, itemEnd))
+
       let nextI = i + 1
       while (nextI < trimmed.length && /\s/.test(trimmed[nextI]!)) {
         nextI++
       }
+      rawDelims.push(trimmed.slice(itemEnd, nextI))
       itemStart = nextI
       i = nextI
       continue
@@ -260,17 +299,56 @@ function parseTypedItems(text: string): {
   }
 
   rawItems.push(trimmed.slice(itemStart).trim())
-  const validItems = rawItems.filter((it) => it.length > 0)
-  if (validItems.length < 2) {
-    return { items: [trimmed], delimiters: [] }
+
+  let hasMalformedDelimiters = false
+  let leadingDelim: string | undefined
+  let trailingDelim: string | undefined
+
+  if (rawItems[0] === '') {
+    hasMalformedDelimiters = true
+    leadingDelim = rawDelims.shift()
+    rawItems.shift()
   }
 
-  const delimiters = Array.from(
-    { length: validItems.length - 1 },
-    () => delimStr,
-  )
+  if (rawItems.length > 0 && rawItems[rawItems.length - 1] === '') {
+    hasMalformedDelimiters = true
+    trailingDelim = rawDelims.pop()
+    rawItems.pop()
+  }
 
-  return { items: validItems, delimiters }
+  const items: string[] = []
+  const delimiters: string[] = []
+
+  for (let idx = 0; idx < rawItems.length; idx++) {
+    const it = rawItems[idx]!
+    if (it.length === 0) {
+      hasMalformedDelimiters = true
+      if (delimiters.length > 0 && idx - 1 < rawDelims.length) {
+        delimiters[delimiters.length - 1] += rawDelims[idx - 1]!
+      }
+    } else {
+      items.push(it)
+      if (idx < rawDelims.length && idx < rawItems.length - 1) {
+        delimiters.push(rawDelims[idx]!)
+      }
+    }
+  }
+
+  if (items.length === 0) {
+    return {
+      items: [trimmed],
+      delimiters: [],
+      hasMalformedDelimiters: true,
+    }
+  }
+
+  return {
+    items,
+    delimiters,
+    leadingDelim,
+    trailingDelim,
+    hasMalformedDelimiters,
+  }
 }
 
 function missingItemSegments(item: string): DiffSegment[] {
@@ -548,7 +626,12 @@ export function compareAnswer(
     }
   }
 
-  let isAllExact = matchedT.size === k && missingE.length === 0
+  let isAllExact =
+    !typedParsed.hasMalformedDelimiters &&
+    !typedParsed.leadingDelim &&
+    !typedParsed.trailingDelim &&
+    matchedT.size === k &&
+    missingE.length === 0
   const itemDiffs = new Map<number, AnswerComparison>()
 
   for (let i = 0; i < k; i++) {
@@ -575,10 +658,16 @@ export function compareAnswer(
   const primaryDelim = expectedEnum.primaryDelim
   const typedRaw: DiffSegment[] = []
 
+  if (typedParsed.leadingDelim) {
+    typedRaw.push({ value: typedParsed.leadingDelim, status: 'extra' })
+  }
+
   for (let i = 0; i < k; i++) {
     if (i > 0) {
       const delim = typedParsed.delimiters[i - 1]!
-      const isMatchedDelim = matchedT.has(i - 1) && matchedT.has(i)
+      const isSingleDelim = (delim.match(/[/;,]/g) || []).length === 1
+      const isMatchedDelim =
+        matchedT.has(i - 1) && matchedT.has(i) && isSingleDelim
       typedRaw.push({
         value: delim,
         status: isMatchedDelim ? 'match' : 'extra',
@@ -592,6 +681,10 @@ export function compareAnswer(
     } else {
       typedRaw.push({ value: T[i]!, status: 'extra' })
     }
+  }
+
+  if (typedParsed.trailingDelim) {
+    typedRaw.push({ value: typedParsed.trailingDelim, status: 'extra' })
   }
 
   const expectedRaw: DiffSegment[] = []
