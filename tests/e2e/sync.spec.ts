@@ -32,6 +32,13 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   const emailInput = page.getByLabel(/email address/i)
   await expect(previewHeading.or(emailInput)).toBeVisible()
 
+  // Ensure web fonts are completely loaded before evaluating styles and rendering
+  await page.evaluate(() => document.fonts.ready)
+  const isFontLoaded = await page.evaluate(() =>
+    document.fonts.check('12px "Bricolage Grotesque"'),
+  )
+  expect(isFontLoaded).toBe(true)
+
   // Verify typography and computed style parity across modal legal links
   const privacyBtn = page.getByRole('button', { name: /privacy policy/i })
   const ackLink = page.getByRole('link', { name: /acknowledgements/i })
@@ -45,7 +52,17 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
         fontFamily: s.fontFamily,
         fontSize: s.fontSize,
         fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
         color: s.color,
+        textDecorationLine: s.textDecorationLine,
+        cursor: s.cursor,
+        paddingTop: s.paddingTop,
+        paddingBottom: s.paddingBottom,
+        paddingLeft: s.paddingLeft,
+        paddingRight: s.paddingRight,
+        borderTopWidth: s.borderTopWidth,
+        borderBottomWidth: s.borderBottomWidth,
+        backgroundColor: s.backgroundColor,
       }
     }),
     ackLink.evaluate((el) => {
@@ -54,20 +71,50 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
         fontFamily: s.fontFamily,
         fontSize: s.fontSize,
         fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
         color: s.color,
+        textDecorationLine: s.textDecorationLine,
+        cursor: s.cursor,
+        paddingTop: s.paddingTop,
+        paddingBottom: s.paddingBottom,
+        paddingLeft: s.paddingLeft,
+        paddingRight: s.paddingRight,
+        borderTopWidth: s.borderTopWidth,
+        borderBottomWidth: s.borderBottomWidth,
+        backgroundColor: s.backgroundColor,
       }
     }),
   ])
 
+  // Full rendered typographic & reset contract: sibling legal links must not diverge
   expect(privacyStyle.fontFamily).toBe(ackStyle.fontFamily)
   expect(privacyStyle.fontSize).toBe(ackStyle.fontSize)
   expect(privacyStyle.fontWeight).toBe(ackStyle.fontWeight)
   expect(privacyStyle.fontWeight).toBe('400')
+  expect(privacyStyle.lineHeight).toBe(ackStyle.lineHeight)
   expect(privacyStyle.color).toBe(ackStyle.color)
+  expect(privacyStyle.textDecorationLine).toBe('underline')
+  expect(ackStyle.textDecorationLine).toBe('underline')
+  expect(privacyStyle.cursor).toBe('pointer')
+  expect(ackStyle.cursor).toBe('pointer')
+  expect(privacyStyle.paddingTop).toBe(ackStyle.paddingTop)
+  expect(privacyStyle.paddingBottom).toBe(ackStyle.paddingBottom)
+  expect(privacyStyle.borderTopWidth).toBe('0px')
+  expect(ackStyle.borderTopWidth).toBe('0px')
+  expect(privacyStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+  expect(ackStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)')
 
-  // Save screenshot for autonomous visual inspection
+  // Save screenshot of the legal footer and full modal for visual verification
+  await page.locator('.sync-modal-legal').screenshot({
+    path: '/tmp/legal-footer-desktop.png',
+    animations: 'disabled',
+  })
   await page.screenshot({
     path: 'test-results/sync-modal.png',
+    animations: 'disabled',
+  })
+  await page.screenshot({
+    path: '/tmp/sync-modal-after.png',
     animations: 'disabled',
   })
 
@@ -494,4 +541,52 @@ test('displays guarded account deletion flow with zero WCAG violations', async (
   // Typing DELETE enables confirm button
   await confirmInput.fill('DELETE')
   await expect(confirmBtn).toBeEnabled()
+})
+
+test('renders cloud sync legal footer with typographic parity on mobile viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await page.goto('/')
+
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /^cloud sync$/i }),
+  ).toBeVisible()
+
+  // Ensure fonts loaded
+  await page.evaluate(() => document.fonts.ready)
+
+  const privacyBtn = page.getByRole('button', { name: /privacy policy/i })
+  const ackLink = page.getByRole('link', { name: /acknowledgements/i })
+  await expect(privacyBtn).toBeVisible()
+  await expect(ackLink).toBeVisible()
+
+  const [privacyStyle, ackStyle] = await Promise.all([
+    privacyBtn.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
+      }
+    }),
+    ackLink.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
+      }
+    }),
+  ])
+
+  expect(privacyStyle.fontWeight).toBe('400')
+  expect(privacyStyle.fontWeight).toBe(ackStyle.fontWeight)
+  expect(privacyStyle.lineHeight).toBe(ackStyle.lineHeight)
+
+  await page.locator('.sync-modal-legal').screenshot({
+    path: '/tmp/legal-footer-mobile.png',
+    animations: 'disabled',
+  })
 })
