@@ -14,6 +14,7 @@ interface FeedbackResponseBody {
   success?: boolean
   emailDispatched?: boolean
   provider?: string
+  emailError?: string
   issues?: unknown[]
 }
 
@@ -340,6 +341,8 @@ describe('feedback-route', () => {
       const body = (await res.json()) as FeedbackResponseBody
       expect(body.success).toBe(true)
       expect(body.emailDispatched).toBe(false)
+      expect(body.provider).toBe('error')
+      expect(body.emailError).toBe('SMTP connection timed out')
     })
   })
 })

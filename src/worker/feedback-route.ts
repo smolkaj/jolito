@@ -295,12 +295,15 @@ export async function handleFeedbackRequest(
 
   // Dispatch email notification (non-fatal error handling: submission succeeds even if email fails)
   let emailDispatched = false
-  let emailProvider = 'none'
+  let emailProvider: string
+  let emailError: string | undefined
   try {
     const res = await sendFeedbackNotification(payload, env)
     emailDispatched = res.dispatched
     emailProvider = res.provider
   } catch (emailErr) {
+    emailProvider = 'error'
+    emailError = emailErr instanceof Error ? emailErr.message : String(emailErr)
     console.error(
       '[FeedbackRoute] Non-fatal notification dispatch error:',
       emailErr,
@@ -312,6 +315,7 @@ export async function handleFeedbackRequest(
       success: true,
       emailDispatched,
       provider: emailProvider,
+      ...(emailError ? { emailError } : {}),
     }),
     {
       status: 200,
