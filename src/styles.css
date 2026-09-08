@@ -5299,7 +5299,7 @@ kbd {
 
 .sync-privacy-link {
   font-size: 12px;
-  color: var(--ink-muted);
+  color: var(--ink);
 }
 
 .sync-privacy-link:hover {

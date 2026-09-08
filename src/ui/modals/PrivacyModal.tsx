@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { ShieldIcon } from '../icons'
+import { useDialogFocus } from '../useDialogFocus'
 
 export interface PrivacyModalProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ export function PrivacyModal({
   onClose,
   onOpenFeedback,
 }: PrivacyModalProps) {
+  const dialogRef = useDialogFocus(isOpen)
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,6 +32,8 @@ export function PrivacyModal({
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
         className="modal-content privacy-modal"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="privacy-modal-title"

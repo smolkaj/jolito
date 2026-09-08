@@ -709,8 +709,7 @@ export class SupabaseAuthService implements AuthService {
     const token = session?.accessToken
 
     if (!token || !this.supabaseUrl || !this.supabaseAnonKey) {
-      this.clearSession()
-      return { success: true }
+      return { success: false, error: 'Sign in to delete your account.' }
     }
 
     try {
@@ -729,7 +728,7 @@ export class SupabaseAuthService implements AuthService {
         },
       )
 
-      if (!rpcRes.ok && rpcRes.status !== 404) {
+      if (!rpcRes.ok) {
         const errorData = (await rpcRes.json().catch(() => ({}))) as {
           message?: string
           details?: string
@@ -754,6 +753,7 @@ export class SupabaseAuthService implements AuthService {
         },
       }).catch(() => {})
 
+      this.clearSession()
       return { success: true }
     } catch (err) {
       return {
@@ -761,8 +761,6 @@ export class SupabaseAuthService implements AuthService {
         error:
           err instanceof Error ? err.message : 'Error deleting cloud account.',
       }
-    } finally {
-      this.clearSession()
     }
   }
 

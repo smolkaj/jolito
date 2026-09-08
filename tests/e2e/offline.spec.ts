@@ -1,5 +1,23 @@
 import { expect, test } from '@playwright/test'
 
+test('visiting privacy never replaces the offline app shell', async ({
+  context,
+  page,
+}) => {
+  await page.goto('/')
+  await page.locator('html[data-offline-ready="true"]').waitFor()
+  await page.reload()
+  await page.goto('/privacy/')
+  await expect(
+    page.getByRole('heading', { name: 'Privacy Policy', exact: true }),
+  ).toBeVisible()
+  await context.setOffline(true)
+  await page.goto('/')
+  await expect(
+    page.getByRole('heading', { name: /make the words you meet stick/i }),
+  ).toBeVisible()
+})
+
 test('supports complete learner workflow, audio, autocomplete, and celebration while offline', async ({
   context,
   page,

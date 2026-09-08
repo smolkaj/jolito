@@ -58,10 +58,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     fireEvent.click(confirmBtn)
 
     await waitFor(() => {
-      expect(deleteRemoteDeckSpy).toHaveBeenCalledWith({
-        id: 'user-del-1',
-        email: 'delete-me@example.com',
-      })
+      expect(deleteRemoteDeckSpy).not.toHaveBeenCalled()
       expect(deleteAccountSpy).toHaveBeenCalled()
       expect(
         screen.getByText(/cloud account and backup data deleted/i),

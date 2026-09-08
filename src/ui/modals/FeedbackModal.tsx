@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import type { AuthUser, FeedbackService } from '../../application/ports'
 import type { View } from '../../navigation'
+import { useDialogFocus } from '../useDialogFocus'
 
 function FeedbackModalInner({
   onClose,
@@ -14,6 +15,7 @@ function FeedbackModalInner({
   currentView: View
 }) {
   const [message, setMessage] = useState('')
+  const dialogRef = useDialogFocus()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
@@ -55,7 +57,6 @@ function FeedbackModalInner({
                 : null,
             devicePixelRatio:
               typeof window !== 'undefined' ? window.devicePixelRatio : null,
-            url: typeof window !== 'undefined' ? window.location.href : null,
             online: typeof navigator !== 'undefined' ? navigator.onLine : null,
           },
         },
@@ -89,6 +90,8 @@ function FeedbackModalInner({
     >
       <div
         className="modal-content feedback-modal"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="feedback-modal-title"

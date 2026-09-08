@@ -7,6 +7,7 @@ import type {
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { isIOS, isStandalone } from '../../infrastructure/browser/environment'
+import { useDialogFocus } from '../useDialogFocus'
 import {
   ClipboardIcon,
   CloudCheckSticker,
@@ -43,6 +44,7 @@ export function SyncModal({
   pendingCardPrompt,
   onOpenPrivacy,
 }: SyncModalProps) {
+  const dialogRef = useDialogFocus(isOpen)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
@@ -211,17 +213,6 @@ export function SyncModal({
     setLoadingAction('delete')
     setStatusMsg(null)
     try {
-      if (sync.deleteRemoteDeck) {
-        const deleteRes = await sync.deleteRemoteDeck(user)
-        if (!deleteRes.success) {
-          setStatusMsg({
-            type: 'error',
-            message: deleteRes.error || 'Failed to delete cloud deck.',
-          })
-          setLoadingAction(null)
-          return
-        }
-      }
       if (auth.deleteAccount) {
         const authRes = await auth.deleteAccount()
         if (!authRes.success) {
@@ -233,7 +224,11 @@ export function SyncModal({
           return
         }
       } else {
-        await auth.signOut()
+        setStatusMsg({
+          type: 'error',
+          message: 'Account deletion is unavailable. Please contact a@joli.to.',
+        })
+        return
       }
       setIsOtpSent(false)
       setToken('')
@@ -256,6 +251,8 @@ export function SyncModal({
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
         className="modal-content sync-modal"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="sync-modal-title"

@@ -1,6 +1,30 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
+test('card sign-in keeps focus inside the dialog and restores it on close', async ({
+  page,
+}) => {
+  await page.goto('/#/create')
+  await page.getByLabel(/mexican spanish/i).fill('buen provecho')
+  await page.getByLabel('English', { exact: true }).fill('Enjoy your meal')
+  const save = page.getByRole('button', { name: 'Sign in to save card' })
+  await save.click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  for (let i = 0; i < 10; i++) {
+    await page.keyboard.press('Tab')
+    await expect
+      .poll(() => dialog.evaluate((el) => el.contains(document.activeElement)))
+      .toBe(true)
+  }
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+  expect(results.violations).toEqual([])
+  await page.keyboard.press('Escape')
+  await expect(save).toBeFocused()
+})
+
 test('opens cloud sync modal without automatically detectable WCAG violations and allows interaction', async ({
   page,
 }) => {

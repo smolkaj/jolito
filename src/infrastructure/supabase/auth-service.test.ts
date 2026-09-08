@@ -869,7 +869,7 @@ describe('SupabaseAuthService', () => {
       expect(notifiedUser).toBeNull()
     })
 
-    it('returns error if delete_user_account RPC returns non-404 failure', async () => {
+    it('keeps the session available to retry a failed deletion', async () => {
       mockStorage['jolito-auth-session-v1'] = JSON.stringify({
         accessToken: 'token-fail',
         refreshToken: 'refresh-fail',
@@ -893,11 +893,10 @@ describe('SupabaseAuthService', () => {
       const res = await service.deleteAccount()
       expect(res.success).toBe(false)
       expect(res.error).toBe('Database deletion error')
-      // Local session is cleared even on failure
-      expect(await service.getUser()).toBeNull()
+      expect(await service.getUser()).toMatchObject({ id: 'u-err' })
     })
 
-    it('tolerates 404 RPC on unmigrated backends and falls back gracefully to logout', async () => {
+    it('never reports deletion when the backend deletion function is missing', async () => {
       mockStorage['jolito-auth-session-v1'] = JSON.stringify({
         accessToken: 'token-404',
         refreshToken: 'refresh-404',
@@ -907,7 +906,7 @@ describe('SupabaseAuthService', () => {
 
       const fetchSpy = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce(new Response('{}', { status: 404 }))
         .mockResolvedValueOnce({ ok: true, status: 200 })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -918,14 +917,12 @@ describe('SupabaseAuthService', () => {
       )
 
       const res = await service.deleteAccount()
-      expect(res.success).toBe(true)
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.supabase.co/auth/v1/logout',
-        expect.objectContaining({ method: 'POST' }),
-      )
+      expect(res.success).toBe(false)
+      expect(await service.getUser()).toMatchObject({ id: 'u-404' })
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('clears session and returns error if network throws during deletion', async () => {
+    it('preserves the session if the network fails during deletion', async () => {
       mockStorage['jolito-auth-session-v1'] = JSON.stringify({
         accessToken: 'token-err',
         refreshToken: 'refresh-err',
@@ -947,8 +944,8 @@ describe('SupabaseAuthService', () => {
       const res = await service.deleteAccount()
       expect(res.success).toBe(false)
       expect(res.error).toBe('Network error')
-      expect(await service.getUser()).toBeNull()
-      expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+      expect(await service.getUser()).toMatchObject({ id: 'u2' })
+      expect(mockStorage['jolito-auth-session-v1']).toBeDefined()
     })
   })
 })

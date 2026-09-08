@@ -1,6 +1,6 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'jolito-shell-v9'
+const CACHE_NAME = 'jolito-shell-v10'
 const scopePath = new URL(self.registration.scope).pathname
 const shellUrl = scopePath
 const indexUrl = `${scopePath}index.html`
@@ -92,14 +92,22 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone()
-          void caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(indexUrl, copy))
+          if (response.ok) {
+            const isAppShell =
+              requestUrl.pathname === shellUrl ||
+              requestUrl.pathname === indexUrl
+            const copy = response.clone()
+            void caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(isAppShell ? indexUrl : request, copy))
+          }
           return response
         })
         .catch(
-          async () => (await caches.match(indexUrl)) ?? caches.match(shellUrl),
+          async () =>
+            (await caches.match(request)) ??
+            (await caches.match(indexUrl)) ??
+            caches.match(shellUrl),
         ),
     )
     return
