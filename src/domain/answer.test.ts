@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { compareAnswer, normalizeTypography } from './answer'
+import { compareAnswer, normalizeTypography, splitEnumeration } from './answer'
 
 describe('compareAnswer (character-level affine diff)', () => {
   it('recognizes exact matches', () => {
@@ -369,7 +369,348 @@ describe('normalizeTypography', () => {
     expect(normalizeTypography(' / ')).toBe('/')
   })
 
+  it('normalizes spacing around semicolons without leading space', () => {
+    expect(normalizeTypography('hola; buenos días')).toBe('hola; buenos días')
+    expect(normalizeTypography('hola ; buenos días')).toBe('hola; buenos días')
+    expect(normalizeTypography('hola;buenos días')).toBe('hola; buenos días')
+    expect(normalizeTypography('hola  ;  buenos días')).toBe(
+      'hola; buenos días',
+    )
+    expect(normalizeTypography(' ; ')).toBe(';')
+  })
+
   it('leaves plain ASCII text unchanged', () => {
     expect(normalizeTypography('hello world...')).toBe('hello world...')
+  })
+})
+
+describe('splitEnumeration', () => {
+  it('splits on slash and semicolon', () => {
+    expect(splitEnumeration('take / drink')).toEqual({
+      items: ['take', 'drink'],
+      delimiters: [' / '],
+      primaryDelim: ' / ',
+      primaryDelimChar: '/',
+    })
+
+    expect(splitEnumeration('hola; buenos días')).toEqual({
+      items: ['hola', 'buenos días'],
+      delimiters: ['; '],
+      primaryDelim: '; ',
+      primaryDelimChar: ';',
+    })
+  })
+
+  it('preserves grammatical commas inside phrases without splitting them', () => {
+    expect(splitEnumeration('yes, please / no, thank you')).toEqual({
+      items: ['yes, please', 'no, thank you'],
+      delimiters: [' / '],
+      primaryDelim: ' / ',
+      primaryDelimChar: '/',
+    })
+
+    // Conversational sentences with commas are not alternative enumerations
+    expect(splitEnumeration('To go, please')).toBeNull()
+    expect(splitEnumeration('La cuenta, por favor')).toBeNull()
+    expect(splitEnumeration('No, gracias')).toBeNull()
+  })
+
+  it('ignores delimiters inside parentheses and brackets', () => {
+    expect(splitEnumeration('to know (facts / skills)')).toBeNull()
+    expect(splitEnumeration('to know [facts / skills]')).toBeNull()
+    expect(splitEnumeration('to have (auxiliary) / there is')).toEqual({
+      items: ['to have (auxiliary)', 'there is'],
+      delimiters: [' / '],
+      primaryDelim: ' / ',
+      primaryDelimChar: '/',
+    })
+  })
+
+  it('returns null for non-enumerations and incomplete inputs', () => {
+    expect(splitEnumeration('restaurante')).toBeNull()
+    expect(splitEnumeration('Where is the metro?')).toBeNull()
+    expect(splitEnumeration('')).toBeNull()
+    expect(splitEnumeration('take / ')).toBeNull()
+    expect(splitEnumeration(' / take')).toBeNull()
+    expect(splitEnumeration('; take')).toBeNull()
+    expect(splitEnumeration('take;')).toBeNull()
+  })
+})
+
+describe('compareAnswer (enumeration commutativity & missing words)', () => {
+  it('treats reversed items as an exact match across slash and semicolon', () => {
+    const slash = compareAnswer('drink / take', 'take / drink')
+    expect(slash.isExact).toBe(true)
+
+    const semi = compareAnswer('buenos días; hola', 'hola; buenos días')
+    expect(semi.isExact).toBe(true)
+  })
+
+  it('accepts comma as an item delimiter when user types an answer to an enumeration card', () => {
+    const commaForSlash = compareAnswer('drink, take', 'take / drink')
+    expect(commaForSlash.isExact).toBe(true)
+
+    const commaForSemi = compareAnswer('buenos días, hola', 'hola; buenos días')
+    expect(commaForSemi.isExact).toBe(true)
+  })
+
+  it('handles 3-item permutations as exact matches', () => {
+    const perm1 = compareAnswer(
+      'Later / Right now / In a minute',
+      'Right now / In a minute / Later',
+    )
+    expect(perm1.isExact).toBe(true)
+
+    const perm2 = compareAnswer('dos ; tres ; uno', 'uno ; dos ; tres')
+    expect(perm2.isExact).toBe(true)
+  })
+
+  it('preserves sentence word order for phrases with grammatical commas without scrambling', () => {
+    // Omitting comma in "To go, please" highlights the missing comma without inverting words
+    const toGo = compareAnswer('To go please', 'To go, please')
+    expect(toGo.isExact).toBe(false)
+    expect(toGo.expectedSegments).toEqual([
+      { value: 'To go', status: 'match' },
+      { value: ',', status: 'missing' },
+      { value: ' please', status: 'match' },
+    ])
+    expect(toGo.typedSegments).toEqual([
+      { value: 'To go please', status: 'match' },
+    ])
+
+    // "No, gracias" is not scrambled into "gracias, No"
+    const noGracias = compareAnswer('No gracias', 'No, gracias')
+    expect(noGracias.isExact).toBe(false)
+    expect(noGracias.expectedSegments).toEqual([
+      { value: 'No', status: 'match' },
+      { value: ',', status: 'missing' },
+      { value: ' gracias', status: 'match' },
+    ])
+
+    // Scrambled sentence is NOT accepted as exact match
+    const invertedSentence = compareAnswer('please, To go', 'To go, please')
+    expect(invertedSentence.isExact).toBe(false)
+  })
+
+  it('shows missing words at the end when only a subset of items is typed', () => {
+    // User typed second item only
+    const typedSecond = compareAnswer('drink', 'take / drink')
+    expect(typedSecond.isExact).toBe(false)
+    expect(typedSecond.typedSegments).toEqual([
+      { value: 'drink', status: 'match' },
+    ])
+    expect(typedSecond.expectedSegments).toEqual([
+      { value: 'drink', status: 'match' },
+      { value: ' / take', status: 'missing' },
+    ])
+
+    // User typed first item only
+    const typedFirst = compareAnswer('take', 'take / drink')
+    expect(typedFirst.isExact).toBe(false)
+    expect(typedFirst.typedSegments).toEqual([
+      { value: 'take', status: 'match' },
+    ])
+    expect(typedFirst.expectedSegments).toEqual([
+      { value: 'take', status: 'match' },
+      { value: ' / drink', status: 'missing' },
+    ])
+
+    // User typed 2 out of 3 items in reverse order
+    const permMissing = compareAnswer('tres, uno', 'uno / dos / tres')
+    expect(permMissing.isExact).toBe(false)
+    expect(permMissing.typedSegments).toEqual([
+      { value: 'tres, uno', status: 'match' },
+    ])
+    expect(permMissing.expectedSegments).toEqual([
+      { value: 'tres / uno', status: 'match' },
+      { value: ' / dos', status: 'missing' },
+    ])
+
+    // User typed 1 out of 3 items
+    const singleOfThree = compareAnswer('dos', 'uno / dos / tres')
+    expect(singleOfThree.isExact).toBe(false)
+    expect(singleOfThree.typedSegments).toEqual([
+      { value: 'dos', status: 'match' },
+    ])
+    expect(singleOfThree.expectedSegments).toEqual([
+      { value: 'dos', status: 'match' },
+      { value: ' / uno / tres', status: 'missing' },
+    ])
+  })
+
+  it('aligns typos within items commutatively while keeping missing words at the end', () => {
+    // Typo in one item, both items present
+    const typoPerm = compareAnswer('drnk / take', 'take / drink')
+    expect(typoPerm.isExact).toBe(false)
+    expect(typoPerm.typedSegments).toEqual([
+      { value: 'drnk / take', status: 'match' },
+    ])
+    expect(typoPerm.expectedSegments).toEqual([
+      { value: 'dr', status: 'match' },
+      { value: 'i', status: 'missing' },
+      { value: 'nk / take', status: 'match' },
+    ])
+
+    // Typo in one item, other item missing
+    const typoMissing = compareAnswer('drnk', 'take / drink')
+    expect(typoMissing.isExact).toBe(false)
+    expect(typoMissing.typedSegments).toEqual([
+      { value: 'drnk', status: 'match' },
+    ])
+    expect(typoMissing.expectedSegments).toEqual([
+      { value: 'dr', status: 'match' },
+      { value: 'i', status: 'missing' },
+      { value: 'nk', status: 'match' },
+      { value: ' / take', status: 'missing' },
+    ])
+  })
+
+  it('handles extra items gracefully', () => {
+    // Extra item at the end
+    const extraEnd = compareAnswer('take / drink / sleep', 'take / drink')
+    expect(extraEnd.isExact).toBe(false)
+    expect(extraEnd.typedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+      { value: ' / sleep', status: 'extra' },
+    ])
+    expect(extraEnd.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Extra item at the beginning
+    const extraStart = compareAnswer('eat / take / drink', 'take / drink')
+    expect(extraStart.isExact).toBe(false)
+    expect(extraStart.typedSegments).toEqual([
+      { value: 'eat / ', status: 'extra' },
+      { value: 'take / drink', status: 'match' },
+    ])
+    expect(extraStart.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+  })
+
+  it('handles inverted punctuation with commutativity', () => {
+    const invertedExact = compareAnswer(
+      'Dónde queda? / Dónde está?',
+      '¿Dónde está? / ¿Dónde queda?',
+    )
+    expect(invertedExact.isExact).toBe(true)
+
+    const invertedMissing = compareAnswer('Genial!', '¡Genial! / ¡Maravilloso!')
+    expect(invertedMissing.isExact).toBe(false)
+    expect(invertedMissing.typedSegments).toEqual([
+      { value: 'Genial!', status: 'match' },
+    ])
+    expect(invertedMissing.expectedSegments).toEqual([
+      { value: '¡Genial!', status: 'match' },
+      { value: ' / ', status: 'missing' },
+      { value: '¡', status: 'accent' },
+      { value: 'Maravilloso!', status: 'missing' },
+    ])
+  })
+
+  it('falls back to sequential diff when no items match', () => {
+    const disjoint = compareAnswer('cat', 'take / drink')
+    expect(disjoint.isExact).toBe(false)
+    expect(disjoint.typedSegments).toEqual([{ value: 'cat', status: 'extra' }])
+    expect(disjoint.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'missing' },
+    ])
+  })
+
+  it('falls back to single item when typed delimiter has fewer than two valid items', () => {
+    const trailingDelim = compareAnswer('take / ', 'take / drink')
+    expect(trailingDelim.isExact).toBe(false)
+    expect(trailingDelim.typedSegments).toEqual([
+      { value: 'take', status: 'match' },
+      { value: ' /', status: 'extra' },
+    ])
+    expect(trailingDelim.expectedSegments).toEqual([
+      { value: 'take', status: 'match' },
+      { value: ' / drink', status: 'missing' },
+    ])
+  })
+
+  it('rejects malformed inputs with leading, trailing, or consecutive delimiters as exact matches', () => {
+    // Trailing delimiter on otherwise complete answer
+    const trailing = compareAnswer('take / drink /', 'take / drink')
+    expect(trailing.isExact).toBe(false)
+    expect(trailing.typedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+      { value: ' /', status: 'extra' },
+    ])
+    expect(trailing.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Leading delimiter
+    const leading = compareAnswer('/ take / drink', 'take / drink')
+    expect(leading.isExact).toBe(false)
+    expect(leading.typedSegments).toEqual([
+      { value: '/ ', status: 'extra' },
+      { value: 'take / drink', status: 'match' },
+    ])
+    expect(leading.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Consecutive delimiters
+    const consecutive = compareAnswer('take // drink', 'take / drink')
+    expect(consecutive.isExact).toBe(false)
+    expect(consecutive.typedSegments).toEqual([
+      { value: 'take', status: 'match' },
+      { value: ' // ', status: 'extra' },
+      { value: 'drink', status: 'match' },
+    ])
+    expect(consecutive.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Multiple leading delimiters
+    const multiLeading = compareAnswer('// take / drink', 'take / drink')
+    expect(multiLeading.isExact).toBe(false)
+    expect(multiLeading.typedSegments).toEqual([
+      { value: '// ', status: 'extra' },
+      { value: 'take / drink', status: 'match' },
+    ])
+    expect(multiLeading.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+
+    // Multiple trailing delimiters
+    const multiTrailing = compareAnswer('take / drink //', 'take / drink')
+    expect(multiTrailing.isExact).toBe(false)
+    expect(multiTrailing.typedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+      { value: ' //', status: 'extra' },
+    ])
+    expect(multiTrailing.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'match' },
+    ])
+  })
+
+  it('preserves delimiters inside parentheses in typed answers without splitting', () => {
+    const result = compareAnswer(
+      'there is, to have (auxiliary, helper)',
+      'to have (auxiliary) / there is',
+    )
+    expect(result.isExact).toBe(false)
+    expect(result.typedSegments).toEqual([
+      { value: 'there is, to have (auxiliary', status: 'match' },
+      { value: ', helper', status: 'extra' },
+      { value: ')', status: 'match' },
+    ])
+    expect(result.expectedSegments).toEqual([
+      { value: 'there is / to have (auxiliary)', status: 'match' },
+    ])
+  })
+
+  it('handles typed input consisting only of delimiters', () => {
+    const onlyDelim = compareAnswer(' / ', 'take / drink')
+    expect(onlyDelim.isExact).toBe(false)
+    expect(onlyDelim.typedSegments).toEqual([{ value: '/', status: 'extra' }])
+    expect(onlyDelim.expectedSegments).toEqual([
+      { value: 'take / drink', status: 'missing' },
+    ])
   })
 })
