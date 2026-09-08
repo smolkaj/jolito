@@ -36,6 +36,10 @@ export interface SetupEmailRoutingOptions {
   destinationEmail?: string | undefined
 }
 
+export function getManagedSenders(domain: string): string[] {
+  return ['a', 'signin', 'login'].map((p) => `${p}@${domain}`)
+}
+
 export async function setupEmailRouting({
   cfToken,
   accountId,
@@ -44,7 +48,7 @@ export async function setupEmailRouting({
   destinationEmail,
 }: SetupEmailRoutingOptions): Promise<void> {
   console.log(`\n📧 Configuring Cloudflare Email Routing for ${domain}...`)
-  const canonicalSender = `a@${domain}`
+  const managedSenders = getManagedSenders(domain)
 
   let isDestinationVerified = false
 
@@ -125,14 +129,14 @@ export async function setupEmailRouting({
     }
   }
 
-  // 4. Configure Routing Rule: a@domain -> destinationEmail
+  // 4. Configure Routing Rules: managedSenders -> destinationEmail
   if (destinationEmail) {
     if (!isDestinationVerified) {
       console.log(
-        `⏳ Destination email (${destinationEmail}) is pending verification. Forwarding rule cannot be activated yet.`,
+        `⏳ Destination email (${destinationEmail}) is pending verification. Forwarding rules cannot be activated yet.`,
       )
       console.log(
-        `👉 After clicking the verification link sent to ${destinationEmail}, re-run 'npm run setup:email' to activate the ${canonicalSender} forward rule.`,
+        `👉 After clicking the verification link sent to ${destinationEmail}, re-run 'npm run setup:email' to activate forwarding rules.`,
       )
     } else {
       const rules = await cfApi<CloudflareRoutingRule[]>(
@@ -140,58 +144,58 @@ export async function setupEmailRouting({
         cfToken,
       )
 
-      const existingRule = rules.find((r) =>
-        r.matchers?.some(
-          (m) =>
-            m.field === 'to' &&
-            m.value.toLowerCase() === canonicalSender.toLowerCase(),
-        ),
-      )
-
-      if (!existingRule) {
-        console.log(
-          `➕ Creating email forward rule: ${canonicalSender} -> ${destinationEmail}...`,
+      for (const sender of managedSenders) {
+        const existingRule = rules.find((r) =>
+          r.matchers?.some(
+            (m) =>
+              m.field === 'to' &&
+              m.value.toLowerCase() === sender.toLowerCase(),
+          ),
         )
-        await cfApi(`/zones/${zoneId}/email/routing/rules`, cfToken, 'POST', {
-          name: `Forward ${canonicalSender}`,
-          enabled: true,
-          matchers: [{ type: 'literal', field: 'to', value: canonicalSender }],
-          actions: [{ type: 'forward', value: [destinationEmail] }],
-        })
-        console.log(`✔ Email forward rule active: ${canonicalSender}`)
-      } else {
-        const currentAction = existingRule.actions?.find(
-          (a) => a.type === 'forward',
-        )
-        const currentTarget = currentAction?.value?.[0]
-        const needsUpdate =
-          !existingRule.enabled ||
-          currentTarget?.toLowerCase() !== destinationEmail.toLowerCase()
 
-        if (needsUpdate && existingRule.id) {
+        if (!existingRule) {
           console.log(
-            `🔄 Updating email forward rule: ${canonicalSender} -> ${destinationEmail}...`,
+            `➕ Creating email forward rule: ${sender} -> ${destinationEmail}...`,
           )
-          await cfApi(
-            `/zones/${zoneId}/email/routing/rules/${existingRule.id}`,
-            cfToken,
-            'PUT',
-            {
-              name: existingRule.name || `Forward ${canonicalSender}`,
-              enabled: true,
-              matchers: [
-                { type: 'literal', field: 'to', value: canonicalSender },
-              ],
-              actions: [{ type: 'forward', value: [destinationEmail] }],
-            },
-          )
-          console.log(
-            `✔ Email forward rule updated: ${canonicalSender} -> ${destinationEmail}`,
-          )
+          await cfApi(`/zones/${zoneId}/email/routing/rules`, cfToken, 'POST', {
+            name: `Forward ${sender}`,
+            enabled: true,
+            matchers: [{ type: 'literal', field: 'to', value: sender }],
+            actions: [{ type: 'forward', value: [destinationEmail] }],
+          })
+          console.log(`✔ Email forward rule active: ${sender}`)
         } else {
-          console.log(
-            `✔ Email forward rule already active: ${canonicalSender} -> ${currentTarget ?? destinationEmail}`,
+          const currentAction = existingRule.actions?.find(
+            (a) => a.type === 'forward',
           )
+          const currentTarget = currentAction?.value?.[0]
+          const needsUpdate =
+            !existingRule.enabled ||
+            currentTarget?.toLowerCase() !== destinationEmail.toLowerCase()
+
+          if (needsUpdate && existingRule.id) {
+            console.log(
+              `🔄 Updating email forward rule: ${sender} -> ${destinationEmail}...`,
+            )
+            await cfApi(
+              `/zones/${zoneId}/email/routing/rules/${existingRule.id}`,
+              cfToken,
+              'PUT',
+              {
+                name: existingRule.name || `Forward ${sender}`,
+                enabled: true,
+                matchers: [{ type: 'literal', field: 'to', value: sender }],
+                actions: [{ type: 'forward', value: [destinationEmail] }],
+              },
+            )
+            console.log(
+              `✔ Email forward rule updated: ${sender} -> ${destinationEmail}`,
+            )
+          } else {
+            console.log(
+              `✔ Email forward rule already active: ${sender} -> ${currentTarget ?? destinationEmail}`,
+            )
+          }
         }
       }
     }
@@ -258,7 +262,7 @@ async function main(): Promise<void> {
 
   const destinationEmail = await promptIfMissing(
     'FEEDBACK_NOTIFICATION_EMAIL',
-    'Enter destination email for feedback notifications (e.g. your Gmail): ',
+    'Enter destination email for feedback notifications and sign-in replies (e.g. your personal email): ',
   )
 
   await setupEmailRouting({
