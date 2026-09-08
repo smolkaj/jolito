@@ -2164,12 +2164,15 @@ export function App({
                 </p>
                 <div className="hero-actions" data-nosnippet>
                   <button
-                    className="primary-button"
+                    className={`primary-button ${homeCueState.active && homeCueState.direction === 'right' ? 'is-gesture-primed' : ''}`}
                     onClick={() => navigateTo('create')}
                   >
                     Create a card <span aria-hidden="true">→</span>
                   </button>
-                  <button className="secondary-button" onClick={handlePractice}>
+                  <button
+                    className={`secondary-button ${homeCueState.active && homeCueState.direction === 'left' ? 'is-gesture-primed' : ''}`}
+                    onClick={handlePractice}
+                  >
                     Practice
                   </button>
                 </div>

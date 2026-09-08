@@ -87,9 +87,11 @@ export function useHomeSwipeGesture({
     }
 
     if (leftCueRef.current) {
+      leftCueRef.current.style.transition = 'opacity 160ms ease'
       leftCueRef.current.style.opacity = '0'
     }
     if (rightCueRef.current) {
+      rightCueRef.current.style.transition = 'opacity 160ms ease'
       rightCueRef.current.style.opacity = '0'
     }
 

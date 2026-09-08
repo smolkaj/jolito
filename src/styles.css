@@ -4767,12 +4767,13 @@ kbd {
 
 .home-swipe-cue {
   position: fixed;
-  top: 38%;
-  transform: translateY(-50%) scale(0.92);
+  bottom: max(32px, calc(env(safe-area-inset-bottom) + 24px));
+  left: 50%;
+  transform: translateX(-50%) scale(0.92);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
+  padding: 10px 20px;
   border: 2px solid var(--line);
   border-radius: var(--pill-radius);
   background: var(--paper);
@@ -4780,32 +4781,43 @@ kbd {
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   opacity: 0;
   pointer-events: none;
   z-index: 99;
   transition:
-    opacity 120ms ease,
     transform 140ms var(--ease-spring),
     background 120ms ease,
     box-shadow 120ms ease,
     border-color 120ms ease;
 }
 
-.home-swipe-cue-create {
-  left: max(16px, env(safe-area-inset-left));
-}
-
+.home-swipe-cue-create,
 .home-swipe-cue-practice {
-  right: max(16px, env(safe-area-inset-right));
+  left: 50%;
 }
 
 .home-swipe-cue.is-ready {
   background: var(--turquesa-soft);
   border-color: var(--turquesa-dark);
   color: var(--turquesa-dark);
-  box-shadow: 3px 3px 0 var(--turquesa-dark);
-  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 168, 150, 0.25);
+  transform: translateX(-50%) scale(1.04);
+}
+
+.primary-button.is-gesture-primed {
+  box-shadow:
+    0 0 0 3px var(--turquesa-soft),
+    var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.secondary-button.is-gesture-primed {
+  background: var(--turquesa-soft);
+  border-color: var(--turquesa-dark);
+  color: var(--turquesa-dark);
+  box-shadow: 0 0 0 3px var(--turquesa-soft);
+  transform: translateY(-1px);
 }
 
 .home-swipe-cue .cue-arrow {
