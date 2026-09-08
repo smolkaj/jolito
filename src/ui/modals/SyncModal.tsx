@@ -418,8 +418,7 @@ export function SyncModal({
               >
                 <p className="delete-confirm-text">
                   Permanently deletes your account and backups from Jolito
-                  servers. Other connected devices will stop syncing. Local
-                  cards on this device remain untouched.
+                  servers. Other connected devices will stop syncing.
                 </p>
 
                 <label className="delete-backup-option">
