@@ -122,7 +122,9 @@ export class NeuralVoiceEngine {
   private audioContext: AudioContext | null = null
   private audioCache: LruAudioCache
   private audioBlobs = new Map<string, string>()
+  private isDestroyed = false
   private idleTimer: number | null = null
+  private cleanupGestureListeners: (() => void) | null = null
   private cleanupLifecycleListeners: (() => void) | null = null
   private readonly idleDelayMs: number
 
@@ -134,7 +136,58 @@ export class NeuralVoiceEngine {
     this.idleDelayMs = idleDelayMs
     this.initContext()
     void this.getCache()
+    this.installUnlockListeners()
     this.installLifecycleListeners()
+  }
+
+  private installUnlockListeners(): void {
+    if (this.isDestroyed || typeof window === 'undefined') return
+    if (this.cleanupGestureListeners) return
+    const unlock = () => {
+      configureAudioSessionCategory('ambient')
+      if (
+        this.audioContext &&
+        (this.audioContext.state as string) !== 'running' &&
+        typeof this.audioContext.resume === 'function'
+      ) {
+        void this.audioContext
+          .resume()
+          .then(() => {
+            if (
+              this.currentSource === null &&
+              this.currentAudioElement === null
+            ) {
+              this.scheduleIdleSuspend()
+            }
+          })
+          .catch(() => {})
+      } else if (
+        this.currentSource === null &&
+        this.currentAudioElement === null
+      ) {
+        this.scheduleIdleSuspend()
+      }
+      this.removeUnlockListeners()
+    }
+    window.addEventListener('pointerdown', unlock, {
+      passive: true,
+      once: true,
+    })
+    window.addEventListener('touchstart', unlock, {
+      passive: true,
+      once: true,
+    })
+    window.addEventListener('keydown', unlock, { passive: true, once: true })
+    this.cleanupGestureListeners = () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('touchstart', unlock)
+      window.removeEventListener('keydown', unlock)
+      this.cleanupGestureListeners = null
+    }
+  }
+
+  private removeUnlockListeners(): void {
+    this.cleanupGestureListeners?.()
   }
 
   private installLifecycleListeners(): void {
@@ -143,17 +196,32 @@ export class NeuralVoiceEngine {
       if (document.visibilityState === 'hidden') {
         this.stopAudio()
         void this.suspend()
+      } else if (document.visibilityState === 'visible') {
+        this.cancelIdleSuspend()
+        this.installUnlockListeners()
       }
     }
     const handlePageHide = () => {
       this.stopAudio()
       void this.suspend()
     }
+    const handlePageShow = () => {
+      this.cancelIdleSuspend()
+      this.installUnlockListeners()
+    }
+    const handleOrientation = () => {
+      this.cancelIdleSuspend()
+      this.installUnlockListeners()
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', handlePageShow)
+    window.addEventListener('orientationchange', handleOrientation)
     this.cleanupLifecycleListeners = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('orientationchange', handleOrientation)
       this.cleanupLifecycleListeners = null
     }
   }
@@ -171,11 +239,15 @@ export class NeuralVoiceEngine {
         // Audio is non-critical; never fail loudly
       }
     }
+    if (!this.isDestroyed) {
+      this.installUnlockListeners()
+    }
   }
 
   private scheduleIdleSuspend(): void {
     this.cancelIdleSuspend()
     if (
+      this.isDestroyed ||
       this.currentSource !== null ||
       this.currentAudioElement !== null ||
       typeof window === 'undefined'
@@ -980,7 +1052,7 @@ export class NeuralVoiceEngine {
       this.cancelIdleSuspend()
 
       if (
-        this.audioContext.state === 'suspended' &&
+        (this.audioContext.state as string) !== 'running' &&
         typeof this.audioContext.resume === 'function'
       ) {
         this.audioContext.resume().catch(() => {})
@@ -1013,8 +1085,10 @@ export class NeuralVoiceEngine {
   }
 
   destroy(): void {
+    this.isDestroyed = true
     this.stopAudio()
     this.cancelIdleSuspend()
+    this.removeUnlockListeners()
     this.cleanupLifecycleListeners?.()
     void this.suspend()
   }

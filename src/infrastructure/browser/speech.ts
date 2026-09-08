@@ -16,21 +16,51 @@ export class EnhancedBrowserSpeaker implements Speaker {
     this.installLifecycleListeners()
   }
 
+  private resumeIfPaused(): void {
+    if (
+      typeof window !== 'undefined' &&
+      'speechSynthesis' in window &&
+      window.speechSynthesis &&
+      window.speechSynthesis.paused
+    ) {
+      try {
+        window.speechSynthesis.resume()
+      } catch {
+        // Ignore errors
+      }
+    }
+  }
+
   private installLifecycleListeners(): void {
     if (typeof window === 'undefined' || typeof document === 'undefined') return
     const handleHidden = () => {
       if (document.visibilityState === 'hidden') {
         this.stop()
+      } else if (document.visibilityState === 'visible') {
+        this.resumeIfPaused()
+        this.refreshVoices()
       }
     }
     const handlePageHide = () => {
       this.stop()
     }
+    const handlePageShow = () => {
+      this.resumeIfPaused()
+      this.refreshVoices()
+    }
+    const handleOrientation = () => {
+      this.resumeIfPaused()
+      this.refreshVoices()
+    }
     document.addEventListener('visibilitychange', handleHidden)
     window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', handlePageShow)
+    window.addEventListener('orientationchange', handleOrientation)
     this.cleanupLifecycleListeners = () => {
       document.removeEventListener('visibilitychange', handleHidden)
       window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('orientationchange', handleOrientation)
       this.cleanupLifecycleListeners = null
     }
   }
@@ -100,7 +130,9 @@ export class EnhancedBrowserSpeaker implements Speaker {
         this.currentUtterance.onerror = null
         this.currentUtterance = null
       }
+      this.resumeIfPaused()
       window.speechSynthesis.cancel()
+      this.resumeIfPaused()
 
       // Always query latest voices to capture newly registered or async system voice packs
       this.refreshVoices()
