@@ -22,9 +22,10 @@ function hasActiveTextSelection(): boolean {
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
-  if (!target || !(target instanceof Element)) return false
+  if (!target || !(target instanceof Node)) return false
+  const element = target instanceof Element ? target : target.parentElement
   return Boolean(
-    target.closest(
+    element?.closest(
       'button, a, input, textarea, select, option, [role="button"], [contenteditable="true"]',
     ),
   )
@@ -110,6 +111,12 @@ export function useHomeSwipeGesture({
     }
 
     const handleTouchStart = (e: TouchEvent) => {
+      // If page is already scrolled vertically, do not intercept touches
+      if (typeof window !== 'undefined' && window.scrollY > 10) {
+        touchStartRef.current = null
+        return
+      }
+
       // If a second finger touches while dragging, safely spring back to center
       if (isNavigatingRef.current || e.touches.length !== 1) {
         if (touchStartRef.current !== null) {
@@ -150,6 +157,13 @@ export function useHomeSwipeGesture({
         return
       }
 
+      if (leftCueRef.current) {
+        leftCueRef.current.style.transition = 'none'
+      }
+      if (rightCueRef.current) {
+        rightCueRef.current.style.transition = 'none'
+      }
+
       touchStartRef.current = {
         x: touch.clientX,
         y: touch.clientY,
@@ -169,17 +183,17 @@ export function useHomeSwipeGesture({
       const dx = touch.clientX - start.x
       const dy = touch.clientY - start.y
 
-      // Direction lock decision: require horizontal movement to strongly dominate
+      // Direction lock decision: yield immediately to vertical scrolling
       if (directionLockedRef.current === null) {
         const absX = Math.abs(dx)
         const absY = Math.abs(dy)
         if (absX < 8 && absY < 8) return // Deadzone
 
-        if (absX >= 16 && absX > 1.5 * absY) {
-          directionLockedRef.current = 'horizontal'
-        } else if (absY >= 12 && absY >= absX) {
+        if (absY >= 10 && absY >= absX * 0.6) {
           directionLockedRef.current = 'vertical'
-          return // Let native vertical scroll handle it
+          return // Let native vertical scroll handle it cleanly
+        } else if (absX >= 16 && absX > 1.8 * absY) {
+          directionLockedRef.current = 'horizontal'
         } else {
           return // Ambiguous diagonal movement
         }
@@ -216,19 +230,23 @@ export function useHomeSwipeGesture({
       const cueOpacity = absDx >= 30 ? 1 : Math.max(0, (absDx - 10) / 20)
 
       if (direction === 'right') {
-        // Dragging right reveals "Create a card →" on the left
+        // Dragging right reveals "Create a card →"
         if (leftCueRef.current) {
+          leftCueRef.current.style.transition = 'none'
           leftCueRef.current.style.opacity = `${cueOpacity}`
         }
         if (rightCueRef.current) {
+          rightCueRef.current.style.transition = 'none'
           rightCueRef.current.style.opacity = '0'
         }
       } else {
-        // Dragging left reveals "← Practice" on the right
+        // Dragging left reveals "← Practice"
         if (rightCueRef.current) {
+          rightCueRef.current.style.transition = 'none'
           rightCueRef.current.style.opacity = `${cueOpacity}`
         }
         if (leftCueRef.current) {
+          leftCueRef.current.style.transition = 'none'
           leftCueRef.current.style.opacity = '0'
         }
       }
@@ -272,7 +290,7 @@ export function useHomeSwipeGesture({
       if (directionLockedRef.current === null) {
         const absX = Math.abs(dx)
         const absY = Math.abs(dy)
-        if (absX >= 16 && absX > 1.5 * absY) {
+        if (absX >= 16 && absX > 1.8 * absY) {
           directionLockedRef.current = 'horizontal'
         }
       }
@@ -321,7 +339,7 @@ export function useHomeSwipeGesture({
       // Smooth hero exit transition
       if (containerRef.current) {
         containerRef.current.style.transition =
-          'transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 160ms ease'
+          'transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 120ms ease'
         containerRef.current.style.transform = `translate3d(${commitDir === 'right' ? 100 : -100}vw, 0, 0)`
         containerRef.current.style.opacity = '0'
       }
@@ -352,7 +370,7 @@ export function useHomeSwipeGesture({
         } else {
           callbacksRef.current.onSwipeLeft()
         }
-      }, 180)
+      }, 140)
     }
 
     const handleTouchCancel = () => {

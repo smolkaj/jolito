@@ -4792,11 +4792,6 @@ kbd {
     border-color 120ms ease;
 }
 
-.home-swipe-cue-create,
-.home-swipe-cue-practice {
-  left: 50%;
-}
-
 .home-swipe-cue.is-ready {
   background: var(--turquesa-soft);
   border-color: var(--turquesa-dark);
