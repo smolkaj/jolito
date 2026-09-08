@@ -221,19 +221,93 @@ describe('compareAnswer (character-level affine diff)', () => {
       isExact: true,
       expectedSegments: [],
       typedSegments: [],
+      alignedSlots: [],
     })
 
     expect(compareAnswer('', 'expected')).toEqual({
       isExact: false,
       expectedSegments: [{ value: 'expected', status: 'missing' }],
       typedSegments: [],
+      alignedSlots: [
+        {
+          typedSegments: [],
+          expectedSegments: [{ value: 'expected', status: 'missing' }],
+        },
+      ],
     })
 
     expect(compareAnswer('extra', '')).toEqual({
       isExact: false,
       expectedSegments: [],
       typedSegments: [{ value: 'extra', status: 'extra' }],
+      alignedSlots: [
+        {
+          typedSegments: [{ value: 'extra', status: 'extra' }],
+          expectedSegments: [],
+        },
+      ],
     })
+  })
+
+  it('generates sequence-aligned slots preserving whole word shapes without whitespace highlighting', () => {
+    // Missing word "the": "Where " aligns, "is " aligns, "the " is missing, "metro" aligns
+    const res1 = compareAnswer('Where is metro', 'Where is the metro')
+    expect(res1.alignedSlots).toEqual([
+      {
+        typedSegments: [{ value: 'Where ', status: 'match' }],
+        expectedSegments: [{ value: 'Where ', status: 'match' }],
+      },
+      {
+        typedSegments: [{ value: 'is ', status: 'match' }],
+        expectedSegments: [{ value: 'is ', status: 'match' }],
+      },
+      {
+        typedSegments: [],
+        expectedSegments: [{ value: 'the ', status: 'missing' }],
+      },
+      {
+        typedSegments: [{ value: 'metro', status: 'match' }],
+        expectedSegments: [{ value: 'metro', status: 'match' }],
+      },
+    ])
+
+    // Missing character within word: "el " aligns, "pero " and "perro " remain intact in one slot, "blanco" aligns
+    const res2 = compareAnswer('el pero blanco', 'el perro blanco')
+    expect(res2.alignedSlots).toEqual([
+      {
+        typedSegments: [{ value: 'el ', status: 'match' }],
+        expectedSegments: [{ value: 'el ', status: 'match' }],
+      },
+      {
+        typedSegments: [{ value: 'pero ', status: 'match' }],
+        expectedSegments: [
+          { value: 'per', status: 'match' },
+          { value: 'r', status: 'missing' },
+          { value: 'o ', status: 'match' },
+        ],
+      },
+      {
+        typedSegments: [{ value: 'blanco', status: 'match' }],
+        expectedSegments: [{ value: 'blanco', status: 'match' }],
+      },
+    ])
+
+    // Typo within word: "restuarant" and "restaurant" stay intact
+    const res3 = compareAnswer('restuarant', 'restaurant')
+    expect(res3.alignedSlots).toEqual([
+      {
+        typedSegments: [
+          { value: 'rest', status: 'match' },
+          { value: 'ua', status: 'extra' },
+          { value: 'rant', status: 'match' },
+        ],
+        expectedSegments: [
+          { value: 'rest', status: 'match' },
+          { value: 'au', status: 'missing' },
+          { value: 'rant', status: 'match' },
+        ],
+      },
+    ])
   })
 
   it('always marks identical sequences as exact match', () => {
@@ -339,6 +413,20 @@ describe('compareAnswer (character-level affine diff)', () => {
       { value: ' ', status: 'missing' },
       { value: 'vino', status: 'match' },
     ])
+  })
+
+  it('aligns slots with inverted punctuation and diacritics cleanly', () => {
+    const res = compareAnswer('Donde esta el bano', '¿Dónde está el baño?')
+    expect(res.alignedSlots.length).toBeGreaterThan(0)
+    expect(res.alignedSlots[0]).toEqual({
+      typedSegments: [],
+      expectedSegments: [{ value: '¿', status: 'accent' }],
+    })
+  })
+
+  it('aligns slots cleanly when typing contains extra spaces', () => {
+    const res = compareAnswer('well - known', 'well-known')
+    expect(res.alignedSlots.length).toBeGreaterThan(0)
   })
 })
 

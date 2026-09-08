@@ -140,15 +140,36 @@ function Brand({ onClick }: { onClick?: () => void }) {
 
 function renderDiffSegments(segments: DiffSegment[]) {
   return segments.map((seg, i) => {
+    if (seg.status === 'match') {
+      return (
+        <span className="diff-seg diff-seg-match" key={i}>
+          {seg.value}
+        </span>
+      )
+    }
+    if (seg.status === 'accent') {
+      return (
+        <span className="diff-seg diff-seg-accent" key={i}>
+          {seg.value}
+        </span>
+      )
+    }
     const isSpaceOnly = /^ +$/.test(seg.value)
+    if (isSpaceOnly) {
+      return (
+        <span className="diff-seg diff-seg-space" key={i}>
+          {seg.value}
+        </span>
+      )
+    }
+    const trimmed = seg.value.trimEnd()
+    const trailingSpaces = seg.value.slice(trimmed.length)
     return (
-      <span
-        className={`diff-seg diff-seg-${seg.status}${
-          isSpaceOnly ? ' diff-seg-space' : ''
-        }`}
-        key={i}
-      >
-        {isSpaceOnly && seg.status === 'extra' ? '␣' : seg.value}
+      <span key={i}>
+        {trimmed.length > 0 && (
+          <span className={`diff-seg diff-seg-${seg.status}`}>{trimmed}</span>
+        )}
+        {trailingSpaces}
       </span>
     )
   })
@@ -175,26 +196,60 @@ function AnswerComparison({
     )
   }
 
-  return (
-    <div className="diff-card" aria-label="Answer comparison">
-      <div className="diff-rows">
-        {hasTyped && (
-          <div className="diff-row">
-            <span className="diff-label">You wrote</span>
-            <p className="diff-text">
-              {renderDiffSegments(comparison.typedSegments)}
-            </p>
+  if (!hasTyped) {
+    return (
+      <div className="diff-card" aria-label="Answer comparison">
+        <div className="diff-card-body">
+          <div className="diff-labels-col">
+            <span className="diff-label">Expected</span>
           </div>
-        )}
-
-        <div className="diff-row expected-row">
-          <span className="diff-label">Expected</span>
-          <div className="diff-row-main">
-            <p className="diff-text">
-              {renderDiffSegments(comparison.expectedSegments)}
-            </p>
+          <div className="diff-flow-content">
+            {renderDiffSegments(comparison.expectedSegments)}
+          </div>
+          <div className="diff-audio-col diff-audio-col-single">
             <AudioButton label="Play answer audio" onClick={onPlayAudio} />
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="diff-card" aria-label="Answer comparison">
+      <div className="sr-only">
+        <p>
+          Submitted answer:{' '}
+          {comparison.typedSegments.map((s) => s.value).join('')}
+        </p>
+        <p>
+          Correct answer:{' '}
+          {comparison.expectedSegments.map((s) => s.value).join('')}
+        </p>
+      </div>
+      <div className="diff-card-body">
+        <div className="diff-labels-col" aria-hidden="true">
+          <span className="diff-label">You wrote</span>
+          <span className="diff-label">Expected</span>
+        </div>
+        <div className="diff-flow-content" aria-hidden="true">
+          {comparison.alignedSlots.map((slot, i) => (
+            <span className="diff-pair" key={i}>
+              <span className="diff-pair-top">
+                {slot.typedSegments.length > 0
+                  ? renderDiffSegments(slot.typedSegments)
+                  : '\u200B'}
+              </span>
+              <span className="diff-pair-bottom">
+                {slot.expectedSegments.length > 0
+                  ? renderDiffSegments(slot.expectedSegments)
+                  : '\u200B'}
+              </span>
+            </span>
+          ))}
+        </div>
+        <div className="diff-audio-col">
+          <div className="diff-audio-spacer" aria-hidden="true" />
+          <AudioButton label="Play answer audio" onClick={onPlayAudio} />
         </div>
       </div>
     </div>
