@@ -269,4 +269,103 @@ test.describe('Resource & Energy Hygiene', () => {
       )
       .toBe(true)
   })
+
+  test('survives full round-trip lifecycle: suspends on hidden, re-arms on visible, and resumes on subsequent user interaction', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    // Start practice to unlock audio
+    await page.getByRole('button', { name: /^practice$/i }).click()
+    await expect(page.getByLabel(/your answer/i)).toBeVisible()
+
+    // 1. Submit an answer (plays feedback sound)
+    await page.getByLabel(/your answer/i).fill('avocado')
+    await page.getByLabel(/your answer/i).press('Enter')
+
+    // 2. Tab backgrounding (visibilitychange hidden)
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+
+    // Confirm suspended
+    await expect
+      .poll(
+        async () => {
+          const states = await page.evaluate(() =>
+            (
+              window as unknown as {
+                __hygiene: { getAudioContextStates: () => string[] }
+              }
+            ).__hygiene.getAudioContextStates(),
+          )
+          return states.length > 0 && states.every((s) => s === 'suspended')
+        },
+        {
+          message: 'Expected all AudioContexts to suspend when hidden',
+          timeout: 1000,
+        },
+      )
+      .toBe(true)
+
+    // 3. Tab foregrounding (visibilitychange visible)
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+
+    // 4. Next user interaction on the page (grade the card)
+    const goodBtn = page.getByRole('button', { name: /good/i })
+    await expect(goodBtn).toBeVisible()
+    await goodBtn.click()
+
+    // 5. Contexts must cleanly wake back up to running
+    await expect
+      .poll(
+        async () => {
+          const states = await page.evaluate(() =>
+            (
+              window as unknown as {
+                __hygiene: { getAudioContextStates: () => string[] }
+              }
+            ).__hygiene.getAudioContextStates(),
+          )
+          return states.some((s) => s === 'running')
+        },
+        {
+          message:
+            'Expected AudioContext to resume to running upon user interaction after returning to visible',
+          timeout: 2000,
+        },
+      )
+      .toBe(true)
+
+    // 6. After idle dwell, it must cleanly suspend again without leak
+    await expect
+      .poll(
+        async () => {
+          const states = await page.evaluate(() =>
+            (
+              window as unknown as {
+                __hygiene: { getAudioContextStates: () => string[] }
+              }
+            ).__hygiene.getAudioContextStates(),
+          )
+          return states.length > 0 && states.every((s) => s === 'suspended')
+        },
+        {
+          message:
+            'Expected AudioContext to re-suspend after subsequent idle timeout',
+          timeout: 6000,
+        },
+      )
+      .toBe(true)
+  })
 })

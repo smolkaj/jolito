@@ -241,4 +241,84 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       .poll(async () => page.evaluate(() => window.scrollY))
       .toBeLessThanOrEqual(5)
   })
+
+  test('preserves review progress, queue integrity, and audio controls across device rotation and backgrounding', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    // 1. Start practice session in mobile portrait (393x852)
+    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    await expect(practiceBtn).toBeVisible()
+    await practiceBtn.click()
+
+    // First card: aguacate
+    const answerInput = page.getByLabel(/your answer/i)
+    await expect(answerInput).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+
+    // Answer and grade first card
+    await answerInput.fill('avocado')
+    await answerInput.press('Enter')
+    const easyBtn = page.getByRole('button', { name: /easy/i })
+    await expect(easyBtn).toBeVisible()
+    await easyBtn.click()
+
+    // 2. Queue has advanced to second card: 'qué padre'
+    await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'aguacate' }),
+    ).not.toBeVisible()
+
+    // 3. Simulate device rotation to landscape (852x393)
+    await page.setViewportSize({ width: 852, height: 393 })
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('orientationchange'))
+    })
+
+    // 4. Simulate iOS lifecycle interruption (brief backgrounding/foregrounding on rotate)
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await page.waitForTimeout(100)
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+
+    // 5. Invariant: Card queue did NOT jump backwards or reset; 'qué padre' remains active
+    await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'aguacate' }),
+    ).not.toBeVisible()
+
+    // Audio button remains functional and does not crash or wedge
+    const audioBtn = page.getByRole('button', { name: /play prompt audio/i })
+    if (await audioBtn.isVisible()) {
+      await audioBtn.click()
+    }
+
+    // 6. Rotate back to portrait (393x852)
+    await page.setViewportSize({ width: 393, height: 852 })
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('orientationchange'))
+    })
+
+    // Answer and grade card 2
+    const landscapeInput = page.getByLabel(/your answer/i)
+    await expect(landscapeInput).toBeVisible()
+    await landscapeInput.fill('how cool')
+    await landscapeInput.press('Enter')
+    await page.getByRole('button', { name: /easy/i }).click()
+
+    // 7. Cleanly completes review session
+    await expect(page.getByRole('heading', { name: /¡hecho!/i })).toBeVisible()
+  })
 })

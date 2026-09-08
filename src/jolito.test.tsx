@@ -5482,5 +5482,58 @@ describe('Jolito', () => {
       // 9. Deck manager now shows the newly added street phrases (both es-en and en-es reciprocal cards)
       expect(screen.getAllByText('¿Mande?').length).toBeGreaterThanOrEqual(1)
     })
+
+    it('preserves active study session queue and in-flight card across concurrent background interruptions and lifecycle events', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      // 1. Start practice session (sample starter cards)
+      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      expect(
+        screen.getByRole('heading', { name: 'aguacate' }),
+      ).toBeInTheDocument()
+
+      // 2. Answer and grade card 1
+      const answerInput = screen.getByLabelText('Your answer')
+      await user.type(answerInput, 'avocado')
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+
+      // 3. Queue advances to card 2: 'qué padre'
+      expect(
+        screen.getByRole('heading', { name: 'qué padre' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'aguacate' }),
+      ).not.toBeInTheDocument()
+
+      // 4. Concurrently simulate background lifecycle interruptions (visibility, orientation, focus)
+      act(() => {
+        window.dispatchEvent(new Event('visibilitychange'))
+        window.dispatchEvent(new Event('orientationchange'))
+        window.dispatchEvent(new Event('focus'))
+      })
+
+      // 5. Invariant: Active card must STILL be 'qué padre' and not revert to 'aguacate'
+      expect(
+        screen.getByRole('heading', { name: 'qué padre' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'aguacate' }),
+      ).not.toBeInTheDocument()
+
+      // 6. Answer and grade card 2
+      const answerInput2 = screen.getByLabelText('Your answer')
+      await user.type(answerInput2, 'how cool')
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+
+      // 7. Cleanly advances and finishes session
+      expect(
+        screen.getByRole('heading', { name: '¡Hecho!' }),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
+    })
   })
 })
