@@ -436,4 +436,47 @@ describe('SyncModal First-Class OTP Code Entry', () => {
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
     expect(screen.queryByLabelText(/6-digit code/i)).toBeNull()
   })
+
+  it('dynamically styles numeric OTP tokens and switches inputMode adaptively', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'learner@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/6-digit code or sign-in link/i),
+      ).toBeInTheDocument()
+    })
+
+    const tokenInput = screen.getByLabelText(/6-digit code or sign-in link/i)
+    expect(tokenInput).not.toHaveClass('otp-code-input')
+    expect(tokenInput).toHaveAttribute('inputmode', 'numeric')
+
+    // Entering digits triggers otp-code-input styling
+    fireEvent.change(tokenInput, { target: { value: '123456' } })
+    expect(tokenInput).toHaveClass('otp-code-input')
+    expect(tokenInput).toHaveAttribute('inputmode', 'numeric')
+
+    // Entering URL removes otp-code-input and switches inputMode to text
+    fireEvent.change(tokenInput, {
+      target: { value: 'https://joli.to/#token=abc' },
+    })
+    expect(tokenInput).not.toHaveClass('otp-code-input')
+    expect(tokenInput).toHaveAttribute('inputmode', 'text')
+  })
 })

@@ -550,7 +550,11 @@ export function SyncModal({
                   autoFocus
                   placeholder="e.g. 123456 or paste link"
                   autoComplete="one-time-code"
-                  inputMode="numeric"
+                  inputMode={
+                    token.trim().length === 0 || /^[\d\s-]+$/.test(token.trim())
+                      ? 'numeric'
+                      : 'text'
+                  }
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
                   className={`link-input ${/^[\d\s-]+$/.test(token.trim()) && /\d/.test(token.trim()) ? 'otp-code-input' : ''}`}

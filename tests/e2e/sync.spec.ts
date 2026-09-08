@@ -195,30 +195,25 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await emailInput.fill('pwa-learner@example.com')
     await page.getByRole('button', { name: /send sign-in link/i }).click()
 
-    // On standard browser, verify clean confirmation screen without paste input
+    // On standard browser, verify clean confirmation with immediate code entry
     await expect(
       page.getByText(/Click the sign-in link sent to/i),
     ).toBeVisible()
-    await expect(page.getByLabel(/sign-in link/i)).not.toBeVisible()
+
+    const linkInput = page.getByLabel(/6-digit code or sign-in link/i)
+    await expect(linkInput).toBeVisible()
+    await expect(linkInput).toBeFocused()
 
     // Click resend link and verify inline checkmark animation without status banner
-    const resendBtn = page.locator('.resend-link-button')
+    const resendBtn = page.getByRole('button', { name: /resend link/i })
     await resendBtn.click()
     await expect(resendBtn).toHaveClass(/is-sent/)
     await expect(resendBtn).toContainText(/link sent!/i)
     await expect(page.locator('.status-banner')).toHaveCount(0)
 
-    // Capture screenshot of standard browser email confirmation with animated resend button
+    // Capture screenshot of standard browser email confirmation with immediate code entry
     await page.screenshot({
       path: 'test-results/sync-modal-sent-step.png',
-    })
-
-    // 6-digit code or sign-in link input is immediately visible
-    await expect(page.getByLabel(/6-digit code or sign-in link/i)).toBeVisible()
-
-    // Capture screenshot of link entry step
-    await page.screenshot({
-      path: 'test-results/sync-modal-link-step.png',
       animations: 'disabled',
     })
   } else {
