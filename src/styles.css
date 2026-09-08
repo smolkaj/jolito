@@ -1476,7 +1476,8 @@ body:has(.welcome-page) {
   min-width: 0;
 }
 
-.suggestion-spanish {
+.suggestion-spanish,
+.suggestion-primary {
   font-weight: 700;
   font-size: 15px;
   color: var(--ink);
@@ -1643,7 +1644,8 @@ body:has(.welcome-page) {
   background: #eaeaea;
 }
 
-.suggestion-english {
+.suggestion-english,
+.suggestion-secondary {
   font-size: 13px;
   color: var(--ink);
   font-weight: 500;

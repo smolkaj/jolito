@@ -1044,6 +1044,9 @@ export function App({
   const [reverseAnswerInput, setReverseAnswerInput] = useState('')
   const [savedToast, setSavedToast] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([])
+  const [suggestionTarget, setSuggestionTarget] = useState<'es' | 'en' | null>(
+    null,
+  )
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const [isSyncOpen, setIsSyncOpen] = useState(false)
   const [isBackupOpen, setIsBackupOpen] = useState(false)
@@ -1098,6 +1101,7 @@ export function App({
   const [createPlaying, setCreatePlaying] = useState(false)
   const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
+  const englishInputRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const sampleTimerRef = useRef<number | null>(null)
   const createAudioTimerRef = useRef<number | null>(null)
@@ -1384,6 +1388,7 @@ export function App({
       setReversePromptInput('')
       setReverseAnswerInput('')
       setSuggestions([])
+      setSuggestionTarget(null)
       setActiveSuggestionIndex(-1)
       setPendingCard(null)
       pendingCardRef.current = null
@@ -1462,6 +1467,7 @@ export function App({
           setReversePromptInput('')
           setReverseAnswerInput('')
           setSuggestions([])
+          setSuggestionTarget(null)
           setActiveSuggestionIndex(-1)
           setPendingCard(null)
           pendingCardRef.current = null
@@ -1899,6 +1905,7 @@ export function App({
     isDraggingRef.current = false
     pointerDownPosRef.current = null
     setSuggestions([])
+    setSuggestionTarget(null)
     setActiveSuggestionIndex(-1)
   }, [])
 
@@ -1953,10 +1960,14 @@ export function App({
       }
 
       const target = event.target
+      const activeInput =
+        suggestionTarget === 'en'
+          ? englishInputRef.current
+          : spanishInputRef.current
       if (
         target instanceof Node &&
         (suggestionsRef.current?.contains(target) ||
-          spanishInputRef.current?.contains(target))
+          activeInput?.contains(target))
       ) {
         return
       }
@@ -1966,10 +1977,14 @@ export function App({
     const handleClick = (event: MouseEvent) => {
       if (isScrollingRef.current) return
       const target = event.target
+      const activeInput =
+        suggestionTarget === 'en'
+          ? englishInputRef.current
+          : spanishInputRef.current
       if (
         target instanceof Node &&
         (suggestionsRef.current?.contains(target) ||
-          spanishInputRef.current?.contains(target))
+          activeInput?.contains(target))
       ) {
         return
       }
@@ -1993,7 +2008,7 @@ export function App({
       document.removeEventListener('pointercancel', handlePointerCancel)
       document.removeEventListener('click', handleClick)
     }
-  }, [suggestions.length, dismissSuggestions])
+  }, [dismissSuggestions, suggestionTarget, suggestions.length])
 
   const applySuggestion = useCallback((entry: LexiconEntry) => {
     if (suggestionsBlurTimerRef.current !== null) {
@@ -2003,6 +2018,7 @@ export function App({
     setSpanishInput(entry.spanish)
     setEnglishInput(entry.english)
     setSuggestions([])
+    setSuggestionTarget(null)
     setActiveSuggestionIndex(-1)
   }, [])
 
@@ -2015,9 +2031,12 @@ export function App({
       const val = event.target.value
       setSpanishInput(val)
       if (val.trim().length >= 2) {
-        setSuggestions(services.assistant.suggest(val, 'es', 5))
+        const matches = services.assistant.suggest(val, 'es', 5)
+        setSuggestions(matches)
+        setSuggestionTarget(matches.length > 0 ? 'es' : null)
       } else {
         setSuggestions([])
+        setSuggestionTarget(null)
       }
       setActiveSuggestionIndex(-1)
     },
@@ -2026,18 +2045,26 @@ export function App({
 
   const onEnglishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
+      if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+        suggestionsBlurTimerRef.current = null
+      }
       const val = event.target.value
       setEnglishInput(val)
       if (val.trim().length >= 2 && !spanishInput.trim()) {
-        setSuggestions(services.assistant.suggest(val, 'en', 5))
+        const matches = services.assistant.suggest(val, 'en', 5)
+        setSuggestions(matches)
+        setSuggestionTarget(matches.length > 0 ? 'en' : null)
       } else if (!spanishInput.trim()) {
         setSuggestions([])
+        setSuggestionTarget(null)
       }
+      setActiveSuggestionIndex(-1)
     },
     [services.assistant, spanishInput],
   )
 
-  const onSpanishBlur = useCallback(
+  const onInputBlur = useCallback(
     (event: React.FocusEvent<HTMLTextAreaElement>) => {
       const related = event.relatedTarget
       if (related && suggestionsRef.current?.contains(related)) {
@@ -2066,7 +2093,33 @@ export function App({
     [dismissSuggestions],
   )
 
-  const onSpanishKeyDown = useCallback(
+  const onSpanishFocus = useCallback(
+    (event: React.FocusEvent<HTMLTextAreaElement>) => {
+      if (suggestionTarget === 'en') {
+        dismissSuggestions()
+      } else if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+        suggestionsBlurTimerRef.current = null
+      }
+      handleFocusSelect(event)
+    },
+    [dismissSuggestions, suggestionTarget],
+  )
+
+  const onEnglishFocus = useCallback(
+    (event: React.FocusEvent<HTMLTextAreaElement>) => {
+      if (suggestionTarget === 'es') {
+        dismissSuggestions()
+      } else if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+        suggestionsBlurTimerRef.current = null
+      }
+      handleFocusSelect(event)
+    },
+    [dismissSuggestions, suggestionTarget],
+  )
+
+  const onSuggestionKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
       if (suggestions.length === 0) return
 
@@ -2090,8 +2143,85 @@ export function App({
     [activeSuggestionIndex, applySuggestion, dismissSuggestions, suggestions],
   )
 
+  const renderSuggestions = (lang: 'es' | 'en') => {
+    if (suggestionTarget !== lang || suggestions.length === 0) return null
+
+    return (
+      <div className="suggestions-container" ref={suggestionsRef}>
+        <div className="suggestions-header">
+          <span className="suggestions-header-label">Suggestions</span>
+          <button
+            type="button"
+            className="suggestions-dismiss-button"
+            tabIndex={-1}
+            onMouseDown={(e) => {
+              e.preventDefault()
+            }}
+            onClick={dismissSuggestions}
+            aria-label="Dismiss suggestions"
+          >
+            Dismiss <span aria-hidden="true">✕</span>
+          </button>
+        </div>
+        <ul
+          className="suggestions-listbox"
+          role="listbox"
+          id={lang === 'es' ? 'spanish-suggestions' : 'english-suggestions'}
+          aria-label={
+            lang === 'es'
+              ? 'Mexican Spanish suggestions'
+              : 'English suggestions'
+          }
+        >
+          {suggestions.map((item, index) => {
+            const isSpanish = lang === 'es'
+            const primaryText = isSpanish ? item.spanish : item.english
+            const secondaryText = isSpanish ? item.english : item.spanish
+            return (
+              <li
+                key={`${item.spanish}-${item.english}`}
+                id={`suggestion-${index}`}
+                role="option"
+                aria-selected={activeSuggestionIndex === index}
+                className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                }}
+                onClick={() => {
+                  applySuggestion(item)
+                }}
+              >
+                <div className="suggestion-head">
+                  <span className="suggestion-primary">{primaryText}</span>
+                  {item.matchType === 'lemma' && item.matchedForm && (
+                    <span className="suggestion-lemma-badge">
+                      from <em>{item.matchedForm}</em>
+                    </span>
+                  )}
+                  {item.matchType === 'fuzzy' && (
+                    <span className="suggestion-fuzzy-badge">typo match</span>
+                  )}
+                  {item.tag && (
+                    <span className={`suggestion-tag tag-${item.tag}`}>
+                      {item.tag}
+                    </span>
+                  )}
+                </div>
+                <span className="suggestion-secondary">{secondaryText}</span>
+                {item.context && (
+                  <span className="suggestion-context">{item.context}</span>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    )
+  }
+
   const openSyncModal = useCallback(() => {
     setSuggestions([])
+    setSuggestionTarget(null)
     setIsSyncOpen(true)
   }, [])
 
@@ -2103,6 +2233,7 @@ export function App({
 
   const openFeedbackModal = useCallback(() => {
     setSuggestions([])
+    setSuggestionTarget(null)
     setIsFeedbackOpen(true)
   }, [])
 
@@ -2115,6 +2246,7 @@ export function App({
 
   const openPrivacyModal = useCallback(() => {
     setSuggestions([])
+    setSuggestionTarget(null)
     setIsPrivacyOpen(true)
   }, [])
 
@@ -2609,116 +2741,54 @@ export function App({
                   enterKeyHint="next"
                   value={spanishInput}
                   onChange={onSpanishChange}
-                  onKeyDown={onSpanishKeyDown}
-                  onBlur={onSpanishBlur}
-                  onFocus={(e) => {
-                    if (suggestionsBlurTimerRef.current !== null) {
-                      window.clearTimeout(suggestionsBlurTimerRef.current)
-                      suggestionsBlurTimerRef.current = null
-                    }
-                    handleFocusSelect(e)
-                  }}
+                  onKeyDown={onSuggestionKeyDown}
+                  onBlur={onInputBlur}
+                  onFocus={onSpanishFocus}
                   placeholder="Palabra o frase en español (e.g. ahorita, qué padre)"
                   aria-autocomplete="list"
                   aria-controls="spanish-suggestions"
-                  aria-expanded={suggestions.length > 0}
+                  aria-expanded={
+                    suggestionTarget === 'es' && suggestions.length > 0
+                  }
                   aria-activedescendant={
-                    activeSuggestionIndex >= 0
+                    suggestionTarget === 'es' && activeSuggestionIndex >= 0
                       ? `suggestion-${activeSuggestionIndex}`
                       : undefined
                   }
                 />
-                {suggestions.length > 0 && (
-                  <div className="suggestions-container" ref={suggestionsRef}>
-                    <div className="suggestions-header">
-                      <span className="suggestions-header-label">
-                        Suggestions
-                      </span>
-                      <button
-                        type="button"
-                        className="suggestions-dismiss-button"
-                        tabIndex={-1}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                        }}
-                        onClick={dismissSuggestions}
-                        aria-label="Dismiss suggestions"
-                      >
-                        Dismiss <span aria-hidden="true">✕</span>
-                      </button>
-                    </div>
-                    <ul
-                      className="suggestions-listbox"
-                      role="listbox"
-                      id="spanish-suggestions"
-                      aria-label="Mexican Spanish suggestions"
-                    >
-                      {suggestions.map((item, index) => (
-                        <li
-                          key={item.spanish}
-                          id={`suggestion-${index}`}
-                          role="option"
-                          aria-selected={activeSuggestionIndex === index}
-                          className={`suggestion-item ${activeSuggestionIndex === index ? 'is-active' : ''}`}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                          }}
-                          onClick={() => {
-                            applySuggestion(item)
-                          }}
-                        >
-                          <div className="suggestion-head">
-                            <span className="suggestion-spanish">
-                              {item.spanish}
-                            </span>
-                            {item.matchType === 'lemma' && item.matchedForm && (
-                              <span className="suggestion-lemma-badge">
-                                from <em>{item.matchedForm}</em>
-                              </span>
-                            )}
-                            {item.matchType === 'fuzzy' && (
-                              <span className="suggestion-fuzzy-badge">
-                                typo match
-                              </span>
-                            )}
-                            {item.tag && (
-                              <span
-                                className={`suggestion-tag tag-${item.tag}`}
-                              >
-                                {item.tag}
-                              </span>
-                            )}
-                          </div>
-                          <span className="suggestion-english">
-                            {item.english}
-                          </span>
-                          {item.context && (
-                            <span className="suggestion-context">
-                              {item.context}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {renderSuggestions('es')}
               </div>
-              <div className="field-group">
+              <div className="field-group field-group-relative">
                 <label htmlFor="english">
                   <UsFlag /> English
                 </label>
                 <textarea
+                  ref={englishInputRef}
                   id="english"
                   name="english"
+                  role="combobox"
                   rows={2}
                   required
                   autoCapitalize="none"
                   enterKeyHint="next"
                   value={englishInput}
                   onChange={onEnglishChange}
-                  onFocus={handleFocusSelect}
+                  onKeyDown={onSuggestionKeyDown}
+                  onBlur={onInputBlur}
+                  onFocus={onEnglishFocus}
                   placeholder="English translation"
+                  aria-autocomplete="list"
+                  aria-controls="english-suggestions"
+                  aria-expanded={
+                    suggestionTarget === 'en' && suggestions.length > 0
+                  }
+                  aria-activedescendant={
+                    suggestionTarget === 'en' && activeSuggestionIndex >= 0
+                      ? `suggestion-${activeSuggestionIndex}`
+                      : undefined
+                  }
                 />
+                {renderSuggestions('en')}
               </div>
               {duplicateCard && (
                 <div
