@@ -67,6 +67,10 @@
         .brand-wordmark {
           color: #fdf5f8 !important;
         }
+        .brand-logo-badge {
+          background-color: #ffffff !important;
+          border-color: #384640 !important;
+        }
         .email-card {
           background-color: #161e1a !important;
           border-color: #2b3832 !important;
@@ -185,20 +189,38 @@
                   >
                     <tr>
                       <td style="vertical-align: middle; padding-right: 10px">
-                        <img
-                          src="https://joli.to/favicon-96x96.png"
-                          width="32"
-                          height="32"
-                          alt="Jolito"
+                        <div
+                          class="brand-logo-badge"
                           style="
-                            display: block;
+                            background-color: #ffffff;
+                            border: 1px solid #e2ddd3;
+                            border-radius: 8px;
                             width: 32px;
                             height: 32px;
-                            border: 0;
-                            outline: none;
-                            border-radius: 6px;
+                            display: inline-block;
+                            box-shadow: 0 1px 3px rgba(18, 24, 21, 0.08);
+                            line-height: 0;
+                            font-size: 0;
+                            text-align: center;
+                            vertical-align: middle;
                           "
-                        />
+                        >
+                          <img
+                            src="https://joli.to/favicon-96x96.png"
+                            width="26"
+                            height="26"
+                            alt=""
+                            role="presentation"
+                            style="
+                              display: inline-block;
+                              width: 26px;
+                              height: 26px;
+                              margin-top: 2px;
+                              border: 0;
+                              outline: none;
+                            "
+                          />
+                        </div>
                       </td>
                       <td style="vertical-align: middle">
                         <span
