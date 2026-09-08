@@ -160,6 +160,11 @@ export class NeuralVoiceEngine {
             }
           })
           .catch(() => {})
+      } else if (
+        this.currentSource === null &&
+        this.currentAudioElement === null
+      ) {
+        this.scheduleIdleSuspend()
       }
       this.removeUnlockListeners()
     }
