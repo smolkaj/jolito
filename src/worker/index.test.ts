@@ -15,6 +15,23 @@ describe('worker fetch handler', () => {
     expect(res.status).toBe(400)
   })
 
+  it('routes /api/feedback to feedback handler', async () => {
+    const req = new Request('https://joli.to/api/feedback', {
+      method: 'OPTIONS',
+    })
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(204)
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST')
+  })
+
+  it('routes /api/feedback/ with trailing slash to feedback handler', async () => {
+    const req = new Request('https://joli.to/api/feedback/', {
+      method: 'OPTIONS',
+    })
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(204)
+  })
+
   it('delegates asset requests to env.ASSETS when present', async () => {
     let capturedAssetRequest: Request | null = null
     const mockEnv = {

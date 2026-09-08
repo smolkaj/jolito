@@ -295,4 +295,112 @@ describe('SupabaseFeedbackService', () => {
       }),
     )
   })
+
+  it('dispatches notification to notifyEndpoint on successful submission', async () => {
+    const fetchCalls: { url: string; options: RequestInit | undefined }[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      fetchCalls.push({ url, options: init })
+      return Promise.resolve(new Response(null, { status: 201 }))
+    })
+
+    const service = new SupabaseFeedbackService(
+      mockAuth,
+      'https://supabase.example.com',
+      'anon-key',
+      '/api/feedback',
+    )
+
+    const result = await service.submitFeedback(
+      { message: 'Feedback with notification' },
+      mockUser,
+    )
+
+    expect(result.success).toBe(true)
+    expect(fetchCalls.length).toBe(2)
+    // First call: Supabase PostgREST
+    expect(fetchCalls[0]?.url).toBe(
+      'https://supabase.example.com/rest/v1/feedback',
+    )
+    // Second call: Edge notification route
+    expect(fetchCalls[1]?.url).toContain('/api/feedback')
+    expect(fetchCalls[1]?.options?.headers).toMatchObject({
+      'Content-Type': 'application/json',
+    })
+    expect(fetchCalls[1]?.options?.keepalive).toBe(true)
+  })
+
+  it('resolves https://joli.to origin when running in native Capacitor on iOS', async () => {
+    const fetchCalls: { url: string }[] = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      fetchCalls.push({ url })
+      return Promise.resolve(new Response(null, { status: 201 }))
+    })
+
+    const originalLocation = window.location
+    try {
+      Object.defineProperty(window, 'location', {
+        value: {
+          protocol: 'capacitor:',
+          origin: 'capacitor://localhost',
+        },
+        writable: true,
+      })
+
+      const service = new SupabaseFeedbackService(
+        mockAuth,
+        'https://supabase.example.com',
+        'anon-key',
+        '/api/feedback',
+      )
+
+      await service.submitFeedback(
+        { message: 'Feedback from iOS native app' },
+        mockUser,
+      )
+
+      expect(fetchCalls.length).toBe(2)
+      expect(fetchCalls[1]?.url).toBe('https://joli.to/api/feedback')
+    } finally {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      })
+    }
+  })
+
+  it('tolerates notification dispatch errors without failing feedback submission', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    let callIdx = 0
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      callIdx++
+      if (callIdx === 1) {
+        // Supabase DB insertion succeeds
+        return Promise.resolve(new Response(null, { status: 201 }))
+      }
+      // Notification dispatch throws network error
+      return Promise.reject(new Error('Edge worker offline'))
+    })
+
+    const service = new SupabaseFeedbackService(
+      mockAuth,
+      'https://supabase.example.com',
+      'anon-key',
+      '/api/feedback',
+    )
+
+    const result = await service.submitFeedback(
+      { message: 'Submission succeeds even if notification fails' },
+      mockUser,
+    )
+
+    expect(result.success).toBe(true)
+    // Wait for microtask queue
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[FeedbackService] Non-fatal notification dispatch error:',
+      expect.any(Error),
+    )
+  })
 })

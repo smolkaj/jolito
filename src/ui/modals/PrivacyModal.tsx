@@ -128,8 +128,8 @@ export function PrivacyModal({
                 className="privacy-contact-link"
               >
                 on GitHub
-              </a>{' '}
-              or submit feedback{' '}
+              </a>
+              , submit feedback{' '}
               <a
                 href="#/feedback"
                 className="privacy-contact-link"
@@ -140,6 +140,10 @@ export function PrivacyModal({
                 }}
               >
                 directly in the app
+              </a>
+              , or email us at{' '}
+              <a href="mailto:contact@joli.to" className="privacy-contact-link">
+                contact@joli.to
               </a>
               .
             </p>
