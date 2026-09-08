@@ -4,7 +4,6 @@ import { ShieldIcon } from '../icons'
 export interface PrivacyModalProps {
   isOpen: boolean
   onClose: () => void
-  onOpenFeedback?: () => void
 }
 
 export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
