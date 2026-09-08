@@ -1,3 +1,6 @@
+import { readFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   cfApi,
   loadEnvLocal,
@@ -12,11 +15,13 @@ loadEnvLocal()
 const DOMAIN = process.env.DOMAIN ?? 'joli.to'
 const WORKER_NAME = process.env.WORKER_NAME ?? 'jolito'
 
-function extractSupabaseProjectRef(): string | undefined {
-  if (process.env.SUPABASE_PROJECT_REF) {
-    return process.env.SUPABASE_PROJECT_REF.trim()
+export function extractSupabaseProjectRef(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  if (env.SUPABASE_PROJECT_REF?.trim()) {
+    return env.SUPABASE_PROJECT_REF.trim()
   }
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
+  const supabaseUrl = env.VITE_SUPABASE_URL
   if (supabaseUrl) {
     const match = supabaseUrl.match(/https:\/\/([a-z0-9-]+)\.supabase\.co/)
     if (match && match[1]) {
@@ -24,6 +29,205 @@ function extractSupabaseProjectRef(): string | undefined {
     }
   }
   return undefined
+}
+
+export function getSupabaseAccessToken(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  if (env.SUPABASE_ACCESS_TOKEN?.trim()) {
+    return env.SUPABASE_ACCESS_TOKEN.trim()
+  }
+  const homeDir = env.HOME || env.USERPROFILE || ''
+  if (homeDir) {
+    const tokenFile = resolve(homeDir, '.supabase/access-token')
+    if (existsSync(tokenFile)) {
+      try {
+        const token = readFileSync(tokenFile, 'utf8').trim()
+        if (token) return token
+      } catch {
+        // ignore unreadable file
+      }
+    }
+  }
+  return undefined
+}
+
+export interface BuildSupabaseAuthPatchOptions {
+  domain: string
+  resendApiKey?: string | undefined
+  magicLinkTemplate?: string | undefined
+}
+
+export function buildSupabaseAuthPatch({
+  domain,
+  resendApiKey,
+  magicLinkTemplate,
+}: BuildSupabaseAuthPatchOptions): Record<string, unknown> {
+  const patch: Record<string, unknown> = {
+    site_url: `https://${domain}`,
+    uri_allow_list: `https://${domain}/**,https://*-jolito.smolkaj.workers.dev/**,https://jolito.smolkaj.workers.dev/**,http://localhost:*/**,http://127.0.0.1:*/**`,
+  }
+
+  if (magicLinkTemplate) {
+    patch.mailer_subjects_magic_link = 'Sign in to Jolito: {{ .Token }}'
+    patch.mailer_templates_magic_link_content = magicLinkTemplate
+  }
+
+  if (resendApiKey) {
+    patch.smtp_host = 'smtp.resend.com'
+    patch.smtp_port = '587'
+    patch.smtp_user = 'resend'
+    patch.smtp_pass = resendApiKey
+    patch.smtp_admin_email = `signin@${domain}`
+    patch.smtp_sender_name = 'Jolito'
+  }
+
+  return patch
+}
+
+export interface ResendDnsRecord {
+  record: string
+  name: string
+  type: string
+  value: string
+  priority?: number
+  ttl?: string
+  status?: string
+}
+
+export interface ResendDomain {
+  id: string
+  name: string
+  status: string
+  records?: ResendDnsRecord[]
+}
+
+export async function syncResendDns({
+  cfToken,
+  zoneId,
+  domain,
+  resendApiKey,
+}: {
+  cfToken: string
+  zoneId: string
+  domain: string
+  resendApiKey: string
+}): Promise<void> {
+  console.log(`\n📬 Synchronizing Resend email domain & DNS for ${domain}...`)
+
+  try {
+    let resendDomain: ResendDomain | undefined
+    const listRes = await fetch('https://api.resend.com/domains', {
+      headers: { Authorization: `Bearer ${resendApiKey}` },
+    })
+    if (listRes.ok) {
+      const listData = (await listRes.json()) as { data?: ResendDomain[] }
+      resendDomain = listData.data?.find(
+        (d) => d.name.toLowerCase() === domain.toLowerCase(),
+      )
+    }
+
+    if (!resendDomain) {
+      console.log(`➕ Registering domain ${domain} in Resend...`)
+      const createRes = await fetch('https://api.resend.com/domains', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: domain }),
+      })
+      if (createRes.ok) {
+        resendDomain = (await createRes.json()) as ResendDomain
+        console.log(
+          `✔ Registered domain ${domain} in Resend (ID: ${resendDomain.id})`,
+        )
+      }
+    }
+
+    if (!resendDomain) {
+      console.warn(
+        `⚠️  Could not retrieve or create Resend domain for ${domain}`,
+      )
+      return
+    }
+
+    const detailRes = await fetch(
+      `https://api.resend.com/domains/${resendDomain.id}`,
+      {
+        headers: { Authorization: `Bearer ${resendApiKey}` },
+      },
+    )
+    if (!detailRes.ok) {
+      console.warn(
+        `⚠️  Could not fetch Resend domain details (status: ${detailRes.status})`,
+      )
+      return
+    }
+
+    const detail = (await detailRes.json()) as ResendDomain
+    const records = detail.records ?? []
+
+    if (records.length > 0) {
+      const existingCfRecords = await cfApi<
+        Array<{ type: string; name: string; content: string }>
+      >(`/zones/${zoneId}/dns_records`, cfToken)
+
+      for (const rec of records) {
+        const expectedFullName =
+          rec.name === '@'
+            ? domain.toLowerCase()
+            : `${rec.name.toLowerCase()}.${domain.toLowerCase()}`
+
+        const alreadyExists = existingCfRecords.some((cf) => {
+          const cfName = cf.name.toLowerCase()
+          const cfType = cf.type.toUpperCase()
+          return (
+            cfType === rec.type.toUpperCase() &&
+            (cfName === expectedFullName || cfName === rec.name.toLowerCase())
+          )
+        })
+
+        if (!alreadyExists) {
+          console.log(
+            `➕ Adding Cloudflare DNS record: ${rec.type} ${rec.name} -> ${rec.value}...`,
+          )
+          await cfApi(`/zones/${zoneId}/dns_records`, cfToken, 'POST', {
+            type: rec.type,
+            name: rec.name,
+            content: rec.value,
+            ...(rec.priority !== undefined ? { priority: rec.priority } : {}),
+            ttl: 1,
+          }).catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err)
+            if (!msg.includes('already exists') && !msg.includes('duplicate')) {
+              console.warn(`⚠️  Notice adding DNS record ${rec.name}: ${msg}`)
+            }
+          })
+          console.log(`✔ DNS record provisioned: ${rec.type} ${rec.name}`)
+        } else {
+          console.log(`✔ DNS record already present: ${rec.type} ${rec.name}`)
+        }
+      }
+
+      if (detail.status !== 'verified') {
+        console.log(`🔄 Triggering Resend domain verification check...`)
+        await fetch(
+          `https://api.resend.com/domains/${resendDomain.id}/verify`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${resendApiKey}` },
+          },
+        ).catch(() => {})
+      } else {
+        console.log(`✔ Resend domain ${domain} is verified`)
+      }
+    }
+  } catch (err: unknown) {
+    console.warn(
+      `⚠️  Notice during Resend DNS synchronization: ${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
 }
 
 async function main() {
@@ -199,18 +403,47 @@ async function main() {
     zone.name_servers.forEach((ns) => console.log(`   - ${ns}`))
   }
 
-  // 8. Supabase Auth Configuration
+  // 8. Resend Email Domain & DNS Configuration (if RESEND_API_KEY is provided)
+  const resendApiKey = process.env.RESEND_API_KEY?.trim()
+  if (resendApiKey) {
+    await syncResendDns({
+      cfToken,
+      zoneId: zone.id,
+      domain: DOMAIN,
+      resendApiKey,
+    })
+  } else {
+    console.log(
+      '\nℹ️  RESEND_API_KEY not provided. Skipping automatic Resend DNS records.',
+    )
+  }
+
+  // 9. Supabase Auth Configuration
   console.log(
     `\n📦 Synchronizing Supabase Auth Configuration for https://${DOMAIN}...`,
   )
   const projectRef = extractSupabaseProjectRef()
-  const supabaseToken = process.env.SUPABASE_ACCESS_TOKEN
+  const supabaseToken = getSupabaseAccessToken()
 
   if (projectRef && supabaseToken) {
     try {
       console.log(
         `🔄 Updating Supabase Auth settings via Management API for project ${projectRef}...`,
       )
+      const templatePath = resolve(
+        process.cwd(),
+        'supabase/templates/magic_link.html',
+      )
+      const magicLinkTemplate = existsSync(templatePath)
+        ? readFileSync(templatePath, 'utf8')
+        : undefined
+
+      const patchBody = buildSupabaseAuthPatch({
+        domain: DOMAIN,
+        resendApiKey,
+        magicLinkTemplate,
+      })
+
       const authRes = await fetch(
         `https://api.supabase.com/v1/projects/${projectRef}/config/auth`,
         {
@@ -219,15 +452,12 @@ async function main() {
             Authorization: `Bearer ${supabaseToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            site_url: `https://${DOMAIN}`,
-            uri_allow_list: `https://${DOMAIN}/**,https://*-jolito.smolkaj.workers.dev/**,https://jolito.smolkaj.workers.dev/**,http://localhost:*/**,http://127.0.0.1:*/**`,
-          }),
+          body: JSON.stringify(patchBody),
         },
       )
       if (authRes.ok) {
         console.log(
-          `✔ Supabase Auth Site URL and Redirect URLs successfully updated to https://${DOMAIN}`,
+          `✔ Supabase Auth Site URL, redirect URLs, custom SMTP (Resend), and Magic Link template synchronized!`,
         )
       } else {
         const errText = await authRes.text().catch(() => '')
@@ -242,7 +472,7 @@ async function main() {
     }
   } else {
     console.log(
-      'ℹ️  SUPABASE_ACCESS_TOKEN not provided (or VITE_SUPABASE_URL not configured).',
+      'ℹ️  SUPABASE_ACCESS_TOKEN not found (checked env and ~/.supabase/access-token).',
     )
     console.log(
       `👉 Please ensure Supabase Auth URL Configuration is set in the Supabase Dashboard:\n` +
@@ -257,7 +487,7 @@ async function main() {
     )
   }
 
-  // 9. DNS & Live Health Check
+  // 10. DNS & Live Health Check
   console.log('\n🌐 Checking DNS propagation & live status...')
   try {
     const dnsRes = await fetch(
@@ -274,7 +504,7 @@ async function main() {
     // ignore
   }
 
-  // 10. Cloudflare Email Routing (@joli.to -> destination)
+  // 11. Cloudflare Email Routing (@joli.to -> destination)
   const destinationEmail = process.env.FEEDBACK_NOTIFICATION_EMAIL
   try {
     await setupEmailRouting({
@@ -293,7 +523,11 @@ async function main() {
   console.log(`\n🎉 Setup complete! Visit: https://${DOMAIN}\n`)
 }
 
-main().catch(() => {
-  console.error('\n❌ Setup failed. Check credentials and permissions.')
-  process.exit(1)
-})
+// Run directly if invoked as entrypoint
+const currentFilePath = fileURLToPath(import.meta.url)
+if (process.argv[1] && resolve(process.argv[1]) === currentFilePath) {
+  main().catch(() => {
+    console.error('\n❌ Setup failed. Check credentials and permissions.')
+    process.exit(1)
+  })
+}

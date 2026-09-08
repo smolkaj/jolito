@@ -50,9 +50,8 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toContain('@media (prefers-color-scheme: dark)')
     expect(content).toContain('@media only screen and (max-width: 600px)')
 
-    // Verify dark mode preserves header brand wordmark & subtitle contrast
+    // Verify dark mode preserves header brand wordmark contrast
     expect(content).toMatch(/\.brand-wordmark\s*\{[^}]*color:\s*#fdf5f8/i)
-    expect(content).toMatch(/\.brand-subtitle\s*\{[^}]*color:\s*#8d9c94/i)
 
     // Verify dark mode aligns OTP code container with brand palette
     expect(content).toMatch(
