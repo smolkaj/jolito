@@ -339,6 +339,44 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
+  it('prioritizes explicit grace timeout (1500ms) over disk-cache timeout (150ms) on explicit clicks', async () => {
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'hasDiskAudio').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('aguacate', 'es-MX', {
+      cardSeed: 'sample-aguacate',
+      explicit: true,
+    })
+    expect(played).toBe(true)
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      1500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: true }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
   it('discards delayed awaitAudio playback and fallback when superseded by another speech action', async () => {
     let resolveAwaitAudio!: (ready: boolean) => void
     const awaitPromise = new Promise<boolean>((resolve) => {

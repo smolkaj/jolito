@@ -1232,8 +1232,11 @@ export class LayeredNeuralSpeaker implements Speaker {
       normLocale,
       voice,
     )
+    const isExplicitOnline =
+      Boolean(options?.explicit) &&
+      (typeof navigator === 'undefined' || navigator.onLine !== false)
 
-    if (isInFlight || isDiskCached) {
+    if (isInFlight || isDiskCached || isExplicitOnline) {
       if (!isInFlight) {
         // Trigger hydration from disk/network into memory
         void this.neuralEngine
@@ -1246,49 +1249,10 @@ export class LayeredNeuralSpeaker implements Speaker {
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
-      const graceTimeout = isDiskCached ? 150 : options?.explicit ? 1500 : 1000
+      const graceTimeout = options?.explicit ? 1500 : isDiskCached ? 150 : 1000
+
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
-        .then((ready) => {
-          if (this.speakGeneration !== currentGen) return
-          if (ready) {
-            const played = this.neuralEngine.playAudio(
-              cleanText,
-              normLocale,
-              voice,
-              options,
-            )
-            if (!played) {
-              this.speakFallback(cleanText, normLocale, fallbackOptions)
-            }
-          } else {
-            this.speakFallback(cleanText, normLocale, fallbackOptions)
-          }
-        })
-        .catch(() => {
-          if (this.speakGeneration !== currentGen) return
-          this.speakFallback(cleanText, normLocale, fallbackOptions)
-        })
-      return true
-    }
-
-    // 3. Uncached and not in-flight:
-    if (
-      options?.explicit &&
-      typeof navigator !== 'undefined' &&
-      navigator.onLine !== false
-    ) {
-      void this.neuralEngine
-        .fetchAndCacheAudio(cleanText, normLocale, {
-          voice,
-          cardSeed: options?.cardSeed,
-        })
-        .catch(() => {})
-
-      this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
-
-      void this.neuralEngine
-        .awaitAudio(cleanText, normLocale, voice, 1500)
         .then((ready) => {
           if (this.speakGeneration !== currentGen) return
           if (ready) {

@@ -59,7 +59,6 @@ test('never falls back to robotic speech synthesis when clicking homescreen samp
   await page.waitForTimeout(600)
 
   const calls = await page.evaluate(() => window.__speechSynthesisCalls ?? [])
-  console.log('SpeechSynthesis calls on homescreen interaction:', calls)
   expect(calls).toEqual([])
 })
 
@@ -99,7 +98,6 @@ test('never falls back to robotic speech synthesis when practicing from homescre
   await page.waitForTimeout(600)
 
   const calls = await page.evaluate(() => window.__speechSynthesisCalls ?? [])
-  console.log('SpeechSynthesis calls on entering practice:', calls)
   expect(calls).toEqual([])
 })
 
@@ -134,10 +132,16 @@ test('gracefully falls back to speech synthesis when TTS network fails or offlin
   })
   await expect(spanishCard).toBeVisible()
   await spanishCard.click()
-  await page.waitForTimeout(500)
+
+  await expect
+    .poll(async () => {
+      const calls = await page.evaluate(
+        () => window.__speechSynthesisCalls ?? [],
+      )
+      return calls.length
+    })
+    .toBeGreaterThan(0)
 
   const calls = await page.evaluate(() => window.__speechSynthesisCalls ?? [])
-  console.log('SpeechSynthesis calls when offline/failing:', calls)
-  expect(calls.length).toBeGreaterThan(0)
   expect(calls[0]?.text).toBe('aguacate')
 })
