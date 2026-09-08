@@ -3730,6 +3730,34 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
+  it('provides feedback and privacy buttons in footer during active practice', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    // Navigate to practice
+    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    expect(
+      screen.getByRole('textbox', { name: /your answer/i }),
+    ).toBeInTheDocument()
+
+    // Footer buttons are present during active practice
+    const feedbackBtn = screen.getByRole('button', {
+      name: /^feedback$/i,
+    })
+    const privacyBtn = screen.getByRole('button', {
+      name: /^privacy$/i,
+    })
+    expect(feedbackBtn).toBeInTheDocument()
+    expect(privacyBtn).toBeInTheDocument()
+
+    // Clicking feedback opens the feedback modal
+    await user.click(feedbackBtn)
+    expect(
+      screen.getByRole('heading', { name: /share feedback/i }),
+    ).toBeInTheDocument()
+  })
+
   it('pauses and resumes an active study session when navigating to deck management and back', async () => {
     const user = userEvent.setup()
     const services = createTestServices()

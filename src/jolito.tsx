@@ -3710,6 +3710,10 @@ export function App({
             )}
           </p>
         </section>
+        <AppFooter
+          onOpenFeedback={openFeedbackModal}
+          onOpenPrivacy={openPrivacyModal}
+        />
       </main>
       <SyncModal
         isOpen={isSyncOpen}
