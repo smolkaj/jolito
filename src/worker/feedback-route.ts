@@ -174,8 +174,7 @@ export async function sendFeedbackNotification(
   payload: FeedbackPayload,
   env?: FeedbackWorkerEnv,
 ): Promise<{ dispatched: boolean; provider: string }> {
-  const recipient =
-    env?.FEEDBACK_NOTIFICATION_EMAIL || 'a@joli.to'
+  const recipient = env?.FEEDBACK_NOTIFICATION_EMAIL || 'a@joli.to'
   const sender = env?.FEEDBACK_SENDER_EMAIL || 'a@joli.to'
   const isGuest = !payload.email || payload.email === 'guest@jolito.app'
   const replyTo = !isGuest && payload.email ? payload.email : undefined

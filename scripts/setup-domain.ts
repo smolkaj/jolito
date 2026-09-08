@@ -445,12 +445,17 @@ async function main() {
         )
         if (!ruleExists) {
           console.log(`➕ Creating email forward rule: ${addr}...`)
-          await cfApi(`/zones/${zone.id}/email/routing/rules`, cfToken, 'POST', {
-            name: `Forward ${addr}`,
-            enabled: true,
-            matchers: [{ type: 'literal', field: 'to', value: addr }],
-            actions: [{ type: 'forward', value: [destinationEmail] }],
-          }).catch(() => {
+          await cfApi(
+            `/zones/${zone.id}/email/routing/rules`,
+            cfToken,
+            'POST',
+            {
+              name: `Forward ${addr}`,
+              enabled: true,
+              matchers: [{ type: 'literal', field: 'to', value: addr }],
+              actions: [{ type: 'forward', value: [destinationEmail] }],
+            },
+          ).catch(() => {
             console.warn(
               `ℹ️  Notice: Forwarding rule for ${addr} already exists or was skipped.`,
             )
