@@ -139,6 +139,12 @@ The Cloudflare DNS zone, edge TLS settings, custom domain bindings for `joli.to`
 npm run setup:domain
 ```
 
+To configure or re-provision Cloudflare Email Routing (verifying destination address, provisioning MX/SPF DNS records, and activating the `a@joli.to` forwarding rule) independently without running the full registrar pipeline:
+
+```sh
+npm run setup:email
+```
+
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality, browser, and iOS native compilation checks remain the code-quality gates.
 
 ## Native iOS & Mobile development

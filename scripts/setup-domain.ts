@@ -1,27 +1,11 @@
-import { readFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
-import * as readline from 'node:readline/promises'
-import { stdin as input, stdout as output } from 'node:process'
-
-// Load .env.local if present
-function loadEnvLocal(): void {
-  const envPath = resolve(process.cwd(), '.env.local')
-  if (existsSync(envPath)) {
-    const content = readFileSync(envPath, 'utf8')
-    for (const line of content.split('\n')) {
-      const trimmed = line.trim()
-      if (!trimmed || trimmed.startsWith('#')) continue
-      const eqIdx = trimmed.indexOf('=')
-      if (eqIdx !== -1) {
-        const key = trimmed.slice(0, eqIdx).trim()
-        const val = trimmed.slice(eqIdx + 1).trim()
-        if (!process.env[key]) {
-          process.env[key] = val
-        }
-      }
-    }
-  }
-}
+import {
+  cfApi,
+  loadEnvLocal,
+  promptIfMissing,
+  type CloudflareAccount,
+  type CloudflareZone,
+} from './cf-utils.ts'
+import { setupEmailRouting } from './setup-email.ts'
 
 loadEnvLocal()
 
@@ -40,82 +24,6 @@ function extractSupabaseProjectRef(): string | undefined {
     }
   }
   return undefined
-}
-
-async function promptIfMissing(
-  varName: string,
-  promptText: string,
-): Promise<string> {
-  const existing = process.env[varName]
-  if (existing) return existing.trim()
-
-  const rl = readline.createInterface({ input, output })
-  try {
-    const answer = await rl.question(promptText)
-    return answer.trim()
-  } finally {
-    rl.close()
-  }
-}
-
-interface CloudflareZone {
-  id: string
-  name: string
-  name_servers: string[]
-  status: string
-}
-
-interface CloudflareAccount {
-  id: string
-  name: string
-}
-
-interface CloudflareRoutingAddress {
-  email: string
-  verified: string | null
-}
-
-interface CloudflareRoutingRule {
-  name: string
-  matchers: { type: string; field: string; value: string }[]
-}
-
-async function cfApi<T>(
-  path: string,
-  token: string,
-  method = 'GET',
-  body?: unknown,
-): Promise<T> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  }
-
-  const reqInit: RequestInit = {
-    method,
-    headers,
-  }
-
-  if (body !== undefined) {
-    reqInit.body = JSON.stringify(body)
-  }
-
-  const res = await fetch(
-    `https://api.cloudflare.com/client/v4${path}`,
-    reqInit,
-  )
-
-  const data = (await res.json()) as {
-    success: boolean
-    result: T
-    errors?: { message: string }[]
-  }
-  if (!data.success) {
-    const errMsg =
-      data.errors?.map((e) => e.message).join(', ') ?? res.statusText
-    throw new Error(`Cloudflare API error (${path}): ${errMsg}`)
-  }
-  return data.result
 }
 
 async function main() {
@@ -167,7 +75,7 @@ async function main() {
   }
 
   console.log(`📌 Cloudflare Nameservers for ${DOMAIN}:`)
-  zone.name_servers.forEach((ns) => console.log(`   - ${ns}`))
+  ;(zone.name_servers ?? []).forEach((ns) => console.log(`   - ${ns}`))
 
   // 4. Configure Zone Settings (Strict SSL, Always HTTPS, TLS 1.3)
   console.log('\n🔒 Enforcing SSL & Security Settings on Cloudflare...')
@@ -367,107 +275,18 @@ async function main() {
   }
 
   // 10. Cloudflare Email Routing (@joli.to -> destination)
-  console.log('\n📧 Configuring Cloudflare Email Routing for ' + DOMAIN + '...')
   const destinationEmail = process.env.FEEDBACK_NOTIFICATION_EMAIL
-  const forwardAddresses = [`a@${DOMAIN}`]
-
   try {
-    // 10a. Destination Address Verification (if configured)
-    if (destinationEmail) {
-      const addresses = await cfApi<CloudflareRoutingAddress[]>(
-        `/accounts/${accountId}/email/routing/addresses`,
-        cfToken,
-      ).catch(() => [] as CloudflareRoutingAddress[])
-
-      const existingDest = addresses.find(
-        (a) => a.email.toLowerCase() === destinationEmail.toLowerCase(),
-      )
-
-      if (!existingDest) {
-        console.log('➕ Adding verified destination email for notifications...')
-        await cfApi(
-          `/accounts/${accountId}/email/routing/addresses`,
-          cfToken,
-          'POST',
-          { email: destinationEmail },
-        ).catch(() => {
-          console.warn(
-            'ℹ️  Notice: Destination address already registered or requires manual verification.',
-          )
-        })
-        console.log(
-          '✉️  Verification email dispatched. Please check your inbox and click the verification link if prompted!',
-        )
-      } else if (!existingDest.verified) {
-        console.log(
-          '⏳ Destination email is pending verification. Please check your inbox!',
-        )
-      } else {
-        console.log('✔ Verified destination email confirmed active.')
-      }
-    } else {
-      console.log(
-        'ℹ️  FEEDBACK_NOTIFICATION_EMAIL not set in environment. Skipping destination address configuration.',
-      )
-    }
-
-    // 10b. Enable Email Routing on Zone
-    try {
-      await cfApi(`/zones/${zone.id}/email/routing/enabled`, cfToken, 'POST', {
-        enabled: true,
-      })
-      console.log(`✔ Cloudflare Email Routing enabled for zone ${DOMAIN}`)
-    } catch {
-      // ignore if already enabled
-    }
-
-    // 10c. Auto-provision DNS records for Email Routing
-    try {
-      await cfApi(`/zones/${zone.id}/email/routing/dns`, cfToken, 'POST')
-      console.log(`✔ Email Routing DNS records (MX, SPF) provisioned`)
-    } catch {
-      // ignore if already provisioned
-    }
-
-    // 10d. Configure Routing Rules (if destination email is known)
-    if (destinationEmail) {
-      const rules = await cfApi<CloudflareRoutingRule[]>(
-        `/zones/${zone.id}/email/routing/rules`,
-        cfToken,
-      ).catch(() => [] as CloudflareRoutingRule[])
-
-      for (const addr of forwardAddresses) {
-        const ruleExists = rules.some((r) =>
-          r.matchers?.some(
-            (m) =>
-              m.field === 'to' && m.value.toLowerCase() === addr.toLowerCase(),
-          ),
-        )
-        if (!ruleExists) {
-          console.log(`➕ Creating email forward rule: ${addr}...`)
-          await cfApi(
-            `/zones/${zone.id}/email/routing/rules`,
-            cfToken,
-            'POST',
-            {
-              name: `Forward ${addr}`,
-              enabled: true,
-              matchers: [{ type: 'literal', field: 'to', value: addr }],
-              actions: [{ type: 'forward', value: [destinationEmail] }],
-            },
-          ).catch(() => {
-            console.warn(
-              `ℹ️  Notice: Forwarding rule for ${addr} already exists or was skipped.`,
-            )
-          })
-        } else {
-          console.log(`✔ Email forward rule already active: ${addr}`)
-        }
-      }
-    }
+    await setupEmailRouting({
+      cfToken,
+      accountId,
+      zoneId: zone.id,
+      domain: DOMAIN,
+      destinationEmail: destinationEmail || undefined,
+    })
   } catch {
     console.warn(
-      '⚠️  Notice: Could not complete automatic Email Routing setup.',
+      '⚠️  Notice: Could not complete automatic Email Routing setup. Run `npm run setup:email` for dedicated setup.',
     )
   }
 
