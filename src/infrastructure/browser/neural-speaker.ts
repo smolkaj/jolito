@@ -26,9 +26,13 @@ export function isShortPhraseForDualVoice(text: string): boolean {
   return words.length > 0 && words.length <= 3 && clean.length <= 30
 }
 
-export const STARTER_PHRASES: Array<{ text: string; locale: string }> = [
-  { text: 'aguacate', locale: 'es-MX' },
-  { text: 'avocado', locale: 'en-US' },
+export const STARTER_PHRASES: Array<{
+  text: string
+  locale: string
+  cardSeed?: string | undefined
+}> = [
+  { text: 'aguacate', locale: 'es-MX', cardSeed: 'sample-aguacate' },
+  { text: 'avocado', locale: 'en-US', cardSeed: 'sample-aguacate' },
   { text: 'qué padre', locale: 'es-MX' },
   { text: 'how cool', locale: 'en-US' },
   { text: '¿dónde está el metro?', locale: 'es-MX' },
@@ -1020,6 +1024,7 @@ export class NeuralVoiceEngine {
           STARTER_PHRASES.map((p) => ({
             text: p.text,
             locale: p.locale,
+            cardSeed: p.cardSeed,
             bothVoices: true,
           })),
           fetchFn,
@@ -1241,7 +1246,7 @@ export class LayeredNeuralSpeaker implements Speaker {
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
-      const graceTimeout = isDiskCached ? 150 : 200
+      const graceTimeout = isDiskCached ? 150 : options?.explicit ? 1500 : 1000
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
         .then((ready) => {
@@ -1267,7 +1272,47 @@ export class LayeredNeuralSpeaker implements Speaker {
       return true
     }
 
-    // 3. Uncached and not in-flight: fire background fetch for subsequent plays and speak via fallback synchronously
+    // 3. Uncached and not in-flight:
+    if (
+      options?.explicit &&
+      typeof navigator !== 'undefined' &&
+      navigator.onLine !== false
+    ) {
+      void this.neuralEngine
+        .fetchAndCacheAudio(cleanText, normLocale, {
+          voice,
+          cardSeed: options?.cardSeed,
+        })
+        .catch(() => {})
+
+      this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
+
+      void this.neuralEngine
+        .awaitAudio(cleanText, normLocale, voice, 1500)
+        .then((ready) => {
+          if (this.speakGeneration !== currentGen) return
+          if (ready) {
+            const played = this.neuralEngine.playAudio(
+              cleanText,
+              normLocale,
+              voice,
+              options,
+            )
+            if (!played) {
+              this.speakFallback(cleanText, normLocale, fallbackOptions)
+            }
+          } else {
+            this.speakFallback(cleanText, normLocale, fallbackOptions)
+          }
+        })
+        .catch(() => {
+          if (this.speakGeneration !== currentGen) return
+          this.speakFallback(cleanText, normLocale, fallbackOptions)
+        })
+      return true
+    }
+
+    // Fire background fetch for subsequent plays and speak via fallback synchronously
     void this.neuralEngine
       .fetchAndCacheAudio(cleanText, normLocale, {
         voice,

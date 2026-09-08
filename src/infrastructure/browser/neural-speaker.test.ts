@@ -257,6 +257,88 @@ describe('LayeredNeuralSpeaker', () => {
     })
   })
 
+  it('awaits in-flight prefetch for explicit user clicks with a 1500ms grace window', async () => {
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('aguacate', 'es-MX', {
+      cardSeed: 'sample-aguacate',
+      explicit: true,
+    })
+    expect(played).toBe(true)
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      1500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: true }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('initiates and awaits fetch for uncached phrases on explicit user interaction while online', async () => {
+    const fetchSpy = vi
+      .spyOn(neuralEngine, 'fetchAndCacheAudio')
+      .mockResolvedValue(true)
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('palabra nueva', 'es-MX', {
+      cardSeed: 'seed-123',
+      explicit: true,
+    })
+    expect(played).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'palabra nueva',
+      'es-MX',
+      expect.objectContaining({ cardSeed: 'seed-123' }),
+    )
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'palabra nueva',
+      'es-MX',
+      expect.any(String),
+      1500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'palabra nueva',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: true }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
   it('discards delayed awaitAudio playback and fallback when superseded by another speech action', async () => {
     let resolveAwaitAudio!: (ready: boolean) => void
     const awaitPromise = new Promise<boolean>((resolve) => {
@@ -475,11 +557,19 @@ describe('NeuralVoiceEngine', () => {
     expect(STARTER_PHRASES.length).toBeGreaterThan(0)
     expect(
       STARTER_PHRASES.some(
-        (p) => p.text === 'aguacate' && p.locale === 'es-MX',
+        (p) =>
+          p.text === 'aguacate' &&
+          p.locale === 'es-MX' &&
+          p.cardSeed === 'sample-aguacate',
       ),
     ).toBe(true)
     expect(
-      STARTER_PHRASES.some((p) => p.text === 'avocado' && p.locale === 'en-US'),
+      STARTER_PHRASES.some(
+        (p) =>
+          p.text === 'avocado' &&
+          p.locale === 'en-US' &&
+          p.cardSeed === 'sample-aguacate',
+      ),
     ).toBe(true)
   })
 
