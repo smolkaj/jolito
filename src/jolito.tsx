@@ -2546,6 +2546,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
@@ -2925,6 +2926,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
@@ -3432,6 +3434,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
@@ -3578,6 +3581,7 @@ export function App({
           onUpdateCards={onUpdateCards}
           auth={services.auth}
           sync={services.sync}
+          clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
             pendingCard ? pendingCard.spanish.trim() : undefined
@@ -3783,6 +3787,7 @@ export function App({
         onUpdateCards={onUpdateCards}
         auth={services.auth}
         sync={services.sync}
+        clock={services.clock}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
         onOpenPrivacy={openPrivacyModal}
