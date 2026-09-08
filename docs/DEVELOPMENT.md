@@ -139,11 +139,31 @@ The Cloudflare DNS zone, edge TLS settings, custom domain bindings for `joli.to`
 npm run setup:domain
 ```
 
-To configure or re-provision Cloudflare Email Routing (verifying destination address, provisioning MX/SPF DNS records, and activating the `a@joli.to` forwarding rule) independently without running the full registrar pipeline:
+To configure or re-provision Cloudflare Email Routing (verifying destination address, provisioning MX/SPF DNS records, and activating forwarding rules for `a@joli.to`, `signin@joli.to`, and `login@joli.to`) independently without running the full registrar pipeline:
 
 ```sh
 npm run setup:email
 ```
+
+### Passwordless Authentication & Sign-in Emails
+
+Jolito uses Supabase Auth for passwordless 1-click magic link and 6-digit OTP verification.
+
+1. **Email Templates:** The custom responsive email template is version-controlled at `supabase/templates/magic_link.html` and configured in `supabase/config.toml` (`[auth.email.template.magic_link]`). It features:
+   - Primary 1-click login button (`{{ .ConfirmationURL }}`).
+   - Prominent letter-spaced 6-digit OTP code (`{{ .Token }}`) for cross-device and standalone PWA logins.
+   - Dynamic subject line: `Sign in to Jolito: {{ .Token }}`.
+   - Inlined CSS with dark mode support (`prefers-color-scheme: dark`) and inbox preheader text to prevent snippet leakage.
+2. **Sender Domain (`signin@joli.to`) via Custom SMTP:**
+   - In the Supabase Dashboard, navigate to **Project Settings > Authentication > SMTP Settings**.
+   - Enable **Custom SMTP**:
+     - **Sender email:** `signin@joli.to`
+     - **Sender name:** `Jolito`
+     - **Host:** `smtp.resend.com` (using Resend)
+     - **Port:** `465` (SSL) or `587` (TLS)
+     - **Username:** `resend`
+     - **Password:** `<RESEND_API_KEY>` (same key used in Cloudflare Workers)
+3. **Inbound Reply Forwarding:** Running `npm run setup:email` provisions Cloudflare Email Routing rules for `signin@joli.to` and `login@joli.to` in addition to `a@joli.to`, ensuring user replies to auth emails route directly to the maintainer destination inbox.
 
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality, browser, and iOS native compilation checks remain the code-quality gates.
 
