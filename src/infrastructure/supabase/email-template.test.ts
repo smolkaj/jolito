@@ -35,6 +35,9 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toContain('Jolito')
     expect(content).toMatch(/Spoken Mexican Spanish/i)
     expect(content).toContain('joli.to')
+    // Official geometric brand logo
+    expect(content).toContain('https://joli.to/favicon-96x96.png')
+    expect(content).toMatch(/<img[^>]*alt="Jolito"/i)
     // Rosa Mexicano brand accent
     expect(content).toContain('#e4007c')
   })
