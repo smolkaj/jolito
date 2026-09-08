@@ -53,25 +53,17 @@ describe('PrivacyModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('triggers onOpenFeedback and onClose when clicking directly in the app feedback link', () => {
-    const onClose = vi.fn()
-    const onOpenFeedback = vi.fn()
-    render(
-      <PrivacyModal
-        isOpen={true}
-        onClose={onClose}
-        onOpenFeedback={onOpenFeedback}
-      />,
+  it('renders open-source GitHub link and author link', () => {
+    render(<PrivacyModal isOpen={true} onClose={vi.fn()} />)
+
+    const repoLink = screen.getByRole('link', { name: 'open-source' })
+    expect(repoLink).toHaveAttribute(
+      'href',
+      'https://github.com/smolkaj/jolito',
     )
 
-    const feedbackLink = screen.getByRole('link', {
-      name: /directly in the app/i,
-    })
-    expect(feedbackLink).toBeInTheDocument()
-    fireEvent.click(feedbackLink)
-
-    expect(onClose).toHaveBeenCalledTimes(1)
-    expect(onOpenFeedback).toHaveBeenCalledTimes(1)
+    const authorLink = screen.getByRole('link', { name: 'Steffen Smolka' })
+    expect(authorLink).toHaveAttribute('href', 'https://smolka.st')
   })
 
   it('renders official contact email mailto link to a@joli.to', () => {

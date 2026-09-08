@@ -3824,11 +3824,7 @@ export function App({
         feedbackService={services.feedback}
         currentView={view}
       />
-      <PrivacyModal
-        isOpen={isPrivacyOpen}
-        onClose={closePrivacyModal}
-        onOpenFeedback={openFeedbackModal}
-      />
+      <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
     </>
   )
 }
