@@ -3480,6 +3480,13 @@ kbd {
   font-size: 14px;
 }
 
+.link-input.otp-code-input {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
 .paste-input-btn {
   position: absolute;
   right: 6px;

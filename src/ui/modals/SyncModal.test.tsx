@@ -326,3 +326,114 @@ describe('SyncModal Account Deletion and Legal', () => {
     expect(ackLink).not.toHaveClass('modal-link-btn')
   })
 })
+
+describe('SyncModal First-Class OTP Code Entry', () => {
+  it('immediately reveals 6-digit code input upon sending magic link without clicking paste link', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    fireEvent.change(emailInput, { target: { value: 'learner@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/6-digit code or sign-in link/i),
+      ).toBeInTheDocument()
+    })
+
+    const tokenInput = screen.getByLabelText(/6-digit code or sign-in link/i)
+    expect(tokenInput).toHaveAttribute(
+      'placeholder',
+      'e.g. 123456 or paste link',
+    )
+    expect(
+      screen.getByRole('button', { name: /sign in & sync/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /resend link/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /change email/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('signs in when 6-digit OTP code is entered and submitted', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+    const verifySpy = vi.spyOn(auth, 'verifyOtp')
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'otp-user@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/6-digit code or sign-in link/i),
+      ).toBeInTheDocument()
+    })
+
+    const tokenInput = screen.getByLabelText(/6-digit code or sign-in link/i)
+    fireEvent.change(tokenInput, { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: /sign in & sync/i }))
+
+    await waitFor(() => {
+      expect(verifySpy).toHaveBeenCalledWith('otp-user@example.com', '123456')
+    })
+  })
+
+  it('allows changing email back to the email input form', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'wrong@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /change email/i }),
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /change email/i }))
+
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/6-digit code/i)).toBeNull()
+  })
+})

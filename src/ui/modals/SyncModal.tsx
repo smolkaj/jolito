@@ -57,9 +57,6 @@ export function SyncModal({
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [backupBeforeDelete, setBackupBeforeDelete] = useState(true)
-  const [showPasteLink, setShowPasteLink] = useState(
-    () => isStandalone() && isIOS(),
-  )
   const [transientFeedback, setTransientFeedback] = useState<
     'synced' | 'resent' | 'pasted' | null
   >(null)
@@ -199,7 +196,7 @@ export function SyncModal({
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid sign-in link.',
+        message: res.error || 'Invalid sign-in link or code.',
       })
     }
   }
@@ -518,93 +515,32 @@ export function SyncModal({
                   : 'Send sign-in link →'}
             </button>
           </form>
-        ) : !showPasteLink ? (
-          <div className="sync-sent-pane">
-            <p className="sync-explanation">
-              {pendingCardPrompt ? (
-                <>
-                  Click the sign-in link sent to <strong>{email.trim()}</strong>
-                  . Your card “{pendingCardPrompt}” will be saved to your deck
-                  automatically.
-                </>
-              ) : (
-                <>
-                  Click the sign-in link sent to <strong>{email.trim()}</strong>{' '}
-                  to connect your account.
-                </>
-              )}
-            </p>
-            <div className="sync-sent-actions">
-              <button
-                type="button"
-                className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
-                disabled={loading}
-                onClick={() => {
-                  void handleSendLink(true)
-                }}
-              >
-                {isLinkResent ? (
-                  <span className="resend-button-sent">
-                    <span className="resend-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="resend-button-text">Link sent!</span>
-                  </span>
-                ) : (
-                  <span>
-                    {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
-                  </span>
-                )}
-              </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setShowPasteLink(true)
-                    setTimeout(() => pasteInputRef.current?.focus(), 0)
-                  }}
-                >
-                  Paste link manually
-                </button>
-              </div>
-            </div>
-          </div>
         ) : (
           <form
             onSubmit={(e) => {
               void handleVerifyOtp(e)
             }}
-            className="sync-auth-form"
+            className="sync-auth-form sync-sent-pane"
           >
             {isStandalone() && isIOS() ? (
               <p className="sync-explanation">
                 Open the email in Safari, tap <strong>Copy sign-in link</strong>{' '}
-                on the top banner, then paste it here:
+                on the top banner, or enter the 6-digit code below:
+              </p>
+            ) : pendingCardPrompt ? (
+              <p className="sync-explanation">
+                Click the sign-in link sent to <strong>{email.trim()}</strong>,
+                or enter the 6-digit code below. Your card “{pendingCardPrompt}”
+                will be saved to your deck automatically:
               </p>
             ) : (
               <p className="sync-explanation">
-                Paste the sign-in link or 6-digit code sent to{' '}
-                <strong>{email.trim()}</strong>:
+                Click the sign-in link sent to <strong>{email.trim()}</strong>,
+                or enter the 6-digit code below:
               </p>
             )}
             <div className="field-group">
-              <label htmlFor="sync-otp">Sign-in link or code</label>
+              <label htmlFor="sync-otp">6-digit code or sign-in link</label>
               <div className="link-input-wrap">
                 <input
                   ref={pasteInputRef}
@@ -612,11 +548,12 @@ export function SyncModal({
                   type="text"
                   required
                   autoFocus
-                  placeholder="Paste link or code"
+                  placeholder="e.g. 123456 or paste link"
                   autoComplete="one-time-code"
+                  inputMode="numeric"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="link-input"
+                  className={`link-input ${/^[\d\s-]+$/.test(token.trim()) && /\d/.test(token.trim()) ? 'otp-code-input' : ''}`}
                 />
                 {typeof navigator !== 'undefined' &&
                   typeof navigator.clipboard?.readText === 'function' && (
@@ -665,11 +602,30 @@ export function SyncModal({
                     void handleSendLink(true)
                   }}
                 >
-                  {isLinkResent
-                    ? 'Link sent! ✓'
-                    : loadingAction === 'send'
-                      ? 'Resending…'
-                      : 'Resend link'}
+                  {isLinkResent ? (
+                    <span className="resend-button-sent">
+                      <span className="resend-button-check" aria-hidden="true">
+                        ✓
+                      </span>
+                      <span className="resend-button-text">Link sent!</span>
+                    </span>
+                  ) : (
+                    <span>
+                      {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
+                    </span>
+                  )}
+                </button>
+                <span className="sync-sub-action-dot" aria-hidden="true">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  className="modal-link-btn"
+                  onClick={() => {
+                    pasteInputRef.current?.focus()
+                  }}
+                >
+                  Paste link manually
                 </button>
                 <span className="sync-sub-action-dot" aria-hidden="true">
                   ·
@@ -679,7 +635,6 @@ export function SyncModal({
                   className="modal-link-btn"
                   onClick={() => {
                     setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
                     setToken('')
                     setStatusMsg(null)
                   }}

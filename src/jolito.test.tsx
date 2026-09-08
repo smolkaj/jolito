@@ -1569,16 +1569,11 @@ describe('Jolito', () => {
       await screen.findByText(/Click the sign-in link sent to/i),
     ).toBeInTheDocument()
 
-    // On standard desktop browser, no paste input is shown by default
-    expect(screen.queryByLabelText(/sign-in link/i)).not.toBeInTheDocument()
-
-    // User can manually toggle paste link input if desired
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
+    // 6-digit OTP code / sign-in link input is immediately visible
+    const tokenInput = screen.getByLabelText(/6-digit code or sign-in link/i)
+    expect(tokenInput).toBeInTheDocument()
 
     // Enter link / token
-    const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
