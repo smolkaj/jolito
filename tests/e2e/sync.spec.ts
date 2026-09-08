@@ -32,6 +32,39 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   const emailInput = page.getByLabel(/email address/i)
   await expect(previewHeading.or(emailInput)).toBeVisible()
 
+  // Verify typography and computed style parity across modal legal links
+  const privacyBtn = page.getByRole('button', { name: /privacy policy/i })
+  const ackLink = page.getByRole('link', { name: /acknowledgements/i })
+  await expect(privacyBtn).toBeVisible()
+  await expect(ackLink).toBeVisible()
+
+  const [privacyStyle, ackStyle] = await Promise.all([
+    privacyBtn.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontFamily: s.fontFamily,
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        color: s.color,
+      }
+    }),
+    ackLink.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontFamily: s.fontFamily,
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        color: s.color,
+      }
+    }),
+  ])
+
+  expect(privacyStyle.fontFamily).toBe(ackStyle.fontFamily)
+  expect(privacyStyle.fontSize).toBe(ackStyle.fontSize)
+  expect(privacyStyle.fontWeight).toBe(ackStyle.fontWeight)
+  expect(privacyStyle.fontWeight).toBe('400')
+  expect(privacyStyle.color).toBe(ackStyle.color)
+
   // Save screenshot for autonomous visual inspection
   await page.screenshot({
     path: 'test-results/sync-modal.png',
