@@ -18,17 +18,48 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <style>
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        font-style: normal;
+        font-weight: 400 800;
+        font-stretch: 100%;
+        font-display: swap;
+        src: url('/fonts/bricolage-grotesque-normal-400-800-latin.woff2')
+          format('woff2');
+        unicode-range:
+          U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+          U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        font-style: normal;
+        font-weight: 400 800;
+        font-stretch: 100%;
+        font-display: swap;
+        src: url('/fonts/bricolage-grotesque-normal-400-800-latin-ext.woff2')
+          format('woff2');
+        unicode-range:
+          U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+          U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+          U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+
       :root {
         --papel: #fdf5f8;
         --card: #ffffff;
-        --ink: #1f1b18;
-        --ink-light: #645b53;
-        --line: #2b2520;
-        --rosa: #d94a7a;
-        --rosa-dark: #b83561;
-        --verde: #1b8a5a;
-        --verde-dark: #126340;
+        --ink: #121815;
+        --ink-soft: #3b4740;
+        --ink-muted: #5f6e66;
+        --line: #121815;
+        --rosa: #e4007c;
+        --rosa-dark: #b30060;
+        --maya-dark: #0369a1;
         --shadow: 4px 4px 0 var(--line);
+        --font-serif:
+          'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+        --font-sans:
+          'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
       }
       * {
         box-sizing: border-box;
@@ -36,9 +67,7 @@
         padding: 0;
       }
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-          Arial, sans-serif;
+        font-family: var(--font-sans);
         background-color: var(--papel);
         color: var(--ink);
         line-height: 1.6;
@@ -47,6 +76,7 @@
         flex-direction: column;
         align-items: center;
         min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
       }
       .ack-container {
         width: 100%;
@@ -69,34 +99,40 @@
         margin-bottom: 12px;
       }
       .brand-title {
-        font-size: 20px;
+        font-family: var(--font-serif);
+        font-size: 22px;
         font-weight: 800;
+        letter-spacing: -0.6px;
         color: var(--ink);
         text-decoration: none;
       }
       h1 {
+        font-family: var(--font-serif);
         font-size: clamp(26px, 4vw, 32px);
         font-weight: 800;
+        letter-spacing: -0.8px;
         line-height: 1.2;
         color: var(--ink);
         margin-bottom: 8px;
       }
       .subtitle {
-        color: var(--ink-light);
+        color: var(--ink-soft);
         font-size: 15px;
       }
       section {
         margin-bottom: 24px;
       }
       h2 {
+        font-family: var(--font-serif);
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 800;
+        letter-spacing: -0.3px;
         color: var(--ink);
         margin-bottom: 10px;
       }
       p {
         font-size: 15px;
-        color: var(--ink);
+        color: var(--ink-soft);
         line-height: 1.65;
         margin-bottom: 10px;
       }
@@ -106,16 +142,28 @@
       }
       li {
         font-size: 15px;
-        margin-bottom: 6px;
+        color: var(--ink-soft);
+        margin-bottom: 8px;
         line-height: 1.6;
+      }
+      li strong {
+        color: var(--ink);
       }
       a {
         color: var(--rosa-dark);
         text-decoration: underline;
         text-underline-offset: 2px;
+        font-weight: 600;
+        transition: color 120ms ease;
       }
       a:hover {
-        color: var(--rosa);
+        color: var(--ink);
+      }
+      a:focus-visible,
+      .return-link:focus-visible {
+        outline: 2.5px solid var(--maya-dark);
+        outline-offset: 2px;
+        border-radius: 4px;
       }
       .return-link {
         display: inline-flex;
@@ -131,11 +179,14 @@
         color: var(--ink);
         text-decoration: none;
         box-shadow: 2px 2px 0 var(--line);
-        transition: transform 120ms ease;
+        transition:
+          transform 120ms ease,
+          box-shadow 120ms ease;
       }
       .return-link:hover {
         transform: translate(-1px, -1px);
         box-shadow: 3px 3px 0 var(--line);
+        color: var(--ink);
       }
     </style>
   </head>
@@ -143,7 +194,7 @@
     <main class="ack-container">
       <header>
         <div class="brand-row">
-          <a href="https://joli.to" class="brand-title">Jolito</a>
+          <a href="/" class="brand-title">Jolito</a>
         </div>
         <h1>Acknowledgements</h1>
         <p class="subtitle">
@@ -333,7 +384,7 @@
         </p>
       </section>
 
-      <a href="https://joli.to" class="return-link">← Return to Jolito</a>
+      <a href="/" class="return-link">← Return to Jolito</a>
     </main>
   </body>
 </html>

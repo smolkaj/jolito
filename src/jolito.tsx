@@ -2519,18 +2519,6 @@ export function App({
                   I am glad to report:{' '}
                   <strong>Memorization and I have become friends!</strong>
                 </p>
-                <p className="why-acknowledgements">
-                  Jolito is open-source and powered by community data and open
-                  tools —{' '}
-                  <a
-                    href="/acknowledgements"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    see our acknowledgements
-                  </a>
-                  .
-                </p>
               </div>
 
               <div className="why-actions">
@@ -2546,6 +2534,18 @@ export function App({
                 >
                   Start learning <span aria-hidden="true">↑</span>
                 </button>
+                <p className="why-acknowledgements">
+                  Jolito is open-source and powered by community data and open
+                  tools —{' '}
+                  <a
+                    href="/acknowledgements"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    see our acknowledgements
+                  </a>
+                  .
+                </p>
               </div>
             </div>
           </section>
