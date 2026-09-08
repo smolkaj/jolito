@@ -224,6 +224,24 @@ summary:focus-visible,
   transform: translateY(1px);
 }
 
+.brand-text {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.brand-i-dot {
+  position: absolute;
+  top: 0.17em;
+  left: 1.255em;
+  transform: translateX(-50%);
+  width: 0.185em;
+  height: 0.185em;
+  background-color: var(--rosa);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
 /* Jolito Brandmark SVG */
 .brand-mark {
   width: 34px;

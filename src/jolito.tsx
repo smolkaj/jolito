@@ -120,7 +120,10 @@ function Brand({ onClick }: { onClick?: () => void }) {
   const content = (
     <>
       <JolitoMark className="brand-mark" />
-      <span>Jolito</span>
+      <span className="brand-text">
+        Jolito
+        <span className="brand-i-dot" aria-hidden="true" />
+      </span>
     </>
   )
 
