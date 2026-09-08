@@ -169,26 +169,49 @@ function AnswerComparison({
     )
   }
 
-  return (
-    <div className="diff-card" aria-label="Answer comparison">
-      <div className="diff-rows">
-        {hasTyped && (
-          <div className="diff-row typed-row">
-            <span className="diff-label">You wrote</span>
-            <p className="diff-text">
-              {renderDiffSegments(comparison.typedSegments)}
-            </p>
+  if (!hasTyped) {
+    return (
+      <div className="diff-card" aria-label="Answer comparison">
+        <div className="diff-card-body">
+          <div className="diff-labels-col">
+            <span className="diff-label">Expected</span>
           </div>
-        )}
-
-        <div className="diff-row expected-row">
-          <span className="diff-label">Expected</span>
-          <div className="diff-row-main">
-            <p className="diff-text">
-              {renderDiffSegments(comparison.expectedSegments)}
-            </p>
+          <div className="diff-flow-content">
+            {renderDiffSegments(comparison.expectedSegments)}
+          </div>
+          <div className="diff-audio-col diff-audio-col-single">
             <AudioButton label="Play answer audio" onClick={onPlayAudio} />
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="diff-card" aria-label="Answer comparison">
+      <div className="diff-card-body">
+        <div className="diff-labels-col">
+          <span className="diff-label">You wrote</span>
+          <span className="diff-label">Expected</span>
+        </div>
+        <div className="diff-flow-content">
+          {comparison.alignedSlots.map((slot, i) => (
+            <span className="diff-pair" key={i}>
+              <span className="diff-pair-top">
+                {slot.typedSegments.length > 0
+                  ? renderDiffSegments(slot.typedSegments)
+                  : '\u200B'}
+              </span>
+              <span className="diff-pair-bottom">
+                {slot.expectedSegments.length > 0
+                  ? renderDiffSegments(slot.expectedSegments)
+                  : '\u200B'}
+              </span>
+            </span>
+          ))}
+        </div>
+        <div className="diff-audio-col">
+          <AudioButton label="Play answer audio" onClick={onPlayAudio} />
         </div>
       </div>
     </div>

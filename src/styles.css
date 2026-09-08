@@ -2244,6 +2244,72 @@ kbd {
   background: #e5e0d8;
 }
 
+.diff-card-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.diff-labels-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 5px;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.diff-labels-col .diff-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.diff-flow-content {
+  flex: 1;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding-top: 5px;
+  font-family: var(--font-serif);
+  font-size: 23px;
+  font-weight: 400;
+  letter-spacing: var(--phrase-letter-spacing, -0.8px);
+  color: var(--ink);
+  row-gap: 22px;
+}
+
+.diff-pair {
+  display: inline-grid;
+  grid-template-rows: 32px 32px;
+  row-gap: 4px;
+  vertical-align: top;
+  white-space: pre;
+}
+
+.diff-pair-top,
+.diff-pair-bottom {
+  display: inline;
+  line-height: 1.35;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.diff-audio-col {
+  margin-top: 36px;
+  flex-shrink: 0;
+}
+
+.diff-audio-col-single {
+  margin-top: 0;
+}
+
 .diff-rows {
   display: flex;
   flex-direction: column;
@@ -2282,7 +2348,7 @@ kbd {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 23px;
-  font-weight: var(--display-weight, 700);
+  font-weight: 400;
   letter-spacing: var(--phrase-letter-spacing, -0.8px);
   line-height: 1.35;
   color: var(--ink);
@@ -2308,24 +2374,25 @@ kbd {
   -webkit-box-decoration-break: clone;
 }
 
-/* Matching characters in "You wrote": soft calm turquoise green highlight */
+/* Matching characters on both rows: unbadged standard ink color */
 .diff-seg-match {
-  background: var(--turquesa-soft);
-  color: var(--turquesa-dark);
+  background: transparent;
+  color: var(--ink);
 }
 
 /* Extra / incorrect characters in what you wrote: soft pastel red */
 .diff-seg-extra {
   background: var(--tezontle-soft);
   color: var(--tezontle-dark);
+  font-weight: 600;
   padding: 1px 3px;
   border-radius: 3px;
 }
 
 /* Extra space: distinct soft red space badge */
 .diff-seg-extra.diff-seg-space {
-  background: #fecaca;
-  color: #dc2626;
+  background: var(--tezontle-soft);
+  color: var(--tezontle-dark);
   font-weight: 700;
   padding: 1px 5px;
   margin: 0 2px;
@@ -2336,22 +2403,18 @@ kbd {
 .diff-seg-missing {
   background: var(--turquesa-soft);
   color: var(--turquesa-dark);
-  font-weight: 700;
+  font-weight: 600;
   padding: 1px 3px;
   border-radius: 3px;
 }
 
-/* Accent nuance (diacritics / inverted marks): subtle dashed marigold underline */
+/* Accent nuance (diacritics / inverted marks): subtle dashed green underline */
 .diff-seg-accent {
   background: transparent;
-  color: var(--ink-muted);
-  border-bottom: 2px dashed var(--cempasuchil);
-}
-
-/* Expected row hierarchy: de-emphasize redundant matching characters so target fixes pop */
-.expected-row .diff-seg-match {
-  background: transparent;
-  color: var(--ink-muted);
+  color: var(--ink);
+  font-weight: inherit;
+  border-bottom: 2px dashed var(--turquesa-dark);
+  padding-bottom: 1px;
 }
 
 /* Subtle Always-Visible Additional Context Block (Pronounced on Hover) */

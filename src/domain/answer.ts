@@ -5,10 +5,16 @@ export type DiffSegment = {
   status: DiffStatus
 }
 
+export type AlignedDiffSlot = {
+  typedSegments: DiffSegment[]
+  expectedSegments: DiffSegment[]
+}
+
 export type AnswerComparison = {
   typedSegments: DiffSegment[]
   expectedSegments: DiffSegment[]
   isExact: boolean
+  alignedSlots: AlignedDiffSlot[]
 }
 
 export const stripDiacritics = (text: string): string =>
@@ -42,6 +48,56 @@ function groupSegments(segments: DiffSegment[]): DiffSegment[] {
       last.value += seg.value
     } else {
       result.push({ ...seg })
+    }
+  }
+  return result
+}
+
+function separateTrailingWhitespace(segments: DiffSegment[]): DiffSegment[] {
+  const result: DiffSegment[] = []
+  for (const seg of segments) {
+    if (
+      seg.status !== 'match' &&
+      seg.value.endsWith(' ') &&
+      !/^ +$/.test(seg.value)
+    ) {
+      const match = seg.value.match(/^(.*?)(\s+)$/)
+      if (match) {
+        result.push({ value: match[1]!, status: seg.status })
+        result.push({ value: match[2]!, status: 'match' })
+        continue
+      }
+    }
+    result.push(seg)
+  }
+  return result
+}
+
+function isPureMatch(slot: AlignedDiffSlot): boolean {
+  const tPure = slot.typedSegments.every((s) => s.status === 'match')
+  const ePure = slot.expectedSegments.every((s) => s.status === 'match')
+  if (!tPure || !ePure) return false
+  const tText = slot.typedSegments.map((s) => s.value).join('')
+  const eText = slot.expectedSegments.map((s) => s.value).join('')
+  return tText.length > 0 && tText === eText
+}
+
+function mergePureMatchSlots(slots: AlignedDiffSlot[]): AlignedDiffSlot[] {
+  const result: AlignedDiffSlot[] = []
+  for (const slot of slots) {
+    const last = result[result.length - 1]
+    if (last && isPureMatch(last) && isPureMatch(slot)) {
+      last.typedSegments[0]!.value += slot.typedSegments
+        .map((s) => s.value)
+        .join('')
+      last.expectedSegments[0]!.value += slot.expectedSegments
+        .map((s) => s.value)
+        .join('')
+    } else {
+      result.push({
+        typedSegments: slot.typedSegments.map((s) => ({ ...s })),
+        expectedSegments: slot.expectedSegments.map((s) => ({ ...s })),
+      })
     }
   }
   return result
@@ -83,10 +139,23 @@ export function compareAnswer(
     tTrim === eTrim ||
     (tNormInverted.length > 0 && tNormInverted === eNormInverted)
   ) {
+    const typedSegs = tTrim ? [{ value: tTrim, status: 'match' as const }] : []
+    const expectedSegs = eTrim
+      ? [{ value: eTrim, status: 'match' as const }]
+      : []
     return {
-      typedSegments: tTrim ? [{ value: tTrim, status: 'match' }] : [],
-      expectedSegments: eTrim ? [{ value: eTrim, status: 'match' }] : [],
+      typedSegments: typedSegs,
+      expectedSegments: expectedSegs,
       isExact: true,
+      alignedSlots:
+        tTrim || eTrim
+          ? [
+              {
+                typedSegments: typedSegs,
+                expectedSegments: expectedSegs,
+              },
+            ]
+          : [],
     }
   }
 
@@ -94,18 +163,32 @@ export function compareAnswer(
   const eChars = Array.from(eTrim)
 
   if (tChars.length === 0) {
+    const expectedSegs = [{ value: eTrim, status: 'missing' as const }]
     return {
       typedSegments: [],
-      expectedSegments: [{ value: eTrim, status: 'missing' }],
+      expectedSegments: expectedSegs,
       isExact: false,
+      alignedSlots: [
+        {
+          typedSegments: [],
+          expectedSegments: separateTrailingWhitespace(expectedSegs),
+        },
+      ],
     }
   }
 
   if (eChars.length === 0) {
+    const typedSegs = [{ value: tTrim, status: 'extra' as const }]
     return {
-      typedSegments: [{ value: tTrim, status: 'extra' }],
+      typedSegments: typedSegs,
       expectedSegments: [],
       isExact: false,
+      alignedSlots: [
+        {
+          typedSegments: separateTrailingWhitespace(typedSegs),
+          expectedSegments: [],
+        },
+      ],
     }
   }
 
@@ -188,6 +271,14 @@ export function compareAnswer(
         ? STATE_EXTRA
         : STATE_MISSING
 
+  type TraceStep =
+    | { type: 'match'; t: string; e: string }
+    | { type: 'accent'; t: string; e: string }
+    | { type: 'inverted'; e: string }
+    | { type: 'extra'; t: string }
+    | { type: 'missing'; e: string }
+
+  const trace: TraceStep[] = []
   const typedRaw: DiffSegment[] = []
   const expectedRaw: DiffSegment[] = []
 
@@ -200,9 +291,11 @@ export function compareAnswer(
       if (tc.toLowerCase() === ec.toLowerCase()) {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'match' })
+        trace.push({ type: 'match', t: tc, e: ec })
       } else {
         typedRaw.push({ value: tc, status: 'match' })
         expectedRaw.push({ value: ec, status: 'accent' })
+        trace.push({ type: 'accent', t: tc, e: ec })
       }
 
       const toM = M_score[i + 1]![j + 1]! + score + CONTINUOUS_MATCH_BONUS
@@ -220,6 +313,7 @@ export function compareAnswer(
     } else if ((state === STATE_EXTRA || j >= M) && i < N) {
       const tc = tChars[i]!
       typedRaw.push({ value: tc, status: 'extra' })
+      trace.push({ type: 'extra', t: tc })
 
       const xPenalty = isWhitespace(tc)
         ? GAP_OPEN_SPACE_PENALTY
@@ -237,8 +331,14 @@ export function compareAnswer(
       i++
     } else {
       const ec = eChars[j]!
-      const status: DiffStatus = ec === '¿' || ec === '¡' ? 'accent' : 'missing'
+      const isPunct = ec === '¿' || ec === '¡'
+      const status: DiffStatus = isPunct ? 'accent' : 'missing'
       expectedRaw.push({ value: ec, status })
+      if (isPunct) {
+        trace.push({ type: 'inverted', e: ec })
+      } else {
+        trace.push({ type: 'missing', e: ec })
+      }
 
       const yPenalty = isWhitespace(ec)
         ? GAP_OPEN_SPACE_PENALTY
@@ -257,6 +357,52 @@ export function compareAnswer(
     }
   }
 
+  const rawSlots: AlignedDiffSlot[] = []
+  let cur: { typedSegments: DiffSegment[]; expectedSegments: DiffSegment[] } = {
+    typedSegments: [],
+    expectedSegments: [],
+  }
+
+  const flush = () => {
+    if (cur.typedSegments.length > 0 || cur.expectedSegments.length > 0) {
+      rawSlots.push({
+        typedSegments: separateTrailingWhitespace(
+          groupSegments(cur.typedSegments),
+        ),
+        expectedSegments: separateTrailingWhitespace(
+          groupSegments(cur.expectedSegments),
+        ),
+      })
+      cur = { typedSegments: [], expectedSegments: [] }
+    }
+  }
+
+  for (let k = 0; k < trace.length; k++) {
+    const step = trace[k]!
+    if (step.type === 'inverted') {
+      cur.expectedSegments.push({ value: step.e, status: 'missing' })
+      flush()
+      continue
+    }
+
+    if (step.type === 'match') {
+      cur.typedSegments.push({ value: step.t, status: 'match' })
+      cur.expectedSegments.push({ value: step.e, status: 'match' })
+      if (step.t === ' ') flush()
+    } else if (step.type === 'accent') {
+      cur.typedSegments.push({ value: step.t, status: 'match' })
+      cur.expectedSegments.push({ value: step.e, status: 'accent' })
+    } else if (step.type === 'extra') {
+      cur.typedSegments.push({ value: step.t, status: 'extra' })
+      if (step.t === ' ') flush()
+    } else if (step.type === 'missing') {
+      cur.expectedSegments.push({ value: step.e, status: 'missing' })
+      if (step.e === ' ') flush()
+    }
+  }
+  flush()
+
+  const alignedSlots = mergePureMatchSlots(rawSlots)
   const typedSegments = groupSegments(typedRaw)
   const expectedSegments = groupSegments(expectedRaw)
 
@@ -264,5 +410,6 @@ export function compareAnswer(
     typedSegments,
     expectedSegments,
     isExact: false,
+    alignedSlots,
   }
 }
