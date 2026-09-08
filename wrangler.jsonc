@@ -18,4 +18,9 @@
       "custom_domain": true,
     },
   ],
+  "send_email": [
+    {
+      "name": "SEND_EMAIL",
+    },
+  ],
 }
