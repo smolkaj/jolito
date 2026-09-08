@@ -29,6 +29,43 @@ describe('SupabaseAuthService', () => {
     vi.unstubAllGlobals()
   })
 
+  it('announces another tab signing in or out and removes its storage listener on destroy', () => {
+    localStorage.clear()
+    const service = new SupabaseAuthService('', '', localStorage)
+    const listener = vi.fn()
+    service.onAuthStateChange(listener)
+    const session = JSON.stringify({
+      accessToken: 'token',
+      refreshToken: '',
+      expiresAt: Date.now() + 3600000,
+      user: { id: 'other-tab', email: 'learner@example.com' },
+    })
+    const changed = () =>
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'jolito-auth-session-v1',
+          storageArea: localStorage,
+        }),
+      )
+    localStorage.setItem('jolito-auth-session-v1', session)
+    changed()
+    expect(listener).toHaveBeenLastCalledWith({
+      id: 'other-tab',
+      email: 'learner@example.com',
+    })
+    changed()
+    expect(listener).toHaveBeenCalledTimes(2)
+    localStorage.removeItem('jolito-auth-session-v1')
+    changed()
+    expect(listener).toHaveBeenLastCalledWith(null)
+    service.destroy()
+    listener.mockClear()
+    localStorage.setItem('jolito-auth-session-v1', session)
+    changed()
+    expect(listener).not.toHaveBeenCalled()
+    localStorage.clear()
+  })
+
   it('loads existing unexpired session from storage', async () => {
     mockStorage['jolito-auth-session-v1'] = JSON.stringify({
       accessToken: 'token-abc',

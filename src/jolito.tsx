@@ -1491,14 +1491,34 @@ export function App({
       authUserRef.current = user
       setAuthUser(user)
       if (user) {
-        let userCards = filterOutStarterCards(cardsRef.current)
+        let userCards =
+          prevUser && prevUser.id !== user.id
+            ? []
+            : filterOutStarterCards(cardsRef.current)
         if (pendingCardRef.current) {
           const pending = pendingCardRef.current
-          const created = createStudyCards(
-            pending,
-            pending.id,
-            pending.createdAt,
-          )
+          // Another tab may already have saved this draft and its review state.
+          userCards = filterOutStarterCards(services.cards.load([]))
+          let storedPending: PendingCard | null
+          try {
+            storedPending = services.pendingCard.load()
+          } catch {
+            setDraftError(
+              'Your unfinished card could not be restored. Please copy your words and try again.',
+            )
+            setIsSyncOpen(false)
+            navigateTo('create')
+            return
+          }
+          // A discarded or already-consumed draft must not be resurrected by a stale tab.
+          const created =
+            storedPending?.id === pending.id
+              ? createStudyCards(
+                  storedPending,
+                  storedPending.id,
+                  storedPending.createdAt,
+                )
+              : []
           if (created.length > 0) {
             userCards = [
               ...created.filter(
@@ -1554,9 +1574,12 @@ export function App({
           localDeletedIds: deletedIds,
           user,
           syncService: services.sync,
-          onCardsUpdated: (newCards, newDeletedIds) =>
-            onUpdateCardsRef.current(newCards, false, newDeletedIds),
+          onCardsUpdated: (newCards, newDeletedIds) => {
+            if (authUserRef.current?.id === user.id)
+              onUpdateCardsRef.current(newCards, false, newDeletedIds)
+          },
         }).then((res) => {
+          if (authUserRef.current?.id !== user.id) return
           if (res.success) setSyncStatus('synced')
           else setSyncStatus('error')
         })
@@ -2310,6 +2333,29 @@ export function App({
     setIsSyncOpen(false)
   }, [])
 
+  const discardPendingCard = useCallback(() => {
+    try {
+      services.pendingCard.clear()
+    } catch {
+      setDraftError(
+        'This browser could not discard your draft. Please try again.',
+      )
+      return
+    }
+    setDraftError(null)
+    setPendingCard(null)
+    pendingCardRef.current = null
+    setSpanishInput('')
+    setEnglishInput('')
+    setContextInput('')
+    setReversePromptInput('')
+    setReverseAnswerInput('')
+    setSuggestions([])
+    setSuggestionTarget(null)
+    setActiveSuggestionIndex(-1)
+    spanishInputRef.current?.focus()
+  }, [services.pendingCard])
+
   const openFeedbackModal = useCallback(() => {
     setSuggestions([])
     setSuggestionTarget(null)
@@ -2366,8 +2412,8 @@ export function App({
     if (!authUserRef.current) {
       const pending = {
         ...cardParams,
-        id: services.ids.nextId('note'),
-        createdAt: services.clock.now(),
+        id: pendingCardRef.current?.id ?? services.ids.nextId('note'),
+        createdAt: pendingCardRef.current?.createdAt ?? services.clock.now(),
       }
       try {
         services.pendingCard.save(pending)
@@ -2817,6 +2863,18 @@ export function App({
             </div>
             <form className="create-form" onSubmit={createCard}>
               {draftError && <p role="alert">{draftError}</p>}
+              {pendingCard && (
+                <div className="pending-draft-note">
+                  <span>Draft kept on this device.</span>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={discardPendingCard}
+                  >
+                    Discard draft
+                  </button>
+                </div>
+              )}
               <div className="field-group field-group-relative">
                 <label htmlFor="spanish">
                   <MexicoFlag /> Mexican Spanish

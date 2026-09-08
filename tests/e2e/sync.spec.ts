@@ -57,7 +57,9 @@ test('keeps the pending card through reload and saves it once when the email ope
       signedIn.evaluate(() => localStorage.getItem('jolito-pending-card-v1')),
     )
     .toBeNull()
-  await page.reload()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByLabel(/mexican spanish/i)).toHaveValue('')
+  await expect(page.getByLabel('English', { exact: true })).toHaveValue('')
   const cards = await page.evaluate(
     () =>
       (
@@ -69,6 +71,31 @@ test('keeps the pending card through reload and saves it once when the email ope
   expect(
     cards.filter((card: { prompt: string }) => card.prompt === 'buen provecho'),
   ).toHaveLength(1)
+})
+
+test('lets a learner discard a retained draft without it returning on reload', async ({
+  page,
+}) => {
+  await page.goto('/#/create')
+  await page.getByLabel(/mexican spanish/i).fill('buen provecho')
+  await page.getByLabel('English', { exact: true }).fill('Enjoy your meal')
+  await page.getByRole('button', { name: 'Sign in to save card' }).click()
+  const firstId = await page.evaluate(() =>
+    localStorage.getItem('jolito-pending-card-v1'),
+  )
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Sign in to save card' }).click()
+  expect(
+    await page.evaluate(() => localStorage.getItem('jolito-pending-card-v1')),
+  ).toBe(firstId)
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Discard draft' }).click()
+  await page.reload()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByLabel(/mexican spanish/i)).toHaveValue('')
+  expect(
+    await page.evaluate(() => localStorage.getItem('jolito-pending-card-v1')),
+  ).toBeNull()
 })
 
 test('card sign-in keeps focus inside the dialog and restores it on close', async ({

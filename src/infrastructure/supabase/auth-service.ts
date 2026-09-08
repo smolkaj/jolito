@@ -53,6 +53,7 @@ export class SupabaseAuthService implements AuthService {
   private inFlightRefresh: Promise<string | null> | null = null
   private boundVisibilityHandler: (() => void) | null = null
   private boundOnlineHandler: (() => void) | null = null
+  private boundStorageHandler: ((event: StorageEvent) => void) | null = null
   private supabaseUrl: string
   private supabaseAnonKey: string
   private storage: Storage
@@ -775,6 +776,22 @@ export class SupabaseAuthService implements AuthService {
   private setupLifecycleListeners(): void {
     if (typeof window === 'undefined') return
 
+    this.boundStorageHandler = (event) => {
+      if (
+        event.storageArea !== this.storage ||
+        (event.key !== STORAGE_KEY && event.key !== null)
+      )
+        return
+      const nextUser = this.loadStoredSession()?.user ?? null
+      const changed =
+        nextUser?.id !== this.currentUser?.id ||
+        nextUser?.email !== this.currentUser?.email
+      this.currentUser = nextUser
+      this.scheduleNextRefresh()
+      if (changed) this.notifyListeners()
+    }
+    window.addEventListener('storage', this.boundStorageHandler)
+
     this.boundVisibilityHandler = () => {
       if (
         typeof document !== 'undefined' &&
@@ -803,6 +820,10 @@ export class SupabaseAuthService implements AuthService {
   }
 
   destroy(): void {
+    if (typeof window !== 'undefined' && this.boundStorageHandler) {
+      window.removeEventListener('storage', this.boundStorageHandler)
+      this.boundStorageHandler = null
+    }
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer)
       this.refreshTimer = null

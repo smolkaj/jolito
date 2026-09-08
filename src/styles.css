@@ -5310,6 +5310,16 @@ kbd {
   line-height: 1.5;
 }
 
+.pending-draft-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
 .legal-summary a {
   color: var(--rosa-dark);
 }
