@@ -205,7 +205,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await expect(linkInput).toBeFocused()
 
     // Click resend link and verify inline checkmark animation without status banner
-    const resendBtn = page.getByRole('button', { name: /resend link/i })
+    const resendBtn = page.locator('.resend-text-button')
     await resendBtn.click()
     await expect(resendBtn).toHaveClass(/is-sent/)
     await expect(resendBtn).toContainText(/link sent!/i)
