@@ -1912,7 +1912,6 @@ body:has(.welcome-page) {
   .export-button.is-exported,
   .export-button-exported,
   .export-button-check,
-  .resend-link-button.is-sent,
   .resend-button-sent,
   .resend-button-check,
   .paste-input-btn.is-pasted,
@@ -3471,13 +3470,24 @@ kbd {
   display: flex;
   align-items: center;
   width: 100%;
+  margin-top: 8px;
+}
+
+.link-input-wrap .link-input {
+  margin-top: 0;
 }
 
 .link-input {
   width: 100%;
   padding-right: 76px !important;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
+}
+
+.link-input.otp-code-input {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.16em;
 }
 
 .paste-input-btn {
@@ -3510,40 +3520,6 @@ kbd {
   color: var(--verde-dark);
   border-color: var(--verde);
   animation: saveButtonPop 250ms var(--ease-spring);
-}
-
-.resend-link-button {
-  transition: all 180ms var(--ease-spring);
-}
-
-.resend-link-button span {
-  margin-left: 0;
-  line-height: inherit;
-  font-size: inherit;
-  transition: none;
-}
-
-.resend-link-button:hover span {
-  transform: none;
-}
-
-.resend-link-button.is-sent {
-  background: var(--verde);
-  color: #ffffff;
-  border-color: var(--verde-dark);
-  box-shadow: 3px 3px 0 var(--verde-dark);
-  animation: saveButtonPop 320ms var(--ease-spring);
-}
-
-.resend-link-button.is-sent:hover {
-  background: var(--verde-dark);
-  box-shadow: 4px 4px 0 var(--ink);
-  transform: translate(-1px, -1px);
-}
-
-.resend-link-button.is-sent:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 var(--verde-dark);
 }
 
 .resend-button-sent {
