@@ -698,7 +698,7 @@ export function SyncModal({
         <div className="sync-modal-legal">
           <button
             type="button"
-            className="sync-privacy-link"
+            className="sync-legal-link"
             onClick={() => {
               handleClose()
               if (onOpenPrivacy) {
@@ -717,7 +717,7 @@ export function SyncModal({
             href="/acknowledgements"
             target="_blank"
             rel="noopener noreferrer"
-            className="sync-privacy-link"
+            className="sync-legal-link"
           >
             Acknowledgements
           </a>

@@ -318,8 +318,8 @@ describe('SyncModal Account Deletion and Legal', () => {
     const ackLink = screen.getByRole('link', { name: /acknowledgements/i })
 
     // Both legal links must share the dedicated link class
-    expect(privacyBtn).toHaveClass('sync-privacy-link')
-    expect(ackLink).toHaveClass('sync-privacy-link')
+    expect(privacyBtn).toHaveClass('sync-legal-link')
+    expect(ackLink).toHaveClass('sync-legal-link')
 
     // Neither element should carry .modal-link-btn, which introduces weight: 600 divergence
     expect(privacyBtn).not.toHaveClass('modal-link-btn')
