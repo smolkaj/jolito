@@ -1,0 +1,40 @@
+# Practice grammar: pretérito
+
+The north star is fluent production: applying a conjugation pattern to a verb in
+context, with enough variation and delayed recall to make it dependable.
+Vocabulary remains Jolito’s main entry point. A quieter “Practice grammar” link
+on home opens its own space; grammar never enters vocabulary queues or counts.
+
+## Learning experience
+
+- Short, eight-form sessions with typed recall, accent entry, sentence context,
+  concise corrective explanations, and the familiar Again / Hard / Good / Easy.
+- Mixed practice interleaves verb families and people; focused practice offers
+  regular endings, irregular stems, essential irregulars, spelling changes,
+  third-person stem changes, and vowel changes.
+- Each verb/person has its own existing Anki-compatible schedule. Due forms
+  precede new forms; weak forms repeat after intervening prompts. Repeat recall
+  rotates sentence contexts without giving the answer away.
+- A small pattern reference is available before practice and after reveal.
+  Learning is not represented as a one-session mastery score.
+- Mexican Spanish: yo, tú, él/ella/usted, nosotros/as, ellos/ellas/ustedes.
+  Vosotros is deliberately outside this initial Mexican Spanish set.
+
+## Architecture and verification
+
+Grammar is a specialization of StudyCard, sharing the scheduler, repository,
+backup, and cloud reconciliation. Version 2 envelopes migrate version 1 cards
+without changing vocabulary content or schedules. Older clients reject version 2
+rather than flatten grammar into vocabulary. No database schema change is needed:
+Supabase already stores validated snapshot payloads as JSON.
+
+Practice owns its session snapshot; background sync can update stored schedules
+without replacing the current prompt, typed answer, or queue. Coverage must include
+interruption and resume, spaced scheduling, context rotation, vocabulary isolation,
+backup/sync round trips, mobile keyboard operation, offline use, and accessibility.
+Visual inspection covers desktop, mobile, short screens, reveal, and completion.
+
+Grammar reference sources: [SpanishDictionary: preterite forms](https://www.spanishdict.com/guide/spanish-preterite-tense-forms),
+[stem and spelling changes](https://www.spanishdict.com/guide/spanish-preterite-stem-changes),
+[Lawless Spanish: irregular pretérito](https://www.lawlessspanish.com/grammar/verbs/preterito-irregular-verbs/).
+All exercise sentences are authored for Jolito.
