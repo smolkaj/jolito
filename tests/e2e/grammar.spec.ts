@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test'
 
 for (const viewport of [
   { width: 1280, height: 900 },
+  { width: 1024, height: 768 },
+  { width: 768, height: 1024 },
   { width: 393, height: 852 },
   { width: 320, height: 568 },
 ]) {
@@ -27,6 +29,21 @@ for (const viewport of [
       const box = await button.boundingBox()
       expect(box!.width).toBeGreaterThanOrEqual(44)
       expect(box!.height).toBeGreaterThanOrEqual(44)
+    }
+    const check = page.getByRole('button', { name: 'Check' })
+    const cardBox = (await page.locator('.grammar-study').boundingBox())!
+    for (const state of ['rest', 'hover', 'pressed']) {
+      if (state === 'hover') await check.hover()
+      if (state === 'pressed') await page.mouse.down()
+      const box = (await check.boundingBox())!
+      expect(box.x).toBeGreaterThanOrEqual(cardBox.x)
+      expect(box.y).toBeGreaterThanOrEqual(cardBox.y)
+      expect(box.x + box.width).toBeLessThanOrEqual(cardBox.x + cardBox.width)
+      expect(box.y + box.height).toBeLessThanOrEqual(cardBox.y + cardBox.height)
+      if (state === 'pressed') {
+        await page.mouse.move(0, 0)
+        await page.mouse.up()
+      }
     }
     await input.fill('habl')
     await page.getByRole('button', { name: 'Insert é' }).click()

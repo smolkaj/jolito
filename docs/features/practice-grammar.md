@@ -75,3 +75,14 @@ round. Sign-out clears the active grammar round with the account’s local deck.
   animations before measuring contrast. Sampling intermediate opacity produced
   transient failures in existing sync, feedback, and completion tests; the helper
   closes that timing gap without suppressing motion or accessibility rules.
+
+## Review-driven safeguards
+
+Independent review caught three issues before merge. The corrected auth reconciliation
+filters demo cards from the latest local snapshot, preserving grammar progress without
+putting examples into an ordinary signed-in vocabulary deck. Persisted review/lapse
+counts must be nonnegative integers; malformed modern backups cannot fall through to
+legacy import and discard their grammar metadata. The grammar Check action explicitly
+owns its static positioning and hover/press transforms rather than inheriting the
+vocabulary input’s absolute positioning. Browser contracts verify the action stays
+inside its exercise card at 320, 393, 768, 1024, and 1280px in all three states.

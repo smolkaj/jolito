@@ -249,6 +249,7 @@
 }
 
 .grammar-answer-form .answer-input {
+  padding: 16px 20px;
   width: 100%;
   margin: 0;
   font-size: 22px;
@@ -280,9 +281,18 @@
   background: var(--paper-subtle);
 }
 .grammar-input-actions .reveal-button {
+  position: static;
+  inset: auto;
+  transform: none;
   min-height: 44px;
   padding: 10px 14px;
   margin: 0;
+}
+.grammar-input-actions .reveal-button:hover {
+  transform: translateY(-1px);
+}
+.grammar-input-actions .reveal-button:active {
+  transform: translateY(1px);
 }
 .grammar-feedback {
   outline: none;

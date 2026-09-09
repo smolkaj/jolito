@@ -38,6 +38,9 @@ function restoreLegacyCards(raw: unknown): StudyCard[] | null {
   for (const [index, candidate] of raw.entries()) {
     if (
       !isRecord(candidate) ||
+      'schedule' in candidate ||
+      'grammar' in candidate ||
+      'noteId' in candidate ||
       typeof candidate.prompt !== 'string' ||
       typeof candidate.answer !== 'string' ||
       !directions.includes(candidate.direction as Direction)

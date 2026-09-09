@@ -200,6 +200,33 @@ describe('preterite practice contracts', () => {
     }
   })
 
+  it('rejects fractional and negative counters at storage, backup, and sync boundaries without downgrading modern cards to legacy vocabulary', () => {
+    const card = createGrammarCards(now)[0]!
+    for (const field of ['reviews', 'lapses']) {
+      for (const invalid of [-1, 1.5]) {
+        const cards = [
+          { ...card, schedule: { ...card.schedule, [field]: invalid } },
+        ]
+        expect(
+          studyCardCollectionSchema.safeParse({ version: 2, cards }).success,
+        ).toBe(false)
+        expect(
+          parseDeckBackup(JSON.stringify({ version: 2, cards })).success,
+        ).toBe(false)
+        expect(parseDeckBackup(JSON.stringify(cards)).success).toBe(false)
+        expect(
+          deckSyncPayloadSchema.safeParse({
+            version: 2,
+            app: 'jolito',
+            updatedAt: '2026-09-08',
+            deviceId: 'test',
+            cards,
+          }).success,
+        ).toBe(false)
+      }
+    }
+  })
+
   it('migrates v1 vocabulary and round-trips grammar through storage, backup, and sync without flattening it', () => {
     const legacy = studyCardCollectionSchema.parse({
       version: 1,

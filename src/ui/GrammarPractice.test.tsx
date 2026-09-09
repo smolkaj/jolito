@@ -87,6 +87,28 @@ describe('grammar practice in Jolito', () => {
     expect(saved.schedule.dueAt).toBeGreaterThan(services.clock.now() + DAY)
   })
 
+  it('keeps grammar progress but removes demo vocabulary on ordinary sign-in without a pending card', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    render(<App services={services} />)
+    const user = await begin()
+    await user.keyboard('{Enter}4')
+    await act(async () => {
+      await services.mockAuth.verifyOtp('learner@example.com', '123456')
+    })
+    await waitFor(() =>
+      expect(
+        services.memoryCards.saved!.some((card) =>
+          card.id.startsWith('starter-'),
+        ),
+      ).toBe(false),
+    )
+    expect(services.memoryCards.saved!.filter(isGrammarCard)).toHaveLength(1)
+    expect(
+      services.memoryCards.saved!.find(isGrammarCard)!.schedule.reviews,
+    ).toBe(1)
+  })
+
   it('retains a just-saved review when initial sign-in sync returns an older snapshot', async () => {
     window.history.replaceState({}, '', '#/grammar')
     const services = createTestServices({

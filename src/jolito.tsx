@@ -1532,7 +1532,7 @@ export function App({
           syncService: services.sync,
           onCardsUpdated: (newCards, newDeletedIds) => {
             const reconciled = reconcileStudyCards(
-              cardsRef.current,
+              filterOutStarterCards(cardsRef.current),
               newCards,
               Array.from(deletedCardIdsRef.current),
               newDeletedIds,

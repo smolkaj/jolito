@@ -39,8 +39,8 @@ export const reviewScheduleSchema = z.preprocess(
     dueAt: z.number(),
     intervalDays: z.number(),
     easeFactor: z.number().default(2.5),
-    reviews: z.number(),
-    lapses: z.number(),
+    reviews: z.number().int().nonnegative(),
+    lapses: z.number().int().nonnegative(),
     lastReviewedAt: z.number().optional(),
   }),
 )
