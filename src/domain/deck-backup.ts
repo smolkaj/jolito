@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { collectionVersionSchema } from './card'
 import {
   directions,
   studyCardSchema,
@@ -7,7 +8,7 @@ import {
 } from './card'
 
 export const deckBackupEnvelopeSchema = z.object({
-  version: z.literal(1),
+  version: collectionVersionSchema,
   app: z.string().optional(),
   exportedAt: z.string().optional(),
   cards: z.array(studyCardSchema),

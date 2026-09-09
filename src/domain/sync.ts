@@ -1,8 +1,9 @@
 import { z } from 'zod'
+import { collectionVersionSchema } from './card'
 import { studyCardSchema, type StudyCard } from './card'
 
 export const deckSyncPayloadSchema = z.object({
-  version: z.literal(1),
+  version: collectionVersionSchema,
   app: z.literal('jolito'),
   updatedAt: z.string(),
   deviceId: z.string(),

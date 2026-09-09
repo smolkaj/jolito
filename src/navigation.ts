@@ -1,4 +1,5 @@
-export type View = 'welcome' | 'create' | 'review' | 'complete' | 'deck'
+export type View =
+  'welcome' | 'create' | 'review' | 'complete' | 'deck' | 'grammar'
 
 export function viewFromHash(hash: string): View {
   const clean = hash
@@ -6,6 +7,7 @@ export function viewFromHash(hash: string): View {
     .replace(/\/+$/, '')
     .trim()
     .toLowerCase()
+  if (clean === 'grammar') return 'grammar'
   if (clean === 'create') return 'create'
   if (clean === 'study' || clean === 'review') return 'review'
   if (clean === 'deck' || clean === 'cards' || clean === 'library')
@@ -43,6 +45,8 @@ export function isFeedbackHash(hash: string): boolean {
 
 export function hashForView(view: View): string {
   switch (view) {
+    case 'grammar':
+      return '#/grammar'
     case 'create':
       return '#/create'
     case 'review':
@@ -59,6 +63,8 @@ export function hashForView(view: View): string {
 
 export function titleForView(view: View): string {
   switch (view) {
+    case 'grammar':
+      return 'Practice Grammar • Jolito'
     case 'create':
       return 'Create Flashcard • Jolito'
     case 'review':

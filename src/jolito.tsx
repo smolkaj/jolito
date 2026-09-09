@@ -49,6 +49,13 @@ import {
   createStudySession,
   formatPracticedSummary,
 } from './domain/study-session'
+import {
+  grammarContext,
+  isGrammarCard,
+  type GrammarCard,
+} from './domain/grammar'
+import { useGrammarPractice } from './ui/useGrammarPractice'
+import { GrammarPractice } from './ui/GrammarPractice'
 import { useStudySession } from './ui/useStudySession'
 import { useStudyAudio } from './ui/useStudyAudio'
 import {
@@ -106,6 +113,18 @@ function getActiveAudioItems(
 ): Array<{ text: string; locale: string }> {
   const items: Array<{ text: string; locale: string }> = []
   for (const card of cards) {
+    if (isGrammarCard(card)) {
+      for (const reviews of [0, 1]) {
+        items.push({
+          text: grammarContext({
+            ...card,
+            schedule: { ...card.schedule, reviews },
+          }).completed,
+          locale: 'es-MX',
+        })
+      }
+      continue
+    }
     if (card.prompt.trim()) {
       items.push({ text: card.prompt, locale: localeForPrompt(card) })
     }
@@ -983,7 +1002,7 @@ export function App({
     if (requested === 'review') {
       const now = services.clock.now()
       const due = orderCardsForReview(
-        initialCards,
+        initialCards.filter((card) => !isGrammarCard(card)),
         now,
         DEFAULT_STUDY_BATCH_SIZE,
       ).map(({ id }) => id)
@@ -996,6 +1015,11 @@ export function App({
   }, [initialCards, services.clock])
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
+  const vocabularyCards = useMemo(
+    () => cards.filter((card) => !isGrammarCard(card)),
+    [cards],
+  )
+  const grammarResetRef = useRef<() => void>(() => {})
   const [view, setView] = useState<View>(initialResolved.view)
   const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
 
@@ -1116,7 +1140,9 @@ export function App({
   const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null)
   const isDraggingRef = useRef(false)
   const currentCard = cards.find(({ id }) => id === queue[0])
-  const dueCount = cards.filter((card) => isDue(card, referenceTime)).length
+  const dueCount = vocabularyCards.filter((card) =>
+    isDue(card, referenceTime),
+  ).length
 
   const {
     audioUnavailable,
@@ -1183,11 +1209,11 @@ export function App({
     }
 
     // 2. Prioritize due cards first, followed by remaining cards in collection
-    if (cards.length > 0) {
+    if (vocabularyCards.length > 0) {
       const now = services.clock.now()
-      const dueCards = orderCardsForReview(cards, now)
+      const dueCards = orderCardsForReview(vocabularyCards, now)
       const dueIds = new Set(dueCards.map((c) => c.id))
-      const nonDueCards = cards.filter((c) => !dueIds.has(c.id))
+      const nonDueCards = vocabularyCards.filter((c) => !dueIds.has(c.id))
       const allOrderedCards = [...dueCards, ...nonDueCards]
 
       // Background prefetching defaults to bothVoices !== false, priming both
@@ -1213,7 +1239,7 @@ export function App({
     if (items.length > 0) {
       void services.speaker.prefetch(items)
     }
-  }, [cards, services.clock, services.speaker, view])
+  }, [vocabularyCards, services.clock, services.speaker, view])
 
   const onUpdateCards = useCallback(
     (
@@ -1229,11 +1255,11 @@ export function App({
       }
       const deletedIdsArray = Array.from(deletedCardIdsRef.current)
 
+      services.cards.save(newCards, deletedIdsArray)
       const previousCards = cardsRef.current
       cardsRef.current = newCards
       setCards(newCards)
       setDeletedCardIds(deletedIdsArray)
-      services.cards.save(newCards, deletedIdsArray)
       const now = services.clock.now()
       setReferenceTime(now)
       const cardIdSet = new Set(newCards.map((c) => c.id))
@@ -1327,36 +1353,45 @@ export function App({
   )
 
   const deckStats = useMemo(
-    () => getDeckStats(cards, referenceTime),
-    [cards, referenceTime],
+    () => getDeckStats(vocabularyCards, referenceTime),
+    [vocabularyCards, referenceTime],
   )
 
   const nextBatchCount = useMemo(
     () =>
-      orderCardsForReview(cards, referenceTime, DEFAULT_STUDY_BATCH_SIZE)
-        .length,
-    [cards, referenceTime],
+      orderCardsForReview(
+        vocabularyCards,
+        referenceTime,
+        DEFAULT_STUDY_BATCH_SIZE,
+      ).length,
+    [vocabularyCards, referenceTime],
   )
 
   const filteredDeckCards = useMemo(
     () =>
-      filterDeckCards(cards, {
+      filterDeckCards(vocabularyCards, {
         query: deckSearchQuery,
         stateFilter: deckFilterState,
         sortOrder: deckSortOrder,
         now: referenceTime,
       }),
-    [cards, deckFilterState, deckSearchQuery, deckSortOrder, referenceTime],
+    [
+      vocabularyCards,
+      deckFilterState,
+      deckSearchQuery,
+      deckSortOrder,
+      referenceTime,
+    ],
   )
 
   const duplicateCardIds = useMemo(
     () =>
       new Set(
-        Array.from(getDuplicateGroups(cards).values()).flatMap((group) =>
-          group.map((c) => c.id),
+        Array.from(getDuplicateGroups(vocabularyCards).values()).flatMap(
+          (group) => group.map((c) => c.id),
         ),
       ),
-    [cards],
+    [vocabularyCards],
   )
 
   const saveCardFromParams = useCallback(
@@ -1495,8 +1530,19 @@ export function App({
           localDeletedIds: deletedIds,
           user,
           syncService: services.sync,
-          onCardsUpdated: (newCards, newDeletedIds) =>
-            onUpdateCardsRef.current(newCards, false, newDeletedIds),
+          onCardsUpdated: (newCards, newDeletedIds) => {
+            const reconciled = reconcileStudyCards(
+              cardsRef.current,
+              newCards,
+              Array.from(deletedCardIdsRef.current),
+              newDeletedIds,
+            )
+            onUpdateCardsRef.current(
+              reconciled.cards,
+              false,
+              reconciled.deletedCardIds,
+            )
+          },
         }).then((res) => {
           if (res.success) setSyncStatus('synced')
           else setSyncStatus('error')
@@ -1504,6 +1550,8 @@ export function App({
       } else if (prevUser !== null) {
         // Explicit transition from signed in to signed out:
         // Clear local user deck and restore clean starter demo deck
+        grammarResetRef.current()
+        cardsRef.current = starterCards
         setCards(starterCards)
         setDeletedCardIds([])
         deletedCardIdsRef.current = new Set()
@@ -1660,7 +1708,7 @@ export function App({
         if (queueRef.current.length === 0) {
           const now = services.clock.now()
           const newQueue = orderCardsForReview(
-            cardsRef.current,
+            cardsRef.current.filter((card) => !isGrammarCard(card)),
             now,
             DEFAULT_STUDY_BATCH_SIZE,
           ).map(({ id }) => id)
@@ -1895,7 +1943,7 @@ export function App({
     const now = services.clock.now()
     const nextQueue =
       cardIds ??
-      orderCardsForReview(cards, now, DEFAULT_STUDY_BATCH_SIZE).map(
+      orderCardsForReview(vocabularyCards, now, DEFAULT_STUDY_BATCH_SIZE).map(
         ({ id }) => id,
       )
     startSession(nextQueue)
@@ -2310,6 +2358,65 @@ export function App({
     saveCardFromParams(cardParams)
   }
 
+  const saveGrammarCard = (card: GrammarCard) => {
+    // Save through the shared repository, preserving edits made during the round.
+    const next = [
+      ...cardsRef.current.filter((existing) => existing.id !== card.id),
+      card,
+    ]
+    onUpdateCards(next, false)
+    scheduleDebouncedSync()
+  }
+  const grammarPractice = useGrammarPractice({
+    cards,
+    deletedCardIds,
+    clock: services.clock,
+    save: saveGrammarCard,
+  })
+  useEffect(() => {
+    grammarResetRef.current = grammarPractice.reset
+  }, [grammarPractice.reset])
+
+  if (view === 'grammar')
+    return (
+      <>
+        <main className="app-shell grammar-page">
+          <nav className="topbar" aria-label="Grammar navigation">
+            <Brand onClick={goHome} />
+            <div className="nav-actions">
+              <button className="text-button" onClick={goHome}>
+                Vocabulary
+              </button>
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => openSyncModal()}
+              />
+            </div>
+          </nav>
+          <GrammarPractice
+            practice={grammarPractice}
+            services={services}
+            onHome={goHome}
+            paused={isSyncOpen || isPrivacyOpen}
+          />
+        </main>
+        <SyncModal
+          isOpen={isSyncOpen}
+          onClose={closeSyncModal}
+          cards={cards}
+          deletedCardIds={deletedCardIds}
+          onUpdateCards={onUpdateCards}
+          auth={services.auth}
+          sync={services.sync}
+          clock={services.clock}
+          onOpenPrivacy={openPrivacyModal}
+        />
+        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+      </>
+    )
+
   if (view === 'welcome') {
     return (
       <>
@@ -2365,6 +2472,16 @@ export function App({
                     Practice
                   </button>
                 </div>
+                <a
+                  className="text-button grammar-entry"
+                  href="#/grammar"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    navigateTo('grammar')
+                  }}
+                >
+                  Practice grammar <span aria-hidden="true">↗</span>
+                </a>
               </div>
               <div className="hero-visual" data-nosnippet>
                 {/* English Card (concise meaning) */}
@@ -2600,7 +2717,7 @@ export function App({
           ? 'is-medium'
           : ''
 
-    const duplicateMatches = findDuplicateNoteCards(cards, {
+    const duplicateMatches = findDuplicateNoteCards(vocabularyCards, {
       spanish: spanishInput,
       english: englishInput,
       bidirectional,
@@ -3014,7 +3131,7 @@ export function App({
           <nav className="topbar" aria-label="Deck navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions" data-nosnippet>
-              {cards.length > 0 && (
+              {vocabularyCards.length > 0 && (
                 <button
                   className="text-button"
                   onClick={() => navigateTo('create')}
@@ -3168,7 +3285,7 @@ export function App({
                     </button>
                   </div>
                 ) : (
-                  cards.length > 0 && (
+                  vocabularyCards.length > 0 && (
                     <div className="deck-sort-wrap">
                       <label
                         htmlFor="deck-sort-select"
@@ -3202,11 +3319,11 @@ export function App({
                 <p>
                   {deckSearchQuery.trim()
                     ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
-                    : cards.length === 0
+                    : vocabularyCards.length === 0
                       ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
                       : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
                 </p>
-                {cards.length === 0 ? (
+                {vocabularyCards.length === 0 ? (
                   <div className="deck-empty-actions">
                     <button
                       type="button"

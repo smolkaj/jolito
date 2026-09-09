@@ -38,3 +38,40 @@ Grammar reference sources: [SpanishDictionary: preterite forms](https://www.span
 [stem and spelling changes](https://www.spanishdict.com/guide/spanish-preterite-stem-changes),
 [Lawless Spanish: irregular pretérito](https://www.lawlessspanish.com/grammar/verbs/preterito-irregular-verbs/).
 All exercise sentences are authored for Jolito.
+
+## Implemented scope
+
+The initial set contains 34 verbs × 5 persons (170 independently scheduled forms),
+with two authored sentence contexts per form. New mixed sessions diversify families,
+verbs, and people; due reviews retain overdue priority. The initial curriculum is
+curated and intentionally finite; no AI service, generated lesson pipeline, or
+second scheduler is introduced.
+
+The shared card schema validates grammar identity and its canonical answer together.
+Storage, sync snapshots, and JSON exports write version 2 and read versions 1 and 2.
+The existing storage key remains stable so local version 1 decks migrate in place.
+Upgrading all devices is recommended: older clients cannot read version 2 snapshots.
+There is no SQL migration because the server stores the envelope as JSON already.
+
+Auth refresh and visibility events preserve typed answers and session snapshots.
+Late initial-sync responses reconcile with current local progress. Local save failure
+keeps the answer open for retry; deleted forms cannot be resurrected by grading.
+Navigation preserves an unfinished round; reload restores schedules and starts a new
+round. Sign-out clears the active grammar round with the account’s local deck.
+
+## Author verification
+
+- Domain tests cover all person/verb identities, six pattern families, representative
+  irregular forms, accents, context rotation, due priority, independent schedules,
+  semantic import isolation, and migration/backup/sync round trips.
+- React tests exercise complete rounds, spaced retries, navigation and reload,
+  background sync/visibility/auth interruptions, a late initial-sync response,
+  storage failure/retry, and shortcut teardown.
+- Browser tests cover 1280px, 393px, and 320px layouts, keyboard recall and grading,
+  accent touch targets, accessibility, offline reload, and vocabulary isolation.
+  Screenshots are emitted to `test-results/grammar-*-{home,answer,reveal,complete}.png`
+  and uploaded with CI’s Playwright artifacts for independent visual review.
+- Browser accessibility audits share a helper that waits for finite entrance
+  animations before measuring contrast. Sampling intermediate opacity produced
+  transient failures in existing sync, feedback, and completion tests; the helper
+  closes that timing gap without suppressing motion or accessibility rules.

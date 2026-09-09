@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createGrammarCards } from '../../domain/grammar'
 import { createStudyCards } from '../../domain/card'
 import { LocalStorageCardRepository } from './card-repository'
 
@@ -22,6 +23,29 @@ describe('LocalStorageCardRepository', () => {
     expect(repo.load([])).toEqual(fallback)
     expect(repo.getDeletedCardIds()).toEqual(['deleted-id-1', 'deleted-id-2'])
     expect(localStorage.getItem('jolito-library-v1')).toContain('deleted-id-1')
+  })
+
+  it('migrates version 1 vocabulary to version 2 and retains grammar across fresh repository instances', () => {
+    localStorage.setItem(
+      'jolito-library-v1',
+      JSON.stringify({
+        version: 1,
+        cards: fallback,
+        deletedCardIds: ['removed'],
+      }),
+    )
+    const repo = new LocalStorageCardRepository(localStorage)
+    const vocabulary = repo.load([])
+    expect(vocabulary).toEqual(fallback)
+    const grammar = createGrammarCards(123).slice(0, 2)
+    repo.save([...vocabulary, ...grammar])
+    expect(
+      JSON.parse(localStorage.getItem('jolito-library-v1')!) as unknown,
+    ).toMatchObject({ version: 2, deletedCardIds: ['removed'] })
+    expect(new LocalStorageCardRepository(localStorage).load([])).toEqual([
+      ...vocabulary,
+      ...grammar,
+    ])
   })
 
   it('migrates cards from ritmo-library-v1 seamlessly and initializes empty deletedCardIds', () => {

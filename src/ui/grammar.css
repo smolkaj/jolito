@@ -1,0 +1,459 @@
+.grammar-entry {
+  text-decoration: none;
+  margin-top: 18px;
+  color: var(--ink-soft);
+  gap: 10px;
+}
+.grammar-page {
+  padding-bottom: max(48px, env(safe-area-inset-bottom));
+}
+.grammar-home,
+.grammar-practice,
+.grammar-complete {
+  width: min(740px, 100%);
+  margin: clamp(36px, 6vh, 72px) auto 0;
+}
+.grammar-home > .eyebrow,
+.grammar-study > .eyebrow,
+.grammar-complete > .eyebrow {
+  color: var(--rosa-dark);
+  font-size: 12px;
+  letter-spacing: 1.7px;
+  margin: 0 0 12px;
+}
+.grammar-home h1 {
+  font-size: clamp(38px, 5.5vw, 60px);
+  line-height: 1.08;
+  letter-spacing: -2px;
+  margin: 0;
+}
+.grammar-home h1 em {
+  color: var(--rosa-dark);
+  font-style: normal;
+}
+.grammar-intro {
+  color: var(--ink-soft);
+  font-size: 18px;
+  max-width: 490px;
+  margin: 18px 0 30px;
+}
+.grammar-course-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.grammar-course-line h2 {
+  font-size: 24px;
+  margin: 0;
+}
+.grammar-course-line span {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+.grammar-focus {
+  border: 0;
+  padding: 0;
+  margin: 22px 0 0;
+  min-width: 0;
+}
+.grammar-focus legend {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.grammar-focus label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-subtle);
+  background: var(--card);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 78px;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+.grammar-focus label:hover {
+  border-color: var(--ink-muted);
+}
+.grammar-focus label.is-selected {
+  border-color: var(--turquesa-dark);
+  background: var(--turquesa-soft);
+  box-shadow: inset 0 0 0 1px var(--turquesa-dark);
+}
+.grammar-focus input {
+  accent-color: var(--turquesa-dark);
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.grammar-focus label:focus-within {
+  outline: 2px solid var(--rosa-dark);
+  outline-offset: 3px;
+}
+.grammar-focus strong,
+.grammar-focus small {
+  display: block;
+}
+.grammar-focus strong {
+  font-size: 15px;
+  font-weight: 650;
+}
+.grammar-focus small {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.grammar-families {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.grammar-start-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 24px 0 0;
+}
+.grammar-start-row .primary-button {
+  white-space: nowrap;
+}
+.grammar-start-row p {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.grammar-start-row p span {
+  color: var(--ink-muted);
+}
+.grammar-resume {
+  margin-top: 12px;
+}
+.grammar-reference {
+  border-top: 1px solid var(--line-subtle);
+  margin-top: 28px;
+  padding-top: 8px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.grammar-reference summary,
+.grammar-reveal-reference summary {
+  padding: 12px 0;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.grammar-reference label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.grammar-reference select {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line-subtle);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-height: 44px;
+  width: 100%;
+}
+.grammar-table {
+  width: 100%;
+  border-collapse: collapse;
+  max-width: 480px;
+  font-size: 15px;
+}
+.grammar-table caption {
+  text-align: left;
+  padding: 12px 0;
+  font-weight: 650;
+  color: var(--ink);
+}
+.grammar-table th,
+.grammar-table td {
+  text-align: left;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-subtle);
+}
+.grammar-table th {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.grammar-table td {
+  font-weight: 650;
+  color: var(--turquesa-dark);
+}
+.grammar-note {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.grammar-session-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.grammar-session-heading > span {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.grammar-practice .review-progress-track {
+  width: 100%;
+  margin: 12px 0 28px;
+}
+.grammar-study {
+  padding: clamp(22px, 4vw, 40px);
+  border: 1.5px solid var(--ink);
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+.grammar-sentence {
+  margin: 22px 0 12px;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.35;
+  letter-spacing: -0.8px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.grammar-blank {
+  display: inline;
+  color: var(--rosa-dark);
+  border-bottom: 2px solid var(--rosa);
+  padding: 0 4px 2px;
+}
+.grammar-translation {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+.grammar-verb-cue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin: 24px 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+.grammar-verb-cue strong {
+  color: var(--ink);
+  font-size: 21px;
+}
+
+.grammar-answer-form .answer-input {
+  width: 100%;
+  margin: 0;
+  font-size: 22px;
+  min-height: 62px;
+}
+.grammar-input-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+.grammar-accents {
+  display: flex;
+  gap: 2px;
+}
+.grammar-accents button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 18px;
+}
+.grammar-accents button:hover {
+  background: var(--paper-subtle);
+}
+.grammar-input-actions .reveal-button {
+  min-height: 44px;
+  padding: 10px 14px;
+  margin: 0;
+}
+.grammar-feedback {
+  outline: none;
+}
+.grammar-feedback-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.grammar-feedback-heading p {
+  color: var(--turquesa-dark);
+  font-weight: 650;
+  margin: 0;
+}
+.grammar-your-answer {
+  font-size: 16px;
+  color: var(--ink-muted);
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.grammar-your-answer > span:first-child {
+  color: var(--ink-soft);
+  margin-left: 6px;
+}
+.grammar-your-answer strong {
+  color: var(--ink);
+}
+.grammar-explanation {
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin: 14px 0 0;
+  line-height: 1.65;
+}
+.grammar-reveal-reference {
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+.grammar-study .grade-fieldset {
+  margin: 0;
+}
+.grammar-study .grade-fieldset legend {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.grammar-study .grade-buttons {
+  gap: 8px;
+}
+.grammar-study .grade-buttons button {
+  min-width: 0;
+  padding: 10px 4px;
+}
+.grammar-study .audio-button {
+  width: 44px;
+  height: 44px;
+}
+.grammar-error {
+  color: var(--tezontle-dark);
+  font-size: 14px;
+}
+.grammar-complete {
+  text-align: center;
+  margin-top: clamp(64px, 15vh, 150px);
+  max-width: 560px;
+}
+.grammar-finish-mark {
+  color: var(--turquesa-dark);
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: -4px;
+  transform: rotate(-6deg);
+  margin: 32px 0;
+}
+.grammar-complete h1 {
+  font-size: clamp(30px, 5vw, 42px);
+  letter-spacing: -1px;
+  line-height: 1.2;
+}
+.grammar-complete > p:not(.eyebrow) {
+  font-size: 17px;
+  color: var(--ink-soft);
+}
+.grammar-complete-actions {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 30px;
+}
+@media (max-width: 600px) {
+  .grammar-study .grade-buttons kbd {
+    display: none;
+  }
+  .grammar-home {
+    margin-top: 36px;
+  }
+  .grammar-home h1 {
+    letter-spacing: -1.5px;
+  }
+  .grammar-intro {
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  .grammar-families {
+    gap: 8px;
+  }
+  .grammar-focus label {
+    padding: 12px;
+    gap: 9px;
+  }
+  .grammar-focus strong {
+    font-size: 14px;
+  }
+  .grammar-focus small {
+    font-size: 12px;
+  }
+  .grammar-focus input {
+    width: 16px;
+    height: 16px;
+  }
+  .grammar-start-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .grammar-start-row p {
+    text-align: center;
+  }
+  .grammar-study {
+    border-radius: 16px;
+    padding: 22px 18px;
+  }
+  .grammar-practice {
+    margin-top: 24px;
+  }
+  .grammar-session-heading > span {
+    font-size: 12px;
+  }
+  .grammar-study > .eyebrow {
+    font-size: 10px;
+    letter-spacing: 1.3px;
+  }
+  .grammar-accents {
+    flex: 1;
+    justify-content: space-between;
+  }
+  .grammar-input-actions .reveal-button {
+    width: 100%;
+  }
+  .grammar-study .grade-buttons {
+    gap: 5px;
+  }
+  .grammar-study .grade-buttons strong {
+    font-size: 13px;
+  }
+  .grammar-study .grade-buttons small {
+    font-size: 11px;
+  }
+  .grammar-page .topbar {
+    gap: 8px;
+  }
+}
+@media (max-width: 359px) {
+  .grammar-families {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grammar-focus label {
+    transition: none;
+  }
+}

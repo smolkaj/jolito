@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 
 test.describe('Feedback modal & submission', () => {
   test('opens feedback modal, verifies zero WCAG violations, and submits note successfully', async ({
@@ -24,9 +24,7 @@ test.describe('Feedback modal & submission', () => {
     await expect(modalTitle).toBeVisible()
 
     // 1. Verify zero WCAG accessibility violations on initial feedback modal
-    const initialAxeResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const initialAxeResults = await auditAccessibility(page)
     expect(initialAxeResults.violations).toEqual([])
 
     // Capture visual snapshot of the feedback modal form
@@ -53,9 +51,7 @@ test.describe('Feedback modal & submission', () => {
     await expect(page.getByText(/your note has been received\./i)).toBeVisible()
 
     // 3. Verify zero WCAG accessibility violations on success screen
-    const successAxeResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const successAxeResults = await auditAccessibility(page)
     expect(successAxeResults.violations).toEqual([])
 
     // Capture visual snapshot of the success screen
@@ -102,9 +98,7 @@ test.describe('Feedback modal & submission', () => {
     )
 
     // Verify WCAG accessibility of modal with error banner
-    const errorAxeResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const errorAxeResults = await auditAccessibility(page)
     expect(errorAxeResults.violations).toEqual([])
 
     // Capture visual snapshot of error banner

@@ -25,7 +25,9 @@ export function mergeStudyCardsSemantic(
 
   // Result array starts as a shallow copy of existing cards so we preserve their exact order
   const merged: StudyCard[] = existingCards.map((card, index) => {
-    const key = normalizeCardKey(card.prompt, card.direction)
+    const key = card.grammar
+      ? card.id
+      : normalizeCardKey(card.prompt, card.direction)
     const entry = { card: { ...card }, index }
     if (!existingByKey.has(key)) {
       existingByKey.set(key, entry)
@@ -41,7 +43,9 @@ export function mergeStudyCardsSemantic(
   const seenIncomingKeys = new Set<string>()
 
   for (const incoming of incomingCards) {
-    const key = normalizeCardKey(incoming.prompt, incoming.direction)
+    const key = incoming.grammar
+      ? incoming.id
+      : normalizeCardKey(incoming.prompt, incoming.direction)
 
     // Check if duplicate within incoming batch itself
     if (seenIncomingKeys.has(key)) {

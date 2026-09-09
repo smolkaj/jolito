@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 
 async function dismissDemoModal(page: Page) {
   const dismissBtn = page.getByRole('button', { name: /explore demo deck/i })
@@ -47,9 +47,7 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
   })
 
   // Verify zero WCAG violations in the inspection view
-  const inspectAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const inspectAxe = await auditAccessibility(page)
   expect(inspectAxe.violations).toEqual([])
 
   // Return to all packs view
@@ -59,9 +57,7 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
   ).not.toBeVisible()
 
   // Verify zero WCAG 2.1 A/AA violations in the modal main view
-  const axeResults = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const axeResults = await auditAccessibility(page)
   expect(axeResults.violations).toEqual([])
 
   // Add Mexican street phrases pack

@@ -1,4 +1,4 @@
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 import { expect, test } from '@playwright/test'
 
 test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => {
@@ -99,9 +99,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     ).not.toBeVisible()
 
     // Initial accessibility check on mobile welcome screen
-    const welcomeAxe = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const welcomeAxe = await auditAccessibility(page)
     expect(welcomeAxe.violations).toEqual([])
 
     // 2. Tap Practice on mobile
@@ -135,9 +133,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.waitForTimeout(250)
     await page.screenshot({ path: 'test-results/mobile-revealed.png' })
 
-    const reviewAxe = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const reviewAxe = await auditAccessibility(page)
     expect(reviewAxe.violations).toEqual([])
 
     // 5. Tap Good to grade

@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import {
+  grammarCardId,
+  preteriteVerbs,
+  type PreteriteVerb,
+} from './grammar-content'
 
 export const grades = ['again', 'hard', 'good', 'easy'] as const
 export const directions = ['es-en', 'en-es'] as const
@@ -40,20 +45,52 @@ export const reviewScheduleSchema = z.preprocess(
   }),
 )
 
-export const studyCardSchema = z.object({
-  id: z.string().min(1),
-  noteId: z.string().min(1),
-  prompt: z.string().trim().min(1),
-  answer: z.string().trim().min(1),
-  direction: directionSchema,
-  context: z.string(),
-  scene: sceneSchema,
-  schedule: reviewScheduleSchema,
-  createdAt: z.number().default(0),
+// Version 1 → 2 is additive: absent grammar metadata remains vocabulary.
+// A new envelope version keeps older clients from discarding exercise metadata.
+export const collectionVersionSchema = z
+  .union([z.literal(1), z.literal(2)])
+  .transform(() => 2 as const)
+export const grammarExerciseSchema = z.object({
+  topic: z.literal('preterite'),
+  verb: z.enum(
+    Object.keys(preteriteVerbs) as [PreteriteVerb, ...PreteriteVerb[]],
+  ),
+  person: z.number().int().min(0).max(4),
 })
 
+export const studyCardSchema = z
+  .object({
+    id: z.string().min(1),
+    noteId: z.string().min(1),
+    prompt: z.string().trim().min(1),
+    answer: z.string().trim().min(1),
+    direction: directionSchema,
+    context: z.string(),
+    scene: sceneSchema,
+    schedule: reviewScheduleSchema,
+    grammar: grammarExerciseSchema.optional(),
+    createdAt: z.number().default(0),
+  })
+  .superRefine((card, ctx) => {
+    if (!card.grammar) return
+    const { verb, person } = card.grammar
+    if (
+      card.id !== grammarCardId(verb, person) ||
+      card.noteId !== card.id ||
+      card.answer !== preteriteVerbs[verb].forms[person] ||
+      card.direction !== 'en-es'
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['grammar'],
+        message:
+          'Grammar exercise identity and answer must match its verb and person.',
+      })
+    }
+  })
+
 export const studyCardCollectionSchema = z.object({
-  version: z.literal(1),
+  version: collectionVersionSchema,
   cards: z.array(studyCardSchema),
   deletedCardIds: z.array(z.string()).default([]),
 })

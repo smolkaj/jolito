@@ -30,7 +30,7 @@ export function createDeckBackup(
   const dateString = isoDate.slice(0, 10)
 
   const payload: DeckBackupEnvelope = {
-    version: 1,
+    version: 2,
     app: 'jolito',
     exportedAt: isoDate,
     cards,
