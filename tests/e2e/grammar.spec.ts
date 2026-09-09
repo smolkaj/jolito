@@ -127,3 +127,48 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
   expect(saved.version).toBe(2)
   expect(saved.cards.filter((card) => card.grammar)).toHaveLength(2)
 })
+
+test('native keyboard controls coexist with grammar audio and grading shortcuts', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__speechSynthesisCalls = []
+    window.speechSynthesis.speak = (utterance) => {
+      window.__speechSynthesisCalls!.push({
+        text: utterance.text,
+        lang: utterance.lang,
+      })
+      utterance.onend?.(new SpeechSynthesisEvent('end', { utterance }))
+    }
+  })
+  const now = Date.now()
+  await page.clock.setFixedTime(now)
+  await page.route('**/api/tts*', (route) => route.fulfill({ status: 503 }))
+  await page.goto('/#/grammar')
+  await page.getByRole('button', { name: 'Practice pretérito' }).click()
+  await page.getByRole('textbox').press('Enter')
+  const disclosure = page.locator('.grammar-study summary')
+  const reference = page.locator('.grammar-study details')
+  for (const key of ['Space', 'Enter']) {
+    await disclosure.press(key)
+    await expect(reference).toHaveAttribute('open', '')
+    await disclosure.press(key)
+    await expect(reference).not.toHaveAttribute('open')
+  }
+  const speechCount = () =>
+    page.evaluate(() => window.__speechSynthesisCalls!.length)
+  expect(await speechCount()).toBe(0)
+  await page.getByRole('status').focus()
+  await page.keyboard.press('Space')
+  await expect.poll(speechCount).toBe(1)
+  // Move beyond speech’s double-activation suppression window.
+  await page.clock.setFixedTime(now + 1000)
+  const audioButton = page.locator('.grammar-study .audio-button')
+  await audioButton.press('Space')
+  await expect.poll(speechCount).toBe(2)
+  await page.keyboard.press('4')
+  await expect(page.getByRole('textbox')).toBeFocused()
+  await page.getByRole('textbox').press('Space')
+  await expect(page.getByRole('textbox')).toHaveValue(' ')
+  expect(await speechCount()).toBe(2)
+})

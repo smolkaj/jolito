@@ -78,7 +78,7 @@ round. Sign-out clears the active grammar round with the account’s local deck.
 
 ## Review-driven safeguards
 
-Independent review caught four issues before merge. The corrected auth reconciliation
+Independent review caught five issues before merge. The corrected auth reconciliation
 filters demo cards from the latest local snapshot, preserving grammar progress without
 putting examples into an ordinary signed-in vocabulary deck. Persisted review/lapse
 counts must be nonnegative integers; malformed modern backups cannot fall through to
@@ -92,3 +92,8 @@ validation alone allowed persisted or imported values that date formatting canno
 render. Boundary contracts reject out-of-range due and last-review timestamps through
 storage, raw/enveloped backup, and sync, and accept both valid range endpoints. This
 closes the malformed-schedule blind spot before the feature reaches main.
+
+Grammar audio shortcuts defer to native buttons, links, and reference disclosures.
+A browser contract opens and closes the reference with both Space and Enter, then
+checks audio activation, grading, and literal spaces in the next typed answer. This
+catches keyboard event interception that static accessibility audits cannot detect.

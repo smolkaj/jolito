@@ -133,7 +133,10 @@ export function GrammarPractice({
       }
       if (
         event.code === 'Space' &&
-        !(event.target instanceof HTMLButtonElement)
+        !(
+          event.target instanceof HTMLElement &&
+          event.target.closest('button, summary, a[href]')
+        )
       ) {
         event.preventDefault()
         state.play()
