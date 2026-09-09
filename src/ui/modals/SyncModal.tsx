@@ -34,6 +34,7 @@ export interface SyncModalProps {
   onSaveLocally?: (() => void) | undefined
   pendingCardPrompt?: string | undefined
   onOpenPrivacy?: (() => void) | undefined
+  onOpenFeedback?: (() => void) | undefined
 }
 
 export function SyncModal({
@@ -49,6 +50,7 @@ export function SyncModal({
   onSaveLocally,
   pendingCardPrompt,
   onOpenPrivacy,
+  onOpenFeedback,
 }: SyncModalProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
@@ -655,7 +657,24 @@ export function SyncModal({
               }
             }}
           >
-            Privacy Policy
+            Privacy
+          </button>
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>
+          <button
+            type="button"
+            className="sync-privacy-link"
+            onClick={() => {
+              handleClose()
+              if (onOpenFeedback) {
+                onOpenFeedback()
+              } else {
+                window.location.hash = '#/feedback'
+              }
+            }}
+          >
+            Feedback
           </button>
           <span className="sync-modal-legal-separator" aria-hidden="true">
             ·

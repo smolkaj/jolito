@@ -589,9 +589,12 @@ summary:focus-visible,
 
 .welcome-hero-footer {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
+  column-gap: 8px;
   margin-top: auto;
   padding-top: 24px;
 }
@@ -611,6 +614,8 @@ summary:focus-visible,
   padding-top: 0;
   grid-column: 3;
   justify-self: end;
+  width: auto;
+  min-width: 0;
 }
 
 .hero-scroll-cue {
@@ -2750,10 +2755,13 @@ kbd {
 
   .welcome-hero-footer {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
+    column-gap: 8px;
     margin-top: clamp(12px, 2vh, 20px);
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .welcome-hero-footer-spacer {
@@ -2764,13 +2772,26 @@ kbd {
     grid-column: 2;
     justify-self: center;
     min-height: 48px;
-    padding: 10px 22px;
+    padding: 10px 18px;
     font-size: 14px;
   }
 
   .welcome-hero-footer .app-footer {
     grid-column: 3;
     justify-self: end;
+    width: auto;
+    min-width: 0;
+  }
+
+  @media (max-width: 340px) {
+    .welcome-hero-footer {
+      column-gap: 4px;
+    }
+
+    .welcome-hero-footer .hero-scroll-cue {
+      padding: 10px 14px;
+      font-size: 13px;
+    }
   }
 
   .why-start-button {
@@ -5336,6 +5357,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid #f0e6eb;

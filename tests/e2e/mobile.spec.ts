@@ -85,6 +85,19 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(cueBox!.height).toBeGreaterThanOrEqual(44)
     expect(cueBox!.width).toBeGreaterThanOrEqual(44)
 
+    // Verify Why Jolito scroll cue and Feedback button do not overlap or collide
+    const heroFooter = page.locator('.welcome-hero-footer')
+    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+    await expect(feedbackBtn).toBeVisible()
+    const feedbackBox = await feedbackBtn.boundingBox()
+    expect(feedbackBox).not.toBeNull()
+    expect(cueBox!.x + cueBox!.width).toBeLessThanOrEqual(feedbackBox!.x)
+
+    // Privacy is housed cleanly in SyncModal / deck footer, not colliding in hero fold
+    await expect(
+      heroFooter.getByRole('button', { name: /^privacy$/i }),
+    ).not.toBeVisible()
+
     // Initial accessibility check on mobile welcome screen
     const welcomeAxe = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -320,5 +333,36 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
 
     // 7. Cleanly completes review session
     await expect(page.getByRole('heading', { name: /¡hecho!/i })).toBeVisible()
+  })
+
+  test('guarantees zero bounding-box overlap and clearance between Why Jolito cue and Feedback on narrow 375px mobile viewports', async ({
+    page,
+  }) => {
+    // Test on iPhone SE (375x667)
+    await page.setViewportSize({ width: 375, height: 667 })
+    await page.goto('/')
+
+    const scrollCue = page.getByRole('link', {
+      name: /^scroll down to explore why jolito$/i,
+    })
+    const heroFooter = page.locator('.welcome-hero-footer')
+    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+
+    await expect(scrollCue).toBeVisible()
+    await expect(feedbackBtn).toBeVisible()
+
+    const cueBox = await scrollCue.boundingBox()
+    const feedbackBox = await feedbackBtn.boundingBox()
+
+    expect(cueBox).not.toBeNull()
+    expect(feedbackBox).not.toBeNull()
+
+    // Ensure strictly no horizontal collision and at least an 8px clearance gap
+    expect(feedbackBox!.x - (cueBox!.x + cueBox!.width)).toBeGreaterThanOrEqual(
+      8,
+    )
+
+    // Capture screenshot on 375px viewport for visual verification
+    await page.screenshot({ path: 'test-results/mobile-375-welcome.png' })
   })
 })

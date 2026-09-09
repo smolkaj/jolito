@@ -5368,19 +5368,26 @@ describe('Jolito', () => {
       vi.useRealTimers()
     })
 
-    it('opens Privacy modal via footer link and via #/privacy hash navigation', async () => {
+    it('opens Privacy modal via #/privacy hash navigation, Sync modal, and deck footer', async () => {
       window.location.hash = '#/'
       const services = createTestServices()
 
       render(<App services={services} />)
 
-      const privacyBtn = screen.getByRole('button', { name: /^privacy$/i })
-      expect(privacyBtn).toBeInTheDocument()
-
-      fireEvent.click(privacyBtn)
+      // Welcome hero only has Feedback button, not Privacy
       expect(
-        screen.getByRole('heading', { name: /privacy policy/i }),
+        screen.getByRole('button', { name: /^feedback$/i }),
       ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^privacy$/i })).toBeNull()
+
+      // Open Privacy via #/privacy hash
+      window.location.hash = '#/privacy'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /privacy policy/i }),
+        ).toBeInTheDocument()
+      })
 
       fireEvent.click(
         screen.getByRole('button', { name: /close privacy policy/i }),
@@ -5389,13 +5396,24 @@ describe('Jolito', () => {
         screen.queryByRole('heading', { name: /privacy policy/i }),
       ).toBeNull()
 
-      window.location.hash = '#/privacy'
-      window.dispatchEvent(new PopStateEvent('popstate'))
+      // Open Privacy via Sync Modal legal link
+      const syncPill = screen.getByRole('button', { name: /sign in/i })
+      fireEvent.click(syncPill)
+      expect(
+        screen.getByRole('heading', { name: /^cloud sync$/i }),
+      ).toBeInTheDocument()
+
+      const modalPrivacyBtn = screen.getByRole('button', { name: /^privacy$/i })
+      fireEvent.click(modalPrivacyBtn)
       await waitFor(() => {
         expect(
           screen.getByRole('heading', { name: /privacy policy/i }),
         ).toBeInTheDocument()
       })
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /close privacy policy/i }),
+      )
     })
   })
 

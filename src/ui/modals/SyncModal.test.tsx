@@ -252,7 +252,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     })
   })
 
-  it('invokes onOpenPrivacy callback when clicking Privacy Policy link', () => {
+  it('invokes onOpenPrivacy callback when clicking Privacy link', () => {
     const auth = new MockAuthService()
     const sync = new MockSyncService()
     const onOpenPrivacy = vi.fn()
@@ -270,11 +270,36 @@ describe('SyncModal Account Deletion and Legal', () => {
       />,
     )
 
-    const privacyBtn = screen.getByRole('button', { name: /privacy policy/i })
+    const privacyBtn = screen.getByRole('button', { name: /^privacy$/i })
     fireEvent.click(privacyBtn)
 
     expect(onClose).toHaveBeenCalled()
     expect(onOpenPrivacy).toHaveBeenCalled()
+  })
+
+  it('invokes onOpenFeedback callback when clicking Feedback link', () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+    const onOpenFeedback = vi.fn()
+    const onClose = vi.fn()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={onClose}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+        onOpenFeedback={onOpenFeedback}
+      />,
+    )
+
+    const feedbackBtn = screen.getByRole('button', { name: /^feedback$/i })
+    fireEvent.click(feedbackBtn)
+
+    expect(onClose).toHaveBeenCalled()
+    expect(onOpenFeedback).toHaveBeenCalled()
   })
 
   it('renders Acknowledgements link pointing to /acknowledgements in a new tab', () => {
@@ -314,15 +339,18 @@ describe('SyncModal Account Deletion and Legal', () => {
       />,
     )
 
-    const privacyBtn = screen.getByRole('button', { name: /privacy policy/i })
+    const privacyBtn = screen.getByRole('button', { name: /^privacy$/i })
+    const feedbackBtn = screen.getByRole('button', { name: /^feedback$/i })
     const ackLink = screen.getByRole('link', { name: /acknowledgements/i })
 
-    // Both legal links must share the dedicated link class
+    // All legal links must share the dedicated link class
     expect(privacyBtn).toHaveClass('sync-privacy-link')
+    expect(feedbackBtn).toHaveClass('sync-privacy-link')
     expect(ackLink).toHaveClass('sync-privacy-link')
 
     // Neither element should carry .modal-link-btn, which introduces weight: 600 divergence
     expect(privacyBtn).not.toHaveClass('modal-link-btn')
+    expect(feedbackBtn).not.toHaveClass('modal-link-btn')
     expect(ackLink).not.toHaveClass('modal-link-btn')
   })
 })

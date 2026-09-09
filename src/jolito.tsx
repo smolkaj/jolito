@@ -756,25 +756,29 @@ function DemoDeckModal({ isOpen, onClose, onSignIn }: DemoDeckModalProps) {
 function AppFooter({
   onOpenFeedback,
   onOpenPrivacy,
+  showPrivacy = true,
 }: {
   onOpenFeedback: () => void
   onOpenPrivacy?: (() => void) | undefined
+  showPrivacy?: boolean
 }) {
   return (
     <footer className="app-footer" aria-label="Site footer">
       <div className="app-footer-inner" data-nosnippet>
-        <button
-          type="button"
-          className="footer-link-button"
-          onClick={
-            onOpenPrivacy ??
-            (() => {
-              window.location.hash = '#/privacy'
-            })
-          }
-        >
-          Privacy
-        </button>
+        {showPrivacy && (
+          <button
+            type="button"
+            className="footer-link-button"
+            onClick={
+              onOpenPrivacy ??
+              (() => {
+                window.location.hash = '#/privacy'
+              })
+            }
+          >
+            Privacy
+          </button>
+        )}
         <button
           type="button"
           className="footer-link-button"
@@ -2460,7 +2464,7 @@ export function App({
               </a>
               <AppFooter
                 onOpenFeedback={openFeedbackModal}
-                onOpenPrivacy={openPrivacyModal}
+                showPrivacy={false}
               />
             </div>
           </section>
@@ -2552,6 +2556,7 @@ export function App({
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
           onOpenPrivacy={openPrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2932,6 +2937,7 @@ export function App({
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
           onOpenPrivacy={openPrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3440,6 +3446,7 @@ export function App({
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
           onOpenPrivacy={openPrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3587,6 +3594,7 @@ export function App({
             pendingCard ? pendingCard.spanish.trim() : undefined
           }
           onOpenPrivacy={openPrivacyModal}
+          onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3791,6 +3799,7 @@ export function App({
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
         onOpenPrivacy={openPrivacyModal}
+        onOpenFeedback={openFeedbackModal}
       />
       <EditCardModal
         isOpen={editingCard !== null}

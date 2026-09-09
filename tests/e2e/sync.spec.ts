@@ -40,9 +40,12 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   expect(isFontLoaded).toBe(true)
 
   // Verify typography and computed style parity across modal legal links
-  const privacyBtn = page.getByRole('button', { name: /privacy policy/i })
-  const ackLink = page.getByRole('link', { name: /acknowledgements/i })
+  const modal = page.getByRole('dialog', { name: /cloud sync/i })
+  const privacyBtn = modal.getByRole('button', { name: /^privacy$/i })
+  const feedbackBtn = modal.getByRole('button', { name: /^feedback$/i })
+  const ackLink = modal.getByRole('link', { name: /acknowledgements/i })
   await expect(privacyBtn).toBeVisible()
+  await expect(feedbackBtn).toBeVisible()
   await expect(ackLink).toBeVisible()
 
   const [privacyStyle, ackStyle] = await Promise.all([
@@ -372,6 +375,9 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     path: 'test-results/sync-button-animated.png',
   })
 
+  // Allow keyframe pop/fade animation (320ms) to settle to 100% opacity for full contrast
+  await page.waitForTimeout(350)
+
   const animatedResults = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -537,7 +543,7 @@ test('renders cloud sync legal footer with typographic parity on mobile viewport
   // Ensure fonts loaded
   await page.evaluate(() => document.fonts.ready)
 
-  const privacyBtn = page.getByRole('button', { name: /privacy policy/i })
+  const privacyBtn = page.getByRole('button', { name: /^privacy$/i })
   const ackLink = page.getByRole('link', { name: /acknowledgements/i })
   await expect(privacyBtn).toBeVisible()
   await expect(ackLink).toBeVisible()
