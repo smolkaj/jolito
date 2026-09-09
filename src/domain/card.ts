@@ -15,6 +15,9 @@ export const directionSchema = z.enum(directions)
 export const sceneSchema = z.enum(scenes)
 export const cardStateSchema = z.enum(cardStates)
 
+// JavaScript dates support at most 100 million days on either side of epoch.
+const scheduleTimestampSchema = z.number().min(-8.64e15).max(8.64e15)
+
 export const reviewScheduleSchema = z.preprocess(
   (val) => {
     if (typeof val === 'object' && val !== null) {
@@ -36,12 +39,12 @@ export const reviewScheduleSchema = z.preprocess(
   },
   z.object({
     state: cardStateSchema.default('new'),
-    dueAt: z.number(),
+    dueAt: scheduleTimestampSchema,
     intervalDays: z.number(),
     easeFactor: z.number().default(2.5),
     reviews: z.number().int().nonnegative(),
     lapses: z.number().int().nonnegative(),
-    lastReviewedAt: z.number().optional(),
+    lastReviewedAt: scheduleTimestampSchema.optional(),
   }),
 )
 

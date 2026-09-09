@@ -67,7 +67,7 @@ round. Sign-out clears the active grammar round with the account’s local deck.
 - React tests exercise complete rounds, spaced retries, navigation and reload,
   background sync/visibility/auth interruptions, a late initial-sync response,
   storage failure/retry, and shortcut teardown.
-- Browser tests cover 1280px, 393px, and 320px layouts, keyboard recall and grading,
+- Browser tests cover 1280px, 1024px, 768px, 393px, and 320px layouts, keyboard recall and grading,
   accent touch targets, accessibility, offline reload, and vocabulary isolation.
   Screenshots are emitted to `test-results/grammar-*-{home,answer,reveal,complete}.png`
   and uploaded with CI’s Playwright artifacts for independent visual review.
@@ -78,7 +78,7 @@ round. Sign-out clears the active grammar round with the account’s local deck.
 
 ## Review-driven safeguards
 
-Independent review caught three issues before merge. The corrected auth reconciliation
+Independent review caught four issues before merge. The corrected auth reconciliation
 filters demo cards from the latest local snapshot, preserving grammar progress without
 putting examples into an ordinary signed-in vocabulary deck. Persisted review/lapse
 counts must be nonnegative integers; malformed modern backups cannot fall through to
@@ -86,3 +86,9 @@ legacy import and discard their grammar metadata. The grammar Check action expli
 owns its static positioning and hover/press transforms rather than inheriting the
 vocabulary input’s absolute positioning. Browser contracts verify the action stays
 inside its exercise card at 320, 393, 768, 1024, and 1280px in all three states.
+
+Schedule timestamps also respect JavaScript’s representable date range. Finite numeric
+validation alone allowed persisted or imported values that date formatting cannot
+render. Boundary contracts reject out-of-range due and last-review timestamps through
+storage, raw/enveloped backup, and sync, and accept both valid range endpoints. This
+closes the malformed-schedule blind spot before the feature reaches main.

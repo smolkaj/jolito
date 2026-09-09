@@ -200,30 +200,64 @@ describe('preterite practice contracts', () => {
     }
   })
 
-  it('rejects fractional and negative counters at storage, backup, and sync boundaries without downgrading modern cards to legacy vocabulary', () => {
+  it('rejects unusable schedules at storage, backup, and sync boundaries without downgrading modern cards to legacy vocabulary', () => {
     const card = createGrammarCards(now)[0]!
-    for (const field of ['reviews', 'lapses']) {
-      for (const invalid of [-1, 1.5]) {
-        const cards = [
-          { ...card, schedule: { ...card.schedule, [field]: invalid } },
-        ]
-        expect(
-          studyCardCollectionSchema.safeParse({ version: 2, cards }).success,
-        ).toBe(false)
-        expect(
-          parseDeckBackup(JSON.stringify({ version: 2, cards })).success,
-        ).toBe(false)
-        expect(parseDeckBackup(JSON.stringify(cards)).success).toBe(false)
-        expect(
-          deckSyncPayloadSchema.safeParse({
-            version: 2,
-            app: 'jolito',
-            updatedAt: '2026-09-08',
-            deviceId: 'test',
-            cards,
-          }).success,
-        ).toBe(false)
+    for (const [fields, invalidValues] of [
+      [
+        ['reviews', 'lapses'],
+        [-1, 1.5],
+      ],
+      [
+        ['dueAt', 'lastReviewedAt'],
+        [-8.64e15 - 1, 8.64e15 + 1, -1e20, 1e20],
+      ],
+    ] as const) {
+      for (const field of fields) {
+        for (const invalid of invalidValues) {
+          const cards = [
+            { ...card, schedule: { ...card.schedule, [field]: invalid } },
+          ]
+          expect(
+            studyCardCollectionSchema.safeParse({ version: 2, cards }).success,
+          ).toBe(false)
+          expect(
+            parseDeckBackup(JSON.stringify({ version: 2, cards })).success,
+          ).toBe(false)
+          expect(parseDeckBackup(JSON.stringify(cards)).success).toBe(false)
+          expect(
+            deckSyncPayloadSchema.safeParse({
+              version: 2,
+              app: 'jolito',
+              updatedAt: '2026-09-08',
+              deviceId: 'test',
+              cards,
+            }).success,
+          ).toBe(false)
+        }
       }
+    }
+  })
+
+  it('accepts the full representable date range for schedule timestamps', () => {
+    const card = createGrammarCards(now)[0]!
+    for (const timestamp of [-8.64e15, 0, now, 8.64e15]) {
+      const parsed = studyCardCollectionSchema.parse({
+        version: 2,
+        cards: [
+          {
+            ...card,
+            schedule: {
+              ...card.schedule,
+              dueAt: timestamp,
+              lastReviewedAt: timestamp,
+            },
+          },
+        ],
+      })
+      expect(parsed.cards[0]!.schedule.dueAt).toBe(timestamp)
+      expect(() =>
+        new Intl.DateTimeFormat('en').format(parsed.cards[0]!.schedule.dueAt),
+      ).not.toThrow()
     }
   })
 
