@@ -527,8 +527,9 @@ export function SyncModal({
           >
             {isStandalone() && isIOS() ? (
               <p className="sync-explanation">
-                Open the email in Safari, tap <strong>Copy sign-in link</strong>{' '}
-                on the top banner, or enter the 6-digit code below:
+                Tap the link in your email, then tap{' '}
+                <strong>Copy sign-in link</strong> in Safari’s top banner, or
+                enter the 6-digit code below:
               </p>
             ) : pendingCardPrompt ? (
               <p className="sync-explanation">
