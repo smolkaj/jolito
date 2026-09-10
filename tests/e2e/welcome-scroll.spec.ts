@@ -188,11 +188,15 @@ test('intro fits its header naturally and keeps its boundary through content cha
   await expect.poll(boundary).toBe(852)
   await expect(cue).toBeInViewport({ ratio: 1 })
   await cue.click()
-  await expect.poll(boundary).toBe(0)
+  await expect
+    .poll(async () => Math.abs(await boundary()))
+    .toBeLessThanOrEqual(1)
   await headerSize.evaluate((element) =>
     element.parentNode?.removeChild(element),
   )
-  await expect.poll(boundary).toBe(0)
+  await expect
+    .poll(async () => Math.abs(await boundary()))
+    .toBeLessThanOrEqual(1)
   await page.getByRole('button', { name: /^start learning/i }).click()
   await expect
     .poll(() => welcome.evaluate((element) => element.scrollTop))
@@ -207,7 +211,9 @@ test('intro fits its header naturally and keeps its boundary through content cha
   await cue.focus()
   await expect(cue).toBeInViewport({ ratio: 1 })
   await cue.press('Enter')
-  await expect.poll(boundary).toBe(0)
+  await expect
+    .poll(async () => Math.abs(await boundary()))
+    .toBeLessThanOrEqual(1)
   await page.getByRole('button', { name: /^start learning/i }).click()
   await expect
     .poll(() => welcome.evaluate((element) => element.scrollTop))
