@@ -44,3 +44,18 @@ Keep a version 3 backup when rolling back; older clients cannot restore it.
 - Five-width browser flows cover setup, correction, completion and offline reload.
   The neural cache lifecycle contract runs for both tenses, covering both contexts
   and voices, interruptions, vocabulary deletion, offline reuse and teardown.
+
+## Narrow-screen correction review
+
+Independent design review found that the fixed label column and adjacent audio button
+left too little room for compound answers at 320px. The fixed mobile column dates to
+PR #30; the comparison/audio layout evolved in #41 and retained the constraint in
+#205. Perfecto exposed the pressure with ordinary words such as hablado.
+Container-bound and accessibility checks passed because the fallback wrapped words
+instead of overflowing. Those checks did not measure whether a word remained readable.
+
+The shared comparison now uses one flat grid. On narrow screens, the label and audio
+button sit above full-width answer text. Obsolete wrapper and badge styles are removed.
+A browser contract measures text-node rectangles across diff spans for varied grammar
+and vocabulary phrases, in exact, incorrect and empty states at 320px and 393px.
+It failed for four cases before the layout change, covering both learning modes.

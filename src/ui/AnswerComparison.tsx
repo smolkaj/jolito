@@ -56,12 +56,10 @@ export function AnswerComparison({
 
         <div className="diff-row expected-row">
           <span className="diff-label">Expected</span>
-          <div className="diff-row-main">
-            <p className="diff-text" lang={lang}>
-              {renderDiffSegments(comparison.expectedSegments)}
-            </p>
-            <AudioButton label="Play answer audio" onClick={onPlayAudio} />
-          </div>
+          <p className="diff-text" lang={lang}>
+            {renderDiffSegments(comparison.expectedSegments)}
+          </p>
+          <AudioButton label="Play answer audio" onClick={onPlayAudio} />
         </div>
       </div>
     </div>

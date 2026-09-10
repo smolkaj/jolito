@@ -76,3 +76,10 @@ Future practice modes should compose `PracticeCard` and `SessionComplete` and us
 common page branch. Mode CSS should style learning content, not override shared form,
 feedback, grading, completion or navigation geometry. Extend the comparative state
 contracts when adding a shared state or capability.
+
+Compound-tense review exposed word fragmentation at 320px despite container-fit and
+accessibility checks passing. Shared comparison rows now give answer text the full
+width on narrow screens, with labels and audio above it. The browser readability
+contract measures each word across highlighted spans in grammar and both vocabulary
+directions, including exact, incorrect and empty answers. See the
+[perfecto review analysis](practice-perfecto.md#narrow-screen-correction-review).

@@ -2245,75 +2245,12 @@ kbd {
   box-shadow: 3px 3px 0 var(--turquesa-deep);
 }
 
-.diff-exact-main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .diff-card {
   padding: 16px 18px;
   border: 2px solid var(--line);
   border-radius: 16px;
   background: var(--paper-subtle);
   box-shadow: 3px 3px 0 var(--cempasuchil);
-}
-
-.diff-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1.5px solid var(--line-subtle);
-}
-
-.diff-card-title {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.diff-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--pill-height-sm);
-  min-height: var(--pill-height-sm);
-  max-height: var(--pill-height-sm);
-  box-sizing: border-box;
-  padding: 0 10px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--pill-radius);
-  font-size: 11px;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  line-height: 1;
-  letter-spacing: 0.4px;
-  box-shadow: 1px 1px 0 var(--ink);
-}
-
-.diff-badge.exact {
-  color: var(--turquesa-dark);
-  background: var(--turquesa-soft);
-}
-
-.diff-badge.accents {
-  color: var(--cempasuchil-dark);
-  background: #fef9c3;
-}
-
-.diff-badge.close {
-  color: var(--tezontle-dark);
-  background: #fee2e2;
-}
-
-.diff-badge.different {
-  color: var(--ink-muted);
-  background: #e5e0d8;
 }
 
 .diff-rows {
@@ -2338,16 +2275,13 @@ kbd {
   letter-spacing: 0.6px;
 }
 
-.diff-row-main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+.expected-row {
+  grid-template-columns: 88px minmax(0, 1fr) auto;
 }
 
-.diff-row-main .audio-button {
+.expected-row .audio-button {
+  align-self: start;
   margin-top: 2px;
-  flex-shrink: 0;
 }
 
 .diff-text {
@@ -2994,7 +2928,20 @@ kbd {
   }
 
   .diff-row {
-    grid-template-columns: 68px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px 12px;
+  }
+
+  .diff-row .diff-text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .expected-row .audio-button {
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 0;
   }
 
   .grade-buttons {
