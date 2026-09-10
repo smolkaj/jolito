@@ -31,7 +31,7 @@ describe('grammar practice in Jolito', () => {
     expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
     fireEvent(document, new Event('visibilitychange'))
     expect(services.mockSpeaker.spoken).toEqual([prompt, prompt])
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Resume practice' }))
     expect(screen.getByRole('textbox')).toHaveValue('habl')
     expect(services.mockSpeaker.spoken).toEqual([prompt, prompt, prompt])
     await user.click(screen.getByRole('button', { name: 'Play prompt audio' }))
@@ -61,7 +61,7 @@ describe('grammar practice in Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
     expect(
-      screen.queryByRole('button', { name: 'Continue' }),
+      screen.queryByRole('button', { name: 'Resume practice' }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByText(/Conjugation reference|8 forms/),
@@ -69,7 +69,7 @@ describe('grammar practice in Jolito', () => {
     const user = await begin()
     await user.type(screen.getByRole('textbox'), 'habl')
     await user.click(screen.getByRole('button', { name: 'Grammar' }))
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Resume practice' }))
     expect(screen.getByRole('textbox')).toHaveValue('habl')
     await user.click(screen.getByRole('button', { name: 'Grammar' }))
     await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
@@ -302,7 +302,7 @@ describe('grammar practice in Jolito', () => {
       const stops = services.mockSpeaker.stopCount
       await user.click(screen.getByRole('button', { name: 'Grammar' }))
       expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
-      await user.click(screen.getByRole('button', { name: 'Continue' }))
+      await user.click(screen.getByRole('button', { name: 'Resume practice' }))
       expect(screen.getByRole('status')).toBeVisible()
       await user.click(screen.getByRole('button', { name: 'Jolito home' }))
       await practiceGrammar(user)
@@ -369,7 +369,7 @@ describe('grammar practice in Jolito', () => {
     })
     expect(screen.getByRole('heading', { name: 'Grammar' })).toBeVisible()
     expect(
-      screen.queryByRole('button', { name: /Continue/ }),
+      screen.queryByRole('button', { name: /Resume practice/ }),
     ).not.toBeInTheDocument()
   })
 

@@ -22,13 +22,13 @@ it('keeps a perfecto draft through tense selection and interruptions, then grade
     'preterite',
   )
   expect(
-    screen.queryByRole('button', { name: 'Continue' }),
+    screen.queryByRole('button', { name: 'Resume practice' }),
   ).not.toBeInTheDocument()
   await user.selectOptions(
     screen.getByRole('combobox', { name: 'Tense' }),
     'perfect',
   )
-  await user.click(screen.getByRole('button', { name: 'Continue' }))
+  await user.click(screen.getByRole('button', { name: 'Resume practice' }))
   fireEvent(document, new Event('visibilitychange'))
   expect(screen.getByRole('textbox')).toHaveValue('he habla')
   await user.type(screen.getByRole('textbox'), 'do')

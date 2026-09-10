@@ -119,7 +119,7 @@ for (const viewport of [
     await page.getByRole('button', { name: 'Grammar', exact: true }).click()
     await settleAnimations(page)
     const resume = (await page
-      .getByRole('button', { name: 'Continue' })
+      .getByRole('button', { name: 'Resume practice' })
       .boundingBox())!
     const fresh = (await page
       .getByRole('button', { name: 'Start new' })
@@ -136,7 +136,7 @@ for (const viewport of [
       path: `test-results/grammar-${viewport.width}-resume.png`,
       fullPage: true,
     })
-    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: 'Resume practice' }).click()
     await expect(page.getByRole('textbox')).toHaveValue('habl')
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
     await expect(input).toBeFocused()
@@ -513,7 +513,7 @@ for (const topic of ['preterite', 'perfect'] as const) {
     await expect.poll(plays).toBeGreaterThan(afterReplay)
     // Interrupt before grading so setup predicts the same already-warmed round.
     await page.getByRole('button', { name: 'Grammar' }).click()
-    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: 'Resume practice' }).click()
     await page.getByRole('button', { name: 'Jolito home' }).click()
     await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
     const demo = page.getByRole('button', { name: /explore demo deck/i })

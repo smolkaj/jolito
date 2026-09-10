@@ -24,9 +24,11 @@ for (const width of [320, 393, 768, 1024, 1280]) {
     await page
       .getByRole('combobox', { name: 'Tense' })
       .selectOption('preterite')
-    await expect(page.getByRole('button', { name: 'Continue' })).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: 'Resume practice' }),
+    ).toHaveCount(0)
     await page.getByRole('combobox', { name: 'Tense' }).selectOption('perfect')
-    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: 'Resume practice' }).click()
     await expect(page.getByRole('textbox')).toHaveValue('he habla')
     await page.getByRole('textbox').press('Enter')
     await expect(page.locator('.expected-row')).toContainText('he hablado')

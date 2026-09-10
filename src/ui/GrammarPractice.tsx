@@ -132,7 +132,7 @@ export function GrammarPractice({
         <div className="grammar-start-row">
           {canResume && (
             <button className="primary-button" onClick={practice.resume}>
-              Continue
+              Resume practice
             </button>
           )}
           <button
