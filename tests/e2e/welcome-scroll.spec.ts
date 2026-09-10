@@ -61,8 +61,17 @@ test('welcome owns snapping through navigation, resize, keyboard input and teard
   await welcome.focus()
   await page.keyboard.press('End')
   await expect(start).toBeInViewport()
-  // Visibility can become true mid-animation; finish this trip before Home.
-  await atWhy()
+  // End targets the bottom, which can be past the snap point for a long story.
+  // Visibility becomes true mid-animation; finish this trip before Home.
+  await expect
+    .poll(() =>
+      welcome.evaluate((element) =>
+        Math.abs(
+          element.scrollHeight - element.clientHeight - element.scrollTop,
+        ),
+      ),
+    )
+    .toBeLessThanOrEqual(1)
   await page.keyboard.press('Home')
   await atTop()
   await cue.click()
