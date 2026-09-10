@@ -100,9 +100,12 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.grammar-blank,
+.grammar-verb-cue {
+  color: var(--rosa-dark);
+}
 .grammar-blank {
   display: inline;
-  color: var(--rosa-dark);
   border-bottom: 2px solid var(--rosa);
   padding: 0 4px 2px;
 }
@@ -115,7 +118,6 @@
   margin: 0;
   font-size: clamp(30px, 4vw, 40px);
   font-weight: 700;
-  color: var(--ink);
 }
 .grammar-explanation {
   font-size: 15px;
