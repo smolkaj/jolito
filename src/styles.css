@@ -575,14 +575,27 @@ summary:focus-visible,
 /* Keep snap gestures out of Safari's root viewport: its browser chrome can
    cancel smooth scrolling and restore stale snap positions (WebKit 245722). */
 .welcome-page {
+  --welcome-gutter: clamp(20px, 5vw, 80px);
   height: 100dvh;
-  min-height: 0;
-  display: block;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scroll-behavior: smooth;
   scroll-snap-type: y mandatory;
   background: var(--paper);
+}
+
+.welcome-panel {
+  min-height: 100%;
+  padding-right: max(var(--welcome-gutter), env(safe-area-inset-right));
+  padding-left: max(var(--welcome-gutter), env(safe-area-inset-left));
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.welcome-intro {
+  display: flex;
+  flex-direction: column;
+  padding-top: max(16px, env(safe-area-inset-top));
 }
 
 .welcome-page .lede {
@@ -591,13 +604,13 @@ summary:focus-visible,
 
 .welcome-hero {
   width: min(1080px, 100%);
-  min-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 46px);
+  flex: 1;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: clamp(16px, 2.5vh, 32px) 0 20px;
+  padding: clamp(16px, 2.5vh, 32px) 0 max(20px, env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -1104,28 +1117,13 @@ summary:focus-visible,
 }
 
 /* Welcome "Why Jolito?" Editorial Fold */
-.welcome-page .topbar {
-  scroll-snap-align: start;
-  scroll-margin-top: max(16px, env(safe-area-inset-top));
-}
-
 .welcome-why {
-  min-height: 100dvh;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  scroll-margin-top: 0;
-  margin: 0 calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-right)))
-    calc(-1 * max(40px, env(safe-area-inset-bottom)))
-    calc(-1 * max(clamp(20px, 5vw, 80px), env(safe-area-inset-left)));
-  padding: clamp(48px, 8vh, 80px)
-    max(clamp(20px, 5vw, 80px), env(safe-area-inset-right))
-    clamp(48px, 8vh, 80px)
-    max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
+  padding-top: max(clamp(48px, 8vh, 80px), env(safe-area-inset-top));
+  padding-bottom: max(clamp(48px, 8vh, 80px), env(safe-area-inset-bottom));
   background: linear-gradient(
     180deg,
     var(--paper-subtle) 0%,
@@ -1268,9 +1266,6 @@ summary:focus-visible,
 @media (max-height: 520px) {
   .welcome-page {
     scroll-snap-type: none;
-  }
-  .welcome-why {
-    min-height: auto;
   }
 }
 
@@ -2762,14 +2757,17 @@ kbd {
     height: 24px;
   }
 
+  .welcome-page {
+    --welcome-gutter: 16px;
+  }
+
+  .welcome-intro {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
   .welcome-hero {
-    min-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 32px);
     padding-top: 14px;
-    padding-bottom: 28px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
 
   .welcome-hero-main {
@@ -2826,20 +2824,8 @@ kbd {
   }
 
   .welcome-why {
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    scroll-margin-top: 0;
-    margin: 0 calc(-1 * max(16px, env(safe-area-inset-right)))
-      calc(-1 * max(28px, env(safe-area-inset-bottom)))
-      calc(-1 * max(16px, env(safe-area-inset-left)));
-    padding: 32px max(16px, env(safe-area-inset-right))
-      max(28px, env(safe-area-inset-bottom))
-      max(16px, env(safe-area-inset-left));
+    padding-top: max(32px, env(safe-area-inset-top));
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
 
   .welcome-mascot-img {
