@@ -951,6 +951,7 @@ export function App({
   )
   const grammarResetRef = useRef<() => void>(() => {})
   const [view, setView] = useState<View>(initialResolved.view)
+  const welcomeRef = useRef<HTMLElement>(null)
   const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
 
   useEffect(() => {
@@ -968,9 +969,7 @@ export function App({
       return undefined
     }
     const timer = window.setTimeout(() => {
-      document
-        .getElementById('why-jolito')
-        ?.scrollIntoView({ behavior: 'smooth' })
+      document.getElementById('why-jolito')?.scrollIntoView()
     }, 50)
     return () => window.clearTimeout(timer)
   }, [view])
@@ -1598,11 +1597,9 @@ export function App({
       if (nextView === 'welcome') {
         resetPromptState()
         if (isWhyJolitoHash(currentHash)) {
-          document
-            .getElementById('why-jolito')
-            ?.scrollIntoView({ behavior: 'smooth' })
+          document.getElementById('why-jolito')?.scrollIntoView()
         } else {
-          window.scrollTo({ top: 0, behavior: 'smooth' })
+          welcomeRef.current?.scrollTo({ top: 0 })
         }
       } else if (nextView === 'review') {
         if (queueRef.current.length === 0) {
@@ -2249,7 +2246,7 @@ export function App({
   if (view === 'welcome') {
     return (
       <>
-        <main className="app-shell welcome-page">
+        <main ref={welcomeRef} className="app-shell welcome-page" tabIndex={0}>
           <nav className="topbar" aria-label="Main navigation">
             <Brand />
             <div className="nav-actions" data-nosnippet>
@@ -2388,9 +2385,7 @@ export function App({
                       '#why-jolito',
                     )
                   }
-                  document
-                    .getElementById('why-jolito')
-                    ?.scrollIntoView({ behavior: 'smooth' })
+                  document.getElementById('why-jolito')?.scrollIntoView()
                 }}
                 aria-label="Scroll down to explore Why Jolito"
               >
@@ -2470,7 +2465,7 @@ export function App({
                     if (isWhyJolitoHash(window.location.hash)) {
                       window.history.pushState({ view: 'welcome' }, '', '#/')
                     }
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                    welcomeRef.current?.scrollTo({ top: 0 })
                   }}
                 >
                   Start learning <span aria-hidden="true">↑</span>

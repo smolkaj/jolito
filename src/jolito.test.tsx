@@ -5300,7 +5300,7 @@ describe('Jolito', () => {
         '',
         '#why-jolito',
       )
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith()
       scrollIntoViewSpy.mockRestore()
       pushStateSpy.mockRestore()
 
@@ -5348,14 +5348,14 @@ describe('Jolito', () => {
       // Clicking start learning smooth-scrolls back to the top and resets hash if at #why-jolito
       window.location.hash = '#why-jolito'
       const scrollToSpy = vi
-        .spyOn(window, 'scrollTo')
+        .spyOn(screen.getByRole('main'), 'scrollTo')
         .mockImplementation(() => {})
       const pushStateSpy2 = vi
         .spyOn(window.history, 'pushState')
         .mockImplementation(() => {})
       await user.click(startBtn)
       expect(pushStateSpy2).toHaveBeenCalledWith({ view: 'welcome' }, '', '#/')
-      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0 })
       scrollToSpy.mockRestore()
       pushStateSpy2.mockRestore()
     })
@@ -5374,21 +5374,21 @@ describe('Jolito', () => {
         .mockImplementation(() => {})
 
       vi.advanceTimersByTime(100)
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith()
 
       // Simulating popstate back to #/ triggers scrollTo top
       const scrollToSpy = vi
-        .spyOn(window, 'scrollTo')
+        .spyOn(screen.getByRole('main'), 'scrollTo')
         .mockImplementation(() => {})
       window.location.hash = '#/'
       window.dispatchEvent(new PopStateEvent('popstate'))
 
-      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0 })
 
       // Simulating popstate forward to #/why-jolito triggers scrollIntoView
       window.location.hash = '#/why-jolito'
       window.dispatchEvent(new PopStateEvent('popstate'))
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith()
 
       scrollIntoViewSpy.mockRestore()
       scrollToSpy.mockRestore()

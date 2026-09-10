@@ -227,7 +227,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await scrollCue.click()
     await expect(page).toHaveURL(/#why-jolito$/)
     await expect
-      .poll(async () => page.evaluate(() => window.scrollY))
+      .poll(async () =>
+        page.locator('.welcome-page').evaluate((element) => element.scrollTop),
+      )
       .toBeGreaterThan(100)
     await page.waitForTimeout(400)
 
@@ -252,7 +254,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(startBtn).toBeVisible()
     await startBtn.click()
     await expect
-      .poll(async () => page.evaluate(() => window.scrollY))
+      .poll(async () =>
+        page.locator('.welcome-page').evaluate((element) => element.scrollTop),
+      )
       .toBeLessThanOrEqual(5)
   })
 
