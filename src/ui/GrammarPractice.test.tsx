@@ -10,7 +10,7 @@ import { scheduleReview, DAY } from '../domain/card'
 
 async function begin() {
   const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: 'New round' }))
+  await user.click(screen.getByRole('button', { name: 'Start practice' }))
   return user
 }
 
@@ -31,7 +31,7 @@ describe('grammar practice in Jolito', () => {
     expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
     fireEvent(document, new Event('visibilitychange'))
     expect(services.mockSpeaker.spoken).toEqual([prompt, prompt])
-    await user.click(screen.getByRole('button', { name: 'Resume round' }))
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
     expect(screen.getByRole('textbox')).toHaveValue('habl')
     expect(services.mockSpeaker.spoken).toEqual([prompt, prompt, prompt])
     await user.click(screen.getByRole('button', { name: 'Play prompt audio' }))
@@ -61,7 +61,7 @@ describe('grammar practice in Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
     expect(
-      screen.queryByRole('button', { name: 'Resume round' }),
+      screen.queryByRole('button', { name: 'Continue' }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByText(/Conjugation reference|8 forms/),
@@ -69,11 +69,11 @@ describe('grammar practice in Jolito', () => {
     const user = await begin()
     await user.type(screen.getByRole('textbox'), 'habl')
     await user.click(screen.getByRole('button', { name: 'Grammar' }))
-    await user.click(screen.getByRole('button', { name: 'Resume round' }))
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
     expect(screen.getByRole('textbox')).toHaveValue('habl')
     await user.click(screen.getByRole('button', { name: 'Grammar' }))
     await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
-    await user.click(screen.getByRole('button', { name: 'New round' }))
+    await user.click(screen.getByRole('button', { name: 'Start new' }))
     expect(screen.getByRole('textbox')).toHaveValue('')
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'En el camino, yo … una idea.',
@@ -167,7 +167,7 @@ describe('grammar practice in Jolito', () => {
         screen.getByRole('combobox', { name: 'Tense' }),
         topic,
       )
-      await user.click(screen.getByRole('button', { name: 'New round' }))
+      await user.click(screen.getByRole('button', { name: 'Start practice' }))
       const card = createGrammarCards(0, topic)[0]!
       await user.type(screen.getByRole('textbox'), 'habl')
       const prompt = screen.getByRole('heading', { level: 1 }).textContent
@@ -302,7 +302,7 @@ describe('grammar practice in Jolito', () => {
       const stops = services.mockSpeaker.stopCount
       await user.click(screen.getByRole('button', { name: 'Grammar' }))
       expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
-      await user.click(screen.getByRole('button', { name: 'Resume round' }))
+      await user.click(screen.getByRole('button', { name: 'Continue' }))
       expect(screen.getByRole('status')).toBeVisible()
       await user.click(screen.getByRole('button', { name: 'Jolito home' }))
       await practiceGrammar(user)
@@ -369,7 +369,7 @@ describe('grammar practice in Jolito', () => {
     })
     expect(screen.getByRole('heading', { name: 'Grammar' })).toBeVisible()
     expect(
-      screen.queryByRole('button', { name: /Resume round/ }),
+      screen.queryByRole('button', { name: /Continue/ }),
     ).not.toBeInTheDocument()
   })
 

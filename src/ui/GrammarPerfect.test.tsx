@@ -14,7 +14,7 @@ it('keeps a perfecto draft through tense selection and interruptions, then grade
     'perfect',
   )
   expect(screen.getByText('Spanish present perfect')).toBeVisible()
-  await user.click(screen.getByRole('button', { name: 'New round' }))
+  await user.click(screen.getByRole('button', { name: 'Start practice' }))
   await user.type(screen.getByRole('textbox'), 'he habla')
   await user.click(screen.getByRole('button', { name: 'Grammar' }))
   await user.selectOptions(
@@ -22,13 +22,13 @@ it('keeps a perfecto draft through tense selection and interruptions, then grade
     'preterite',
   )
   expect(
-    screen.queryByRole('button', { name: 'Resume round' }),
+    screen.queryByRole('button', { name: 'Continue' }),
   ).not.toBeInTheDocument()
   await user.selectOptions(
     screen.getByRole('combobox', { name: 'Tense' }),
     'perfect',
   )
-  await user.click(screen.getByRole('button', { name: 'Resume round' }))
+  await user.click(screen.getByRole('button', { name: 'Continue' }))
   fireEvent(document, new Event('visibilitychange'))
   expect(screen.getByRole('textbox')).toHaveValue('he habla')
   await user.type(screen.getByRole('textbox'), 'do')

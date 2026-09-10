@@ -120,7 +120,7 @@ for (const width of [320, 393]) {
           await page
             .getByRole('combobox', { name: 'Tense' })
             .selectOption('perfect')
-          await page.getByRole('button', { name: 'New round' }).click()
+          await page.getByRole('button', { name: 'Start practice' }).click()
         }
         await page.getByRole('textbox').fill(answer!)
         await page.getByRole('textbox').press('Enter')

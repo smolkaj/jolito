@@ -3431,7 +3431,7 @@ export function App({
                   className="text-button"
                   onClick={grammarPractice.choose}
                 >
-                  Grammar
+                  <span aria-hidden="true">←</span> Grammar
                 </button>
               )
             ) : (
