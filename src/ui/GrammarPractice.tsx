@@ -2,7 +2,11 @@ import type { AppServices } from '../application/ports'
 import { type Grade } from '../domain/card'
 import { grammarContext, grammarQueue } from '../domain/grammar'
 import { compareAnswer } from '../domain/answer'
-import { grammarFamilies, preteriteVerbs } from '../domain/grammar-content'
+import {
+  grammarTopics,
+  grammarVerb,
+  type GrammarTopic,
+} from '../domain/grammar-catalog'
 import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
 import { PracticeCard } from './PracticeCard'
@@ -25,7 +29,8 @@ export function GrammarPractice({
   signedIn: boolean
   onSignIn: () => void
 }) {
-  const { mode, current, session, focus } = practice
+  const { mode, current, session, focus, topic, canResume } = practice
+  const content = grammarTopics[topic]
   const context = current ? grammarContext(current) : undefined
   const audio = useStudyAudio({
     speaker: services.speaker,
@@ -51,9 +56,11 @@ export function GrammarPractice({
   const now = services.clock.now()
   const focusedCards = practice.available.filter(
     (card) =>
-      focus === 'mixed' || preteriteVerbs[card.grammar.verb].family === focus,
+      card.grammar.topic === topic &&
+      (focus === 'mixed' ||
+        grammarVerb(topic, card.grammar.verb)!.family === focus),
   )
-  const nextRound = grammarQueue(focusedCards, now, focus)
+  const nextRound = grammarQueue(focusedCards, now, focus, topic)
   const nextDue = Math.min(...focusedCards.map((card) => card.schedule.dueAt))
   const nextReview =
     nextRound.length === 0 && Number.isFinite(nextDue)
@@ -66,10 +73,26 @@ export function GrammarPractice({
     return (
       <section className="grammar-home" aria-labelledby="grammar-title">
         <header className="grammar-heading">
-          <h1 id="grammar-title" lang="es">
-            Pretérito indefinido
-          </h1>
-          <p className="grammar-intro">Spanish simple past</p>
+          <h1 id="grammar-title">Grammar</h1>
+          <label htmlFor="grammar-topic" className="sr-only">
+            Tense
+          </label>
+          <select
+            id="grammar-topic"
+            className="pill-select grammar-topic"
+            lang="es"
+            value={topic}
+            onChange={(event) =>
+              practice.setTopic(event.target.value as GrammarTopic)
+            }
+          >
+            {(Object.keys(grammarTopics) as GrammarTopic[]).map((topic) => (
+              <option key={topic} value={topic}>
+                {grammarTopics[topic].title}
+              </option>
+            ))}
+          </select>
+          <p className="grammar-intro">{content.description}</p>
         </header>
         <fieldset className="grammar-focus">
           <legend className="sr-only">Patterns</legend>
@@ -87,7 +110,7 @@ export function GrammarPractice({
             </span>
           </label>
           <div className="grammar-families">
-            {grammarFamilies.map((family) => (
+            {content.families.map((family) => (
               <label
                 key={family.id}
                 className={`flat-choice ${focus === family.id ? 'is-selected' : ''}`}
@@ -107,15 +130,13 @@ export function GrammarPractice({
           </div>
         </fieldset>
         <div className="grammar-start-row">
-          {session.queue.length > 0 && (
+          {canResume && (
             <button className="primary-button" onClick={practice.resume}>
               Resume round
             </button>
           )}
           <button
-            className={
-              session.queue.length > 0 ? 'secondary-button' : 'primary-button'
-            }
+            className={canResume ? 'secondary-button' : 'primary-button'}
             onClick={practice.start}
             disabled={nextRound.length === 0}
           >
@@ -144,7 +165,7 @@ export function GrammarPractice({
                 label: `Practice next ${nextRound.length}`,
                 onClick: practice.start,
               }
-            : { label: 'Choose patterns', onClick: practice.choose }
+            : { label: 'Choose tense', onClick: practice.choose }
         }
         onHome={onHome}
       >

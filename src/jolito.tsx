@@ -3102,15 +3102,12 @@ export function App({
                 ) : (
                   vocabularyCards.length > 0 && (
                     <div className="deck-sort-wrap">
-                      <label
-                        htmlFor="deck-sort-select"
-                        className="deck-sort-label"
-                      >
+                      <label htmlFor="pill-select" className="deck-sort-label">
                         Sort
                       </label>
                       <select
-                        id="deck-sort-select"
-                        className="deck-sort-select"
+                        id="pill-select"
+                        className="pill-select"
                         value={deckSortOrder}
                         onChange={(e) =>
                           setDeckSortOrder(e.target.value as DeckSortOrder)
@@ -3434,7 +3431,7 @@ export function App({
                   className="text-button"
                   onClick={grammarPractice.choose}
                 >
-                  Patterns
+                  Grammar
                 </button>
               )
             ) : (

@@ -72,6 +72,9 @@ content and capabilities, while their session hooks own scheduling and persisten
 Domain locale selection also owns content language: `PracticeCard` derives the input
 and feedback language from its card, and `AnswerComparison` requires that language.
 Prompts declare their content language; English interface labels remain English.
+Grammar topics share one catalog for canonical forms, labels and pattern groups.
+Identity validation, queue selection and spoken contexts use this catalog; a new tense
+adds content rather than another session or audio implementation.
 
 Do not fork shared practice controls or override their geometry in mode-specific CSS.
 Compare corresponding states across modes when changing the shared experience. The

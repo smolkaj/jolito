@@ -86,7 +86,7 @@ export function parseDeckBackup(rawJson: string): ParseDeckBackupResult {
     }
   }
 
-  // Check 1: Envelope schema (version 1 with cards array)
+  // Check the versioned envelope before considering legacy formats.
   const envelopeResult = deckBackupEnvelopeSchema.safeParse(parsed)
   if (envelopeResult.success) {
     return {

@@ -88,7 +88,7 @@ for (const viewport of [
     await page.goto('/')
     await practiceGrammar(page)
     await expect(
-      page.getByRole('heading', { name: 'Pretérito indefinido' }),
+      page.getByRole('heading', { name: 'Grammar', exact: true }),
     ).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
@@ -116,7 +116,7 @@ for (const viewport of [
     await page.getByRole('button', { name: 'New round' }).click()
     const grammarLayout = await sessionLayout(page)
     await page.getByRole('textbox').fill('habl')
-    await page.getByRole('button', { name: 'Patterns', exact: true }).click()
+    await page.getByRole('button', { name: 'Grammar', exact: true }).click()
     await settleAnimations(page)
     const resume = (await page
       .getByRole('button', { name: 'Resume round' })
@@ -309,7 +309,7 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
         cards: { grammar?: unknown }[]
       },
   )
-  expect(saved.version).toBe(2)
+  expect(saved.version).toBe(3)
   expect(saved.cards.filter((card) => card.grammar)).toHaveLength(2)
 })
 
@@ -388,76 +388,88 @@ test('accent taps preserve the active input and selection across practice turns'
   }
 })
 
-test('grammar prepares neural voices for both contexts and retains them across interruption and offline recall', async ({
-  page,
-  context,
-}) => {
-  // A short valid WAV exercises the actual decode/cache/playback path without an external TTS dependency.
-  const wav = Buffer.alloc(44 + 1600)
-  wav.write('RIFF', 0)
-  wav.writeUInt32LE(wav.length - 8, 4)
-  wav.write('WAVEfmt ', 8)
-  wav.writeUInt32LE(16, 16)
-  wav.writeUInt16LE(1, 20)
-  wav.writeUInt16LE(1, 22)
-  wav.writeUInt32LE(8000, 24)
-  wav.writeUInt32LE(16000, 28)
-  wav.writeUInt16LE(2, 32)
-  wav.writeUInt16LE(16, 34)
-  wav.write('data', 36)
-  wav.writeUInt32LE(1600, 40)
-  await page.addInitScript(() => {
-    window.__speechSynthesisCalls = []
-    window.speechSynthesis.speak = (utterance) => {
-      window.__speechSynthesisCalls!.push({
-        text: utterance.text,
-        lang: utterance.lang,
-      })
+for (const topic of ['preterite', 'perfect'] as const) {
+  test(`${topic} prepares neural voices for both contexts and retains them across interruption and offline recall`, async ({
+    page,
+    context,
+  }) => {
+    // A short valid WAV exercises the actual decode/cache/playback path without an external TTS dependency.
+    const wav = Buffer.alloc(44 + 1600)
+    wav.write('RIFF', 0)
+    wav.writeUInt32LE(wav.length - 8, 4)
+    wav.write('WAVEfmt ', 8)
+    wav.writeUInt32LE(16, 16)
+    wav.writeUInt16LE(1, 20)
+    wav.writeUInt16LE(1, 22)
+    wav.writeUInt32LE(8000, 24)
+    wav.writeUInt32LE(16000, 28)
+    wav.writeUInt16LE(2, 32)
+    wav.writeUInt16LE(16, 34)
+    wav.write('data', 36)
+    wav.writeUInt32LE(1600, 40)
+    await page.addInitScript(() => {
+      window.__speechSynthesisCalls = []
+      window.speechSynthesis.speak = (utterance) => {
+        window.__speechSynthesisCalls!.push({
+          text: utterance.text,
+          lang: utterance.lang,
+        })
+      }
+      // The wrapper forwards the original receiver with apply below.
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      const start = AudioBufferSourceNode.prototype.start
+      AudioBufferSourceNode.prototype.start = function (...args) {
+        document.documentElement.dataset.neuralPlays = String(
+          Number(document.documentElement.dataset.neuralPlays ?? 0) + 1,
+        )
+        return start.apply(this, args)
+      }
+    })
+    let offline = false
+    let offlineRequests = 0
+    const fetched = new Map<string, Set<string>>()
+    await page.route('**/api/tts*', async (route) => {
+      if (offline) {
+        offlineRequests++
+        await route.abort('internetdisconnected')
+        return
+      }
+      const url = new URL(route.request().url())
+      const text = url.searchParams.get('text')!
+      const voices = fetched.get(text) ?? new Set<string>()
+      voices.add(url.searchParams.get('voice')!)
+      fetched.set(text, voices)
+      await route.fulfill({ contentType: 'audio/wav', body: wav })
+    })
+    await page.goto('/#/grammar')
+    await page.getByRole('combobox', { name: 'Tense' }).selectOption(topic)
+    const first = createGrammarCards(0, topic)[0]!
+    const initialContext = grammarContext(first)
+    const repeatContext = grammarContext({
+      ...first,
+      schedule: { ...first.schedule, reviews: 1 },
+    })
+    const original = initialContext.completed
+    const repeated = repeatContext.completed
+    const spokenPrompt = initialContext.spokenPrompt
+    for (const text of [
+      original,
+      repeated,
+      spokenPrompt,
+      repeatContext.spokenPrompt,
+    ]) {
+      await expect
+        .poll(() => [...(fetched.get(text) ?? [])].sort())
+        .toEqual(['es-MX-DaliaNeural', 'es-MX-JorgeNeural'])
     }
-    // The wrapper forwards the original receiver with apply below.
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    const start = AudioBufferSourceNode.prototype.start
-    AudioBufferSourceNode.prototype.start = function (...args) {
-      document.documentElement.dataset.neuralPlays = String(
-        Number(document.documentElement.dataset.neuralPlays ?? 0) + 1,
-      )
-      return start.apply(this, args)
-    }
-  })
-  let offline = false
-  let offlineRequests = 0
-  const fetched = new Map<string, Set<string>>()
-  await page.route('**/api/tts*', async (route) => {
-    if (offline) {
-      offlineRequests++
-      await route.abort('internetdisconnected')
-      return
-    }
-    const url = new URL(route.request().url())
-    const text = url.searchParams.get('text')!
-    const voices = fetched.get(text) ?? new Set<string>()
-    voices.add(url.searchParams.get('voice')!)
-    fetched.set(text, voices)
-    await route.fulfill({ contentType: 'audio/wav', body: wav })
-  })
-  await page.goto('/#/grammar')
-  const original = 'Anoche yo hablé con la vecina.'
-  const repeated = 'Después de cenar, yo hablé de la película.'
-  const spokenPrompt = 'Anoche yo … con la vecina.'
-  for (const text of [
-    original,
-    repeated,
-    spokenPrompt,
-    'Después de cenar, yo … de la película.',
-  ]) {
-    await expect
-      .poll(() => [...(fetched.get(text) ?? [])].sort())
-      .toEqual(['es-MX-DaliaNeural', 'es-MX-JorgeNeural'])
-  }
-  // Count unique grammar entries in the neural cache only: the service-worker shell
-  // also caches TTS URLs, but cannot establish neural playback readiness.
-  const roundTexts = grammarQueue(createGrammarCards(0), 0, 'mixed').flatMap(
-    (card) =>
+    // Count unique grammar entries in the neural cache only: the service-worker shell
+    // also caches TTS URLs, but cannot establish neural playback readiness.
+    const roundTexts = grammarQueue(
+      createGrammarCards(0, topic),
+      0,
+      'mixed',
+      topic,
+    ).flatMap((card) =>
       [0, 1].flatMap((reviews) => {
         const context = grammarContext({
           ...card,
@@ -465,80 +477,83 @@ test('grammar prepares neural voices for both contexts and retains them across i
         })
         return [context.spokenPrompt, context.completed]
       }),
-  )
-  const cachedGrammar = () =>
-    page.evaluate(async (texts) => {
-      const entries = await Promise.all(
-        (await caches.keys())
-          .filter((key) => key.startsWith('jolito-audio-'))
-          .map(async (key) => (await caches.open(key)).keys()),
-      )
-      return new Set(
-        entries
-          .flat()
-          .filter((request) =>
-            texts.includes(new URL(request.url).searchParams.get('text') ?? ''),
-          )
-          .map((request) => request.url),
-      ).size
-    }, roundTexts)
-  await expect.poll(cachedGrammar).toBe(64)
-  await page.getByRole('button', { name: 'New round' }).click()
-  const plays = () =>
-    page.evaluate(() =>
-      Number(document.documentElement.dataset.neuralPlays ?? 0),
     )
-  await expect.poll(plays).toBeGreaterThan(0)
-  const afterAutoplay = await plays()
-  // An intentional replay occurs after the 80ms double-activation window.
-  await page.clock.setFixedTime(Date.now() + 1000)
-  await page.getByRole('textbox').fill('habl')
-  await page.getByRole('textbox').press('Control+Space')
-  await expect.poll(plays).toBeGreaterThan(afterAutoplay)
-  await expect(page.getByRole('textbox')).toHaveValue('habl')
-  const afterReplay = await plays()
-  await page.getByRole('textbox').press('Enter')
-  await expect.poll(plays).toBeGreaterThan(afterReplay)
-  // Interrupt before grading so setup predicts the same already-warmed round.
-  await page.getByRole('button', { name: 'Patterns' }).click()
-  await page.getByRole('button', { name: 'Resume round' }).click()
-  await page.getByRole('button', { name: 'Jolito home' }).click()
-  await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
-  const demo = page.getByRole('button', { name: /explore demo deck/i })
-  if (await demo.isVisible()) await demo.click()
-  await page.getByRole('checkbox', { name: /select card aguacate/i }).click()
-  await page.getByRole('button', { name: /delete selected \(1\)/i }).click()
-  await page.getByRole('button', { name: /^delete card$/i }).click()
-  await expect(
-    page.getByRole('checkbox', { name: /select card aguacate/i }),
-  ).toHaveCount(0)
-  await context.setOffline(true)
-  offline = true
-  await page.getByRole('button', { name: 'Jolito home' }).click()
-  await practiceGrammar(page)
-  await expect(page.getByRole('status')).toBeVisible()
-  await expect.poll(cachedGrammar).toBe(64)
-  await page.keyboard.press('1')
-  for (let turn = 0; turn < 5; turn++) {
-    await page.getByRole('button', { name: 'Play prompt audio' }).click()
+    const cachedGrammar = () =>
+      page.evaluate(async (texts) => {
+        const entries = await Promise.all(
+          (await caches.keys())
+            .filter((key) => key.startsWith('jolito-audio-'))
+            .map(async (key) => (await caches.open(key)).keys()),
+        )
+        return new Set(
+          entries
+            .flat()
+            .filter((request) =>
+              texts.includes(
+                new URL(request.url).searchParams.get('text') ?? '',
+              ),
+            )
+            .map((request) => request.url),
+        ).size
+      }, roundTexts)
+    await expect.poll(cachedGrammar).toBe(64)
+    await page.getByRole('button', { name: 'New round' }).click()
+    const plays = () =>
+      page.evaluate(() =>
+        Number(document.documentElement.dataset.neuralPlays ?? 0),
+      )
+    await expect.poll(plays).toBeGreaterThan(0)
+    const afterAutoplay = await plays()
+    // An intentional replay occurs after the 80ms double-activation window.
+    await page.clock.setFixedTime(Date.now() + 1000)
+    await page.getByRole('textbox').fill('habl')
+    await page.getByRole('textbox').press('Control+Space')
+    await expect.poll(plays).toBeGreaterThan(afterAutoplay)
+    await expect(page.getByRole('textbox')).toHaveValue('habl')
+    const afterReplay = await plays()
+    await page.getByRole('textbox').press('Enter')
+    await expect.poll(plays).toBeGreaterThan(afterReplay)
+    // Interrupt before grading so setup predicts the same already-warmed round.
+    await page.getByRole('button', { name: 'Grammar' }).click()
+    await page.getByRole('button', { name: 'Resume round' }).click()
+    await page.getByRole('button', { name: 'Jolito home' }).click()
+    await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
+    const demo = page.getByRole('button', { name: /explore demo deck/i })
+    if (await demo.isVisible()) await demo.click()
+    await page.getByRole('checkbox', { name: /select card aguacate/i }).click()
+    await page.getByRole('button', { name: /delete selected \(1\)/i }).click()
+    await page.getByRole('button', { name: /^delete card$/i }).click()
+    await expect(
+      page.getByRole('checkbox', { name: /select card aguacate/i }),
+    ).toHaveCount(0)
+    await context.setOffline(true)
+    offline = true
+    await page.getByRole('button', { name: 'Jolito home' }).click()
+    await practiceGrammar(page)
+    await expect(page.getByRole('status')).toBeVisible()
+    await expect.poll(cachedGrammar).toBe(64)
+    await page.keyboard.press('1')
+    for (let turn = 0; turn < 5; turn++) {
+      await page.getByRole('button', { name: 'Play prompt audio' }).click()
+      const before = await plays()
+      await page.getByRole('textbox').press('Enter')
+      await expect.poll(plays).toBeGreaterThan(before)
+      await page.keyboard.press('4')
+    }
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      repeatContext.sentence.replace('___', '…'),
+    )
     const before = await plays()
     await page.getByRole('textbox').press('Enter')
     await expect.poll(plays).toBeGreaterThan(before)
+    expect(await page.evaluate(() => window.__speechSynthesisCalls)).toEqual([])
+    expect(offlineRequests).toBe(0)
+    // Leaving before the scheduled reveal audio fires must cancel it.
     await page.keyboard.press('4')
-  }
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    'Después de cenar, yo',
-  )
-  const before = await plays()
-  await page.getByRole('textbox').press('Enter')
-  await expect.poll(plays).toBeGreaterThan(before)
-  expect(await page.evaluate(() => window.__speechSynthesisCalls)).toEqual([])
-  expect(offlineRequests).toBe(0)
-  // Leaving before the scheduled reveal audio fires must cancel it.
-  await page.keyboard.press('4')
-  await page.getByRole('textbox').press('Enter')
-  await page.getByRole('button', { name: 'Jolito home' }).click()
-  const ended = await plays()
-  await page.waitForTimeout(250)
-  expect(await plays()).toBe(ended)
-})
+    await page.getByRole('textbox').press('Enter')
+    await page.getByRole('button', { name: 'Jolito home' }).click()
+    const ended = await plays()
+    await page.waitForTimeout(250)
+    expect(await plays()).toBe(ended)
+  })
+}
