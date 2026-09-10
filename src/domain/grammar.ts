@@ -84,7 +84,12 @@ export function grammarContext(card: GrammarCard) {
     spokenPrompt: sentence.replace('___', '…'),
     completed: sentence.replace('___', card.answer),
     translation,
-    explanation: 'note' in verb ? verb.note : family.rule,
+    explanation:
+      family.id === 'regular'
+        ? `Replace -${card.grammar.verb.slice(-2)} with -${verb.forms[person]!.slice(card.grammar.verb.length - 2)}.`
+        : 'note' in verb
+          ? verb.note
+          : family.rule,
   }
 }
 
