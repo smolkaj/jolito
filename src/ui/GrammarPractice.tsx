@@ -1,7 +1,6 @@
 import type { AppServices } from '../application/ports'
 import { type Grade } from '../domain/card'
 import { grammarContext, grammarQueue } from '../domain/grammar'
-import { compareAnswer } from '../domain/answer'
 import {
   grammarTopics,
   grammarVerb,
@@ -226,10 +225,7 @@ export function GrammarPractice({
       placeholder="Type the verb…"
       accents
       error={practice.error}
-    >
-      {!compareAnswer(session.answer, current.answer).isExact && (
-        <p className="grammar-explanation">{context.explanation}</p>
-      )}
-    </PracticeCard>
+      correctionRule={context.explanation}
+    />
   )
 }
