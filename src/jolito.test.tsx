@@ -5229,8 +5229,11 @@ describe('Jolito', () => {
         expect.arrayContaining([
           { text: 'plátano', locale: 'es-MX' },
           { text: 'banana', locale: 'en-US' },
-          { text: 'Ayer yo hablé con la vecina.', locale: 'es-MX' },
-          { text: 'El sábado yo hablé de la película.', locale: 'es-MX' },
+          { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
+          {
+            text: 'Después de cenar, yo hablé de la película.',
+            locale: 'es-MX',
+          },
         ]),
       )
       expect(prunedActiveItems).not.toContainEqual({
@@ -5280,8 +5283,11 @@ describe('Jolito', () => {
         expect.arrayContaining([
           { text: 'palta', locale: 'es-MX' },
           { text: 'avocado', locale: 'en-US' },
-          { text: 'Ayer yo hablé con la vecina.', locale: 'es-MX' },
-          { text: 'El sábado yo hablé de la película.', locale: 'es-MX' },
+          { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
+          {
+            text: 'Después de cenar, yo hablé de la película.',
+            locale: 'es-MX',
+          },
         ]),
       )
       expect(lastPruned).not.toContainEqual({

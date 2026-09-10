@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DAY, scheduleReview, studyCardCollectionSchema } from './card'
-import {
-  createGrammarCards,
-  grammarContext,
-  grammarQueue,
-  grammarStats,
-} from './grammar'
+import { createGrammarCards, grammarContext, grammarQueue } from './grammar'
 import { preteriteVerbs, grammarFamilies } from './grammar-content'
 import { createStudyCards } from './card'
 const starterCards = createStudyCards(
@@ -146,7 +141,6 @@ describe('preterite practice contracts', () => {
     ).toBe(true)
     expect(cards[1]!.schedule.reviews).toBe(0)
     expect(grammarQueue([], now, 'mixed')).toEqual([])
-    expect(grammarStats(pool, now).introduced).toBe(2)
   })
 
   it('rotates contexts on delayed and in-session recall without changing the target skill', () => {
@@ -160,6 +154,73 @@ describe('preterite practice contracts', () => {
     )
     expect(grammarContext(reviewed).completed).toContain(card.answer)
     expect(reviewed.id).toBe(card.id)
+  })
+
+  it('varies authored sentence openings and makes omitted subjects recoverable', () => {
+    const cards = createGrammarCards(now)
+    const contexts = cards.flatMap((card) => [
+      grammarContext(card),
+      grammarContext({
+        ...card,
+        schedule: { ...card.schedule, reviews: 1 },
+      }),
+    ])
+    expect(
+      new Set(
+        contexts.map((context) =>
+          context.sentence.split(' ').slice(0, 2).join(' '),
+        ),
+      ).size,
+    ).toBeGreaterThan(12)
+    for (const context of contexts) {
+      expect(context.sentence.split('___')).toHaveLength(2)
+      expect(context.sentence + context.translation).not.toMatch(/[{}]/)
+    }
+    for (const card of cards) {
+      for (const reviews of [0, 1]) {
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
+        })
+        const words = context.sentence
+          .toLocaleLowerCase('es')
+          .match(/[\p{L}]+/gu)!
+        expect(words).not.toContain(card.answer)
+      }
+    }
+    const comer = cards.find(
+      (card) => card.grammar.verb === 'comer' && card.grammar.person === 1,
+    )!
+    expect(grammarContext(comer).sentence).toBe(
+      'Fuiste al mercado y ___ en un puesto de tacos.',
+    )
+    expect(grammarContext(comer).translation).toBe(
+      'You went to the market and ate at a taco stand.',
+    )
+    const comerYo = cards.find(
+      (card) => card.grammar.verb === 'comer' && card.grammar.person === 0,
+    )!
+    expect(grammarContext(comerYo).sentence).toBe(
+      'Fui al mercado y ___ en un puesto de tacos.',
+    )
+    expect(grammarContext(comerYo).translation).toBe(
+      'I went to the market and ate at a taco stand.',
+    )
+    const comerMarta = cards.find(
+      (card) => card.grammar.verb === 'comer' && card.grammar.person === 2,
+    )!
+    expect(grammarContext(comerMarta).sentence).toBe(
+      'Marta fue al mercado y ___ en un puesto de tacos.',
+    )
+    const ponerUstedes = cards.find(
+      (card) => card.grammar.verb === 'poner' && card.grammar.person === 4,
+    )!
+    expect(
+      grammarContext({
+        ...ponerUstedes,
+        schedule: { ...ponerUstedes.schedule, reviews: 1 },
+      }).sentence,
+    ).toBe('Ustedes llegaron a casa y ___ música para cocinar.')
   })
 
   it('keeps authored vocabulary distinct from grammar and rejects mismatched exercise identities or answers', () => {

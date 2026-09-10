@@ -1,39 +1,13 @@
-import { useState } from 'react'
 import type { AppServices } from '../application/ports'
 import { type Grade } from '../domain/card'
-import { grammarContext, grammarQueue, grammarStats } from '../domain/grammar'
-import {
-  grammarFamilies,
-  grammarPeople,
-  preteriteVerbs,
-  type PreteriteVerb,
-} from '../domain/grammar-content'
+import { grammarContext, grammarQueue } from '../domain/grammar'
+import { compareAnswer } from '../domain/answer'
+import { grammarFamilies, preteriteVerbs } from '../domain/grammar-content'
 import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
 import { PracticeCard } from './PracticeCard'
 import { SessionComplete } from './SessionComplete'
 import './grammar.css'
-
-function PatternReference({ verbId }: { verbId: PreteriteVerb }) {
-  const verb = preteriteVerbs[verbId]
-  return (
-    <table className="grammar-table">
-      <caption>
-        <span lang="es">{verbId}</span> · {verb.meaning}
-      </caption>
-      <tbody>
-        {grammarPeople.map((person, index) => (
-          <tr key={person}>
-            <th scope="row" lang="es">
-              {person}
-            </th>
-            <td lang="es">{verb.forms[index]}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )
-}
 
 export function GrammarPractice({
   practice,
@@ -51,7 +25,6 @@ export function GrammarPractice({
   onSignIn: () => void
 }) {
   const { mode, current, session, focus } = practice
-  const [referenceVerb, setReferenceVerb] = useState<PreteriteVerb>('hablar')
   const context = current ? grammarContext(current) : undefined
   const audio = useStudyAudio({
     speaker: services.speaker,
@@ -75,23 +48,24 @@ export function GrammarPractice({
     (card) =>
       focus === 'mixed' || preteriteVerbs[card.grammar.verb].family === focus,
   )
-  const stats = grammarStats(focusedCards, now)
   const nextRound = grammarQueue(focusedCards, now, focus)
-  const nextReview = Number.isFinite(stats.nextDue)
-    ? new Intl.DateTimeFormat(undefined, {
-        month: 'short',
-        day: 'numeric',
-      }).format(stats.nextDue)
-    : null
+  const nextDue = Math.min(...focusedCards.map((card) => card.schedule.dueAt))
+  const nextReview =
+    nextRound.length === 0 && Number.isFinite(nextDue)
+      ? new Intl.DateTimeFormat(undefined, {
+          month: 'short',
+          day: 'numeric',
+        }).format(nextDue)
+      : null
   if (mode === 'choose')
     return (
       <section className="grammar-home" aria-labelledby="grammar-title">
         <h1 id="grammar-title" lang="es">
           Pretérito
         </h1>
-        <p className="grammar-intro">Conjugate verbs in the past tense.</p>
+        <p className="grammar-intro">Spanish past tense</p>
         <fieldset className="grammar-focus">
-          <legend>Patterns</legend>
+          <legend className="sr-only">Patterns</legend>
           <label
             className={`grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
           >
@@ -126,63 +100,26 @@ export function GrammarPractice({
           </div>
         </fieldset>
         <div className="grammar-start-row">
+          {session.queue.length > 0 && (
+            <button className="primary-button" onClick={practice.resume}>
+              Resume round
+            </button>
+          )}
           <button
-            className="primary-button"
+            className={
+              session.queue.length > 0 ? 'secondary-button' : 'primary-button'
+            }
             onClick={practice.start}
             disabled={nextRound.length === 0}
           >
-            Practice pretérito <span aria-hidden="true">→</span>
+            New round
           </button>
-          <p>
-            {nextRound.length
-              ? `${nextRound.length} forms${stats.due ? ` · ${stats.due} due` : ''}`
-              : nextReview
-                ? `Next review: ${nextReview}`
-                : 'No forms due'}
-          </p>
         </div>
-        {session.queue.length > 0 && (
-          <button
-            className="text-button grammar-resume"
-            onClick={practice.resume}
-          >
-            Resume practice
-          </button>
+        {nextRound.length === 0 && (
+          <p className="grammar-availability">
+            {nextReview ? `Next review: ${nextReview}` : 'No forms due.'}
+          </p>
         )}
-        <details className="grammar-reference">
-          <summary>Conjugation reference</summary>
-          <p>
-            Use the pretérito for completed events:{' '}
-            <span lang="es">ayer, el sábado</span>. Accents matter:{' '}
-            <span lang="es">hablo</span> is “I speak”;{' '}
-            <span lang="es">habló</span> is “he/she spoke”.
-          </p>
-          <label htmlFor="reference-verb">Verb</label>
-          <select
-            id="reference-verb"
-            value={referenceVerb}
-            onChange={(event) =>
-              setReferenceVerb(event.target.value as PreteriteVerb)
-            }
-          >
-            {Object.entries(preteriteVerbs).map(([id, verb]) => (
-              <option key={id} value={id}>
-                {id} — {verb.meaning}
-              </option>
-            ))}
-          </select>
-          <p>
-            {
-              grammarFamilies.find(
-                (f) => f.id === preteriteVerbs[referenceVerb].family,
-              )!.rule
-            }
-          </p>
-          <PatternReference verbId={referenceVerb} />
-          <p className="grammar-note">
-            Mexican Spanish: <span lang="es">ustedes</span> for plural “you”.
-          </p>
-        </details>
       </section>
     )
 
@@ -255,11 +192,9 @@ export function GrammarPractice({
       accents
       error={practice.error}
     >
-      <details className="grammar-reveal-reference">
-        <summary>Conjugation</summary>
+      {!compareAnswer(session.answer, current.answer).isExact && (
         <p className="grammar-explanation">{context.explanation}</p>
-        <PatternReference verbId={current.grammar.verb} />
-      </details>
+      )}
     </PracticeCard>
   )
 }

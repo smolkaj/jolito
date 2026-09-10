@@ -9,11 +9,38 @@ import { scheduleReview, DAY } from '../domain/card'
 
 async function begin() {
   const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: 'Practice pretérito' }))
+  await user.click(screen.getByRole('button', { name: 'New round' }))
   return user
 }
 
 describe('grammar practice in Jolito', () => {
+  it('distinguishes resuming an answer from starting a fresh round', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    render(<App services={services} />)
+    expect(
+      screen.queryByRole('button', { name: 'Resume round' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/Conjugation reference|8 forms/),
+    ).not.toBeInTheDocument()
+    const user = await begin()
+    await user.type(screen.getByRole('textbox'), 'habl')
+    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('button', { name: 'Resume round' }))
+    expect(screen.getByRole('textbox')).toHaveValue('habl')
+    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
+    await user.click(screen.getByRole('button', { name: 'New round' }))
+    expect(screen.getByRole('textbox')).toHaveValue('')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'En el camino, yo … una idea.',
+    )
+    expect(
+      services.memoryCards.saved?.filter(isGrammarCard) ?? [],
+    ).toHaveLength(0)
+  })
+
   it('keeps vocabulary primary and grammar separate through practice, navigation, and reload', async () => {
     window.history.replaceState({}, '', '#/')
     const services = createTestServices()
@@ -22,7 +49,7 @@ describe('grammar practice in Jolito', () => {
     await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
     await begin()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Ayer yo',
+      'Anoche yo',
     )
     await user.type(
       screen.getByRole('textbox', { name: 'Your conjugation' }),
@@ -45,14 +72,14 @@ describe('grammar practice in Jolito', () => {
     )
     expect(screen.getByRole('textbox', { name: 'Your answer' })).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent(
-      'Ayer',
+      'Anoche',
     )
     app.unmount()
     window.history.replaceState({}, '', '#/grammar')
     render(<App services={services} />)
     await begin()
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent(
-      'Ayer yo … con la vecina.',
+      'Anoche yo … con la vecina.',
     )
   })
 
@@ -63,8 +90,8 @@ describe('grammar practice in Jolito', () => {
     const app = render(<App services={services} />)
     expect(services.mockSpeaker.prefetched).toEqual(
       expect.arrayContaining([
-        { text: 'Ayer yo hablé con la vecina.', locale: 'es-MX' },
-        { text: 'El sábado yo hablé de la película.', locale: 'es-MX' },
+        { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
+        { text: 'Después de cenar, yo hablé de la película.', locale: 'es-MX' },
       ]),
     )
     const user = await begin()
@@ -75,7 +102,7 @@ describe('grammar practice in Jolito', () => {
     await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
     expect(services.mockSpeaker.prefetched).toEqual(
       expect.arrayContaining([
-        { text: 'Ayer yo tuve una idea.', locale: 'es-MX' },
+        { text: 'En el camino, yo tuve una idea.', locale: 'es-MX' },
       ]),
     )
     app.unmount()
@@ -173,7 +200,7 @@ describe('grammar practice in Jolito', () => {
     await user.keyboard('{Enter}1')
     for (let index = 0; index < 5; index++) await user.keyboard('{Enter}4')
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'El sábado yo',
+      'Después de cenar, yo',
     )
     await user.keyboard('{Enter}4')
     for (let index = 0; index < 2; index++) await user.keyboard('{Enter}4')
@@ -209,7 +236,7 @@ describe('grammar practice in Jolito', () => {
       '0',
     )
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent(
-      'Ayer yo … con la vecina.',
+      'Anoche yo … con la vecina.',
     )
   })
 
@@ -223,7 +250,7 @@ describe('grammar practice in Jolito', () => {
       const stops = services.mockSpeaker.stopCount
       await user.click(screen.getByRole('button', { name: 'Patterns' }))
       expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
-      await user.click(screen.getByRole('button', { name: 'Resume practice' }))
+      await user.click(screen.getByRole('button', { name: 'Resume round' }))
       expect(screen.getByRole('status')).toBeVisible()
       await user.click(screen.getByRole('button', { name: 'Jolito home' }))
       await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
@@ -263,7 +290,7 @@ describe('grammar practice in Jolito', () => {
         services.mockSpeaker.prunedCalls.length - 1
       ],
     ).not.toContainEqual({
-      text: 'Ayer yo hablé con la vecina.',
+      text: 'Anoche yo hablé con la vecina.',
       locale: 'es-MX',
     })
     expect(
@@ -271,7 +298,7 @@ describe('grammar practice in Jolito', () => {
         services.mockSpeaker.prunedCalls.length - 1
       ],
     ).toContainEqual({
-      text: 'Ayer tú hablaste con la vecina.',
+      text: 'Anoche tú hablaste con la vecina.',
       locale: 'es-MX',
     })
     const played = [...services.mockSounds.played]
@@ -290,7 +317,7 @@ describe('grammar practice in Jolito', () => {
     })
     expect(screen.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
     expect(
-      screen.queryByRole('button', { name: /Resume practice/ }),
+      screen.queryByRole('button', { name: /Resume round/ }),
     ).not.toBeInTheDocument()
   })
 

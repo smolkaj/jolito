@@ -2,7 +2,7 @@
 
 Grammar and vocabulary should differ in what the learner recalls, not in how a
 practice session behaves. This audit compares setup, typed recall, exact/incorrect/
-empty answers, references, grading, interruption/resume, completion, and the next
+empty answers, corrective guidance, grading, interruption/resume, completion, and the next
 round at 320, 393, 768, 1024, and 1280px.
 
 ## Findings and architectural changes
@@ -19,7 +19,7 @@ round at 320, 393, 768, 1024, and 1280px.
 
 The architecture uses content slots and explicit capabilities rather than a second
 set of grammar controls. Grammar supplies its sentence, translation, accent entry
-and conjugation reference. Vocabulary supplies its prompt/direction, optional context
+and a corrective rule when needed. Vocabulary supplies its prompt/direction, optional context
 and edit/delete actions. Scheduling and persistence remain in the existing session
 hooks; presentation does not choose cards, save grades, or start its own audio engine.
 
@@ -29,7 +29,7 @@ hooks; presentation does not choose cards, save grades, or start its own audio e
   the learner's deck. Their content-management tasks are different.
 - A grammar prompt is an incomplete sentence. Playing its completed sentence before
   reveal would give away the answer, so only vocabulary has prompt replay.
-- Grammar requires Spanish accent entry and conjugation references. Vocabulary keeps
+- Grammar supplies Spanish accent entry and corrective grammar rules. Vocabulary keeps
   its authored context and card editing. Both use the same reveal and rating workflow.
 - Summaries say forms or cards. Guest vocabulary is a demo; grammar progress can be
   practiced locally and synced after sign-in, so its account copy describes progress.
@@ -60,7 +60,7 @@ teardown immobility. The audio lifecycle contract failed before shared pause han
 then covers active speech → interruption → resumed playback → navigation → teardown.
 Grammar integration also preserves completion through account/visibility interruptions
 and starts the next round with a fresh answer and progress bar. Existing real-cache
-neural/offline, accent touch, reference keyboard and background-sync contracts remain.
+neural/offline, accent touch, native keyboard and background-sync contracts remain.
 
 Future practice modes should compose `PracticeCard` and `SessionComplete` and use the
 common page branch. Mode CSS should style learning content, not override shared form,

@@ -48,331 +48,489 @@ export const grammarPeople = [
 
 type Verb = {
   family: Exclude<GrammarFocus, 'mixed'>
-  meaning: string
   forms: readonly [string, string, string, string, string]
   contexts: readonly [readonly [string, string], readonly [string, string]]
   note?: string
 }
 
-// Authored sentence tails work with all five grammatical people. Context and
-// subject rotate together; the schedule belongs to verb/person, not a sentence.
+// Full authored sentences own their word order and time context. {ir}/{llegar}
+// establish the same subject before an omitted pronoun; they reuse canonical forms.
+// The schedule belongs to verb/person, not to a sentence.
 export const preteriteVerbs = {
   hablar: {
     family: 'regular',
-    meaning: 'to speak',
     forms: ['hablé', 'hablaste', 'habló', 'hablamos', 'hablaron'],
     contexts: [
-      ['con la vecina', 'spoke with the neighbor'],
-      ['de la película', 'talked about the movie'],
+      [
+        'Anoche {subject} ___ con la vecina.',
+        'Last night, {subject} spoke with the neighbor.',
+      ],
+      [
+        'Después de cenar, {subject} ___ de la película.',
+        'After dinner, {subject} talked about the movie.',
+      ],
     ],
   },
   comer: {
     family: 'regular',
-    meaning: 'to eat',
     forms: ['comí', 'comiste', 'comió', 'comimos', 'comieron'],
     contexts: [
-      ['en el mercado', 'ate at the market'],
-      ['tacos de hongos', 'ate mushroom tacos'],
+      [
+        '{ir} al mercado y ___ en un puesto de tacos.',
+        '{subject} went to the market and ate at a taco stand.',
+      ],
+      [
+        '{subject} ___ tacos de hongos el domingo.',
+        '{subject} ate mushroom tacos on Sunday.',
+      ],
     ],
   },
   vivir: {
     family: 'regular',
-    meaning: 'to live',
     forms: ['viví', 'viviste', 'vivió', 'vivimos', 'vivieron'],
     contexts: [
-      ['una experiencia increíble', 'had an incredible experience'],
-      ['un momento especial', 'experienced a special moment'],
+      [
+        'En ese viaje, {subject} ___ una experiencia increíble.',
+        'On that trip, {subject} had an incredible experience.',
+      ],
+      [
+        'Durante la fiesta, {subject} ___ un momento especial.',
+        'During the party, {subject} experienced a special moment.',
+      ],
     ],
   },
   comprar: {
     family: 'regular',
-    meaning: 'to buy',
     forms: ['compré', 'compraste', 'compró', 'compramos', 'compraron'],
     contexts: [
-      ['pan en la esquina', 'bought bread on the corner'],
-      ['fruta para el desayuno', 'bought fruit for breakfast'],
+      [
+        '{subject} ___ pan en la esquina esta mañana.',
+        '{subject} bought bread on the corner this morning.',
+      ],
+      [
+        '{ir} al mercado y ___ fruta para el desayuno.',
+        '{subject} went to the market and bought fruit for breakfast.',
+      ],
     ],
   },
   aprender: {
     family: 'regular',
-    meaning: 'to learn',
     forms: ['aprendí', 'aprendiste', 'aprendió', 'aprendimos', 'aprendieron'],
     contexts: [
-      ['una palabra nueva', 'learned a new word'],
-      ['a preparar salsa', 'learned to make salsa'],
+      [
+        'En clase, {subject} ___ una palabra nueva.',
+        'In class, {subject} learned a new word.',
+      ],
+      [
+        '{subject} ___ a preparar salsa el fin de semana.',
+        '{subject} learned to make salsa over the weekend.',
+      ],
     ],
   },
   escribir: {
     family: 'regular',
-    meaning: 'to write',
     forms: ['escribí', 'escribiste', 'escribió', 'escribimos', 'escribieron'],
     contexts: [
-      ['un mensaje', 'wrote a message'],
-      ['una carta', 'wrote a letter'],
+      [
+        '{subject} ___ un mensaje antes de salir.',
+        '{subject} wrote a message before leaving.',
+      ],
+      [
+        'Al volver a casa, {subject} ___ una carta.',
+        'After returning home, {subject} wrote a letter.',
+      ],
     ],
   },
   ir: {
     family: 'essential',
-    meaning: 'to go',
     forms: ['fui', 'fuiste', 'fue', 'fuimos', 'fueron'],
     contexts: [
-      ['al mercado', 'went to the market'],
-      ['a Coyoacán', 'went to Coyoacán'],
+      [
+        'El viernes, {subject} ___ al mercado.',
+        'On Friday, {subject} went to the market.',
+      ],
+      [
+        '{subject} ___ a Coyoacán después de comer.',
+        '{subject} went to Coyoacán after lunch.',
+      ],
     ],
     note: 'Ir and ser share all preterite forms. The destination here identifies ir.',
   },
   ser: {
     family: 'essential',
-    meaning: 'to be',
     forms: ['fui', 'fuiste', 'fue', 'fuimos', 'fueron'],
     contexts: [
-      ['parte del equipo ganador', '{was} part of the winning team'],
-      ['parte de la solución', '{was} part of the solution'],
+      [
+        'Ese día, {subject} ___ parte del equipo ganador.',
+        'That day, {subject} {was} part of the winning team.',
+      ],
+      [
+        '{subject} ___ parte de la solución.',
+        '{subject} {was} part of the solution.',
+      ],
     ],
     note: 'Ser and ir share all preterite forms. Here, ser describes a role: “was” or “were”.',
   },
   dar: {
     family: 'essential',
-    meaning: 'to give',
     forms: ['di', 'diste', 'dio', 'dimos', 'dieron'],
     contexts: [
-      ['un paseo por el parque', 'took a walk in the park'],
-      ['las gracias al mesero', 'thanked the waiter'],
+      [
+        'Después de comer, {subject} ___ un paseo por el parque.',
+        'After lunch, {subject} took a walk in the park.',
+      ],
+      [
+        '{subject} ___ las gracias al mesero antes de salir.',
+        '{subject} thanked the waiter before leaving.',
+      ],
     ],
     note: 'Di and dio have no written accent.',
   },
   ver: {
     family: 'essential',
-    meaning: 'to see',
     forms: ['vi', 'viste', 'vio', 'vimos', 'vieron'],
     contexts: [
-      ['una película mexicana', 'watched a Mexican movie'],
-      ['el atardecer', 'saw the sunset'],
+      [
+        '{subject} ___ una película mexicana anoche.',
+        '{subject} watched a Mexican movie last night.',
+      ],
+      [
+        'Desde la azotea, {subject} ___ el atardecer.',
+        'From the rooftop, {subject} saw the sunset.',
+      ],
     ],
     note: 'Vi and vio have no written accent.',
   },
   tener: {
     family: 'irregular',
-    meaning: 'to have',
     forms: ['tuve', 'tuviste', 'tuvo', 'tuvimos', 'tuvieron'],
     contexts: [
-      ['una idea', 'had an idea'],
-      ['tiempo para caminar', 'had time for a walk'],
+      [
+        'En el camino, {subject} ___ una idea.',
+        'On the way, {subject} had an idea.',
+      ],
+      [
+        'El domingo, {subject} ___ tiempo para caminar.',
+        'On Sunday, {subject} had time for a walk.',
+      ],
     ],
     note: 'Tener → tuv-, with irregular endings and no accents.',
   },
   hacer: {
     family: 'irregular',
-    meaning: 'to do / make',
     forms: ['hice', 'hiciste', 'hizo', 'hicimos', 'hicieron'],
     contexts: [
-      ['la cena', 'made dinner'],
-      ['una reservación', 'made a reservation'],
+      ['{llegar} a casa y ___ la cena.', '{subject} got home and made dinner.'],
+      [
+        '{subject} ___ una reservación por teléfono.',
+        '{subject} made a reservation by phone.',
+      ],
     ],
     note: 'Hacer → hic-, except hizo: z preserves the consonant sound before o.',
   },
   decir: {
     family: 'irregular',
-    meaning: 'to say',
     forms: ['dije', 'dijiste', 'dijo', 'dijimos', 'dijeron'],
     contexts: [
-      ['la verdad', 'told the truth'],
-      ['algo interesante', 'said something interesting'],
+      [
+        'Al final, {subject} ___ la verdad.',
+        'In the end, {subject} told the truth.',
+      ],
+      [
+        'Durante la cena, {subject} ___ algo interesante.',
+        'During dinner, {subject} said something interesting.',
+      ],
     ],
     note: 'Decir → dij-. After j, use -eron: dijeron, not “dijieron”.',
   },
   estar: {
     family: 'irregular',
-    meaning: 'to be',
     forms: ['estuve', 'estuviste', 'estuvo', 'estuvimos', 'estuvieron'],
     contexts: [
-      ['en casa todo el día', '{was} home all day'],
-      ['en el museo dos horas', 'spent two hours at the museum'],
+      [
+        'El lunes, {subject} ___ en casa todo el día.',
+        'On Monday, {subject} {was} home all day.',
+      ],
+      [
+        '{subject} ___ en el museo dos horas el sábado.',
+        '{subject} spent two hours at the museum on Saturday.',
+      ],
     ],
     note: 'Estar → estuv-, with irregular endings and no accents.',
   },
   poder: {
     family: 'irregular',
-    meaning: 'to be able to',
     forms: ['pude', 'pudiste', 'pudo', 'pudimos', 'pudieron'],
     contexts: [
-      ['conseguir boletos', 'managed to get tickets'],
-      ['terminar a tiempo', 'managed to finish on time'],
+      [
+        'Esta mañana, {subject} ___ conseguir boletos.',
+        'This morning, {subject} managed to get tickets.',
+      ],
+      [
+        '{subject} ___ terminar a tiempo.',
+        '{subject} managed to finish on time.',
+      ],
     ],
     note: 'Poder → pud-. Here it means “managed to”.',
   },
   poner: {
     family: 'irregular',
-    meaning: 'to put',
     forms: ['puse', 'pusiste', 'puso', 'pusimos', 'pusieron'],
     contexts: [
-      ['la mesa', 'set the table'],
-      ['música para cocinar', 'put on music to cook'],
+      [
+        'Antes de cenar, {subject} ___ la mesa.',
+        'Before dinner, {subject} set the table.',
+      ],
+      [
+        '{llegar} a casa y ___ música para cocinar.',
+        '{subject} got home and put on music to cook.',
+      ],
     ],
     note: 'Poner → pus-, with irregular endings and no accents.',
   },
   venir: {
     family: 'irregular',
-    meaning: 'to come',
     forms: ['vine', 'viniste', 'vino', 'vinimos', 'vinieron'],
     contexts: [
-      ['en metro', 'came by metro'],
-      ['a la fiesta', 'came to the party'],
+      [
+        '{subject} ___ en metro a la reunión.',
+        '{subject} came to the meeting by metro.',
+      ],
+      [
+        'El sábado, {subject} ___ a la fiesta.',
+        'On Saturday, {subject} came to the party.',
+      ],
     ],
     note: 'Venir → vin-. Vino has no accent.',
   },
   querer: {
     family: 'irregular',
-    meaning: 'to want',
     forms: ['quise', 'quisiste', 'quiso', 'quisimos', 'quisieron'],
     contexts: [
-      ['probar algo nuevo', 'wanted to try something new'],
-      ['ayudar con la cena', 'wanted to help with dinner'],
+      [
+        'En el restaurante, {subject} ___ probar algo nuevo.',
+        'At the restaurant, {subject} wanted to try something new.',
+      ],
+      [
+        '{subject} ___ ayudar con la cena.',
+        '{subject} wanted to help with dinner.',
+      ],
     ],
     note: 'Querer → quis-, with irregular endings and no accents.',
   },
   saber: {
     family: 'irregular',
-    meaning: 'to know / find out',
     forms: ['supe', 'supiste', 'supo', 'supimos', 'supieron'],
     contexts: [
-      ['la noticia', 'found out the news'],
-      ['el resultado', 'found out the result'],
+      [
+        '{subject} ___ la noticia por la radio.',
+        '{subject} found out the news on the radio.',
+      ],
+      [
+        'Al terminar el partido, {subject} ___ el resultado.',
+        'After the match, {subject} found out the result.',
+      ],
     ],
     note: 'Saber → sup-. Here it means “found out”.',
   },
   traer: {
     family: 'irregular',
-    meaning: 'to bring',
     forms: ['traje', 'trajiste', 'trajo', 'trajimos', 'trajeron'],
     contexts: [
-      ['pan dulce', 'brought sweet bread'],
-      ['algo para compartir', 'brought something to share'],
+      [
+        '{subject} ___ pan dulce para el desayuno.',
+        '{subject} brought sweet bread for breakfast.',
+      ],
+      [
+        'Para la reunión, {subject} ___ algo para compartir.',
+        'For the gathering, {subject} brought something to share.',
+      ],
     ],
     note: 'Traer → traj-. After j, use -eron: trajeron.',
   },
   andar: {
     family: 'irregular',
-    meaning: 'to walk',
     forms: ['anduve', 'anduviste', 'anduvo', 'anduvimos', 'anduvieron'],
     contexts: [
-      ['por el centro', 'walked around downtown'],
-      ['por el parque', 'walked around the park'],
+      [
+        'El domingo, {subject} ___ por el centro.',
+        'On Sunday, {subject} walked around downtown.',
+      ],
+      [
+        '{subject} ___ por el parque después de comer.',
+        '{subject} walked around the park after lunch.',
+      ],
     ],
     note: 'Andar → anduv-, like tuv- and estuv-.',
   },
   conducir: {
     family: 'irregular',
-    meaning: 'to drive',
     forms: ['conduje', 'condujiste', 'condujo', 'condujimos', 'condujeron'],
     contexts: [
-      ['hasta Puebla', 'drove to Puebla'],
-      ['por la ciudad', 'drove through the city'],
+      [
+        'El viernes, {subject} ___ hasta Puebla.',
+        'On Friday, {subject} drove to Puebla.',
+      ],
+      [
+        '{subject} ___ por la ciudad de noche.',
+        '{subject} drove through the city at night.',
+      ],
     ],
     note: 'Conducir → conduj-. After j, use -eron: condujeron.',
   },
   buscar: {
     family: 'spelling',
-    meaning: 'to look for',
     forms: ['busqué', 'buscaste', 'buscó', 'buscamos', 'buscaron'],
     contexts: [
-      ['las llaves', 'looked for the keys'],
-      ['una cafetería', 'looked for a café'],
+      [
+        'Antes de salir, {subject} ___ las llaves.',
+        'Before leaving, {subject} looked for the keys.',
+      ],
+      [
+        '{subject} ___ una cafetería cerca de la plaza.',
+        '{subject} looked for a café near the square.',
+      ],
     ],
   },
   llegar: {
     family: 'spelling',
-    meaning: 'to arrive',
     forms: ['llegué', 'llegaste', 'llegó', 'llegamos', 'llegaron'],
     contexts: [
-      ['a tiempo', 'arrived on time'],
-      ['antes de la lluvia', 'arrived before the rain'],
+      [
+        '{subject} ___ a tiempo a la cita.',
+        '{subject} arrived on time for the appointment.',
+      ],
+      [
+        '{subject} ___ antes de la lluvia.',
+        '{subject} arrived before the rain.',
+      ],
     ],
   },
   empezar: {
     family: 'spelling',
-    meaning: 'to begin',
     forms: ['empecé', 'empezaste', 'empezó', 'empezamos', 'empezaron'],
     contexts: [
-      ['un libro nuevo', 'started a new book'],
-      ['a estudiar español', 'started studying Spanish'],
+      [
+        '{subject} ___ un libro nuevo durante el viaje.',
+        '{subject} started a new book during the trip.',
+      ],
+      [
+        'El mes pasado, {subject} ___ a estudiar español.',
+        'Last month, {subject} started studying Spanish.',
+      ],
     ],
   },
   pagar: {
     family: 'spelling',
-    meaning: 'to pay',
     forms: ['pagué', 'pagaste', 'pagó', 'pagamos', 'pagaron'],
     contexts: [
-      ['con tarjeta', 'paid by card'],
-      ['la cuenta', 'paid the bill'],
+      [
+        '{subject} ___ con tarjeta en la tienda.',
+        '{subject} paid by card at the store.',
+      ],
+      [
+        'Después de cenar, {subject} ___ la cuenta.',
+        'After dinner, {subject} paid the bill.',
+      ],
     ],
   },
   pedir: {
     family: 'stem',
-    meaning: 'to ask for / order',
     forms: ['pedí', 'pediste', 'pidió', 'pedimos', 'pidieron'],
     contexts: [
-      ['un café de olla', 'ordered a café de olla'],
-      ['la cuenta', 'asked for the bill'],
+      [
+        'En la cafetería, {subject} ___ un café de olla.',
+        'At the café, {subject} ordered a café de olla.',
+      ],
+      [
+        '{subject} ___ la cuenta al terminar.',
+        '{subject} asked for the bill at the end.',
+      ],
     ],
   },
   dormir: {
     family: 'stem',
-    meaning: 'to sleep',
     forms: ['dormí', 'dormiste', 'durmió', 'dormimos', 'durmieron'],
     contexts: [
-      ['ocho horas', 'slept for eight hours'],
-      ['muy bien', 'slept very well'],
+      [
+        'Anoche, {subject} ___ ocho horas.',
+        'Last night, {subject} slept for eight hours.',
+      ],
+      [
+        '{subject} ___ muy bien después del viaje.',
+        '{subject} slept very well after the trip.',
+      ],
     ],
   },
   sentir: {
     family: 'stem',
-    meaning: 'to feel',
     forms: ['sentí', 'sentiste', 'sintió', 'sentimos', 'sintieron'],
     contexts: [
-      ['el temblor', 'felt the earthquake'],
-      ['mucha alegría', 'felt a lot of joy'],
+      [
+        '{subject} ___ el temblor de madrugada.',
+        '{subject} felt the earthquake in the early morning.',
+      ],
+      [
+        'Al escuchar la noticia, {subject} ___ mucha alegría.',
+        'Upon hearing the news, {subject} felt a lot of joy.',
+      ],
     ],
   },
   servir: {
     family: 'stem',
-    meaning: 'to serve',
     forms: ['serví', 'serviste', 'sirvió', 'servimos', 'sirvieron'],
     contexts: [
-      ['la comida', 'served the food'],
-      ['el café', 'served the coffee'],
+      [
+        '{subject} ___ la comida al mediodía.',
+        '{subject} served the food at noon.',
+      ],
+      [
+        '{llegar} a casa y ___ el café.',
+        '{subject} got home and served the coffee.',
+      ],
     ],
   },
   leer: {
     family: 'vowel',
-    meaning: 'to read',
     forms: ['leí', 'leíste', 'leyó', 'leímos', 'leyeron'],
     contexts: [
-      ['el menú', 'read the menu'],
-      ['un cuento', 'read a short story'],
+      [
+        '{ir} a un restaurante y ___ el menú.',
+        '{subject} went to a restaurant and read the menu.',
+      ],
+      [
+        'Antes de dormir, {subject} ___ un cuento.',
+        'Before bed, {subject} read a short story.',
+      ],
     ],
   },
   oír: {
     family: 'vowel',
-    meaning: 'to hear',
     forms: ['oí', 'oíste', 'oyó', 'oímos', 'oyeron'],
     contexts: [
-      ['música en la plaza', 'heard music in the square'],
-      ['un ruido en la calle', 'heard a noise in the street'],
+      [
+        '{subject} ___ música en la plaza el domingo.',
+        '{subject} heard music in the square on Sunday.',
+      ],
+      [
+        'De pronto, {subject} ___ un ruido en la calle.',
+        'Suddenly, {subject} heard a noise in the street.',
+      ],
     ],
   },
   creer: {
     family: 'vowel',
-    meaning: 'to believe',
     forms: ['creí', 'creíste', 'creyó', 'creímos', 'creyeron'],
     contexts: [
-      ['la historia', 'believed the story'],
-      ['que era una broma', 'thought it was a joke'],
+      [
+        'Al principio, {subject} ___ la historia.',
+        'At first, {subject} believed the story.',
+      ],
+      ['{subject} ___ que era una broma.', '{subject} thought it was a joke.'],
     ],
   },
   construir: {
     family: 'vowel',
-    meaning: 'to build',
     forms: [
       'construí',
       'construiste',
@@ -381,8 +539,14 @@ export const preteriteVerbs = {
       'construyeron',
     ],
     contexts: [
-      ['una mesa de madera', 'built a wooden table'],
-      ['un castillo de arena', 'built a sandcastle'],
+      [
+        'El verano pasado, {subject} ___ una mesa de madera.',
+        'Last summer, {subject} built a wooden table.',
+      ],
+      [
+        'En la playa, {subject} ___ un castillo de arena.',
+        'At the beach, {subject} built a sandcastle.',
+      ],
     ],
     note: 'Construir → construyó, construyeron. Unlike leer, tú and nosotros have no accent: construiste, construimos.',
   },

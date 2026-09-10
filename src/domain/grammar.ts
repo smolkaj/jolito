@@ -52,24 +52,38 @@ export function grammarContext(card: GrammarCard) {
   const variant = card.schedule.reviews % 2
   const subjects =
     variant === 0
-      ? ['yo', 'tú', 'ella', 'nosotros', 'ellos']
+      ? ['yo', 'tú', 'Marta', 'nosotros', 'los vecinos']
       : ['yo', 'tú', 'usted', 'nosotras', 'ustedes']
   const englishSubjects =
     variant === 0
-      ? ['I', 'you', 'she', 'we', 'they']
+      ? ['I', 'you', 'Marta', 'we', 'the neighbors']
       : ['I', 'you', 'you', 'we', 'you all']
   const person = card.grammar.person
-  const [tail, english] = verb.contexts[variant]!
-  const sentence = `${variant === 0 ? 'Ayer' : 'El sábado'} ${subjects[person]} ___ ${tail}.`
-  const family = grammarFamilies.find((f) => f.id === verb.family)!
+  const [spanish, english] = verb.contexts[variant]!
+  // First/second person and nosotros are clear from the preceding verb. Keep an
+  // explicit noun/pronoun for third person so its referent is never a guessing game.
+  const cueSubject = person === 2 || person === 4 ? `${subjects[person]} ` : ''
+  const capitalize = (text: string) => text[0]!.toUpperCase() + text.slice(1)
+  const sentence = capitalize(
+    spanish
+      .replace('{subject}', subjects[person]!)
+      .replace('{ir}', cueSubject + preteriteVerbs.ir.forms[person]!)
+      .replace('{llegar}', cueSubject + preteriteVerbs.llegar.forms[person]!),
+  )
+  const translation = capitalize(
+    english
+      .replace('{subject}', englishSubjects[person]!)
+      .replace(
+        '{was}',
+        person === 0 || (person === 2 && variant === 0) ? 'was' : 'were',
+      ),
+  )
+  const family = grammarFamilies.find((family) => family.id === verb.family)!
   return {
     sentence,
     completed: sentence.replace('___', card.answer),
-    translation: `${variant === 0 ? 'Yesterday' : 'On Saturday'}, ${englishSubjects[person]} ${english.replace('{was}', person === 0 || (person === 2 && variant === 0) ? 'was' : 'were')}.`,
-    subject: subjects[person]!,
+    translation,
     explanation: 'note' in verb ? verb.note : family.rule,
-    family,
-    meaning: verb.meaning,
   }
 }
 
@@ -125,17 +139,4 @@ export function grammarQueue(
     }
   }
   return selected
-}
-
-export function grammarStats(cards: StudyCard[], now: number) {
-  const practiced = cards
-    .filter(isGrammarCard)
-    .filter((c) => c.schedule.reviews > 0)
-  return {
-    introduced: practiced.length,
-    due: practiced.filter((c) => isDue(c, now)).length,
-    nextDue: practiced
-      .filter((c) => !isDue(c, now))
-      .reduce((next, c) => Math.min(next, c.schedule.dueAt), Infinity),
-  }
 }

@@ -1,3 +1,8 @@
+import {
+  createGrammarCards,
+  grammarContext,
+  grammarQueue,
+} from '../../src/domain/grammar'
 import { auditAccessibility, settleAnimations } from './accessibility'
 import { expect, test, type Page } from '@playwright/test'
 
@@ -96,8 +101,31 @@ for (const viewport of [
       path: `test-results/grammar-${viewport.width}-home.png`,
       fullPage: true,
     })
-    await page.getByRole('button', { name: 'Practice pretérito' }).click()
+    await page.getByRole('button', { name: 'New round' }).click()
     const grammarLayout = await sessionLayout(page)
+    await page.getByRole('textbox').fill('habl')
+    await page.getByRole('button', { name: 'Patterns', exact: true }).click()
+    await settleAnimations(page)
+    const resume = (await page
+      .getByRole('button', { name: 'Resume round' })
+      .boundingBox())!
+    const fresh = (await page
+      .getByRole('button', { name: 'New round' })
+      .boundingBox())!
+    expect(resume.y).toBeCloseTo(fresh.y, 2)
+    expect(resume.width).toBeCloseTo(fresh.width, 2)
+    expect(resume.height).toBeCloseTo(fresh.height, 2)
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true)
+    await page.screenshot({
+      path: `test-results/grammar-${viewport.width}-resume.png`,
+      fullPage: true,
+    })
+    await page.getByRole('button', { name: 'Resume round' }).click()
+    await expect(page.getByRole('textbox')).toHaveValue('habl')
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
     await expect(input).toBeFocused()
     for (const button of await page.locator('.answer-accents button').all()) {
@@ -138,6 +166,7 @@ for (const viewport of [
     })
     await input.press('Enter')
     await expect(page.getByRole('status')).toHaveText('hablé')
+    await expect(page.locator('.grammar-explanation')).toHaveCount(0)
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-reveal.png`,
@@ -150,12 +179,13 @@ for (const viewport of [
       await page.keyboard.press('4')
     }
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'El sábado yo',
+      'Después de cenar, yo',
     )
     await page.getByRole('textbox').fill('hable')
     await page.getByRole('textbox').press('Enter')
     await expect(page.locator('.expected-row .diff-seg-accent')).toHaveText('é')
     await expect(page.locator('.diff-row').first()).toContainText('hable')
+    await expect(page.locator('.grammar-explanation')).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-correction.png`,
@@ -234,16 +264,16 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
     await navigator.serviceWorker.ready
   })
   await page.getByRole('radio', { name: /Irregular stems/ }).check()
-  await page.getByRole('button', { name: 'Practice pretérito' }).click()
+  await page.getByRole('button', { name: 'New round' }).click()
   await page.getByRole('textbox').fill('tuve')
   await page.getByRole('textbox').press('Enter')
   await page.keyboard.press('4')
   await context.setOffline(true)
   await page.reload()
   await page.getByRole('radio', { name: /Irregular stems/ }).check()
-  await page.getByRole('button', { name: 'Practice pretérito' }).click()
+  await page.getByRole('button', { name: 'New round' }).click()
   await expect(page.getByRole('heading', { level: 1 })).not.toContainText(
-    'Ayer yo … una idea.',
+    'En el camino, yo … una idea.',
   )
   await page.getByRole('textbox').press('Enter')
   await page.keyboard.press('4')
@@ -278,16 +308,8 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await page.clock.setFixedTime(now)
   await page.route('**/api/tts*', (route) => route.fulfill({ status: 503 }))
   await page.goto('/#/grammar')
-  await page.getByRole('button', { name: 'Practice pretérito' }).click()
+  await page.getByRole('button', { name: 'New round' }).click()
   await page.getByRole('textbox').press('Enter')
-  const disclosure = page.locator('.study-card summary')
-  const reference = page.locator('.study-card details')
-  for (const key of ['Space', 'Enter']) {
-    await disclosure.press(key)
-    await expect(reference).toHaveAttribute('open', '')
-    await disclosure.press(key)
-    await expect(reference).not.toHaveAttribute('open')
-  }
   const speechCount = () =>
     page.evaluate(() => window.__speechSynthesisCalls!.length)
   expect(await speechCount()).toBe(0)
@@ -299,7 +321,7 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   const audioButton = page.locator('.study-card .audio-button')
   await audioButton.press('Space')
   await expect.poll(speechCount).toBe(2)
-  await page.keyboard.press('4')
+  await page.getByRole('button', { name: /Easy/ }).press('Space')
   await expect(page.getByRole('textbox')).toBeFocused()
   await page.getByRole('textbox').press('Space')
   await expect(page.getByRole('textbox')).toHaveValue(' ')
@@ -317,7 +339,7 @@ test('accent taps preserve the active input and selection across practice turns'
   try {
     const page = await context.newPage()
     await page.goto('/#/grammar')
-    await page.getByRole('button', { name: 'Practice pretérito' }).tap()
+    await page.getByRole('button', { name: 'New round' }).tap()
     for (let turn = 0; turn < 2; turn++) {
       const input = page.getByRole('textbox')
       await input.fill('hablX')
@@ -394,8 +416,8 @@ test('grammar prepares neural voices for both contexts and retains them across i
     await route.fulfill({ contentType: 'audio/wav', body: wav })
   })
   await page.goto('/#/grammar')
-  const original = 'Ayer yo hablé con la vecina.'
-  const repeated = 'El sábado yo hablé de la película.'
+  const original = 'Anoche yo hablé con la vecina.'
+  const repeated = 'Después de cenar, yo hablé de la película.'
   for (const text of [original, repeated]) {
     await expect
       .poll(() => [...(fetched.get(text) ?? [])].sort())
@@ -403,8 +425,16 @@ test('grammar prepares neural voices for both contexts and retains them across i
   }
   // Count unique grammar entries in the neural cache only: the service-worker shell
   // also caches TTS URLs, but cannot establish neural playback readiness.
+  const roundTexts = grammarQueue(createGrammarCards(0), 0, 'mixed').flatMap(
+    (card) =>
+      [0, 1].map(
+        (reviews) =>
+          grammarContext({ ...card, schedule: { ...card.schedule, reviews } })
+            .completed,
+      ),
+  )
   const cachedGrammar = () =>
-    page.evaluate(async () => {
+    page.evaluate(async (texts) => {
       const entries = await Promise.all(
         (await caches.keys())
           .filter((key) => key.startsWith('jolito-audio-'))
@@ -414,15 +444,13 @@ test('grammar prepares neural voices for both contexts and retains them across i
         entries
           .flat()
           .filter((request) =>
-            /^(Ayer|El sábado) /.test(
-              new URL(request.url).searchParams.get('text') ?? '',
-            ),
+            texts.includes(new URL(request.url).searchParams.get('text') ?? ''),
           )
           .map((request) => request.url),
       ).size
-    })
+    }, roundTexts)
   await expect.poll(cachedGrammar).toBe(32)
-  await page.getByRole('button', { name: 'Practice pretérito' }).click()
+  await page.getByRole('button', { name: 'New round' }).click()
   const plays = () =>
     page.evaluate(() =>
       Number(document.documentElement.dataset.neuralPlays ?? 0),
@@ -431,7 +459,7 @@ test('grammar prepares neural voices for both contexts and retains them across i
   await expect.poll(plays).toBeGreaterThan(0)
   // Interrupt before grading so setup predicts the same already-warmed round.
   await page.getByRole('button', { name: 'Patterns' }).click()
-  await page.getByRole('button', { name: 'Resume practice' }).click()
+  await page.getByRole('button', { name: 'Resume round' }).click()
   await page.getByRole('button', { name: 'Jolito home' }).click()
   await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
   const demo = page.getByRole('button', { name: /explore demo deck/i })
@@ -456,7 +484,7 @@ test('grammar prepares neural voices for both contexts and retains them across i
     await page.keyboard.press('4')
   }
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
-    'El sábado yo',
+    'Después de cenar, yo',
   )
   const before = await plays()
   await page.getByRole('textbox').press('Enter')

@@ -9,15 +9,15 @@ on home opens its own space; grammar never enters vocabulary queues or counts.
 
 - Short, eight-form sessions with typed recall, accent entry, sentence context,
   the shared vocabulary answer diff and Again / Hard / Good / Easy controls.
-  Explanations and full conjugation tables are available on demand.
+  A short rule appears after an incorrect or empty answer.
 - Mixed practice interleaves verb families and people; focused practice offers
   regular endings, irregular stems, essential irregulars, spelling changes,
   third-person stem changes, and vowel changes.
 - Each verb/person has its own existing Anki-compatible schedule. Due forms
   precede new forms; weak forms repeat after intervening prompts. Repeat recall
   rotates sentence contexts without giving the answer away.
-- A small pattern reference is available before practice and after reveal.
-  Learning is not represented as a one-session mastery score.
+- Setup offers pattern selection and New round. An unfinished round adds Resume round
+  alongside it; the two actions have equal width.
 - Mexican Spanish: yo, tú, él/ella/usted, nosotros/as, ellos/ellas/ustedes.
   Vosotros is deliberately outside this initial Mexican Spanish set.
 
@@ -94,9 +94,9 @@ render. Boundary contracts reject out-of-range due and last-review timestamps th
 storage, raw/enveloped backup, and sync, and accept both valid range endpoints. This
 closes the malformed-schedule blind spot before the feature reaches main.
 
-Grammar audio shortcuts defer to native buttons, links, and reference disclosures.
-A browser contract opens and closes the reference with both Space and Enter, then
-checks audio activation, grading, and literal spaces in the next typed answer. This
+Grammar audio shortcuts defer to native buttons and links.
+A browser contract checks native audio and grade activation, global shortcuts,
+and literal spaces in the next typed answer. This
 catches keyboard event interception that static accessibility audits cannot detect.
 
 ## Coherence with vocabulary practice
@@ -104,7 +104,7 @@ catches keyboard event interception that static accessibility audits cannot dete
 Both modes render through the same practice page branch, `PracticeCard` and
 `SessionComplete`. They share navigation structure, progress, input/reveal behavior,
 feedback focus, answer comparison, rating controls, shortcuts, audio notices, account
-dialogs and completion layout. Grammar supplies its sentence, accent keys and reference;
+dialogs and completion layout. Grammar supplies its sentence, accent keys and corrective rule;
 vocabulary supplies its prompt, authored context and card-edit actions.
 
 The shared audio hook owns interruption and teardown. Successful grammar grading
@@ -143,3 +143,24 @@ grading so its predicted round is already cached before the offline transition.
 Accent pointer presses preserve an already-focused answer input; keyboard activation
 retains native button behavior. A touch-browser contract checks that input never blurs,
 selection replacement and caret editing work, and focus survives another practice turn.
+
+## Simpler setup and natural sentences
+
+The setup has no reference sheet or round-size notice. The verb is the strongest
+typographic cue during recall. Correct answers need only the shared answer feedback;
+incorrect and empty answers get the relevant rule without a disclosure or full table.
+
+Each authored Spanish/English sentence pair owns its word order and time context.
+Some sentences establish the subject with a preceding conjugated clause, allowing
+pronouns to be omitted naturally. Third-person clauses retain a noun or pronoun to
+avoid guessing the referent. The cue verbs reuse canonical forms from the catalog;
+there is no second conjugator or random sentence generator. All 340 person/context
+combinations are checked for complete expansion, a single blank, and no leaked answer.
+Card identities and schedules remain unchanged; existing progress needs no migration.
+
+The repetitive Ayer/subject framing and unnecessary reference/counts originated in
+this unmerged PR's prototype. Earlier tests checked valid conjugations and context
+rotation but not sentence variety or setup action relationships. Authored sentence
+contracts now cover the former, and five-width browser contracts compare the New/Resume
+actions and preserve an unfinished answer through setup and back. Neural cache readiness
+uses the actual upcoming sentences, independent of their opening words.
