@@ -224,7 +224,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await expect(resendBtn).toContainText(/link sent!/i)
     await expect(page.locator('.status-banner')).toHaveCount(0)
 
-    // Capture screenshot of standard browser email confirmation with immediate code entry
+    // Capture the iOS Home Screen email confirmation with immediate code entry.
     await page.screenshot({
       path: 'test-results/sync-modal-sent-step.png',
       animations: 'disabled',
