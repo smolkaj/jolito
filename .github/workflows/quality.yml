@@ -39,11 +39,11 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium webkit
       - run: npm run test:e2e
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

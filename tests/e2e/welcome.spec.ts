@@ -1025,14 +1025,18 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
 
   // Verify CSS scroll snap is configured on the welcome page
   const scrollSnapType = await page.evaluate(
-    () => window.getComputedStyle(document.documentElement).scrollSnapType,
+    () =>
+      window.getComputedStyle(document.querySelector('.welcome-page')!)
+        .scrollSnapType,
   )
   expect(scrollSnapType).toMatch(/y mandatory/)
 
   // Clicking "Start learning" returns cleanly to the top slide and cleans hash to #/
   await startBtn.click()
   await expect
-    .poll(async () => page.evaluate(() => window.scrollY))
+    .poll(async () =>
+      page.locator('.welcome-page').evaluate((element) => element.scrollTop),
+    )
     .toBeLessThanOrEqual(5)
   await expect(page).toHaveURL(/#\/?$/)
 
@@ -1065,7 +1069,9 @@ test('navigates directly to "#why-jolito" and "#/why-jolito" deep links on initi
   const startBtn = page.getByRole('button', { name: /^start learning/i })
   await startBtn.click()
   await expect
-    .poll(async () => page.evaluate(() => window.scrollY))
+    .poll(async () =>
+      page.locator('.welcome-page').evaluate((element) => element.scrollTop),
+    )
     .toBeLessThanOrEqual(5)
   await expect(page).toHaveURL(/#\/?$/)
 

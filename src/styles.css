@@ -572,7 +572,16 @@ summary:focus-visible,
 }
 
 /* Welcome Page */
+/* Keep snap gestures out of Safari's root viewport: its browser chrome can
+   cancel smooth scrolling and restore stale snap positions (WebKit 245722). */
 .welcome-page {
+  height: 100dvh;
+  min-height: 0;
+  display: block;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
   background: var(--paper);
 }
 
@@ -582,7 +591,7 @@ summary:focus-visible,
 
 .welcome-hero {
   width: min(1080px, 100%);
-  min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 46px);
+  min-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 46px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1095,18 +1104,13 @@ summary:focus-visible,
 }
 
 /* Welcome "Why Jolito?" Editorial Fold */
-html:has(.welcome-page),
-body:has(.welcome-page) {
-  scroll-snap-type: y mandatory;
-}
-
 .welcome-page .topbar {
   scroll-snap-align: start;
   scroll-margin-top: max(16px, env(safe-area-inset-top));
 }
 
 .welcome-why {
-  min-height: 100svh;
+  min-height: 100dvh;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -1262,8 +1266,7 @@ body:has(.welcome-page) {
 }
 
 @media (max-height: 520px) {
-  html:has(.welcome-page),
-  body:has(.welcome-page) {
+  .welcome-page {
     scroll-snap-type: none;
   }
   .welcome-why {
@@ -2889,7 +2892,7 @@ kbd {
   }
 
   .welcome-why {
-    min-height: 100svh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     justify-content: center;
