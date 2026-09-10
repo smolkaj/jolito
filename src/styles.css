@@ -746,29 +746,21 @@ summary:focus-visible,
   top: calc(100% + 10px);
   right: 0;
   width: max(100%, 180px);
-  padding: 6px;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
   background: var(--card);
   border: 2px solid var(--ink);
   border-radius: 14px;
-  box-shadow: 3px 3px 0 var(--line-subtle);
+  box-shadow: var(--shadow-card);
 }
-.practice-menu-options button {
-  display: block;
+/* Geometry only: menu actions inherit shared secondary-button states. */
+.practice-menu-options .secondary-button {
   width: 100%;
   min-height: 48px;
   padding: 12px 16px;
-  border: 0;
   border-radius: 8px;
-  background: transparent;
-  color: var(--ink);
-  text-align: left;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.practice-menu-options button:hover,
-.practice-menu-options button:focus-visible {
-  background: var(--turquesa-soft);
+  justify-content: flex-start;
 }
 
 .hero-visual {

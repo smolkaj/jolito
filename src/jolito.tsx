@@ -106,13 +106,14 @@ function getActiveAudioItems(
   for (const card of cards) {
     if (isGrammarCard(card)) {
       for (const reviews of [0, 1]) {
-        items.push({
-          text: grammarContext({
-            ...card,
-            schedule: { ...card.schedule, reviews },
-          }).completed,
-          locale: 'es-MX',
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
         })
+        items.push(
+          { text: context.spokenPrompt, locale: localeForPrompt(card) },
+          { text: context.completed, locale: localeForAnswer(card) },
+        )
       }
       continue
     }

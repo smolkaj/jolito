@@ -40,6 +40,25 @@ for (const width of [1280, 1024, 768, 393, 320]) {
       path: `test-results/practice-menu-${width}-open.png`,
       fullPage: true,
     })
+    if (width === 1280) {
+      const grammar = page.getByRole('menuitem', { name: 'Grammar' })
+      await grammar.hover()
+      await settleAnimations(page)
+      await page.screenshot({
+        path: 'test-results/practice-menu-hover.png',
+        fullPage: true,
+      })
+      await page.mouse.down()
+      await settleAnimations(page)
+      await page.screenshot({
+        path: 'test-results/practice-menu-pressed.png',
+        fullPage: true,
+      })
+      // Release outside the action so this visual check does not navigate.
+      await page.mouse.move(0, 0)
+      await page.mouse.up()
+      await page.keyboard.press('Home')
+    }
     await page.keyboard.press('ArrowDown')
     await expect(page.getByRole('menuitem', { name: 'Grammar' })).toBeFocused()
     await page.keyboard.press('Escape')
@@ -71,7 +90,9 @@ for (const width of [1280, 1024, 768, 393, 320]) {
     await page.getByRole('button', { name: 'Jolito home', exact: true }).click()
     await trigger.tap()
     await page.getByRole('menuitem', { name: 'Grammar' }).tap()
-    await expect(page.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Pretérito indefinido' }),
+    ).toBeVisible()
     await page.getByRole('button', { name: 'Jolito home', exact: true }).click()
     await trigger.tap()
     await page.getByRole('menuitem', { name: 'Cards' }).tap()

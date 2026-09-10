@@ -81,6 +81,7 @@ export function grammarContext(card: GrammarCard) {
   const family = grammarFamilies.find((family) => family.id === verb.family)!
   return {
     sentence,
+    spokenPrompt: sentence.replace('___', 'mmm'),
     completed: sentence.replace('___', card.answer),
     translation,
     explanation: 'note' in verb ? verb.note : family.rule,

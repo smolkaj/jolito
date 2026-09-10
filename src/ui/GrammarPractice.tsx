@@ -7,6 +7,7 @@ import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
 import { PracticeCard } from './PracticeCard'
 import { SessionComplete } from './SessionComplete'
+import { AudioButton } from './AudioButton'
 import './grammar.css'
 
 export function GrammarPractice({
@@ -32,10 +33,14 @@ export function GrammarPractice({
     haptics: services.haptics,
     currentCard:
       current && context
-        ? { ...current, answer: context.completed }
+        ? {
+            ...current,
+            prompt: context.spokenPrompt,
+            answer: context.completed,
+          }
         : undefined,
-    autoplayPrompt: false,
-    view: mode,
+    autoplayPrompt: !session.revealed,
+    view: mode === 'practice' ? 'review' : mode,
     paused,
   })
   const grade = (value: Grade) => {
@@ -60,10 +65,12 @@ export function GrammarPractice({
   if (mode === 'choose')
     return (
       <section className="grammar-home" aria-labelledby="grammar-title">
-        <h1 id="grammar-title" lang="es">
-          Pretérito
-        </h1>
-        <p className="grammar-intro">Spanish past tense</p>
+        <header className="grammar-heading">
+          <h1 id="grammar-title" lang="es">
+            Pretérito indefinido
+          </h1>
+          <p className="grammar-intro">Spanish simple past</p>
+        </header>
         <fieldset className="grammar-focus">
           <legend className="sr-only">Patterns</legend>
           <label
@@ -162,9 +169,16 @@ export function GrammarPractice({
       card={current}
       prompt={
         <>
-          <p className="grammar-verb-cue" lang="es">
-            {current.grammar.verb}
-          </p>
+          <div className="study-prompt-wrap">
+            <p className="grammar-verb-cue" lang="es">
+              {current.grammar.verb}
+            </p>
+            <AudioButton
+              prompt
+              label="Play prompt audio"
+              onClick={() => audio.playPromptAudio()}
+            />
+          </div>
           <h1 className="grammar-sentence" lang="es">
             {before}
             <span className="grammar-blank" aria-label="missing verb">
@@ -184,6 +198,7 @@ export function GrammarPractice({
       }}
       onGrade={grade}
       onPlayAnswer={() => audio.playAnswerAudio()}
+      onPlayPrompt={() => audio.playPromptAudio()}
       paused={paused}
       audioUnavailable={audio.audioUnavailable}
       answerLabel="Your conjugation"

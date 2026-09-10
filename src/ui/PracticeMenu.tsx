@@ -118,6 +118,7 @@ export function PracticeMenu({
           ].map(({ label, action }, index) => (
             <button
               key={label}
+              className="secondary-button"
               role="menuitem"
               tabIndex={-1}
               ref={(element) => {

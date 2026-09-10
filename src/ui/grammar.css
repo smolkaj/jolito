@@ -2,16 +2,21 @@
   width: min(560px, 100%);
   margin: clamp(28px, 4.5vh, 48px) auto 0;
 }
+.grammar-heading {
+  text-align: center;
+  margin-bottom: 28px;
+}
 .grammar-home h1 {
-  font-size: clamp(36px, 5vw, 48px);
+  font-family: var(--font-serif);
+  font-size: clamp(44px, 6vw, 56px);
   line-height: 1.1;
   letter-spacing: -1.5px;
   margin: 0;
 }
 .grammar-intro {
   color: var(--ink-soft);
-  font-size: 17px;
-  margin: 12px 0 28px;
+  font-size: 16px;
+  margin: 12px 0 0;
 }
 .grammar-focus {
   border: 0;
@@ -22,28 +27,32 @@
 .grammar-focus label {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 16px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  min-height: 48px;
+  min-height: 56px;
 }
 .grammar-focus label:hover {
-  background: var(--paper-subtle);
-}
-.grammar-focus label.is-selected {
   background: var(--turquesa-soft);
 }
+.grammar-focus label.is-selected {
+  background: var(--turquesa);
+  box-shadow: 3px 3px 0 var(--ink);
+}
 .grammar-focus input {
-  accent-color: var(--turquesa-dark);
+  accent-color: var(--ink);
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
   margin: 0;
 }
 .grammar-focus label:focus-within {
-  outline: 2px solid var(--rosa-dark);
-  outline-offset: 2px;
+  outline: 3px solid var(--rosa-dark);
+  outline-offset: 4px;
 }
 .grammar-focus strong,
 .grammar-focus small {
@@ -51,18 +60,18 @@
 }
 .grammar-focus strong {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .grammar-focus small {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-soft);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .grammar-families {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 12px;
-  margin-top: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
 }
 .grammar-start-row {
   display: flex;
@@ -112,11 +121,8 @@
   line-height: 1.6;
 }
 @media (max-width: 600px) {
-  .grammar-families {
-    gap: 4px;
-  }
   .grammar-focus label {
-    padding: 10px 8px;
+    padding: 12px 10px;
     gap: 8px;
   }
   .grammar-focus strong {

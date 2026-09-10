@@ -25,10 +25,10 @@ hooks; presentation does not choose cards, save grades, or start its own audio e
 
 ## Intentional differences
 
-- Grammar setup chooses patterns and explains the pretérito; vocabulary starts from
+- Grammar setup uses tactile pattern choices and names the pretérito indefinido; vocabulary starts from
   the learner's deck. Their content-management tasks are different.
-- A grammar prompt is an incomplete sentence. Playing its completed sentence before
-  reveal would give away the answer, so only vocabulary has prompt replay.
+- Both modes autoplay and replay prompts. Grammar speaks “mmm” at the blank;
+  the complete sentence is reserved for answer feedback.
 - Grammar supplies Spanish accent entry and corrective grammar rules. Vocabulary keeps
   its authored context and card editing. Both use the same reveal and rating workflow.
 - Summaries say forms or cards. Guest vocabulary is a demo; grammar progress can be

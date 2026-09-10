@@ -15,6 +15,47 @@ async function begin() {
 }
 
 describe('grammar practice in Jolito', () => {
+  it('speaks the blank prompt in Spanish, preserves typing through interruption, and stops on exit', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    const app = render(<App services={services} />)
+    const user = await begin()
+    const prompt = { text: 'Anoche yo mmm con la vecina.', locale: 'es-MX' }
+    expect(services.mockSpeaker.spoken).toEqual([prompt])
+    await user.type(screen.getByRole('textbox'), 'habl')
+    expect(services.mockSpeaker.spoken).toEqual([prompt])
+    await user.keyboard('{Control>} {/Control}')
+    expect(services.mockSpeaker.spoken).toEqual([prompt, prompt])
+    const stops = services.mockSpeaker.stopCount
+    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
+    fireEvent(document, new Event('visibilitychange'))
+    expect(services.mockSpeaker.spoken).toEqual([prompt, prompt])
+    await user.click(screen.getByRole('button', { name: 'Resume round' }))
+    expect(screen.getByRole('textbox')).toHaveValue('habl')
+    expect(services.mockSpeaker.spoken).toEqual([prompt, prompt, prompt])
+    await user.click(screen.getByRole('button', { name: 'Play prompt audio' }))
+    expect(services.mockSpeaker.spoken.slice(-1)[0]).toEqual(prompt)
+    expect(
+      services.mockSpeaker.spoken.every(({ text }) => text.includes('mmm')),
+    ).toBe(true)
+    await user.click(screen.getByRole('button', { name: /Reveal answer/ }))
+    await waitFor(() =>
+      expect(services.mockSpeaker.spoken.slice(-1)[0]).toEqual({
+        text: 'Anoche yo hablé con la vecina.',
+        locale: 'es-MX',
+      }),
+    )
+    await user.keyboard('4')
+    expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toContain('mmm')
+    await user.keyboard('{Enter}')
+    app.unmount()
+    const ended = [...services.mockSpeaker.spoken]
+    fireEvent.keyDown(window, { key: ' ', code: 'Space', ctrlKey: true })
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    expect(services.mockSpeaker.spoken).toEqual(ended)
+  })
+
   it('distinguishes resuming an answer from starting a fresh round', async () => {
     window.history.replaceState({}, '', '#/grammar')
     const services = createTestServices()
@@ -89,6 +130,8 @@ describe('grammar practice in Jolito', () => {
     const app = render(<App services={services} />)
     expect(services.mockSpeaker.prefetched).toEqual(
       expect.arrayContaining([
+        { text: 'Anoche yo mmm con la vecina.', locale: 'es-MX' },
+        { text: 'Después de cenar, yo mmm de la película.', locale: 'es-MX' },
         { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
         { text: 'Después de cenar, yo hablé de la película.', locale: 'es-MX' },
       ]),
@@ -314,7 +357,9 @@ describe('grammar practice in Jolito', () => {
     await act(async () => {
       await services.mockAuth.signOut()
     })
-    expect(screen.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
+    expect(
+      screen.getByRole('heading', { name: 'Pretérito indefinido' }),
+    ).toBeVisible()
     expect(
       screen.queryByRole('button', { name: /Resume round/ }),
     ).not.toBeInTheDocument()

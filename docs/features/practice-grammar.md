@@ -1,4 +1,4 @@
-# Practice grammar: pretérito
+# Practice grammar: pretérito indefinido
 
 The north star is fluent production: applying a conjugation pattern to a verb in
 context, with enough variation and delayed recall to make it dependable.
@@ -125,7 +125,8 @@ dismissal, teardown and five-width layout contracts cover the shared home entry.
 
 The shared prefetch effect prepares the upcoming grammar round when its setup opens
 and when the selected pattern changes. It uses the same sentence expansion as cache
-retention, covering both contexts and both neural voices for the eight upcoming forms.
+retention, covering the incomplete prompt and completed answer in both contexts and
+both neural voices for the eight upcoming forms.
 Active rounds retain their original snapshots through interruptions; typing does not
 restart prefetch. The existing neural cache and network concurrency limit remain the
 single audio pipeline.
@@ -169,3 +170,29 @@ rotation but not sentence variety or setup action relationships. Authored senten
 contracts now cover the former, and five-width browser contracts compare the New/Resume
 actions and preserve an unfinished answer through setup and back. Neural cache readiness
 uses the actual upcoming sentences, independent of their opening words.
+
+## Setup styling and spoken prompts
+
+Setup uses Jolito’s heading typography, white surfaces, ink borders, offset shadows
+and mint selection color. Native radio controls retain their keyboard behavior; a
+single-column narrow layout keeps pattern names and examples readable. The heading
+names the tense explicitly: “Pretérito indefinido,” with “Spanish simple past” below.
+New/Resume action semantics stay the same. No illustration, reference or additional
+status copy is introduced to create visual character.
+
+Grammar supplies `grammarContext.spokenPrompt` to the existing audio hook and the same
+`AudioButton` and replay shortcut as card practice. “mmm” marks the missing verb; the
+complete sentence plays after reveal. Domain locale selection recognizes grammar as
+Spanish on both sides, independent of the vocabulary direction field. One context
+expansion supplies playback, prefetch and cache retention, keeping both voices ready
+for each prompt and answer through offline recall. Typing does not repeat autoplay.
+
+Contracts cover every authored context’s missing-answer protection and locale, plus
+prompt → typing → interruption → resume → replay → answer → next turn → teardown.
+The real-browser audio contract checks neural cache readiness for prompts and answers
+and retains the vocabulary-deletion/offline/alternate-context lifecycle.
+
+The home menu uses shared `secondary-button` styles for its actions, including hover
+lift, colored offset shadows, press movement and keyboard focus. Its CSS supplies
+only layout; the popup uses the existing card-shadow token. This replaces the
+prototype’s separate flat hover treatment and bespoke faint shadow.

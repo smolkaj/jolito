@@ -87,7 +87,9 @@ for (const viewport of [
     await page.setViewportSize(viewport)
     await page.goto('/')
     await practiceGrammar(page)
-    await expect(page.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Pretérito indefinido' }),
+    ).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-home.png`,
@@ -298,24 +300,27 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await page.clock.setFixedTime(now)
   await page.route('**/api/tts*', (route) => route.fulfill({ status: 503 }))
   await page.goto('/#/grammar')
-  await page.getByRole('button', { name: 'New round' }).click()
-  await page.getByRole('textbox').press('Enter')
   const speechCount = () =>
     page.evaluate(() => window.__speechSynthesisCalls!.length)
-  expect(await speechCount()).toBe(0)
+  await page.getByRole('button', { name: 'New round' }).click()
+  await expect.poll(speechCount).toBe(1)
+  await page.getByRole('textbox').press('Enter')
+  await expect.poll(speechCount).toBe(2)
+  // Separate intentional replays from speech’s double-activation suppression.
+  await page.clock.setFixedTime(now + 1000)
   await page.getByRole('status').focus()
   await page.keyboard.press('Space')
-  await expect.poll(speechCount).toBe(1)
-  // Move beyond speech’s double-activation suppression window.
-  await page.clock.setFixedTime(now + 1000)
-  const audioButton = page.locator('.study-card .audio-button')
+  await expect.poll(speechCount).toBe(3)
+  await page.clock.setFixedTime(now + 2000)
+  const audioButton = page.locator('.reveal-panel .audio-button')
   await audioButton.press('Space')
-  await expect.poll(speechCount).toBe(2)
+  await expect.poll(speechCount).toBe(4)
   await page.getByRole('button', { name: /Easy/ }).press('Space')
   await expect(page.getByRole('textbox')).toBeFocused()
+  await expect.poll(speechCount).toBe(5)
   await page.getByRole('textbox').press('Space')
   await expect(page.getByRole('textbox')).toHaveValue(' ')
-  expect(await speechCount()).toBe(2)
+  expect(await speechCount()).toBe(5)
 })
 
 test('accent taps preserve the active input and selection across practice turns', async ({
@@ -408,7 +413,13 @@ test('grammar prepares neural voices for both contexts and retains them across i
   await page.goto('/#/grammar')
   const original = 'Anoche yo hablé con la vecina.'
   const repeated = 'Después de cenar, yo hablé de la película.'
-  for (const text of [original, repeated]) {
+  const spokenPrompt = 'Anoche yo mmm con la vecina.'
+  for (const text of [
+    original,
+    repeated,
+    spokenPrompt,
+    'Después de cenar, yo mmm de la película.',
+  ]) {
     await expect
       .poll(() => [...(fetched.get(text) ?? [])].sort())
       .toEqual(['es-MX-DaliaNeural', 'es-MX-JorgeNeural'])
@@ -417,11 +428,13 @@ test('grammar prepares neural voices for both contexts and retains them across i
   // also caches TTS URLs, but cannot establish neural playback readiness.
   const roundTexts = grammarQueue(createGrammarCards(0), 0, 'mixed').flatMap(
     (card) =>
-      [0, 1].map(
-        (reviews) =>
-          grammarContext({ ...card, schedule: { ...card.schedule, reviews } })
-            .completed,
-      ),
+      [0, 1].flatMap((reviews) => {
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
+        })
+        return [context.spokenPrompt, context.completed]
+      }),
   )
   const cachedGrammar = () =>
     page.evaluate(async (texts) => {
@@ -439,14 +452,23 @@ test('grammar prepares neural voices for both contexts and retains them across i
           .map((request) => request.url),
       ).size
     }, roundTexts)
-  await expect.poll(cachedGrammar).toBe(32)
+  await expect.poll(cachedGrammar).toBe(64)
   await page.getByRole('button', { name: 'New round' }).click()
   const plays = () =>
     page.evaluate(() =>
       Number(document.documentElement.dataset.neuralPlays ?? 0),
     )
-  await page.getByRole('textbox').press('Enter')
   await expect.poll(plays).toBeGreaterThan(0)
+  const afterAutoplay = await plays()
+  // An intentional replay occurs after the 80ms double-activation window.
+  await page.clock.setFixedTime(Date.now() + 1000)
+  await page.getByRole('textbox').fill('habl')
+  await page.getByRole('textbox').press('Control+Space')
+  await expect.poll(plays).toBeGreaterThan(afterAutoplay)
+  await expect(page.getByRole('textbox')).toHaveValue('habl')
+  const afterReplay = await plays()
+  await page.getByRole('textbox').press('Enter')
+  await expect.poll(plays).toBeGreaterThan(afterReplay)
   // Interrupt before grading so setup predicts the same already-warmed round.
   await page.getByRole('button', { name: 'Patterns' }).click()
   await page.getByRole('button', { name: 'Resume round' }).click()
@@ -465,9 +487,10 @@ test('grammar prepares neural voices for both contexts and retains them across i
   await page.getByRole('button', { name: 'Jolito home' }).click()
   await practiceGrammar(page)
   await expect(page.getByRole('status')).toBeVisible()
-  await expect.poll(cachedGrammar).toBe(32)
+  await expect.poll(cachedGrammar).toBe(64)
   await page.keyboard.press('1')
   for (let turn = 0; turn < 5; turn++) {
+    await page.getByRole('button', { name: 'Play prompt audio' }).click()
     const before = await plays()
     await page.getByRole('textbox').press('Enter')
     await expect.poll(plays).toBeGreaterThan(before)

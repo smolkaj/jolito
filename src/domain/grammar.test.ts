@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DAY, scheduleReview, studyCardCollectionSchema } from './card'
+import {
+  DAY,
+  scheduleReview,
+  studyCardCollectionSchema,
+  localeForPrompt,
+  localeForAnswer,
+} from './card'
 import { createGrammarCards, grammarContext, grammarQueue } from './grammar'
 import { preteriteVerbs, grammarFamilies } from './grammar-content'
 import { createStudyCards } from './card'
@@ -186,6 +192,14 @@ describe('preterite practice contracts', () => {
           .toLocaleLowerCase('es')
           .match(/[\p{L}]+/gu)!
         expect(words).not.toContain(card.answer)
+        expect(context.spokenPrompt).toBe(
+          context.sentence.replace('___', 'mmm'),
+        )
+        expect(
+          context.spokenPrompt.toLocaleLowerCase('es').match(/[\p{L}]+/gu),
+        ).not.toContain(card.answer)
+        expect(localeForPrompt(card)).toBe('es-MX')
+        expect(localeForAnswer(card)).toBe('es-MX')
       }
     }
     const comer = cards.find(
