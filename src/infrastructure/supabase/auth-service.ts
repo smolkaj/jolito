@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../application/ports'
+import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { getCanonicalOrigin } from '../browser/host'
 
 const jwtPayloadSchema = z.object({
@@ -454,23 +455,13 @@ export class SupabaseAuthService implements AuthService {
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
     const cleanEmail = email.trim()
-    let rawToken = token.trim()
+    const rawToken = unwrapDomainBoundOtp(token)
 
     if (!rawToken) {
       return {
         success: false,
         error: 'Please paste your sign-in link.',
       }
-    }
-
-    if (rawToken.startsWith('<') && rawToken.endsWith('>')) {
-      rawToken = rawToken.slice(1, -1).trim()
-    }
-    if (
-      (rawToken.startsWith('"') && rawToken.endsWith('"')) ||
-      (rawToken.startsWith("'") && rawToken.endsWith("'"))
-    ) {
-      rawToken = rawToken.slice(1, -1).trim()
     }
 
     // 0. Check if rawToken is a plain webpage link without tokens
