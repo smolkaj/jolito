@@ -89,6 +89,9 @@
         .code-display {
           color: #f272ad !important;
         }
+        .domain-bound-otp {
+          color: #8d9c94 !important;
+        }
         .divider-line {
           border-top-color: #2b3832 !important;
         }
@@ -148,8 +151,8 @@
         font-family: sans-serif;
       "
     >
-      Your 1-click sign-in link and 6-digit code for Jolito. &#847; &zwnj;
-      &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj;
+      Your Jolito verification code is {{ .Token }}. Your 1-click sign-in link
+      and 6-digit code for Jolito. &#847; &zwnj; &nbsp; &#8199; &shy; &#847;
       &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj;
       &nbsp; &#8199; &shy;
     </div>
@@ -414,8 +417,8 @@
                     text-align: center;
                   "
                 >
-                  Signing in on another device or the mobile app? Enter this
-                  6-digit code:
+                  Signing in on another device or the mobile app? Your
+                  verification code is:
                 </p>
 
                 <div
@@ -426,7 +429,7 @@
                     border-radius: 12px;
                     padding: 14px 16px;
                     text-align: center;
-                    margin: 0 auto 16px auto;
+                    margin: 0 auto 10px auto;
                     max-width: 320px;
                   "
                 >
@@ -446,6 +449,24 @@
                     >{{ .Token }}</span
                   >
                 </div>
+
+                <!-- Domain-bound security format for iOS/macOS AutoFill -->
+                <p
+                  class="domain-bound-otp"
+                  style="
+                    margin: 0 0 16px 0;
+                    font-family:
+                      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                      monospace;
+                    font-size: 11px;
+                    line-height: 1.4;
+                    color: #5f6e66;
+                    text-align: center;
+                    letter-spacing: 0.04em;
+                  "
+                >
+                  @joli.to #{{ .Token }}
+                </p>
 
                 <!-- Expiry Notice -->
                 <p

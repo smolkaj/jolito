@@ -494,6 +494,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
     const tokenInput = screen.getByLabelText(/6-digit code or sign-in link/i)
     expect(tokenInput).not.toHaveClass('otp-code-input')
     expect(tokenInput).toHaveAttribute('inputmode', 'numeric')
+    expect(tokenInput).toHaveAttribute('name', 'one-time-code')
+    expect(tokenInput).toHaveAttribute('autocomplete', 'one-time-code')
 
     // Entering digits triggers otp-code-input styling
     fireEvent.change(tokenInput, { target: { value: '123456' } })
@@ -506,5 +508,121 @@ describe('SyncModal First-Class OTP Code Entry', () => {
     })
     expect(tokenInput).not.toHaveClass('otp-code-input')
     expect(tokenInput).toHaveAttribute('inputmode', 'text')
+  })
+
+  it('normalizes domain-bound code (@joli.to #123456) when clicking paste from clipboard', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+    const readTextSpy = vi.fn().mockResolvedValue('@joli.to #839201')
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { readText: readTextSpy },
+      configurable: true,
+      writable: true,
+    })
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'domain-paster@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const tokenInput = await screen.findByLabelText(
+      /6-digit code or sign-in link/i,
+    )
+    const pasteBtn = screen.getByRole('button', {
+      name: /paste from clipboard/i,
+    })
+
+    fireEvent.click(pasteBtn)
+
+    await waitFor(() => {
+      expect(tokenInput).toHaveValue('839201')
+    })
+    expect(tokenInput).toHaveClass('otp-code-input')
+  })
+
+  it('normalizes domain-bound code during native paste event and allows successful sign-in', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'native-paster@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const tokenInput = await screen.findByLabelText(
+      /6-digit code or sign-in link/i,
+    )
+
+    // Simulate native clipboard paste
+    fireEvent.paste(tokenInput, {
+      clipboardData: {
+        getData: (format: string) =>
+          format === 'text' ? '@joli.to #839201' : '',
+      },
+    })
+
+    expect(tokenInput).toHaveValue('839201')
+    expect(tokenInput).toHaveClass('otp-code-input')
+
+    // Submit form and verify sign-in completes
+    fireEvent.click(screen.getByRole('button', { name: /sign in & sync/i }))
+
+    await waitFor(() => {
+      expect(auth.user?.email).toBe('native-paster@example.com')
+    })
+  })
+
+  it('normalizes domain-bound code during direct input change', async () => {
+    const auth = new MockAuthService()
+    const sync = new MockSyncService()
+
+    render(
+      <SyncModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: 'direct-input@example.com' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const tokenInput = await screen.findByLabelText(
+      /6-digit code or sign-in link/i,
+    )
+
+    fireEvent.change(tokenInput, {
+      target: { value: '@joli.to # 482-910' },
+    })
+
+    expect(tokenInput).toHaveValue('482910')
+    expect(tokenInput).toHaveClass('otp-code-input')
   })
 })

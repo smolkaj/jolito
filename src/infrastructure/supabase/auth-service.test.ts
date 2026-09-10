@@ -563,6 +563,74 @@ describe('SupabaseAuthService', () => {
     expect(parsedBody.token).toBe('123456')
   })
 
+  it('extracts 6-digit code from domain-bound security format (@joli.to #123456 or #123456) during verifyOtp', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          access_token: 'clean-token',
+          refresh_token: 'clean-refresh',
+          expires_in: 3600,
+          user: { id: 'usr-clean', email: 'domain-bound@example.com' },
+        }),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    // Test with full domain-bound string: @joli.to #482910
+    const res1 = await service.verifyOtp(
+      'domain-bound@example.com',
+      '@joli.to #482910',
+    )
+    expect(res1.success).toBe(true)
+
+    const callArgs1 = fetchSpy.mock.calls[0] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody1 = JSON.parse(callArgs1[1].body) as {
+      email: string
+      token: string
+    }
+    expect(parsedBody1.token).toBe('482910')
+
+    // Test with prefix-only format: #482910
+    const res2 = await service.verifyOtp('domain-bound@example.com', '#482910')
+    expect(res2.success).toBe(true)
+
+    const callArgs2 = fetchSpy.mock.calls[1] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody2 = JSON.parse(callArgs2[1].body) as {
+      email: string
+      token: string
+    }
+    expect(parsedBody2.token).toBe('482910')
+
+    // Test with hyphenated/spaced domain-bound format: @joli.to # 482-910
+    const res3 = await service.verifyOtp(
+      'domain-bound@example.com',
+      '@joli.to # 482-910',
+    )
+    expect(res3.success).toBe(true)
+
+    const callArgs3 = fetchSpy.mock.calls[2] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody3 = JSON.parse(callArgs3[1].body) as {
+      email: string
+      token: string
+    }
+    expect(parsedBody3.token).toBe('482910')
+  })
+
   it('provides actionable guidance when OTP is expired or invalid', async () => {
     vi.stubGlobal(
       'fetch',

@@ -23,6 +23,7 @@ import { OfflineCardAssistant } from '../application/card-assistant'
 import type { StudyCard } from '../domain/card'
 import { SEED_LEXICON, type LexiconEntry } from '../domain/lexicon'
 import { reconcileStudyCards, type SyncStatus } from '../domain/sync'
+import { unwrapDomainBoundOtp } from '../domain/auth'
 
 export class FixedClock implements Clock {
   constructor(public currentTime = 1771632000000) {}
@@ -174,8 +175,10 @@ export class MockAuthService implements AuthService {
     email: string,
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
-    const clean = token.replace(/\s+|-/g, '').trim()
+    const unwrapped = unwrapDomainBoundOtp(token)
+    const clean = unwrapped.replace(/\s+|-/g, '').trim()
     if (
+      /^\d{6}$/.test(clean) ||
       clean === '123456' ||
       clean.includes('access_token=') ||
       clean.includes('token=') ||
