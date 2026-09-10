@@ -109,3 +109,59 @@ test('direct links and reduced motion preserve welcome round trips', async ({
     .poll(() => welcome.evaluate((element) => element.scrollTop))
     .toBeGreaterThan(100)
 })
+
+test.describe('touch scroll round trips', () => {
+  test.use({
+    viewport: { width: 393, height: 852 },
+    isMobile: true,
+    hasTouch: true,
+  })
+
+  test('swipes reach the entire story and return to the hero after viewport changes', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'Playwright exposes touch dragging only through Chromium CDP; physical iOS swipes require device verification.',
+    )
+    const touch = await page.context().newCDPSession(page)
+    const swipe = async (direction: 'up' | 'down') => {
+      const startY = direction === 'up' ? 560 : 160
+      const endY = direction === 'up' ? 160 : 560
+      await touch.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x: 195, y: startY }],
+      })
+      for (let step = 1; step <= 12; step++) {
+        await touch.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x: 195, y: startY + ((endY - startY) * step) / 12 }],
+        })
+        await page.waitForTimeout(16)
+      }
+      await touch.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      })
+      // Allow native momentum and snapping to settle before the next gesture.
+      await page.waitForTimeout(500)
+    }
+    await page.goto('/')
+    for (const height of [852, 680, 852]) {
+      await page.setViewportSize({ width: 393, height })
+      for (let gesture = 0; gesture < 3; gesture++) await swipe('up')
+      await expect(
+        page.getByRole('button', { name: /^start learning/i }),
+      ).toBeInViewport({ ratio: 1 })
+      for (let gesture = 0; gesture < 3; gesture++) await swipe('down')
+      await expect
+        .poll(() =>
+          page.getByRole('main').evaluate((element) => element.scrollTop),
+        )
+        .toBeLessThanOrEqual(1)
+      expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    }
+    await touch.detach()
+  })
+})
