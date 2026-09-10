@@ -113,16 +113,16 @@ for (const viewport of [
       fullPage: true,
     })
     await allPatterns.click()
-    await page.getByRole('button', { name: 'New round' }).click()
+    await page.getByRole('button', { name: 'Start practice' }).click()
     const grammarLayout = await sessionLayout(page)
     await page.getByRole('textbox').fill('habl')
     await page.getByRole('button', { name: 'Grammar', exact: true }).click()
     await settleAnimations(page)
     const resume = (await page
-      .getByRole('button', { name: 'Resume round' })
+      .getByRole('button', { name: 'Resume practice' })
       .boundingBox())!
     const fresh = (await page
-      .getByRole('button', { name: 'New round' })
+      .getByRole('button', { name: 'Start new' })
       .boundingBox())!
     expect(resume.y).toBeCloseTo(fresh.y, 2)
     expect(resume.width).toBeCloseTo(fresh.width, 2)
@@ -136,7 +136,7 @@ for (const viewport of [
       path: `test-results/grammar-${viewport.width}-resume.png`,
       fullPage: true,
     })
-    await page.getByRole('button', { name: 'Resume round' }).click()
+    await page.getByRole('button', { name: 'Resume practice' }).click()
     await expect(page.getByRole('textbox')).toHaveValue('habl')
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
     await expect(input).toBeFocused()
@@ -294,14 +294,14 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
     await navigator.serviceWorker.ready
   })
   await page.getByRole('radio', { name: /Irregular stems/ }).check()
-  await page.getByRole('button', { name: 'New round' }).click()
+  await page.getByRole('button', { name: 'Start practice' }).click()
   await page.getByRole('textbox').fill('tuve')
   await page.getByRole('textbox').press('Enter')
   await page.keyboard.press('4')
   await context.setOffline(true)
   await page.reload()
   await page.getByRole('radio', { name: /Irregular stems/ }).check()
-  await page.getByRole('button', { name: 'New round' }).click()
+  await page.getByRole('button', { name: 'Start practice' }).click()
   await expect(page.getByRole('heading', { level: 1 })).not.toContainText(
     'En el camino, yo … una idea.',
   )
@@ -340,7 +340,7 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await page.goto('/#/grammar')
   const speechCount = () =>
     page.evaluate(() => window.__speechSynthesisCalls!.length)
-  await page.getByRole('button', { name: 'New round' }).click()
+  await page.getByRole('button', { name: 'Start practice' }).click()
   await expect.poll(speechCount).toBe(1)
   await page.getByRole('textbox').press('Enter')
   await expect.poll(speechCount).toBe(2)
@@ -372,7 +372,7 @@ test('accent taps preserve the active input and selection across practice turns'
   try {
     const page = await context.newPage()
     await page.goto('/#/grammar')
-    await page.getByRole('button', { name: 'New round' }).tap()
+    await page.getByRole('button', { name: 'Start practice' }).tap()
     for (let turn = 0; turn < 2; turn++) {
       const input = page.getByRole('textbox')
       await input.fill('hablX')
@@ -505,7 +505,7 @@ for (const topic of ['preterite', 'perfect'] as const) {
         ).size
       }, roundTexts)
     await expect.poll(cachedGrammar).toBe(64)
-    await page.getByRole('button', { name: 'New round' }).click()
+    await page.getByRole('button', { name: 'Start practice' }).click()
     const plays = () =>
       page.evaluate(() =>
         Number(document.documentElement.dataset.neuralPlays ?? 0),
@@ -523,7 +523,7 @@ for (const topic of ['preterite', 'perfect'] as const) {
     await expect.poll(plays).toBeGreaterThan(afterReplay)
     // Interrupt before grading so setup predicts the same already-warmed round.
     await page.getByRole('button', { name: 'Grammar' }).click()
-    await page.getByRole('button', { name: 'Resume round' }).click()
+    await page.getByRole('button', { name: 'Resume practice' }).click()
     await page.getByRole('button', { name: 'Jolito home' }).click()
     await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
     const demo = page.getByRole('button', { name: /explore demo deck/i })
