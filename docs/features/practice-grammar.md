@@ -118,6 +118,8 @@ paths drifting from vocabulary. Existing tests checked scheduling and isolated l
 but did not compare the two flows or assert grade sounds after interruptions. Browser
 contracts now compare home action heights and rating geometry across five widths,
 exercise highlighted accent corrections, and retain keyboard and accessibility checks.
+Geometry measurements await settled transitions, account for intentional 1px button
+travel, and tolerate subpixel rounding without weakening padding/spacing parity.
 React contracts assert each grade sound/haptic after navigation/visibility interruptions,
 completion feedback, failed-save silence, and shortcut immobility after teardown.
 These issues originated in PR #275’s prototype and never reached main or production.

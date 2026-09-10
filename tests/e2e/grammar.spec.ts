@@ -1,7 +1,8 @@
-import { auditAccessibility } from './accessibility'
+import { auditAccessibility, settleAnimations } from './accessibility'
 import { expect, test, type Page } from '@playwright/test'
 
 async function ratingGeometry(page: Page) {
+  await settleAnimations(page)
   return page.locator('.grade-buttons').evaluate((element) => {
     const style = getComputedStyle(element)
     return {
@@ -36,8 +37,9 @@ for (const viewport of [
       name: 'Practice',
       exact: true,
     })
-    expect((await grammarEntry.boundingBox())!.height).toBe(
+    expect((await grammarEntry.boundingBox())!.height).toBeCloseTo(
       (await vocabularyEntry.boundingBox())!.height,
+      2,
     )
     await grammarEntry.click()
     await expect(page.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
@@ -59,11 +61,18 @@ for (const viewport of [
     for (const state of ['rest', 'hover', 'pressed']) {
       if (state === 'hover') await check.hover()
       if (state === 'pressed') await page.mouse.down()
+      await settleAnimations(page)
       const box = (await check.boundingBox())!
-      expect(box.x).toBeGreaterThanOrEqual(cardBox.x)
-      expect(box.y).toBeGreaterThanOrEqual(cardBox.y)
-      expect(box.x + box.width).toBeLessThanOrEqual(cardBox.x + cardBox.width)
-      expect(box.y + box.height).toBeLessThanOrEqual(cardBox.y + cardBox.height)
+      // Preserve the intentional 1px hover/press travel; ignore subpixel rounding.
+      const travel = state === 'hover' ? -1 : state === 'pressed' ? 1 : 0
+      expect(box.x).toBeGreaterThanOrEqual(cardBox.x - 0.01)
+      expect(box.y - travel).toBeGreaterThanOrEqual(cardBox.y - 0.01)
+      expect(box.x + box.width).toBeLessThanOrEqual(
+        cardBox.x + cardBox.width + 0.01,
+      )
+      expect(box.y + box.height - travel).toBeLessThanOrEqual(
+        cardBox.y + cardBox.height + 0.01,
+      )
       if (state === 'pressed') {
         await page.mouse.move(0, 0)
         await page.mouse.up()
@@ -120,7 +129,15 @@ for (const viewport of [
       page.getByRole('textbox', { name: 'Your answer' }),
     ).toBeVisible()
     await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
-    expect(await ratingGeometry(page)).toEqual(grammarRatings)
+    const vocabularyRatings = await ratingGeometry(page)
+    expect(vocabularyRatings.gap).toBe(grammarRatings.gap)
+    expect(vocabularyRatings.columns).toBe(grammarRatings.columns)
+    vocabularyRatings.buttons.forEach(({ height, ...style }, index) => {
+      const { height: expectedHeight, ...expectedStyle } =
+        grammarRatings.buttons[index]!
+      expect(style).toEqual(expectedStyle)
+      expect(height).toBeCloseTo(expectedHeight, 2)
+    })
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
