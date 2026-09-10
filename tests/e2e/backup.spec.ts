@@ -117,7 +117,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
 
   // Start review with the imported card
   await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -152,7 +152,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await page.keyboard.press('Escape')
 
   await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(
@@ -232,7 +232,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
 
   // Start review
   await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
+    .getByRole('button', { name: /^practice$/i })
     .first()
     .click()
   await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()

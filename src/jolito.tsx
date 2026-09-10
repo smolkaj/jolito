@@ -50,6 +50,7 @@ import {
 } from './domain/grammar'
 import { useGrammarPractice } from './ui/useGrammarPractice'
 import { GrammarPractice } from './ui/GrammarPractice'
+import { PracticeMenu } from './ui/PracticeMenu'
 import { useStudySession } from './ui/useStudySession'
 import { useStudyAudio } from './ui/useStudyAudio'
 import {
@@ -2295,24 +2296,10 @@ export function App({
                   >
                     Create a card <span aria-hidden="true">→</span>
                   </button>
-                  <div className="practice-actions">
-                    <button
-                      className="secondary-button"
-                      onClick={handlePractice}
-                    >
-                      Practice vocabulary
-                    </button>
-                    <a
-                      className="secondary-button grammar-entry"
-                      href="#/grammar"
-                      onClick={(event) => {
-                        event.preventDefault()
-                        navigateTo('grammar')
-                      }}
-                    >
-                      Practice grammar
-                    </a>
-                  </div>
+                  <PracticeMenu
+                    onCards={handlePractice}
+                    onGrammar={() => navigateTo('grammar')}
+                  />
                 </div>
               </div>
               <div className="hero-visual" data-nosnippet>

@@ -1,3 +1,4 @@
+import { practiceCards, practiceGrammar } from '../test/practice'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -46,7 +47,7 @@ describe('grammar practice in Jolito', () => {
     const services = createTestServices()
     const app = render(<App services={services} />)
     const user = userEvent.setup()
-    await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
+    await practiceGrammar(user)
     await begin()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Anoche yo',
@@ -63,13 +64,11 @@ describe('grammar practice in Jolito', () => {
     const heading = screen.getByRole('heading', { level: 1 }).textContent
     await user.type(screen.getByRole('textbox'), 'unfinished')
     await user.click(screen.getByRole('button', { name: 'Jolito home' }))
-    await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
+    await practiceGrammar(user)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(heading)
     expect(screen.getByRole('textbox')).toHaveValue('unfinished')
     await user.click(screen.getByRole('button', { name: 'Jolito home' }))
-    await user.click(
-      screen.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
-    )
+    await practiceCards(user)
     expect(screen.getByRole('textbox', { name: 'Your answer' })).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent(
       'Anoche',
@@ -253,7 +252,7 @@ describe('grammar practice in Jolito', () => {
       await user.click(screen.getByRole('button', { name: 'Resume round' }))
       expect(screen.getByRole('status')).toBeVisible()
       await user.click(screen.getByRole('button', { name: 'Jolito home' }))
-      await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
+      await practiceGrammar(user)
       fireEvent(document, new Event('visibilitychange'))
       const played = services.mockSounds.played.length
       await user.keyboard(String(index + 1))

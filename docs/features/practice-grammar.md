@@ -2,8 +2,8 @@
 
 The north star is fluent production: applying a conjugation pattern to a verb in
 context, with enough variation and delayed recall to make it dependable.
-Vocabulary remains Jolito’s main entry point. A secondary “Practice grammar” action
-on home opens its own space; grammar never enters vocabulary queues or counts.
+Home offers Create a card and Practice on one row. Practice opens a compact menu
+with Cards first and Grammar second; grammar never enters card queues or counts.
 
 ## Learning experience
 
@@ -114,7 +114,12 @@ and Back home, with Patterns remaining in navigation.
 
 See the [coherence audit](practice-coherence-audit.md) for every finding, intentional
 differences, root causes, and the comparative/lifecycle contracts that prevent drift.
-Home button grouping remains deferred for a separate user discussion.
+The home Practice menu makes the two learning modes explicit without repeating
+Practice labels or introducing a second action row. Cards resumes the existing card
+session; Grammar opens its existing route. Card-specific editor/deck shortcuts still
+lead directly to card practice. The menu owns only its open state and focus; it does
+not own session state or remember a hidden default mode. Keyboard, touch, outside
+dismissal, teardown and five-width layout contracts cover the shared home entry.
 
 ## Neural audio and touch focus
 

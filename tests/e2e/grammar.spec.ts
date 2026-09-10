@@ -1,3 +1,4 @@
+import { practiceCards, practiceGrammar } from './practice'
 import {
   createGrammarCards,
   grammarContext,
@@ -85,16 +86,7 @@ for (const viewport of [
   }) => {
     await page.setViewportSize(viewport)
     await page.goto('/')
-    const grammarEntry = page.getByRole('link', { name: 'Practice grammar' })
-    const vocabularyEntry = page.getByRole('button', {
-      name: 'Practice vocabulary',
-      exact: true,
-    })
-    expect((await grammarEntry.boundingBox())!.height).toBeCloseTo(
-      (await vocabularyEntry.boundingBox())!.height,
-      2,
-    )
-    await grammarEntry.click()
+    await practiceGrammar(page)
     await expect(page.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
@@ -204,9 +196,7 @@ for (const viewport of [
     })
     const grammarCompletion = await completionStyle(page)
     await page.getByRole('button', { name: 'Back home' }).click()
-    await page
-      .getByRole('button', { name: 'Practice vocabulary', exact: true })
-      .click()
+    await practiceCards(page)
     await expect(
       page.getByRole('textbox', { name: 'Your answer' }),
     ).toBeVisible()
@@ -473,7 +463,7 @@ test('grammar prepares neural voices for both contexts and retains them across i
   await context.setOffline(true)
   offline = true
   await page.getByRole('button', { name: 'Jolito home' }).click()
-  await page.getByRole('link', { name: 'Practice grammar' }).click()
+  await practiceGrammar(page)
   await expect(page.getByRole('status')).toBeVisible()
   await expect.poll(cachedGrammar).toBe(32)
   await page.keyboard.press('1')

@@ -1,3 +1,4 @@
+import { practiceCards } from './practice'
 import { auditAccessibility } from './accessibility'
 import { expect, test } from '@playwright/test'
 
@@ -15,7 +16,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
 
     // 1. Welcome screen primary touch targets
     const practiceBtn = page.getByRole('button', {
-      name: /^practice(?: vocabulary)?$/i,
+      name: /^practice$/i,
     })
     await expect(practiceBtn).toBeVisible()
     const practiceBox = await practiceBtn.boundingBox()
@@ -31,7 +32,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(createBox!.width).toBeGreaterThanOrEqual(44)
 
     // 2. Study screen controls
-    await practiceBtn.click()
+    await practiceCards(page)
     const answerInput = page.getByLabel(/your answer/i)
     await expect(answerInput).toBeVisible()
     const inputBox = await answerInput.boundingBox()
@@ -106,10 +107,10 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
 
     // 2. Tap Practice on mobile
     const practiceBtn = page.getByRole('button', {
-      name: /^practice(?: vocabulary)?$/i,
+      name: /^practice$/i,
     })
     await expect(practiceBtn).toBeVisible()
-    await practiceBtn.click()
+    await practiceCards(page)
 
     // Verify study view is active and responsive
     const answerInput = page.getByLabel(/your answer/i)
@@ -262,10 +263,10 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
 
     // 1. Start practice session in mobile portrait (393x852)
     const practiceBtn = page.getByRole('button', {
-      name: /^practice(?: vocabulary)?$/i,
+      name: /^practice$/i,
     })
     await expect(practiceBtn).toBeVisible()
-    await practiceBtn.click()
+    await practiceCards(page)
 
     // First card: aguacate
     const answerInput = page.getByLabel(/your answer/i)

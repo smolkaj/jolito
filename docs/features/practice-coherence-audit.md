@@ -33,8 +33,8 @@ hooks; presentation does not choose cards, save grades, or start its own audio e
   its authored context and card editing. Both use the same reveal and rating workflow.
 - Summaries say forms or cards. Guest vocabulary is a demo; grammar progress can be
   practiced locally and synced after sign-in, so its account copy describes progress.
-- Home button grouping is outside this audit's implementation and remains deferred
-  for the separate discussion requested by the user.
+- Home uses one Practice menu with Cards and Grammar. Card-specific editor and deck
+  shortcuts retain direct access to card practice; their scope already identifies the mode.
 
 ## Escape analysis and prevention
 

@@ -1,3 +1,4 @@
+import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility } from './accessibility'
 
@@ -181,9 +182,7 @@ test('creates and reviews both directions with the keyboard', async ({
   await page.getByLabel(/spanish/i).fill('¿Dónde está el metro?')
   await page.getByLabel(/english/i).fill('Where is the metro?')
   await page.getByRole('button', { name: /save card/i }).click()
-  await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-    .click()
+  await practiceCards(page)
 
   await expect(
     page.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -325,9 +324,7 @@ test('supports browser back and forward navigation across views', async ({
 
   // Navigate to Study from Welcome
   await page.goBack()
-  await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-    .click()
+  await practiceCards(page)
   await expect(page.getByLabel('Your answer')).toBeVisible()
   expect(page.url()).toContain('#/study')
 
@@ -769,9 +766,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)
@@ -795,9 +790,7 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(spanishInput).toHaveValue('')
   await expect(englishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(
-    page.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
@@ -812,14 +805,10 @@ test('supports rapid batch card creation while remaining in create view', async 
   ).toBeVisible()
   await expect(spanishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(
-    page.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 3. Start review from top navbar
-  await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-    .click()
+  await practiceCards(page)
   await expect(page.getByRole('heading', { name: 'chido' })).toBeVisible()
 
   const results = await auditAccessibility(page)
@@ -832,12 +821,8 @@ test('allows guests to practice example deck immediately and explore card creato
   await page.goto('/')
 
   // 1. Practice example starter cards immediately as a guest
-  await expect(
-    page.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
-  ).toBeVisible()
-  await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-    .click()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await practiceCards(page)
 
   // Card 1: aguacate -> avocado
   await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
@@ -972,9 +957,7 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
       if (testPage === 'deck') {
         await page.getByRole('button', { name: /manage deck/i }).click()
       } else if (testPage === 'review') {
-        await page
-          .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-          .click()
+        await practiceCards(page)
       } else if (testPage === 'create') {
         await page.getByRole('button', { name: /create a card/i }).click()
       }
@@ -1366,9 +1349,7 @@ test('displays lightweight demo deck modal and demo session complete screen with
 
   // 2. Practice session to demo complete screen
   await page.goto('/')
-  await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-    .click()
+  await practiceCards(page)
 
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press('Enter')
@@ -1508,12 +1489,8 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
 }) => {
   await page.goto('/')
 
-  await expect(
-    page.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
-  ).toBeVisible()
-  await page
-    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
-    .click()
+  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await practiceCards(page)
 
   // Card 1: aguacate -> Again (requeued)
   await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
