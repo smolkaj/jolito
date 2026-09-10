@@ -157,8 +157,8 @@ Jolito uses Supabase Auth for passwordless 1-click magic link and 6-digit OTP ve
 1. **Email Templates:** The custom responsive email template is version-controlled at [`supabase/templates/magic_link.html`](../supabase/templates/magic_link.html) and configured in `supabase/config.toml` (`[auth.email.template.magic_link]`). It features:
    - Official Jolito brand badge with dark-mode contrast protection.
    - Primary 1-click login button (`{{ .ConfirmationURL }}`).
-   - Prominent letter-spaced 6-digit OTP code (`{{ .Token }}`) for cross-device and standalone PWA logins.
-   - Dynamic subject line: `Sign in to Jolito: {{ .Token }}`.
+   - Prominent letter-spaced 6-digit OTP code (`{{ .Token }}`) with explicit verification code phrasing and domain-bound security format (`@joli.to #{{ .Token }}`) for OS AutoFill detection.
+   - Dynamic subject line: `Your Jolito verification code is {{ .Token }}`.
    - Inlined CSS with dark mode support (`prefers-color-scheme: dark`) and inbox preheader text to prevent snippet leakage.
 2. **Sender Domain (`signin@joli.to`) via Custom SMTP:**
    - Transactional authentication emails route through Resend SMTP (`smtp.resend.com`) from `signin@joli.to`.

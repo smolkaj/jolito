@@ -69,7 +69,8 @@ export function buildSupabaseAuthPatch({
   }
 
   if (magicLinkTemplate) {
-    patch.mailer_subjects_magic_link = 'Sign in to Jolito: {{ .Token }}'
+    patch.mailer_subjects_magic_link =
+      'Your Jolito verification code is {{ .Token }}'
     patch.mailer_templates_magic_link_content = magicLinkTemplate
   }
 

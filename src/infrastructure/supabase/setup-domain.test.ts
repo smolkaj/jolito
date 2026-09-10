@@ -82,7 +82,7 @@ describe('Domain & Supabase Setup Utilities', () => {
       })
 
       expect(patch.mailer_subjects_magic_link).toBe(
-        'Sign in to Jolito: {{ .Token }}',
+        'Your Jolito verification code is {{ .Token }}',
       )
       expect(patch.mailer_templates_magic_link_content).toBe(
         '<html><body>{{ .Token }}</body></html>',
