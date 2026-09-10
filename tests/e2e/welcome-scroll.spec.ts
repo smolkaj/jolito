@@ -61,6 +61,8 @@ test('welcome owns snapping through navigation, resize, keyboard input and teard
   await welcome.focus()
   await page.keyboard.press('End')
   await expect(start).toBeInViewport()
+  // Visibility can become true mid-animation; finish this trip before Home.
+  await atWhy()
   await page.keyboard.press('Home')
   await atTop()
   await cue.click()
