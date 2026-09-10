@@ -100,7 +100,10 @@ export function grammarContext(card: GrammarCard) {
     spokenPrompt: sentence.replace('___', '…'),
     completed: sentence.replace('___', card.answer),
     translation,
-    explanation: verb.note ?? family.rule,
+    explanation:
+      'rule' in family
+        ? (verb.note ?? family.rule)
+        : `Replace -${card.grammar.verb.slice(-2)} with -${verb.forms[person]!.slice(card.grammar.verb.length - 2)}.`,
   }
 }
 

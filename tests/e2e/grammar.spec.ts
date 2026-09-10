@@ -204,7 +204,9 @@ for (const viewport of [
     await page.getByRole('textbox').press('Enter')
     await expect(page.locator('.expected-row .diff-seg-accent')).toHaveText('é')
     await expect(page.locator('.diff-row').first()).toContainText('hable')
-    await expect(page.locator('.grammar-explanation')).toBeVisible()
+    await expect(page.locator('.grammar-explanation')).toHaveText(
+      'Replace -ar with -é.',
+    )
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-correction.png`,

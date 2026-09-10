@@ -5,7 +5,6 @@ export const preteriteFamilies = [
     id: 'regular',
     title: 'Regular endings',
     example: 'hablé · comí · viví',
-    rule: 'Replace -ar with -é, -aste, -ó, -amos, -aron. Replace -er or -ir with -í, -iste, -ió, -imos, -ieron.',
   },
   {
     id: 'essential',
