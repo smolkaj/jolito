@@ -1,3 +1,4 @@
+import { grammarVerb } from './grammar-catalog'
 import { describe, expect, it } from 'vitest'
 import {
   DAY,
@@ -30,7 +31,10 @@ describe('preterite practice contracts', () => {
     ).toEqual(cards)
     for (const family of grammarFamilies) {
       expect(
-        cards.some((c) => preteriteVerbs[c.grammar.verb].family === family.id),
+        cards.some(
+          (c) =>
+            grammarVerb(c.grammar.topic, c.grammar.verb)!.family === family.id,
+        ),
       ).toBe(true)
     }
     for (const card of cards) {
@@ -121,13 +125,16 @@ describe('preterite practice contracts', () => {
     const queue = grammarQueue(cards, now, 'mixed')
     expect(queue).toHaveLength(8)
     expect(
-      new Set(queue.map((c) => preteriteVerbs[c.grammar.verb].family)).size,
+      new Set(
+        queue.map((c) => grammarVerb(c.grammar.topic, c.grammar.verb)!.family),
+      ).size,
     ).toBe(6)
     expect(new Set(queue.map((c) => c.grammar.person)).size).toBe(5)
     expect(new Set(queue.map((c) => c.grammar.verb)).size).toBe(8)
     expect(
       grammarQueue(cards, now, 'spelling').every(
-        (c) => preteriteVerbs[c.grammar.verb].family === 'spelling',
+        (c) =>
+          grammarVerb(c.grammar.topic, c.grammar.verb)!.family === 'spelling',
       ),
     ).toBe(true)
   })
@@ -329,7 +336,7 @@ describe('preterite practice contracts', () => {
       version: 1,
       cards: starterCards,
     })
-    expect(legacy.version).toBe(2)
+    expect(legacy.version).toBe(3)
     expect(legacy.cards).toEqual(starterCards)
     const card = scheduleReview(createGrammarCards(now)[0]!, 'easy', now)
     const cards = [...legacy.cards, card]
@@ -349,7 +356,7 @@ describe('preterite practice contracts', () => {
       ).cards.find((c) => c.id === card.id),
     ).toEqual(card)
     expect(
-      studyCardCollectionSchema.safeParse({ version: 3, cards }).success,
+      studyCardCollectionSchema.safeParse({ version: 4, cards }).success,
     ).toBe(false)
     expect(
       studyCardCollectionSchema.safeParse({

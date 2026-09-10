@@ -1,3 +1,4 @@
+import { collectionVersion } from '../../domain/card'
 import type { AuthUser, SyncResult, SyncService } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import {
@@ -164,7 +165,7 @@ export class SupabaseSyncService implements SyncService {
     try {
       const nowIso = new Date().toISOString()
       const payload: DeckSyncPayload = {
-        version: 2,
+        version: collectionVersion,
         app: 'jolito',
         updatedAt: nowIso,
         deviceId: this.deviceId,
@@ -176,7 +177,7 @@ export class SupabaseSyncService implements SyncService {
         user_id: user.id,
         updated_at: nowIso,
         device_id: this.deviceId,
-        version: 2,
+        version: collectionVersion,
         data: payload,
       })
 

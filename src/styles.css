@@ -4151,7 +4151,7 @@ kbd {
   letter-spacing: 0.5px;
 }
 
-.deck-sort-select {
+.pill-select {
   display: inline-flex;
   align-items: center;
   height: var(--pill-height);
@@ -4174,12 +4174,12 @@ kbd {
   transition: all 150ms ease;
 }
 
-.deck-sort-select:hover {
+.pill-select:hover {
   border-color: var(--line);
   color: var(--ink);
 }
 
-.deck-sort-select:focus-visible {
+.pill-select:focus-visible {
   outline: none;
   border-color: var(--rosa);
   box-shadow: 0 0 0 2px var(--rosa-glow);

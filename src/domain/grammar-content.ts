@@ -1,3 +1,5 @@
+import type { GrammarVerb } from './grammar-catalog-types'
+
 export const grammarFamilies = [
   {
     id: 'regular',
@@ -46,12 +48,7 @@ export const grammarPeople = [
   'ellos / ellas / ustedes',
 ] as const
 
-type Verb = {
-  family: Exclude<GrammarFocus, 'mixed'>
-  forms: readonly [string, string, string, string, string]
-  contexts: readonly [readonly [string, string], readonly [string, string]]
-  note?: string
-}
+type Verb = GrammarVerb & { family: Exclude<GrammarFocus, 'mixed'> }
 
 // Full authored sentences own their word order and time context. {ir}/{llegar}
 // establish the same subject before an omitted pronoun; they reuse canonical forms.
@@ -553,7 +550,3 @@ export const preteriteVerbs = {
 } as const satisfies Record<string, Verb>
 
 export type PreteriteVerb = keyof typeof preteriteVerbs
-
-export function grammarCardId(verb: PreteriteVerb, person: number): string {
-  return `grammar:preterite:${verb}:${person}`
-}

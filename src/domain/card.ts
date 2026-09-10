@@ -1,9 +1,10 @@
 import { z } from 'zod'
 import {
   grammarCardId,
-  preteriteVerbs,
-  type PreteriteVerb,
-} from './grammar-content'
+  grammarVerb,
+  grammarTopics,
+  type GrammarTopic,
+} from './grammar-catalog'
 
 export const grades = ['again', 'hard', 'good', 'easy'] as const
 export const directions = ['es-en', 'en-es'] as const
@@ -48,16 +49,17 @@ export const reviewScheduleSchema = z.preprocess(
   }),
 )
 
-// Version 1 → 2 is additive: absent grammar metadata remains vocabulary.
-// A new envelope version keeps older clients from discarding exercise metadata.
+// Versions 1 and 2 retain their card IDs and schedules. Version 3 adds a tense
+// that older clients cannot validate; all writers use the same current version.
+export const collectionVersion = 3 as const
 export const collectionVersionSchema = z
-  .union([z.literal(1), z.literal(2)])
-  .transform(() => 2 as const)
+  .union([z.literal(1), z.literal(2), z.literal(3)])
+  .transform(() => collectionVersion)
 export const grammarExerciseSchema = z.object({
-  topic: z.literal('preterite'),
-  verb: z.enum(
-    Object.keys(preteriteVerbs) as [PreteriteVerb, ...PreteriteVerb[]],
+  topic: z.enum(
+    Object.keys(grammarTopics) as [GrammarTopic, ...GrammarTopic[]],
   ),
+  verb: z.string().min(1),
   person: z.number().int().min(0).max(4),
 })
 
@@ -76,11 +78,13 @@ export const studyCardSchema = z
   })
   .superRefine((card, ctx) => {
     if (!card.grammar) return
-    const { verb, person } = card.grammar
+    const { topic, verb, person } = card.grammar
+    const content = grammarVerb(topic, verb)
     if (
-      card.id !== grammarCardId(verb, person) ||
+      !content ||
+      card.id !== grammarCardId(verb, person, topic) ||
       card.noteId !== card.id ||
-      card.answer !== preteriteVerbs[verb].forms[person] ||
+      card.answer !== content.forms[person] ||
       card.direction !== 'en-es'
     ) {
       ctx.addIssue({

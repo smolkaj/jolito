@@ -27,7 +27,7 @@ describe('grammar practice in Jolito', () => {
     await user.keyboard('{Control>} {/Control}')
     expect(services.mockSpeaker.spoken).toEqual([prompt, prompt])
     const stops = services.mockSpeaker.stopCount
-    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('button', { name: 'Grammar' }))
     expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
     fireEvent(document, new Event('visibilitychange'))
     expect(services.mockSpeaker.spoken).toEqual([prompt, prompt])
@@ -68,10 +68,10 @@ describe('grammar practice in Jolito', () => {
     ).not.toBeInTheDocument()
     const user = await begin()
     await user.type(screen.getByRole('textbox'), 'habl')
-    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('button', { name: 'Grammar' }))
     await user.click(screen.getByRole('button', { name: 'Resume round' }))
     expect(screen.getByRole('textbox')).toHaveValue('habl')
-    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('button', { name: 'Grammar' }))
     await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
     await user.click(screen.getByRole('button', { name: 'New round' }))
     expect(screen.getByRole('textbox')).toHaveValue('')
@@ -140,7 +140,7 @@ describe('grammar practice in Jolito', () => {
     const calls = prefetch.mock.calls.length
     await user.type(screen.getByRole('textbox'), 'hable')
     expect(prefetch).toHaveBeenCalledTimes(calls)
-    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('button', { name: 'Grammar' }))
     await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
     expect(services.mockSpeaker.prefetched).toEqual(
       expect.arrayContaining([
@@ -290,7 +290,7 @@ describe('grammar practice in Jolito', () => {
     for (const [index, grade] of ['again', 'hard', 'good', 'easy'].entries()) {
       await user.keyboard('{Enter}')
       const stops = services.mockSpeaker.stopCount
-      await user.click(screen.getByRole('button', { name: 'Patterns' }))
+      await user.click(screen.getByRole('button', { name: 'Grammar' }))
       expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
       await user.click(screen.getByRole('button', { name: 'Resume round' }))
       expect(screen.getByRole('status')).toBeVisible()
@@ -357,9 +357,7 @@ describe('grammar practice in Jolito', () => {
     await act(async () => {
       await services.mockAuth.signOut()
     })
-    expect(
-      screen.getByRole('heading', { name: 'Pretérito indefinido' }),
-    ).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Grammar' })).toBeVisible()
     expect(
       screen.queryByRole('button', { name: /Resume round/ }),
     ).not.toBeInTheDocument()
