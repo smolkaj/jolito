@@ -434,7 +434,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
 
     // Capture screenshot of sent confirmation / code entry
     await page.screenshot({
-      path: 'test-results/sync-modal-sent-step.png',
+      path: 'test-results/sync-modal-standard-sent-step.png',
       animations: 'disabled',
     })
 
