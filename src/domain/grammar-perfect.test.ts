@@ -57,6 +57,7 @@ describe('perfecto alongside indefinido', () => {
         expect(context.sentence.split('___')).toHaveLength(2)
         expect(context.completed).toContain(card.answer)
         expect(context.spokenPrompt).toContain('…')
+        expect(context.explanation).toContain('participle')
         expect(context.sentence + context.translation).not.toMatch(
           /[{}]|undefined|Ayer|anoche/,
         )

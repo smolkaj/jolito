@@ -41,7 +41,29 @@ describe('preterite practice contracts', () => {
       const context = grammarContext(card)
       expect(context.sentence.split('___')).toHaveLength(2)
       expect(context.completed).toContain(card.answer)
-      expect(context.explanation.length).toBeGreaterThan(20)
+      expect(context.explanation).not.toBe('')
+    }
+  })
+
+  it('limits regular feedback to the current infinitive ending and person', () => {
+    const endings = {
+      ar: ['é', 'aste', 'ó', 'amos', 'aron'],
+      er: ['í', 'iste', 'ió', 'imos', 'ieron'],
+      ir: ['í', 'iste', 'ió', 'imos', 'ieron'],
+    }
+    for (const card of createGrammarCards(now).filter(
+      (card) =>
+        grammarVerb(card.grammar.topic, card.grammar.verb)!.family ===
+        'regular',
+    )) {
+      const infinitiveEnding = card.grammar.verb.slice(
+        -2,
+      ) as keyof typeof endings
+      const ending = endings[infinitiveEnding][card.grammar.person]!
+      expect(grammarContext(card).explanation).toBe(
+        `Replace -${infinitiveEnding} with -${ending}.`,
+      )
+      expect(card.grammar.verb.slice(0, -2) + ending).toBe(card.answer)
     }
   })
 
