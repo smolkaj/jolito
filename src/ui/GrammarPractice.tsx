@@ -131,7 +131,7 @@ export function GrammarPractice({
         <div className="grammar-start-row">
           {canResume && (
             <button className="primary-button" onClick={practice.resume}>
-              Resume round
+              Resume practice
             </button>
           )}
           <button
@@ -139,7 +139,7 @@ export function GrammarPractice({
             onClick={practice.start}
             disabled={nextRound.length === 0}
           >
-            New round
+            {canResume ? 'Start new' : 'Start practice'}
           </button>
         </div>
         {nextRound.length === 0 && (

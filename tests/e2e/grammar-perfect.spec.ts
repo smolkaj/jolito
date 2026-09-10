@@ -18,17 +18,17 @@ for (const width of [320, 393, 768, 1024, 1280]) {
       path: `test-results/perfect-${width}-setup.png`,
       fullPage: true,
     })
-    await page.getByRole('button', { name: 'New round' }).click()
+    await page.getByRole('button', { name: 'Start practice' }).click()
     await page.getByRole('textbox').fill('he habla')
     await page.getByRole('button', { name: 'Grammar', exact: true }).click()
     await page
       .getByRole('combobox', { name: 'Tense' })
       .selectOption('preterite')
     await expect(
-      page.getByRole('button', { name: 'Resume round' }),
+      page.getByRole('button', { name: 'Resume practice' }),
     ).toHaveCount(0)
     await page.getByRole('combobox', { name: 'Tense' }).selectOption('perfect')
-    await page.getByRole('button', { name: 'Resume round' }).click()
+    await page.getByRole('button', { name: 'Resume practice' }).click()
     await expect(page.getByRole('textbox')).toHaveValue('he habla')
     await page.getByRole('textbox').press('Enter')
     await expect(page.locator('.expected-row')).toContainText('he hablado')
@@ -75,7 +75,7 @@ for (const width of [320, 393, 768, 1024, 1280]) {
     await context.setOffline(true)
     await page.reload()
     await page.getByRole('combobox', { name: 'Tense' }).selectOption('perfect')
-    await page.getByRole('button', { name: 'New round' }).click()
+    await page.getByRole('button', { name: 'Start practice' }).click()
     await expect(page.getByRole('heading', { level: 1 })).not.toContainText(
       'Últimamente yo … mucho con la vecina.',
     )
