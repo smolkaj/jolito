@@ -35,12 +35,14 @@ describe('grammar practice in Jolito', () => {
     expect(services.memoryCards.saved?.filter(isGrammarCard)).toHaveLength(1)
     const heading = screen.getByRole('heading', { level: 1 }).textContent
     await user.type(screen.getByRole('textbox'), 'unfinished')
-    await user.click(screen.getByRole('button', { name: 'Vocabulary' }))
+    await user.click(screen.getByRole('button', { name: 'Jolito home' }))
     await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(heading)
     expect(screen.getByRole('textbox')).toHaveValue('unfinished')
-    await user.click(screen.getByRole('button', { name: 'Vocabulary' }))
-    await user.click(screen.getByRole('button', { name: 'Practice' }))
+    await user.click(screen.getByRole('button', { name: 'Jolito home' }))
+    await user.click(
+      screen.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
+    )
     expect(screen.getByRole('textbox', { name: 'Your answer' })).toBeVisible()
     expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent(
       'Ayer',
@@ -166,7 +168,12 @@ describe('grammar practice in Jolito', () => {
     const user = await begin()
     for (const [index, grade] of ['again', 'hard', 'good', 'easy'].entries()) {
       await user.keyboard('{Enter}')
-      await user.click(screen.getByRole('button', { name: 'Vocabulary' }))
+      const stops = services.mockSpeaker.stopCount
+      await user.click(screen.getByRole('button', { name: 'Patterns' }))
+      expect(services.mockSpeaker.stopCount).toBeGreaterThan(stops)
+      await user.click(screen.getByRole('button', { name: 'Resume practice' }))
+      expect(screen.getByRole('status')).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'Jolito home' }))
       await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
       fireEvent(document, new Event('visibilitychange'))
       const played = services.mockSounds.played.length

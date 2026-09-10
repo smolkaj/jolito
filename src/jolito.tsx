@@ -98,6 +98,7 @@ import { FeedbackModal } from './ui/modals/FeedbackModal'
 import { PrivacyModal } from './ui/modals/PrivacyModal'
 import { handleFocusSelect } from './ui/utils'
 import { ReviewGrades } from './ui/ReviewGrades'
+import { SessionProgress } from './ui/SessionProgress'
 import { AnswerComparison } from './ui/AnswerComparison'
 
 function getActiveAudioItems(
@@ -2314,9 +2315,14 @@ export function App({
           <nav className="topbar" aria-label="Grammar navigation">
             <Brand onClick={goHome} />
             <div className="nav-actions">
-              <button className="text-button" onClick={goHome}>
-                Vocabulary
-              </button>
+              {grammarPractice.mode === 'practice' && (
+                <button
+                  className="text-button"
+                  onClick={grammarPractice.choose}
+                >
+                  Patterns
+                </button>
+              )}
               <ConnectionPill
                 authUser={authUser}
                 syncStatus={syncStatus}
@@ -2325,6 +2331,13 @@ export function App({
               />
             </div>
           </nav>
+          {grammarPractice.mode === 'practice' && (
+            <SessionProgress
+              percentage={grammarPractice.session.progressPercentage}
+              remaining={grammarPractice.session.remainingCount}
+              unit="form"
+            />
+          )}
           <GrammarPractice
             practice={grammarPractice}
             services={services}
@@ -2398,19 +2411,24 @@ export function App({
                   >
                     Create a card <span aria-hidden="true">→</span>
                   </button>
-                  <button className="secondary-button" onClick={handlePractice}>
-                    Practice
-                  </button>
-                  <a
-                    className="secondary-button grammar-entry"
-                    href="#/grammar"
-                    onClick={(event) => {
-                      event.preventDefault()
-                      navigateTo('grammar')
-                    }}
-                  >
-                    Practice grammar
-                  </a>
+                  <div className="practice-actions">
+                    <button
+                      className="secondary-button"
+                      onClick={handlePractice}
+                    >
+                      Practice vocabulary
+                    </button>
+                    <a
+                      className="secondary-button grammar-entry"
+                      href="#/grammar"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        navigateTo('grammar')
+                      }}
+                    >
+                      Practice grammar
+                    </a>
+                  </div>
                 </div>
               </div>
               <div className="hero-visual" data-nosnippet>
@@ -3698,20 +3716,11 @@ export function App({
           onDismiss={() => setRedirectAuthBanner(null)}
           onCopySessionLink={handleCopySessionLink}
         />
-        <div
-          className="review-progress-track"
-          role="progressbar"
-          aria-label="Session progress"
-          aria-valuenow={progressPercentage}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuetext={`${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} remaining`}
-        >
-          <div
-            className="review-progress-bar"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
+        <SessionProgress
+          percentage={progressPercentage}
+          remaining={remainingCount}
+          unit="card"
+        />
         <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
           <div className="study-prompt-wrap">
             <h1

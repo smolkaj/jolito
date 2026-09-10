@@ -90,7 +90,9 @@ test('never falls back to robotic speech synthesis when practicing from homescre
   await page.goto('/')
 
   // Click Practice
-  const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+  const practiceBtn = page.getByRole('button', {
+    name: /^practice(?: vocabulary)?$/i,
+  })
   await expect(practiceBtn).toBeVisible()
   await practiceBtn.click()
 

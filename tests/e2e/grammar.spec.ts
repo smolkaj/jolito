@@ -20,6 +20,28 @@ async function ratingGeometry(page: Page) {
   })
 }
 
+async function sessionLayout(page: Page) {
+  await settleAnimations(page)
+  return page
+    .getByRole('progressbar', { name: 'Session progress' })
+    .evaluate((element) => {
+      const bar = element.getBoundingClientRect()
+      const study = document
+        .querySelector('.study-card')!
+        .getBoundingClientRect()
+      const input = getComputedStyle(document.querySelector('.answer-input')!)
+      return {
+        x: bar.x,
+        y: bar.y + scrollY,
+        width: bar.width,
+        height: bar.height,
+        contentTop: study.y + scrollY,
+        inputHeight: parseFloat(input.height),
+        inputFontSize: parseFloat(input.fontSize),
+      }
+    })
+}
+
 for (const viewport of [
   { width: 1280, height: 900 },
   { width: 1024, height: 768 },
@@ -34,7 +56,7 @@ for (const viewport of [
     await page.goto('/')
     const grammarEntry = page.getByRole('link', { name: 'Practice grammar' })
     const vocabularyEntry = page.getByRole('button', {
-      name: 'Practice',
+      name: 'Practice vocabulary',
       exact: true,
     })
     expect((await grammarEntry.boundingBox())!.height).toBeCloseTo(
@@ -49,6 +71,7 @@ for (const viewport of [
     })
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.getByRole('button', { name: 'Practice pretérito' }).click()
+    const grammarLayout = await sessionLayout(page)
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
     await expect(input).toBeFocused()
     for (const button of await page.locator('.grammar-accents button').all()) {
@@ -124,10 +147,24 @@ for (const viewport of [
       fullPage: true,
     })
     await page.getByRole('button', { name: 'Back to vocabulary' }).click()
-    await page.getByRole('button', { name: 'Practice', exact: true }).click()
+    await page
+      .getByRole('button', { name: 'Practice vocabulary', exact: true })
+      .click()
     await expect(
       page.getByRole('textbox', { name: 'Your answer' }),
     ).toBeVisible()
+    const vocabularyLayout = await sessionLayout(page)
+    for (const key of [
+      'x',
+      'y',
+      'width',
+      'height',
+      'contentTop',
+      'inputHeight',
+      'inputFontSize',
+    ] as const) {
+      expect(vocabularyLayout[key]).toBeCloseTo(grammarLayout[key], 2)
+    }
     await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
     const vocabularyRatings = await ratingGeometry(page)
     expect(vocabularyRatings.gap).toBe(grammarRatings.gap)
@@ -168,7 +205,7 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
   )
   await page.getByRole('textbox').press('Enter')
   await page.keyboard.press('4')
-  await page.getByRole('button', { name: 'Vocabulary', exact: true }).click()
+  await page.getByRole('button', { name: 'Jolito home', exact: true }).click()
   await page.getByRole('button', { name: 'Manage deck' }).click()
   await expect(page.getByRole('main')).not.toContainText('tener · yo')
   const saved = await page.evaluate(

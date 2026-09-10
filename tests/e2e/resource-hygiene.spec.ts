@@ -87,7 +87,7 @@ test.describe('Resource & Energy Hygiene', () => {
   }) => {
     await page.goto('/')
     await expect(
-      page.getByRole('button', { name: /^practice$/i }),
+      page.getByRole('button', { name: /^practice(?: vocabulary)?$/i }),
     ).toBeVisible()
 
     // 1. Verify zero recurring intervals were registered during initialization
@@ -167,7 +167,9 @@ test.describe('Resource & Energy Hygiene', () => {
     await page.goto('/')
 
     // Start practice to unlock audio session
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice(?: vocabulary)?$/i,
+    })
     await practiceBtn.click()
 
     const answerInput = page.getByLabel(/your answer/i)
@@ -232,7 +234,9 @@ test.describe('Resource & Energy Hygiene', () => {
     await page.goto('/')
 
     // Start practice to unlock audio
-    await page.getByRole('button', { name: /^practice$/i }).click()
+    await page
+      .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
+      .click()
     await expect(page.getByLabel(/your answer/i)).toBeVisible()
 
     // Trigger an answer submission which plays feedback tone
@@ -276,7 +280,9 @@ test.describe('Resource & Energy Hygiene', () => {
     await page.goto('/')
 
     // Start practice to unlock audio
-    await page.getByRole('button', { name: /^practice$/i }).click()
+    await page
+      .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
+      .click()
     await expect(page.getByLabel(/your answer/i)).toBeVisible()
 
     // 1. Submit an answer (plays feedback sound)

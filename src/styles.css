@@ -719,6 +719,13 @@ summary:focus-visible,
   gap: 14px;
 }
 
+.practice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  flex-basis: 100%;
+}
+
 .hero-visual {
   position: relative;
   min-height: 460px;
@@ -2836,6 +2843,10 @@ kbd {
   .hero-actions,
   .complete-actions {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .practice-actions {
     flex-direction: column;
   }
 

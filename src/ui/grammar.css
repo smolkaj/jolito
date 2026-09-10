@@ -5,7 +5,6 @@
   padding-bottom: max(48px, env(safe-area-inset-bottom));
 }
 .grammar-home,
-.grammar-practice,
 .grammar-complete {
   width: min(560px, 100%);
   margin: clamp(28px, 4.5vh, 48px) auto 0;
@@ -149,20 +148,6 @@
   font-size: 13px;
   color: var(--ink-muted);
 }
-.grammar-session-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-.grammar-session-heading > span {
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-.grammar-practice .review-progress-track {
-  width: 100%;
-  margin: 12px 0 28px;
-}
 .grammar-study {
   text-align: center;
 }
@@ -191,24 +176,11 @@
   font-weight: 600;
   color: var(--ink-soft);
 }
-.grammar-answer-form .answer-input {
-  padding: 16px 20px;
-  width: 100%;
-  margin: 0;
-  font-size: 22px;
-  min-height: 62px;
-}
-.grammar-input-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-}
 .grammar-accents {
   display: flex;
+  justify-content: center;
   gap: 2px;
+  margin-top: 12px;
 }
 .grammar-accents button {
   flex: 0 0 44px;
@@ -222,20 +194,6 @@
 }
 .grammar-accents button:hover {
   background: var(--paper-subtle);
-}
-.grammar-input-actions .reveal-button {
-  position: static;
-  inset: auto;
-  transform: none;
-  min-height: 44px;
-  padding: 10px 14px;
-  margin: 0;
-}
-.grammar-input-actions .reveal-button:hover {
-  transform: translateY(-1px);
-}
-.grammar-input-actions .reveal-button:active {
-  transform: translateY(1px);
 }
 .grammar-feedback [tabindex='-1'] {
   outline: none;
@@ -291,15 +249,8 @@
   .grammar-start-row p {
     text-align: center;
   }
-  .grammar-practice {
-    margin-top: 24px;
-  }
   .grammar-accents {
-    flex: 1;
     justify-content: space-between;
-  }
-  .grammar-input-actions .reveal-button {
-    width: 100%;
   }
   .grammar-page .topbar {
     gap: 8px;

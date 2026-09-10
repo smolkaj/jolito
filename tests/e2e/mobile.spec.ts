@@ -14,7 +14,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.goto('/')
 
     // 1. Welcome screen primary touch targets
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice(?: vocabulary)?$/i,
+    })
     await expect(practiceBtn).toBeVisible()
     const practiceBox = await practiceBtn.boundingBox()
     expect(practiceBox).not.toBeNull()
@@ -103,7 +105,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(welcomeAxe.violations).toEqual([])
 
     // 2. Tap Practice on mobile
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice(?: vocabulary)?$/i,
+    })
     await expect(practiceBtn).toBeVisible()
     await practiceBtn.click()
 
@@ -257,7 +261,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.goto('/')
 
     // 1. Start practice session in mobile portrait (393x852)
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice(?: vocabulary)?$/i,
+    })
     await expect(practiceBtn).toBeVisible()
     await practiceBtn.click()
 

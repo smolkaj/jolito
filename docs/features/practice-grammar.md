@@ -123,3 +123,15 @@ travel, and tolerate subpixel rounding without weakening padding/spacing parity.
 React contracts assert each grade sound/haptic after navigation/visibility interruptions,
 completion feedback, failed-save silence, and shortcut immobility after teardown.
 These issues originated in PR #275’s prototype and never reached main or production.
+
+Both practice modes place the shared `SessionProgress` directly below navigation
+and use the same study-column margins and answer form styles. Grammar’s Patterns
+action lives in navigation; the extra in-column header/count is removed. Home
+labels explicitly distinguish Practice vocabulary and Practice grammar, grouped
+below card creation. Geometry contracts compare progress position/size, content
+start, input height/type size, and ratings across both flows. Returning to Patterns
+stops pending speech; resume preserves the revealed answer and grading controls.
+
+This second user review caught layout drift missed by the first polish pass, whose
+comparison stopped at rating controls. Shared progress rendering and removal of
+form/layout overrides close that gap across the whole active practice surface.

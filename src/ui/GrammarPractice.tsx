@@ -68,8 +68,14 @@ export function GrammarPractice({
         : undefined,
     autoplayPrompt: false,
   })
-  useEffect(() => () => services.speaker.stop?.(), [services.speaker])
   const cancelPendingAudio = audio.cancelPendingAudio
+  useEffect(
+    () => () => {
+      cancelPendingAudio()
+      services.speaker.stop?.()
+    },
+    [mode, cancelPendingAudio, services.speaker],
+  )
   useEffect(() => {
     if (paused) {
       cancelPendingAudio()
@@ -293,28 +299,10 @@ export function GrammarPractice({
 
   const [before, after] = context.sentence.split('___')
   return (
-    <section className="grammar-practice" aria-labelledby="grammar-prompt">
-      <div className="grammar-session-heading">
-        <button className="text-button" onClick={choose}>
-          ← Pretérito
-        </button>
-        <span>
-          {session.completedCount} / {session.effectiveTotal}
-        </span>
-      </div>
-      <div
-        className="review-progress-track"
-        role="progressbar"
-        aria-label="Grammar round progress"
-        aria-valuenow={session.progressPercentage}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <div
-          className="review-progress-bar"
-          style={{ width: `${session.progressPercentage}%` }}
-        />
-      </div>
+    <section
+      className="study-card grammar-practice"
+      aria-labelledby="grammar-prompt"
+    >
       <div className={`grammar-study ${session.revealed ? 'is-revealed' : ''}`}>
         <p className="grammar-verb-cue" lang="es">
           {current.grammar.verb}
@@ -329,59 +317,59 @@ export function GrammarPractice({
         <p className="grammar-translation">{context.translation}</p>
 
         {!session.revealed ? (
-          <form
-            className="grammar-answer-form"
-            onSubmit={(event) => {
-              event.preventDefault()
-              practice.reveal()
-              audio.playRevealSensory()
-            }}
-          >
-            <label className="sr-only" htmlFor="grammar-answer">
-              Your conjugation
-            </label>
-            <input
-              ref={input}
-              id="grammar-answer"
-              className="answer-input"
-              placeholder="Type the verb…"
-              value={session.answer}
-              onChange={(event) => session.setAnswer(event.target.value)}
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              lang="es"
-            />
-            <div className="grammar-input-actions">
-              <div className="grammar-accents" aria-label="Spanish accents">
-                {['á', 'é', 'í', 'ó', 'ú'].map((letter) => (
-                  <button
-                    type="button"
-                    key={letter}
-                    aria-label={`Insert ${letter}`}
-                    onClick={() => {
-                      const element = input.current!
-                      const start =
-                        element.selectionStart ?? session.answer.length
-                      const end = element.selectionEnd ?? start
-                      session.setAnswer(
-                        session.answer.slice(0, start) +
-                          letter +
-                          session.answer.slice(end),
-                      )
-                      element.focus()
-                      caret.current = start + 1
-                    }}
-                  >
-                    {letter}
-                  </button>
-                ))}
-              </div>
+          <>
+            <form
+              className="answer-form"
+              onSubmit={(event) => {
+                event.preventDefault()
+                practice.reveal()
+                audio.playRevealSensory()
+              }}
+            >
+              <label className="sr-only" htmlFor="grammar-answer">
+                Your conjugation
+              </label>
+              <input
+                ref={input}
+                id="grammar-answer"
+                className="answer-input"
+                placeholder="Type the verb…"
+                value={session.answer}
+                onChange={(event) => session.setAnswer(event.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                lang="es"
+              />
               <button className="reveal-button" type="submit">
                 Check <kbd>Enter</kbd>
               </button>
+            </form>
+            <div className="grammar-accents" aria-label="Spanish accents">
+              {['á', 'é', 'í', 'ó', 'ú'].map((letter) => (
+                <button
+                  type="button"
+                  key={letter}
+                  aria-label={`Insert ${letter}`}
+                  onClick={() => {
+                    const element = input.current!
+                    const start =
+                      element.selectionStart ?? session.answer.length
+                    const end = element.selectionEnd ?? start
+                    session.setAnswer(
+                      session.answer.slice(0, start) +
+                        letter +
+                        session.answer.slice(end),
+                    )
+                    element.focus()
+                    caret.current = start + 1
+                  }}
+                >
+                  {letter}
+                </button>
+              ))}
             </div>
-          </form>
+          </>
         ) : (
           <div className="grammar-feedback reveal-panel">
             <div

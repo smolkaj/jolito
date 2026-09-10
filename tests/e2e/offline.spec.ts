@@ -47,7 +47,9 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   await spanishInput.fill('Nos vemos al rato')
   await page.getByLabel(/english/i).fill('See you later')
   await page.getByRole('button', { name: /save card/i }).click()
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await page
+    .getByRole('button', { name: /^practice(?: vocabulary)?$/i })
+    .click()
   await expect(
     page.getByRole('heading', { name: 'Nos vemos al rato' }),
   ).toBeVisible()
