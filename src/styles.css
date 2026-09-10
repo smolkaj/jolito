@@ -2531,6 +2531,38 @@ kbd {
   font-weight: 600;
 }
 
+.answer-accents {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 12px;
+}
+.answer-accents button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 18px;
+}
+.answer-accents button:hover {
+  background: var(--paper-subtle);
+}
+.reveal-panel [tabindex='-1'] {
+  outline: none;
+}
+.practice-error {
+  color: var(--tezontle-dark);
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .answer-accents {
+    justify-content: space-between;
+  }
+}
+
 /* Completion Page */
 .complete-page {
   background: var(--paper);
@@ -2561,9 +2593,7 @@ kbd {
   object-fit: contain;
   filter: drop-shadow(0 6px 16px rgba(18, 24, 21, 0.08));
   transform-origin: center bottom;
-  animation:
-    complete-mascot-pop 400ms var(--ease-spring) both,
-    complete-mascot-bob 3.5s ease-in-out infinite 400ms alternate;
+  animation: complete-mascot-pop 400ms var(--ease-spring) both;
 }
 
 @keyframes complete-mascot-pop {
@@ -2577,18 +2607,6 @@ kbd {
   }
 }
 
-@keyframes complete-mascot-bob {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-5px) rotate(1.5deg);
-  }
-  100% {
-    transform: translateY(2px) rotate(-1.5deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .complete-mascot-img {
     animation: none;
@@ -2598,6 +2616,10 @@ kbd {
 
 .complete-card h1 {
   font-size: clamp(44px, 5.5vw, 64px);
+}
+
+.complete-card h1:focus {
+  outline: none;
 }
 
 .complete-copy {

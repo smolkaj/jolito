@@ -62,6 +62,19 @@ supabase/migrations
 Do not add a build orchestrator or microservices until repository scale proves
 the need.
 
+## Practice presentation boundary
+
+Vocabulary and grammar use one practice page branch for navigation, progress, notices
+and dialogs. `PracticeCard` owns the recall/feedback/rating interaction and keyboard
+lifecycle; `SessionComplete` owns completion presentation. Learning modes supply
+content and capabilities, while their session hooks own scheduling and persistence.
+`useStudyAudio` owns speech interruption and teardown for both modes.
+
+Do not fork shared practice controls or override their geometry in mode-specific CSS.
+Compare corresponding states across modes when changing the shared experience. The
+[practice coherence audit](features/practice-coherence-audit.md) records the deliberate
+content differences and the browser/lifecycle contracts that enforce this boundary.
+
 ## Current and target topology
 
 - React and Vite provide an offline-capable single-page application shell.

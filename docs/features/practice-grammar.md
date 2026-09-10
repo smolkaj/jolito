@@ -85,7 +85,7 @@ filters demo cards from the latest local snapshot, preserving grammar progress w
 putting examples into an ordinary signed-in vocabulary deck. Persisted review/lapse
 counts must be nonnegative integers; malformed modern backups cannot fall through to
 legacy import and discard their grammar metadata. Grammar now shares vocabulary’s
-answer form layout and Check action. Browser contracts verify the action stays
+answer form and Reveal answer action. Browser contracts verify the action stays
 inside its exercise card at 320, 393, 768, 1024, and 1280px in all three states.
 
 Schedule timestamps also respect JavaScript’s representable date range. Finite numeric
@@ -101,39 +101,20 @@ catches keyboard event interception that static accessibility audits cannot dete
 
 ## Coherence with vocabulary practice
 
-Grammar and vocabulary render the same `AnswerComparison` and `ReviewGrades`
-components. Grammar has no rating geometry overrides and uses the shared grade
-and completion sound/haptic path. The grammar hook returns the session transition
-result only after a successful save, so failed or duplicate grading cannot produce
-success feedback.
+Both modes render through the same practice page branch, `PracticeCard` and
+`SessionComplete`. They share navigation structure, progress, input/reveal behavior,
+feedback focus, answer comparison, rating controls, shortcuts, audio notices, account
+dialogs and completion layout. Grammar supplies its sentence, accent keys and reference;
+vocabulary supplies its prompt, authored context and card-edit actions.
 
-The home grammar action sits with the existing actions and shares their secondary
-button style. Setup uses direct topic/pattern labels; practice retains the verb,
-sentence, translation, and response, with explanation and tables behind Conjugation.
-Marketing copy, rating narration, duplicate correct forms, and extra frames are removed.
+The shared audio hook owns interruption and teardown. Successful grammar grading
+uses the shared grade/completion sensory path only after saving; failed or duplicate
+grading cannot produce success feedback. Completion offers the next available round
+and Back home, with Patterns remaining in navigation.
 
-User review of the unmerged prototype exposed independent grammar UI and sensory
-paths drifting from vocabulary. Existing tests checked scheduling and isolated layouts,
-but did not compare the two flows or assert grade sounds after interruptions. Browser
-contracts now compare home action heights and rating geometry across five widths,
-exercise highlighted accent corrections, and retain keyboard and accessibility checks.
-Geometry measurements await settled transitions, account for intentional 1px button
-travel, and tolerate subpixel rounding without weakening padding/spacing parity.
-React contracts assert each grade sound/haptic after navigation/visibility interruptions,
-completion feedback, failed-save silence, and shortcut immobility after teardown.
-These issues originated in PR #275’s prototype and never reached main or production.
-
-Both practice modes place the shared `SessionProgress` directly below navigation
-and use the same study-column margins and answer form styles. Grammar’s Patterns
-action lives in navigation; the extra in-column header/count is removed. Home
-labels explicitly distinguish Practice vocabulary and Practice grammar, grouped
-below card creation. Geometry contracts compare progress position/size, content
-start, input height/type size, and ratings across both flows. Returning to Patterns
-stops pending speech; resume preserves the revealed answer and grading controls.
-
-This second user review caught layout drift missed by the first polish pass, whose
-comparison stopped at rating controls. Shared progress rendering and removal of
-form/layout overrides close that gap across the whole active practice surface.
+See the [coherence audit](practice-coherence-audit.md) for every finding, intentional
+differences, root causes, and the comparative/lifecycle contracts that prevent drift.
+Home button grouping remains deferred for a separate user discussion.
 
 ## Neural audio and touch focus
 

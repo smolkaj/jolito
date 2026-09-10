@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { AppServices } from '../application/ports'
-import { grades, type Grade } from '../domain/card'
+import { type Grade } from '../domain/card'
 import { grammarContext, grammarQueue, grammarStats } from '../domain/grammar'
 import {
   grammarFamilies,
@@ -10,8 +10,8 @@ import {
 } from '../domain/grammar-content'
 import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
-import { AnswerComparison } from './AnswerComparison'
-import { ReviewGrades } from './ReviewGrades'
+import { PracticeCard } from './PracticeCard'
+import { SessionComplete } from './SessionComplete'
 import './grammar.css'
 
 function PatternReference({ verbId }: { verbId: PreteriteVerb }) {
@@ -40,22 +40,17 @@ export function GrammarPractice({
   services,
   onHome,
   paused,
+  signedIn,
+  onSignIn,
 }: {
   practice: GrammarPracticeState
   services: AppServices
   onHome: () => void
   paused: boolean
+  signedIn: boolean
+  onSignIn: () => void
 }) {
   const { mode, current, session, focus } = practice
-  const input = useRef<HTMLInputElement>(null)
-  const feedback = useRef<HTMLDivElement>(null)
-  const caret = useRef<number | null>(null)
-  useLayoutEffect(() => {
-    if (caret.current !== null && input.current) {
-      input.current.setSelectionRange(caret.current, caret.current)
-      caret.current = null
-    }
-  }, [session.answer])
   const [referenceVerb, setReferenceVerb] = useState<PreteriteVerb>('hablar')
   const context = current ? grammarContext(current) : undefined
   const audio = useStudyAudio({
@@ -67,85 +62,13 @@ export function GrammarPractice({
         ? { ...current, answer: context.completed }
         : undefined,
     autoplayPrompt: false,
+    view: mode,
+    paused,
   })
-  const cancelPendingAudio = audio.cancelPendingAudio
-  useEffect(
-    () => () => {
-      cancelPendingAudio()
-      services.speaker.stop?.()
-    },
-    [mode, cancelPendingAudio, services.speaker],
-  )
-  useEffect(() => {
-    if (paused) {
-      cancelPendingAudio()
-      services.speaker.stop?.()
-    }
-  }, [paused, cancelPendingAudio, services.speaker])
-  useEffect(() => {
-    if (mode !== 'practice') return
-    if (session.revealed) feedback.current?.focus()
-    else input.current?.focus()
-  }, [current?.id, current?.schedule.reviews, mode, session.revealed])
-
   const grade = (value: Grade) => {
     const result = practice.grade(value)
     if (result) audio.playGradeSensory(value, result.isComplete)
   }
-  const shortcuts = useRef({
-    grade,
-    revealed: session.revealed,
-    mode,
-    paused,
-    play: audio.playAnswerAudio,
-  })
-  useEffect(() => {
-    shortcuts.current = {
-      grade,
-      revealed: session.revealed,
-      mode,
-      paused,
-      play: audio.playAnswerAudio,
-    }
-  })
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const state = shortcuts.current
-      if (
-        state.paused ||
-        event.repeat ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.isComposing ||
-        state.mode !== 'practice' ||
-        !state.revealed
-      )
-        return
-      if (
-        event.target instanceof HTMLElement &&
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)
-      )
-        return
-      const value = grades[Number(event.key) - 1]
-      if (value) {
-        event.preventDefault()
-        state.grade(value)
-      }
-      if (
-        event.code === 'Space' &&
-        !(
-          event.target instanceof HTMLElement &&
-          event.target.closest('button, summary, a[href]')
-        )
-      ) {
-        event.preventDefault()
-        state.play()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
 
   const now = services.clock.now()
   const focusedCards = practice.available.filter(
@@ -160,17 +83,6 @@ export function GrammarPractice({
         day: 'numeric',
       }).format(stats.nextDue)
     : null
-  const leave = () => {
-    audio.cancelPendingAudio()
-    services.speaker.stop?.()
-    onHome()
-  }
-  const choose = () => {
-    audio.cancelPendingAudio()
-    services.speaker.stop?.()
-    practice.choose()
-  }
-
   if (mode === 'choose')
     return (
       <section className="grammar-home" aria-labelledby="grammar-title">
@@ -276,141 +188,78 @@ export function GrammarPractice({
 
   if (mode === 'complete' || !current || !context)
     return (
-      <section
-        className="grammar-complete"
-        aria-labelledby="grammar-complete-title"
+      <SessionComplete
+        practicedCount={session.practicedCount}
+        unit="form"
+        emptyMessage={
+          nextReview ? `Next review: ${nextReview}` : 'No forms due.'
+        }
+        primaryAction={
+          nextRound.length
+            ? {
+                label: `Practice next ${nextRound.length}`,
+                onClick: practice.start,
+              }
+            : { label: 'Choose patterns', onClick: practice.choose }
+        }
+        onHome={onHome}
       >
-        <h1 id="grammar-complete-title">Practice complete</h1>
-        <p>
-          {session.practicedCount
-            ? `${session.practicedCount} ${session.practicedCount === 1 ? 'form' : 'forms'} practiced.`
-            : 'No forms due.'}
-        </p>
-        <div className="grammar-complete-actions">
-          <button className="primary-button" onClick={leave}>
-            Back to vocabulary <span aria-hidden="true">→</span>
-          </button>
-          <button className="text-button" onClick={choose}>
-            Choose patterns
-          </button>
-        </div>
-      </section>
+        {!signedIn && (
+          <p className="complete-subtext">
+            <button
+              type="button"
+              className="complete-link-button"
+              onClick={onSignIn}
+            >
+              Sign in
+            </button>{' '}
+            to sync your progress.
+          </p>
+        )}
+      </SessionComplete>
     )
 
   const [before, after] = context.sentence.split('___')
   return (
-    <section
-      className="study-card grammar-practice"
-      aria-labelledby="grammar-prompt"
+    <PracticeCard
+      card={current}
+      prompt={
+        <>
+          <p className="grammar-verb-cue" lang="es">
+            {current.grammar.verb}
+          </p>
+          <h1 className="grammar-sentence" lang="es">
+            {before}
+            <span className="grammar-blank" aria-label="missing verb">
+              …
+            </span>
+            {after}
+          </h1>
+          <p className="grammar-translation">{context.translation}</p>
+        </>
+      }
+      answer={session.answer}
+      revealed={session.revealed}
+      onAnswerChange={session.setAnswer}
+      onReveal={() => {
+        practice.reveal()
+        audio.playRevealSensory()
+      }}
+      onGrade={grade}
+      onPlayAnswer={() => audio.playAnswerAudio()}
+      paused={paused}
+      audioUnavailable={audio.audioUnavailable}
+      answerLabel="Your conjugation"
+      placeholder="Type the verb…"
+      answerLang="es"
+      accents
+      error={practice.error}
     >
-      <div className={`grammar-study ${session.revealed ? 'is-revealed' : ''}`}>
-        <p className="grammar-verb-cue" lang="es">
-          {current.grammar.verb}
-        </p>
-        <h1 id="grammar-prompt" className="grammar-sentence" lang="es">
-          {before}
-          <span className="grammar-blank" aria-label="missing verb">
-            …
-          </span>
-          {after}
-        </h1>
-        <p className="grammar-translation">{context.translation}</p>
-
-        {!session.revealed ? (
-          <>
-            <form
-              className="answer-form"
-              onSubmit={(event) => {
-                event.preventDefault()
-                practice.reveal()
-                audio.playRevealSensory()
-              }}
-            >
-              <label className="sr-only" htmlFor="grammar-answer">
-                Your conjugation
-              </label>
-              <input
-                ref={input}
-                id="grammar-answer"
-                className="answer-input"
-                placeholder="Type the verb…"
-                value={session.answer}
-                onChange={(event) => session.setAnswer(event.target.value)}
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                lang="es"
-              />
-              <button className="reveal-button" type="submit">
-                Check <kbd>Enter</kbd>
-              </button>
-            </form>
-            <div className="grammar-accents" aria-label="Spanish accents">
-              {['á', 'é', 'í', 'ó', 'ú'].map((letter) => (
-                <button
-                  type="button"
-                  key={letter}
-                  aria-label={`Insert ${letter}`}
-                  onPointerDown={(event) => {
-                    if (
-                      event.button === 0 &&
-                      document.activeElement === input.current
-                    )
-                      event.preventDefault()
-                  }}
-                  onClick={() => {
-                    const element = input.current!
-                    const start =
-                      element.selectionStart ?? session.answer.length
-                    const end = element.selectionEnd ?? start
-                    session.setAnswer(
-                      session.answer.slice(0, start) +
-                        letter +
-                        session.answer.slice(end),
-                    )
-                    element.focus()
-                    caret.current = start + 1
-                  }}
-                >
-                  {letter}
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="grammar-feedback reveal-panel">
-            <div
-              ref={feedback}
-              tabIndex={-1}
-              role="status"
-              aria-label="Answer feedback"
-            >
-              <AnswerComparison
-                typed={session.answer}
-                expected={current.answer}
-                onPlayAudio={() => audio.playAnswerAudio()}
-                audioLabel="Play completed sentence"
-              />
-            </div>
-            <details className="grammar-reveal-reference">
-              <summary>Conjugation</summary>
-              <p className="grammar-explanation">{context.explanation}</p>
-              <PatternReference verbId={current.grammar.verb} />
-            </details>
-            <ReviewGrades card={current} onGrade={grade} />
-          </div>
-        )}
-        {practice.error && (
-          <p role="alert" className="grammar-error">
-            {practice.error}
-          </p>
-        )}
-        {audio.audioUnavailable && (
-          <p role="status" className="grammar-note">
-            Audio unavailable.
-          </p>
-        )}
-      </div>
-    </section>
+      <details className="grammar-reveal-reference">
+        <summary>Conjugation</summary>
+        <p className="grammar-explanation">{context.explanation}</p>
+        <PatternReference verbId={current.grammar.verb} />
+      </details>
+    </PracticeCard>
   )
 }

@@ -177,9 +177,7 @@ describe('grammar practice in Jolito', () => {
     )
     await user.keyboard('{Enter}4')
     for (let index = 0; index < 2; index++) await user.keyboard('{Enter}4')
-    expect(
-      screen.getByRole('heading', { name: 'Practice complete' }),
-    ).toBeVisible()
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
     expect(screen.getByText(/8 forms practiced/)).toBeVisible()
     expect(services.mockSounds.played.slice(-1)[0]).toBe('complete')
     expect(services.mockHaptics.triggered.slice(-1)[0]).toBe('complete')
@@ -188,6 +186,31 @@ describe('grammar practice in Jolito', () => {
     fireEvent.keyDown(window, { key: '1' })
     fireEvent(window, new Event('focus'))
     expect(JSON.stringify(services.memoryCards.saved)).toBe(snapshot)
+  })
+
+  it('keeps completion through account and visibility interruptions, then starts the next round', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    render(<App services={services} />)
+    const user = await begin()
+    for (let turn = 0; turn < 8; turn++) await user.keyboard('{Enter}4')
+    expect(screen.getByRole('heading', { name: '¡Hecho!' })).toHaveFocus()
+    expect(screen.getByText('8 forms practiced.')).toBeVisible()
+    await user.click(screen.getAllByRole('button', { name: 'Sign in' })[0]!)
+    fireEvent(document, new Event('visibilitychange'))
+    await user.keyboard('4{Escape}')
+    expect(screen.getByText('8 forms practiced.')).toBeVisible()
+    expect(services.memoryCards.saved!.filter(isGrammarCard)).toHaveLength(8)
+    await user.click(screen.getByRole('button', { name: 'Practice next 8' }))
+    expect(screen.getByRole('textbox')).toHaveFocus()
+    expect(screen.getByRole('textbox')).toHaveValue('')
+    expect(screen.getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    )
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent(
+      'Ayer yo … con la vecina.',
+    )
   })
 
   it('plays shared rating feedback after interruptions and stays silent after leaving', async () => {

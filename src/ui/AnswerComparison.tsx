@@ -21,12 +21,10 @@ export function AnswerComparison({
   typed,
   expected,
   onPlayAudio,
-  audioLabel = 'Play answer audio',
 }: {
   typed: string
   expected: string
   onPlayAudio: () => void
-  audioLabel?: string
 }) {
   const comparison = compareAnswer(typed, expected)
   const hasTyped = typed.trim().length > 0
@@ -35,7 +33,7 @@ export function AnswerComparison({
     return (
       <div className="diff-exact-card" aria-label="Answer comparison">
         <p className="diff-text diff-match">{expected}</p>
-        <AudioButton label={audioLabel} onClick={onPlayAudio} />
+        <AudioButton label="Play answer audio" onClick={onPlayAudio} />
       </div>
     )
   }
@@ -58,7 +56,7 @@ export function AnswerComparison({
             <p className="diff-text">
               {renderDiffSegments(comparison.expectedSegments)}
             </p>
-            <AudioButton label={audioLabel} onClick={onPlayAudio} />
+            <AudioButton label="Play answer audio" onClick={onPlayAudio} />
           </div>
         </div>
       </div>

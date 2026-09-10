@@ -20,6 +20,32 @@ async function ratingGeometry(page: Page) {
   })
 }
 
+async function completionStyle(page: Page) {
+  await settleAnimations(page)
+  return page.locator('.complete-card').evaluate((card) => {
+    const dimensions = (element: Element) => {
+      const style = getComputedStyle(element)
+      return {
+        padding: style.padding,
+        border: style.border,
+        borderRadius: style.borderRadius,
+        fontSize: style.fontSize,
+        gap: style.gap,
+      }
+    }
+    return {
+      width: card.getBoundingClientRect().width,
+      top: card.getBoundingClientRect().top + scrollY,
+      card: dimensions(card),
+      heading: dimensions(card.querySelector('h1')!),
+      actions: dimensions(card.querySelector('.complete-actions')!),
+      primary: dimensions(card.querySelector('.primary-button')!),
+      secondary: dimensions(card.querySelector('.secondary-button')!),
+      mascot: dimensions(card.querySelector('img')!),
+    }
+  })
+}
+
 async function sessionLayout(page: Page) {
   await settleAnimations(page)
   return page
@@ -74,13 +100,13 @@ for (const viewport of [
     const grammarLayout = await sessionLayout(page)
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
     await expect(input).toBeFocused()
-    for (const button of await page.locator('.grammar-accents button').all()) {
+    for (const button of await page.locator('.answer-accents button').all()) {
       const box = await button.boundingBox()
       expect(box!.width).toBeGreaterThanOrEqual(44)
       expect(box!.height).toBeGreaterThanOrEqual(44)
     }
-    const check = page.getByRole('button', { name: 'Check' })
-    const cardBox = (await page.locator('.grammar-study').boundingBox())!
+    const check = page.getByRole('button', { name: 'Reveal answer' })
+    const cardBox = (await page.locator('.study-card').boundingBox())!
     for (const state of ['rest', 'hover', 'pressed']) {
       if (state === 'hover') await check.hover()
       if (state === 'pressed') await page.mouse.down()
@@ -140,15 +166,14 @@ for (const viewport of [
       await page.getByRole('textbox').press('Enter')
       await page.keyboard.press('4')
     }
-    await expect(
-      page.getByRole('heading', { name: 'Practice complete' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
     await settleAnimations(page)
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-complete.png`,
       fullPage: true,
     })
-    await page.getByRole('button', { name: 'Back to vocabulary' }).click()
+    const grammarCompletion = await completionStyle(page)
+    await page.getByRole('button', { name: 'Back home' }).click()
     await page
       .getByRole('button', { name: 'Practice vocabulary', exact: true })
       .click()
@@ -182,6 +207,21 @@ for (const viewport of [
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true)
+    await page.keyboard.press('4')
+    while (await page.getByRole('textbox', { name: 'Your answer' }).count()) {
+      await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
+      await page.keyboard.press('4')
+    }
+    expect(await completionStyle(page)).toEqual(grammarCompletion)
+    expect((await auditAccessibility(page)).violations).toEqual([])
+    expect(
+      await page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((animation) => animation.playState === 'running').length,
+      ),
+    ).toBe(0)
   })
 }
 
@@ -240,8 +280,8 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await page.goto('/#/grammar')
   await page.getByRole('button', { name: 'Practice pretérito' }).click()
   await page.getByRole('textbox').press('Enter')
-  const disclosure = page.locator('.grammar-study summary')
-  const reference = page.locator('.grammar-study details')
+  const disclosure = page.locator('.study-card summary')
+  const reference = page.locator('.study-card details')
   for (const key of ['Space', 'Enter']) {
     await disclosure.press(key)
     await expect(reference).toHaveAttribute('open', '')
@@ -256,7 +296,7 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await expect.poll(speechCount).toBe(1)
   // Move beyond speech’s double-activation suppression window.
   await page.clock.setFixedTime(now + 1000)
-  const audioButton = page.locator('.grammar-study .audio-button')
+  const audioButton = page.locator('.study-card .audio-button')
   await audioButton.press('Space')
   await expect.poll(speechCount).toBe(2)
   await page.keyboard.press('4')

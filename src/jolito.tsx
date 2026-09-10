@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import celebrateUrl from '../assets/jolito-celebrate.webp'
 import familyLogoUrl from '../assets/jolito-family.webp'
 import logoUrl from '../assets/jolito-welcome.webp'
 import sampleAguacateUrl from '../assets/sample-aguacate.webp'
@@ -42,10 +41,7 @@ import {
   type StudyCard,
   type UpdateCardParams,
 } from './domain/card'
-import {
-  createStudySession,
-  formatPracticedSummary,
-} from './domain/study-session'
+import { createStudySession } from './domain/study-session'
 import {
   availableGrammarCards,
   grammarContext,
@@ -98,9 +94,9 @@ import { SyncModal } from './ui/modals/SyncModal'
 import { FeedbackModal } from './ui/modals/FeedbackModal'
 import { PrivacyModal } from './ui/modals/PrivacyModal'
 import { handleFocusSelect } from './ui/utils'
-import { ReviewGrades } from './ui/ReviewGrades'
+import { PracticeCard } from './ui/PracticeCard'
+import { SessionComplete } from './ui/SessionComplete'
 import { SessionProgress } from './ui/SessionProgress'
-import { AnswerComparison } from './ui/AnswerComparison'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -1059,7 +1055,6 @@ export function App({
     'spanish' | 'english'
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
-  const responseInput = useRef<HTMLInputElement>(null)
   const spanishInputRef = useRef<HTMLTextAreaElement>(null)
   const englishInputRef = useRef<HTMLTextAreaElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
@@ -1076,6 +1071,15 @@ export function App({
     isDue(card, referenceTime),
   ).length
 
+  const paused =
+    editingCard !== null ||
+    deletingCards !== null ||
+    isSyncOpen ||
+    isBackupOpen ||
+    isStarterPacksOpen ||
+    isFeedbackOpen ||
+    isPrivacyOpen
+
   const {
     audioUnavailable,
     cancelPendingAudio,
@@ -1088,8 +1092,10 @@ export function App({
     speaker: services.speaker,
     sounds: services.sounds,
     haptics: services.haptics,
-    currentCard,
+    currentCard: view === 'review' ? currentCard : undefined,
     view,
+    paused,
+    autoplayPrompt: !revealed,
   })
 
   const navigateTo = useCallback(
@@ -1691,20 +1697,6 @@ export function App({
     services.cards.save(cards, deletedCardIds)
   }, [cards, deletedCardIds, services.cards])
 
-  const currentCardId = currentCard?.id
-  const currentPrompt = currentCard?.prompt
-
-  useEffect(() => {
-    if (view !== 'review' || !currentCardId || !currentPrompt) return
-    responseInput.current?.focus()
-  }, [currentCardId, currentPrompt, view])
-
-  useEffect(() => {
-    if (view === 'review' && editingCard === null && !revealed) {
-      responseInput.current?.focus()
-    }
-  }, [editingCard, revealed, view])
-
   const grade = useCallback(
     (gradeValue: Grade) => {
       if (!currentCard) return
@@ -1747,75 +1739,6 @@ export function App({
     ],
   )
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        view !== 'review' ||
-        !currentCard ||
-        editingCard !== null ||
-        deletingCards !== null ||
-        isSyncOpen ||
-        isBackupOpen ||
-        isStarterPacksOpen ||
-        isFeedbackOpen
-      )
-        return
-
-      const isInputActive =
-        document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA'
-
-      if (
-        (event.code === 'Space' || event.key === ' ') &&
-        (document.activeElement !== responseInput.current ||
-          event.ctrlKey ||
-          event.metaKey)
-      ) {
-        event.preventDefault()
-        if (revealed) {
-          playAnswerAudio()
-        } else {
-          playPromptAudio()
-        }
-      }
-
-      if (revealed && ['1', '2', '3', '4'].includes(event.key)) {
-        event.preventDefault()
-        const gradeMap: Record<string, Grade> = {
-          '1': 'again',
-          '2': 'hard',
-          '3': 'good',
-          '4': 'easy',
-        }
-        const gradeValue = gradeMap[event.key]
-        if (gradeValue) grade(gradeValue)
-      }
-
-      if (
-        (event.key === 'e' || event.key === 'E') &&
-        (!isInputActive || event.ctrlKey || event.metaKey)
-      ) {
-        event.preventDefault()
-        setEditingCard(currentCard)
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [
-    currentCard,
-    deletingCards,
-    editingCard,
-    grade,
-    isSyncOpen,
-    isBackupOpen,
-    isStarterPacksOpen,
-    isFeedbackOpen,
-    playAnswerAudio,
-    playPromptAudio,
-    revealed,
-    view,
-  ])
-
   function goHome() {
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
@@ -1843,8 +1766,7 @@ export function App({
     navigateTo(nextQueue.length > 0 ? 'review' : 'complete')
   }
 
-  function reveal(event: FormEvent) {
-    event.preventDefault()
+  function reveal() {
     if (revealed || !currentCard) return
     revealSession()
     playRevealSensory()
@@ -2321,58 +2243,6 @@ export function App({
     services.speaker,
     view,
   ])
-
-  if (view === 'grammar')
-    return (
-      <>
-        <main className="app-shell grammar-page">
-          <nav className="topbar" aria-label="Grammar navigation">
-            <Brand onClick={goHome} />
-            <div className="nav-actions">
-              {grammarPractice.mode === 'practice' && (
-                <button
-                  className="text-button"
-                  onClick={grammarPractice.choose}
-                >
-                  Patterns
-                </button>
-              )}
-              <ConnectionPill
-                authUser={authUser}
-                syncStatus={syncStatus}
-                isOnline={isOnline}
-                onClick={() => openSyncModal()}
-              />
-            </div>
-          </nav>
-          {grammarPractice.mode === 'practice' && (
-            <SessionProgress
-              percentage={grammarPractice.session.progressPercentage}
-              remaining={grammarPractice.session.remainingCount}
-              unit="form"
-            />
-          )}
-          <GrammarPractice
-            practice={grammarPractice}
-            services={services}
-            onHome={goHome}
-            paused={isSyncOpen || isPrivacyOpen}
-          />
-        </main>
-        <SyncModal
-          isOpen={isSyncOpen}
-          onClose={closeSyncModal}
-          cards={cards}
-          deletedCardIds={deletedCardIds}
-          onUpdateCards={onUpdateCards}
-          auth={services.auth}
-          sync={services.sync}
-          clock={services.clock}
-          onOpenPrivacy={openPrivacyModal}
-        />
-        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
-      </>
-    )
 
   if (view === 'welcome') {
     return (
@@ -3558,165 +3428,48 @@ export function App({
     )
   }
 
-  if (view === 'complete' || (view === 'review' && !currentCard))
-    return (
-      <>
-        <main className="app-shell complete-page">
-          <nav className="topbar" aria-label="Session navigation">
-            <Brand onClick={goHome} />
-            <div className="nav-actions" data-nosnippet>
-              <button
-                className="text-button"
-                onClick={() => navigateTo('deck')}
-              >
-                Manage deck
-              </button>
-              <button
-                className="text-button"
-                onClick={() => navigateTo('create')}
-              >
-                + New card
-              </button>
-              <ConnectionPill
-                authUser={authUser}
-                syncStatus={syncStatus}
-                isOnline={isOnline}
-                onClick={() => openSyncModal()}
-              />
-            </div>
-          </nav>
-          <RedirectAuthNotice
-            message={redirectAuthBanner}
-            onDismiss={() => setRedirectAuthBanner(null)}
-            onCopySessionLink={handleCopySessionLink}
-          />
-          <section className="complete-card">
-            <div className="complete-mascot-frame" aria-hidden="true">
-              <img src={celebrateUrl} alt="" className="complete-mascot-img" />
-            </div>
-            <p className="eyebrow">
-              {authUser ? 'SESSION COMPLETE' : 'DEMO SESSION COMPLETE'}
-            </p>
-            <h1>{practicedCount > 0 ? '¡Hecho!' : 'You’re caught up.'}</h1>
-            {authUser ? (
-              <div className="complete-copy">
-                <p>
-                  {practicedCount > 0
-                    ? `${formatPracticedSummary(practicedCount)}.`
-                    : 'Nothing is due right now. Add something from your day in CDMX?'}
-                </p>
-              </div>
-            ) : (
-              <div className="complete-copy">
-                <p>
-                  {practicedCount > 0
-                    ? `${formatPracticedSummary(practicedCount)}.`
-                    : 'You’re exploring demo cards.'}
-                </p>
-                <p className="complete-subtext">
-                  <button
-                    type="button"
-                    className="complete-link-button"
-                    onClick={() => openSyncModal()}
-                  >
-                    Sign in
-                  </button>{' '}
-                  to create and sync your personal deck.
-                </p>
-              </div>
-            )}
-            <div className="complete-actions">
-              {nextBatchCount > 0 ? (
-                <>
-                  <button
-                    className="primary-button"
-                    onClick={() => beginReview()}
-                  >
-                    Practice next {nextBatchCount}{' '}
-                    <span aria-hidden="true">→</span>
-                  </button>
-                  <button className="secondary-button" onClick={goHome}>
-                    Back home
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="primary-button"
-                    onClick={() => navigateTo('create')}
-                  >
-                    Create a card <span aria-hidden="true">→</span>
-                  </button>
-                  <button className="secondary-button" onClick={goHome}>
-                    Back home
-                  </button>
-                </>
-              )}
-            </div>
-          </section>
-          <AppFooter
-            onOpenFeedback={openFeedbackModal}
-            onOpenPrivacy={openPrivacyModal}
-          />
-        </main>
-        <SyncModal
-          isOpen={isSyncOpen}
-          onClose={closeSyncModal}
-          cards={cards}
-          deletedCardIds={deletedCardIds}
-          onUpdateCards={onUpdateCards}
-          auth={services.auth}
-          sync={services.sync}
-          clock={services.clock}
-          onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
-          pendingCardPrompt={
-            pendingCard ? pendingCard.spanish.trim() : undefined
-          }
-          onOpenPrivacy={openPrivacyModal}
-          onOpenFeedback={openFeedbackModal}
-        />
-        <EditCardModal
-          isOpen={editingCard !== null}
-          card={editingCard}
-          cards={cards}
-          onClose={() => setEditingCard(null)}
-          onSave={handleSaveEdit}
-          onPlayAudio={playAudio}
-        />
-        <DeleteCardsModal
-          isOpen={deletingCards !== null}
-          cards={deletingCards}
-          onClose={() => setDeletingCards(null)}
-          onConfirm={handleConfirmDelete}
-        />
-        <FeedbackModal
-          isOpen={isFeedbackOpen}
-          onClose={closeFeedbackModal}
-          user={authUser}
-          feedbackService={services.feedback}
-          currentView={view}
-        />
-        <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
-      </>
-    )
-
-  if (!currentCard) return null
+  const grammar = view === 'grammar'
+  const complete = grammar
+    ? grammarPractice.mode === 'complete'
+    : view === 'complete' || !currentCard
+  const practicing = grammar ? grammarPractice.mode === 'practice' : !complete
 
   return (
     <>
-      <main className="app-shell review-page">
-        <nav className="topbar" aria-label="Review navigation">
+      <main
+        className={`app-shell ${complete ? 'complete-page' : practicing ? 'review-page' : 'grammar-page'}`}
+      >
+        <nav
+          className="topbar"
+          aria-label={practicing ? 'Review navigation' : 'Session navigation'}
+        >
           <Brand onClick={goHome} />
           <div className="nav-actions" data-nosnippet>
-            <button className="text-button" onClick={() => navigateTo('deck')}>
-              Manage deck
-            </button>
-            <button
-              className="text-button"
-              onClick={() => navigateTo('create')}
-            >
-              + New card
-            </button>
+            {grammar ? (
+              grammarPractice.mode !== 'choose' && (
+                <button
+                  className="text-button"
+                  onClick={grammarPractice.choose}
+                >
+                  Patterns
+                </button>
+              )
+            ) : (
+              <>
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('deck')}
+                >
+                  Manage deck
+                </button>
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('create')}
+                >
+                  + New card
+                </button>
+              </>
+            )}
             <ConnectionPill
               authUser={authUser}
               syncStatus={syncStatus}
@@ -3730,115 +3483,125 @@ export function App({
           onDismiss={() => setRedirectAuthBanner(null)}
           onCopySessionLink={handleCopySessionLink}
         />
-        <SessionProgress
-          percentage={progressPercentage}
-          remaining={remainingCount}
-          unit="card"
-        />
-        <section className={`study-card ${revealed ? 'is-revealed' : ''}`}>
-          <div className="study-prompt-wrap">
-            <h1
-              className={`study-prompt ${currentCard.prompt.trim().length > 100 ? 'is-long' : currentCard.prompt.trim().length > 50 ? 'is-medium' : ''}`.trim()}
-            >
-              {currentCard.prompt}
-            </h1>
-            <AudioButton
-              prompt
-              label="Play prompt audio"
-              onClick={() => playPromptAudio()}
-            />
-          </div>
-          <div className="prompt-meta">
-            <p className="eyebrow direction-eyebrow">
-              {currentCard.direction === 'es-en' ? (
-                <>
-                  <MexicoFlag /> MEXICAN SPANISH → <UsFlag /> ENGLISH
-                </>
-              ) : (
-                <>
-                  <UsFlag /> ENGLISH → <MexicoFlag /> MEXICAN SPANISH
-                </>
-              )}
-            </p>
-          </div>
-          {audioUnavailable && (
-            <p className="audio-unavailable" role="status">
-              Audio isn’t available in this browser. You can keep reviewing.
-            </p>
-          )}
-          {!revealed ? (
-            <form className="answer-form" onSubmit={reveal}>
-              <label className="sr-only" htmlFor="answer">
-                Your answer
-              </label>
-              <input
-                ref={responseInput}
-                id="answer"
-                className="answer-input"
-                value={answer}
-                onChange={(event) => setAnswer(event.target.value)}
-                placeholder="Type your answer…"
-                autoComplete="off"
-                autoCapitalize="none"
-              />
-              <button className="reveal-button" type="submit">
-                Reveal answer <kbd>Enter</kbd>
-              </button>
-            </form>
-          ) : (
-            <div className="reveal-panel">
-              <div className="reveal-content">
-                <div className="reveal-main">
-                  <AnswerComparison
-                    typed={answer}
-                    expected={currentCard.answer}
-                    onPlayAudio={() => playAnswerAudio()}
-                  />
-                  {currentCard.context && (
-                    <div className="reveal-context-block">
-                      <span className="context-label">Additional Context</span>
-                      <p className="context-text">{currentCard.context}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <ReviewGrades card={currentCard} onGrade={grade} />
-            </div>
-          )}
-
-          <div className="study-card-quick-actions">
-            <button
-              type="button"
-              className="study-quick-btn edit-btn"
-              aria-label={`Edit card: ${currentCard.prompt}`}
-              onClick={() => setEditingCard(currentCard)}
-            >
-              ✏️ Edit card
-            </button>
-            <button
-              type="button"
-              className="study-quick-btn delete-btn"
-              aria-label={`Delete card: ${currentCard.prompt}`}
-              onClick={() => setDeletingCards([currentCard])}
-            >
-              🗑️ Delete card
-            </button>
-          </div>
-
-          <p className="keyboard-hint">
-            {!revealed ? (
-              <>
-                <kbd>Enter</kbd> reveal · <kbd>⌃ E</kbd> edit ·{' '}
-                <kbd>⌃ Space</kbd> replay audio
-              </>
-            ) : (
-              <>
-                <kbd>1–4</kbd> rate · <kbd>e</kbd> edit · <kbd>Space</kbd>{' '}
-                replay audio
-              </>
+        {practicing && (
+          <SessionProgress
+            percentage={
+              grammar
+                ? grammarPractice.session.progressPercentage
+                : progressPercentage
+            }
+            remaining={
+              grammar ? grammarPractice.session.remainingCount : remainingCount
+            }
+            unit={grammar ? 'form' : 'card'}
+          />
+        )}
+        {grammar ? (
+          <GrammarPractice
+            practice={grammarPractice}
+            services={services}
+            onHome={goHome}
+            paused={paused}
+            signedIn={Boolean(authUser)}
+            onSignIn={() => openSyncModal()}
+          />
+        ) : complete ? (
+          <SessionComplete
+            practicedCount={practicedCount}
+            unit="card"
+            demo={!authUser}
+            emptyMessage={
+              authUser
+                ? 'Nothing is due right now. Add something from your day in CDMX?'
+                : 'You’re exploring demo cards.'
+            }
+            primaryAction={
+              nextBatchCount > 0
+                ? {
+                    label: `Practice next ${nextBatchCount}`,
+                    onClick: () => beginReview(),
+                  }
+                : {
+                    label: 'Create a card',
+                    onClick: () => navigateTo('create'),
+                  }
+            }
+            onHome={goHome}
+          >
+            {!authUser && (
+              <p className="complete-subtext">
+                <button
+                  type="button"
+                  className="complete-link-button"
+                  onClick={() => openSyncModal()}
+                >
+                  Sign in
+                </button>{' '}
+                to create and sync your personal deck.
+              </p>
             )}
-          </p>
-        </section>
+          </SessionComplete>
+        ) : (
+          currentCard && (
+            <PracticeCard
+              card={currentCard}
+              prompt={
+                <>
+                  <div className="study-prompt-wrap">
+                    <h1
+                      className={`study-prompt ${currentCard.prompt.trim().length > 100 ? 'is-long' : currentCard.prompt.trim().length > 50 ? 'is-medium' : ''}`.trim()}
+                    >
+                      {currentCard.prompt}
+                    </h1>
+                    <AudioButton
+                      prompt
+                      label="Play prompt audio"
+                      onClick={() => playPromptAudio()}
+                    />
+                  </div>
+                  <div className="prompt-meta">
+                    <p className="eyebrow direction-eyebrow">
+                      {currentCard.direction === 'es-en' ? (
+                        <>
+                          <MexicoFlag /> MEXICAN SPANISH → <UsFlag /> ENGLISH
+                        </>
+                      ) : (
+                        <>
+                          <UsFlag /> ENGLISH → <MexicoFlag /> MEXICAN SPANISH
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </>
+              }
+              answer={answer}
+              revealed={revealed}
+              onAnswerChange={setAnswer}
+              onReveal={reveal}
+              onGrade={grade}
+              onPlayAnswer={() => playAnswerAudio()}
+              onPlayPrompt={() => playPromptAudio()}
+              onEdit={() => setEditingCard(currentCard)}
+              onDelete={() => setDeletingCards([currentCard])}
+              paused={paused}
+              audioUnavailable={audioUnavailable}
+              answerLang={localeForAnswer(currentCard)}
+            >
+              {currentCard.context && (
+                <div className="reveal-context-block">
+                  <span className="context-label">Additional Context</span>
+                  <p className="context-text">{currentCard.context}</p>
+                </div>
+              )}
+            </PracticeCard>
+          )
+        )}
+        {!practicing && (
+          <AppFooter
+            onOpenFeedback={openFeedbackModal}
+            onOpenPrivacy={openPrivacyModal}
+          />
+        )}
       </main>
       <SyncModal
         isOpen={isSyncOpen}
