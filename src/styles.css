@@ -611,6 +611,8 @@ summary:focus-visible,
 
 .welcome-hero-footer .app-footer {
   margin-top: 0;
+  margin-right: 0;
+  margin-left: 0;
   padding-top: 0;
   grid-column: 3;
   justify-self: end;
@@ -2738,13 +2740,13 @@ kbd {
   }
 
   .welcome-hero {
-    min-height: calc(100svh - max(16px, env(safe-area-inset-top)) - 32px);
+    min-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - 32px);
     padding-top: 14px;
     padding-bottom: 28px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .welcome-hero-main {
@@ -2758,7 +2760,7 @@ kbd {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     column-gap: 8px;
-    margin-top: clamp(12px, 2vh, 20px);
+    margin-top: auto;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
