@@ -3,7 +3,6 @@ import { DAY, scheduleReview, studyCardCollectionSchema } from './card'
 import {
   createGrammarCards,
   grammarContext,
-  grammarFeedback,
   grammarQueue,
   grammarStats,
 } from './grammar'
@@ -161,15 +160,6 @@ describe('preterite practice contracts', () => {
     )
     expect(grammarContext(reviewed).completed).toContain(card.answer)
     expect(reviewed.id).toBe(card.id)
-    expect(grammarFeedback('HABLÉ ', 'hablé')).toBe('That’s it.')
-    expect(grammarFeedback('hable\u0301', 'hablé')).toBe('That’s it.')
-    expect(grammarFeedback('hable', 'hablé')).toBe('Almost — keep the accent.')
-    expect(grammarFeedback('hablaste', 'hablé')).toBe(
-      'Compare the form, then try it again.',
-    )
-    expect(grammarFeedback('', 'hablé')).toBe(
-      'Take a look, then try it from memory.',
-    )
   })
 
   it('keeps authored vocabulary distinct from grammar and rejects mismatched exercise identities or answers', () => {

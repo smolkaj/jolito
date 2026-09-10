@@ -28,11 +28,8 @@ import {
   starterHeroPrefetchItems,
   starterHeroSampleCards,
 } from './application/starter-cards'
-import { compareAnswer, type DiffSegment } from './domain/answer'
 import {
   burySiblingCards,
-  grades,
-  intervalLabel,
   isDue,
   localeForAnswer,
   localeForPrompt,
@@ -100,13 +97,8 @@ import { SyncModal } from './ui/modals/SyncModal'
 import { FeedbackModal } from './ui/modals/FeedbackModal'
 import { PrivacyModal } from './ui/modals/PrivacyModal'
 import { handleFocusSelect } from './ui/utils'
-
-const gradeLabels: Record<Grade, string> = {
-  again: 'Again',
-  hard: 'Hard',
-  good: 'Good',
-  easy: 'Easy',
-}
+import { ReviewGrades } from './ui/ReviewGrades'
+import { AnswerComparison } from './ui/AnswerComparison'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -157,68 +149,6 @@ function Brand({ onClick }: { onClick?: () => void }) {
   )
 }
 
-function renderDiffSegments(segments: DiffSegment[]) {
-  return segments.map((seg, i) => {
-    const isSpaceOnly = /^ +$/.test(seg.value)
-    return (
-      <span
-        className={`diff-seg diff-seg-${seg.status}${
-          isSpaceOnly ? ' diff-seg-space' : ''
-        }`}
-        key={i}
-      >
-        {isSpaceOnly && seg.status === 'extra' ? '␣' : seg.value}
-      </span>
-    )
-  })
-}
-
-function AnswerComparison({
-  typed,
-  expected,
-  onPlayAudio,
-}: {
-  typed: string
-  expected: string
-  onPlayAudio: () => void
-}) {
-  const comparison = compareAnswer(typed, expected)
-  const hasTyped = typed.trim().length > 0
-
-  if (comparison.isExact) {
-    return (
-      <div className="diff-exact-card" aria-label="Answer comparison">
-        <p className="diff-text diff-match">{expected}</p>
-        <AudioButton label="Play answer audio" onClick={onPlayAudio} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="diff-card" aria-label="Answer comparison">
-      <div className="diff-rows">
-        {hasTyped && (
-          <div className="diff-row">
-            <span className="diff-label">You wrote</span>
-            <p className="diff-text">
-              {renderDiffSegments(comparison.typedSegments)}
-            </p>
-          </div>
-        )}
-
-        <div className="diff-row expected-row">
-          <span className="diff-label">Expected</span>
-          <div className="diff-row-main">
-            <p className="diff-text">
-              {renderDiffSegments(comparison.expectedSegments)}
-            </p>
-            <AudioButton label="Play answer audio" onClick={onPlayAudio} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 interface PendingCardParams {
   spanish: string
   english: string
@@ -2471,17 +2401,17 @@ export function App({
                   <button className="secondary-button" onClick={handlePractice}>
                     Practice
                   </button>
+                  <a
+                    className="secondary-button grammar-entry"
+                    href="#/grammar"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      navigateTo('grammar')
+                    }}
+                  >
+                    Practice grammar
+                  </a>
                 </div>
-                <a
-                  className="text-button grammar-entry"
-                  href="#/grammar"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    navigateTo('grammar')
-                  }}
-                >
-                  Practice grammar <span aria-hidden="true">↗</span>
-                </a>
               </div>
               <div className="hero-visual" data-nosnippet>
                 {/* English Card (concise meaning) */}
@@ -3849,24 +3779,7 @@ export function App({
                   )}
                 </div>
               </div>
-              <fieldset className="grade-fieldset">
-                <legend className="sr-only">How did that feel?</legend>
-                <div className="grade-buttons">
-                  {grades.map((gradeValue, index) => (
-                    <button
-                      type="button"
-                      className={`grade-${gradeValue}`}
-                      data-grade={index + 1}
-                      onClick={() => grade(gradeValue)}
-                      key={gradeValue}
-                    >
-                      <kbd>{index + 1}</kbd>
-                      <strong>{gradeLabels[gradeValue]}</strong>
-                      <small>{intervalLabel(currentCard, gradeValue)}</small>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
+              <ReviewGrades card={currentCard} onGrade={grade} />
             </div>
           )}
 

@@ -29,7 +29,7 @@ describe('grammar practice in Jolito', () => {
       'hable{Enter}',
     )
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Almost — keep the accent.',
+      'You wrotehableExpectedhablé',
     )
     await user.keyboard('4')
     expect(services.memoryCards.saved?.filter(isGrammarCard)).toHaveLength(1)
@@ -147,14 +147,39 @@ describe('grammar practice in Jolito', () => {
     await user.keyboard('{Enter}4')
     for (let index = 0; index < 2; index++) await user.keyboard('{Enter}4')
     expect(
-      screen.getByRole('heading', { name: 'A little more natural.' }),
+      screen.getByRole('heading', { name: 'Practice complete' }),
     ).toBeVisible()
     expect(screen.getByText(/8 forms practiced/)).toBeVisible()
+    expect(services.mockSounds.played.slice(-1)[0]).toBe('complete')
+    expect(services.mockHaptics.triggered.slice(-1)[0]).toBe('complete')
     const snapshot = JSON.stringify(services.memoryCards.saved)
     app.unmount()
     fireEvent.keyDown(window, { key: '1' })
     fireEvent(window, new Event('focus'))
     expect(JSON.stringify(services.memoryCards.saved)).toBe(snapshot)
+  })
+
+  it('plays shared rating feedback after interruptions and stays silent after leaving', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    const app = render(<App services={services} />)
+    const user = await begin()
+    for (const [index, grade] of ['again', 'hard', 'good', 'easy'].entries()) {
+      await user.keyboard('{Enter}')
+      await user.click(screen.getByRole('button', { name: 'Vocabulary' }))
+      await user.click(screen.getByRole('link', { name: 'Practice grammar' }))
+      fireEvent(document, new Event('visibilitychange'))
+      const played = services.mockSounds.played.length
+      await user.keyboard(String(index + 1))
+      expect(services.mockSounds.played.slice(played)).toEqual([grade])
+      expect(services.mockHaptics.triggered.slice(-1)[0]).toBe(grade)
+    }
+    app.unmount()
+    const played = [...services.mockSounds.played]
+    fireEvent.keyDown(window, { key: '1' })
+    fireEvent.keyDown(window, { code: 'Space', key: ' ' })
+    fireEvent(document, new Event('visibilitychange'))
+    expect(services.mockSounds.played).toEqual(played)
   })
 
   it('respects remote removal during a round and clears the active round on sign-out', async () => {
@@ -174,7 +199,9 @@ describe('grammar practice in Jolito', () => {
         'grammar:preterite:hablar:0',
       ),
     )
+    const played = [...services.mockSounds.played]
     await user.keyboard('4')
+    expect(services.mockSounds.played).toEqual(played)
     expect(screen.getByRole('alert')).toHaveTextContent(
       'removed on another device',
     )
@@ -186,11 +213,9 @@ describe('grammar practice in Jolito', () => {
     await act(async () => {
       await services.mockAuth.signOut()
     })
+    expect(screen.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
     expect(
-      screen.getByRole('heading', { name: 'Make the past click.' }),
-    ).toBeVisible()
-    expect(
-      screen.queryByRole('button', { name: /Resume your unfinished/ }),
+      screen.queryByRole('button', { name: /Resume practice/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -203,9 +228,11 @@ describe('grammar practice in Jolito', () => {
     const save = vi.spyOn(services.cards, 'save').mockImplementationOnce(() => {
       throw new Error('quota')
     })
+    const played = [...services.mockSounds.played]
     await user.keyboard('4')
+    expect(services.mockSounds.played).toEqual(played)
     expect(screen.getByRole('alert')).toHaveTextContent('couldn’t be saved')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('hablé')
+    expect(screen.getByRole('status')).toHaveTextContent('hablé')
     await user.keyboard('4')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(

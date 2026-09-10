@@ -3,37 +3,37 @@ export const grammarFamilies = [
     id: 'regular',
     title: 'Regular endings',
     example: 'hablé · comí · viví',
-    rule: 'Drop -ar, -er, or -ir and add the past-tense ending. For -ar: -é, -aste, -ó, -amos, -aron. For -er and -ir: -í, -iste, -ió, -imos, -ieron.',
+    rule: 'Replace -ar with -é, -aste, -ó, -amos, -aron. Replace -er or -ir with -í, -iste, -ió, -imos, -ieron.',
   },
   {
     id: 'essential',
-    title: 'The everyday irregulars',
+    title: 'Common irregulars',
     example: 'fui · di · vi',
-    rule: 'Ser and ir share every preterite form; the sentence tells you which meaning fits. Dar and ver use short forms without written accents.',
+    rule: 'Ser and ir share all preterite forms; context determines the meaning. Dar and ver have no written accents.',
   },
   {
     id: 'irregular',
     title: 'Irregular stems',
     example: 'tuve · hice · dije',
-    rule: 'Learn the new stem, then reuse -e, -iste, -o, -imos, -ieron. These endings have no written accents. A stem ending in j takes -eron instead of -ieron.',
+    rule: 'Add -e, -iste, -o, -imos, -ieron to the irregular stem, without accents. After j, use -eron instead of -ieron.',
   },
   {
     id: 'spelling',
-    title: 'Keep the sound',
+    title: 'Spelling changes',
     example: 'busqué · llegué · empecé',
-    rule: 'Only the yo form changes spelling: -car → -qué, -gar → -gué, -zar → -cé. This preserves the consonant sound before é; the other forms use regular -ar endings.',
+    rule: 'In yo: -car → -qué, -gar → -gué, -zar → -cé, preserving the consonant sound. Other forms are regular.',
   },
   {
     id: 'stem',
     title: 'Third-person changes',
     example: 'pidió · durmieron',
-    rule: 'These -ir verbs change e → i or o → u only with él, ella, usted, ellos, ellas, and ustedes. Yo, tú, and nosotros/as keep the original vowel.',
+    rule: 'These -ir verbs change e → i or o → u only in the third person: él/ella/usted and ellos/ellas/ustedes.',
   },
   {
     id: 'vowel',
-    title: 'When i becomes y',
+    title: 'i → y',
     example: 'leyó · oyeron',
-    rule: 'With these vowel stems, i becomes y in the third-person forms: -yó and -yeron. Watch the accents in the other forms, too.',
+    rule: 'After these vowel stems, i becomes y in the third person: -yó and -yeron.',
   },
 ] as const
 
@@ -119,7 +119,7 @@ export const preteriteVerbs = {
       ['al mercado', 'went to the market'],
       ['a Coyoacán', 'went to Coyoacán'],
     ],
-    note: 'Ir and ser share fui, fuiste, fue, fuimos, fueron. A destination makes ir the right meaning here.',
+    note: 'Ir and ser share all preterite forms. The destination here identifies ir.',
   },
   ser: {
     family: 'essential',
@@ -129,7 +129,7 @@ export const preteriteVerbs = {
       ['parte del equipo ganador', '{was} part of the winning team'],
       ['parte de la solución', '{was} part of the solution'],
     ],
-    note: 'Ser and ir have identical preterite forms. Here the sentence describes a role in a completed event, so the meaning is “was” or “were”.',
+    note: 'Ser and ir share all preterite forms. Here, ser describes a role: “was” or “were”.',
   },
   dar: {
     family: 'essential',
@@ -139,7 +139,7 @@ export const preteriteVerbs = {
       ['un paseo por el parque', 'took a walk in the park'],
       ['las gracias al mesero', 'thanked the waiter'],
     ],
-    note: 'Dar uses di, diste, dio, dimos, dieron. Di and dio have no written accent.',
+    note: 'Di and dio have no written accent.',
   },
   ver: {
     family: 'essential',
@@ -149,7 +149,7 @@ export const preteriteVerbs = {
       ['una película mexicana', 'watched a Mexican movie'],
       ['el atardecer', 'saw the sunset'],
     ],
-    note: 'Ver uses vi, viste, vio, vimos, vieron. Vi and vio have no written accent.',
+    note: 'Vi and vio have no written accent.',
   },
   tener: {
     family: 'irregular',
@@ -159,7 +159,7 @@ export const preteriteVerbs = {
       ['una idea', 'had an idea'],
       ['tiempo para caminar', 'had time for a walk'],
     ],
-    note: 'Tener changes its stem to tuv-. Add the irregular endings without written accents.',
+    note: 'Tener → tuv-, with irregular endings and no accents.',
   },
   hacer: {
     family: 'irregular',
@@ -169,7 +169,7 @@ export const preteriteVerbs = {
       ['la cena', 'made dinner'],
       ['una reservación', 'made a reservation'],
     ],
-    note: 'Hacer uses hic-, but él/ella/usted takes hizo: z keeps the same consonant sound before o.',
+    note: 'Hacer → hic-, except hizo: z preserves the consonant sound before o.',
   },
   decir: {
     family: 'irregular',
@@ -179,7 +179,7 @@ export const preteriteVerbs = {
       ['la verdad', 'told the truth'],
       ['algo interesante', 'said something interesting'],
     ],
-    note: 'Decir changes to dij-. After j, the plural ending is -eron: dijeron, never “dijieron”.',
+    note: 'Decir → dij-. After j, use -eron: dijeron, not “dijieron”.',
   },
   estar: {
     family: 'irregular',
@@ -189,7 +189,7 @@ export const preteriteVerbs = {
       ['en casa todo el día', '{was} home all day'],
       ['en el museo dos horas', 'spent two hours at the museum'],
     ],
-    note: 'Estar changes its stem to estuv-. The sentence bounds the time spent in a place.',
+    note: 'Estar → estuv-, with irregular endings and no accents.',
   },
   poder: {
     family: 'irregular',
@@ -199,7 +199,7 @@ export const preteriteVerbs = {
       ['conseguir boletos', 'managed to get tickets'],
       ['terminar a tiempo', 'managed to finish on time'],
     ],
-    note: 'Poder changes to pud-. In these completed events, it means “managed to”.',
+    note: 'Poder → pud-. Here it means “managed to”.',
   },
   poner: {
     family: 'irregular',
@@ -209,7 +209,7 @@ export const preteriteVerbs = {
       ['la mesa', 'set the table'],
       ['música para cocinar', 'put on music to cook'],
     ],
-    note: 'Poner changes to pus-, then takes the irregular endings without written accents.',
+    note: 'Poner → pus-, with irregular endings and no accents.',
   },
   venir: {
     family: 'irregular',
@@ -219,7 +219,7 @@ export const preteriteVerbs = {
       ['en metro', 'came by metro'],
       ['a la fiesta', 'came to the party'],
     ],
-    note: 'Venir changes to vin-. The third-person singular is vino, with no accent.',
+    note: 'Venir → vin-. Vino has no accent.',
   },
   querer: {
     family: 'irregular',
@@ -229,7 +229,7 @@ export const preteriteVerbs = {
       ['probar algo nuevo', 'wanted to try something new'],
       ['ayudar con la cena', 'wanted to help with dinner'],
     ],
-    note: 'Querer changes to quis-. These completed occasions call for the preterite forms.',
+    note: 'Querer → quis-, with irregular endings and no accents.',
   },
   saber: {
     family: 'irregular',
@@ -239,7 +239,7 @@ export const preteriteVerbs = {
       ['la noticia', 'found out the news'],
       ['el resultado', 'found out the result'],
     ],
-    note: 'Saber changes to sup-. In the preterite it often means “found out”, a completed discovery.',
+    note: 'Saber → sup-. Here it means “found out”.',
   },
   traer: {
     family: 'irregular',
@@ -249,7 +249,7 @@ export const preteriteVerbs = {
       ['pan dulce', 'brought sweet bread'],
       ['algo para compartir', 'brought something to share'],
     ],
-    note: 'Traer changes to traj-. As with decir, use -eron after j: trajeron.',
+    note: 'Traer → traj-. After j, use -eron: trajeron.',
   },
   andar: {
     family: 'irregular',
@@ -259,7 +259,7 @@ export const preteriteVerbs = {
       ['por el centro', 'walked around downtown'],
       ['por el parque', 'walked around the park'],
     ],
-    note: 'Andar changes to anduv-, like the uv in tuve and estuve.',
+    note: 'Andar → anduv-, like tuv- and estuv-.',
   },
   conducir: {
     family: 'irregular',
@@ -269,7 +269,7 @@ export const preteriteVerbs = {
       ['hasta Puebla', 'drove to Puebla'],
       ['por la ciudad', 'drove through the city'],
     ],
-    note: 'Verbs ending in -ducir take a j stem. Conducir becomes conduj- and the plural ends in -eron.',
+    note: 'Conducir → conduj-. After j, use -eron: condujeron.',
   },
   buscar: {
     family: 'spelling',
@@ -384,7 +384,7 @@ export const preteriteVerbs = {
       ['una mesa de madera', 'built a wooden table'],
       ['un castillo de arena', 'built a sandcastle'],
     ],
-    note: 'Construir takes construyó and construyeron. Unlike leer, -uir verbs have no accent in tú or nosotros: construiste, construimos.',
+    note: 'Construir → construyó, construyeron. Unlike leer, tú and nosotros have no accent: construiste, construimos.',
   },
 } as const satisfies Record<string, Verb>
 

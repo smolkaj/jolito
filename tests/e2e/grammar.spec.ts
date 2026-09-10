@@ -1,5 +1,23 @@
 import { auditAccessibility } from './accessibility'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+async function ratingGeometry(page: Page) {
+  return page.locator('.grade-buttons').evaluate((element) => {
+    const style = getComputedStyle(element)
+    return {
+      gap: style.gap,
+      columns: style.gridTemplateColumns,
+      buttons: Array.from(element.querySelectorAll('button')).map((button) => {
+        const style = getComputedStyle(button)
+        return {
+          padding: style.padding,
+          gap: style.gap,
+          height: button.getBoundingClientRect().height,
+        }
+      }),
+    }
+  })
+}
 
 for (const viewport of [
   { width: 1280, height: 900 },
@@ -13,10 +31,16 @@ for (const viewport of [
   }) => {
     await page.setViewportSize(viewport)
     await page.goto('/')
-    await page.getByRole('link', { name: 'Practice grammar' }).click()
-    await expect(
-      page.getByRole('heading', { name: 'Make the past click.' }),
-    ).toBeVisible()
+    const grammarEntry = page.getByRole('link', { name: 'Practice grammar' })
+    const vocabularyEntry = page.getByRole('button', {
+      name: 'Practice',
+      exact: true,
+    })
+    expect((await grammarEntry.boundingBox())!.height).toBe(
+      (await vocabularyEntry.boundingBox())!.height,
+    )
+    await grammarEntry.click()
+    await expect(page.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-home.png`,
       fullPage: true,
@@ -54,12 +78,13 @@ for (const viewport of [
       fullPage: true,
     })
     await input.press('Enter')
-    await expect(page.getByRole('status')).toHaveText('That’s it.')
+    await expect(page.getByRole('status')).toHaveText('hablé')
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-reveal.png`,
       fullPage: true,
     })
     expect((await auditAccessibility(page)).violations).toEqual([])
+    const grammarRatings = await ratingGeometry(page)
     await page.keyboard.press('1')
     for (let index = 0; index < 5; index++) {
       await page.getByRole('textbox').press('Enter')
@@ -68,12 +93,22 @@ for (const viewport of [
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       'El sábado yo',
     )
-    for (let index = 0; index < 3; index++) {
+    await page.getByRole('textbox').fill('hable')
+    await page.getByRole('textbox').press('Enter')
+    await expect(page.locator('.expected-row .diff-seg-accent')).toHaveText('é')
+    await expect(page.locator('.diff-row').first()).toContainText('hable')
+    expect((await auditAccessibility(page)).violations).toEqual([])
+    await page.screenshot({
+      path: `test-results/grammar-${viewport.width}-correction.png`,
+      fullPage: true,
+    })
+    await page.keyboard.press('4')
+    for (let index = 0; index < 2; index++) {
       await page.getByRole('textbox').press('Enter')
       await page.keyboard.press('4')
     }
     await expect(
-      page.getByRole('heading', { name: 'A little more natural.' }),
+      page.getByRole('heading', { name: 'Practice complete' }),
     ).toBeVisible()
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-complete.png`,
@@ -84,6 +119,8 @@ for (const viewport of [
     await expect(
       page.getByRole('textbox', { name: 'Your answer' }),
     ).toBeVisible()
+    await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
+    expect(await ratingGeometry(page)).toEqual(grammarRatings)
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,

@@ -2,13 +2,14 @@
 
 The north star is fluent production: applying a conjugation pattern to a verb in
 context, with enough variation and delayed recall to make it dependable.
-Vocabulary remains Jolito’s main entry point. A quieter “Practice grammar” link
+Vocabulary remains Jolito’s main entry point. A secondary “Practice grammar” action
 on home opens its own space; grammar never enters vocabulary queues or counts.
 
 ## Learning experience
 
 - Short, eight-form sessions with typed recall, accent entry, sentence context,
-  concise corrective explanations, and the familiar Again / Hard / Good / Easy.
+  the shared vocabulary answer diff and Again / Hard / Good / Easy controls.
+  Explanations and full conjugation tables are available on demand.
 - Mixed practice interleaves verb families and people; focused practice offers
   regular endings, irregular stems, essential irregulars, spelling changes,
   third-person stem changes, and vowel changes.
@@ -71,6 +72,7 @@ round. Sign-out clears the active grammar round with the account’s local deck.
   accent touch targets, accessibility, offline reload, and vocabulary isolation.
   Screenshots are emitted to `test-results/grammar-*-{home,answer,reveal,complete}.png`
   and uploaded with CI’s Playwright artifacts for independent visual review.
+  Corrective-answer screenshots also capture accent differences at every width.
 - Browser accessibility audits share a helper that waits for finite entrance
   animations before measuring contrast. Sampling intermediate opacity produced
   transient failures in existing sync, feedback, and completion tests; the helper
@@ -97,3 +99,25 @@ Grammar audio shortcuts defer to native buttons, links, and reference disclosure
 A browser contract opens and closes the reference with both Space and Enter, then
 checks audio activation, grading, and literal spaces in the next typed answer. This
 catches keyboard event interception that static accessibility audits cannot detect.
+
+## Coherence with vocabulary practice
+
+Grammar and vocabulary render the same `AnswerComparison` and `ReviewGrades`
+components. Grammar has no rating geometry overrides and uses the shared grade
+and completion sound/haptic path. The grammar hook returns the session transition
+result only after a successful save, so failed or duplicate grading cannot produce
+success feedback.
+
+The home grammar action sits with the existing actions and shares their secondary
+button style. Setup uses direct topic/pattern labels; practice retains the verb,
+sentence, translation, and response, with explanation and tables behind Conjugation.
+Marketing copy, rating narration, duplicate correct forms, and extra frames are removed.
+
+User review of the unmerged prototype exposed independent grammar UI and sensory
+paths drifting from vocabulary. Existing tests checked scheduling and isolated layouts,
+but did not compare the two flows or assert grade sounds after interruptions. Browser
+contracts now compare home action heights and rating geometry across five widths,
+exercise highlighted accent corrections, and retain keyboard and accessibility checks.
+React contracts assert each grade sound/haptic after navigation/visibility interruptions,
+completion feedback, failed-save silence, and shortcut immobility after teardown.
+These issues originated in PR #275’s prototype and never reached main or production.

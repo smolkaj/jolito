@@ -50,12 +50,12 @@ export function useGrammarPractice({
   }
 
   const grade = (value: Grade) => {
-    if (!current || !session.revealed || gradeLock.current) return false
+    if (!current || !session.revealed || gradeLock.current) return undefined
     if (deletedCardIds.includes(current.id)) {
       setError(
         'This form was removed on another device. Choose a pattern to start a fresh round.',
       )
-      return false
+      return undefined
     }
     gradeLock.current = true
     const now = clock.now()
@@ -75,7 +75,7 @@ export function useGrammarPractice({
         'Your progress couldn’t be saved. Free up device storage, then try rating again.',
       )
       gradeLock.current = false
-      return false
+      return undefined
     }
     setError(null)
     setSnapshots((previous) =>
@@ -84,7 +84,7 @@ export function useGrammarPractice({
     const result = session.advanceOnGrade(current.id, reviewed.schedule, [])
     if (result.isComplete) setMode('complete')
     // Reveal is the next explicit user action that unlocks grading.
-    return true
+    return result
   }
 
   const reveal = () => {

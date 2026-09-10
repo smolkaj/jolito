@@ -1,12 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { AppServices } from '../application/ports'
-import { grades, intervalLabel, type Grade } from '../domain/card'
-import {
-  grammarContext,
-  grammarFeedback,
-  grammarQueue,
-  grammarStats,
-} from '../domain/grammar'
+import { grades, type Grade } from '../domain/card'
+import { grammarContext, grammarQueue, grammarStats } from '../domain/grammar'
 import {
   grammarFamilies,
   grammarPeople,
@@ -15,7 +10,8 @@ import {
 } from '../domain/grammar-content'
 import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
-import { AudioButton } from './AudioButton'
+import { AnswerComparison } from './AnswerComparison'
+import { ReviewGrades } from './ReviewGrades'
 import './grammar.css'
 
 function PatternReference({ verbId }: { verbId: PreteriteVerb }) {
@@ -87,9 +83,8 @@ export function GrammarPractice({
   }, [current?.id, current?.schedule.reviews, mode, session.revealed])
 
   const grade = (value: Grade) => {
-    audio.cancelPendingAudio()
-    services.speaker.stop?.()
-    if (practice.grade(value)) services.haptics.trigger('selection')
+    const result = practice.grade(value)
+    if (result) audio.playGradeSensory(value, result.isComplete)
   }
   const shortcuts = useRef({
     grade,
@@ -173,20 +168,12 @@ export function GrammarPractice({
   if (mode === 'choose')
     return (
       <section className="grammar-home" aria-labelledby="grammar-title">
-        <p className="eyebrow">PRACTICE GRAMMAR</p>
-        <h1 id="grammar-title">
-          Make the past <em>click.</em>
+        <h1 id="grammar-title" lang="es">
+          Pretérito
         </h1>
-        <p className="grammar-intro">
-          Tell yesterday’s stories with confidence. One verb, one small moment
-          at a time.
-        </p>
-        <div className="grammar-course-line">
-          <h2 lang="es">Pretérito</h2>
-          <span>Completed actions in the past</span>
-        </div>
+        <p className="grammar-intro">Conjugate verbs in the past tense.</p>
         <fieldset className="grammar-focus">
-          <legend>What would you like to practice?</legend>
+          <legend>Patterns</legend>
           <label
             className={`grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
           >
@@ -197,8 +184,7 @@ export function GrammarPractice({
               onChange={() => practice.setFocus('mixed')}
             />
             <span>
-              <strong>A little of everything</strong>
-              <small>Mix the patterns. Build flexible recall.</small>
+              <strong>All patterns</strong>
             </span>
           </label>
           <div className="grammar-families">
@@ -231,18 +217,10 @@ export function GrammarPractice({
           </button>
           <p>
             {nextRound.length
-              ? `${nextRound.length} forms · at your pace`
-              : 'All caught up with this pattern'}
-            <br />
-            <span>
-              {stats.due
-                ? `${stats.due} practiced ${stats.due === 1 ? 'form is' : 'forms are'} ready to revisit.`
-                : nextRound.length
-                  ? 'Weak forms return sooner. Familiar ones get space.'
-                  : nextReview
-                    ? `Next review: ${nextReview}. Try another pattern today.`
-                    : 'Choose another pattern to keep practicing.'}
-            </span>
+              ? `${nextRound.length} forms${stats.due ? ` · ${stats.due} due` : ''}`
+              : nextReview
+                ? `Next review: ${nextReview}`
+                : 'No forms due'}
           </p>
         </div>
         {session.queue.length > 0 && (
@@ -250,18 +228,18 @@ export function GrammarPractice({
             className="text-button grammar-resume"
             onClick={practice.resume}
           >
-            Resume your unfinished round →
+            Resume practice
           </button>
         )}
         <details className="grammar-reference">
-          <summary>A quick refresher</summary>
+          <summary>Conjugation reference</summary>
           <p>
             Use the pretérito for completed events:{' '}
-            <span lang="es">ayer, el sábado, la semana pasada</span>. Type just
-            the verb. Accents matter: <span lang="es">hablo</span> is “I speak”;{' '}
+            <span lang="es">ayer, el sábado</span>. Accents matter:{' '}
+            <span lang="es">hablo</span> is “I speak”;{' '}
             <span lang="es">habló</span> is “he/she spoke”.
           </p>
-          <label htmlFor="reference-verb">Explore a verb</label>
+          <label htmlFor="reference-verb">Verb</label>
           <select
             id="reference-verb"
             value={referenceVerb}
@@ -285,7 +263,6 @@ export function GrammarPractice({
           <PatternReference verbId={referenceVerb} />
           <p className="grammar-note">
             Mexican Spanish: <span lang="es">ustedes</span> for plural “you”.
-            Each verb and person gets its own review rhythm.
           </p>
         </details>
       </section>
@@ -297,29 +274,24 @@ export function GrammarPractice({
         className="grammar-complete"
         aria-labelledby="grammar-complete-title"
       >
-        <p className="eyebrow">PRETÉRITO · ROUND COMPLETE</p>
-        <div className="grammar-finish-mark" aria-hidden="true">
-          ¡Bien!
-        </div>
-        <h1 id="grammar-complete-title">A little more natural.</h1>
+        <h1 id="grammar-complete-title">Practice complete</h1>
         <p>
           {session.practicedCount
-            ? `${session.practicedCount} ${session.practicedCount === 1 ? 'form' : 'forms'} practiced. Your next reviews are spaced out to help them stick.`
-            : 'You’re caught up with this pattern. Come back when a form is due, or explore another pattern.'}
+            ? `${session.practicedCount} ${session.practicedCount === 1 ? 'form' : 'forms'} practiced.`
+            : 'No forms due.'}
         </p>
         <div className="grammar-complete-actions">
           <button className="primary-button" onClick={leave}>
             Back to vocabulary <span aria-hidden="true">→</span>
           </button>
           <button className="text-button" onClick={choose}>
-            Explore the patterns
+            Choose patterns
           </button>
         </div>
       </section>
     )
 
   const [before, after] = context.sentence.split('___')
-  const status = grammarFeedback(session.answer, current.answer)
   return (
     <section className="grammar-practice" aria-labelledby="grammar-prompt">
       <div className="grammar-session-heading">
@@ -327,7 +299,7 @@ export function GrammarPractice({
           ← Pretérito
         </button>
         <span>
-          {session.completedCount} of {session.effectiveTotal} forms complete
+          {session.completedCount} / {session.effectiveTotal}
         </span>
       </div>
       <div
@@ -344,22 +316,18 @@ export function GrammarPractice({
         />
       </div>
       <div className={`grammar-study ${session.revealed ? 'is-revealed' : ''}`}>
-        <p className="eyebrow">COMPLETE THE PAST-TENSE VERB</p>
+        <p className="grammar-verb-cue" lang="es">
+          {current.grammar.verb}
+        </p>
         <h1 id="grammar-prompt" className="grammar-sentence" lang="es">
           {before}
-          <span
-            className="grammar-blank"
-            aria-label={session.revealed ? undefined : 'missing verb'}
-          >
-            {session.revealed ? current.answer : '…'}
+          <span className="grammar-blank" aria-label="missing verb">
+            …
           </span>
           {after}
         </h1>
         <p className="grammar-translation">{context.translation}</p>
-        <div className="grammar-verb-cue">
-          <strong lang="es">{current.grammar.verb}</strong>
-          <span>{context.meaning}</span>
-        </div>
+
         {!session.revealed ? (
           <form
             className="grammar-answer-form"
@@ -415,53 +383,26 @@ export function GrammarPractice({
             </div>
           </form>
         ) : (
-          <div
-            className="grammar-feedback"
-            ref={feedback}
-            tabIndex={-1}
-            aria-label="Answer feedback"
-          >
-            <div className="grammar-feedback-heading">
-              <p role="status">{status}</p>
-              <AudioButton
-                label="Play completed sentence"
-                onClick={() => audio.playAnswerAudio()}
+          <div className="grammar-feedback reveal-panel">
+            <div
+              ref={feedback}
+              tabIndex={-1}
+              role="status"
+              aria-label="Answer feedback"
+            >
+              <AnswerComparison
+                typed={session.answer}
+                expected={current.answer}
+                onPlayAudio={() => audio.playAnswerAudio()}
+                audioLabel="Play completed sentence"
               />
             </div>
-            {session.answer.trim() && status !== 'That’s it.' && (
-              <p className="grammar-your-answer">
-                You wrote <span lang="es">{session.answer}</span>
-                <span aria-hidden="true"> → </span>
-                <strong lang="es">{current.answer}</strong>
-              </p>
-            )}
-            <p className="grammar-explanation">{context.explanation}</p>
             <details className="grammar-reveal-reference">
-              <summary>
-                See all forms of <span lang="es">{current.grammar.verb}</span>
-              </summary>
+              <summary>Conjugation</summary>
+              <p className="grammar-explanation">{context.explanation}</p>
               <PatternReference verbId={current.grammar.verb} />
             </details>
-            <fieldset className="grade-fieldset">
-              <legend>How did that feel?</legend>
-              <div className="grade-buttons">
-                {grades.map((value, index) => (
-                  <button
-                    type="button"
-                    className={`grade-${value}`}
-                    key={value}
-                    onClick={() => grade(value)}
-                  >
-                    <kbd>{index + 1}</kbd>
-                    <strong>{value[0]!.toUpperCase() + value.slice(1)}</strong>
-                    <small>{intervalLabel(current, value)}</small>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <p className="grammar-note">
-              You choose the rating. Use Again if the form didn’t come back.
-            </p>
+            <ReviewGrades card={current} onGrade={grade} />
           </div>
         )}
         {practice.error && (
@@ -471,7 +412,7 @@ export function GrammarPractice({
         )}
         {audio.audioUnavailable && (
           <p role="status" className="grammar-note">
-            Audio isn’t available. You can keep practicing.
+            Audio unavailable.
           </p>
         )}
       </div>

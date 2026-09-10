@@ -1,8 +1,5 @@
 .grammar-entry {
   text-decoration: none;
-  margin-top: 18px;
-  color: var(--ink-soft);
-  gap: 10px;
 }
 .grammar-page {
   padding-bottom: max(48px, env(safe-area-inset-bottom));
@@ -10,81 +7,46 @@
 .grammar-home,
 .grammar-practice,
 .grammar-complete {
-  width: min(740px, 100%);
-  margin: clamp(36px, 6vh, 72px) auto 0;
+  width: min(560px, 100%);
+  margin: clamp(28px, 4.5vh, 48px) auto 0;
 }
-.grammar-home > .eyebrow,
-.grammar-study > .eyebrow,
-.grammar-complete > .eyebrow {
-  color: var(--rosa-dark);
-  font-size: 12px;
-  letter-spacing: 1.7px;
-  margin: 0 0 12px;
-}
-.grammar-home h1 {
-  font-size: clamp(38px, 5.5vw, 60px);
-  line-height: 1.08;
-  letter-spacing: -2px;
+.grammar-home h1,
+.grammar-complete h1 {
+  font-size: clamp(36px, 5vw, 48px);
+  line-height: 1.1;
+  letter-spacing: -1.5px;
   margin: 0;
-}
-.grammar-home h1 em {
-  color: var(--rosa-dark);
-  font-style: normal;
 }
 .grammar-intro {
   color: var(--ink-soft);
-  font-size: 18px;
-  max-width: 490px;
-  margin: 18px 0 30px;
-}
-.grammar-course-line {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--line-subtle);
-}
-.grammar-course-line h2 {
-  font-size: 24px;
-  margin: 0;
-}
-.grammar-course-line span {
-  font-size: 14px;
-  color: var(--ink-muted);
+  font-size: 17px;
+  margin: 12px 0 28px;
 }
 .grammar-focus {
   border: 0;
   padding: 0;
-  margin: 22px 0 0;
+  margin: 0;
   min-width: 0;
 }
 .grammar-focus legend {
   font-size: 14px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .grammar-focus label {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--line-subtle);
-  background: var(--card);
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  min-height: 78px;
-  transition:
-    background 120ms,
-    border-color 120ms;
+  min-height: 48px;
 }
 .grammar-focus label:hover {
-  border-color: var(--ink-muted);
+  background: var(--paper-subtle);
 }
 .grammar-focus label.is-selected {
-  border-color: var(--turquesa-dark);
   background: var(--turquesa-soft);
-  box-shadow: inset 0 0 0 1px var(--turquesa-dark);
 }
 .grammar-focus input {
   accent-color: var(--turquesa-dark);
@@ -95,7 +57,7 @@
 }
 .grammar-focus label:focus-within {
   outline: 2px solid var(--rosa-dark);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .grammar-focus strong,
 .grammar-focus small {
@@ -103,7 +65,7 @@
 }
 .grammar-focus strong {
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
 }
 .grammar-focus small {
   font-size: 13px;
@@ -113,28 +75,22 @@
 .grammar-families {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 4px 12px;
+  margin-top: 4px;
 }
 .grammar-start-row {
   display: flex;
   align-items: center;
-  gap: 24px;
-  margin: 24px 0 0;
-}
-.grammar-start-row .primary-button {
-  white-space: nowrap;
+  gap: 20px;
+  margin-top: 24px;
 }
 .grammar-start-row p {
   font-size: 13px;
-  color: var(--ink-soft);
+  color: var(--ink-muted);
   margin: 0;
 }
-.grammar-start-row p span {
-  color: var(--ink-muted);
-}
 .grammar-resume {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 .grammar-reference {
   border-top: 1px solid var(--line-subtle);
@@ -167,7 +123,6 @@
 .grammar-table {
   width: 100%;
   border-collapse: collapse;
-  max-width: 480px;
   font-size: 15px;
 }
 .grammar-table caption {
@@ -209,16 +164,12 @@
   margin: 12px 0 28px;
 }
 .grammar-study {
-  padding: clamp(22px, 4vw, 40px);
-  border: 1.5px solid var(--ink);
-  border-radius: 22px;
-  background: var(--card);
-  box-shadow: var(--shadow-card);
+  text-align: center;
 }
 .grammar-sentence {
-  margin: 22px 0 12px;
+  margin: 12px 0;
   font-size: clamp(28px, 4vw, 40px);
-  line-height: 1.35;
+  line-height: 1.3;
   letter-spacing: -0.8px;
   font-weight: 600;
   overflow-wrap: anywhere;
@@ -230,24 +181,16 @@
   padding: 0 4px 2px;
 }
 .grammar-translation {
-  margin: 0;
+  margin: 0 0 24px;
   font-size: 15px;
   color: var(--ink-muted);
 }
 .grammar-verb-cue {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 12px;
-  margin: 24px 0;
-  font-size: 14px;
-  color: var(--ink-muted);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-soft);
 }
-.grammar-verb-cue strong {
-  color: var(--ink);
-  font-size: 21px;
-}
-
 .grammar-answer-form .answer-input {
   padding: 16px 20px;
   width: 100%;
@@ -294,62 +237,18 @@
 .grammar-input-actions .reveal-button:active {
   transform: translateY(1px);
 }
-.grammar-feedback {
+.grammar-feedback [tabindex='-1'] {
   outline: none;
-}
-.grammar-feedback-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.grammar-feedback-heading p {
-  color: var(--turquesa-dark);
-  font-weight: 650;
-  margin: 0;
-}
-.grammar-your-answer {
-  font-size: 16px;
-  color: var(--ink-muted);
-  margin: 12px 0;
-  overflow-wrap: anywhere;
-}
-.grammar-your-answer > span:first-child {
-  color: var(--ink-soft);
-  margin-left: 6px;
-}
-.grammar-your-answer strong {
-  color: var(--ink);
 }
 .grammar-explanation {
   font-size: 15px;
   color: var(--ink-soft);
-  margin: 14px 0 0;
-  line-height: 1.65;
+  margin: 0;
+  line-height: 1.6;
 }
 .grammar-reveal-reference {
   font-size: 13px;
-  margin-bottom: 18px;
-}
-.grammar-study .grade-fieldset {
-  margin: 0;
-}
-.grammar-study .grade-fieldset legend {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-.grammar-study .grade-buttons {
-  gap: 8px;
-}
-.grammar-study .grade-buttons button {
-  min-width: 0;
-  padding: 10px 4px;
-}
-.grammar-study .audio-button {
-  width: 44px;
-  height: 44px;
+  margin-top: 12px;
 }
 .grammar-error {
   color: var(--tezontle-dark);
@@ -358,22 +257,8 @@
 .grammar-complete {
   text-align: center;
   margin-top: clamp(64px, 15vh, 150px);
-  max-width: 560px;
 }
-.grammar-finish-mark {
-  color: var(--turquesa-dark);
-  font-size: 72px;
-  font-weight: 700;
-  letter-spacing: -4px;
-  transform: rotate(-6deg);
-  margin: 32px 0;
-}
-.grammar-complete h1 {
-  font-size: clamp(30px, 5vw, 42px);
-  letter-spacing: -1px;
-  line-height: 1.2;
-}
-.grammar-complete > p:not(.eyebrow) {
+.grammar-complete > p {
   font-size: 17px;
   color: var(--ink-soft);
 }
@@ -385,35 +270,18 @@
   margin-top: 30px;
 }
 @media (max-width: 600px) {
-  .grammar-study .grade-buttons kbd {
-    display: none;
-  }
-  .grammar-home {
-    margin-top: 36px;
-  }
-  .grammar-home h1 {
-    letter-spacing: -1.5px;
-  }
-  .grammar-intro {
-    font-size: 16px;
-    margin-bottom: 24px;
-  }
   .grammar-families {
-    gap: 8px;
+    gap: 4px;
   }
   .grammar-focus label {
-    padding: 12px;
-    gap: 9px;
+    padding: 10px 8px;
+    gap: 8px;
   }
   .grammar-focus strong {
     font-size: 14px;
   }
   .grammar-focus small {
     font-size: 12px;
-  }
-  .grammar-focus input {
-    width: 16px;
-    height: 16px;
   }
   .grammar-start-row {
     flex-direction: column;
@@ -423,19 +291,8 @@
   .grammar-start-row p {
     text-align: center;
   }
-  .grammar-study {
-    border-radius: 16px;
-    padding: 22px 18px;
-  }
   .grammar-practice {
     margin-top: 24px;
-  }
-  .grammar-session-heading > span {
-    font-size: 12px;
-  }
-  .grammar-study > .eyebrow {
-    font-size: 10px;
-    letter-spacing: 1.3px;
   }
   .grammar-accents {
     flex: 1;
@@ -444,15 +301,6 @@
   .grammar-input-actions .reveal-button {
     width: 100%;
   }
-  .grammar-study .grade-buttons {
-    gap: 5px;
-  }
-  .grammar-study .grade-buttons strong {
-    font-size: 13px;
-  }
-  .grammar-study .grade-buttons small {
-    font-size: 11px;
-  }
   .grammar-page .topbar {
     gap: 8px;
   }
@@ -460,10 +308,5 @@
 @media (max-width: 359px) {
   .grammar-families {
     grid-template-columns: 1fr;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .grammar-focus label {
-    transition: none;
   }
 }

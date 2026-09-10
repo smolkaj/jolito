@@ -58,17 +58,6 @@ export function grammarContext(card: GrammarCard) {
   }
 }
 
-export function grammarFeedback(typed: string, expected: string): string {
-  const answer = typed.trim().normalize('NFC').toLocaleLowerCase('es')
-  if (!answer) return 'Take a look, then try it from memory.'
-  if (answer === expected) return 'That’s it.'
-  const unaccent = (text: string) =>
-    text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  if (unaccent(answer) === unaccent(expected))
-    return 'Almost — keep the accent.'
-  return 'Compare the form, then try it again.'
-}
-
 /** Due practice always precedes unseen forms. Within each group, choose diverse
  * patterns, people and verbs so a conjugation chart never gives away the next turn. */
 export function grammarQueue(
