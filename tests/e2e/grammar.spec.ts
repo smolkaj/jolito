@@ -140,6 +140,12 @@ for (const viewport of [
     await expect(page.getByRole('textbox')).toHaveValue('habl')
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
     await expect(input).toBeFocused()
+    await expect(input).toHaveAttribute('lang', 'es-MX')
+    await expect(page.locator('.grammar-sentence')).toHaveAttribute(
+      'lang',
+      'es',
+    )
+    await expect(page.locator('.grammar-blank')).toHaveAttribute('lang', 'en')
     for (const button of await page.locator('.answer-accents button').all()) {
       const box = await button.boundingBox()
       expect(box!.width).toBeGreaterThanOrEqual(44)
@@ -178,6 +184,7 @@ for (const viewport of [
     })
     await input.press('Enter')
     await expect(page.getByRole('status')).toHaveText('hablé')
+    await expect(page.locator('.diff-text')).toHaveAttribute('lang', 'es-MX')
     await expect(page.locator('.grammar-explanation')).toHaveCount(0)
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
@@ -221,6 +228,8 @@ for (const viewport of [
       page.getByRole('textbox', { name: 'Your answer' }),
     ).toBeVisible()
     const vocabularyLayout = await sessionLayout(page)
+    await expect(page.locator('.study-prompt')).toHaveAttribute('lang', 'es-MX')
+    await expect(page.getByRole('textbox')).toHaveAttribute('lang', 'en-US')
     for (const key of [
       'x',
       'y',
@@ -234,6 +243,7 @@ for (const viewport of [
     }
     await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
     const vocabularyRatings = await ratingGeometry(page)
+    await expect(page.locator('.diff-text')).toHaveAttribute('lang', 'en-US')
     expect(vocabularyRatings.gap).toBe(grammarRatings.gap)
     expect(vocabularyRatings.columns).toBe(grammarRatings.columns)
     vocabularyRatings.buttons.forEach(({ height, ...style }, index) => {

@@ -5,7 +5,12 @@ import {
   useRef,
   type ReactNode,
 } from 'react'
-import { grades, type Grade, type StudyCard } from '../domain/card'
+import {
+  grades,
+  localeForAnswer,
+  type Grade,
+  type StudyCard,
+} from '../domain/card'
 import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
 
@@ -26,7 +31,6 @@ export function PracticeCard({
   audioUnavailable,
   answerLabel = 'Your answer',
   placeholder = 'Type your answer…',
-  answerLang,
   accents = false,
   children,
   error,
@@ -46,11 +50,11 @@ export function PracticeCard({
   audioUnavailable: boolean
   answerLabel?: string
   placeholder?: string
-  answerLang?: string
   accents?: boolean
   children?: ReactNode
   error?: string | null
 }) {
+  const answerLang = localeForAnswer(card)
   const answerId = useId()
   const input = useRef<HTMLInputElement>(null)
   const feedback = useRef<HTMLDivElement>(null)
@@ -208,6 +212,7 @@ export function PracticeCard({
                 <AnswerComparison
                   typed={answer}
                   expected={card.answer}
+                  lang={answerLang}
                   onPlayAudio={onPlayAnswer}
                 />
               </div>

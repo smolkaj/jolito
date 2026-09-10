@@ -62,6 +62,16 @@ Grammar integration also preserves completion through account/visibility interru
 and starts the next round with a fresh answer and progress bar. Existing real-cache
 neural/offline, accent touch, native keyboard and background-sync contracts remain.
 
+The final design review found that answer feedback inherited the English document
+language. This omission was already present in vocabulary's comparison renderer in
+PR #41 and carried into grammar by this PR's extraction. Language was an optional
+input-only prop, separate from the domain locale used for speech. Text assertions
+and automated accessibility audits cannot infer which language a sentence needs.
+`PracticeCard` now derives input and feedback language from the same domain authority;
+`AnswerComparison` requires it while leaving interface labels English. Contracts cover
+grammar and both vocabulary directions through exact, incorrect and empty feedback,
+including pause/resume. Browser flows also check prompt, input and feedback language.
+
 Future practice modes should compose `PracticeCard` and `SessionComplete` and use the
 common page branch. Mode CSS should style learning content, not override shared form,
 feedback, grading, completion or navigation geometry. Extend the comparative state

@@ -181,7 +181,7 @@ export function GrammarPractice({
           </div>
           <h1 className="grammar-sentence" lang="es">
             {before}
-            <span className="grammar-blank" aria-label="missing verb">
+            <span className="grammar-blank" aria-label="missing verb" lang="en">
               …
             </span>
             {after}
@@ -203,7 +203,6 @@ export function GrammarPractice({
       audioUnavailable={audio.audioUnavailable}
       answerLabel="Your conjugation"
       placeholder="Type the verb…"
-      answerLang="es"
       accents
       error={practice.error}
     >

@@ -69,6 +69,9 @@ and dialogs. `PracticeCard` owns the recall/feedback/rating interaction and keyb
 lifecycle; `SessionComplete` owns completion presentation. Learning modes supply
 content and capabilities, while their session hooks own scheduling and persistence.
 `useStudyAudio` owns speech interruption and teardown for both modes.
+Domain locale selection also owns content language: `PracticeCard` derives the input
+and feedback language from its card, and `AnswerComparison` requires that language.
+Prompts declare their content language; English interface labels remain English.
 
 Do not fork shared practice controls or override their geometry in mode-specific CSS.
 Compare corresponding states across modes when changing the shared experience. The

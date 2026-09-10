@@ -20,10 +20,12 @@ function renderDiffSegments(segments: DiffSegment[]) {
 export function AnswerComparison({
   typed,
   expected,
+  lang,
   onPlayAudio,
 }: {
   typed: string
   expected: string
+  lang: string
   onPlayAudio: () => void
 }) {
   const comparison = compareAnswer(typed, expected)
@@ -32,7 +34,9 @@ export function AnswerComparison({
   if (comparison.isExact) {
     return (
       <div className="diff-exact-card" aria-label="Answer comparison">
-        <p className="diff-text diff-match">{expected}</p>
+        <p className="diff-text diff-match" lang={lang}>
+          {expected}
+        </p>
         <AudioButton label="Play answer audio" onClick={onPlayAudio} />
       </div>
     )
@@ -44,7 +48,7 @@ export function AnswerComparison({
         {hasTyped && (
           <div className="diff-row">
             <span className="diff-label">You wrote</span>
-            <p className="diff-text">
+            <p className="diff-text" lang={lang}>
               {renderDiffSegments(comparison.typedSegments)}
             </p>
           </div>
@@ -53,7 +57,7 @@ export function AnswerComparison({
         <div className="diff-row expected-row">
           <span className="diff-label">Expected</span>
           <div className="diff-row-main">
-            <p className="diff-text">
+            <p className="diff-text" lang={lang}>
               {renderDiffSegments(comparison.expectedSegments)}
             </p>
             <AudioButton label="Play answer audio" onClick={onPlayAudio} />

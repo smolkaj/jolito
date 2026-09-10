@@ -3537,6 +3537,7 @@ export function App({
                 <>
                   <div className="study-prompt-wrap">
                     <h1
+                      lang={localeForPrompt(currentCard)}
                       className={`study-prompt ${currentCard.prompt.trim().length > 100 ? 'is-long' : currentCard.prompt.trim().length > 50 ? 'is-medium' : ''}`.trim()}
                     >
                       {currentCard.prompt}
@@ -3573,7 +3574,6 @@ export function App({
               onDelete={() => setDeletingCards([currentCard])}
               paused={paused}
               audioUnavailable={audioUnavailable}
-              answerLang={localeForAnswer(currentCard)}
             >
               {currentCard.context && (
                 <div className="reveal-context-block">
