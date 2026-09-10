@@ -30,6 +30,8 @@ export {
   LayeredNeuralSpeaker,
 }
 
+import { BrowserSignupNotificationService } from './signup-notification-service'
+
 export function createBrowserServices(): AppServices {
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
@@ -45,6 +47,7 @@ export function createBrowserServices(): AppServices {
     undefined,
     '/api/feedback',
   )
+  const signupNotification = new BrowserSignupNotificationService('/api/signup')
 
   return {
     clock: new SystemClock(),
@@ -57,5 +60,6 @@ export function createBrowserServices(): AppServices {
     auth,
     sync,
     feedback,
+    signupNotification,
   }
 }

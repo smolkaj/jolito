@@ -1,5 +1,10 @@
 import type { StudyCard } from '../domain/card'
-import type { AuthUser, SyncResult, SyncService } from './ports'
+import type {
+  AuthUser,
+  SignupNotificationService,
+  SyncResult,
+  SyncService,
+} from './ports'
 
 export async function syncDeckWithCloud({
   localCards,
@@ -7,12 +12,16 @@ export async function syncDeckWithCloud({
   user,
   syncService,
   onCardsUpdated,
+  signupNotifier,
+  clientContext,
 }: {
   localCards: StudyCard[]
   localDeletedIds?: string[]
   user: AuthUser | null
   syncService: SyncService
   onCardsUpdated: (cards: StudyCard[], deletedCardIds?: string[]) => void
+  signupNotifier?: SignupNotificationService | undefined
+  clientContext?: Record<string, unknown> | undefined
 }): Promise<SyncResult> {
   if (!user) {
     return {
@@ -24,6 +33,13 @@ export async function syncDeckWithCloud({
   const result = await syncService.syncDeck(localCards, user, localDeletedIds)
   if (result.success && result.cards) {
     onCardsUpdated(result.cards, result.deletedCardIds)
+  }
+  if (result.success && result.isInitialSync && signupNotifier && user.email) {
+    void signupNotifier.notifySignup({
+      email: user.email,
+      userId: user.id,
+      context: clientContext,
+    })
   }
   return result
 }

@@ -1,7 +1,8 @@
 import { handleTtsRequest } from './tts-route'
 import { handleFeedbackRequest, type FeedbackWorkerEnv } from './feedback-route'
+import { handleSignupRequest, type SignupWorkerEnv } from './signup-route'
 
-export interface WorkerEnv extends FeedbackWorkerEnv {
+export interface WorkerEnv extends FeedbackWorkerEnv, SignupWorkerEnv {
   ASSETS?: {
     fetch: (request: Request) => Promise<Response>
   }
@@ -16,6 +17,9 @@ export default {
     }
     if (pathname === '/api/feedback') {
       return handleFeedbackRequest(request, env)
+    }
+    if (pathname === '/api/signup') {
+      return handleSignupRequest(request, env)
     }
 
     if (env?.ASSETS) {

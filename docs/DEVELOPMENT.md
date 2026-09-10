@@ -165,6 +165,11 @@ Jolito uses Supabase Auth for passwordless 1-click magic link and 6-digit OTP ve
    - **Automated sync:** `npm run setup:domain` provisions the Resend domain, syncs DKIM/SPF DNS records to Cloudflare, and applies custom SMTP settings (`smtp_host`, `smtp_port`, `smtp_admin_email`, `smtp_sender_name`, `smtp_user`, `smtp_pass`) and the branded magic link template directly to the hosted Supabase project via the Supabase Management API.
    - **Zero manual drift:** In accordance with the 100% config-as-code invariant, never manually edit SMTP settings or email templates in the Supabase Dashboard. All remote settings are codified in [`scripts/setup-domain.ts`](../scripts/setup-domain.ts).
 3. **Inbound Reply Forwarding:** Running `npm run setup:email` (or `npm run setup:domain`) provisions Cloudflare Email Routing rules for `signin@joli.to` and `a@joli.to`, ensuring user replies to auth emails route directly to the maintainer destination inbox.
+4. **Sign-up & Feedback Email Alerts:**
+   - Jolito dispatches real-time email notifications to the maintainer destination inbox (`FEEDBACK_NOTIFICATION_EMAIL` or `SIGNUP_NOTIFICATION_EMAIL`, defaulting to `a@joli.to`) whenever:
+     - A new learner verifies their account and initializes their cloud deck (`POST /api/signup`).
+     - A user or guest submits feedback through the in-app modal (`POST /api/feedback`).
+   - Dispatches via Cloudflare Workers `SEND_EMAIL` binding (with Resend API fallback) at strictly $0.00 operating costs.
 
 Preview deployments are public. Do not expose secrets, credentials, personal information, or production data through previews as backend bindings are added. The Cloudflare check is intentionally optional so a deployment-provider outage cannot block an otherwise healthy merge; the quality, browser, and iOS native compilation checks remain the code-quality gates.
 

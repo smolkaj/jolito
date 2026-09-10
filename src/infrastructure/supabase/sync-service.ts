@@ -109,7 +109,12 @@ export class SupabaseSyncService implements SyncService {
       }>
 
       if (!rows || rows.length === 0) {
-        return { success: true, cards: [], deletedCardIds: [] }
+        return {
+          success: true,
+          cards: [],
+          deletedCardIds: [],
+          isInitialSync: true,
+        }
       }
 
       const first = rows[0]
@@ -278,12 +283,14 @@ export class SupabaseSyncService implements SyncService {
       return pushRes
     }
 
+    const isInitialSync = Boolean(pullRes.isInitialSync)
     this.status = 'synced'
     return {
       success: true,
       cards: reconciliation.cards,
       deletedCardIds: reconciliation.deletedCardIds,
       syncedAt: pushRes.syncedAt,
+      isInitialSync,
     }
   }
 

@@ -262,7 +262,7 @@ async function main(): Promise<void> {
 
   const destinationEmail = await promptIfMissing(
     'FEEDBACK_NOTIFICATION_EMAIL',
-    'Enter destination email for feedback notifications and sign-in replies (e.g. your personal email): ',
+    'Enter destination email for feedback notifications, sign-up alerts, and sign-in replies (e.g. your personal email): ',
   )
 
   await setupEmailRouting({

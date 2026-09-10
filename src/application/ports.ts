@@ -101,6 +101,7 @@ export type SyncResult = {
   deletedCardIds?: string[] | undefined
   error?: string | undefined
   syncedAt?: number | undefined
+  isInitialSync?: boolean | undefined
 }
 
 export type SyncService = {
@@ -133,6 +134,19 @@ export type FeedbackService = {
   ): Promise<FeedbackResult>
 }
 
+export type SignupNotificationPayload = {
+  email: string
+  userId: string
+  context?: Record<string, unknown> | undefined
+}
+
+export type SignupNotificationService = {
+  notifySignup(payload: SignupNotificationPayload): Promise<{
+    success: boolean
+    error?: string | undefined
+  }>
+}
+
 export type AppServices = {
   clock: Clock
   ids: IdGenerator
@@ -144,4 +158,5 @@ export type AppServices = {
   auth: AuthService
   sync: SyncService
   feedback: FeedbackService
+  signupNotification?: SignupNotificationService | undefined
 }

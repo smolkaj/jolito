@@ -13,6 +13,8 @@ import type {
   HapticsPlayer,
   IdGenerator,
   PrefetchItem,
+  SignupNotificationPayload,
+  SignupNotificationService,
   SoundPlayer,
   Speaker,
   SpeakerOptions,
@@ -309,6 +311,23 @@ export class MockFeedbackService implements FeedbackService {
   }
 }
 
+export class MockSignupNotificationService implements SignupNotificationService {
+  public notifications: SignupNotificationPayload[] = []
+  public shouldSucceed = true
+  public errorMessage = 'Failed to dispatch signup notification.'
+
+  notifySignup(payload: SignupNotificationPayload): Promise<{
+    success: boolean
+    error?: string | undefined
+  }> {
+    if (!this.shouldSucceed) {
+      return Promise.resolve({ success: false, error: this.errorMessage })
+    }
+    this.notifications.push(payload)
+    return Promise.resolve({ success: true })
+  }
+}
+
 export const TEST_LEXICON: LexiconEntry[] = SEED_LEXICON
 
 export function createTestServices(options?: {
@@ -331,6 +350,7 @@ export function createTestServices(options?: {
   mockAuth: MockAuthService
   mockSync: MockSyncService
   mockFeedback: MockFeedbackService
+  mockSignupNotification: MockSignupNotificationService
 } {
   const memoryCards = new MemoryCardRepository(
     options?.cards ?? null,
@@ -357,6 +377,7 @@ export function createTestServices(options?: {
     mockSync.remoteDeletedCardIds = [...options.remoteDeletedCardIds]
   }
   const mockFeedback = new MockFeedbackService()
+  const mockSignupNotification = new MockSignupNotificationService()
 
   return {
     cards: memoryCards,
@@ -369,6 +390,7 @@ export function createTestServices(options?: {
     auth: mockAuth,
     sync: mockSync,
     feedback: mockFeedback,
+    signupNotification: mockSignupNotification,
     memoryCards,
     mockSpeaker,
     mockSounds,
@@ -378,5 +400,6 @@ export function createTestServices(options?: {
     mockAuth,
     mockSync,
     mockFeedback,
+    mockSignupNotification,
   }
 }

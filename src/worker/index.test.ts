@@ -32,6 +32,23 @@ describe('worker fetch handler', () => {
     expect(res.status).toBe(204)
   })
 
+  it('routes /api/signup to signup handler', async () => {
+    const req = new Request('https://joli.to/api/signup', {
+      method: 'OPTIONS',
+    })
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(204)
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST')
+  })
+
+  it('routes /api/signup/ with trailing slash to signup handler', async () => {
+    const req = new Request('https://joli.to/api/signup/', {
+      method: 'OPTIONS',
+    })
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(204)
+  })
+
   it('delegates asset requests to env.ASSETS when present', async () => {
     let capturedAssetRequest: Request | null = null
     const mockEnv = {

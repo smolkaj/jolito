@@ -1,10 +1,11 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { createDeckBackup } from '../../application/deck-backup'
 import { syncDeckWithCloud } from '../../application/deck-sync'
 import type {
   AuthService,
   AuthUser,
   Clock,
+  SignupNotificationService,
   SyncService,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
@@ -36,6 +37,7 @@ export interface SyncModalProps {
   pendingCardPrompt?: string | undefined
   onOpenPrivacy?: (() => void) | undefined
   onOpenFeedback?: (() => void) | undefined
+  signupNotifier?: SignupNotificationService | undefined
 }
 
 export function SyncModal({
@@ -52,6 +54,7 @@ export function SyncModal({
   pendingCardPrompt,
   onOpenPrivacy,
   onOpenFeedback,
+  signupNotifier,
 }: SyncModalProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
@@ -128,12 +131,12 @@ export function SyncModal({
     })
   }, [auth])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsConfirmingDelete(false)
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
     onClose()
-  }
+  }, [onClose])
 
   useEffect(() => {
     if (!isOpen) return
@@ -145,7 +148,7 @@ export function SyncModal({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   if (!isOpen) return null
 
@@ -215,6 +218,7 @@ export function SyncModal({
       syncService: sync,
       onCardsUpdated: (newCards, newDeletedIds) =>
         onUpdateCards(newCards, false, newDeletedIds),
+      signupNotifier,
     })
     setLoadingAction(null)
     if (res.success) {

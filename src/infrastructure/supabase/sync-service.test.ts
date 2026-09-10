@@ -68,6 +68,32 @@ describe('SupabaseSyncService', () => {
     expect(res.success).toBe(true)
     expect(res.cards).toHaveLength(1)
     expect(res.cards?.[0]?.prompt).toBe('hola')
+    expect(res.isInitialSync).toBeFalsy()
+  })
+
+  it('flags isInitialSync: true when pullDeck finds no existing remote deck', async () => {
+    const service = new SupabaseSyncService(
+      mockAuthService as SupabaseAuthService,
+      'https://example.supabase.co',
+      'anon-key',
+      'device-a',
+    )
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      }),
+    )
+
+    const res = await service.pullDeck({
+      id: 'usr-new',
+      email: 'new@example.com',
+    })
+    expect(res.success).toBe(true)
+    expect(res.cards).toHaveLength(0)
+    expect(res.isInitialSync).toBe(true)
   })
 
   it('pushes deck successfully and saves record to cloud', async () => {

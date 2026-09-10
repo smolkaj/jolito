@@ -1490,6 +1490,14 @@ export function App({
         }
 
         const deletedIds = Array.from(deletedCardIdsRef.current)
+        const clientContext = {
+          platform: isIOS() ? 'ios' : 'web',
+          standalone: isStandalone(),
+          userAgent:
+            typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+          language:
+            typeof navigator !== 'undefined' ? navigator.language : 'unknown',
+        }
         void syncDeckWithCloud({
           localCards: userCards,
           localDeletedIds: deletedIds,
@@ -1497,6 +1505,8 @@ export function App({
           syncService: services.sync,
           onCardsUpdated: (newCards, newDeletedIds) =>
             onUpdateCardsRef.current(newCards, false, newDeletedIds),
+          signupNotifier: services.signupNotification,
+          clientContext,
         }).then((res) => {
           if (res.success) setSyncStatus('synced')
           else setSyncStatus('error')
@@ -1520,7 +1530,13 @@ export function App({
         setIsDemoDeckDismissed(false)
       }
     })
-  }, [services.auth, services.clock, services.ids, services.sync])
+  }, [
+    services.auth,
+    services.clock,
+    services.ids,
+    services.signupNotification,
+    services.sync,
+  ])
 
   const isSyncingRef = useRef(false)
   const syncDebounceTimerRef = useRef<number | null>(null)
@@ -1547,6 +1563,29 @@ export function App({
         )
         onUpdateCards(reconciled.cards, false, reconciled.deletedCardIds)
         setSyncStatus('synced')
+
+        if (
+          res.isInitialSync &&
+          services.signupNotification &&
+          authUserRef.current?.email
+        ) {
+          void services.signupNotification.notifySignup({
+            email: authUserRef.current.email,
+            userId: authUserRef.current.id,
+            context: {
+              platform: isIOS() ? 'ios' : 'web',
+              standalone: isStandalone(),
+              userAgent:
+                typeof navigator !== 'undefined'
+                  ? navigator.userAgent
+                  : 'unknown',
+              language:
+                typeof navigator !== 'undefined'
+                  ? navigator.language
+                  : 'unknown',
+            },
+          })
+        }
       } else if (!res.success) {
         setSyncStatus('error')
       }
@@ -1555,7 +1594,7 @@ export function App({
     } finally {
       isSyncingRef.current = false
     }
-  }, [onUpdateCards, services.sync])
+  }, [onUpdateCards, services.signupNotification, services.sync])
 
   const flushSync = useCallback(() => {
     if (syncDebounceTimerRef.current !== null) {
@@ -2557,6 +2596,7 @@ export function App({
           }
           onOpenPrivacy={openPrivacyModal}
           onOpenFeedback={openFeedbackModal}
+          signupNotifier={services.signupNotification}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -2938,6 +2978,7 @@ export function App({
           }
           onOpenPrivacy={openPrivacyModal}
           onOpenFeedback={openFeedbackModal}
+          signupNotifier={services.signupNotification}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3447,6 +3488,7 @@ export function App({
           }
           onOpenPrivacy={openPrivacyModal}
           onOpenFeedback={openFeedbackModal}
+          signupNotifier={services.signupNotification}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3595,6 +3637,7 @@ export function App({
           }
           onOpenPrivacy={openPrivacyModal}
           onOpenFeedback={openFeedbackModal}
+          signupNotifier={services.signupNotification}
         />
         <EditCardModal
           isOpen={editingCard !== null}
@@ -3800,6 +3843,7 @@ export function App({
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
         onOpenPrivacy={openPrivacyModal}
         onOpenFeedback={openFeedbackModal}
+        signupNotifier={services.signupNotification}
       />
       <EditCardModal
         isOpen={editingCard !== null}

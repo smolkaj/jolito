@@ -5522,5 +5522,36 @@ describe('Jolito', () => {
       ).toBeInTheDocument()
       expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
     })
+
+    it('dispatches signup notification when learner signs in and completes initial cloud sync', async () => {
+      const services = createTestServices()
+      services.mockSync.syncDeck = (cards) => {
+        return Promise.resolve({
+          success: true,
+          cards: cards.map((c) => ({ ...c })),
+          deletedCardIds: [],
+          syncedAt: Date.now(),
+          isInitialSync: true,
+        })
+      }
+
+      render(<App services={services} />)
+
+      expect(services.mockSignupNotification.notifications).toHaveLength(0)
+
+      act(() => {
+        void services.mockAuth.verifyOtp('newlearner@example.com', '123456')
+      })
+
+      await waitFor(() => {
+        expect(services.mockSignupNotification.notifications).toHaveLength(1)
+      })
+
+      const notification = services.mockSignupNotification.notifications[0]
+      expect(notification?.email).toBe('newlearner@example.com')
+      expect(notification?.userId).toBe('mock-user-1')
+      expect(notification?.context).toBeDefined()
+      expect(typeof notification?.context?.['platform']).toBe('string')
+    })
   })
 })

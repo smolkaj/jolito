@@ -108,4 +108,95 @@ describe('syncDeckWithCloud', () => {
     expect(result.error).toBe('Network connection lost.')
     expect(onCardsUpdated).not.toHaveBeenCalled()
   })
+
+  it('dispatches signup notification when sync succeeds with isInitialSync: true', async () => {
+    const syncDeckMock = vi.fn().mockResolvedValue({
+      success: true,
+      cards: [mockCard],
+      deletedCardIds: [],
+      syncedAt: 123456789,
+      isInitialSync: true,
+    })
+    const syncService: SyncService = {
+      getStatus: () => 'synced',
+      pushDeck: vi.fn(),
+      pullDeck: vi.fn(),
+      syncDeck: syncDeckMock,
+    }
+    const notifySignupMock = vi.fn().mockResolvedValue({ success: true })
+    const signupNotifier = { notifySignup: notifySignupMock }
+
+    const result = await syncDeckWithCloud({
+      localCards: [mockCard],
+      user: testUser,
+      syncService,
+      onCardsUpdated: vi.fn(),
+      signupNotifier,
+      clientContext: { platform: 'web' },
+    })
+
+    expect(result.success).toBe(true)
+    expect(notifySignupMock).toHaveBeenCalledTimes(1)
+    expect(notifySignupMock).toHaveBeenCalledWith({
+      email: testUser.email,
+      userId: testUser.id,
+      context: { platform: 'web' },
+    })
+  })
+
+  it('does not dispatch signup notification when isInitialSync is false', async () => {
+    const syncDeckMock = vi.fn().mockResolvedValue({
+      success: true,
+      cards: [mockCard],
+      deletedCardIds: [],
+      syncedAt: 123456789,
+      isInitialSync: false,
+    })
+    const syncService: SyncService = {
+      getStatus: () => 'synced',
+      pushDeck: vi.fn(),
+      pullDeck: vi.fn(),
+      syncDeck: syncDeckMock,
+    }
+    const notifySignupMock = vi.fn()
+    const signupNotifier = { notifySignup: notifySignupMock }
+
+    const result = await syncDeckWithCloud({
+      localCards: [mockCard],
+      user: testUser,
+      syncService,
+      onCardsUpdated: vi.fn(),
+      signupNotifier,
+    })
+
+    expect(result.success).toBe(true)
+    expect(notifySignupMock).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch signup notification when sync fails even if isInitialSync was true', async () => {
+    const syncDeckMock = vi.fn().mockResolvedValue({
+      success: false,
+      error: 'Push failed',
+      isInitialSync: true,
+    })
+    const syncService: SyncService = {
+      getStatus: () => 'error',
+      pushDeck: vi.fn(),
+      pullDeck: vi.fn(),
+      syncDeck: syncDeckMock,
+    }
+    const notifySignupMock = vi.fn()
+    const signupNotifier = { notifySignup: notifySignupMock }
+
+    const result = await syncDeckWithCloud({
+      localCards: [mockCard],
+      user: testUser,
+      syncService,
+      onCardsUpdated: vi.fn(),
+      signupNotifier,
+    })
+
+    expect(result.success).toBe(false)
+    expect(notifySignupMock).not.toHaveBeenCalled()
+  })
 })
