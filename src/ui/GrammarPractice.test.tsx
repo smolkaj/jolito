@@ -20,7 +20,7 @@ describe('grammar practice in Jolito', () => {
     const services = createTestServices()
     const app = render(<App services={services} />)
     const user = await begin()
-    const prompt = { text: 'Anoche yo mmm con la vecina.', locale: 'es-MX' }
+    const prompt = { text: 'Anoche yo … con la vecina.', locale: 'es-MX' }
     expect(services.mockSpeaker.spoken).toEqual([prompt])
     await user.type(screen.getByRole('textbox'), 'habl')
     expect(services.mockSpeaker.spoken).toEqual([prompt])
@@ -37,7 +37,7 @@ describe('grammar practice in Jolito', () => {
     await user.click(screen.getByRole('button', { name: 'Play prompt audio' }))
     expect(services.mockSpeaker.spoken.slice(-1)[0]).toEqual(prompt)
     expect(
-      services.mockSpeaker.spoken.every(({ text }) => text.includes('mmm')),
+      services.mockSpeaker.spoken.every(({ text }) => text.includes('…')),
     ).toBe(true)
     await user.click(screen.getByRole('button', { name: /Reveal answer/ }))
     await waitFor(() =>
@@ -47,7 +47,7 @@ describe('grammar practice in Jolito', () => {
       }),
     )
     await user.keyboard('4')
-    expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toContain('mmm')
+    expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toContain('…')
     await user.keyboard('{Enter}')
     app.unmount()
     const ended = [...services.mockSpeaker.spoken]
@@ -130,8 +130,8 @@ describe('grammar practice in Jolito', () => {
     const app = render(<App services={services} />)
     expect(services.mockSpeaker.prefetched).toEqual(
       expect.arrayContaining([
-        { text: 'Anoche yo mmm con la vecina.', locale: 'es-MX' },
-        { text: 'Después de cenar, yo mmm de la película.', locale: 'es-MX' },
+        { text: 'Anoche yo … con la vecina.', locale: 'es-MX' },
+        { text: 'Después de cenar, yo … de la película.', locale: 'es-MX' },
         { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
         { text: 'Después de cenar, yo hablé de la película.', locale: 'es-MX' },
       ]),

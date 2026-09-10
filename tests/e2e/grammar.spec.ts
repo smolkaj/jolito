@@ -95,6 +95,24 @@ for (const viewport of [
       path: `test-results/grammar-${viewport.width}-home.png`,
       fullPage: true,
     })
+    const allPatterns = page.getByRole('radio', { name: 'All patterns' })
+    await allPatterns.focus()
+    await page.keyboard.press('ArrowRight')
+    const regular = page.getByRole('radio', { name: /Regular endings/ })
+    await expect(regular).toBeChecked()
+    await expect(regular).toBeFocused()
+    expect((await auditAccessibility(page)).violations).toEqual([])
+    await page.screenshot({
+      path: `test-results/grammar-${viewport.width}-selection-keyboard.png`,
+      fullPage: true,
+    })
+    await page.getByRole('radio', { name: /Common irregulars/ }).click()
+    await settleAnimations(page)
+    await page.screenshot({
+      path: `test-results/grammar-${viewport.width}-selection-pointer.png`,
+      fullPage: true,
+    })
+    await allPatterns.click()
     await page.getByRole('button', { name: 'New round' }).click()
     const grammarLayout = await sessionLayout(page)
     await page.getByRole('textbox').fill('habl')
@@ -413,12 +431,12 @@ test('grammar prepares neural voices for both contexts and retains them across i
   await page.goto('/#/grammar')
   const original = 'Anoche yo hablé con la vecina.'
   const repeated = 'Después de cenar, yo hablé de la película.'
-  const spokenPrompt = 'Anoche yo mmm con la vecina.'
+  const spokenPrompt = 'Anoche yo … con la vecina.'
   for (const text of [
     original,
     repeated,
     spokenPrompt,
-    'Después de cenar, yo mmm de la película.',
+    'Después de cenar, yo … de la película.',
   ]) {
     await expect
       .poll(() => [...(fetched.get(text) ?? [])].sort())

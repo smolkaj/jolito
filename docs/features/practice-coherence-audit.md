@@ -27,7 +27,7 @@ hooks; presentation does not choose cards, save grades, or start its own audio e
 
 - Grammar setup uses tactile pattern choices and names the pretérito indefinido; vocabulary starts from
   the learner's deck. Their content-management tasks are different.
-- Both modes autoplay and replay prompts. Grammar speaks “mmm” at the blank;
+- Both modes autoplay and replay prompts. Grammar pauses at the blank;
   the complete sentence is reserved for answer feedback.
 - Grammar supplies Spanish accent entry and corrective grammar rules. Vocabulary keeps
   its authored context and card editing. Both use the same reveal and rating workflow.

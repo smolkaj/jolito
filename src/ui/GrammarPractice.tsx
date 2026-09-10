@@ -74,7 +74,7 @@ export function GrammarPractice({
         <fieldset className="grammar-focus">
           <legend className="sr-only">Patterns</legend>
           <label
-            className={`grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
+            className={`flat-choice grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
           >
             <input
               type="radio"
@@ -90,7 +90,7 @@ export function GrammarPractice({
             {grammarFamilies.map((family) => (
               <label
                 key={family.id}
-                className={focus === family.id ? 'is-selected' : ''}
+                className={`flat-choice ${focus === family.id ? 'is-selected' : ''}`}
               >
                 <input
                   type="radio"

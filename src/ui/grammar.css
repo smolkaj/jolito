@@ -31,17 +31,8 @@
   padding: 16px;
   border: 2px solid var(--line);
   border-radius: 18px;
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
   cursor: pointer;
   min-height: 56px;
-}
-.grammar-focus label:hover {
-  background: var(--turquesa-soft);
-}
-.grammar-focus label.is-selected {
-  background: var(--turquesa);
-  box-shadow: 3px 3px 0 var(--ink);
 }
 .grammar-focus input {
   accent-color: var(--ink);
@@ -49,13 +40,6 @@
   width: 18px;
   height: 18px;
   margin: 0;
-}
-.grammar-focus input:focus-visible {
-  outline: none;
-}
-.grammar-focus label:focus-within {
-  outline: 3px solid var(--rosa-dark);
-  outline-offset: 4px;
 }
 .grammar-focus strong,
 .grammar-focus small {

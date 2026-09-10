@@ -192,12 +192,10 @@ describe('preterite practice contracts', () => {
           .toLocaleLowerCase('es')
           .match(/[\p{L}]+/gu)!
         expect(words).not.toContain(card.answer)
-        expect(context.spokenPrompt).toBe(
-          context.sentence.replace('___', 'mmm'),
-        )
+        expect(context.spokenPrompt).toBe(context.sentence.replace('___', '…'))
         expect(
           context.spokenPrompt.toLocaleLowerCase('es').match(/[\p{L}]+/gu),
-        ).not.toContain(card.answer)
+        ).toEqual(words)
         expect(localeForPrompt(card)).toBe('es-MX')
         expect(localeForAnswer(card)).toBe('es-MX')
       }

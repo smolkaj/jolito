@@ -152,8 +152,8 @@ selection replacement and caret editing work, and focus survives another practic
 
 ## Simpler setup and natural sentences
 
-The setup has no reference sheet or round-size notice. The verb is the strongest
-typographic cue during recall. Correct answers need only the shared answer feedback;
+The setup has no reference sheet or round-size notice. The sentence leads the
+typographic hierarchy, with the infinitive as a smaller pink cue. Correct answers need only the shared answer feedback;
 incorrect and empty answers get the relevant rule without a disclosure or full table.
 
 Each authored Spanish/English sentence pair owns its word order and time context.
@@ -173,8 +173,9 @@ uses the actual upcoming sentences, independent of their opening words.
 
 ## Setup styling and spoken prompts
 
-Setup uses Jolito’s heading typography, white surfaces, ink borders, offset shadows
-and mint selection color. Native radio controls retain their keyboard behavior; a
+Setup uses Jolito’s heading typography, flat white surfaces, ink borders
+and mint selection color. Choices have no drop shadows or surrounding selection
+rings; keyboard focus appears on the native radio control. Native radio controls retain their keyboard behavior; a
 single-column narrow layout keeps pattern names and examples readable. The heading
 names the tense explicitly: “Pretérito indefinido,” with “Spanish simple past” below.
 The target infinitive and its sentence blank share the same accessible dark pink,
@@ -183,8 +184,9 @@ the smaller infinitive remains a clear supporting cue. New/Resume action semanti
 status copy is introduced to create visual character.
 
 Grammar supplies `grammarContext.spokenPrompt` to the existing audio hook and the same
-`AudioButton` and replay shortcut as card practice. “mmm” marks the missing verb; the
-complete sentence plays after reveal. Domain locale selection recognizes grammar as
+`AudioButton` and replay shortcut as card practice. An ellipsis replaces the missing
+verb in the spoken prompt, producing a short punctuation pause without adding a word.
+The complete sentence plays after reveal. Domain locale selection recognizes grammar as
 Spanish on both sides, independent of the vocabulary direction field. One context
 expansion supplies playback, prefetch and cache retention, keeping both voices ready
 for each prompt and answer through offline recall. Typing does not repeat autoplay.
@@ -194,7 +196,19 @@ prompt → typing → interruption → resume → replay → answer → next tur
 The real-browser audio contract checks neural cache readiness for prompts and answers
 and retains the vocabulary-deletion/offline/alternate-context lifecycle.
 
-The home menu uses shared `secondary-button` styles for its actions, including hover
-lift, colored offset shadows, press movement and keyboard focus. Its CSS supplies
-only layout; the popup uses the existing card-shadow token. This replaces the
-prototype’s separate flat hover treatment and bespoke faint shadow.
+The home menu has one framed popup with plain rows. Menu rows and grammar choices
+share `flat-choice` color feedback; primary and secondary action buttons keep their
+raised treatment. Reusing raised action-button styles for menu rows had created
+nested frames, while grammar’s shadow plus whole-label focus ring overloaded its
+selection state. Both were introduced in this unmerged PR. Default-state screenshots
+and accessibility audits missed the combined visual states. Five-width browser
+artifacts now include keyboard and pointer selection as well as menu hover/press,
+and the shared flat-choice styles separate these choices from raised actions.
+
+The pause uses the existing text-synthesis path and remains inside a single cached
+recording. There are no separate clips, playback timers or SSML commands. A live
+waveform comparison of “Anoche yo … con la vecina” against the same words without the
+ellipsis measured an internal quiet gap of about 260–270ms with both neural voices.
+Timing remains voice-dependent, including native fallback. Context contracts verify
+that prompt audio contains exactly the sentence’s remaining words; browser contracts
+retain both-voice prefetch, offline recall, interruption/resume and teardown coverage.
