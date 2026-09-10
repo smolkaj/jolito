@@ -612,6 +612,23 @@ describe('SupabaseAuthService', () => {
       token: string
     }
     expect(parsedBody2.token).toBe('482910')
+
+    // Test with hyphenated/spaced domain-bound format: @joli.to # 482-910
+    const res3 = await service.verifyOtp(
+      'domain-bound@example.com',
+      '@joli.to # 482-910',
+    )
+    expect(res3.success).toBe(true)
+
+    const callArgs3 = fetchSpy.mock.calls[2] as [
+      string,
+      { method: string; body: string },
+    ]
+    const parsedBody3 = JSON.parse(callArgs3[1].body) as {
+      email: string
+      token: string
+    }
+    expect(parsedBody3.token).toBe('482910')
   })
 
   it('provides actionable guidance when OTP is expired or invalid', async () => {

@@ -8,6 +8,7 @@ import type {
   SyncService,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
+import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { downloadJsonFile } from '../../infrastructure/browser/download'
 import { isIOS, isStandalone } from '../../infrastructure/browser/environment'
 import {
@@ -173,8 +174,7 @@ export function SyncModal({
       try {
         const text = await navigator.clipboard.readText()
         if (text) {
-          const domainBoundMatch = /(?:@[\w.-]+\s*)?#\s*(\d{6})\b/.exec(text)
-          setToken(domainBoundMatch?.[1] ?? text.trim())
+          setToken(unwrapDomainBoundOtp(text))
           triggerTransientFeedback('pasted', 1500)
         }
       } catch {
@@ -560,7 +560,19 @@ export function SyncModal({
                       : 'text'
                   }
                   value={token}
-                  onChange={(e) => setToken(e.target.value)}
+                  onChange={(e) =>
+                    setToken(unwrapDomainBoundOtp(e.target.value))
+                  }
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData('text')
+                    if (pasted) {
+                      const unwrapped = unwrapDomainBoundOtp(pasted)
+                      if (unwrapped !== pasted) {
+                        e.preventDefault()
+                        setToken(unwrapped)
+                      }
+                    }
+                  }}
                   className={`link-input ${/^[\d\s-]+$/.test(token.trim()) && /\d/.test(token.trim()) ? 'otp-code-input' : ''}`}
                 />
                 {typeof navigator !== 'undefined' &&
