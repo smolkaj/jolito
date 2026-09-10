@@ -235,6 +235,22 @@ describe('grammar practice in Jolito', () => {
         'grammar:preterite:hablar:0',
       ),
     )
+    expect(
+      services.mockSpeaker.prunedCalls[
+        services.mockSpeaker.prunedCalls.length - 1
+      ],
+    ).not.toContainEqual({
+      text: 'Ayer yo hablé con la vecina.',
+      locale: 'es-MX',
+    })
+    expect(
+      services.mockSpeaker.prunedCalls[
+        services.mockSpeaker.prunedCalls.length - 1
+      ],
+    ).toContainEqual({
+      text: 'Ayer tú hablaste con la vecina.',
+      locale: 'es-MX',
+    })
     const played = [...services.mockSounds.played]
     await user.keyboard('4')
     expect(services.mockSounds.played).toEqual(played)

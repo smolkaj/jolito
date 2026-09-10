@@ -4,15 +4,12 @@ import { scheduleReview, type Grade, type StudyCard } from '../domain/card'
 import { reconcileStudyCards } from '../domain/sync'
 import { createStudySession } from '../domain/study-session'
 import {
-  createGrammarCards,
+  availableGrammarCards,
   grammarQueue,
-  isGrammarCard,
   type GrammarCard,
 } from '../domain/grammar'
 import type { GrammarFocus } from '../domain/grammar-content'
 import { useStudySession } from './useStudySession'
-
-const catalog = createGrammarCards(0)
 
 export function useGrammarPractice({
   cards,
@@ -31,13 +28,10 @@ export function useGrammarPractice({
   const [error, setError] = useState<string | null>(null)
   const session = useStudySession(createStudySession([]))
   const gradeLock = useRef(false)
-  const available = useMemo(() => {
-    const saved = new Map(cards.filter(isGrammarCard).map((c) => [c.id, c]))
-    const deleted = new Set(deletedCardIds)
-    return catalog
-      .filter((c) => !deleted.has(c.id))
-      .map((c) => saved.get(c.id) ?? c)
-  }, [cards, deletedCardIds])
+  const available = useMemo(
+    () => availableGrammarCards(cards, deletedCardIds),
+    [cards, deletedCardIds],
+  )
   const audioCards = useMemo(() => {
     if (mode === 'choose') return grammarQueue(available, clock.now(), focus)
     return mode === 'practice' ? snapshots : []

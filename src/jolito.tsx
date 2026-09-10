@@ -47,6 +47,7 @@ import {
   formatPracticedSummary,
 } from './domain/study-session'
 import {
+  availableGrammarCards,
   grammarContext,
   isGrammarCard,
   type GrammarCard,
@@ -1185,7 +1186,14 @@ export function App({
         }
 
         if (hasRemovedAudio) {
-          void services.speaker.pruneUnusedAudio(nextActiveItems)
+          // Unpracticed catalog forms are available even before their first save.
+          // Keep their warmed audio through deck edits and remote reconciliation.
+          void services.speaker.pruneUnusedAudio(
+            getActiveAudioItems([
+              ...newCards.filter((card) => !isGrammarCard(card)),
+              ...availableGrammarCards(newCards, deletedIdsArray),
+            ]),
+          )
         }
       }
     },

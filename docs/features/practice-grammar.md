@@ -151,6 +151,14 @@ speaker tests verified calls but not cache readiness or which voice actually pla
 New contracts cover prefetch intent and real browser decode/cache/playback through
 practice interruption, offline recall in both contexts, and navigation teardown.
 
+Independent review also reproduced eviction of unsaved grammar audio after deleting
+vocabulary. Practice and cache retention now share the same available-form catalog,
+including unsaved forms and excluding tombstones. Retention only preserves existing
+cache entries; it does not fetch the catalog. The browser contract deletes vocabulary
+mid-round before offline resume, and checks unique grammar entries in the neural cache
+rather than double-counting the service worker’s copy. Setup interruption precedes
+grading so its predicted round is already cached before the offline transition.
+
 Accent pointer presses preserve an already-focused answer input; keyboard activation
 retains native button behavior. A touch-browser contract checks that input never blurs,
 selection replacement and caret editing work, and focus survives another practice turn.

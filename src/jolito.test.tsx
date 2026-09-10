@@ -5222,13 +5222,21 @@ describe('Jolito', () => {
       )
       await user.click(screen.getByRole('button', { name: /^delete card$/i }))
 
-      // Prune should have been called with only the remaining active card's items
+      // Vocabulary removal keeps the remaining card and available grammar audio.
       expect(services.mockSpeaker.prunedCalls).toHaveLength(1)
       const prunedActiveItems = services.mockSpeaker.prunedCalls[0]
-      expect(prunedActiveItems).toEqual([
-        { text: 'plátano', locale: 'es-MX' },
-        { text: 'banana', locale: 'en-US' },
-      ])
+      expect(prunedActiveItems).toEqual(
+        expect.arrayContaining([
+          { text: 'plátano', locale: 'es-MX' },
+          { text: 'banana', locale: 'en-US' },
+          { text: 'Ayer yo hablé con la vecina.', locale: 'es-MX' },
+          { text: 'El sábado yo hablé de la película.', locale: 'es-MX' },
+        ]),
+      )
+      expect(prunedActiveItems).not.toContainEqual({
+        text: 'aguacate',
+        locale: 'es-MX',
+      })
     })
 
     it('prunes unused audio cache entries when card text is edited', async () => {
@@ -5268,10 +5276,18 @@ describe('Jolito', () => {
         services.mockSpeaker.prunedCalls[
           services.mockSpeaker.prunedCalls.length - 1
         ]
-      expect(lastPruned).toEqual([
-        { text: 'palta', locale: 'es-MX' },
-        { text: 'avocado', locale: 'en-US' },
-      ])
+      expect(lastPruned).toEqual(
+        expect.arrayContaining([
+          { text: 'palta', locale: 'es-MX' },
+          { text: 'avocado', locale: 'en-US' },
+          { text: 'Ayer yo hablé con la vecina.', locale: 'es-MX' },
+          { text: 'El sábado yo hablé de la película.', locale: 'es-MX' },
+        ]),
+      )
+      expect(lastPruned).not.toContainEqual({
+        text: 'aguacate',
+        locale: 'es-MX',
+      })
     })
 
     it('cancels pending reveal answer audio when navigating away before stagger expires', async () => {

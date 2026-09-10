@@ -32,6 +32,21 @@ export function createGrammarCards(now: number): GrammarCard[] {
   )
 }
 
+const catalog = createGrammarCards(0)
+
+export function availableGrammarCards(
+  cards: StudyCard[],
+  deletedCardIds: string[],
+): GrammarCard[] {
+  const saved = new Map(
+    cards.filter(isGrammarCard).map((card) => [card.id, card]),
+  )
+  const deleted = new Set(deletedCardIds)
+  return catalog
+    .filter((card) => !deleted.has(card.id))
+    .map((card) => saved.get(card.id) ?? card)
+}
+
 export function grammarContext(card: GrammarCard) {
   const verb = preteriteVerbs[card.grammar.verb]
   const variant = card.schedule.reviews % 2

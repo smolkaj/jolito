@@ -359,22 +359,27 @@ test('grammar prepares neural voices for both contexts and retains them across i
       .poll(() => [...(fetched.get(text) ?? [])].sort())
       .toEqual(['es-MX-DaliaNeural', 'es-MX-JorgeNeural'])
   }
-  // All eight forms, two contexts and two voices must reach the real disk cache before going offline.
-  await expect
-    .poll(() =>
-      page.evaluate(async () => {
-        const entries = await Promise.all(
-          (await caches.keys()).map(
-            async (key) =>
-              (await (await caches.open(key)).keys()).filter((request) =>
-                request.url.includes('/api/tts'),
-              ).length,
-          ),
-        )
-        return entries.reduce((total, count) => total + count, 0)
-      }),
-    )
-    .toBeGreaterThanOrEqual(32)
+  // Count unique grammar entries in the neural cache only: the service-worker shell
+  // also caches TTS URLs, but cannot establish neural playback readiness.
+  const cachedGrammar = () =>
+    page.evaluate(async () => {
+      const entries = await Promise.all(
+        (await caches.keys())
+          .filter((key) => key.startsWith('jolito-audio-'))
+          .map(async (key) => (await caches.open(key)).keys()),
+      )
+      return new Set(
+        entries
+          .flat()
+          .filter((request) =>
+            /^(Ayer|El sábado) /.test(
+              new URL(request.url).searchParams.get('text') ?? '',
+            ),
+          )
+          .map((request) => request.url),
+      ).size
+    })
+  await expect.poll(cachedGrammar).toBe(32)
   await page.getByRole('button', { name: 'Practice pretérito' }).click()
   const plays = () =>
     page.evaluate(() =>
@@ -382,11 +387,26 @@ test('grammar prepares neural voices for both contexts and retains them across i
     )
   await page.getByRole('textbox').press('Enter')
   await expect.poll(plays).toBeGreaterThan(0)
-  await page.keyboard.press('1')
+  // Interrupt before grading so setup predicts the same already-warmed round.
   await page.getByRole('button', { name: 'Patterns' }).click()
   await page.getByRole('button', { name: 'Resume practice' }).click()
-  offline = true
+  await page.getByRole('button', { name: 'Jolito home' }).click()
+  await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
+  const demo = page.getByRole('button', { name: /explore demo deck/i })
+  if (await demo.isVisible()) await demo.click()
+  await page.getByRole('checkbox', { name: /select card aguacate/i }).click()
+  await page.getByRole('button', { name: /delete selected \(1\)/i }).click()
+  await page.getByRole('button', { name: /^delete card$/i }).click()
+  await expect(
+    page.getByRole('checkbox', { name: /select card aguacate/i }),
+  ).toHaveCount(0)
   await context.setOffline(true)
+  offline = true
+  await page.getByRole('button', { name: 'Jolito home' }).click()
+  await page.getByRole('link', { name: 'Practice grammar' }).click()
+  await expect(page.getByRole('status')).toBeVisible()
+  await expect.poll(cachedGrammar).toBe(32)
+  await page.keyboard.press('1')
   for (let turn = 0; turn < 5; turn++) {
     const before = await plays()
     await page.getByRole('textbox').press('Enter')
