@@ -1,6 +1,6 @@
 import type { GrammarVerb } from './grammar-catalog-types'
 
-export const grammarFamilies = [
+export const preteriteFamilies = [
   {
     id: 'regular',
     title: 'Regular endings',
@@ -39,7 +39,6 @@ export const grammarFamilies = [
   },
 ] as const
 
-export type GrammarFocus = 'mixed' | (typeof grammarFamilies)[number]['id']
 export const grammarPeople = [
   'yo',
   'tú',
@@ -48,7 +47,7 @@ export const grammarPeople = [
   'ellos / ellas / ustedes',
 ] as const
 
-type Verb = GrammarVerb & { family: Exclude<GrammarFocus, 'mixed'> }
+type Verb = GrammarVerb & { family: (typeof preteriteFamilies)[number]['id'] }
 
 // Full authored sentences own their word order and time context. {ir}/{llegar}
 // establish the same subject before an omitted pronoun; they reuse canonical forms.

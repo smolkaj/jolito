@@ -8,8 +8,7 @@ import {
   grammarQueue,
   type GrammarCard,
 } from '../domain/grammar'
-import type { GrammarTopic } from '../domain/grammar-catalog'
-import type { GrammarFocus } from '../domain/grammar-content'
+import type { GrammarTopic, GrammarFocus } from '../domain/grammar-catalog'
 import { useStudySession } from './useStudySession'
 
 export function useGrammarPractice({
@@ -24,11 +23,11 @@ export function useGrammarPractice({
   save: (card: GrammarCard) => void
 }) {
   const [topic, setSelectedTopic] = useState<GrammarTopic>('preterite')
+  const [focus, setFocus] = useState<GrammarFocus>('mixed')
   const setTopic = (topic: GrammarTopic) => {
     setSelectedTopic(topic)
     setFocus('mixed')
   }
-  const [focus, setFocus] = useState<GrammarFocus>('mixed')
   const [mode, setMode] = useState<'choose' | 'practice' | 'complete'>('choose')
   const [snapshots, setSnapshots] = useState<GrammarCard[]>([])
   const [error, setError] = useState<string | null>(null)

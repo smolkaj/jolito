@@ -5,6 +5,9 @@ context, with enough variation and delayed recall to make it dependable.
 Home offers Create a card and Practice on one row. Practice opens a compact menu
 with Cards first and Grammar second; grammar never enters card queues or counts.
 
+Grammar now also supports [pretérito perfecto compuesto](practice-perfecto.md),
+using the same practice flow with independent schedules.
+
 ## Learning experience
 
 - Short, eight-form sessions with typed recall, accent entry, sentence context,
@@ -16,7 +19,7 @@ with Cards first and Grammar second; grammar never enters card queues or counts.
 - Each verb/person has its own existing Anki-compatible schedule. Due forms
   precede new forms; weak forms repeat after intervening prompts. Repeat recall
   rotates sentence contexts without giving the answer away.
-- Setup offers pattern selection and New round. An unfinished round adds Resume round
+- Setup offers tense and pattern selection and New round. An unfinished round adds Resume round
   alongside it; the two actions have equal width.
 - Mexican Spanish: yo, tú, él/ella/usted, nosotros/as, ellos/ellas/ustedes.
   Vosotros is deliberately outside this initial Mexican Spanish set.
@@ -24,8 +27,8 @@ with Cards first and Grammar second; grammar never enters card queues or counts.
 ## Architecture and verification
 
 Grammar is a specialization of StudyCard, sharing the scheduler, repository,
-backup, and cloud reconciliation. Version 2 envelopes migrate version 1 cards
-without changing vocabulary content or schedules. Older clients reject version 2
+backup, and cloud reconciliation. Version 3 envelopes read versions 1 and 2
+without changing existing content or schedules. Older clients reject version 3
 rather than flatten grammar into vocabulary. No database schema change is needed:
 Supabase already stores validated snapshot payloads as JSON.
 
@@ -49,9 +52,9 @@ curated and intentionally finite; no AI service, generated lesson pipeline, or
 second scheduler is introduced.
 
 The shared card schema validates grammar identity and its canonical answer together.
-Storage, sync snapshots, and JSON exports write version 2 and read versions 1 and 2.
+Storage, sync snapshots, and JSON exports write version 3 and read versions 1, 2 and 3.
 The existing storage key remains stable so local version 1 decks migrate in place.
-Upgrading all devices is recommended: older clients cannot read version 2 snapshots.
+Upgrading all devices is recommended: older clients cannot read version 3 snapshots.
 There is no SQL migration because the server stores the envelope as JSON already.
 
 Auth refresh and visibility events preserve typed answers and session snapshots.
@@ -110,7 +113,7 @@ vocabulary supplies its prompt, authored context and card-edit actions.
 The shared audio hook owns interruption and teardown. Successful grammar grading
 uses the shared grade/completion sensory path only after saving; failed or duplicate
 grading cannot produce success feedback. Completion offers the next available round
-and Back home, with Patterns remaining in navigation.
+and Back home, with Grammar remaining in navigation.
 
 See the [coherence audit](practice-coherence-audit.md) for every finding, intentional
 differences, root causes, and the comparative/lifecycle contracts that prevent drift.
@@ -124,7 +127,7 @@ dismissal, teardown and five-width layout contracts cover the shared home entry.
 ## Neural audio and touch focus
 
 The shared prefetch effect prepares the upcoming grammar round when its setup opens
-and when the selected pattern changes. It uses the same sentence expansion as cache
+and when the selected tense or pattern changes. It uses the same sentence expansion as cache
 retention, covering the incomplete prompt and completed answer in both contexts and
 both neural voices for the eight upcoming forms.
 Active rounds retain their original snapshots through interruptions; typing does not

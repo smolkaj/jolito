@@ -1,4 +1,4 @@
-import { grammarFamilies, preteriteVerbs } from './grammar-content'
+import { preteriteFamilies, preteriteVerbs } from './grammar-content'
 import { perfectFamilies, perfectVerbs } from './grammar-perfect'
 import type { GrammarVerb } from './grammar-catalog-types'
 
@@ -6,7 +6,7 @@ export const grammarTopics = {
   preterite: {
     title: 'Pretérito indefinido',
     description: 'Spanish simple past',
-    families: grammarFamilies,
+    families: preteriteFamilies,
     verbs: preteriteVerbs,
   },
   perfect: {
@@ -17,6 +17,8 @@ export const grammarTopics = {
   },
 } as const
 export type GrammarTopic = keyof typeof grammarTopics
+export type GrammarFocus =
+  'mixed' | (typeof grammarTopics)[GrammarTopic]['families'][number]['id']
 
 export function grammarVerb(
   topic: GrammarTopic,
@@ -32,7 +34,7 @@ export function grammarVerb(
 export function grammarCardId(
   verb: string,
   person: number,
-  topic: GrammarTopic = 'preterite',
+  topic: GrammarTopic,
 ): string {
   return `grammar:${topic}:${verb}:${person}`
 }

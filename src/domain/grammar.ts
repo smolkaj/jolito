@@ -1,14 +1,11 @@
 import { createNewReviewSchedule, isDue, type StudyCard } from './card'
-import {
-  grammarPeople,
-  preteriteVerbs,
-  type GrammarFocus,
-} from './grammar-content'
+import { grammarPeople, preteriteVerbs } from './grammar-content'
 import {
   grammarCardId,
   grammarTopics,
   grammarVerb,
   type GrammarTopic,
+  type GrammarFocus,
 } from './grammar-catalog'
 
 export type GrammarCard = StudyCard & {

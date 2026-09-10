@@ -8,7 +8,7 @@ import {
   localeForAnswer,
 } from './card'
 import { createGrammarCards, grammarContext, grammarQueue } from './grammar'
-import { preteriteVerbs, grammarFamilies } from './grammar-content'
+import { preteriteVerbs, preteriteFamilies } from './grammar-content'
 import { createStudyCards } from './card'
 const starterCards = createStudyCards(
   { spanish: 'hola', english: 'hello', context: '', bidirectional: true },
@@ -29,7 +29,7 @@ describe('preterite practice contracts', () => {
     expect(
       studyCardCollectionSchema.parse({ version: 2, cards }).cards,
     ).toEqual(cards)
-    for (const family of grammarFamilies) {
+    for (const family of preteriteFamilies) {
       expect(
         cards.some(
           (c) =>

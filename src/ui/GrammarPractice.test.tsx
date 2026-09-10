@@ -154,38 +154,48 @@ describe('grammar practice in Jolito', () => {
     expect(prefetch).toHaveBeenCalledTimes(ended)
   })
 
-  it('preserves an active answer through cloud reconciliation, token refresh and visibility interruptions', async () => {
-    window.history.replaceState({}, '', '#/grammar')
-    const services = createTestServices({
-      user: { id: 'learner', email: 'learner@example.com' },
-    })
-    render(<App services={services} />)
-    const user = await begin()
-    await user.type(screen.getByRole('textbox'), 'habl')
-    const prompt = screen.getByRole('heading', { level: 1 }).textContent
-    services.mockSync.remoteCards = [
-      scheduleReview(createGrammarCards(0)[0]!, 'easy', services.clock.now()),
-    ]
-    act(() => {
-      fireEvent(window, new Event('focus'))
-      fireEvent(document, new Event('visibilitychange'))
-    })
-    await waitFor(() =>
-      expect(services.mockSync.syncedCount).toBeGreaterThan(1),
-    )
-    await act(async () => {
-      await services.mockAuth.verifyOtp('learner@example.com', '123456')
-    })
-    expect(screen.getByRole('textbox')).toHaveValue('habl')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(prompt)
-    await user.type(screen.getByRole('textbox'), 'é{Enter}')
-    await user.keyboard('4')
-    const saved = services.memoryCards.saved!.find(
-      (c) => c.id === 'grammar:preterite:hablar:0',
-    )!
-    expect(saved.schedule.reviews).toBe(2)
-    expect(saved.schedule.dueAt).toBeGreaterThan(services.clock.now() + DAY)
-  })
+  it.each(['preterite', 'perfect'] as const)(
+    'preserves an active %s answer through cloud reconciliation, token refresh and visibility interruptions',
+    async (topic) => {
+      window.history.replaceState({}, '', '#/grammar')
+      const services = createTestServices({
+        user: { id: 'learner', email: 'learner@example.com' },
+      })
+      render(<App services={services} />)
+      const user = userEvent.setup()
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: 'Tense' }),
+        topic,
+      )
+      await user.click(screen.getByRole('button', { name: 'New round' }))
+      const card = createGrammarCards(0, topic)[0]!
+      await user.type(screen.getByRole('textbox'), 'habl')
+      const prompt = screen.getByRole('heading', { level: 1 }).textContent
+      services.mockSync.remoteCards = [
+        scheduleReview(card, 'easy', services.clock.now()),
+      ]
+      act(() => {
+        fireEvent(window, new Event('focus'))
+        fireEvent(document, new Event('visibilitychange'))
+      })
+      await waitFor(() =>
+        expect(services.mockSync.syncedCount).toBeGreaterThan(1),
+      )
+      await act(async () => {
+        await services.mockAuth.verifyOtp('learner@example.com', '123456')
+      })
+      expect(screen.getByRole('textbox')).toHaveValue('habl')
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+        prompt,
+      )
+      await user.clear(screen.getByRole('textbox'))
+      await user.type(screen.getByRole('textbox'), card.answer + '{Enter}')
+      await user.keyboard('4')
+      const saved = services.memoryCards.saved!.find((c) => c.id === card.id)!
+      expect(saved.schedule.reviews).toBe(2)
+      expect(saved.schedule.dueAt).toBeGreaterThan(services.clock.now() + DAY)
+    },
+  )
 
   it('keeps grammar progress but removes demo vocabulary on ordinary sign-in without a pending card', async () => {
     window.history.replaceState({}, '', '#/grammar')

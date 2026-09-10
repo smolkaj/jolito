@@ -308,4 +308,7 @@ export const perfectVerbs = {
       ],
     ],
   },
-} as const satisfies Record<string, GrammarVerb>
+} as const satisfies Record<
+  string,
+  GrammarVerb & { family: (typeof perfectFamilies)[number]['id'] }
+>

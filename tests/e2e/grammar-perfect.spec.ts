@@ -52,9 +52,7 @@ for (const width of [320, 393, 768, 1024, 1280]) {
       path: `test-results/perfect-${width}-complete.png`,
       fullPage: true,
     })
-    await page.evaluate(async () => {
-      await navigator.serviceWorker.ready
-    })
+    await page.locator('html[data-offline-ready="true"]').waitFor()
     await context.setOffline(true)
     await page.reload()
     await page.getByRole('combobox', { name: 'Tense' }).selectOption('perfect')
