@@ -2287,6 +2287,14 @@ kbd {
   margin-top: 2px;
 }
 
+.diff-rule {
+  grid-column: 2 / -1;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
 .diff-text {
   margin: 0;
   font-family: var(--font-serif);
@@ -2939,6 +2947,11 @@ kbd {
   .diff-row .diff-text {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  .diff-rule {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 
   .expected-row .audio-button {
