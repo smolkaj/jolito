@@ -65,11 +65,11 @@ for (const viewport of [
     )
     await grammarEntry.click()
     await expect(page.getByRole('heading', { name: 'Pretérito' })).toBeVisible()
+    expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-home.png`,
       fullPage: true,
     })
-    expect((await auditAccessibility(page)).violations).toEqual([])
     await page.getByRole('button', { name: 'Practice pretérito' }).click()
     const grammarLayout = await sessionLayout(page)
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
@@ -105,17 +105,18 @@ for (const viewport of [
     await page.getByRole('button', { name: 'Insert é' }).click()
     await expect(input).toHaveValue('hablé')
     await expect(input).toBeFocused()
+    await settleAnimations(page)
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-answer.png`,
       fullPage: true,
     })
     await input.press('Enter')
     await expect(page.getByRole('status')).toHaveText('hablé')
+    expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-reveal.png`,
       fullPage: true,
     })
-    expect((await auditAccessibility(page)).violations).toEqual([])
     const grammarRatings = await ratingGeometry(page)
     await page.keyboard.press('1')
     for (let index = 0; index < 5; index++) {
@@ -142,6 +143,7 @@ for (const viewport of [
     await expect(
       page.getByRole('heading', { name: 'Practice complete' }),
     ).toBeVisible()
+    await settleAnimations(page)
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-complete.png`,
       fullPage: true,
