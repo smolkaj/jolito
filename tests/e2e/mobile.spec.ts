@@ -368,4 +368,45 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     // Capture screenshot on 375px viewport for visual verification
     await page.screenshot({ path: 'test-results/mobile-375-welcome.png' })
   })
+
+  test('anchors home actions to the viewport bottom and right-aligns Feedback on narrow screens', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 375, height: 667 },
+      { width: 393, height: 852 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto('/')
+
+      const heroFooter = page.locator('.welcome-hero-footer')
+      const feedbackBtn = heroFooter.getByRole('button', {
+        name: /^feedback$/i,
+      })
+
+      await expect(heroFooter).toBeVisible()
+      await expect(feedbackBtn).toBeVisible()
+
+      const [footerBox, feedbackBox, viewportSize] = await Promise.all([
+        heroFooter.boundingBox(),
+        feedbackBtn.boundingBox(),
+        page.evaluate(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })),
+      ])
+
+      expect(footerBox).not.toBeNull()
+      expect(feedbackBox).not.toBeNull()
+      expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(
+        viewportSize.height,
+      )
+      expect(
+        viewportSize.height - (footerBox!.y + footerBox!.height),
+      ).toBeLessThanOrEqual(32)
+      expect(
+        viewportSize.width - (feedbackBox!.x + feedbackBox!.width),
+      ).toBeLessThanOrEqual(16)
+    }
+  })
 })
