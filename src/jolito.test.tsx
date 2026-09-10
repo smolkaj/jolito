@@ -1611,7 +1611,7 @@ describe('Jolito', () => {
     // In iOS standalone mode, paste input and hint are directly visible
     expect(
       await screen.findByText(
-        /Tap the link in your email.*Safari’s top banner/i,
+        /Tap the link in your email.*Jolito’s top banner/i,
       ),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/sign-in link/i)).toBeInTheDocument()
@@ -2419,7 +2419,7 @@ describe('Jolito', () => {
 
     expect(
       await screen.findByText(
-        /Tap the link in your email.*Safari’s top banner/i,
+        /Tap the link in your email.*Jolito’s top banner/i,
       ),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/sign-in link/i)).toBeInTheDocument()

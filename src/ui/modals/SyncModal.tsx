@@ -528,7 +528,7 @@ export function SyncModal({
             {isStandalone() && isIOS() ? (
               <p className="sync-explanation">
                 Tap the link in your email, then tap{' '}
-                <strong>Copy sign-in link</strong> in Safari’s top banner, or
+                <strong>Copy sign-in link</strong> in Jolito’s top banner, or
                 enter the 6-digit code below:
               </p>
             ) : pendingCardPrompt ? (

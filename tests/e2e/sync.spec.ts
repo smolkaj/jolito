@@ -206,10 +206,10 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await emailInput.fill('pwa-learner@example.com')
     await page.getByRole('button', { name: /send sign-in link/i }).click()
 
-    // In the iOS Home Screen app, explain the email-app-to-Safari handoff.
+    // In the iOS Home Screen app, explain the email-to-browser handoff.
     await expect(
       page.getByText(
-        /Tap the link in your email, then tap Copy sign-in link in Safari’s top banner/i,
+        /Tap the link in your email, then tap Copy sign-in link in Jolito’s top banner/i,
       ),
     ).toBeVisible()
 

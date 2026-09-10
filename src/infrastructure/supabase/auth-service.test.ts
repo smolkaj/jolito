@@ -652,7 +652,7 @@ describe('SupabaseAuthService', () => {
     const res = await service.verifyOtp('test@example.com', '111222')
     expect(res.success).toBe(false)
     expect(res.error).toContain(
-      'Tap the link in your email, then tap "Copy sign-in link" in Safari’s top banner',
+      'Tap the link in your email, then tap "Copy sign-in link" in Jolito’s top banner',
     )
   })
 
@@ -666,7 +666,7 @@ describe('SupabaseAuthService', () => {
     const res = await service.verifyOtp('', 'https://joli.to/')
     expect(res.success).toBe(false)
     expect(res.error).toContain(
-      'This webpage link has no session tokens. Tap the link in your email, then tap "Copy sign-in link" in Safari’s top banner',
+      'This webpage link has no session tokens. Tap the link in your email, then tap "Copy sign-in link" in Jolito’s top banner',
     )
   })
 
