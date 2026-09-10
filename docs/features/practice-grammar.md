@@ -178,7 +178,8 @@ and mint selection color. Native radio controls retain their keyboard behavior; 
 single-column narrow layout keeps pattern names and examples readable. The heading
 names the tense explicitly: “Pretérito indefinido,” with “Spanish simple past” below.
 The target infinitive and its sentence blank share the same accessible dark pink,
-connecting the verb to where it belongs. New/Resume action semantics stay the same. No illustration, reference or additional
+connecting the verb to where it belongs. The sentence leads the type hierarchy;
+the smaller infinitive remains a clear supporting cue. New/Resume action semantics stay the same. No illustration, reference or additional
 status copy is introduced to create visual character.
 
 Grammar supplies `grammarContext.spokenPrompt` to the existing audio hook and the same
