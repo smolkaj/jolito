@@ -32,6 +32,25 @@ for (const width of [320, 393, 768, 1024, 1280]) {
     await expect(page.getByRole('textbox')).toHaveValue('he habla')
     await page.getByRole('textbox').press('Enter')
     await expect(page.locator('.expected-row')).toContainText('he hablado')
+    const rule = page.locator('.expected-row .diff-rule')
+    await expect(rule).toContainText(
+      'Rule: Use he, has, ha, hemos or han + participle.',
+    )
+    const ruleBounds = await rule.boundingBox()
+    const answerBounds = await page
+      .locator('.expected-row .diff-text')
+      .boundingBox()
+    const comparisonBounds = await page.locator('.diff-card').boundingBox()
+    expect(ruleBounds!.y).toBeGreaterThanOrEqual(
+      answerBounds!.y + answerBounds!.height,
+    )
+    expect(ruleBounds!.x).toBeCloseTo(answerBounds!.x, 0)
+    expect(ruleBounds!.x + ruleBounds!.width).toBeLessThan(
+      comparisonBounds!.x + comparisonBounds!.width,
+    )
+    expect(ruleBounds!.y + ruleBounds!.height).toBeLessThan(
+      comparisonBounds!.y + comparisonBounds!.height,
+    )
     for (const text of await page.locator('.diff-text').all()) {
       await expect(text).toHaveAttribute('lang', 'es-MX')
     }
