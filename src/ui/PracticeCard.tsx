@@ -33,6 +33,7 @@ export function PracticeCard({
   placeholder = 'Type your answer…',
   accents = false,
   children,
+  correctionRule,
   error,
 }: {
   card: StudyCard
@@ -52,6 +53,7 @@ export function PracticeCard({
   placeholder?: string
   accents?: boolean
   children?: ReactNode
+  correctionRule?: string
   error?: string | null
 }) {
   const answerLang = localeForAnswer(card)
@@ -211,6 +213,7 @@ export function PracticeCard({
               >
                 <AnswerComparison
                   typed={answer}
+                  correctionRule={correctionRule}
                   expected={card.answer}
                   lang={answerLang}
                   onPlayAudio={onPlayAnswer}

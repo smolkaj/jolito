@@ -137,3 +137,40 @@ it.each([
     }
   },
 )
+
+it('keeps a correction rule with the expected answer through pause/resume and removes it on recall or success', () => {
+  const initial = props()
+  const correctionRule = 'Replace -ar with -é.'
+  const app = render(
+    <PracticeCard {...initial} correctionRule={correctionRule} />,
+  )
+  expect(screen.queryByText('Rule:')).not.toBeInTheDocument()
+  for (const answer of ['hable', '']) {
+    for (const paused of [false, true, false]) {
+      app.rerender(
+        <PracticeCard
+          {...initial}
+          answer={answer}
+          paused={paused}
+          correctionRule={correctionRule}
+        />,
+      )
+      const rule = screen.getByText('Rule:').closest('p')!
+      expect(rule).toHaveTextContent('Rule: Replace -ar with -é.')
+      expect(rule.closest('.expected-row')).toHaveTextContent('Expected')
+      expect(rule.closest('[role="status"]')).toHaveAccessibleName(
+        'Answer feedback',
+      )
+    }
+  }
+  app.rerender(
+    <PracticeCard
+      {...initial}
+      revealed={false}
+      correctionRule={correctionRule}
+    />,
+  )
+  expect(screen.queryByText('Rule:')).not.toBeInTheDocument()
+  app.rerender(<PracticeCard {...initial} correctionRule={correctionRule} />)
+  expect(screen.queryByText('Rule:')).not.toBeInTheDocument()
+})

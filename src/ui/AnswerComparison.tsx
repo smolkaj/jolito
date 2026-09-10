@@ -22,11 +22,13 @@ export function AnswerComparison({
   expected,
   lang,
   onPlayAudio,
+  correctionRule,
 }: {
   typed: string
   expected: string
   lang: string
   onPlayAudio: () => void
+  correctionRule?: string | undefined
 }) {
   const comparison = compareAnswer(typed, expected)
   const hasTyped = typed.trim().length > 0
@@ -60,6 +62,11 @@ export function AnswerComparison({
             {renderDiffSegments(comparison.expectedSegments)}
           </p>
           <AudioButton label="Play answer audio" onClick={onPlayAudio} />
+          {correctionRule && (
+            <p className="diff-rule">
+              <strong>Rule:</strong> {correctionRule}
+            </p>
+          )}
         </div>
       </div>
     </div>

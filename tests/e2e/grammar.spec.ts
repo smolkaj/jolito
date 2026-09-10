@@ -185,7 +185,7 @@ for (const viewport of [
     await input.press('Enter')
     await expect(page.getByRole('status')).toHaveText('hablé')
     await expect(page.locator('.diff-text')).toHaveAttribute('lang', 'es-MX')
-    await expect(page.locator('.grammar-explanation')).toHaveCount(0)
+    await expect(page.locator('.diff-rule')).toHaveCount(0)
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-reveal.png`,
@@ -204,9 +204,17 @@ for (const viewport of [
     await page.getByRole('textbox').press('Enter')
     await expect(page.locator('.expected-row .diff-seg-accent')).toHaveText('é')
     await expect(page.locator('.diff-row').first()).toContainText('hable')
-    await expect(page.locator('.grammar-explanation')).toHaveText(
-      'Replace -ar with -é.',
+    await expect(page.locator('.diff-rule')).toHaveText(
+      'Rule: Replace -ar with -é.',
     )
+    const expectedRow = page.locator('.expected-row')
+    await expect(expectedRow.locator('.diff-rule')).toBeVisible()
+    const expectedText = await expectedRow.locator('.diff-text').boundingBox()
+    const rule = await expectedRow.locator('.diff-rule').boundingBox()
+    expect(rule!.y).toBeGreaterThanOrEqual(
+      expectedText!.y + expectedText!.height,
+    )
+    expect(rule!.x).toBeCloseTo(expectedText!.x, 0)
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-correction.png`,
