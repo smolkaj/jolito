@@ -84,9 +84,8 @@ Independent review caught five issues before merge. The corrected auth reconcili
 filters demo cards from the latest local snapshot, preserving grammar progress without
 putting examples into an ordinary signed-in vocabulary deck. Persisted review/lapse
 counts must be nonnegative integers; malformed modern backups cannot fall through to
-legacy import and discard their grammar metadata. The grammar Check action explicitly
-owns its static positioning and hover/press transforms rather than inheriting the
-vocabulary input’s absolute positioning. Browser contracts verify the action stays
+legacy import and discard their grammar metadata. Grammar now shares vocabulary’s
+answer form layout and Check action. Browser contracts verify the action stays
 inside its exercise card at 320, 393, 768, 1024, and 1280px in all three states.
 
 Schedule timestamps also respect JavaScript’s representable date range. Finite numeric
@@ -135,3 +134,23 @@ stops pending speech; resume preserves the revealed answer and grading controls.
 This second user review caught layout drift missed by the first polish pass, whose
 comparison stopped at rating controls. Shared progress rendering and removal of
 form/layout overrides close that gap across the whole active practice surface.
+
+## Neural audio and touch focus
+
+The shared prefetch effect prepares the upcoming grammar round when its setup opens
+and when the selected pattern changes. It uses the same sentence expansion as cache
+retention, covering both contexts and both neural voices for the eight upcoming forms.
+Active rounds retain their original snapshots through interruptions; typing does not
+restart prefetch. The existing neural cache and network concurrency limit remain the
+single audio pipeline.
+
+The original feature omitted grammar from vocabulary-only prefetch, so automatic
+reveals missed the cache and immediately used browser speech while neural synthesis
+ran in the background. This was caught in PR #275’s preview before merge. Mocked
+speaker tests verified calls but not cache readiness or which voice actually played.
+New contracts cover prefetch intent and real browser decode/cache/playback through
+practice interruption, offline recall in both contexts, and navigation teardown.
+
+Accent pointer presses preserve an already-focused answer input; keyboard activation
+retains native button behavior. A touch-browser contract checks that input never blurs,
+selection replacement and caret editing work, and focus survives another practice turn.

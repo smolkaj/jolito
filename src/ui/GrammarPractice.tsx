@@ -351,6 +351,13 @@ export function GrammarPractice({
                   type="button"
                   key={letter}
                   aria-label={`Insert ${letter}`}
+                  onPointerDown={(event) => {
+                    if (
+                      event.button === 0 &&
+                      document.activeElement === input.current
+                    )
+                      event.preventDefault()
+                  }}
                   onClick={() => {
                     const element = input.current!
                     const start =

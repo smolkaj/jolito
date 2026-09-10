@@ -38,6 +38,10 @@ export function useGrammarPractice({
       .filter((c) => !deleted.has(c.id))
       .map((c) => saved.get(c.id) ?? c)
   }, [cards, deletedCardIds])
+  const audioCards = useMemo(() => {
+    if (mode === 'choose') return grammarQueue(available, clock.now(), focus)
+    return mode === 'practice' ? snapshots : []
+  }, [available, clock, focus, mode, snapshots])
   const current = snapshots.find((c) => c.id === session.currentCardId)
 
   const start = () => {
@@ -105,6 +109,7 @@ export function useGrammarPractice({
     mode,
     current,
     available,
+    audioCards,
     session,
     error,
     start,

@@ -1125,53 +1125,6 @@ export function App({
     queueRef.current = queue
   })
 
-  // Eagerly prefetch starter screen sample audio and review collection in background,
-  // prioritizing hero starter card and due review cards first
-  useEffect(() => {
-    if (typeof services.speaker.prefetch !== 'function') {
-      return
-    }
-
-    const items: PrefetchItem[] = []
-
-    // 1. Prioritize starter screen hero sample audio when on welcome screen
-    if (view === 'welcome') {
-      items.push(...starterHeroPrefetchItems)
-    }
-
-    // 2. Prioritize due cards first, followed by remaining cards in collection
-    if (vocabularyCards.length > 0) {
-      const now = services.clock.now()
-      const dueCards = orderCardsForReview(vocabularyCards, now)
-      const dueIds = new Set(dueCards.map((c) => c.id))
-      const nonDueCards = vocabularyCards.filter((c) => !dueIds.has(c.id))
-      const allOrderedCards = [...dueCards, ...nonDueCards]
-
-      // Background prefetching defaults to bothVoices !== false, priming both
-      // female and male personas into cache so that any review turn is immediately ready.
-      for (const card of allOrderedCards) {
-        if (card.prompt.trim()) {
-          items.push({
-            text: card.prompt,
-            locale: localeForPrompt(card),
-            cardSeed: card.id,
-          })
-        }
-        if (card.answer.trim()) {
-          items.push({
-            text: card.answer,
-            locale: localeForAnswer(card),
-            cardSeed: card.id,
-          })
-        }
-      }
-    }
-
-    if (items.length > 0) {
-      void services.speaker.prefetch(items)
-    }
-  }, [vocabularyCards, services.clock, services.speaker, view])
-
   const onUpdateCards = useCallback(
     (
       newCards: StudyCard[],
@@ -2307,6 +2260,59 @@ export function App({
   useEffect(() => {
     grammarResetRef.current = grammarPractice.reset
   }, [grammarPractice.reset])
+
+  // Prepare the active learning mode first; grammar includes both sentence contexts.
+  useEffect(() => {
+    if (typeof services.speaker.prefetch !== 'function') {
+      return
+    }
+
+    const items: PrefetchItem[] = []
+
+    // 1. Prioritize starter screen hero sample audio when on welcome screen
+    if (view === 'welcome') {
+      items.push(...starterHeroPrefetchItems)
+    }
+
+    if (view === 'grammar') {
+      items.push(...getActiveAudioItems(grammarPractice.audioCards))
+    } else if (vocabularyCards.length > 0) {
+      const now = services.clock.now()
+      const dueCards = orderCardsForReview(vocabularyCards, now)
+      const dueIds = new Set(dueCards.map((c) => c.id))
+      const nonDueCards = vocabularyCards.filter((c) => !dueIds.has(c.id))
+      const allOrderedCards = [...dueCards, ...nonDueCards]
+
+      // Background prefetching defaults to bothVoices !== false, priming both
+      // female and male personas into cache so that any review turn is immediately ready.
+      for (const card of allOrderedCards) {
+        if (card.prompt.trim()) {
+          items.push({
+            text: card.prompt,
+            locale: localeForPrompt(card),
+            cardSeed: card.id,
+          })
+        }
+        if (card.answer.trim()) {
+          items.push({
+            text: card.answer,
+            locale: localeForAnswer(card),
+            cardSeed: card.id,
+          })
+        }
+      }
+    }
+
+    if (items.length > 0) {
+      void services.speaker.prefetch(items)
+    }
+  }, [
+    grammarPractice.audioCards,
+    vocabularyCards,
+    services.clock,
+    services.speaker,
+    view,
+  ])
 
   if (view === 'grammar')
     return (

@@ -56,6 +56,35 @@ describe('grammar practice in Jolito', () => {
     )
   })
 
+  it('prepares both sentence contexts for upcoming forms without fetching again on typing or after teardown', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    const prefetch = vi.spyOn(services.speaker, 'prefetch')
+    const app = render(<App services={services} />)
+    expect(services.mockSpeaker.prefetched).toEqual(
+      expect.arrayContaining([
+        { text: 'Ayer yo hablé con la vecina.', locale: 'es-MX' },
+        { text: 'El sábado yo hablé de la película.', locale: 'es-MX' },
+      ]),
+    )
+    const user = await begin()
+    const calls = prefetch.mock.calls.length
+    await user.type(screen.getByRole('textbox'), 'hable')
+    expect(prefetch).toHaveBeenCalledTimes(calls)
+    await user.click(screen.getByRole('button', { name: 'Patterns' }))
+    await user.click(screen.getByRole('radio', { name: /Irregular stems/ }))
+    expect(services.mockSpeaker.prefetched).toEqual(
+      expect.arrayContaining([
+        { text: 'Ayer yo tuve una idea.', locale: 'es-MX' },
+      ]),
+    )
+    app.unmount()
+    const ended = prefetch.mock.calls.length
+    fireEvent(document, new Event('visibilitychange'))
+    fireEvent(window, new Event('focus'))
+    expect(prefetch).toHaveBeenCalledTimes(ended)
+  })
+
   it('preserves an active answer through cloud reconciliation, token refresh and visibility interruptions', async () => {
     window.history.replaceState({}, '', '#/grammar')
     const services = createTestServices({

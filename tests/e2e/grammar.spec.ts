@@ -263,3 +263,149 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await expect(page.getByRole('textbox')).toHaveValue(' ')
   expect(await speechCount()).toBe(2)
 })
+
+test('accent taps preserve the active input and selection across practice turns', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 393, height: 852 },
+    isMobile: true,
+    hasTouch: true,
+  })
+  try {
+    const page = await context.newPage()
+    await page.goto('/#/grammar')
+    await page.getByRole('button', { name: 'Practice pretérito' }).tap()
+    for (let turn = 0; turn < 2; turn++) {
+      const input = page.getByRole('textbox')
+      await input.fill('hablX')
+      await input.evaluate((element: HTMLInputElement) => {
+        element.setSelectionRange(4, 5)
+        element.addEventListener('blur', () =>
+          element.setAttribute('data-blurred', 'true'),
+        )
+      })
+      await page.getByRole('button', { name: 'Insert é' }).tap()
+      await expect(input).toHaveValue('hablé')
+      await expect(input).toBeFocused()
+      await expect(input).not.toHaveAttribute('data-blurred')
+      await input.press('Backspace')
+      await expect(input).toHaveValue('habl')
+      await input.press('Enter')
+      await page.keyboard.press('4')
+    }
+  } finally {
+    await context.close()
+  }
+})
+
+test('grammar prepares neural voices for both contexts and retains them across interruption and offline recall', async ({
+  page,
+  context,
+}) => {
+  // A short valid WAV exercises the actual decode/cache/playback path without an external TTS dependency.
+  const wav = Buffer.alloc(44 + 1600)
+  wav.write('RIFF', 0)
+  wav.writeUInt32LE(wav.length - 8, 4)
+  wav.write('WAVEfmt ', 8)
+  wav.writeUInt32LE(16, 16)
+  wav.writeUInt16LE(1, 20)
+  wav.writeUInt16LE(1, 22)
+  wav.writeUInt32LE(8000, 24)
+  wav.writeUInt32LE(16000, 28)
+  wav.writeUInt16LE(2, 32)
+  wav.writeUInt16LE(16, 34)
+  wav.write('data', 36)
+  wav.writeUInt32LE(1600, 40)
+  await page.addInitScript(() => {
+    window.__speechSynthesisCalls = []
+    window.speechSynthesis.speak = (utterance) => {
+      window.__speechSynthesisCalls!.push({
+        text: utterance.text,
+        lang: utterance.lang,
+      })
+    }
+    // The wrapper forwards the original receiver with apply below.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      document.documentElement.dataset.neuralPlays = String(
+        Number(document.documentElement.dataset.neuralPlays ?? 0) + 1,
+      )
+      return start.apply(this, args)
+    }
+  })
+  let offline = false
+  let offlineRequests = 0
+  const fetched = new Map<string, Set<string>>()
+  await page.route('**/api/tts*', async (route) => {
+    if (offline) {
+      offlineRequests++
+      await route.abort('internetdisconnected')
+      return
+    }
+    const url = new URL(route.request().url())
+    const text = url.searchParams.get('text')!
+    const voices = fetched.get(text) ?? new Set<string>()
+    voices.add(url.searchParams.get('voice')!)
+    fetched.set(text, voices)
+    await route.fulfill({ contentType: 'audio/wav', body: wav })
+  })
+  await page.goto('/#/grammar')
+  const original = 'Ayer yo hablé con la vecina.'
+  const repeated = 'El sábado yo hablé de la película.'
+  for (const text of [original, repeated]) {
+    await expect
+      .poll(() => [...(fetched.get(text) ?? [])].sort())
+      .toEqual(['es-MX-DaliaNeural', 'es-MX-JorgeNeural'])
+  }
+  // All eight forms, two contexts and two voices must reach the real disk cache before going offline.
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const entries = await Promise.all(
+          (await caches.keys()).map(
+            async (key) =>
+              (await (await caches.open(key)).keys()).filter((request) =>
+                request.url.includes('/api/tts'),
+              ).length,
+          ),
+        )
+        return entries.reduce((total, count) => total + count, 0)
+      }),
+    )
+    .toBeGreaterThanOrEqual(32)
+  await page.getByRole('button', { name: 'Practice pretérito' }).click()
+  const plays = () =>
+    page.evaluate(() =>
+      Number(document.documentElement.dataset.neuralPlays ?? 0),
+    )
+  await page.getByRole('textbox').press('Enter')
+  await expect.poll(plays).toBeGreaterThan(0)
+  await page.keyboard.press('1')
+  await page.getByRole('button', { name: 'Patterns' }).click()
+  await page.getByRole('button', { name: 'Resume practice' }).click()
+  offline = true
+  await context.setOffline(true)
+  for (let turn = 0; turn < 5; turn++) {
+    const before = await plays()
+    await page.getByRole('textbox').press('Enter')
+    await expect.poll(plays).toBeGreaterThan(before)
+    await page.keyboard.press('4')
+  }
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    'El sábado yo',
+  )
+  const before = await plays()
+  await page.getByRole('textbox').press('Enter')
+  await expect.poll(plays).toBeGreaterThan(before)
+  expect(await page.evaluate(() => window.__speechSynthesisCalls)).toEqual([])
+  expect(offlineRequests).toBe(0)
+  // Leaving before the scheduled reveal audio fires must cancel it.
+  await page.keyboard.press('4')
+  await page.getByRole('textbox').press('Enter')
+  await page.getByRole('button', { name: 'Jolito home' }).click()
+  const ended = await plays()
+  await page.waitForTimeout(250)
+  expect(await plays()).toBe(ended)
+})
