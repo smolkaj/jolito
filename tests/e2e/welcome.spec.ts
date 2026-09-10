@@ -28,6 +28,8 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
     page.getByRole('button', { name: /^create a card$/i }),
   ).toBeVisible()
 
+  await page.screenshot({ path: 'test-results/desktop-welcome.png' })
+
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()

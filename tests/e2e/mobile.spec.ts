@@ -85,17 +85,21 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(cueBox!.height).toBeGreaterThanOrEqual(44)
     expect(cueBox!.width).toBeGreaterThanOrEqual(44)
 
-    // Verify Why Jolito scroll cue and Feedback button do not overlap or collide
-    const heroFooter = page.locator('.welcome-hero-footer')
-    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+    // Verify Why Jolito scroll cue sits directly under hero content, above the footer
+    const hero = page.locator('.welcome-hero')
+    const heroMain = page.locator('.welcome-hero-main')
+    const feedbackBtn = hero.getByRole('button', { name: /^feedback$/i })
     await expect(feedbackBtn).toBeVisible()
+    const mainBox = await heroMain.boundingBox()
     const feedbackBox = await feedbackBtn.boundingBox()
+    expect(mainBox).not.toBeNull()
     expect(feedbackBox).not.toBeNull()
-    expect(cueBox!.x + cueBox!.width).toBeLessThanOrEqual(feedbackBox!.x)
+    expect(cueBox!.y).toBeGreaterThanOrEqual(mainBox!.y + mainBox!.height)
+    expect(feedbackBox!.y).toBeGreaterThanOrEqual(cueBox!.y + cueBox!.height)
 
-    // Privacy is housed cleanly in SyncModal / deck footer, not colliding in hero fold
+    // Privacy is housed cleanly in SyncModal / deck footer, not present in hero fold
     await expect(
-      heroFooter.getByRole('button', { name: /^privacy$/i }),
+      hero.getByRole('button', { name: /^privacy$/i }),
     ).not.toBeVisible()
 
     // Initial accessibility check on mobile welcome screen
@@ -345,22 +349,24 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     const scrollCue = page.getByRole('link', {
       name: /^scroll down to explore why jolito$/i,
     })
-    const heroFooter = page.locator('.welcome-hero-footer')
-    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+    const hero = page.locator('.welcome-hero')
+    const heroMain = page.locator('.welcome-hero-main')
+    const feedbackBtn = hero.getByRole('button', { name: /^feedback$/i })
 
     await expect(scrollCue).toBeVisible()
     await expect(feedbackBtn).toBeVisible()
 
+    const mainBox = await heroMain.boundingBox()
     const cueBox = await scrollCue.boundingBox()
     const feedbackBox = await feedbackBtn.boundingBox()
 
+    expect(mainBox).not.toBeNull()
     expect(cueBox).not.toBeNull()
     expect(feedbackBox).not.toBeNull()
 
-    // Ensure strictly no horizontal collision and at least an 8px clearance gap
-    expect(feedbackBox!.x - (cueBox!.x + cueBox!.width)).toBeGreaterThanOrEqual(
-      8,
-    )
+    // Cue sits cleanly under main content, and footer sits cleanly below cue
+    expect(cueBox!.y).toBeGreaterThanOrEqual(mainBox!.y + mainBox!.height)
+    expect(feedbackBox!.y).toBeGreaterThanOrEqual(cueBox!.y + cueBox!.height)
 
     // Capture screenshot on 375px viewport for visual verification
     await page.screenshot({ path: 'test-results/mobile-375-welcome.png' })

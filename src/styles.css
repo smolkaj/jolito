@@ -587,43 +587,12 @@ summary:focus-visible,
   margin-top: clamp(8px, 2vh, 28px);
 }
 
-.welcome-hero-footer {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  column-gap: 8px;
-  margin-top: auto;
-  padding-top: 24px;
-}
-
-.welcome-hero-footer-spacer {
-  min-width: 0;
-}
-
-.welcome-hero-footer .hero-scroll-cue {
-  margin-top: 0;
-  grid-column: 2;
-  justify-self: center;
-}
-
-.welcome-hero-footer .app-footer {
-  margin-top: 0;
-  padding-top: 0;
-  grid-column: 3;
-  justify-self: end;
-  width: auto;
-  min-width: 0;
-}
-
 .hero-scroll-cue {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 24px;
+  margin-top: clamp(20px, 3vh, 32px);
   min-height: 50px;
   padding: 12px 28px;
   font-size: 15px;
@@ -2753,45 +2722,11 @@ kbd {
     gap: 20px;
   }
 
-  .welcome-hero-footer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    column-gap: 8px;
-    margin-top: clamp(12px, 2vh, 20px);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  .welcome-hero-footer-spacer {
-    min-width: 0;
-  }
-
-  .welcome-hero-footer .hero-scroll-cue {
-    grid-column: 2;
-    justify-self: center;
+  .hero-scroll-cue {
     min-height: 48px;
-    padding: 10px 18px;
+    padding: 10px 22px;
     font-size: 14px;
-  }
-
-  .welcome-hero-footer .app-footer {
-    grid-column: 3;
-    justify-self: end;
-    width: auto;
-    min-width: 0;
-  }
-
-  @media (max-width: 340px) {
-    .welcome-hero-footer {
-      column-gap: 4px;
-    }
-
-    .welcome-hero-footer .hero-scroll-cue {
-      padding: 10px 14px;
-      font-size: 13px;
-    }
+    margin-top: clamp(14px, 2.5vh, 22px);
   }
 
   .why-start-button {

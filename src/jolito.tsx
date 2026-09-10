@@ -2437,36 +2437,30 @@ export function App({
                 </button>
               </div>
             </div>
-            <div className="welcome-hero-footer">
-              <div className="welcome-hero-footer-spacer" aria-hidden="true" />
-              <a
-                href="#why-jolito"
-                className="hero-scroll-cue"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (window.location.hash !== '#why-jolito') {
-                    window.history.pushState(
-                      { view: 'welcome' },
-                      '',
-                      '#why-jolito',
-                    )
-                  }
-                  document
-                    .getElementById('why-jolito')
-                    ?.scrollIntoView({ behavior: 'smooth' })
-                }}
-                aria-label="Scroll down to explore Why Jolito"
-              >
-                <span className="scroll-cue-text">Why Jolito?</span>
-                <span className="scroll-cue-arrow" aria-hidden="true">
-                  ↓
-                </span>
-              </a>
-              <AppFooter
-                onOpenFeedback={openFeedbackModal}
-                showPrivacy={false}
-              />
-            </div>
+            <a
+              href="#why-jolito"
+              className="hero-scroll-cue"
+              onClick={(e) => {
+                e.preventDefault()
+                if (window.location.hash !== '#why-jolito') {
+                  window.history.pushState(
+                    { view: 'welcome' },
+                    '',
+                    '#why-jolito',
+                  )
+                }
+                document
+                  .getElementById('why-jolito')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              aria-label="Scroll down to explore Why Jolito"
+            >
+              <span className="scroll-cue-text">Why Jolito?</span>
+              <span className="scroll-cue-arrow" aria-hidden="true">
+                ↓
+              </span>
+            </a>
+            <AppFooter onOpenFeedback={openFeedbackModal} showPrivacy={false} />
           </section>
           <section
             className="welcome-why"
