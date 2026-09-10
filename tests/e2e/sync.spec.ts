@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 
 test('opens cloud sync modal without automatically detectable WCAG violations and allows interaction', async ({
   page,
@@ -12,9 +12,8 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   ).toBeVisible()
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in sync dialog
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Verify modal has opaque surface
@@ -228,9 +227,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
   }
 
   // Check accessibility
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -274,9 +271,7 @@ test('renders iOS redirect auth notification banner with zero WCAG violations an
   })
 
   // Check accessibility of banner on mobile
-  const mobileResults = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const mobileResults = await auditAccessibility(page)
   expect(mobileResults.violations).toEqual([])
 
   // Click copy link button and verify visual feedback
@@ -357,9 +352,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   })
 
   // Zero WCAG violations in signed-in state
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Visually verify animated synced button state and accessibility
@@ -378,9 +371,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   // Allow keyframe pop/fade animation (320ms) to settle to 100% opacity for full contrast
   await page.waitForTimeout(350)
 
-  const animatedResults = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const animatedResults = await auditAccessibility(page)
   expect(animatedResults.violations).toEqual([])
 
   // Click sign out
@@ -437,15 +428,11 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     })
 
     // Verify zero WCAG violations on sent screen
-    const sentResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const sentResults = await auditAccessibility(page)
     expect(sentResults.violations).toEqual([])
   } else {
     // Check accessibility of unconfigured state after sign-out
-    const postSignOutResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const postSignOutResults = await auditAccessibility(page)
     expect(postSignOutResults.violations).toEqual([])
   }
 })
@@ -509,9 +496,7 @@ test('displays guarded account deletion flow with zero WCAG violations', async (
   await expect(confirmBtn).toBeDisabled()
 
   // Verify zero WCAG violations on confirmation UI
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Capture screenshot of modal for visual inspection

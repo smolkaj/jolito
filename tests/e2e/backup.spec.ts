@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 import * as fflate from 'fflate'
 import initSqlJs from 'sql.js'
 import * as fs from 'node:fs'
@@ -33,9 +33,7 @@ test('opens deck manager without automatically detectable WCAG violations and ex
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in deck manager
   await page.waitForTimeout(200)
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Export JSON backup
@@ -282,9 +280,7 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await page.screenshot({ path: 'test-results/deck-edit-card-modal.png' })
 
   // Verify accessibility of edit modal
-  const editAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const editAxe = await auditAccessibility(page)
   expect(editAxe.violations).toEqual([])
 
   await page.getByLabel(/mexican spanish \(prompt\)/i).fill('el aguacate')
@@ -312,9 +308,7 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await page.screenshot({ path: 'test-results/deck-delete-modal.png' })
 
   // Verify accessibility of delete modal
-  const deleteAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const deleteAxe = await auditAccessibility(page)
 
   expect(deleteAxe.violations).toEqual([])
 
@@ -393,9 +387,7 @@ test('resets learning history to new card in deck manager edit modal with zero a
   ).toBeVisible()
 
   // Verify accessibility with toggle
-  const editAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const editAxe = await auditAccessibility(page)
   expect(editAxe.violations).toEqual([])
 
   await page.screenshot({

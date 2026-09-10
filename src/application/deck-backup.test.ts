@@ -56,7 +56,7 @@ describe('createDeckBackup', () => {
       exportedAt: string
       cards: StudyCard[]
     }
-    expect(parsed.version).toBe(1)
+    expect(parsed.version).toBe(2)
     expect(parsed.app).toBe('jolito')
     expect(parsed.exportedAt).toBe('2026-08-23T14:30:00.000Z')
     expect(parsed.cards).toHaveLength(2)

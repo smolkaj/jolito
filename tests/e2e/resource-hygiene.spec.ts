@@ -1,3 +1,4 @@
+import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
 
 test.describe('Resource & Energy Hygiene', () => {
@@ -167,8 +168,7 @@ test.describe('Resource & Energy Hygiene', () => {
     await page.goto('/')
 
     // Start practice to unlock audio session
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
-    await practiceBtn.click()
+    await practiceCards(page)
 
     const answerInput = page.getByLabel(/your answer/i)
     await expect(answerInput).toBeVisible()
@@ -232,7 +232,7 @@ test.describe('Resource & Energy Hygiene', () => {
     await page.goto('/')
 
     // Start practice to unlock audio
-    await page.getByRole('button', { name: /^practice$/i }).click()
+    await practiceCards(page)
     await expect(page.getByLabel(/your answer/i)).toBeVisible()
 
     // Trigger an answer submission which plays feedback tone
@@ -276,7 +276,7 @@ test.describe('Resource & Energy Hygiene', () => {
     await page.goto('/')
 
     // Start practice to unlock audio
-    await page.getByRole('button', { name: /^practice$/i }).click()
+    await practiceCards(page)
     await expect(page.getByLabel(/your answer/i)).toBeVisible()
 
     // 1. Submit an answer (plays feedback sound)

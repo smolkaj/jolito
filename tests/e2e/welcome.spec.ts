@@ -1,5 +1,6 @@
+import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 
 test('welcomes learners without automatically detectable WCAG A/AA violations', async ({
   page,
@@ -28,9 +29,7 @@ test('welcomes learners without automatically detectable WCAG A/AA violations', 
     page.getByRole('button', { name: /^create a card$/i }),
   ).toBeVisible()
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -183,7 +182,7 @@ test('creates and reviews both directions with the keyboard', async ({
   await page.getByLabel(/spanish/i).fill('¿Dónde está el metro?')
   await page.getByLabel(/english/i).fill('Where is the metro?')
   await page.getByRole('button', { name: /save card/i }).click()
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
 
   await expect(
     page.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -203,9 +202,7 @@ test('creates and reviews both directions with the keyboard', async ({
   await expect(page.locator('.complete-mascot-frame')).toBeVisible()
   await expect(page.locator('.complete-mascot-img')).toBeVisible()
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -294,9 +291,7 @@ test('advances progress bar visibly during practice with bidirectional cards', a
   await page.screenshot({ path: '/tmp/jolito-progress-bar-active.png' })
   await page.screenshot({ path: 'test-results/jolito-progress-bar-active.png' })
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -329,7 +324,7 @@ test('supports browser back and forward navigation across views', async ({
 
   // Navigate to Study from Welcome
   await page.goBack()
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
   await expect(page.getByLabel('Your answer')).toBeVisible()
   expect(page.url()).toContain('#/study')
 
@@ -378,9 +373,7 @@ test('transitions sample card from background to foreground smoothly and remains
   await expect(spanishCard).toHaveClass(/is-foreground/)
   await expect(englishCard).toHaveClass(/is-background/)
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -401,9 +394,7 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   await page.screenshot({ path: 'test-results/suggestion-open.png' })
 
   // Verify WCAG accessibility with dropdown open
-  const resultsDropdown = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const resultsDropdown = await auditAccessibility(page)
   expect(resultsDropdown.violations).toEqual([])
 
   // Select suggestion
@@ -452,9 +443,7 @@ test('autocompletes Mexican Spanish phrases and corrects typos on card creation'
   await expect(page.getByLabel(/english/i)).toHaveValue('awesome')
 
   // Verify WCAG compliance
-  const resultsFinal = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const resultsFinal = await auditAccessibility(page)
   expect(resultsFinal.violations).toEqual([])
 })
 
@@ -579,9 +568,7 @@ test('all pills and badges have consistent heights across views and within the s
   expect(completeHomeBtn?.height).toBe(completeCreateBtn?.height)
 
   // 6. Accessibility check
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -821,12 +808,10 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
 
   // 3. Start review from top navbar
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
   await expect(page.getByRole('heading', { name: 'chido' })).toBeVisible()
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -837,7 +822,7 @@ test('allows guests to practice example deck immediately and explore card creato
 
   // 1. Practice example starter cards immediately as a guest
   await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
 
   // Card 1: aguacate -> avocado
   await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
@@ -894,9 +879,7 @@ test('allows guests to practice example deck immediately and explore card creato
   ).toBeVisible()
   await page.screenshot({ path: 'test-results/guest-sync-modal.png' })
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -926,9 +909,7 @@ test('prompts unauthenticated guest to sign in when clicking save card in card c
     animations: 'disabled',
   })
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Modal can be dismissed with Escape and preserves form inputs
@@ -976,7 +957,7 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
       if (testPage === 'deck') {
         await page.getByRole('button', { name: /manage deck/i }).click()
       } else if (testPage === 'review') {
-        await page.getByRole('button', { name: /^practice$/i }).click()
+        await practiceCards(page)
       } else if (testPage === 'create') {
         await page.getByRole('button', { name: /create a card/i }).click()
       }
@@ -1067,9 +1048,7 @@ test('displays "Why Jolito?" value proposition fold on welcome view with zero WC
     fullPage: true,
   })
 
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -1354,9 +1333,7 @@ test('displays lightweight demo deck modal and demo session complete screen with
   ).toBeVisible()
 
   // Verify modal accessibility
-  const modalAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const modalAxe = await auditAccessibility(page)
   expect(modalAxe.violations).toEqual([])
 
   // Dismiss demo modal
@@ -1372,7 +1349,7 @@ test('displays lightweight demo deck modal and demo session complete screen with
 
   // 2. Practice session to demo complete screen
   await page.goto('/')
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
 
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press('Enter')
@@ -1395,9 +1372,7 @@ test('displays lightweight demo deck modal and demo session complete screen with
     page.getByRole('button', { name: /create a card/i }),
   ).toBeVisible()
 
-  const completeAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const completeAxe = await auditAccessibility(page)
   expect(completeAxe.violations).toEqual([])
 })
 
@@ -1440,9 +1415,7 @@ test('aligns study card quick actions with card container and supports keyboard 
 
   await page.screenshot({ path: 'test-results/study-unrevealed-aligned.png' })
 
-  const unrevealedAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const unrevealedAxe = await auditAccessibility(page)
   expect(unrevealedAxe.violations).toEqual([])
 
   // 2. Typing 'e' types into the field without opening edit modal
@@ -1496,9 +1469,7 @@ test('aligns study card quick actions with card container and supports keyboard 
   await page.waitForTimeout(250)
   await page.screenshot({ path: 'test-results/study-revealed-aligned.png' })
 
-  const revealedAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const revealedAxe = await auditAccessibility(page)
   expect(revealedAxe.violations).toEqual([])
 
   // 5. Bare 'e' shortcut opens edit modal when revealed
@@ -1506,9 +1477,7 @@ test('aligns study card quick actions with card container and supports keyboard 
   await expect(editModal).toBeVisible()
   await page.waitForTimeout(250)
 
-  const editModalAxe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const editModalAxe = await auditAccessibility(page)
   expect(editModalAxe.violations).toEqual([])
 
   await page.keyboard.press('Escape')
@@ -1521,7 +1490,7 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   await page.goto('/')
 
   await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
 
   // Card 1: aguacate -> Again (requeued)
   await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
@@ -1549,8 +1518,6 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   })
 
   // Accessibility audit
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })

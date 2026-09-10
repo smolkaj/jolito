@@ -351,6 +351,56 @@ describe('useStudyAudio', () => {
     expect(speakMock).not.toHaveBeenCalled()
   })
 
+  it('stops interrupted speech, resumes playback, and remains inert after teardown', () => {
+    const { result, rerender, unmount } = renderHook(
+      ({ paused, view }) =>
+        useStudyAudio({
+          speaker: mockSpeaker,
+          sounds: mockSounds,
+          currentCard: mockCard,
+          autoplayPrompt: false,
+          paused,
+          view,
+        }),
+      { initialProps: { paused: false, view: 'review' } },
+    )
+    act(() => {
+      result.current.playAnswerAudio()
+    })
+    expect(speakMock).toHaveBeenCalledTimes(1)
+    act(() => {
+      result.current.playRevealSensory()
+    })
+    const stopped = stopMock.mock.calls.length
+    rerender({ paused: true, view: 'review' })
+    expect(stopMock.mock.calls.length).toBeGreaterThan(stopped)
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(speakMock).toHaveBeenCalledTimes(1)
+    rerender({ paused: false, view: 'review' })
+    act(() => {
+      result.current.playAnswerAudio()
+    })
+    expect(speakMock).toHaveBeenCalledTimes(2)
+    const activeStops = stopMock.mock.calls.length
+    rerender({ paused: false, view: 'complete' })
+    expect(stopMock.mock.calls.length).toBeGreaterThan(activeStops)
+    rerender({ paused: false, view: 'review' })
+    act(() => {
+      result.current.playRevealSensory()
+    })
+    unmount()
+    const endedStops = stopMock.mock.calls.length
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      vi.advanceTimersByTime(500)
+    })
+    expect(speakMock).toHaveBeenCalledTimes(2)
+    expect(stopMock).toHaveBeenCalledTimes(endedStops)
+  })
+
   it('handles playGradeSensory with sound, haptics, and completion cues', () => {
     const { result } = renderHook(() =>
       useStudyAudio({

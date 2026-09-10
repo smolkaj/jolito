@@ -1,4 +1,5 @@
-import AxeBuilder from '@axe-core/playwright'
+import { practiceCards } from './practice'
+import { auditAccessibility } from './accessibility'
 import { expect, test } from '@playwright/test'
 
 test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => {
@@ -14,7 +15,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.goto('/')
 
     // 1. Welcome screen primary touch targets
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice$/i,
+    })
     await expect(practiceBtn).toBeVisible()
     const practiceBox = await practiceBtn.boundingBox()
     expect(practiceBox).not.toBeNull()
@@ -29,7 +32,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(createBox!.width).toBeGreaterThanOrEqual(44)
 
     // 2. Study screen controls
-    await practiceBtn.click()
+    await practiceCards(page)
     const answerInput = page.getByLabel(/your answer/i)
     await expect(answerInput).toBeVisible()
     const inputBox = await answerInput.boundingBox()
@@ -99,15 +102,15 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     ).not.toBeVisible()
 
     // Initial accessibility check on mobile welcome screen
-    const welcomeAxe = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const welcomeAxe = await auditAccessibility(page)
     expect(welcomeAxe.violations).toEqual([])
 
     // 2. Tap Practice on mobile
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice$/i,
+    })
     await expect(practiceBtn).toBeVisible()
-    await practiceBtn.click()
+    await practiceCards(page)
 
     // Verify study view is active and responsive
     const answerInput = page.getByLabel(/your answer/i)
@@ -135,9 +138,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.waitForTimeout(250)
     await page.screenshot({ path: 'test-results/mobile-revealed.png' })
 
-    const reviewAxe = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const reviewAxe = await auditAccessibility(page)
     expect(reviewAxe.violations).toEqual([])
 
     // 5. Tap Good to grade
@@ -261,9 +262,11 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.goto('/')
 
     // 1. Start practice session in mobile portrait (393x852)
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice$/i,
+    })
     await expect(practiceBtn).toBeVisible()
-    await practiceBtn.click()
+    await practiceCards(page)
 
     // First card: aguacate
     const answerInput = page.getByLabel(/your answer/i)

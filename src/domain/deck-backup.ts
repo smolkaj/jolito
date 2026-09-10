@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { collectionVersionSchema } from './card'
 import {
   directions,
   studyCardSchema,
@@ -7,7 +8,7 @@ import {
 } from './card'
 
 export const deckBackupEnvelopeSchema = z.object({
-  version: z.literal(1),
+  version: collectionVersionSchema,
   app: z.string().optional(),
   exportedAt: z.string().optional(),
   cards: z.array(studyCardSchema),
@@ -37,6 +38,9 @@ function restoreLegacyCards(raw: unknown): StudyCard[] | null {
   for (const [index, candidate] of raw.entries()) {
     if (
       !isRecord(candidate) ||
+      'schedule' in candidate ||
+      'grammar' in candidate ||
+      'noteId' in candidate ||
       typeof candidate.prompt !== 'string' ||
       typeof candidate.answer !== 'string' ||
       !directions.includes(candidate.direction as Direction)

@@ -1,0 +1,214 @@
+import type { AppServices } from '../application/ports'
+import { type Grade } from '../domain/card'
+import { grammarContext, grammarQueue } from '../domain/grammar'
+import { compareAnswer } from '../domain/answer'
+import { grammarFamilies, preteriteVerbs } from '../domain/grammar-content'
+import type { GrammarPracticeState } from './useGrammarPractice'
+import { useStudyAudio } from './useStudyAudio'
+import { PracticeCard } from './PracticeCard'
+import { SessionComplete } from './SessionComplete'
+import { AudioButton } from './AudioButton'
+import './grammar.css'
+
+export function GrammarPractice({
+  practice,
+  services,
+  onHome,
+  paused,
+  signedIn,
+  onSignIn,
+}: {
+  practice: GrammarPracticeState
+  services: AppServices
+  onHome: () => void
+  paused: boolean
+  signedIn: boolean
+  onSignIn: () => void
+}) {
+  const { mode, current, session, focus } = practice
+  const context = current ? grammarContext(current) : undefined
+  const audio = useStudyAudio({
+    speaker: services.speaker,
+    sounds: services.sounds,
+    haptics: services.haptics,
+    currentCard:
+      current && context
+        ? {
+            ...current,
+            prompt: context.spokenPrompt,
+            answer: context.completed,
+          }
+        : undefined,
+    autoplayPrompt: !session.revealed,
+    view: mode === 'practice' ? 'review' : mode,
+    paused,
+  })
+  const grade = (value: Grade) => {
+    const result = practice.grade(value)
+    if (result) audio.playGradeSensory(value, result.isComplete)
+  }
+
+  const now = services.clock.now()
+  const focusedCards = practice.available.filter(
+    (card) =>
+      focus === 'mixed' || preteriteVerbs[card.grammar.verb].family === focus,
+  )
+  const nextRound = grammarQueue(focusedCards, now, focus)
+  const nextDue = Math.min(...focusedCards.map((card) => card.schedule.dueAt))
+  const nextReview =
+    nextRound.length === 0 && Number.isFinite(nextDue)
+      ? new Intl.DateTimeFormat(undefined, {
+          month: 'short',
+          day: 'numeric',
+        }).format(nextDue)
+      : null
+  if (mode === 'choose')
+    return (
+      <section className="grammar-home" aria-labelledby="grammar-title">
+        <header className="grammar-heading">
+          <h1 id="grammar-title" lang="es">
+            Pretérito indefinido
+          </h1>
+          <p className="grammar-intro">Spanish simple past</p>
+        </header>
+        <fieldset className="grammar-focus">
+          <legend className="sr-only">Patterns</legend>
+          <label
+            className={`flat-choice grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
+          >
+            <input
+              type="radio"
+              name="grammar-focus"
+              checked={focus === 'mixed'}
+              onChange={() => practice.setFocus('mixed')}
+            />
+            <span>
+              <strong>All patterns</strong>
+            </span>
+          </label>
+          <div className="grammar-families">
+            {grammarFamilies.map((family) => (
+              <label
+                key={family.id}
+                className={`flat-choice ${focus === family.id ? 'is-selected' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="grammar-focus"
+                  checked={focus === family.id}
+                  onChange={() => practice.setFocus(family.id)}
+                />
+                <span>
+                  <strong>{family.title}</strong>
+                  <small lang="es">{family.example}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <div className="grammar-start-row">
+          {session.queue.length > 0 && (
+            <button className="primary-button" onClick={practice.resume}>
+              Resume round
+            </button>
+          )}
+          <button
+            className={
+              session.queue.length > 0 ? 'secondary-button' : 'primary-button'
+            }
+            onClick={practice.start}
+            disabled={nextRound.length === 0}
+          >
+            New round
+          </button>
+        </div>
+        {nextRound.length === 0 && (
+          <p className="grammar-availability">
+            {nextReview ? `Next review: ${nextReview}` : 'No forms due.'}
+          </p>
+        )}
+      </section>
+    )
+
+  if (mode === 'complete' || !current || !context)
+    return (
+      <SessionComplete
+        practicedCount={session.practicedCount}
+        unit="form"
+        emptyMessage={
+          nextReview ? `Next review: ${nextReview}` : 'No forms due.'
+        }
+        primaryAction={
+          nextRound.length
+            ? {
+                label: `Practice next ${nextRound.length}`,
+                onClick: practice.start,
+              }
+            : { label: 'Choose patterns', onClick: practice.choose }
+        }
+        onHome={onHome}
+      >
+        {!signedIn && (
+          <p className="complete-subtext">
+            <button
+              type="button"
+              className="complete-link-button"
+              onClick={onSignIn}
+            >
+              Sign in
+            </button>{' '}
+            to sync your progress.
+          </p>
+        )}
+      </SessionComplete>
+    )
+
+  const [before, after] = context.sentence.split('___')
+  return (
+    <PracticeCard
+      card={current}
+      prompt={
+        <>
+          <div className="study-prompt-wrap">
+            <p className="grammar-verb-cue" lang="es">
+              {current.grammar.verb}
+            </p>
+            <AudioButton
+              prompt
+              label="Play prompt audio"
+              onClick={() => audio.playPromptAudio()}
+            />
+          </div>
+          <h1 className="grammar-sentence" lang="es">
+            {before}
+            <span className="grammar-blank" aria-label="missing verb" lang="en">
+              …
+            </span>
+            {after}
+          </h1>
+          <p className="grammar-translation">{context.translation}</p>
+        </>
+      }
+      answer={session.answer}
+      revealed={session.revealed}
+      onAnswerChange={session.setAnswer}
+      onReveal={() => {
+        practice.reveal()
+        audio.playRevealSensory()
+      }}
+      onGrade={grade}
+      onPlayAnswer={() => audio.playAnswerAudio()}
+      onPlayPrompt={() => audio.playPromptAudio()}
+      paused={paused}
+      audioUnavailable={audio.audioUnavailable}
+      answerLabel="Your conjugation"
+      placeholder="Type the verb…"
+      accents
+      error={practice.error}
+    >
+      {!compareAnswer(session.answer, current.answer).isExact && (
+        <p className="grammar-explanation">{context.explanation}</p>
+      )}
+    </PracticeCard>
+  )
+}

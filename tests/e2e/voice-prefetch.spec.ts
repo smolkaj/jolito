@@ -1,3 +1,4 @@
+import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
 
 interface TrackedSpeechCall {
@@ -90,9 +91,11 @@ test('never falls back to robotic speech synthesis when practicing from homescre
   await page.goto('/')
 
   // Click Practice
-  const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+  const practiceBtn = page.getByRole('button', {
+    name: /^practice$/i,
+  })
   await expect(practiceBtn).toBeVisible()
-  await practiceBtn.click()
+  await practiceCards(page)
 
   // Wait for card review to mount and play prompt
   await page.waitForTimeout(600)

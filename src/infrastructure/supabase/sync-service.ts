@@ -164,7 +164,7 @@ export class SupabaseSyncService implements SyncService {
     try {
       const nowIso = new Date().toISOString()
       const payload: DeckSyncPayload = {
-        version: 1,
+        version: 2,
         app: 'jolito',
         updatedAt: nowIso,
         deviceId: this.deviceId,
@@ -176,7 +176,7 @@ export class SupabaseSyncService implements SyncService {
         user_id: user.id,
         updated_at: nowIso,
         device_id: this.deviceId,
-        version: 1,
+        version: 2,
         data: payload,
       })
 

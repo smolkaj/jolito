@@ -121,7 +121,7 @@ export class LocalStorageCardRepository implements CardRepository {
     this.storage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        version: 1,
+        version: 2,
         cards,
         deletedCardIds: this.deletedCardIds,
       }),
