@@ -173,7 +173,8 @@ export function SyncModal({
       try {
         const text = await navigator.clipboard.readText()
         if (text) {
-          setToken(text.trim())
+          const domainBoundMatch = /(?:@[\w.-]+\s*)?#\s*(\d{6})\b/.exec(text)
+          setToken(domainBoundMatch?.[1] ?? text.trim())
           triggerTransientFeedback('pasted', 1500)
         }
       } catch {

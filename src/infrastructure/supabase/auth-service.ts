@@ -473,6 +473,12 @@ export class SupabaseAuthService implements AuthService {
       rawToken = rawToken.slice(1, -1).trim()
     }
 
+    // Extract 6-digit code if domain-bound OTP syntax is present (@domain #123456 or #123456)
+    const domainBoundMatch = /(?:@[\w.-]+\s*)?#\s*(\d{6})\b/.exec(rawToken)
+    if (domainBoundMatch?.[1]) {
+      rawToken = domainBoundMatch[1]
+    }
+
     // 0. Check if rawToken is a plain webpage link without tokens
     if (
       (rawToken.includes('joli.to') ||
