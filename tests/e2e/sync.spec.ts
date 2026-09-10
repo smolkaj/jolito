@@ -166,6 +166,14 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
 }) => {
   // Inject mock fetch to simulate Supabase OTP auth responses
   await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'standalone', {
+      value: true,
+      configurable: true,
+    })
     const originalFetch = window.fetch.bind(window)
     window.fetch = async (input, init) => {
       const url = typeof input === 'string' ? input : (input as Request).url
@@ -181,6 +189,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     window.localStorage.setItem('e2e-sync-test', 'true')
   })
 
+  await page.setViewportSize({ width: 375, height: 667 })
   await page.goto('/')
 
   const signInBtn = page.getByRole('button', { name: /sign in|tap to sync/i })
@@ -197,9 +206,11 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await emailInput.fill('pwa-learner@example.com')
     await page.getByRole('button', { name: /send sign-in link/i }).click()
 
-    // On standard browser, verify clean confirmation with immediate code entry
+    // In the iOS Home Screen app, explain the email-to-browser handoff.
     await expect(
-      page.getByText(/Click the sign-in link sent to/i),
+      page.getByText(
+        /Tap the link in your email, then tap Copy sign-in link in Jolito’s top banner/i,
+      ),
     ).toBeVisible()
 
     const linkInput = page.getByLabel(/6-digit code or sign-in link/i)
@@ -213,7 +224,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await expect(resendBtn).toContainText(/link sent!/i)
     await expect(page.locator('.status-banner')).toHaveCount(0)
 
-    // Capture screenshot of standard browser email confirmation with immediate code entry
+    // Capture the iOS Home Screen email confirmation with immediate code entry.
     await page.screenshot({
       path: 'test-results/sync-modal-sent-step.png',
       animations: 'disabled',
@@ -423,7 +434,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
 
     // Capture screenshot of sent confirmation / code entry
     await page.screenshot({
-      path: 'test-results/sync-modal-sent-step.png',
+      path: 'test-results/sync-modal-standard-sent-step.png',
       animations: 'disabled',
     })
 
