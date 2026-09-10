@@ -127,3 +127,8 @@
     grid-template-columns: 1fr;
   }
 }
+
+.grammar-topic {
+  margin-top: 20px;
+  max-width: 100%;
+}

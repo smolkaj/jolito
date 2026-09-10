@@ -1,12 +1,12 @@
 import { createNewReviewSchedule, isDue, type StudyCard } from './card'
+import { grammarPeople, preteriteVerbs } from './grammar-content'
 import {
   grammarCardId,
-  grammarFamilies,
-  grammarPeople,
-  preteriteVerbs,
+  grammarTopics,
+  grammarVerb,
+  type GrammarTopic,
   type GrammarFocus,
-  type PreteriteVerb,
-} from './grammar-content'
+} from './grammar-catalog'
 
 export type GrammarCard = StudyCard & {
   grammar: NonNullable<StudyCard['grammar']>
@@ -15,24 +15,29 @@ export function isGrammarCard(card: StudyCard): card is GrammarCard {
   return card.grammar !== undefined
 }
 
-export function createGrammarCards(now: number): GrammarCard[] {
-  return (Object.keys(preteriteVerbs) as PreteriteVerb[]).flatMap((verb) =>
+export function createGrammarCards(
+  now: number,
+  topic: GrammarTopic = 'preterite',
+): GrammarCard[] {
+  return Object.keys(grammarTopics[topic].verbs).flatMap((verb) =>
     grammarPeople.map((person, index) => ({
-      id: grammarCardId(verb, index),
-      noteId: grammarCardId(verb, index),
+      id: grammarCardId(verb, index, topic),
+      noteId: grammarCardId(verb, index, topic),
       prompt: `${verb} · ${person}`,
-      answer: preteriteVerbs[verb].forms[index]!,
+      answer: grammarVerb(topic, verb)!.forms[index]!,
       direction: 'en-es' as const,
       context: '',
       scene: 'conversation' as const,
       createdAt: now,
       schedule: createNewReviewSchedule(now),
-      grammar: { topic: 'preterite' as const, verb, person: index },
+      grammar: { topic, verb, person: index },
     })),
   )
 }
 
-const catalog = createGrammarCards(0)
+const catalog = (Object.keys(grammarTopics) as GrammarTopic[]).flatMap(
+  (topic) => createGrammarCards(0, topic),
+)
 
 export function availableGrammarCards(
   cards: StudyCard[],
@@ -48,7 +53,7 @@ export function availableGrammarCards(
 }
 
 export function grammarContext(card: GrammarCard) {
-  const verb = preteriteVerbs[card.grammar.verb]
+  const verb = grammarVerb(card.grammar.topic, card.grammar.verb)!
   const variant = card.schedule.reviews % 2
   const subjects =
     variant === 0
@@ -67,24 +72,35 @@ export function grammarContext(card: GrammarCard) {
   const sentence = capitalize(
     spanish
       .replace('{subject}', subjects[person]!)
+      .replace(
+        '{estar}',
+        cueSubject + ['estoy', 'estás', 'está', 'estamos', 'están'][person]!,
+      )
       .replace('{ir}', cueSubject + preteriteVerbs.ir.forms[person]!)
       .replace('{llegar}', cueSubject + preteriteVerbs.llegar.forms[person]!),
   )
   const translation = capitalize(
     english
+      .replace('{have}', person === 2 && variant === 0 ? 'has' : 'have')
+      .replace(
+        '{be}',
+        person === 0 ? 'am' : person === 2 && variant === 0 ? 'is' : 'are',
+      )
       .replace('{subject}', englishSubjects[person]!)
       .replace(
         '{was}',
         person === 0 || (person === 2 && variant === 0) ? 'was' : 'were',
       ),
   )
-  const family = grammarFamilies.find((family) => family.id === verb.family)!
+  const family = grammarTopics[card.grammar.topic].families.find(
+    (family) => family.id === verb.family,
+  )!
   return {
     sentence,
     spokenPrompt: sentence.replace('___', '…'),
     completed: sentence.replace('___', card.answer),
     translation,
-    explanation: 'note' in verb ? verb.note : family.rule,
+    explanation: verb.note ?? family.rule,
   }
 }
 
@@ -94,13 +110,16 @@ export function grammarQueue(
   cards: StudyCard[],
   now: number,
   focus: GrammarFocus,
+  topic: GrammarTopic = 'preterite',
 ): GrammarCard[] {
   const eligible = cards
     .filter(isGrammarCard)
     .filter(
       (c) =>
+        c.grammar.topic === topic &&
         isDue(c, now) &&
-        (focus === 'mixed' || preteriteVerbs[c.grammar.verb].family === focus),
+        (focus === 'mixed' ||
+          grammarVerb(c.grammar.topic, c.grammar.verb)!.family === focus),
     )
   const due = eligible
     .filter((c) => c.schedule.reviews > 0)
@@ -115,7 +134,8 @@ export function grammarQueue(
   const people = new Map<number, number>()
   const verbs = new Map<string, number>()
   const score = (c: GrammarCard) =>
-    (families.get(preteriteVerbs[c.grammar.verb].family) ?? 0) * 3 +
+    (families.get(grammarVerb(c.grammar.topic, c.grammar.verb)!.family) ?? 0) *
+      3 +
     (people.get(c.grammar.person) ?? 0) * 2 +
     (verbs.get(c.grammar.verb) ?? 0) * 5
   for (const pool of [due, fresh]) {
@@ -130,7 +150,7 @@ export function grammarQueue(
             )
       const card = pool.splice(index, 1)[0]!
       selected.push(card)
-      const family = preteriteVerbs[card.grammar.verb].family
+      const family = grammarVerb(card.grammar.topic, card.grammar.verb)!.family
       families.set(family, (families.get(family) ?? 0) + 1)
       people.set(
         card.grammar.person,

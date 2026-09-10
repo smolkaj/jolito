@@ -1,3 +1,4 @@
+import { collectionVersion } from '../domain/card'
 import type { StudyCard } from '../domain/card'
 import {
   mergeStudyCards,
@@ -30,7 +31,7 @@ export function createDeckBackup(
   const dateString = isoDate.slice(0, 10)
 
   const payload: DeckBackupEnvelope = {
-    version: 2,
+    version: collectionVersion,
     app: 'jolito',
     exportedAt: isoDate,
     cards,

@@ -8,7 +8,7 @@ import {
   grammarQueue,
   type GrammarCard,
 } from '../domain/grammar'
-import type { GrammarFocus } from '../domain/grammar-content'
+import type { GrammarTopic, GrammarFocus } from '../domain/grammar-catalog'
 import { useStudySession } from './useStudySession'
 
 export function useGrammarPractice({
@@ -22,7 +22,12 @@ export function useGrammarPractice({
   clock: Clock
   save: (card: GrammarCard) => void
 }) {
+  const [topic, setSelectedTopic] = useState<GrammarTopic>('preterite')
   const [focus, setFocus] = useState<GrammarFocus>('mixed')
+  const setTopic = (topic: GrammarTopic) => {
+    setSelectedTopic(topic)
+    setFocus('mixed')
+  }
   const [mode, setMode] = useState<'choose' | 'practice' | 'complete'>('choose')
   const [snapshots, setSnapshots] = useState<GrammarCard[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -33,13 +38,14 @@ export function useGrammarPractice({
     [cards, deletedCardIds],
   )
   const audioCards = useMemo(() => {
-    if (mode === 'choose') return grammarQueue(available, clock.now(), focus)
+    if (mode === 'choose')
+      return grammarQueue(available, clock.now(), focus, topic)
     return mode === 'practice' ? snapshots : []
-  }, [available, clock, focus, mode, snapshots])
+  }, [available, clock, focus, mode, snapshots, topic])
   const current = snapshots.find((c) => c.id === session.currentCardId)
 
   const start = () => {
-    const selected = grammarQueue(available, clock.now(), focus)
+    const selected = grammarQueue(available, clock.now(), focus, topic)
     setSnapshots(selected)
     session.startSession(selected.map((c) => c.id))
     setMode(selected.length ? 'practice' : 'complete')
@@ -98,6 +104,10 @@ export function useGrammarPractice({
     startSession([])
   }, [startSession])
   return {
+    topic,
+    setTopic,
+    canResume:
+      session.queue.length > 0 && snapshots[0]?.grammar.topic === topic,
     focus,
     setFocus,
     mode,

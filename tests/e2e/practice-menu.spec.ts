@@ -91,7 +91,7 @@ for (const width of [1280, 1024, 768, 393, 320]) {
     await trigger.tap()
     await page.getByRole('menuitem', { name: 'Grammar' }).tap()
     await expect(
-      page.getByRole('heading', { name: 'Pretérito indefinido' }),
+      page.getByRole('heading', { name: 'Grammar', exact: true }),
     ).toBeVisible()
     await page.getByRole('button', { name: 'Jolito home', exact: true }).click()
     await trigger.tap()

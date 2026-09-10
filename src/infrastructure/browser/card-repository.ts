@@ -1,3 +1,4 @@
+import { collectionVersion } from '../../domain/card'
 import type { CardRepository } from '../../application/ports'
 import {
   studyCardCollectionSchema,
@@ -121,7 +122,7 @@ export class LocalStorageCardRepository implements CardRepository {
     this.storage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        version: 2,
+        version: collectionVersion,
         cards,
         deletedCardIds: this.deletedCardIds,
       }),
