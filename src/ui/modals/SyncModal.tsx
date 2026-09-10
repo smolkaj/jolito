@@ -547,6 +547,7 @@ export function SyncModal({
                 <input
                   ref={pasteInputRef}
                   id="sync-otp"
+                  name="one-time-code"
                   type="text"
                   required
                   autoFocus

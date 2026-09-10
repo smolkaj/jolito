@@ -17,11 +17,21 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toContain('{{ .Token }}')
   })
 
-  it('includes inbox preheader preview snippet to prevent preview leakage', () => {
+  it('includes inbox preheader preview snippet with verification code to prevent preview leakage', () => {
     const content = readFileSync(templatePath, 'utf-8')
     expect(content).toMatch(
-      /Your 1-click sign-in link and 6-digit code for Jolito/i,
+      /Your\s+Jolito\s+verification\s+code\s+is\s+\{\{\s*\.Token\s*\}\}/i,
     )
+    expect(content).toMatch(
+      /Your\s+1-click\s+sign-in\s+link\s+and\s+6-digit\s+code\s+for\s+Jolito/i,
+    )
+  })
+
+  it('includes explicit verification code phrasing and domain-bound OTP for OS AutoFill heuristics', () => {
+    const content = readFileSync(templatePath, 'utf-8')
+    expect(content).toMatch(/Your\s+verification\s+code\s+is:/i)
+    expect(content).toContain('@joli.to #{{ .Token }}')
+    expect(content).toMatch(/class="domain-bound-otp"[^>]*color:\s*#5f6e66/i)
   })
 
   it('includes key security guarantees (expiry and ignore disclaimer)', () => {
@@ -62,6 +72,7 @@ describe('Supabase Auth Email Template', () => {
       /\.code-container\s*\{[^}]*background-color:\s*#20151b/i,
     )
     expect(content).toMatch(/\.code-display\s*\{[^}]*color:\s*#f272ad/i)
+    expect(content).toMatch(/\.domain-bound-otp\s*\{[^}]*color:\s*#8d9c94/i)
 
     // Verify dark mode preserves footer and disclaimer contrast (WCAG AA)
     expect(content).toMatch(/\.email-disclaimer\s*\{[^}]*color:\s*#8d9c94/i)
@@ -90,6 +101,7 @@ describe('Supabase Auth Email Template', () => {
 
     expect(rendered).toContain('https://joli.to/#access_token=test-jwt')
     expect(rendered).toContain('482910')
+    expect(rendered).toContain('@joli.to #482910')
     expect(rendered).not.toContain('{{')
     expect(rendered).not.toContain('}}')
   })
@@ -100,7 +112,7 @@ describe('Supabase Auth Email Template', () => {
 
     expect(configContent).toContain('[auth.email.template.magic_link]')
     expect(configContent).toMatch(
-      /subject\s*=\s*"Sign in to Jolito: \{\{ \.Token \}\}"/,
+      /subject\s*=\s*"Your Jolito verification code is \{\{ \.Token \}\}"/,
     )
     expect(configContent).toMatch(
       /content_path\s*=\s*"\.\/supabase\/templates\/magic_link\.html"/,

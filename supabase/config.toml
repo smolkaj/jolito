@@ -34,6 +34,6 @@ otp_length = 6
 otp_expiry = 3600
 
 [auth.email.template.magic_link]
-subject = "Sign in to Jolito: {{ .Token }}"
+subject = "Your Jolito verification code is {{ .Token }}"
 content_path = "./supabase/templates/magic_link.html"
 
