@@ -15,7 +15,7 @@ const rulesSchema = z.array(
     matchers: z.array(
       z.object({
         type: z.string(),
-        field: z.string(),
+        field: z.string().optional(),
         value: z.string().optional(),
       }),
     ),

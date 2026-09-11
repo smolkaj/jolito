@@ -23,6 +23,11 @@ import { verifiedMaintainerInbox } from '../../../scripts/deploy-signup-alerts'
 const rules = [
   {
     enabled: true,
+    matchers: [{ type: 'all' }],
+    actions: [{ type: 'drop' }],
+  },
+  {
+    enabled: true,
     matchers: [{ type: 'literal', field: 'to', value: 'a@joli.to' }],
     actions: [{ type: 'forward', value: ['maintainer@example.com'] }],
   },
@@ -53,8 +58,26 @@ describe('free signup email destination', () => {
       'one active forwarding destination',
     )
     expect(() =>
-      verifiedMaintainerInbox([], [{ ...rules[0], enabled: false }]),
+      verifiedMaintainerInbox(
+        [],
+        rules.map((rule) => ({ ...rule, enabled: false })),
+      ),
     ).toThrow('one active forwarding destination')
+  })
+  it('never selects catch-all or incomplete matchers as the maintainer route', () => {
+    for (const matcher of [
+      { type: 'all' },
+      { type: 'literal', value: 'a@joli.to' },
+      { type: 'literal', field: 'to' },
+      { type: 'literal', field: 'to', value: 'other@joli.to' },
+    ]) {
+      expect(() =>
+        verifiedMaintainerInbox(
+          [{ email: 'maintainer@example.com', verified: '2026-01-01' }],
+          [{ enabled: true, matchers: [matcher], actions: rules[1]!.actions }],
+        ),
+      ).toThrow('one active forwarding destination')
+    }
   })
 })
 
