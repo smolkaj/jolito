@@ -2534,7 +2534,7 @@ kbd {
 .answer-accents {
   display: flex;
   justify-content: center;
-  gap: 2px;
+  gap: 12px;
   margin-top: 12px;
 }
 .answer-accents button {

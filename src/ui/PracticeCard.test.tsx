@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { createStudyCards } from '../domain/card'
+import { createStudyCards, type Grade } from '../domain/card'
 import { createGrammarCards } from '../domain/grammar'
 import { PracticeCard } from './PracticeCard'
 
@@ -200,7 +200,7 @@ describe('accent keyboard insertion', () => {
   it('inserts all accents and shares selection/caret behavior with pointer insertion', async () => {
     const user = userEvent.setup()
     render(<AccentPractice />)
-    const input = screen.getByRole('textbox') as HTMLInputElement
+    const input = screen.getByRole<HTMLInputElement>('textbox')
     await user.keyboard('12345')
     expect(input).toHaveValue('áéíóú')
     input.setSelectionRange(1, 2)
@@ -218,7 +218,7 @@ describe('accent keyboard insertion', () => {
 
   it('respects modifiers/composition, pause/resume, reveal grading and teardown', async () => {
     const user = userEvent.setup()
-    const grade = vi.fn()
+    const grade = vi.fn<(value: Grade) => void>()
     const app = render(<AccentPractice onGrade={grade} />)
     const input = screen.getByRole('textbox')
     for (const modifier of [
@@ -240,7 +240,7 @@ describe('accent keyboard insertion', () => {
     app.rerender(<AccentPractice onGrade={grade} />)
     fireEvent(document, new Event('visibilitychange'))
     await user.keyboard('2')
-    fireEvent.keyDown(input, { key: '2', repeat: true })
+    expect(fireEvent.keyDown(input, { key: '2', repeat: true })).toBe(false)
     expect(input).toHaveValue('áé')
     expect(grade).not.toHaveBeenCalled()
     app.rerender(<AccentPractice revealed onGrade={grade} />)
