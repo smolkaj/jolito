@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { SendEmailBinding } from './email-binding.ts'
+export type { SendEmailBinding } from './email-binding.ts'
 
 export const feedbackPayloadSchema = z.object({
   message: z
@@ -18,17 +20,6 @@ export const feedbackPayloadSchema = z.object({
 })
 
 export type FeedbackPayload = z.infer<typeof feedbackPayloadSchema>
-
-export interface SendEmailBinding {
-  send: (message: {
-    from: string
-    to: string
-    subject: string
-    text: string
-    html: string
-    replyTo?: string | undefined
-  }) => Promise<void>
-}
 
 export interface FeedbackWorkerEnv {
   SEND_EMAIL?: SendEmailBinding | undefined

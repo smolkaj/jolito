@@ -37,11 +37,12 @@ What are we choosing?
 What becomes easier, harder, or newly required?
 ```
 
-| ADR                                                                                                                        | Status   | Decision                                                                           |
-| -------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| [0001: Versioned local storage for the MVP](0001-local-first-mvp-storage.md)                                               | Accepted | Use versioned local storage for the MVP loop.                                      |
-| [0002: Application stack](0002-application-stack.md)                                                                       | Accepted | TypeScript, React SPA, Postgres target, and Zod.                                   |
-| [0003: Offline sync evaluation](0003-offline-sync-evaluation.md)                                                           | Proposed | Evaluate PowerSync with Supabase; snapshot sync adopted in ADR 0005.               |
-| [0004: Offline deck backup and export](0004-offline-deck-backup-and-export.md)                                             | Accepted | Offline JSON deck backup, export, restore, and merge.                              |
-| [0005: Cloud snapshot sync with Supabase](0005-cloud-snapshot-sync-supabase.md)                                            | Accepted | Zero-cost cloud snapshot sync with Supabase and RLS.                               |
-| [0006: Neural speech synthesis, voice licensing, and device fallback](0006-neural-speech-synthesis-and-voice-licensing.md) | Accepted | Hybrid edge neural speech with aggressive caching and offline Web Speech fallback. |
+| ADR                                                                                                                        | Status   | Decision                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| [0001: Versioned local storage for the MVP](0001-local-first-mvp-storage.md)                                               | Accepted | Use versioned local storage for the MVP loop.                                                             |
+| [0002: Application stack](0002-application-stack.md)                                                                       | Accepted | TypeScript, React SPA, Postgres target, and Zod.                                                          |
+| [0003: Offline sync evaluation](0003-offline-sync-evaluation.md)                                                           | Proposed | Evaluate PowerSync with Supabase; snapshot sync adopted in ADR 0005.                                      |
+| [0004: Offline deck backup and export](0004-offline-deck-backup-and-export.md)                                             | Accepted | Offline JSON deck backup, export, restore, and merge.                                                     |
+| [0005: Cloud snapshot sync with Supabase](0005-cloud-snapshot-sync-supabase.md)                                            | Accepted | Zero-cost cloud snapshot sync with Supabase and RLS.                                                      |
+| [0006: Neural speech synthesis, voice licensing, and device fallback](0006-neural-speech-synthesis-and-voice-licensing.md) | Accepted | Hybrid edge neural speech with aggressive caching and offline Web Speech fallback.                        |
+| [0007: Signup alerts from verified accounts](0007-signup-alerts.md)                                                        | Proposed | Private scheduled delivery from Supabase Auth, with durable receipts and free verified-destination email. |

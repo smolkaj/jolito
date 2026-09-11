@@ -100,7 +100,7 @@ describe('feedback-route', () => {
             to: string
             subject: string
             text: string
-            html: string
+            html?: string
           }) => Promise<void>
         >()
         .mockResolvedValue(undefined)
@@ -290,7 +290,7 @@ describe('feedback-route', () => {
             to: string
             subject: string
             text: string
-            html: string
+            html?: string
             replyTo?: string | undefined
           }) => Promise<void>
         >()

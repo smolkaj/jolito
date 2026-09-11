@@ -63,8 +63,9 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
           <section className="privacy-section">
             <h3>2. What We Collect</h3>
             <p>
-              <strong>Email:</strong> Used only to send your passwordless
-              sign-in link. Never shared, sold, or used for marketing.
+              <strong>Email:</strong> Used for passwordless sign-in and to
+              notify Jolito’s maintainer when you join. Never sold or used for
+              marketing.
             </p>
             <p>
               <strong>Your Decks & Progress:</strong> Synced to your private
@@ -87,7 +88,9 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               To permanently delete your cloud data, tap{' '}
               <strong>Cloud sync → Delete cloud account & data</strong> in the
               app. We immediately and permanently delete your user record, cloud
-              decks, and feedback from our servers.
+              decks, feedback, and signup notification records from our servers.
+              Emails already delivered to the maintainer’s inbox are not removed
+              automatically.
             </p>
           </section>
 

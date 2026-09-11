@@ -9,6 +9,8 @@ import {
   type CloudflareZone,
 } from './cf-utils.ts'
 import { setupEmailRouting } from './setup-email.ts'
+import { buildSupabaseAuthPatch } from './supabase-auth-config.ts'
+export { buildSupabaseAuthPatch } from './supabase-auth-config.ts'
 
 loadEnvLocal()
 
@@ -50,40 +52,6 @@ export function getSupabaseAccessToken(
     }
   }
   return undefined
-}
-
-export interface BuildSupabaseAuthPatchOptions {
-  domain: string
-  resendApiKey?: string | undefined
-  magicLinkTemplate?: string | undefined
-}
-
-export function buildSupabaseAuthPatch({
-  domain,
-  resendApiKey,
-  magicLinkTemplate,
-}: BuildSupabaseAuthPatchOptions): Record<string, unknown> {
-  const patch: Record<string, unknown> = {
-    site_url: `https://${domain}`,
-    uri_allow_list: `https://${domain}/**,https://*-jolito.smolkaj.workers.dev/**,https://jolito.smolkaj.workers.dev/**,http://localhost:*/**,http://127.0.0.1:*/**`,
-  }
-
-  if (magicLinkTemplate) {
-    patch.mailer_subjects_magic_link =
-      'Your Jolito verification code is {{ .Token }}'
-    patch.mailer_templates_magic_link_content = magicLinkTemplate
-  }
-
-  if (resendApiKey) {
-    patch.smtp_host = 'smtp.resend.com'
-    patch.smtp_port = '587'
-    patch.smtp_user = 'resend'
-    patch.smtp_pass = resendApiKey
-    patch.smtp_admin_email = `signin@${domain}`
-    patch.smtp_sender_name = 'Jolito'
-  }
-
-  return patch
 }
 
 export interface ResendDnsRecord {
