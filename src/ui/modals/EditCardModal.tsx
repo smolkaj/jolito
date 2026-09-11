@@ -15,7 +15,7 @@ function EditCardModalInner({
   card: StudyCard
   cards?: StudyCard[] | undefined
   onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => boolean | void
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
@@ -23,6 +23,12 @@ function EditCardModalInner({
   const [context, setContext] = useState(card.context ?? '')
   const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const errorRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!error) return
+    errorRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [error, submitAttempt])
   const promptInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -47,6 +53,7 @@ function EditCardModalInner({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
+    setSubmitAttempt((attempt) => attempt + 1)
     const trimmedPrompt = prompt.trim()
     const trimmedAnswer = answer.trim()
     if (!trimmedPrompt) {
@@ -58,12 +65,16 @@ function EditCardModalInner({
       return
     }
     setError(null)
-    onSave(card, {
+    const saved = onSave(card, {
       prompt: trimmedPrompt,
       answer: trimmedAnswer,
       context: context.trim(),
       resetProgress: isAlreadyNew ? false : resetProgress,
     })
+    if (saved === false)
+      setError(
+        'Your changes couldn’t be saved. Free up device storage, then try again.',
+      )
   }
 
   return (
@@ -91,12 +102,6 @@ function EditCardModalInner({
             ✕
           </button>
         </div>
-
-        {error && (
-          <div className="status-banner status-error" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
 
         {duplicateConflict && (
           <div className="status-banner edit-duplicate-notice" role="status">
@@ -200,6 +205,16 @@ function EditCardModalInner({
             </div>
           </label>
 
+          {error && (
+            <div
+              ref={errorRef}
+              className="status-banner status-error"
+              role="alert"
+            >
+              <p>{error}</p>
+            </div>
+          )}
+
           <div className="edit-modal-actions">
             <button
               type="button"
@@ -230,7 +245,7 @@ export function EditCardModal({
   card: StudyCard | null
   cards?: StudyCard[] | undefined
   onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => boolean | void
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   useEffect(() => {

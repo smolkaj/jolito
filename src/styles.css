@@ -5520,3 +5520,28 @@ kbd {
     animation-iteration-count: 1 !important;
   }
 }
+
+.storage-recovery {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+}
+
+.storage-recovery section {
+  max-width: 38rem;
+}
+
+.storage-recovery-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.storage-save-error {
+  color: var(--ink);
+  background: var(--tezontle-soft);
+  border-left: 3px solid var(--tezontle);
+  padding: 0.75rem 1rem;
+}

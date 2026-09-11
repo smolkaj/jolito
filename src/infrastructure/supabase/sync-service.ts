@@ -1,3 +1,4 @@
+import { getOrCreateDeviceId } from '../browser/device-id'
 import { collectionVersion } from '../../domain/card'
 import type { AuthUser, SyncResult, SyncService } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
@@ -24,20 +25,7 @@ export class SupabaseSyncService implements SyncService {
   ) {
     this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
     this.supabaseAnonKey = supabaseAnonKey
-    this.deviceId = deviceId || this.getOrCreateDeviceId()
-  }
-
-  private getOrCreateDeviceId(): string {
-    const key = 'jolito-device-id-v1'
-    if (typeof window === 'undefined' || !window.localStorage) {
-      return 'device-server'
-    }
-    let id = window.localStorage.getItem(key)
-    if (!id) {
-      id = `dev-${Math.random().toString(36).slice(2, 10)}`
-      window.localStorage.setItem(key, id)
-    }
-    return id
+    this.deviceId = deviceId || getOrCreateDeviceId()
   }
 
   getStatus(): SyncStatus {

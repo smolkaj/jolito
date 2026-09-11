@@ -4,6 +4,7 @@ import type {
   AuthUser,
   CardAssistant,
   CardRepository,
+  CardLoadResult,
   Clock,
   Earcon,
   FeedbackResult,
@@ -56,8 +57,11 @@ export class MemoryCardRepository implements CardRepository {
     return [...this.deletedCardIds]
   }
 
-  load(fallback: StudyCard[]): StudyCard[] {
-    return this.cards ?? fallback
+  load(fallback: StudyCard[]): CardLoadResult {
+    return {
+      status: this.cards === null ? 'missing' : 'loaded',
+      cards: this.cards ?? fallback,
+    }
   }
 
   save(cards: StudyCard[], deletedCardIds?: string[]): void {

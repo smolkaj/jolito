@@ -13,9 +13,20 @@ export type IdGenerator = {
   nextId(prefix?: string): string
 }
 
+export type CardLoadResult =
+  | { status: 'missing' | 'loaded' | 'migrated'; cards: StudyCard[] }
+  | {
+      status: 'recovery'
+      reason: 'corrupt' | 'unsupported' | 'unavailable' | 'migration-failed'
+      cards: []
+      raw: string | null
+      message: string
+    }
+
 export type CardRepository = {
-  load(fallback: StudyCard[]): StudyCard[]
+  load(fallback: StudyCard[]): CardLoadResult
   getDeletedCardIds(): string[]
+  /** Commits atomically or throws; callers must save before publishing state. */
   save(cards: StudyCard[], deletedCardIds?: string[]): void
 }
 

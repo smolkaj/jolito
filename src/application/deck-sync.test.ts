@@ -85,6 +85,34 @@ describe('syncDeckWithCloud', () => {
     expect(onCardsUpdated).toHaveBeenCalledWith([updatedCard], ['deleted-id-1'])
   })
 
+  it('reports a failed local commit, then succeeds when persistence recovers', async () => {
+    const syncService: SyncService = {
+      getStatus: () => 'synced',
+      pushDeck: vi.fn(),
+      pullDeck: vi.fn(),
+      syncDeck: vi
+        .fn()
+        .mockResolvedValue({ success: true, cards: [mockCard], syncedAt: 42 }),
+    }
+    const onCardsUpdated = vi
+      .fn()
+      .mockReturnValueOnce(false)
+      .mockReturnValue(true)
+    const request = {
+      localCards: [mockCard],
+      user: testUser,
+      syncService,
+      onCardsUpdated,
+    }
+    const failed = await syncDeckWithCloud(request)
+    expect(failed.success).toBe(false)
+    expect(failed.error).toContain('saved')
+    expect(await syncDeckWithCloud(request)).toMatchObject({
+      success: true,
+      syncedAt: 42,
+    })
+  })
+
   it('returns failure result without modifying cards when cloud sync fails', async () => {
     const syncService: SyncService = {
       getStatus: () => 'error',

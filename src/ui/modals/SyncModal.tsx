@@ -27,7 +27,7 @@ export interface SyncModalProps {
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
-  ) => void
+  ) => boolean | void
   auth: AuthService
   sync: SyncService
   clock?: Clock | undefined

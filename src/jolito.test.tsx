@@ -1346,7 +1346,7 @@ describe('Jolito', () => {
     // Simulate an external background save / card update
     act(() => {
       services.cards.save([
-        ...services.memoryCards.saved!.map((c) => ({ ...c })),
+        ...services.memoryCards.load([]).cards.map((c) => ({ ...c })),
       ])
     })
 
@@ -1982,7 +1982,7 @@ describe('Jolito', () => {
     expect(services.mockSync.remoteCards).toHaveLength(1)
     expect(services.mockSync.remoteCards[0]?.id).toBe('note-2:es-en')
     expect(services.mockSync.remoteDeletedCardIds).toContain('note-1:es-en')
-    expect(services.memoryCards.load([])).toHaveLength(1)
+    expect(services.memoryCards.load([]).cards).toHaveLength(1)
     expect(services.memoryCards.getDeletedCardIds()).toContain('note-1:es-en')
   })
 
@@ -2065,8 +2065,8 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Verify user is signed in with custom deck in storage
-    expect(services.memoryCards.load([])).toHaveLength(1)
-    expect(services.memoryCards.load([])[0]?.prompt).toBe('zapato')
+    expect(services.memoryCards.load([]).cards).toHaveLength(1)
+    expect(services.memoryCards.load([]).cards[0]?.prompt).toBe('zapato')
 
     // Open sync modal and click sign out
     await user.click(screen.getByRole('button', { name: /synced/i }))
@@ -2077,7 +2077,7 @@ describe('Jolito', () => {
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
 
     // Local storage has been reset to starter cards and cleared of user cards & tombstones
-    const storedCards = services.memoryCards.load([])
+    const storedCards = services.memoryCards.load([]).cards
     expect(storedCards.every((c) => c.noteId.startsWith('starter-'))).toBe(true)
     expect(storedCards.some((c) => c.prompt === 'zapato')).toBe(false)
     expect(services.memoryCards.getDeletedCardIds()).toEqual([])
@@ -3535,7 +3535,10 @@ describe('Jolito', () => {
       createdAt: 0,
     }
 
-    services.cards.load = () => [longCard, mediumCard, shortCard]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [longCard, mediumCard, shortCard],
+    })
 
     render(<App services={services} />)
 
@@ -3971,7 +3974,10 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB, cardC]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [cardA, cardB, cardC],
+    })
     render(<App services={services} />)
 
     // Start practice session
@@ -4059,7 +4065,7 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA, cardB] })
     render(<App services={services} />)
 
     await practiceCards(user)
@@ -4198,7 +4204,7 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA] })
     render(<App services={services} />)
 
     await practiceCards(user)
@@ -4248,7 +4254,7 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA] })
     render(<App services={services} />)
 
     await practiceCards(user)
@@ -4338,7 +4344,10 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB, cardC]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [cardA, cardB, cardC],
+    })
     render(<App services={services} />)
 
     // Start practice with 3 cards
@@ -4439,7 +4448,7 @@ describe('Jolito', () => {
       )
     }
 
-    services.cards.load = () => cards
+    services.cards.load = () => ({ status: 'loaded', cards: cards })
     render(<App services={services} />)
 
     // Start practice (queue gets 15 es-en cards, en-es siblings are outside the queue)
@@ -4516,7 +4525,7 @@ describe('Jolito', () => {
       )
     }
 
-    services.cards.load = () => cards
+    services.cards.load = () => ({ status: 'loaded', cards: cards })
     render(<App services={services} />)
 
     // Start practice (queue gets 2 cards: es-01, es-02; en-01 and en-02 are separated into secondary cohort)

@@ -8,8 +8,8 @@ interface StarterPacksModalProps {
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  onAddPack: (pack: StarterPack) => void
-  onAddNote?: (pack: StarterPack, noteIndex: number) => void
+  onAddPack: (pack: StarterPack) => boolean | void
+  onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
 }
 
 function StarterPacksModalInner({
@@ -20,14 +20,15 @@ function StarterPacksModalInner({
 }: {
   onClose: () => void
   cards: StudyCard[]
-  onAddPack: (pack: StarterPack) => void
-  onAddNote?: (pack: StarterPack, noteIndex: number) => void
+  onAddPack: (pack: StarterPack) => boolean | void
+  onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
 }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const inspectBackBtnRef = useRef<HTMLButtonElement>(null)
   const lastInspectedPackIdRef = useRef<string | null>(null)
+  const saveErrorRef = useRef<HTMLParagraphElement>(null)
   const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
@@ -92,6 +93,7 @@ function StarterPacksModalInner({
         if (e.shiftKey) {
           if (
             document.activeElement === first ||
+            document.activeElement === saveErrorRef.current ||
             !container.contains(document.activeElement)
           ) {
             e.preventDefault()
@@ -100,6 +102,7 @@ function StarterPacksModalInner({
         } else {
           if (
             document.activeElement === last ||
+            document.activeElement === saveErrorRef.current ||
             !container.contains(document.activeElement)
           ) {
             e.preventDefault()
@@ -122,9 +125,20 @@ function StarterPacksModalInner({
     return set
   }, [cards])
 
+  const [saveError, setSaveError] = useState(0)
+  useEffect(() => {
+    if (!saveError) return
+    saveErrorRef.current?.focus({ preventScroll: true })
+    saveErrorRef.current?.scrollIntoView({
+      block: 'center',
+      behavior: 'instant',
+    })
+  }, [saveError])
   const handleAdd = (pack: StarterPack) => {
+    const saved = onAddPack(pack)
+    setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
+    if (saved === false) return
     setAddingPackId(pack.id)
-    onAddPack(pack)
     if (addTimerRef.current) {
       clearTimeout(addTimerRef.current)
     }
@@ -140,7 +154,8 @@ function StarterPacksModalInner({
 
   const handleAddNote = (originalIndex: number) => {
     if (!inspectingPack || !onAddNote) return
-    onAddNote(inspectingPack, originalIndex)
+    const saved = onAddNote(inspectingPack, originalIndex)
+    setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
   }
 
   const inspectNotes = useMemo(() => {
@@ -165,6 +180,12 @@ function StarterPacksModalInner({
         aria-labelledby="starter-packs-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
+        {saveError > 0 && (
+          <p ref={saveErrorRef} role="alert" tabIndex={-1}>
+            Your cards couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
         {inspectingPack ? (
           /* Inspecting specific pack drill-down */
           <>

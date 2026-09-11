@@ -12,7 +12,10 @@ export async function syncDeckWithCloud({
   localDeletedIds?: string[]
   user: AuthUser | null
   syncService: SyncService
-  onCardsUpdated: (cards: StudyCard[], deletedCardIds?: string[]) => void
+  onCardsUpdated: (
+    cards: StudyCard[],
+    deletedCardIds?: string[],
+  ) => boolean | void
 }): Promise<SyncResult> {
   if (!user) {
     return {
@@ -23,7 +26,13 @@ export async function syncDeckWithCloud({
 
   const result = await syncService.syncDeck(localCards, user, localDeletedIds)
   if (result.success && result.cards) {
-    onCardsUpdated(result.cards, result.deletedCardIds)
+    if (onCardsUpdated(result.cards, result.deletedCardIds) === false) {
+      return {
+        success: false,
+        error:
+          'The synced deck couldn’t be saved on this device. Free up device storage, then try again.',
+      }
+    }
   }
   return result
 }

@@ -64,6 +64,7 @@ export function PracticeCard({
   const answerId = useId()
   const input = useRef<HTMLInputElement>(null)
   const feedback = useRef<HTMLDivElement>(null)
+  const saveError = useRef<HTMLParagraphElement>(null)
   const caret = useRef<number | null>(null)
   useLayoutEffect(() => {
     if (caret.current !== null && input.current) {
@@ -91,6 +92,16 @@ export function PracticeCard({
       onAnswerChange(nextAnswer)
     }
   }
+
+  useEffect(() => {
+    if (error && !paused) {
+      saveError.current?.focus({ preventScroll: true })
+      saveError.current?.scrollIntoView({
+        block: 'center',
+        behavior: 'instant',
+      })
+    }
+  }, [error, paused])
 
   const actions = useRef({
     paused,
@@ -278,7 +289,12 @@ export function PracticeCard({
         </div>
       )}
       {error && (
-        <p role="alert" className="practice-error">
+        <p
+          ref={saveError}
+          tabIndex={-1}
+          role="alert"
+          className="practice-error"
+        >
           {error}
         </p>
       )}

@@ -1,5 +1,5 @@
 import { collectionVersion } from '../../domain/card'
-import type { CardRepository } from '../../application/ports'
+import type { CardLoadResult, CardRepository } from '../../application/ports'
 import {
   studyCardCollectionSchema,
   type Direction,
@@ -79,53 +79,89 @@ const restoreLegacy = (raw: unknown): StudyCard[] | null => {
 export class LocalStorageCardRepository implements CardRepository {
   private deletedCardIds: string[] = []
 
-  constructor(private readonly storage: StorageLike = window.localStorage) {}
+  constructor(private readonly storage?: StorageLike) {}
 
   getDeletedCardIds(): string[] {
     return [...this.deletedCardIds]
   }
 
-  load(fallback: StudyCard[]): StudyCard[] {
-    const parsedCurrent = parseJson(this.storage.getItem(STORAGE_KEY))
-    const current = restoreCurrent(parsedCurrent)
-    if (current) {
-      this.deletedCardIds = current.deletedCardIds
-      return current.cards
-    }
+  // A failed load fences every write, including asynchronous sync callbacks.
+  private recovery: Extract<CardLoadResult, { status: 'recovery' }> | null =
+    null
 
-    const parsedLegacyStorage = parseJson(
-      this.storage.getItem(LEGACY_STORAGE_KEY),
-    )
-    const legacyCurrent = restoreCurrent(parsedLegacyStorage)
-    if (legacyCurrent) {
-      this.deletedCardIds = legacyCurrent.deletedCardIds
-      this.save(legacyCurrent.cards, legacyCurrent.deletedCardIds)
-      return legacyCurrent.cards
-    }
-
-    const parsedLegacy = parseJson(this.storage.getItem(LEGACY_KEY))
-    const legacy = restoreLegacy(parsedLegacy)
-    if (legacy) {
-      this.deletedCardIds = []
-      this.save(legacy, [])
-      return legacy
-    }
-
+  load(fallback: StudyCard[]): CardLoadResult {
+    this.recovery = null
     this.deletedCardIds = []
-    return fallback
+    let raw: string | null = null
+    try {
+      for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY, LEGACY_KEY]) {
+        raw = (this.storage ?? window.localStorage).getItem(key)
+        if (raw === null) continue
+        const parsed = parseJson(raw)
+        const current = key === LEGACY_KEY ? null : restoreCurrent(parsed)
+        const legacy = key === LEGACY_KEY ? restoreLegacy(parsed) : null
+        if (!current && !legacy) {
+          const unsupported =
+            isRecord(parsed) &&
+            typeof parsed.version === 'number' &&
+            parsed.version > collectionVersion
+          return this.block(
+            unsupported ? 'unsupported' : 'corrupt',
+            raw,
+            unsupported
+              ? 'This deck was saved by a newer version of Jolito. Update or reopen Jolito, then try again.'
+              : 'Jolito couldn’t read your saved deck. Download a copy to keep it safe before repairing or restoring your data.',
+          )
+        }
+        const cards = current?.cards ?? legacy!
+        const deletedCardIds = current?.deletedCardIds ?? []
+        const needsMigration =
+          key !== STORAGE_KEY ||
+          (isRecord(parsed) && parsed.version !== collectionVersion)
+        if (needsMigration) {
+          try {
+            this.save(cards, deletedCardIds)
+          } catch {
+            return this.block(
+              'migration-failed',
+              raw,
+              'Your deck needs an update, but it couldn’t be saved. Free up device storage, then try again.',
+            )
+          }
+        } else {
+          this.deletedCardIds = deletedCardIds
+        }
+        return { status: needsMigration ? 'migrated' : 'loaded', cards }
+      }
+      return { status: 'missing', cards: fallback }
+    } catch {
+      return this.block(
+        'unavailable',
+        raw,
+        'Jolito couldn’t access device storage. Allow storage access in your browser, then try again.',
+      )
+    }
   }
 
-  save(cards: StudyCard[], deletedCardIds?: string[]): void {
-    if (deletedCardIds !== undefined) {
-      this.deletedCardIds = [...deletedCardIds]
-    }
-    this.storage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        version: collectionVersion,
-        cards,
-        deletedCardIds: this.deletedCardIds,
-      }),
-    )
+  private block(
+    reason: Extract<CardLoadResult, { status: 'recovery' }>['reason'],
+    raw: string | null,
+    message: string,
+  ): CardLoadResult {
+    this.recovery = { status: 'recovery', reason, raw, message, cards: [] }
+    return this.recovery
+  }
+
+  save(cards: StudyCard[], deletedCardIds = this.deletedCardIds): void {
+    if (this.recovery) throw new Error(this.recovery.message)
+    // Validate before writing, and publish tombstones only after the write succeeds.
+    const collection = studyCardCollectionSchema.parse({
+      version: collectionVersion,
+      cards,
+      deletedCardIds,
+    })
+    const storage = this.storage ?? window.localStorage
+    storage.setItem(STORAGE_KEY, JSON.stringify(collection))
+    this.deletedCardIds = [...deletedCardIds]
   }
 }

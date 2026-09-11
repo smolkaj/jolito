@@ -49,6 +49,7 @@ import {
   type GrammarCard,
 } from './domain/grammar'
 import { useGrammarPractice } from './ui/useGrammarPractice'
+import { StorageRecovery } from './ui/StorageRecovery'
 import { GrammarPractice } from './ui/GrammarPractice'
 import { PracticeMenu } from './ui/PracticeMenu'
 import { useStudySession } from './ui/useStudySession'
@@ -68,7 +69,7 @@ import type { StarterPack } from './domain/starter-decks'
 import { mergeStudyCardsSemantic } from './domain/card-merge'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
-import { createBrowserServices } from './infrastructure/browser/services'
+import { initializeBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
 import {
   type View,
@@ -188,12 +189,21 @@ function DeleteCardsModal({
   cards,
   onClose,
   onConfirm,
+  saveError,
 }: {
+  saveError: boolean
   isOpen: boolean
   cards: StudyCard[] | null
   onClose: () => void
   onConfirm: (cards: StudyCard[]) => void
 }) {
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const errorRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    if (!isOpen || !saveError) return
+    errorRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [isOpen, saveError, submitAttempt])
+
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -277,6 +287,13 @@ function DeleteCardsModal({
           </div>
         )}
 
+        {saveError && (
+          <p ref={errorRef} role="alert">
+            Your changes couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
+
         <div className="delete-modal-actions">
           <button type="button" className="secondary-button" onClick={onClose}>
             Cancel
@@ -284,7 +301,10 @@ function DeleteCardsModal({
           <button
             type="button"
             className="danger-button"
-            onClick={() => onConfirm(cards)}
+            onClick={() => {
+              setSubmitAttempt((attempt) => attempt + 1)
+              onConfirm(cards)
+            }}
           >
             {isSingle ? 'Delete card' : `Delete ${cards.length} cards`}
           </button>
@@ -310,7 +330,7 @@ function DeckBackupModalInner({
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
-  ) => void
+  ) => boolean | void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -338,6 +358,15 @@ function DeckBackupModalInner({
   const [isExported, setIsExported] = useState(false)
   const exportedTimerRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const backupStatusRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (backupStatus?.type !== 'error') return
+    backupStatusRef.current?.scrollIntoView({
+      block: 'center',
+      behavior: 'instant',
+    })
+  }, [backupStatus])
 
   useEffect(() => {
     const importState = importReadState.current
@@ -416,7 +445,14 @@ function DeckBackupModalInner({
       deletedCardIds,
     )
     if (result.success) {
-      onUpdateCards(result.cards)
+      if (onUpdateCards(result.cards) === false) {
+        setBackupStatus({
+          type: 'error',
+          message:
+            'Your cards couldn’t be saved. Free up device storage, then try importing again.',
+        })
+        return
+      }
       const deckInfo = result.deckName ? ` from “${result.deckName}”` : ''
       setBackupStatus({
         type: 'success',
@@ -474,6 +510,7 @@ function DeckBackupModalInner({
 
         {backupStatus && (
           <div
+            ref={backupStatusRef}
             className={`status-banner status-${backupStatus.type}`}
             role={backupStatus.type === 'error' ? 'alert' : 'status'}
           >
@@ -620,7 +657,7 @@ function DeckBackupModal(props: {
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
-  ) => void
+  ) => boolean | void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -907,14 +944,42 @@ export function App({
 }: {
   services?: AppServices
 } = {}) {
-  const services = useMemo(
-    () => customServices ?? createBrowserServices(),
-    [customServices],
+  const [initialized, setInitialized] = useState(() =>
+    customServices
+      ? { status: 'ready' as const, services: customServices }
+      : initializeBrowserServices(),
   )
-  const initialCards = useMemo(
-    () => services.cards.load(starterCards),
-    [services.cards],
-  )
+  if (initialized.status === 'recovery') {
+    return (
+      <StorageRecovery
+        recovery={initialized}
+        onRetry={() => setInitialized(initializeBrowserServices())}
+      />
+    )
+  }
+  return <AppWithServices services={initialized.services} />
+}
+
+function AppWithServices({ services }: { services: AppServices }) {
+  const [loaded, setLoaded] = useState(() => services.cards.load(starterCards))
+  if (loaded.status === 'recovery') {
+    return (
+      <StorageRecovery
+        recovery={loaded}
+        onRetry={() => setLoaded(services.cards.load(starterCards))}
+      />
+    )
+  }
+  return <LoadedApp services={services} initialCards={loaded.cards} />
+}
+
+function LoadedApp({
+  services,
+  initialCards,
+}: {
+  services: AppServices
+  initialCards: StudyCard[]
+}) {
   const initialResolved = useMemo<{
     view: View
     queue: string[]
@@ -943,6 +1008,7 @@ export function App({
   }, [initialCards, services.clock])
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
+  const [saveError, setSaveError] = useState(false)
   const vocabularyCards = useMemo(
     () => cards.filter((card) => !isGrammarCard(card)),
     [cards],
@@ -1137,15 +1203,20 @@ export function App({
       syncToCloud = true,
       newDeletedCardIds?: string[],
     ) => {
-      if (newDeletedCardIds !== undefined) {
-        deletedCardIdsRef.current = new Set(newDeletedCardIds)
-      }
-      for (const card of newCards) {
-        deletedCardIdsRef.current.delete(card.id)
-      }
-      const deletedIdsArray = Array.from(deletedCardIdsRef.current)
+      const nextDeletedIds = new Set(
+        newDeletedCardIds ?? deletedCardIdsRef.current,
+      )
+      for (const card of newCards) nextDeletedIds.delete(card.id)
+      const deletedIdsArray = Array.from(nextDeletedIds)
 
-      services.cards.save(newCards, deletedIdsArray)
+      try {
+        services.cards.save(newCards, deletedIdsArray)
+      } catch {
+        setSaveError(true)
+        return false
+      }
+      setSaveError(false)
+      deletedCardIdsRef.current = nextDeletedIds
       const previousCards = cardsRef.current
       cardsRef.current = newCards
       setCards(newCards)
@@ -1201,6 +1272,7 @@ export function App({
           )
         }
       }
+      return true
     },
     [
       filterCards,
@@ -1219,8 +1291,9 @@ export function App({
       const newCards = cardsRef.current.map((c) =>
         c.id === card.id ? updated : c,
       )
-      onUpdateCards(newCards)
+      if (!onUpdateCards(newCards)) return false
       setEditingCard(null)
+      return true
     },
     [onUpdateCards, services.clock],
   )
@@ -1232,11 +1305,10 @@ export function App({
       for (const id of idsToDelete) {
         updatedCards = deleteStudyCard(updatedCards, id)
       }
-      for (const id of idsToDelete) {
-        deletedCardIdsRef.current.add(id)
-      }
-      const updatedDeletedIds = Array.from(deletedCardIdsRef.current)
-      onUpdateCards(updatedCards, true, updatedDeletedIds)
+      const updatedDeletedIds = Array.from(
+        new Set([...deletedCardIdsRef.current, ...idsToDelete]),
+      )
+      if (!onUpdateCards(updatedCards, true, updatedDeletedIds)) return
       setSelectedCardIds((prev) => {
         const next = new Set(prev)
         for (const id of idsToDelete) {
@@ -1307,7 +1379,7 @@ export function App({
       if (created.length === 0) return
 
       const userCards = filterOutStarterCards(cardsRef.current)
-      onUpdateCards([...created, ...userCards])
+      if (!onUpdateCards([...created, ...userCards])) return
       const savedSpanish = params.spanish.trim()
       setSavedToast(savedSpanish)
       if (savedToastTimerRef.current !== null) {
@@ -1337,7 +1409,7 @@ export function App({
     (newCards: StudyCard[]) => {
       const userCards = filterOutStarterCards(cardsRef.current)
       const mergeResult = mergeStudyCardsSemantic(userCards, newCards)
-      onUpdateCards(mergeResult.cards, true)
+      return onUpdateCards(mergeResult.cards, true)
     },
     [onUpdateCards],
   )
@@ -1345,7 +1417,7 @@ export function App({
   const handleAddStarterPack = useCallback(
     (pack: StarterPack) => {
       const now = services.clock.now()
-      handleAddStarterCards(pack.createCards(now))
+      return handleAddStarterCards(pack.createCards(now))
     },
     [handleAddStarterCards, services.clock],
   )
@@ -1353,7 +1425,7 @@ export function App({
   const handleAddStarterNote = useCallback(
     (pack: StarterPack, noteIndex: number) => {
       const now = services.clock.now()
-      handleAddStarterCards(pack.createNoteCards(noteIndex, now))
+      return handleAddStarterCards(pack.createNoteCards(noteIndex, now))
     },
     [handleAddStarterCards, services.clock],
   )
@@ -1394,6 +1466,7 @@ export function App({
           })
           if (created.length > 0) {
             userCards = [...created, ...userCards]
+            if (!onUpdateCardsRef.current(userCards, false)) return
             const savedSpanish = pending.spanish.trim()
             setSavedToast(savedSpanish)
             if (savedToastTimerRef.current !== null) {
@@ -1416,9 +1489,6 @@ export function App({
           setPendingCard(null)
           pendingCardRef.current = null
           setIsSyncOpen(false)
-
-          const deletedIds = Array.from(deletedCardIdsRef.current)
-          onUpdateCardsRef.current(userCards, false, deletedIds)
         }
 
         const deletedIds = Array.from(deletedCardIdsRef.current)
@@ -1434,7 +1504,7 @@ export function App({
               Array.from(deletedCardIdsRef.current),
               newDeletedIds,
             )
-            onUpdateCardsRef.current(
+            return onUpdateCardsRef.current(
               reconciled.cards,
               false,
               reconciled.deletedCardIds,
@@ -1447,6 +1517,13 @@ export function App({
       } else if (prevUser !== null) {
         // Explicit transition from signed in to signed out:
         // Clear local user deck and restore clean starter demo deck
+        // Sign-out must still remove private data from the screen if storage fails.
+        try {
+          services.cards.save(starterCards, [])
+          setSaveError(false)
+        } catch {
+          setSaveError(true)
+        }
         grammarResetRef.current()
         cardsRef.current = starterCards
         setCards(starterCards)
@@ -1465,7 +1542,13 @@ export function App({
         setIsDemoDeckDismissed(false)
       }
     })
-  }, [services.auth, services.clock, services.ids, services.sync])
+  }, [
+    services.auth,
+    services.cards,
+    services.clock,
+    services.ids,
+    services.sync,
+  ])
 
   const isSyncingRef = useRef(false)
   const syncDebounceTimerRef = useRef<number | null>(null)
@@ -1490,8 +1573,12 @@ export function App({
           Array.from(deletedCardIdsRef.current),
           res.deletedCardIds ?? [],
         )
-        onUpdateCards(reconciled.cards, false, reconciled.deletedCardIds)
-        setSyncStatus('synced')
+        const saved = onUpdateCards(
+          reconciled.cards,
+          false,
+          reconciled.deletedCardIds,
+        )
+        setSyncStatus(saved ? 'synced' : 'error')
       } else if (!res.success) {
         setSyncStatus('error')
       }
@@ -1690,10 +1777,6 @@ export function App({
     }
   }, [])
 
-  useEffect(() => {
-    services.cards.save(cards, deletedCardIds)
-  }, [cards, deletedCardIds, services.cards])
-
   const grade = useCallback(
     (gradeValue: Grade) => {
       if (!currentCard) return
@@ -1707,8 +1790,7 @@ export function App({
       const nextCards = updatedCards.map((card) =>
         card.id === reviewed.id ? reviewed : card,
       )
-      cardsRef.current = nextCards
-      setCards(nextCards)
+      if (!onUpdateCards(nextCards, false)) return
 
       const { isComplete } = advanceOnGrade(
         currentCard.id,
@@ -1728,6 +1810,7 @@ export function App({
     [
       advanceOnGrade,
       currentCard,
+      onUpdateCards,
       flushSync,
       navigateTo,
       playGradeSensory,
@@ -2175,7 +2258,8 @@ export function App({
       ...cardsRef.current.filter((existing) => existing.id !== card.id),
       card,
     ]
-    onUpdateCards(next, false)
+    if (!onUpdateCards(next, false))
+      throw new Error('Progress could not be saved')
     scheduleDebouncedSync()
   }
   const grammarPractice = useGrammarPractice({
@@ -2263,6 +2347,12 @@ export function App({
                 />
               </div>
             </nav>
+            {saveError && (
+              <p className="storage-save-error" role="alert">
+                Your changes couldn’t be saved. Free up device storage, then try
+                again.
+              </p>
+            )}
             <RedirectAuthNotice
               message={redirectAuthBanner}
               onDismiss={() => setRedirectAuthBanner(null)}
@@ -2502,6 +2592,7 @@ export function App({
           onPlayAudio={playAudio}
         />
         <DeleteCardsModal
+          saveError={saveError}
           isOpen={deletingCards !== null}
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
@@ -2832,6 +2923,12 @@ export function App({
                   </div>
                 </details>
               )}
+              {saveError && (
+                <p className="storage-save-error" role="alert">
+                  Your changes couldn’t be saved. Free up device storage, then
+                  try again.
+                </p>
+              )}
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}
                 type="submit"
@@ -2883,6 +2980,7 @@ export function App({
           onPlayAudio={playAudio}
         />
         <DeleteCardsModal
+          saveError={saveError}
           isOpen={deletingCards !== null}
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
@@ -2970,6 +3068,12 @@ export function App({
               />
             </div>
           </nav>
+          {saveError && (
+            <p className="storage-save-error" role="alert">
+              Your changes couldn’t be saved. Free up device storage, then try
+              again.
+            </p>
+          )}
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
@@ -3389,6 +3493,7 @@ export function App({
           onPlayAudio={playAudio}
         />
         <DeleteCardsModal
+          saveError={saveError}
           isOpen={deletingCards !== null}
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
@@ -3461,6 +3566,12 @@ export function App({
             />
           </div>
         </nav>
+        {saveError && !(practicing && !grammar) && !grammarPractice.error && (
+          <p className="storage-save-error" role="alert">
+            Your changes couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
         <RedirectAuthNotice
           message={redirectAuthBanner}
           onDismiss={() => setRedirectAuthBanner(null)}
@@ -3527,6 +3638,11 @@ export function App({
         ) : (
           currentCard && (
             <PracticeCard
+              error={
+                saveError
+                  ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
+                  : null
+              }
               card={currentCard}
               prompt={
                 <>
@@ -3611,6 +3727,7 @@ export function App({
         onPlayAudio={playAudio}
       />
       <DeleteCardsModal
+        saveError={saveError}
         isOpen={deletingCards !== null}
         cards={deletingCards}
         onClose={() => setDeletingCards(null)}
