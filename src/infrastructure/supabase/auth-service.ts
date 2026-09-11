@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../application/ports'
 import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { getCanonicalOrigin } from '../browser/host'
+import { withRequestDeadline } from '../request-lifetime'
 
 const jwtPayloadSchema = z.object({
   sub: z.string().min(1),
@@ -728,33 +729,18 @@ export class SupabaseAuthService implements AuthService {
     if (this.inFlightRefresh?.ownerId === ownerId) {
       this.inFlightRefresh.preserveSessionOnRejection = true
     }
-    const signal = deletion.controller.signal
-    let timedOut = false
-    let onAbort: () => void = () => {}
-    const interrupted = new Promise<{ success: boolean; error: string }>(
-      (resolve) => {
-        onAbort = () =>
-          resolve({
-            success: false,
-            error: timedOut
-              ? 'Account deletion timed out. Please try again.'
-              : 'Account deletion was interrupted. Please try again.',
-          })
-        signal.addEventListener('abort', onAbort, { once: true })
-      },
-    )
-    const timeout = setTimeout(() => {
-      timedOut = true
-      deletion.controller.abort()
-    }, 10_000)
     try {
-      return await Promise.race([
-        this.performAccountDeletion(ownerId, signal),
-        interrupted,
-      ])
+      return await withRequestDeadline(
+        (signal) => this.performAccountDeletion(ownerId, signal),
+        deletion.controller.signal,
+      )
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Account deletion failed.',
+      }
     } finally {
-      clearTimeout(timeout)
-      signal.removeEventListener('abort', onAbort)
       if (this.accountDeletion === deletion) this.accountDeletion = null
     }
   }
