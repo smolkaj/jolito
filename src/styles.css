@@ -2538,6 +2538,11 @@ kbd {
   margin-top: 12px;
 }
 .answer-accents button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
   flex: 0 0 44px;
   width: 44px;
   height: 44px;

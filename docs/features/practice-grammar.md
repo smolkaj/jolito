@@ -227,3 +227,12 @@ The marked verb and English subject pronouns share the Spanish answer's pink
 accent during both recall and reveal. Names and noun subjects remain neutral.
 English highlighting stays stable as the learner reveals the Spanish answer. The markers are authored catalog
 metadata, never stored in learner cards or sent to speech playback.
+
+### Accent shortcuts
+
+While the grammar answer field has focus, 1–5 insert á, é, í, ó, ú. Each accent
+button displays its number and exposes it through `aria-keyshortcuts`. Keyboard
+and pointer insertion share caret and selection handling. Modified keys and IME
+composition keep their native behavior; held keys do not insert repeated accents
+or stray digits. Shortcuts pause with the practice session. After reveal, 1–4
+retain their grading role. Number typing outside grammar answers is unchanged.

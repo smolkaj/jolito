@@ -14,6 +14,8 @@ import {
 import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
 
+const accentLetters = ['á', 'é', 'í', 'ó', 'ú']
+
 /** Shared recall → feedback → grade interaction; learning modes supply content. */
 export function PracticeCard({
   card,
@@ -74,6 +76,21 @@ export function PracticeCard({
     if (revealed) feedback.current?.focus()
     else input.current?.focus()
   }, [card.id, card.schedule.reviews, revealed, paused])
+
+  const insertAccent = (letter: string) => {
+    const element = input.current
+    if (paused || revealed || !element) return
+    const start = element.selectionStart ?? answer.length
+    const end = element.selectionEnd ?? start
+    const nextAnswer = answer.slice(0, start) + letter + answer.slice(end)
+    element.focus()
+    if (nextAnswer === answer) {
+      element.setSelectionRange(start + 1, start + 1)
+    } else {
+      caret.current = start + 1
+      onAnswerChange(nextAnswer)
+    }
+  }
 
   const actions = useRef({
     paused,
@@ -162,6 +179,22 @@ export function PracticeCard({
               className="answer-input"
               value={answer}
               onChange={(event) => onAnswerChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  !accents ||
+                  paused ||
+                  event.ctrlKey ||
+                  event.metaKey ||
+                  event.altKey ||
+                  event.shiftKey ||
+                  event.nativeEvent.isComposing
+                )
+                  return
+                const letter = accentLetters[Number(event.key) - 1]
+                if (!letter) return
+                event.preventDefault()
+                if (!event.repeat) insertAccent(letter)
+              }}
               placeholder={placeholder}
               autoComplete="off"
               autoCapitalize="none"
@@ -174,11 +207,13 @@ export function PracticeCard({
           </form>
           {accents && (
             <div className="answer-accents" aria-label="Spanish accents">
-              {['á', 'é', 'í', 'ó', 'ú'].map((letter) => (
+              {accentLetters.map((letter, index) => (
                 <button
                   type="button"
                   key={letter}
                   aria-label={`Insert ${letter}`}
+                  aria-keyshortcuts={String(index + 1)}
+                  title={`Insert ${letter} (${index + 1} while typing)`}
                   onPointerDown={(event) => {
                     if (
                       event.button === 0 &&
@@ -186,18 +221,9 @@ export function PracticeCard({
                     )
                       event.preventDefault()
                   }}
-                  onClick={() => {
-                    const element = input.current!
-                    const start = element.selectionStart ?? answer.length
-                    const end = element.selectionEnd ?? start
-                    onAnswerChange(
-                      answer.slice(0, start) + letter + answer.slice(end),
-                    )
-                    element.focus()
-                    caret.current = start + 1
-                  }}
+                  onClick={() => insertAccent(letter)}
                 >
-                  {letter}
+                  {letter} <kbd aria-hidden="true">{index + 1}</kbd>
                 </button>
               ))}
             </div>
