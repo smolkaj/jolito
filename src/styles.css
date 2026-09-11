@@ -839,8 +839,8 @@ summary:focus-visible,
   will-change: transform;
 }
 
-/* Flag Icons */
-.flag-icon {
+/* Language cues */
+.language-icon {
   display: inline-block;
   vertical-align: -1px;
   border-radius: 2px;
@@ -4272,7 +4272,7 @@ kbd {
 }
 
 .deck-direction-badge svg,
-.deck-direction-badge .flag-icon {
+.deck-direction-badge .language-icon {
   flex-shrink: 0;
   vertical-align: middle;
 }

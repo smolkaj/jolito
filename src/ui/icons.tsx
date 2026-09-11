@@ -1,10 +1,10 @@
 export function MexicoFlag({ className }: { className?: string }) {
   return (
     <svg
-      className={`flag-icon flag-mx ${className ?? ''}`}
+      className={`language-icon flag-mx ${className ?? ''}`}
       viewBox="0 0 18 12"
-      width="16"
-      height="11"
+      width="20"
+      height="14"
       aria-hidden="true"
     >
       <rect width="6" height="12" fill="#006847" />
@@ -17,23 +17,28 @@ export function MexicoFlag({ className }: { className?: string }) {
   )
 }
 
-export function UsFlag({ className }: { className?: string }) {
+export function EnglishBadge({ className }: { className?: string }) {
   return (
     <svg
-      className={`flag-icon flag-us ${className ?? ''}`}
-      viewBox="0 0 18 12"
-      width="16"
-      height="11"
+      className={`language-icon ${className ?? ''}`}
+      viewBox="0 0 20 14"
+      width="20"
+      height="14"
       aria-hidden="true"
     >
-      <rect width="18" height="12" fill="#bf0a30" />
-      <rect y="1.8" width="18" height="1.8" fill="#ffffff" />
-      <rect y="5.4" width="18" height="1.8" fill="#ffffff" />
-      <rect y="9" width="18" height="1.8" fill="#ffffff" />
-      <rect width="8" height="6" fill="#002868" />
-      <circle cx="2.5" cy="2" r="0.55" fill="#ffffff" />
-      <circle cx="5.5" cy="2" r="0.55" fill="#ffffff" />
-      <circle cx="4" cy="4" r="0.55" fill="#ffffff" />
+      <rect width="20" height="14" fill="var(--turquesa)" />
+      <text
+        x="10"
+        y="10.5"
+        textAnchor="middle"
+        fill="var(--ink)"
+        fontFamily="var(--font-mono)"
+        fontSize="10"
+        fontWeight="800"
+        letterSpacing="0"
+      >
+        EN
+      </text>
     </svg>
   )
 }
