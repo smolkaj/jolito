@@ -839,11 +839,11 @@ summary:focus-visible,
   will-change: transform;
 }
 
-/* Flag Icons */
-.flag-icon {
+/* Language cues */
+.language-icon {
   display: inline-block;
   vertical-align: -1px;
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(18, 24, 21, 0.25);
   flex-shrink: 0;
@@ -946,6 +946,7 @@ summary:focus-visible,
 
 /* English Card Theme (Verde Cantera de Oaxaca #b7d3c2 / (183, 211, 194)) */
 .sample-card-en {
+  --english-badge-background: var(--paper);
   --card-shadow-color: var(--turquesa-dark);
   --card-shadow-hover: var(--turquesa-dark);
   color: var(--ink);
@@ -4272,7 +4273,7 @@ kbd {
 }
 
 .deck-direction-badge svg,
-.deck-direction-badge .flag-icon {
+.deck-direction-badge .language-icon {
   flex-shrink: 0;
   vertical-align: middle;
 }

@@ -86,7 +86,7 @@ import {
   MexicoFlag,
   SyncAlertIcon,
   SyncSpinnerIcon,
-  UsFlag,
+  EnglishBadge,
   UserIcon,
 } from './ui/icons'
 import { AudioButton } from './ui/AudioButton'
@@ -2315,7 +2315,7 @@ export function App({
                   >
                     <div className="sample-card-header">
                       <span className="sample-badge">
-                        <UsFlag /> ENGLISH
+                        <EnglishBadge /> ENGLISH
                       </span>
                       <span className="sample-listen-hint" aria-hidden="true">
                         <svg viewBox="0 0 24 24">
@@ -2608,7 +2608,7 @@ export function App({
                 >
                   <div className="sample-card-header">
                     <span className="sample-badge">
-                      <UsFlag /> ENGLISH
+                      <EnglishBadge /> ENGLISH
                     </span>
                     <span className="sample-listen-hint" aria-hidden="true">
                       <svg viewBox="0 0 24 24">
@@ -2709,7 +2709,7 @@ export function App({
               </div>
               <div className="field-group field-group-relative">
                 <label htmlFor="english">
-                  <UsFlag /> English
+                  <EnglishBadge /> English
                 </label>
                 <textarea
                   ref={englishInputRef}
@@ -2803,7 +2803,7 @@ export function App({
                   <div className="compact-fields">
                     <div className="compact-field">
                       <label htmlFor="reverse-prompt">
-                        <UsFlag /> Reverse Prompt
+                        <EnglishBadge /> Reverse Prompt
                       </label>
                       <input
                         id="reverse-prompt"
@@ -3309,7 +3309,7 @@ export function App({
                               : 'English Prompt → Mexican Spanish Answer'
                           }
                         >
-                          {isEsToEn ? <MexicoFlag /> : <UsFlag />}
+                          {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}
                           <span>{isEsToEn ? 'ES → EN' : 'EN → ES'}</span>
                         </span>
                       </div>
@@ -3549,11 +3549,13 @@ export function App({
                     <p className="eyebrow direction-eyebrow">
                       {currentCard.direction === 'es-en' ? (
                         <>
-                          <MexicoFlag /> MEXICAN SPANISH → <UsFlag /> ENGLISH
+                          <MexicoFlag /> MEXICAN SPANISH → <EnglishBadge />{' '}
+                          ENGLISH
                         </>
                       ) : (
                         <>
-                          <UsFlag /> ENGLISH → <MexicoFlag /> MEXICAN SPANISH
+                          <EnglishBadge /> ENGLISH → <MexicoFlag /> MEXICAN
+                          SPANISH
                         </>
                       )}
                     </p>
