@@ -5,7 +5,7 @@ context, with enough variation and delayed recall to make it dependable.
 Home offers Create a card and Practice on one row. Practice opens a compact menu
 with Cards first and Grammar second; grammar never enters card queues or counts.
 
-Grammar now also supports [pretérito perfecto compuesto](practice-perfecto.md),
+Grammar now also supports [pretérito perfecto](practice-perfecto.md),
 using the same practice flow with independent schedules.
 
 ## Learning experience
