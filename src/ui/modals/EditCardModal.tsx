@@ -15,7 +15,7 @@ function EditCardModalInner({
   card: StudyCard
   cards?: StudyCard[] | undefined
   onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => boolean | void
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
@@ -58,12 +58,16 @@ function EditCardModalInner({
       return
     }
     setError(null)
-    onSave(card, {
+    const saved = onSave(card, {
       prompt: trimmedPrompt,
       answer: trimmedAnswer,
       context: context.trim(),
       resetProgress: isAlreadyNew ? false : resetProgress,
     })
+    if (saved === false)
+      setError(
+        'Your changes couldn’t be saved. Free up device storage, then try again.',
+      )
   }
 
   return (
@@ -230,7 +234,7 @@ export function EditCardModal({
   card: StudyCard | null
   cards?: StudyCard[] | undefined
   onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
+  onSave: (card: StudyCard, updates: UpdateCardParams) => boolean | void
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   useEffect(() => {

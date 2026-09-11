@@ -102,7 +102,7 @@ describe('LocalStorageCardRepository', () => {
   ])(
     'preserves %s through failed save attempts and reload',
     (_name, raw, reason) => {
-      localStorage.setItem('jolito-library-v1', raw!)
+      localStorage.setItem('jolito-library-v1', raw)
       // A valid older key must never hide a damaged, newer collection.
       localStorage.setItem(
         'ritmo-library-v1',

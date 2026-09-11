@@ -104,10 +104,9 @@ describe('syncDeckWithCloud', () => {
       syncService,
       onCardsUpdated,
     }
-    expect(await syncDeckWithCloud(request)).toMatchObject({
-      success: false,
-      error: expect.stringContaining('saved'),
-    })
+    const failed = await syncDeckWithCloud(request)
+    expect(failed.success).toBe(false)
+    expect(failed.error).toContain('saved')
     expect(await syncDeckWithCloud(request)).toMatchObject({
       success: true,
       syncedAt: 42,

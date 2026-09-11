@@ -85,7 +85,7 @@ it.each(['vocabulary', 'grammar'] as const)(
         .getAllByRole('alert')
         .some((alert) => alert.textContent?.includes('saved')),
     ).toBe(true)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(prompt!)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(prompt)
     expect(
       screen.getByRole('status', { name: 'Answer feedback' }),
     ).toHaveTextContent('my answer')
@@ -111,3 +111,49 @@ it.each(['vocabulary', 'grammar'] as const)(
     )
   },
 )
+
+it('retains an edit draft and deletion selection across failed commits and retry without leaking tombstones', async () => {
+  const cards = createStudyCards(
+    { spanish: 'hola', english: 'hello', context: '', bidirectional: false },
+    'personal',
+    0,
+  )
+  const repository = new LocalStorageCardRepository(localStorage)
+  repository.save(cards)
+  window.history.replaceState({}, '', '#/deck')
+  const services = createTestServices({ cards })
+  services.cards = repository
+  render(<App services={services} />)
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Explore demo deck' }))
+  await user.click(screen.getByRole('row', { name: /card: hola,/i }))
+  const prompt = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+  await user.clear(prompt)
+  await user.type(prompt, 'adiós')
+  const save = vi.spyOn(repository, 'save').mockImplementationOnce(() => {
+    throw new Error('Full')
+  })
+  await user.click(screen.getByRole('button', { name: 'Save changes' }))
+  expect(screen.getByRole('dialog')).toHaveTextContent('couldn’t be saved')
+  expect(prompt).toHaveValue('adiós')
+  expect(repository.load([]).cards[0]?.prompt).toBe('hola')
+  fireEvent(document, new Event('visibilitychange'))
+  await user.click(screen.getByRole('button', { name: 'Save changes' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(repository.load([]).cards[0]?.prompt).toBe('adiós')
+  await user.click(screen.getByRole('checkbox', { name: /select card adiós/i }))
+  await user.click(screen.getByRole('button', { name: /delete selected/i }))
+  save.mockImplementationOnce(() => {
+    throw new Error('Full')
+  })
+  await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+  expect(screen.getByRole('dialog')).toHaveTextContent('couldn’t be saved')
+  expect(repository.getDeletedCardIds()).toEqual([])
+  expect(repository.load([]).cards).toHaveLength(1)
+  fireEvent(window, new Event('online'))
+  await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  const reloaded = new LocalStorageCardRepository(localStorage)
+  expect(reloaded.load([]).cards).toEqual([])
+  expect(reloaded.getDeletedCardIds()).toEqual([cards[0]!.id])
+})

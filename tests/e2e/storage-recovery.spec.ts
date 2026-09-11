@@ -31,7 +31,7 @@ for (const viewport of [
     const downloaded = page.waitForEvent('download')
     await page.keyboard.press('Enter')
     const download = await downloaded
-    expect(await readFile((await download.path())!, 'utf8')).toBe(raw)
+    expect(await readFile(await download.path(), 'utf8')).toBe(raw)
     await page.getByRole('button', { name: 'Try again' }).click()
     expect(
       await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
@@ -52,9 +52,7 @@ for (const viewport of [
       page.getByRole('button', { name: 'Create a card' }),
     ).toBeVisible()
     expect(
-      await page.evaluate(
-        () => JSON.parse(localStorage.getItem('jolito-library-v1')!).cards,
-      ),
-    ).toEqual([])
+      await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
+    ).toBe(JSON.stringify({ version: 3, cards: [] }))
   })
 }

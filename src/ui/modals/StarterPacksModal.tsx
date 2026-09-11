@@ -8,8 +8,8 @@ interface StarterPacksModalProps {
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  onAddPack: (pack: StarterPack) => void
-  onAddNote?: (pack: StarterPack, noteIndex: number) => void
+  onAddPack: (pack: StarterPack) => boolean | void
+  onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
 }
 
 function StarterPacksModalInner({
@@ -20,8 +20,8 @@ function StarterPacksModalInner({
 }: {
   onClose: () => void
   cards: StudyCard[]
-  onAddPack: (pack: StarterPack) => void
-  onAddNote?: (pack: StarterPack, noteIndex: number) => void
+  onAddPack: (pack: StarterPack) => boolean | void
+  onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
 }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -122,9 +122,12 @@ function StarterPacksModalInner({
     return set
   }, [cards])
 
+  const [saveError, setSaveError] = useState(false)
   const handleAdd = (pack: StarterPack) => {
+    const saved = onAddPack(pack)
+    setSaveError(saved === false)
+    if (saved === false) return
     setAddingPackId(pack.id)
-    onAddPack(pack)
     if (addTimerRef.current) {
       clearTimeout(addTimerRef.current)
     }
@@ -140,7 +143,7 @@ function StarterPacksModalInner({
 
   const handleAddNote = (originalIndex: number) => {
     if (!inspectingPack || !onAddNote) return
-    onAddNote(inspectingPack, originalIndex)
+    setSaveError(onAddNote(inspectingPack, originalIndex) === false)
   }
 
   const inspectNotes = useMemo(() => {
@@ -165,6 +168,12 @@ function StarterPacksModalInner({
         aria-labelledby="starter-packs-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
+        {saveError && (
+          <p role="alert">
+            Your cards couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
         {inspectingPack ? (
           /* Inspecting specific pack drill-down */
           <>

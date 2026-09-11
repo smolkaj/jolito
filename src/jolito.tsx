@@ -189,7 +189,9 @@ function DeleteCardsModal({
   cards,
   onClose,
   onConfirm,
+  saveError,
 }: {
+  saveError: boolean
   isOpen: boolean
   cards: StudyCard[] | null
   onClose: () => void
@@ -221,6 +223,12 @@ function DeleteCardsModal({
         aria-labelledby="delete-card-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
+        {saveError && (
+          <p role="alert">
+            Your changes couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
         <div className="modal-header">
           <div className="modal-header-copy">
             <h2 id="delete-card-modal-title">
@@ -1249,8 +1257,9 @@ function LoadedApp({
       const newCards = cardsRef.current.map((c) =>
         c.id === card.id ? updated : c,
       )
-      if (!onUpdateCards(newCards)) return
+      if (!onUpdateCards(newCards)) return false
       setEditingCard(null)
+      return true
     },
     [onUpdateCards, services.clock],
   )
@@ -1366,7 +1375,7 @@ function LoadedApp({
     (newCards: StudyCard[]) => {
       const userCards = filterOutStarterCards(cardsRef.current)
       const mergeResult = mergeStudyCardsSemantic(userCards, newCards)
-      onUpdateCards(mergeResult.cards, true)
+      return onUpdateCards(mergeResult.cards, true)
     },
     [onUpdateCards],
   )
@@ -1374,7 +1383,7 @@ function LoadedApp({
   const handleAddStarterPack = useCallback(
     (pack: StarterPack) => {
       const now = services.clock.now()
-      handleAddStarterCards(pack.createCards(now))
+      return handleAddStarterCards(pack.createCards(now))
     },
     [handleAddStarterCards, services.clock],
   )
@@ -1382,7 +1391,7 @@ function LoadedApp({
   const handleAddStarterNote = useCallback(
     (pack: StarterPack, noteIndex: number) => {
       const now = services.clock.now()
-      handleAddStarterCards(pack.createNoteCards(noteIndex, now))
+      return handleAddStarterCards(pack.createNoteCards(noteIndex, now))
     },
     [handleAddStarterCards, services.clock],
   )
@@ -2549,6 +2558,7 @@ function LoadedApp({
           onPlayAudio={playAudio}
         />
         <DeleteCardsModal
+          saveError={saveError}
           isOpen={deletingCards !== null}
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
@@ -2936,6 +2946,7 @@ function LoadedApp({
           onPlayAudio={playAudio}
         />
         <DeleteCardsModal
+          saveError={saveError}
           isOpen={deletingCards !== null}
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
@@ -3448,6 +3459,7 @@ function LoadedApp({
           onPlayAudio={playAudio}
         />
         <DeleteCardsModal
+          saveError={saveError}
           isOpen={deletingCards !== null}
           cards={deletingCards}
           onClose={() => setDeletingCards(null)}
@@ -3676,6 +3688,7 @@ function LoadedApp({
         onPlayAudio={playAudio}
       />
       <DeleteCardsModal
+        saveError={saveError}
         isOpen={deletingCards !== null}
         cards={deletingCards}
         onClose={() => setDeletingCards(null)}
