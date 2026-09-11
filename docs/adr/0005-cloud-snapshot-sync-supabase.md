@@ -35,9 +35,13 @@ after every pending write is confirmed. Account changes and teardown abort its
 lifetime, including credential waits, and suppress late responses. No polling runs
 while idle. Failed writes retain local data and expose a retryable error.
 
-Deploy the database migration before the client. Older clients continue local
-practice but cannot sync until updated. Preserve revision checks during recovery;
-forward-fix the client instead of restoring unconditional table writes.
+Database and client deployments run independently after merge. If the client
+arrives first, sync reports a retryable error until the migration installs the RPC;
+local practice and saved cards remain available. Verify the production migration
+workflow succeeds before considering rollout complete. Once the migration lands,
+older clients continue local practice but cannot sync until updated. Preserve
+revision checks during recovery; forward-fix the client instead of restoring
+unconditional table writes.
 
 ## Consequences
 
