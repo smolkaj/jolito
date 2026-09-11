@@ -3,6 +3,8 @@ import type { Speaker, SpeakerOptions } from '../../application/ports'
 import { configureAudioSessionCategory } from './sound'
 
 export class EnhancedBrowserSpeaker implements Speaker {
+  private isDestroyed = false
+  private cleanupVoicesListener: (() => void) | null = null
   private voices: SpeechSynthesisVoice[] = []
   private lastSpokenText: string | null = null
   private lastSpokenLocale: string | null = null
@@ -91,9 +93,18 @@ export class EnhancedBrowserSpeaker implements Speaker {
         this.refreshVoices()
       }
       if (typeof window.speechSynthesis.addEventListener === 'function') {
-        window.speechSynthesis.addEventListener('voiceschanged', handler)
+        const synthesis = window.speechSynthesis
+        synthesis.addEventListener('voiceschanged', handler)
+        this.cleanupVoicesListener = () =>
+          synthesis.removeEventListener('voiceschanged', handler)
       } else if ('onvoiceschanged' in window.speechSynthesis) {
-        window.speechSynthesis.onvoiceschanged = handler
+        const synthesis = window.speechSynthesis
+        const previous = synthesis.onvoiceschanged
+        synthesis.onvoiceschanged = handler
+        this.cleanupVoicesListener = () => {
+          if (synthesis.onvoiceschanged === handler)
+            synthesis.onvoiceschanged = previous
+        }
       }
     } catch {
       // Graceful fallback if getVoices throws
@@ -102,8 +113,9 @@ export class EnhancedBrowserSpeaker implements Speaker {
 
   supported(): boolean {
     return (
+      !this.isDestroyed &&
       typeof window !== 'undefined' &&
-      'speechSynthesis' in window &&
+      Boolean(window.speechSynthesis) &&
       typeof window.SpeechSynthesisUtterance === 'function'
     )
   }
@@ -189,6 +201,9 @@ export class EnhancedBrowserSpeaker implements Speaker {
   }
 
   stop(): void {
+    if (this.isDestroyed) return
+    this.lastSpokenText = null
+    this.lastSpokenLocale = null
     if (this.currentUtterance) {
       this.currentUtterance.onend = null
       this.currentUtterance.onerror = null
@@ -205,8 +220,12 @@ export class EnhancedBrowserSpeaker implements Speaker {
   }
 
   destroy(): void {
+    if (this.isDestroyed) return
     this.stop()
+    this.isDestroyed = true
     this.cleanupLifecycleListeners?.()
+    this.cleanupVoicesListener?.()
+    this.cleanupVoicesListener = null
   }
 
   private selectBestVoice(

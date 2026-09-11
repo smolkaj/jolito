@@ -39,7 +39,7 @@ This ADR documents the provider boundaries, licensing considerations, terms of s
 
 2. **Commercial & App Store Roadmap:**
    - The edge endpoint in `src/worker/tts-route.ts` is structured so that adding an `AZURE_SPEECH_KEY` secret transparently routes through the official Azure Cognitive Services Speech endpoint (staying within the F0 500,000 char/month free tier).
-   - On native iOS builds via Capacitor, the app defaults to native device speech synthesis or cached audio, completely decoupling mobile store distribution from external consumer endpoints.
+   - On native iOS builds via Capacitor, the service factory selects device speech directly, without constructing or prewarming the network speech adapter. Installed device voices determine native pronunciation quality and offline availability; the web audio cache is not used on iOS.
 
 3. **Public Acknowledgement:**
    - Jolito transparently acknowledges Microsoft Speech and browser speech engines in the public Acknowledgements disclosure, giving credit for the neural voice models without claiming official endorsement.

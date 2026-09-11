@@ -12,6 +12,7 @@ export default tseslint.config(
       'dist/',
       'ios/',
       'node_modules/',
+      'vendor/',
       'playwright-report/',
       'test-results/',
     ],

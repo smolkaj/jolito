@@ -193,25 +193,14 @@ npm run test:e2e                # runs full desktop and mobile touch target audi
 maestro test tests/native/smoke.yaml
 ```
 
-### Deploying to Apple TestFlight
+### Releasing to TestFlight and the App Store
 
-TestFlight beta builds are automatically deployed via GitHub Actions on the `macos-15` runner or locally using Fastlane:
-
-```sh
-fastlane ios beta
-```
-
-### Deploying to the Apple App Store
-
-For complete App Store Connect release instructions, metadata copy, and privacy nutrition declarations, see the [App Store Release Guide](APP_STORE.md):
-
-```sh
-# Generate App Store screenshots
-npm run capture:screenshots
-
-# Submit release build to App Store Connect
-fastlane ios release
-```
+Follow the [App Store Release Guide](APP_STORE.md) for enrollment, signing,
+production configuration, listing assets, and physical-device validation.
+The release workflows are manually dispatched on main: TestFlight builds and
+signs one candidate; App Store submission selects its exact tested build
+number without rebuilding. Native simulator screenshot artifacts come from
+the iOS CI workflow. Browser screenshots are not App Store release assets.
 
 ## Before opening a PR
 
