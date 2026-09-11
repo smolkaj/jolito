@@ -99,7 +99,7 @@ it('keeps local deletion failure visible after auth unmount, then retries only t
   const mounted = render(<App services={services} />)
   const user = userEvent.setup()
   await user.click(
-    screen.getByRole('button', { name: /deck synced with cloud/i }),
+    await screen.findByRole('button', { name: /deck synced with cloud/i }),
   )
   await user.click(
     screen.getByRole('button', { name: /delete cloud account & data/i }),

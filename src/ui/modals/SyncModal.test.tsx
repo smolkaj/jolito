@@ -444,9 +444,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
     expect(screen.getByText('otp-user@example.com')).toBeVisible()
@@ -664,9 +663,8 @@ it('keeps sign-out storage failure actionable and reports success only after ret
       isOpen={true}
       onClose={vi.fn()}
       cards={[]}
-      onUpdateCards={vi.fn()}
       auth={auth}
-      sync={new MockSyncService()}
+      onSync={vi.fn().mockResolvedValue({ success: true })}
     />,
   )
   fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
