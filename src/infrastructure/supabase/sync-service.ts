@@ -1,310 +1,119 @@
 import { getOrCreateDeviceId } from '../browser/device-id'
+import { z } from 'zod'
 import { collectionVersion } from '../../domain/card'
 import type { AuthUser, SyncResult, SyncService } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import {
   deckSyncPayloadSchema,
   reconcileStudyCards,
-  type DeckSyncPayload,
   type SyncStatus,
 } from '../../domain/sync'
 import type { SupabaseAuthService } from './auth-service'
 import { parsePostgrestErrorPayload } from './postgrest-error'
-import { withRequestDeadline } from '../request-lifetime'
+
+const revisionSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
+const MAX_SYNC_ATTEMPTS = 3
 
 export class SupabaseSyncService implements SyncService {
   private status: SyncStatus = 'idle'
-  private deviceId: string
-  private supabaseUrl: string
-  private supabaseAnonKey: string
+  private readonly deviceId: string
+  private readonly supabaseUrl: string
 
   constructor(
-    private authService: SupabaseAuthService,
+    private readonly authService: SupabaseAuthService,
     supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
-    supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    private readonly supabaseAnonKey: string = import.meta.env
+      .VITE_SUPABASE_ANON_KEY ?? '',
     deviceId?: string,
   ) {
-    this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
-    this.supabaseAnonKey = supabaseAnonKey
-    this.deviceId = deviceId || getOrCreateDeviceId()
+    this.supabaseUrl = supabaseUrl.replace(/\/+$/, '')
+    this.deviceId = deviceId ?? getOrCreateDeviceId()
   }
 
   getStatus(): SyncStatus {
     return this.status
   }
 
-  private assertActive(ownerId: string, signal: AbortSignal): void {
-    if (signal.aborted) throw new Error('Cloud sync was interrupted.')
-    if (!this.authService.isCurrentOwner(ownerId))
-      throw new Error('Your account changed. Please sync again.')
+  private async request(
+    path: string,
+    body?: unknown,
+    signal?: AbortSignal,
+  ): Promise<Response> {
+    if (!this.supabaseUrl || !this.supabaseAnonKey)
+      throw new Error('Cloud sync backend is not configured.')
+    const token = await this.authService.getAccessToken?.()
+    signal?.throwIfAborted()
+    if (!token) throw new Error('Sign in to sync your deck.')
+    const send = (accessToken: string) =>
+      fetch(`${this.supabaseUrl}/rest/v1/${path}`, {
+        method: body === undefined ? 'GET' : 'POST',
+        headers: {
+          apikey: this.supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+          : AbortSignal.timeout(10_000),
+      })
+    let response = await send(token)
+    if (response.status === 401) {
+      const refreshed = await this.authService.refreshSession?.()
+      signal?.throwIfAborted()
+      if (refreshed) response = await send(refreshed)
+    }
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '')
+      const error = parsePostgrestErrorPayload(errorText)
+      throw new Error(
+        error?.message ||
+          `Cloud sync failed (HTTP ${response.status}). Please try again.`,
+      )
+    }
+    return response
   }
 
-  private async withinLifetime(
-    operation: (signal: AbortSignal) => Promise<SyncResult>,
-    signal?: AbortSignal,
-  ): Promise<SyncResult> {
+  async pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult> {
     try {
-      return await withRequestDeadline(operation, signal)
+      const response = await this.request(
+        `decks?user_id=eq.${encodeURIComponent(user.id)}&select=user_id,revision,updated_at,data`,
+        undefined,
+        signal,
+      )
+      const rows = z
+        .array(
+          z.object({
+            user_id: z.literal(user.id),
+            revision: revisionSchema,
+            updated_at: z.iso.datetime({ offset: true }),
+            data: deckSyncPayloadSchema,
+          }),
+        )
+        .max(1)
+        .safeParse(await response.json())
+      if (!rows.success)
+        return {
+          success: false,
+          error: 'Remote deck data did not match the Jolito sync schema.',
+        }
+      const row = rows.data[0]
+      if (!row)
+        return { success: true, cards: [], deletedCardIds: [], revision: 0 }
+      return {
+        success: true,
+        cards: row.data.cards,
+        deletedCardIds: row.data.deletedCardIds,
+        revision: row.revision,
+        syncedAt: new Date(row.updated_at).getTime(),
+      }
     } catch (error) {
       return {
         success: false,
         error:
           error instanceof Error
             ? error.message
-            : 'Cloud sync was interrupted.',
-      }
-    }
-  }
-
-  pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult> {
-    return this.withinLifetime(
-      (requestSignal) => this.performPull(user, requestSignal),
-      signal,
-    )
-  }
-
-  pushDeck(
-    cards: StudyCard[],
-    user: AuthUser,
-    deletedCardIds: string[] = [],
-    signal?: AbortSignal,
-  ): Promise<SyncResult> {
-    return this.withinLifetime(
-      (requestSignal) =>
-        this.performPush(cards, user, deletedCardIds, requestSignal),
-      signal,
-    )
-  }
-
-  private async getAuthHeaders(
-    ownerId: string,
-    signal: AbortSignal,
-  ): Promise<Record<string, string> | null> {
-    this.assertActive(ownerId, signal)
-    const token = (await this.authService.getAccessToken?.()) ?? null
-    this.assertActive(ownerId, signal)
-    if (!token || !this.supabaseAnonKey) {
-      return null
-    }
-    return {
-      apikey: this.supabaseAnonKey,
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    }
-  }
-
-  private async performPull(
-    user: AuthUser,
-    signal: AbortSignal,
-  ): Promise<SyncResult> {
-    if (!this.supabaseUrl || !this.supabaseAnonKey) {
-      return { success: false, error: 'Cloud sync backend is not configured.' }
-    }
-
-    let headers = await this.getAuthHeaders(user.id, signal)
-    this.assertActive(user.id, signal)
-    if (!headers) {
-      return { success: false, error: 'Sign in to access your cloud deck.' }
-    }
-
-    try {
-      const fetchUrl = `${this.supabaseUrl}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}&select=*`
-      let res = await fetch(fetchUrl, { headers, signal })
-      this.assertActive(user.id, signal)
-
-      if (
-        res.status === 401 &&
-        this.authService.refreshSession &&
-        this.authService.isCurrentOwner(user.id)
-      ) {
-        const refreshedToken = await this.authService.refreshSession()
-        this.assertActive(user.id, signal)
-        if (refreshedToken && this.authService.isCurrentOwner(user.id)) {
-          headers = {
-            ...headers,
-            Authorization: `Bearer ${refreshedToken}`,
-          }
-          res = await fetch(fetchUrl, { headers, signal })
-          this.assertActive(user.id, signal)
-        }
-      }
-
-      if (!res.ok) {
-        const errorText = await res.text().catch(() => '')
-        this.assertActive(user.id, signal)
-        const errorPayload = parsePostgrestErrorPayload(errorText)
-        console.error('[SyncService] Cloud pull failed:', {
-          status: res.status,
-          statusText: res.statusText,
-          code: errorPayload?.code,
-          message: errorPayload?.message,
-          details: errorPayload?.details,
-          hint: errorPayload?.hint,
-          rawError: errorText,
-        })
-        const displayError =
-          errorPayload?.message ||
-          (errorText && !errorText.startsWith('{') ? errorText : null) ||
-          `Cloud fetch failed (HTTP ${res.status}).`
-        return {
-          success: false,
-          error: displayError,
-        }
-      }
-
-      const rows = (await res.json()) as Array<{
-        user_id: string
-        updated_at: string
-        data: unknown
-      }>
-
-      this.assertActive(user.id, signal)
-      if (!rows || rows.length === 0) {
-        return { success: true, cards: [], deletedCardIds: [] }
-      }
-
-      const first = rows[0]
-      if (!first) {
-        return { success: true, cards: [], deletedCardIds: [] }
-      }
-
-      const parseResult = deckSyncPayloadSchema.safeParse(first.data)
-      if (!parseResult.success) {
-        console.error(
-          '[SyncService] Remote deck validation failed:',
-          parseResult.error,
-        )
-        return {
-          success: false,
-          error: 'Remote deck data did not match the Jolito sync schema.',
-        }
-      }
-
-      return {
-        success: true,
-        cards: parseResult.data.cards,
-        deletedCardIds: parseResult.data.deletedCardIds,
-        syncedAt: new Date(first.updated_at).getTime(),
-      }
-    } catch (err) {
-      console.error('[SyncService] Unexpected error pulling cloud deck:', err)
-      return {
-        success: false,
-        error:
-          err instanceof Error
-            ? err.message
             : 'Network error pulling cloud deck.',
-      }
-    }
-  }
-
-  private async performPush(
-    cards: StudyCard[],
-    user: AuthUser,
-    deletedCardIds: string[],
-    signal: AbortSignal,
-  ): Promise<SyncResult> {
-    if (!this.supabaseUrl || !this.supabaseAnonKey) {
-      return { success: false, error: 'Cloud sync backend is not configured.' }
-    }
-
-    let headers = await this.getAuthHeaders(user.id, signal)
-    this.assertActive(user.id, signal)
-    if (!headers) {
-      return { success: false, error: 'Sign in to sync your deck.' }
-    }
-
-    try {
-      const nowIso = new Date().toISOString()
-      const payload: DeckSyncPayload = {
-        version: collectionVersion,
-        app: 'jolito',
-        updatedAt: nowIso,
-        deviceId: this.deviceId,
-        cards,
-        deletedCardIds,
-      }
-
-      const postBody = JSON.stringify({
-        user_id: user.id,
-        updated_at: nowIso,
-        device_id: this.deviceId,
-        version: collectionVersion,
-        data: payload,
-      })
-
-      const postUrl = `${this.supabaseUrl}/rest/v1/decks?on_conflict=user_id`
-      let res = await fetch(postUrl, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          Prefer: 'resolution=merge-duplicates',
-        },
-        body: postBody,
-        signal,
-      })
-      this.assertActive(user.id, signal)
-
-      if (
-        res.status === 401 &&
-        this.authService.refreshSession &&
-        this.authService.isCurrentOwner(user.id)
-      ) {
-        const refreshedToken = await this.authService.refreshSession()
-        this.assertActive(user.id, signal)
-        if (refreshedToken && this.authService.isCurrentOwner(user.id)) {
-          headers = {
-            ...headers,
-            Authorization: `Bearer ${refreshedToken}`,
-          }
-          res = await fetch(postUrl, {
-            method: 'POST',
-            headers: {
-              ...headers,
-              Prefer: 'resolution=merge-duplicates',
-            },
-            body: postBody,
-            signal,
-          })
-          this.assertActive(user.id, signal)
-        }
-      }
-
-      if (!res.ok) {
-        const errorText = await res.text().catch(() => '')
-        this.assertActive(user.id, signal)
-        const errorPayload = parsePostgrestErrorPayload(errorText)
-        console.error('[SyncService] Cloud push failed:', {
-          status: res.status,
-          statusText: res.statusText,
-          code: errorPayload?.code,
-          message: errorPayload?.message,
-          details: errorPayload?.details,
-          hint: errorPayload?.hint,
-          rawError: errorText,
-        })
-        const displayError =
-          errorPayload?.message ||
-          (errorText && !errorText.startsWith('{') ? errorText : null) ||
-          `Cloud push failed (HTTP ${res.status}).`
-        return {
-          success: false,
-          error: displayError,
-        }
-      }
-
-      return {
-        success: true,
-        cards,
-        deletedCardIds,
-        syncedAt: new Date(nowIso).getTime(),
-      }
-    } catch (err) {
-      console.error('[SyncService] Unexpected error pushing cloud deck:', err)
-      return {
-        success: false,
-        error:
-          err instanceof Error ? err.message : 'Network error pushing deck.',
       }
     }
   }
@@ -316,39 +125,62 @@ export class SupabaseSyncService implements SyncService {
     signal?: AbortSignal,
   ): Promise<SyncResult> {
     this.status = 'syncing'
-
-    const pullRes = await this.pullDeck(user, signal)
-    if (!pullRes.success) {
-      if (!signal?.aborted) this.status = 'error'
-      return pullRes
-    }
-
-    const remoteCards = pullRes.cards || []
-    const remoteDeletedIds = pullRes.deletedCardIds || []
-    const reconciliation = reconcileStudyCards(
-      localCards,
-      remoteCards,
-      localDeletedIds,
-      remoteDeletedIds,
-    )
-
-    const pushRes = await this.pushDeck(
-      reconciliation.cards,
-      user,
-      reconciliation.deletedCardIds,
-      signal,
-    )
-    if (!pushRes.success) {
-      if (!signal?.aborted) this.status = 'error'
-      return pushRes
-    }
-
-    this.status = 'synced'
-    return {
-      success: true,
-      cards: reconciliation.cards,
-      deletedCardIds: reconciliation.deletedCardIds,
-      syncedAt: pushRes.syncedAt,
+    try {
+      let pending = { cards: localCards, deletedCardIds: localDeletedIds }
+      for (let attempt = 0; attempt < MAX_SYNC_ATTEMPTS; attempt++) {
+        signal?.throwIfAborted()
+        const remote = await this.pullDeck(user, signal)
+        if (!remote.success) throw new Error(remote.error)
+        if (remote.revision === undefined)
+          throw new Error('Cloud snapshot revision is missing.')
+        pending = reconcileStudyCards(
+          pending.cards,
+          remote.cards ?? [],
+          pending.deletedCardIds,
+          remote.deletedCardIds ?? [],
+        )
+        const now = new Date().toISOString()
+        const response = await this.request(
+          'rpc/compare_and_set_deck',
+          {
+            p_user_id: user.id,
+            p_expected_revision: remote.revision,
+            p_data: {
+              version: collectionVersion,
+              app: 'jolito',
+              updatedAt: now,
+              deviceId: this.deviceId,
+              ...pending,
+            },
+          },
+          signal,
+        )
+        const revision = revisionSchema.nullable().parse(await response.json())
+        if (revision === null) continue
+        if (revision !== remote.revision + 1)
+          throw new Error(
+            'Cloud snapshot revision did not advance as expected.',
+          )
+        this.status = 'synced'
+        return {
+          success: true,
+          ...pending,
+          revision,
+          syncedAt: new Date(now).getTime(),
+        }
+      }
+      throw new Error(
+        'Your deck changed on another device. Your local changes are saved; please sync again.',
+      )
+    } catch (error) {
+      this.status = 'error'
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Network error syncing deck.',
+      }
     }
   }
 }

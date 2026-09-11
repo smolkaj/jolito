@@ -25,7 +25,10 @@ const initial = createStudyCards(
 )[0]!
 
 function connectCloud(cards: unknown[], version: number) {
+  let revision = 1
   let row = {
+    user_id: user.id,
+    revision,
     updated_at: '2026-09-10T00:00:00.000Z',
     data: {
       version,
@@ -41,8 +44,14 @@ function connectCloud(cards: unknown[], version: number) {
       if (init?.method === 'POST') {
         if (typeof init.body !== 'string')
           throw new Error('Expected serialized snapshot')
-        row = JSON.parse(init.body) as typeof row
-        return Promise.resolve(new Response(null, { status: 201 }))
+        const write = JSON.parse(init.body) as {
+          p_expected_revision: number
+          p_data: typeof row.data
+        }
+        if (write.p_expected_revision !== revision)
+          return Promise.resolve(Response.json(null))
+        row = { ...row, revision: ++revision, data: write.p_data }
+        return Promise.resolve(Response.json(revision))
       }
       return Promise.resolve(Response.json([row]))
     }),

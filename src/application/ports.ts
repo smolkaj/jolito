@@ -128,16 +128,11 @@ export type SyncResult = {
   deletedCardIds?: string[] | undefined
   error?: string | undefined
   syncedAt?: number | undefined
+  revision?: number | undefined
 }
 
 export type SyncService = {
   getStatus(): SyncStatus
-  pushDeck(
-    cards: StudyCard[],
-    user: AuthUser,
-    deletedCardIds?: string[],
-    signal?: AbortSignal,
-  ): Promise<SyncResult>
   pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult>
   syncDeck(
     localCards: StudyCard[],

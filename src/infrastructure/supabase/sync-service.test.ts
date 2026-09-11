@@ -1,442 +1,231 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { StudyCard } from '../../domain/card'
+import { z } from 'zod'
+import { afterEach, expect, it, vi } from 'vitest'
+import { collectionVersion, createStudyCards } from '../../domain/card'
 import type { SupabaseAuthService } from './auth-service'
 import { SupabaseSyncService } from './sync-service'
 
-const mockCard: StudyCard = {
-  id: 'c1:es-en',
-  noteId: 'n1',
-  prompt: 'hola',
-  answer: 'hello',
-  direction: 'es-en',
-  context: '',
-  scene: 'conversation',
-  schedule: {
-    state: 'new',
-    dueAt: 1000,
-    intervalDays: 0,
-    easeFactor: 2.5,
-    reviews: 0,
-    lapses: 0,
-  },
-  contentRevision: 0,
-  resetRevision: { generation: 0, at: 0 },
-  createdAt: 1000,
+const user = { id: 'learner', email: 'learner@example.com' }
+const cards = createStudyCards(
+  { spanish: 'hola', english: 'hello', context: '', bidirectional: false },
+  'card',
+  0,
+)
+const payload = {
+  version: collectionVersion,
+  app: 'jolito',
+  deviceId: 'remote',
+  updatedAt: '2026-09-10T00:00:00.000Z',
+  cards,
+  deletedCardIds: [],
 }
+const row = {
+  user_id: user.id,
+  revision: 1,
+  updated_at: payload.updatedAt,
+  data: payload,
+}
+function service(auth: Partial<SupabaseAuthService> = {}) {
+  return new SupabaseSyncService(
+    {
+      getAccessToken: () => Promise.resolve('token'),
+      ...auth,
+    } as SupabaseAuthService,
+    'https://example.supabase.co',
+    'anon',
+    'device',
+  )
+}
+afterEach(() => vi.unstubAllGlobals())
 
-describe('SupabaseSyncService', () => {
-  const mockAuthService: Partial<SupabaseAuthService> = {
-    getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
-    isCurrentOwner: (ownerId: string | null) => ownerId === 'usr-1',
-    getAccessToken: () => Promise.resolve('valid-jwt-token'),
-  }
-
-  beforeEach(() => {
-    vi.restoreAllMocks()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('pulls remote deck successfully when records exist', async () => {
-    const service = new SupabaseSyncService(
-      mockAuthService as SupabaseAuthService,
-      'https://example.supabase.co',
-      'anon-key',
-      'device-a',
-    )
-
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            {
-              user_id: 'usr-1',
-              updated_at: '2026-08-23T12:00:00.000Z',
-              data: {
-                version: 1,
-                app: 'jolito',
-                updatedAt: '2026-08-23T12:00:00.000Z',
-                deviceId: 'dev-remote',
-                cards: [mockCard],
-              },
-            },
-          ]),
-      }),
-    )
-
-    const res = await service.pullDeck({ id: 'usr-1', email: 'u@example.com' })
-    expect(res.success).toBe(true)
-    expect(res.cards).toHaveLength(1)
-    expect(res.cards?.[0]?.prompt).toBe('hola')
-  })
-
-  it('pushes deck successfully and saves record to cloud', async () => {
-    const service = new SupabaseSyncService(
-      mockAuthService as SupabaseAuthService,
-      'https://example.supabase.co',
-      'anon-key',
-      'device-a',
-    )
-
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    const res = await service.pushDeck([mockCard], {
-      id: 'usr-1',
-      email: 'u@example.com',
-    })
-    expect(res.success).toBe(true)
-    expect(fetchMock).toHaveBeenCalled()
-  })
-
-  it('synchronizes local and remote cards and updates sync status', async () => {
-    const service = new SupabaseSyncService(
-      mockAuthService as SupabaseAuthService,
-      'https://example.supabase.co',
-      'anon-key',
-      'device-a',
-    )
-
-    const remoteCard: StudyCard = {
-      ...mockCard,
-      id: 'c2:es-en',
-      prompt: 'adiós',
-      answer: 'goodbye',
-    }
-
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        // First call: pull
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve([
-              {
-                user_id: 'usr-1',
-                updated_at: '2026-08-23T12:00:00.000Z',
-                data: {
-                  version: 1,
-                  app: 'jolito',
-                  updatedAt: '2026-08-23T12:00:00.000Z',
-                  deviceId: 'dev-remote',
-                  cards: [remoteCard],
-                },
-              },
-            ]),
-        })
-        // Second call: push merged
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({}),
-        }),
-    )
-
-    const res = await service.syncDeck([mockCard], {
-      id: 'usr-1',
-      email: 'u@example.com',
-    })
-    expect(res.success).toBe(true)
-    expect(res.cards).toHaveLength(2)
-    expect(service.getStatus()).toBe('synced')
-  })
-
-  it('excludes locally deleted cards when syncing with remote deck', async () => {
-    const service = new SupabaseSyncService(
-      mockAuthService as SupabaseAuthService,
-      'https://example.supabase.co',
-      'anon-key',
-      'device-a',
-    )
-
-    const remoteCard2: StudyCard = {
-      ...mockCard,
-      id: 'c2:es-en',
-      prompt: 'adiós',
-      answer: 'goodbye',
-    }
-
-    const pushFetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    })
-
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        // Pull remote cards containing c1 and c2
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve([
-              {
-                user_id: 'usr-1',
-                updated_at: '2026-08-23T12:00:00.000Z',
-                data: {
-                  version: 1,
-                  app: 'jolito',
-                  updatedAt: '2026-08-23T12:00:00.000Z',
-                  deviceId: 'dev-remote',
-                  cards: [mockCard, remoteCard2],
-                  deletedCardIds: [],
-                },
-              },
-            ]),
-        })
-        // Push merged result
-        .mockImplementationOnce(pushFetchMock),
-    )
-
-    // User deleted mockCard (c1:es-en), only passes remoteCard2 in localCards and ['c1:es-en'] in localDeletedIds
-    const res = await service.syncDeck(
-      [remoteCard2],
-      { id: 'usr-1', email: 'u@example.com' },
-      ['c1:es-en'],
-    )
-
-    expect(res.success).toBe(true)
-    expect(res.cards).toHaveLength(1)
-    expect(res.cards?.[0]?.id).toBe('c2:es-en')
-    expect(res.deletedCardIds).toContain('c1:es-en')
-
-    expect(pushFetchMock).toHaveBeenCalled()
-    const firstCall = pushFetchMock.mock.calls[0] as
-      [string, { body?: string }] | undefined
-    const bodyStr = firstCall?.[1]?.body ?? '{}'
-    const callBody = JSON.parse(bodyStr) as {
-      data: { cards: StudyCard[]; deletedCardIds: string[] }
-    }
-    expect(callBody.data.cards).toHaveLength(1)
-    expect(callBody.data.cards[0]?.id).toBe('c2:es-en')
-    expect(callBody.data.deletedCardIds).toEqual(['c1:es-en'])
-  })
-
-  it('retries pullDeck on 401 when refreshSession provides a fresh token', async () => {
-    const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
-    const authWithRefresh: Partial<SupabaseAuthService> = {
-      getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
-      isCurrentOwner: (ownerId: string | null) => ownerId === 'usr-1',
-      getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
-      refreshSession: refreshSpy,
-    }
-
-    const service = new SupabaseSyncService(
-      authWithRefresh as SupabaseAuthService,
-      'https://example.supabase.co',
-      'anon-key',
-      'device-a',
-    )
-
-    const fetchSpy = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            {
-              user_id: 'usr-1',
-              updated_at: '2026-08-23T12:00:00.000Z',
-              data: {
-                version: 1,
-                app: 'jolito',
-                updatedAt: '2026-08-23T12:00:00.000Z',
-                deviceId: 'dev-remote',
-                cards: [mockCard],
-              },
-            },
-          ]),
-      })
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const res = await service.pullDeck({ id: 'usr-1', email: 'u@example.com' })
-    expect(res.success).toBe(true)
-    expect(refreshSpy).toHaveBeenCalledTimes(1)
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
-    expect(res.cards).toHaveLength(1)
-  })
-
-  it('retries pushDeck on 401 when refreshSession provides a fresh token', async () => {
-    const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
-    const authWithRefresh: Partial<SupabaseAuthService> = {
-      getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
-      isCurrentOwner: (ownerId: string | null) => ownerId === 'usr-1',
-      getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
-      refreshSession: refreshSpy,
-    }
-
-    const service = new SupabaseSyncService(
-      authWithRefresh as SupabaseAuthService,
-      'https://example.supabase.co',
-      'anon-key',
-      'device-a',
-    )
-
-    const fetchSpy = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      })
-    vi.stubGlobal('fetch', fetchSpy)
-
-    const res = await service.pushDeck([mockCard], {
-      id: 'usr-1',
-      email: 'u@example.com',
-    })
-    expect(res.success).toBe(true)
-    expect(refreshSpy).toHaveBeenCalledTimes(1)
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
-  })
-
-  it('parses structured PostgREST error and logs on pullDeck failure', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const service = new SupabaseSyncService(
-      mockAuthService as SupabaseAuthService,
-      'https://example.supabase.co/',
-      'anon-key',
-      'device-a',
-    )
-
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-        text: () =>
-          Promise.resolve(
-            JSON.stringify({
-              code: 'PGRST205',
-              message: 'relation "public.decks" does not exist',
-            }),
-          ),
-      }),
-    )
-
-    const res = await service.pullDeck({ id: 'usr-1', email: 'u@example.com' })
-    expect(res.success).toBe(false)
-    expect(res.error).toBe('relation "public.decks" does not exist')
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[SyncService] Cloud pull failed:',
-      expect.objectContaining({
-        status: 404,
-        code: 'PGRST205',
-        message: 'relation "public.decks" does not exist',
-      }),
-    )
-  })
-
-  it('parses structured PostgREST error and logs on pushDeck failure', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const service = new SupabaseSyncService(
-      mockAuthService as SupabaseAuthService,
-      'https://example.supabase.co///',
-      'anon-key',
-      'device-a',
-    )
-
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-        statusText: 'Forbidden',
-        text: () =>
-          Promise.resolve(
-            JSON.stringify({
-              code: '42501',
-              message:
-                'new row violates row-level security policy for table "decks"',
-            }),
-          ),
-      }),
-    )
-
-    const res = await service.pushDeck([mockCard], {
-      id: 'usr-1',
-      email: 'u@example.com',
-    })
-    expect(res.success).toBe(false)
-    expect(res.error).toBe(
-      'new row violates row-level security policy for table "decks"',
-    )
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[SyncService] Cloud push failed:',
-      expect.objectContaining({
-        status: 403,
-        code: '42501',
-        message: 'new row violates row-level security policy for table "decks"',
-      }),
-    )
+it('loads the validated account snapshot and server revision', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([row])))
+  expect(await service().pullDeck(user)).toMatchObject({
+    success: true,
+    cards,
+    revision: 1,
+    deletedCardIds: [],
   })
 })
-
-describe('sync account boundaries', () => {
-  afterEach(() => vi.unstubAllGlobals())
-  it.each(['token', 'refresh', 'pull'] as const)(
-    'does not send the previous deck with a new account token after an interrupted %s',
-    async (interruption) => {
-      let owner = { id: 'A', email: 'a@example.com' }
-      let resolve!: (value: string) => void
-      const held = new Promise<string>((done) => {
-        resolve = done
-      })
-      const auth = {
-        getCurrentUser: () => owner,
-        isCurrentOwner: (ownerId: string | null) => ownerId === owner?.id,
-        getAccessToken: () =>
-          interruption === 'token'
-            ? held
-            : Promise.resolve(`token-${owner.id}`),
-        refreshSession: () => held,
-      } as SupabaseAuthService
-      let resolvePull!: (value: Response) => void
-      const pendingPull = new Promise<Response>((done) => {
-        resolvePull = done
-      })
-      const fetchSpy = vi
-        .fn()
-        .mockImplementation(() =>
-          interruption === 'refresh'
-            ? Promise.resolve(new Response(null, { status: 401 }))
-            : pendingPull,
-        )
-      vi.stubGlobal('fetch', fetchSpy)
-      const service = new SupabaseSyncService(
-        auth,
-        'https://example.supabase.co',
-        'key',
-        'device',
-      )
-      const pending = service.syncDeck([mockCard], owner)
-      // Reach the awaited token, refresh, or pull boundary before switching identity.
-      await vi.waitFor(() =>
-        expect(interruption === 'token' || fetchSpy.mock.calls.length > 0).toBe(
-          true,
-        ),
-      )
-      owner = { id: 'B', email: 'b@example.com' }
-      resolve('token-B')
-      resolvePull(new Response(JSON.stringify([])))
-      expect((await pending).success).toBe(false)
-      expect(fetchSpy.mock.calls).toHaveLength(interruption === 'token' ? 0 : 1)
-    },
+it('treats no row as revision zero, not an existing empty snapshot', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json([])))
+  expect(await service().pullDeck(user)).toEqual({
+    success: true,
+    cards: [],
+    deletedCardIds: [],
+    revision: 0,
+  })
+})
+it.each([
+  [{ ...row, user_id: 'another-account' }],
+  [{ ...row, revision: undefined }],
+  [{ ...row, revision: 0 }],
+  [{ ...row, updated_at: 'invalid date' }],
+  [{ ...row, data: { ...payload, version: 99 } }],
+  [row, row],
+  { error: 'not rows' },
+])(
+  'rejects malformed or incorrectly owned remote boundaries without writing',
+  async (rows) => {
+    const fetchSpy = vi.fn().mockResolvedValue(Response.json(rows))
+    vi.stubGlobal('fetch', fetchSpy)
+    const sync = service()
+    expect(await sync.syncDeck(cards, user)).toMatchObject({ success: false })
+    expect(sync.getStatus()).toBe('error')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  },
+)
+it('commits only against the revision read and returns server confirmation', async () => {
+  const fetchSpy = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json([row]))
+    .mockResolvedValueOnce(Response.json(2))
+  vi.stubGlobal('fetch', fetchSpy)
+  const sync = service()
+  expect(await sync.syncDeck(cards, user)).toMatchObject({
+    success: true,
+    cards,
+    revision: 2,
+  })
+  expect(sync.getStatus()).toBe('synced')
+  const request = fetchSpy.mock.calls[1] as unknown as [string, RequestInit]
+  expect(request[0]).toBe(
+    'https://example.supabase.co/rest/v1/rpc/compare_and_set_deck',
   )
+  expect(JSON.parse(z.string().parse(request[1].body))).toMatchObject({
+    p_user_id: user.id,
+    p_expected_revision: 1,
+    p_data: {
+      ...payload,
+      deviceId: 'device',
+      updatedAt: expect.any(String) as string,
+    },
+  })
+})
+it('bounds conflicts without falling back to an unguarded write', async () => {
+  const fetchSpy = vi.fn((_url: string, init?: RequestInit) =>
+    Promise.resolve(Response.json(init?.method === 'POST' ? null : [row])),
+  )
+  vi.stubGlobal('fetch', fetchSpy)
+  const sync = service()
+  expect(await sync.syncDeck(cards, user)).toMatchObject({
+    success: false,
+    error: expect.stringContaining('changed on another device') as string,
+  })
+  expect(fetchSpy).toHaveBeenCalledTimes(6)
+  expect(cards).toEqual(payload.cards)
+})
+it.each([{}, '2', 0, 1, 3])(
+  'requires a valid next revision in write confirmation',
+  async (confirmation) => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json([row]))
+      .mockResolvedValueOnce(Response.json(confirmation))
+    vi.stubGlobal('fetch', fetchSpy)
+    expect((await service().syncDeck(cards, user)).success).toBe(false)
+  },
+)
+it('refreshes and retries an unauthorized read once', async () => {
+  const fetchSpy = vi
+    .fn()
+    .mockResolvedValueOnce(new Response(null, { status: 401 }))
+    .mockResolvedValueOnce(Response.json([row]))
+  vi.stubGlobal('fetch', fetchSpy)
+  const refreshSession = vi.fn().mockResolvedValue('fresh')
+  expect((await service({ refreshSession }).pullDeck(user)).success).toBe(true)
+  expect(refreshSession).toHaveBeenCalledTimes(1)
+  expect(fetchSpy).toHaveBeenLastCalledWith(
+    expect.any(String),
+    expect.objectContaining({
+      headers: {
+        apikey: 'anon',
+        Authorization: 'Bearer fresh',
+        'Content-Type': 'application/json',
+      },
+    }),
+  )
+})
+it('refreshes and retries an unauthorized write without discarding its expected revision', async () => {
+  const fetchSpy = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json([row]))
+    .mockResolvedValueOnce(new Response(null, { status: 401 }))
+    .mockResolvedValueOnce(Response.json(2))
+  vi.stubGlobal('fetch', fetchSpy)
+  const refreshSession = vi.fn().mockResolvedValue('fresh')
+  expect(
+    (await service({ refreshSession }).syncDeck(cards, user)).success,
+  ).toBe(true)
+  expect(refreshSession).toHaveBeenCalledTimes(1)
+  const before = fetchSpy.mock.calls[1] as unknown as [string, RequestInit]
+  const after = fetchSpy.mock.calls[2] as unknown as [string, RequestInit]
+  expect(before[1].body).toBe(after[1].body)
+})
+it.each([403, 404, 429, 500])(
+  'surfaces HTTP %i without reporting a successful sync',
+  async (status) => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ message: 'Backend unavailable' }, { status }),
+        ),
+    )
+    expect(await service().syncDeck(cards, user)).toEqual({
+      success: false,
+      error: 'Backend unavailable',
+    })
+  },
+)
+it('preserves a retryable error when credential access or network fails', async () => {
+  const authError = service({
+    getAccessToken: () => Promise.reject(new Error('Access unavailable')),
+  })
+  expect(await authError.syncDeck(cards, user)).toEqual({
+    success: false,
+    error: 'Access unavailable',
+  })
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Offline')))
+  expect(await service().syncDeck(cards, user)).toEqual({
+    success: false,
+    error: 'Offline',
+  })
+})
+it('fails explicitly without backend configuration or credentials', async () => {
+  const unconfigured = new SupabaseSyncService(
+    {} as SupabaseAuthService,
+    '',
+    '',
+    'device',
+  )
+  expect((await unconfigured.syncDeck(cards, user)).success).toBe(false)
+  expect(
+    (
+      await service({ getAccessToken: () => Promise.resolve(null) }).syncDeck(
+        cards,
+        user,
+      )
+    ).success,
+  ).toBe(false)
+})
+
+it('does not start a request after disposal while credentials are being refreshed', async () => {
+  const controller = new AbortController()
+  let release!: (token: string) => void
+  const token = new Promise<string>((resolve) => {
+    release = resolve
+  })
+  const fetchSpy = vi.fn()
+  vi.stubGlobal('fetch', fetchSpy)
+  const done = service({ getAccessToken: () => token }).syncDeck(
+    cards,
+    user,
+    [],
+    controller.signal,
+  )
+  controller.abort()
+  release('late-token')
+  expect((await done).success).toBe(false)
+  expect(fetchSpy).not.toHaveBeenCalled()
 })

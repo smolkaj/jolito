@@ -299,18 +299,6 @@ export class MockSyncService implements SyncService {
   getStatus(): SyncStatus {
     return this.status
   }
-  pushDeck(
-    cards: StudyCard[],
-    user: AuthUser,
-    deletedCardIds: string[] = [],
-  ): Promise<SyncResult> {
-    const deck = {
-      cards: cards.map((card) => ({ ...card })),
-      deletedCardIds: [...deletedCardIds],
-    }
-    this.decks.set(user.id, deck)
-    return Promise.resolve({ success: true, ...deck, syncedAt: Date.now() })
-  }
   pullDeck(user: AuthUser): Promise<SyncResult> {
     return Promise.resolve({ success: true, ...this.deck(user.id) })
   }

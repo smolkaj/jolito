@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../src/application/ports'
-import type { StudyCard } from '../../src/domain/card'
+import { createStudyCards, type StudyCard } from '../../src/domain/card'
 import type { SupabaseAuthService } from '../../src/infrastructure/supabase/auth-service'
 import { SupabaseFeedbackService } from '../../src/infrastructure/supabase/feedback-service'
 import { SupabaseSyncService } from '../../src/infrastructure/supabase/sync-service'
@@ -321,7 +321,7 @@ describe('Supabase Live Stack Integration', () => {
     }
 
     // 1. User A pushes deck
-    const pushResult = await syncServiceA.pushDeck([sampleCard], userA.user)
+    const pushResult = await syncServiceA.syncDeck([sampleCard], userA.user)
     expect(pushResult.success).toBe(true)
 
     // 2. User A pulls deck -> sees their card
@@ -344,5 +344,62 @@ describe('Supabase Live Stack Integration', () => {
     expect(anonRes.ok).toBe(true)
     const anonRows = (await anonRes.json()) as unknown[]
     expect(anonRows).toEqual([])
+  })
+  it('reconciles two real devices after both read the same server revision', async () => {
+    const { user, authService } = await createRealTestUser('concurrent-sync')
+    const device = (id: string) =>
+      new SupabaseSyncService(
+        authService as SupabaseAuthService,
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        id,
+      )
+    const a = createStudyCards(
+      { spanish: 'uno', english: 'one', context: '', bidirectional: false },
+      'a',
+      0,
+    )
+    const b = createStudyCards(
+      { spanish: 'dos', english: 'two', context: '', bidirectional: false },
+      'b',
+      0,
+    )
+    const transport = globalThis.fetch
+    let reads = 0
+    let writes = 0
+    let release!: () => void
+    const bothRead = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const intercepted = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const response = await transport(input, init)
+        const url = input instanceof Request ? input.url : input.toString()
+        if (url.includes('/decks?') && reads < 2) {
+          if (++reads === 2) release()
+          await bothRead
+        }
+        if (url.endsWith('/rpc/compare_and_set_deck')) writes++
+        return response
+      })
+    try {
+      const results = await Promise.all([
+        device('a').syncDeck(a, user),
+        device('b').syncDeck(b, user),
+      ])
+      expect(results).toEqual([
+        expect.objectContaining({ success: true }),
+        expect.objectContaining({ success: true }),
+      ])
+      const committed = await device('reader').pullDeck(user)
+      expect(committed.revision).toBe(2)
+      expect(committed.cards?.map((c) => c.id).sort()).toEqual(
+        [...a, ...b].map((c) => c.id).sort(),
+      )
+      expect(writes).toBe(3)
+    } finally {
+      intercepted.mockRestore()
+    }
   })
 })
