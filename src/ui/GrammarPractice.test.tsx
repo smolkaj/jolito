@@ -15,6 +15,73 @@ async function begin() {
 }
 
 describe('grammar practice in Jolito', () => {
+  it.each(['preterite', 'perfect'] as const)(
+    'keeps one sentence playback control through %s recall, reveal, interruption and next card',
+    async (topic) => {
+      window.history.replaceState({}, '', '#/grammar')
+      const services = createTestServices()
+      render(<App services={services} />)
+      const user = userEvent.setup()
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: 'Tense' }),
+        topic,
+      )
+      await user.click(screen.getByRole('button', { name: 'Start practice' }))
+      for (const answer of ['', 'wrong', 'exact']) {
+        const sentence = screen.getByRole('heading', { level: 1 })
+        const prompt = screen.getByRole('button', { name: 'Play prompt audio' })
+        expect(sentence.parentElement).toContainElement(prompt)
+        expect(
+          sentence.parentElement?.querySelector('.grammar-verb-cue'),
+        ).toBeNull()
+        expect(document.querySelectorAll('.audio-button')).toHaveLength(1)
+        await user.click(prompt)
+        expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toBe(
+          sentence.textContent,
+        )
+        const card = createGrammarCards(0, topic)[
+          ['', 'wrong', 'exact'].indexOf(answer)
+        ]!
+        if (answer)
+          await user.type(
+            screen.getByRole('textbox'),
+            answer === 'exact' ? card.answer : answer,
+          )
+        await user.click(screen.getByRole('button', { name: /Reveal answer/ }))
+        await waitFor(() =>
+          expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toBe(
+            sentence.textContent,
+          ),
+        )
+        expect(sentence).not.toHaveTextContent('…')
+        expect(document.querySelectorAll('.audio-button')).toHaveLength(1)
+        expect(sentence.parentElement).toContainElement(
+          screen.getByRole('button', { name: 'Play answer audio' }),
+        )
+        fireEvent(document, new Event('visibilitychange'))
+        await user.click(screen.getByRole('button', { name: 'Grammar' }))
+        await user.click(
+          screen.getByRole('button', { name: 'Resume practice' }),
+        )
+        const resumed = screen.getByRole('heading', { level: 1 })
+        expect(resumed.textContent).toBe(sentence.textContent)
+        expect(document.querySelectorAll('.audio-button')).toHaveLength(1)
+        await user.click(
+          screen.getByRole('button', { name: 'Play answer audio' }),
+        )
+        expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toBe(
+          resumed.textContent,
+        )
+        fireEvent.keyDown(window, { key: ' ', code: 'Space' })
+        expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toBe(
+          resumed.textContent,
+        )
+        await user.keyboard('4')
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('…')
+      }
+    },
+  )
+
   it('speaks the blank prompt in Spanish, preserves typing through interruption, and stops on exit', async () => {
     window.history.replaceState({}, '', '#/grammar')
     const services = createTestServices()

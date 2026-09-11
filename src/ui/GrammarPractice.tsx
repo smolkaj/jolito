@@ -189,23 +189,37 @@ export function GrammarPractice({
       card={current}
       prompt={
         <>
-          <div className="study-prompt-wrap">
-            <p className="grammar-verb-cue" lang="es">
-              {current.grammar.verb}
-            </p>
+          <p className="grammar-verb-cue" lang="es">
+            {current.grammar.verb}
+          </p>
+          <div className="grammar-sentence-row">
+            <h1 className="grammar-sentence" lang="es">
+              {before}
+              {session.revealed ? (
+                <span className="grammar-filled">{current.answer}</span>
+              ) : (
+                <span
+                  className="grammar-blank"
+                  aria-label="missing verb"
+                  lang="en"
+                >
+                  …
+                </span>
+              )}
+              {after}
+            </h1>
             <AudioButton
-              prompt
-              label="Play prompt audio"
-              onClick={() => audio.playPromptAudio()}
+              prompt={!session.revealed}
+              label={
+                session.revealed ? 'Play answer audio' : 'Play prompt audio'
+              }
+              onClick={() =>
+                session.revealed
+                  ? audio.playAnswerAudio()
+                  : audio.playPromptAudio()
+              }
             />
           </div>
-          <h1 className="grammar-sentence" lang="es">
-            {before}
-            <span className="grammar-blank" aria-label="missing verb" lang="en">
-              …
-            </span>
-            {after}
-          </h1>
           <p className="grammar-translation">{context.translation}</p>
         </>
       }
@@ -217,6 +231,7 @@ export function GrammarPractice({
         audio.playRevealSensory()
       }}
       onGrade={grade}
+      showAnswerAudio={false}
       onPlayAnswer={() => audio.playAnswerAudio()}
       onPlayPrompt={() => audio.playPromptAudio()}
       paused={paused}
