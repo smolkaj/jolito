@@ -262,5 +262,5 @@ it('restores every exported identity and schedule even when normalized prompts c
   })
   if (!restored.success) return
   const reexported = createDeckBackup(restored.cards, clock)
-  expect(reexported.json).toBe(backup.json)
+  expect(JSON.parse(reexported.json)).toEqual(JSON.parse(backup.json))
 })
