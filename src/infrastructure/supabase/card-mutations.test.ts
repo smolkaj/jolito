@@ -10,7 +10,10 @@ import {
 } from '../../domain/card'
 import { parseDeckBackup } from '../../domain/deck-backup'
 import { deckSyncPayloadSchema } from '../../domain/sync'
-import { LocalStorageCardRepository } from '../browser/card-repository'
+import {
+  ACCOUNT_STORAGE_KEY,
+  LocalStorageCardRepository,
+} from '../browser/card-repository'
 import type { SupabaseAuthService } from './auth-service'
 import { SupabaseSyncService } from './sync-service'
 
@@ -45,6 +48,7 @@ function connectCloud(cards: unknown[], version: number) {
     }),
   )
   const auth = {
+    getCurrentUser: () => user,
     getAccessToken: () => Promise.resolve('token'),
   } as SupabaseAuthService
   return new SupabaseSyncService(
@@ -77,18 +81,31 @@ describe('card mutation persistence contracts', () => {
         'jolito-library-v1',
         JSON.stringify({ version, cards: [legacy] }),
       )
-      const repo = new LocalStorageCardRepository(localStorage)
-      expect(repo.load([])).toEqual([initial])
+      const repo = new LocalStorageCardRepository(localStorage, user.id)
+      expect(repo.load([]).cards).toEqual([initial])
       expect(
         parseDeckBackup(JSON.stringify({ version, cards: [legacy] })),
       ).toMatchObject({ success: true, cards: [initial] })
       const service = connectCloud([legacy], version)
       expect((await service.pullDeck(user)).cards).toEqual([initial])
-      const edited = updateStudyCard(repo.load([])[0]!, { answer: 'hi' }, 1000)
+      const edited = updateStudyCard(
+        repo.load([]).cards[0]!,
+        { answer: 'hi' },
+        1000,
+      )
       const synced = await service.syncDeck([edited], user)
       expect(synced).toMatchObject({ success: true, cards: [edited] })
       repo.save(synced.cards!)
-      const reloaded = new LocalStorageCardRepository(localStorage).load([])
+      expect(
+        JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY)!),
+      ).toMatchObject({
+        version: 1,
+        accounts: { [`user:${user.id}`]: { version: 4, cards: [edited] } },
+      })
+      const reloaded = new LocalStorageCardRepository(
+        localStorage,
+        user.id,
+      ).load([]).cards
       const backup = createDeckBackup(reloaded, { now: () => 1000 })
       expect(JSON.parse(backup.json)).toMatchObject({ version: 4 })
       expect(parseDeckBackup(backup.json)).toMatchObject({
@@ -98,6 +115,54 @@ describe('card mutation persistence contracts', () => {
       expect((await service.syncDeck(reloaded, user)).cards).toEqual([edited])
     },
   )
+
+  it('upgrades version-three collections inside the account envelope without changing another owner’s cards', () => {
+    const otherCard = { ...initial, id: 'other-card', noteId: 'other-note' }
+    localStorage.setItem(
+      ACCOUNT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        accounts: {
+          [`user:${user.id}`]: {
+            version: 3,
+            cards: [legacyCard()],
+            deletedCardIds: ['deleted'],
+          },
+          'user:other': {
+            version: 3,
+            cards: [otherCard],
+            deletedCardIds: ['other-deleted'],
+          },
+        },
+      }),
+    )
+    const repo = new LocalStorageCardRepository(localStorage, user.id)
+    const loaded = repo.load([])
+    expect(loaded).toMatchObject({ status: 'loaded', cards: [initial] })
+    const edited = updateStudyCard(loaded.cards[0]!, { answer: 'hi' }, 1000)
+    repo.save([edited])
+    expect(
+      JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY)!),
+    ).toMatchObject({
+      version: 1,
+      accounts: {
+        [`user:${user.id}`]: {
+          version: 4,
+          cards: [edited],
+          deletedCardIds: ['deleted'],
+        },
+        'user:other': {
+          version: 4,
+          cards: [otherCard],
+          deletedCardIds: ['other-deleted'],
+        },
+      },
+    })
+    expect(
+      new LocalStorageCardRepository(localStorage, user.id).load([]).cards,
+    ).toEqual([edited])
+    expect(repo.forOwner('other').load([]).cards).toEqual([otherCard])
+  })
 
   it('round-trips an edit and reset through sync, reload, backup, further practice, and sync again', async () => {
     const reviewed = scheduleReview(initial, 'easy', 5000)
@@ -109,8 +174,10 @@ describe('card mutation persistence contracts', () => {
     )
     const synced = await service.syncDeck([edited], user)
     expect(synced).toMatchObject({ success: true, cards: [edited] })
-    new LocalStorageCardRepository(localStorage).save(synced.cards!)
-    const reloaded = new LocalStorageCardRepository(localStorage).load([])
+    new LocalStorageCardRepository(localStorage, user.id).save(synced.cards!)
+    const reloaded = new LocalStorageCardRepository(localStorage, user.id).load(
+      [],
+    ).cards
     const backup = createDeckBackup(reloaded, { now: () => 1000 })
     const restored = parseDeckBackup(backup.json)
     expect(restored).toMatchObject({ success: true, cards: [edited] })
@@ -150,8 +217,10 @@ describe('card mutation persistence contracts', () => {
         },
       ],
     })
-    new LocalStorageCardRepository(localStorage).save(synced.cards!)
-    const reloaded = new LocalStorageCardRepository(localStorage).load([])
+    new LocalStorageCardRepository(localStorage, user.id).save(synced.cards!)
+    const reloaded = new LocalStorageCardRepository(localStorage, user.id).load(
+      [],
+    ).cards
     expect((await service.syncDeck(reloaded, user)).cards).toEqual(synced.cards)
     expect((await service.syncDeck([staleReplica], user)).cards).toEqual(
       synced.cards,
