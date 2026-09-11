@@ -1,5 +1,6 @@
 import { preteriteFamilies, preteriteVerbs } from './grammar-content'
 import { perfectFamilies, perfectVerbs } from './grammar-perfect'
+import { gerundFamilies, gerundVerbs } from './grammar-gerund'
 import type { GrammarVerb } from './grammar-catalog-types'
 
 export const grammarTopics = {
@@ -14,6 +15,12 @@ export const grammarTopics = {
     description: 'Spanish present perfect',
     families: perfectFamilies,
     verbs: perfectVerbs,
+  },
+  gerund: {
+    title: 'Gerundio',
+    description: 'Spanish present progressive',
+    families: gerundFamilies,
+    verbs: gerundVerbs,
   },
 } as const
 export type GrammarTopic = keyof typeof grammarTopics

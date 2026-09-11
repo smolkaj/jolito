@@ -20,7 +20,7 @@ async function begin() {
 }
 
 describe('grammar practice in Jolito', () => {
-  it.each(['preterite', 'perfect'] as const)(
+  it.each(['preterite', 'perfect', 'gerund'] as const)(
     'keeps one sentence playback control through %s recall, reveal, interruption and next card',
     async (topic) => {
       window.history.replaceState({}, '', '#/grammar')
@@ -253,7 +253,7 @@ describe('grammar practice in Jolito', () => {
     expect(prefetch).toHaveBeenCalledTimes(ended)
   })
 
-  it.each(['preterite', 'perfect'] as const)(
+  it.each(['preterite', 'perfect', 'gerund'] as const)(
     'preserves an active %s answer through cloud reconciliation, token refresh and visibility interruptions',
     async (topic) => {
       window.history.replaceState({}, '', '#/grammar')
