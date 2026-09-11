@@ -20,6 +20,7 @@ export interface AnkiImportStats {
 export type ParseAnkiResult =
   | {
       success: true
+      source: 'text' | 'package' | 'backup'
       cards: StudyCard[]
       count: number
       deckName?: string | undefined
@@ -473,6 +474,7 @@ export function parseAnkiText(content: string, now: number): ParseAnkiResult {
 
   return {
     success: true,
+    source: 'text',
     cards,
     count: cards.length,
     stats: {
@@ -683,6 +685,7 @@ export async function parseAnkiPackage(
 
     return {
       success: true,
+      source: 'package',
       cards,
       count: cards.length,
       deckName,
@@ -739,6 +742,7 @@ export async function parseAnkiDeck(
     if (backupResult.success) {
       return {
         success: true,
+        source: 'backup',
         cards: backupResult.cards,
         count: backupResult.count,
         stats: {

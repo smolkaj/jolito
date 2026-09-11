@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import type { StudyCard } from '../domain/card'
+import {
+  createStudyCards,
+  scheduleReview,
+  type StudyCard,
+} from '../domain/card'
+import { createDeckBackup } from './deck-backup'
 import type { Clock } from './ports'
 import { applyAnkiImport } from './anki-import'
-import { parseAnkiDeck } from '../domain/anki-import'
+import { parseAnkiDeck, parseAnkiText } from '../domain/anki-import'
 import type { RestoreMode } from './deck-backup'
 
 async function importAnkiDeck(
@@ -216,4 +221,44 @@ describe('text import identity lifecycle', () => {
       'en-es',
     ])
   })
+})
+
+it('restores every exported identity and schedule even when normalized prompts coincide', async () => {
+  const clock = { now: () => 1000 }
+  const text = parseAnkiText('banco\tbank', 1000)
+  if (!text.success) throw new Error(text.error)
+  const first = text.cards[0]!
+  const second = scheduleReview(
+    createStudyCards(
+      {
+        spanish: 'Banco',
+        english: 'bench',
+        context: 'seat',
+        bidirectional: false,
+      },
+      'second-meaning',
+      1000,
+    )[0]!,
+    'easy',
+    2000,
+  )
+  const cards = [first, second]
+  const backup = createDeckBackup(cards, clock)
+  const restored = await importAnkiDeck(
+    [],
+    backup.json,
+    'replace',
+    clock,
+    backup.filename,
+    [first.id],
+  )
+  expect(restored).toMatchObject({
+    success: true,
+    cards,
+    addedCount: 2,
+    skippedCount: 0,
+  })
+  if (!restored.success) return
+  const reexported = createDeckBackup(restored.cards, clock)
+  expect(reexported.json).toBe(backup.json)
 })
