@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { createStudyCards } from '../../src/domain/card'
+import {
+  collectionVersion,
+  createStudyCards,
+  studyCardCollectionSchema,
+} from '../../src/domain/card'
 import { currentDeckJson } from './storage'
 import { auditAccessibility } from './accessibility'
 
@@ -10,17 +14,21 @@ type HeldSyncWindow = Window & {
 }
 type CloudPush = { user_id: string; data: { cards: unknown[] } }
 
-const cards = (owner: string) =>
-  createStudyCards(
-    {
-      spanish: `${owner}-private`,
-      english: owner,
-      context: '',
-      bidirectional: false,
-    },
-    owner,
-    0,
-  )
+const collection = (owner: string) =>
+  studyCardCollectionSchema.parse({
+    version: collectionVersion,
+    cards: createStudyCards(
+      {
+        spanish: `${owner}-private`,
+        english: owner,
+        context: '',
+        bidirectional: false,
+      },
+      owner,
+      0,
+    ),
+    deletedCardIds: [],
+  })
 const session = (owner: string) => ({
   accessToken: `token-${owner}`,
   refreshToken: `refresh-${owner}`,
@@ -43,8 +51,8 @@ for (const heldAt of ['response', 'body'] as const) {
             JSON.stringify({
               version: 1,
               accounts: {
-                'user:A': { version: 3, cards: a, deletedCardIds: [] },
-                'user:B': { version: 3, cards: b, deletedCardIds: [] },
+                'user:A': a,
+                'user:B': b,
               },
             }),
           )
@@ -85,7 +93,12 @@ for (const heldAt of ['response', 'body'] as const) {
           return response
         }
       },
-      { a: cards('A'), b: cards('B'), auth: session('A'), stage: heldAt },
+      {
+        a: collection('A'),
+        b: collection('B'),
+        auth: session('A'),
+        stage: heldAt,
+      },
     )
     const pushes: CloudPush[] = []
     const cloud = new Map<string, CloudPush>()
