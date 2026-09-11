@@ -27,6 +27,7 @@ const row = {
 function service(auth: Partial<SupabaseAuthService> = {}) {
   return new SupabaseSyncService(
     {
+      getCurrentUser: () => user,
       getAccessToken: () => Promise.resolve('token'),
       ...auth,
     } as SupabaseAuthService,
@@ -227,3 +228,57 @@ it('does not start a request after disposal while credentials are being refreshe
   expect((await done).success).toBe(false)
   expect(fetchSpy).not.toHaveBeenCalled()
 })
+
+it.each(['write credentials', 'unauthorized refresh'])(
+  'does not submit another account’s credentials during %s, then resumes for the correct owner',
+  async (stage) => {
+    let active = user
+    let release!: (token: string) => void
+    let reached!: () => void
+    const paused = new Promise<void>((resolve) => {
+      reached = resolve
+    })
+    const held = new Promise<string>((resolve) => {
+      release = resolve
+    })
+    let credentials = 0
+    let writes = 0
+    const sync = service({
+      getCurrentUser: () => active,
+      getAccessToken: () => {
+        if (++credentials === 2 && stage === 'write credentials') {
+          reached()
+          return held
+        }
+        return Promise.resolve('owner-a-token')
+      },
+      refreshSession: () => {
+        reached()
+        return held
+      },
+    })
+    const fetchSpy = vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method !== 'POST') return Promise.resolve(Response.json([row]))
+      if (++writes === 1 && stage === 'unauthorized refresh')
+        return Promise.resolve(new Response('', { status: 401 }))
+      return Promise.resolve(Response.json(2))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+    const done = sync.syncDeck(cards, user)
+    await paused
+    active = { id: 'another-owner', email: 'another@example.com' }
+    release('owner-b-token')
+    expect(await done).toMatchObject({
+      success: false,
+      error: expect.stringContaining('account changed') as string,
+    })
+    expect(writes).toBe(stage === 'write credentials' ? 0 : 1)
+    active = user
+    expect((await sync.syncDeck(cards, user)).success).toBe(true)
+    for (const [, init] of fetchSpy.mock.calls) {
+      expect(new Headers(init?.headers).get('Authorization')).toBe(
+        'Bearer owner-a-token',
+      )
+    }
+  },
+)

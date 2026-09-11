@@ -30,14 +30,21 @@ export class SupabaseSyncService implements SyncService {
   }
 
   private async request(
+    user: AuthUser,
     path: string,
     body?: unknown,
     signal?: AbortSignal,
   ): Promise<Response> {
     if (!this.supabaseUrl || !this.supabaseAnonKey)
       throw new Error('Cloud sync backend is not configured.')
+    const assertOwner = () => {
+      signal?.throwIfAborted()
+      if (this.authService.getCurrentUser()?.id !== user.id)
+        throw new Error('Your account changed. Please sync again.')
+    }
+    assertOwner()
     const token = await this.authService.getAccessToken?.()
-    signal?.throwIfAborted()
+    assertOwner()
     if (!token) throw new Error('Sign in to sync your deck.')
     const send = (accessToken: string) =>
       fetch(`${this.supabaseUrl}/rest/v1/${path}`, {
@@ -53,10 +60,12 @@ export class SupabaseSyncService implements SyncService {
           : AbortSignal.timeout(10_000),
       })
     let response = await send(token)
+    assertOwner()
     if (response.status === 401) {
       const refreshed = await this.authService.refreshSession?.()
-      signal?.throwIfAborted()
+      assertOwner()
       if (refreshed) response = await send(refreshed)
+      assertOwner()
     }
     if (!response.ok) {
       const errorText = await response.text().catch(() => '')
@@ -72,6 +81,7 @@ export class SupabaseSyncService implements SyncService {
   async pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult> {
     try {
       const response = await this.request(
+        user,
         `decks?user_id=eq.${encodeURIComponent(user.id)}&select=user_id,revision,updated_at,data`,
         undefined,
         signal,
@@ -135,6 +145,7 @@ export class SupabaseSyncService implements SyncService {
         )
         const now = new Date().toISOString()
         const response = await this.request(
+          user,
           'rpc/compare_and_set_deck',
           {
             p_user_id: user.id,

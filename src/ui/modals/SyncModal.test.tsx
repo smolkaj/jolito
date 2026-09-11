@@ -1,13 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { MockAuthService, MockSyncService } from '../../test/services'
+import { MockAuthService } from '../../test/services'
 import { SyncModal } from './SyncModal'
 
 describe('SyncModal Account Deletion and Legal', () => {
   it('renders account deletion trigger when signed in and confirms deletion', async () => {
     const auth = new MockAuthService()
     auth.user = { id: 'user-del-1', email: 'delete-me@example.com' }
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const deleteAccountSpy = vi.spyOn(auth, 'deleteAccount')
 
     render(
@@ -17,9 +17,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -87,7 +86,7 @@ describe('SyncModal Account Deletion and Legal', () => {
   it('triggers onDownloadBackup before deletion when backup checkbox is checked', async () => {
     const auth = new MockAuthService()
     auth.user = { id: 'user-del-2', email: 'backup-del@example.com' }
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const onDownloadBackup = vi.fn()
 
     render(
@@ -97,9 +96,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
         onDownloadBackup={onDownloadBackup}
       />,
     )
@@ -132,7 +130,7 @@ describe('SyncModal Account Deletion and Legal', () => {
   it('bypasses backup download if user unchecks the backup checkbox', async () => {
     const auth = new MockAuthService()
     auth.user = { id: 'user-del-3', email: 'no-backup@example.com' }
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const onDownloadBackup = vi.fn()
 
     render(
@@ -142,9 +140,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
         onDownloadBackup={onDownloadBackup}
       />,
     )
@@ -178,7 +175,7 @@ describe('SyncModal Account Deletion and Legal', () => {
   it('submits deletion via form submit (Enter key) when DELETE is typed', async () => {
     const auth = new MockAuthService()
     auth.user = { id: 'user-del-enter', email: 'enter@example.com' }
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const deleteAccountSpy = vi.spyOn(auth, 'deleteAccount')
 
     render(
@@ -188,9 +185,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -214,7 +210,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
   it('displays error banner if deleteAccount returns failure', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     auth.user = { id: 'user-fail-del', email: 'fail-del@example.com' }
 
     vi.spyOn(auth, 'deleteAccount').mockResolvedValue({
@@ -229,9 +225,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -259,7 +254,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
   it('invokes onOpenPrivacy callback when clicking Privacy link', () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const onOpenPrivacy = vi.fn()
     const onClose = vi.fn()
 
@@ -270,9 +265,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={onClose}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
         onOpenPrivacy={onOpenPrivacy}
       />,
     )
@@ -286,7 +280,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
   it('invokes onOpenFeedback callback when clicking Feedback link', () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const onOpenFeedback = vi.fn()
     const onClose = vi.fn()
 
@@ -297,9 +291,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={onClose}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
         onOpenFeedback={onOpenFeedback}
       />,
     )
@@ -313,7 +306,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
   it('renders Acknowledgements link pointing to /acknowledgements in a new tab', () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -322,9 +315,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -337,7 +329,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
   it('applies uniform legal link styling without competing button utility classes', () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -346,9 +338,8 @@ describe('SyncModal Account Deletion and Legal', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -371,7 +362,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 describe('SyncModal First-Class OTP Code Entry', () => {
   it('immediately reveals 6-digit code input upon sending magic link without clicking paste link', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -380,9 +371,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -414,7 +404,7 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
   it('signs in when 6-digit OTP code is entered and submitted', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const verifySpy = vi.spyOn(auth, 'verifyOtp')
 
     const { rerender } = render(
@@ -424,9 +414,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -465,7 +454,7 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
   it('allows changing email back to the email input form', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -474,9 +463,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -499,7 +487,7 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
   it('dynamically styles numeric OTP tokens and switches inputMode adaptively', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -508,9 +496,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -546,7 +533,7 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
   it('normalizes domain-bound code (@joli.to #123456) when clicking paste from clipboard', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
     const readTextSpy = vi.fn().mockResolvedValue('@joli.to #839201')
     Object.defineProperty(navigator, 'clipboard', {
       value: { readText: readTextSpy },
@@ -561,9 +548,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -589,7 +575,7 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
   it('normalizes domain-bound code during native paste event and allows successful sign-in', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -598,9 +584,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 
@@ -634,7 +619,7 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
   it('normalizes domain-bound code during direct input change', async () => {
     const auth = new MockAuthService()
-    const sync = new MockSyncService()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
 
     render(
       <SyncModal
@@ -643,9 +628,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
-        onUpdateCards={vi.fn()}
         auth={auth}
-        sync={sync}
+        onSync={onSync}
       />,
     )
 

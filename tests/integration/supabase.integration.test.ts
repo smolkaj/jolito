@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../src/application/ports'
 import { createStudyCards, type StudyCard } from '../../src/domain/card'
-import type { SupabaseAuthService } from '../../src/infrastructure/supabase/auth-service'
 import { SupabaseFeedbackService } from '../../src/infrastructure/supabase/feedback-service'
 import { SupabaseSyncService } from '../../src/infrastructure/supabase/sync-service'
 
@@ -287,13 +286,13 @@ describe('Supabase Live Stack Integration', () => {
     const userB = await createRealTestUser('sync-b')
 
     const syncServiceA = new SupabaseSyncService(
-      userA.authService as unknown as SupabaseAuthService,
+      userA.authService,
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
       'device-a',
     )
     const syncServiceB = new SupabaseSyncService(
-      userB.authService as unknown as SupabaseAuthService,
+      userB.authService,
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
       'device-b',
@@ -348,12 +347,7 @@ describe('Supabase Live Stack Integration', () => {
   it('reconciles two real devices after both read the same server revision', async () => {
     const { user, authService } = await createRealTestUser('concurrent-sync')
     const device = (id: string) =>
-      new SupabaseSyncService(
-        authService as SupabaseAuthService,
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-        id,
-      )
+      new SupabaseSyncService(authService, SUPABASE_URL, SUPABASE_ANON_KEY, id)
     const a = createStudyCards(
       { spanish: 'uno', english: 'one', context: '', bidirectional: false },
       'a',

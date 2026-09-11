@@ -1301,6 +1301,7 @@ describe('Jolito', () => {
       return {
         success: true,
         cards: cards.map((c) => ({ ...c })),
+        deletedCardIds: [],
         syncedAt: Date.now(),
       }
     }
@@ -1889,7 +1890,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
@@ -1960,7 +1961,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // Trigger sync now via SyncModal
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
 
@@ -2024,7 +2025,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Open sync modal and trigger sync
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
 
@@ -2071,7 +2072,7 @@ describe('Jolito', () => {
     expect(services.memoryCards.load([]).cards[0]?.prompt).toBe('zapato')
 
     // Open sync modal and click sign out
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
@@ -2205,7 +2206,7 @@ describe('Jolito', () => {
     })
     render(<App services={authedServices} />)
     expect(
-      screen.getByRole('button', { name: /deck synced with cloud/i }),
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
     ).toBeInTheDocument()
 
     window.dispatchEvent(new Event('offline'))

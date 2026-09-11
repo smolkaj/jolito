@@ -53,6 +53,7 @@ function cloud(initial: StudyCard[] = []) {
   })
   vi.stubGlobal('fetch', fetchFn)
   const auth = {
+    getCurrentUser: () => user,
     getAccessToken: () => Promise.resolve('token'),
   } as SupabaseAuthService
   const device = (id: string) =>
