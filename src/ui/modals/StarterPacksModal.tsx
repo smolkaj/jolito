@@ -28,6 +28,7 @@ function StarterPacksModalInner({
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const inspectBackBtnRef = useRef<HTMLButtonElement>(null)
   const lastInspectedPackIdRef = useRef<string | null>(null)
+  const saveErrorRef = useRef<HTMLParagraphElement>(null)
   const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
@@ -92,6 +93,7 @@ function StarterPacksModalInner({
         if (e.shiftKey) {
           if (
             document.activeElement === first ||
+            document.activeElement === saveErrorRef.current ||
             !container.contains(document.activeElement)
           ) {
             e.preventDefault()
@@ -100,6 +102,7 @@ function StarterPacksModalInner({
         } else {
           if (
             document.activeElement === last ||
+            document.activeElement === saveErrorRef.current ||
             !container.contains(document.activeElement)
           ) {
             e.preventDefault()
@@ -123,7 +126,6 @@ function StarterPacksModalInner({
   }, [cards])
 
   const [saveError, setSaveError] = useState(0)
-  const saveErrorRef = useRef<HTMLParagraphElement>(null)
   useEffect(() => {
     if (!saveError) return
     saveErrorRef.current?.focus({ preventScroll: true })

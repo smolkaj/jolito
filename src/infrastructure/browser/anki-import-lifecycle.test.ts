@@ -72,8 +72,10 @@ describe('deleted text card reimport', () => {
     const repo = new LocalStorageCardRepository(adapter)
     repo.save(restored.cards, deletedIds)
     const reloaded = new LocalStorageCardRepository(adapter)
+    const loaded = reloaded.load([])
+    expect(loaded.status).toBe('loaded')
     const synced = reconcileStudyCards(
-      reloaded.load([]),
+      loaded.cards,
       initial.cards,
       reloaded.getDeletedCardIds(),
       deletedIds,

@@ -347,6 +347,15 @@ function DeckBackupModalInner({
   const [isExported, setIsExported] = useState(false)
   const exportedTimerRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const backupStatusRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (backupStatus?.type !== 'error') return
+    backupStatusRef.current?.scrollIntoView({
+      block: 'center',
+      behavior: 'instant',
+    })
+  }, [backupStatus])
 
   useEffect(() => {
     const importState = importReadState.current
@@ -490,6 +499,7 @@ function DeckBackupModalInner({
 
         {backupStatus && (
           <div
+            ref={backupStatusRef}
             className={`status-banner status-${backupStatus.type}`}
             role={backupStatus.type === 'error' ? 'alert' : 'status'}
           >
@@ -2641,12 +2651,6 @@ function LoadedApp({
               />
             </div>
           </nav>
-          {saveError && (
-            <p className="storage-save-error" role="alert">
-              Your changes couldn’t be saved. Free up device storage, then try
-              again.
-            </p>
-          )}
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
@@ -2907,6 +2911,12 @@ function LoadedApp({
                     </div>
                   </div>
                 </details>
+              )}
+              {saveError && (
+                <p className="storage-save-error" role="alert">
+                  Your changes couldn’t be saved. Free up device storage, then
+                  try again.
+                </p>
               )}
               <button
                 className={`primary-button save-button ${savedToast ? 'is-saved' : ''}`}

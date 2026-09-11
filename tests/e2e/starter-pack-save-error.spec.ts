@@ -49,6 +49,16 @@ for (const action of ['pack', 'note']) {
       await settleAnimations(page)
       await expect(error).toBeInViewport({ ratio: 1 })
       await expect(error).toBeFocused()
+      const dialog = page.getByRole('dialog')
+      const buttons = dialog.getByRole('button').filter({ visible: true })
+      await page.keyboard.press('Shift+Tab')
+      await expect(buttons.last()).toBeFocused()
+      await page.keyboard.press('Tab')
+      await expect(buttons.first()).toBeFocused()
+      await error.focus()
+      await page.keyboard.press('Tab')
+      await expect(buttons.first()).toBeFocused()
+      await error.focus()
       await expect(add).toBeEnabled()
       expect(
         await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
