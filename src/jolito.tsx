@@ -408,7 +408,27 @@ function DeckBackupModalInner({
     try {
       const buffer = await file.arrayBuffer()
       if (generation !== importReadState.current.generation) return
-      const parsed = await parseAnkiDeck(buffer, file.name, clock.now())
+      const bytes = new Uint8Array(buffer)
+      const isZip = bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b
+
+      let packageParser:
+        | ((
+            buf: Uint8Array | ArrayBuffer,
+            now: number,
+          ) => Promise<ParseAnkiResult>)
+        | undefined
+      if (isZip) {
+        const { parseAnkiPackage } =
+          await import('./infrastructure/browser/anki-package')
+        packageParser = parseAnkiPackage
+      }
+
+      const parsed = await parseAnkiDeck(
+        buffer,
+        file.name,
+        clock.now(),
+        packageParser,
+      )
       if (generation !== importReadState.current.generation) return
       setIsParsingImport(false)
       if (parsed.success) {

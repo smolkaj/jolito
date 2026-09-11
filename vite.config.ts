@@ -101,6 +101,21 @@ function apiDevPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), apiDevPlugin(), offlineShellPlugin()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/')
+          ) {
+            return 'react'
+          }
+          return undefined
+        },
+      },
+    },
+  },
   server: {
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), '..'],
