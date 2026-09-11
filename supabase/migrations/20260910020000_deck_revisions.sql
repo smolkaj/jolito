@@ -49,3 +49,7 @@ $$;
 revoke all on function public.compare_and_set_deck(uuid, bigint, jsonb) from public, anon;
 grant execute on function public.compare_and_set_deck(uuid, bigint, jsonb) to authenticated;
 revoke insert, update, delete on public.decks from anon, authenticated;
+
+drop policy "Users can insert their own deck" on public.decks;
+drop policy "Users can update their own deck" on public.decks;
+drop policy "Users can delete their own deck" on public.decks;

@@ -1,9 +1,11 @@
 begin;
-select plan(18);
+select plan(19);
 
 insert into auth.users (id, email) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'revision_a@example.com'),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'revision_b@example.com');
+
+select policies_are('public', 'decks', array['Users can view their own deck'], 'Only the revision RPC owns writes; table policies grant reads only');
 
 select ok(not has_function_privilege('anon', 'public.compare_and_set_deck(uuid,bigint,jsonb)', 'execute'), 'Anonymous callers cannot execute snapshot writes');
 select ok(not has_table_privilege('authenticated', 'public.decks', 'insert,update,delete'), 'Legacy REST writes cannot bypass revisions');
