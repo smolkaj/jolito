@@ -1,7 +1,6 @@
 import type { StudyCard } from '../domain/card'
 import type { FeedbackSubmission } from '../domain/feedback'
 import type { AutocompleteSuggestion, LexiconEntry } from '../domain/lexicon'
-import type { SyncStatus } from '../domain/sync'
 
 export type { FeedbackSubmission }
 
@@ -132,7 +131,6 @@ export type SyncResult = {
 }
 
 export type SyncService = {
-  getStatus(): SyncStatus
   pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult>
   syncDeck(
     localCards: StudyCard[],

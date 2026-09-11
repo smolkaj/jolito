@@ -25,7 +25,7 @@ import type {
 import { OfflineCardAssistant } from '../application/card-assistant'
 import type { StudyCard } from '../domain/card'
 import { SEED_LEXICON, type LexiconEntry } from '../domain/lexicon'
-import { reconcileStudyCards, type SyncStatus } from '../domain/sync'
+import { reconcileStudyCards } from '../domain/sync'
 import { unwrapDomainBoundOtp } from '../domain/auth'
 
 export class FixedClock implements Clock {
@@ -268,7 +268,6 @@ export class MockAuthService implements AuthService {
 }
 
 export class MockSyncService implements SyncService {
-  public status: SyncStatus = 'idle'
   public syncedCount = 0
   public decks = new Map<
     string,
@@ -296,9 +295,6 @@ export class MockSyncService implements SyncService {
       deletedCardIds,
     })
   }
-  getStatus(): SyncStatus {
-    return this.status
-  }
   pullDeck(user: AuthUser): Promise<SyncResult> {
     return Promise.resolve({ success: true, ...this.deck(user.id) })
   }
@@ -316,7 +312,6 @@ export class MockSyncService implements SyncService {
       remote.deletedCardIds,
     )
     this.decks.set(user.id, reconciled)
-    this.status = 'synced'
     return Promise.resolve({
       success: true,
       ...reconciled,

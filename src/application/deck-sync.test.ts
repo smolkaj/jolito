@@ -33,7 +33,6 @@ describe('syncDeckWithCloud', () => {
   it('fails gracefully when user is unauthenticated', async () => {
     const syncDeckMock = vi.fn()
     const syncService: SyncService = {
-      getStatus: () => 'unauthenticated',
       pullDeck: vi.fn(),
       syncDeck: syncDeckMock,
     }
@@ -64,7 +63,6 @@ describe('syncDeckWithCloud', () => {
       syncedAt: 123456789,
     })
     const syncService: SyncService = {
-      getStatus: () => 'synced',
       pullDeck: vi.fn(),
       syncDeck: syncDeckMock,
     }
@@ -115,7 +113,6 @@ describe('syncDeckWithCloud', () => {
 
   it('returns failure result without modifying cards when cloud sync fails', async () => {
     const syncService: SyncService = {
-      getStatus: () => 'error',
       pullDeck: vi.fn(),
       syncDeck: vi.fn().mockResolvedValue({
         success: false,

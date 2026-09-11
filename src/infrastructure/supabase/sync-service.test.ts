@@ -70,7 +70,6 @@ it.each([
     vi.stubGlobal('fetch', fetchSpy)
     const sync = service()
     expect(await sync.syncDeck(cards, user)).toMatchObject({ success: false })
-    expect(sync.getStatus()).toBe('error')
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   },
 )
@@ -86,7 +85,6 @@ it('commits only against the revision read and returns server confirmation', asy
     cards,
     revision: 2,
   })
-  expect(sync.getStatus()).toBe('synced')
   const request = fetchSpy.mock.calls[1] as unknown as [string, RequestInit]
   expect(request[0]).toBe(
     'https://example.supabase.co/rest/v1/rpc/compare_and_set_deck',

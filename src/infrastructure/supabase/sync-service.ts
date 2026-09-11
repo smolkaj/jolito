@@ -1,26 +1,25 @@
 import { getOrCreateDeviceId } from '../browser/device-id'
 import { z } from 'zod'
 import { collectionVersion } from '../../domain/card'
-import type { AuthUser, SyncResult, SyncService } from '../../application/ports'
+import type {
+  AuthService,
+  AuthUser,
+  SyncResult,
+  SyncService,
+} from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
-import {
-  deckSyncPayloadSchema,
-  reconcileStudyCards,
-  type SyncStatus,
-} from '../../domain/sync'
-import type { SupabaseAuthService } from './auth-service'
+import { deckSyncPayloadSchema, reconcileStudyCards } from '../../domain/sync'
 import { parsePostgrestErrorPayload } from './postgrest-error'
 
 const revisionSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 const MAX_SYNC_ATTEMPTS = 3
 
 export class SupabaseSyncService implements SyncService {
-  private status: SyncStatus = 'idle'
   private readonly deviceId: string
   private readonly supabaseUrl: string
 
   constructor(
-    private readonly authService: SupabaseAuthService,
+    private readonly authService: AuthService,
     supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL ?? '',
     private readonly supabaseAnonKey: string = import.meta.env
       .VITE_SUPABASE_ANON_KEY ?? '',
@@ -28,10 +27,6 @@ export class SupabaseSyncService implements SyncService {
   ) {
     this.supabaseUrl = supabaseUrl.replace(/\/+$/, '')
     this.deviceId = deviceId ?? getOrCreateDeviceId()
-  }
-
-  getStatus(): SyncStatus {
-    return this.status
   }
 
   private async request(
@@ -124,7 +119,6 @@ export class SupabaseSyncService implements SyncService {
     localDeletedIds: string[] = [],
     signal?: AbortSignal,
   ): Promise<SyncResult> {
-    this.status = 'syncing'
     try {
       let pending = { cards: localCards, deletedCardIds: localDeletedIds }
       for (let attempt = 0; attempt < MAX_SYNC_ATTEMPTS; attempt++) {
@@ -161,7 +155,6 @@ export class SupabaseSyncService implements SyncService {
           throw new Error(
             'Cloud snapshot revision did not advance as expected.',
           )
-        this.status = 'synced'
         return {
           success: true,
           ...pending,
@@ -173,7 +166,6 @@ export class SupabaseSyncService implements SyncService {
         'Your deck changed on another device. Your local changes are saved; please sync again.',
       )
     } catch (error) {
-      this.status = 'error'
       return {
         success: false,
         error:
