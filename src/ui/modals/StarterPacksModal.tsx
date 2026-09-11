@@ -7,18 +7,21 @@ import { starterPacks, type StarterPack } from '../../domain/starter-decks'
 interface StarterPacksModalProps {
   isOpen: boolean
   onClose: () => void
+  saveErrorMessage?: string | null
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => boolean | void
   onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
 }
 
 function StarterPacksModalInner({
+  saveErrorMessage,
   onClose,
   cards,
   onAddPack,
   onAddNote,
 }: {
   onClose: () => void
+  saveErrorMessage?: string | null
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => boolean | void
   onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
@@ -182,8 +185,8 @@ function StarterPacksModalInner({
       >
         {saveError > 0 && (
           <p ref={saveErrorRef} role="alert" tabIndex={-1}>
-            Your cards couldn’t be saved. Free up device storage, then try
-            again.
+            {saveErrorMessage ??
+              'Your cards couldn’t be saved. Free up device storage, then try again.'}
           </p>
         )}
         {inspectingPack ? (

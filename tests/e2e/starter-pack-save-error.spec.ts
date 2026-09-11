@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { currentDeckJson } from './storage'
 import { auditAccessibility, settleAnimations } from './accessibility'
 
 for (const viewport of [
@@ -26,9 +27,7 @@ for (const viewport of [
                 .last()
                 .getByRole('button', { name: /^Add/ })
         await add.scrollIntoViewIfNeeded()
-        const before = await page.evaluate(() =>
-          localStorage.getItem('jolito-library-v1'),
-        )
+        const before = await page.evaluate(currentDeckJson)
         await page.evaluate(() => {
           const original = Object.getOwnPropertyDescriptor(
             Storage.prototype,
@@ -65,11 +64,7 @@ for (const viewport of [
           await expect(buttons.first()).toBeFocused()
           await error.focus()
           await expect(add).toBeEnabled()
-          expect(
-            await page.evaluate(() =>
-              localStorage.getItem('jolito-library-v1'),
-            ),
-          ).toBe(before)
+          expect(await page.evaluate(currentDeckJson)).toBe(before)
         }
         expect((await auditAccessibility(page)).violations).toEqual([])
         await page.screenshot({
@@ -85,9 +80,7 @@ for (const viewport of [
             .getByRole('alert')
             .filter({ hasText: /couldn’t be saved/ }),
         ).toHaveCount(0)
-        expect(
-          await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-        ).not.toBe(before)
+        expect(await page.evaluate(currentDeckJson)).not.toBe(before)
       })
     }
   })

@@ -10,6 +10,7 @@ import {
 } from '../../domain/sync'
 import type { SupabaseAuthService } from './auth-service'
 import { parsePostgrestErrorPayload } from './postgrest-error'
+import { withRequestDeadline } from '../request-lifetime'
 
 export class SupabaseSyncService implements SyncService {
   private status: SyncStatus = 'idle'
@@ -32,8 +33,56 @@ export class SupabaseSyncService implements SyncService {
     return this.status
   }
 
-  private async getAuthHeaders(): Promise<Record<string, string> | null> {
+  private assertActive(ownerId: string, signal: AbortSignal): void {
+    if (signal.aborted) throw new Error('Cloud sync was interrupted.')
+    if (!this.authService.isCurrentOwner(ownerId))
+      throw new Error('Your account changed. Please sync again.')
+  }
+
+  private async withinLifetime(
+    operation: (signal: AbortSignal) => Promise<SyncResult>,
+    signal?: AbortSignal,
+  ): Promise<SyncResult> {
+    try {
+      return await withRequestDeadline(operation, signal)
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Cloud sync was interrupted.',
+      }
+    }
+  }
+
+  pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult> {
+    return this.withinLifetime(
+      (requestSignal) => this.performPull(user, requestSignal),
+      signal,
+    )
+  }
+
+  pushDeck(
+    cards: StudyCard[],
+    user: AuthUser,
+    deletedCardIds: string[] = [],
+    signal?: AbortSignal,
+  ): Promise<SyncResult> {
+    return this.withinLifetime(
+      (requestSignal) =>
+        this.performPush(cards, user, deletedCardIds, requestSignal),
+      signal,
+    )
+  }
+
+  private async getAuthHeaders(
+    ownerId: string,
+    signal: AbortSignal,
+  ): Promise<Record<string, string> | null> {
+    this.assertActive(ownerId, signal)
     const token = (await this.authService.getAccessToken?.()) ?? null
+    this.assertActive(ownerId, signal)
     if (!token || !this.supabaseAnonKey) {
       return null
     }
@@ -44,33 +93,45 @@ export class SupabaseSyncService implements SyncService {
     }
   }
 
-  async pullDeck(user: AuthUser): Promise<SyncResult> {
+  private async performPull(
+    user: AuthUser,
+    signal: AbortSignal,
+  ): Promise<SyncResult> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
-    let headers = await this.getAuthHeaders()
+    let headers = await this.getAuthHeaders(user.id, signal)
+    this.assertActive(user.id, signal)
     if (!headers) {
       return { success: false, error: 'Sign in to access your cloud deck.' }
     }
 
     try {
       const fetchUrl = `${this.supabaseUrl}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}&select=*`
-      let res = await fetch(fetchUrl, { headers })
+      let res = await fetch(fetchUrl, { headers, signal })
+      this.assertActive(user.id, signal)
 
-      if (res.status === 401 && this.authService.refreshSession) {
+      if (
+        res.status === 401 &&
+        this.authService.refreshSession &&
+        this.authService.isCurrentOwner(user.id)
+      ) {
         const refreshedToken = await this.authService.refreshSession()
-        if (refreshedToken) {
+        this.assertActive(user.id, signal)
+        if (refreshedToken && this.authService.isCurrentOwner(user.id)) {
           headers = {
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,
           }
-          res = await fetch(fetchUrl, { headers })
+          res = await fetch(fetchUrl, { headers, signal })
+          this.assertActive(user.id, signal)
         }
       }
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
+        this.assertActive(user.id, signal)
         const errorPayload = parsePostgrestErrorPayload(errorText)
         console.error('[SyncService] Cloud pull failed:', {
           status: res.status,
@@ -97,6 +158,7 @@ export class SupabaseSyncService implements SyncService {
         data: unknown
       }>
 
+      this.assertActive(user.id, signal)
       if (!rows || rows.length === 0) {
         return { success: true, cards: [], deletedCardIds: [] }
       }
@@ -136,16 +198,18 @@ export class SupabaseSyncService implements SyncService {
     }
   }
 
-  async pushDeck(
+  private async performPush(
     cards: StudyCard[],
     user: AuthUser,
-    deletedCardIds: string[] = [],
+    deletedCardIds: string[],
+    signal: AbortSignal,
   ): Promise<SyncResult> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
-    let headers = await this.getAuthHeaders()
+    let headers = await this.getAuthHeaders(user.id, signal)
+    this.assertActive(user.id, signal)
     if (!headers) {
       return { success: false, error: 'Sign in to sync your deck.' }
     }
@@ -177,11 +241,18 @@ export class SupabaseSyncService implements SyncService {
           Prefer: 'resolution=merge-duplicates',
         },
         body: postBody,
+        signal,
       })
+      this.assertActive(user.id, signal)
 
-      if (res.status === 401 && this.authService.refreshSession) {
+      if (
+        res.status === 401 &&
+        this.authService.refreshSession &&
+        this.authService.isCurrentOwner(user.id)
+      ) {
         const refreshedToken = await this.authService.refreshSession()
-        if (refreshedToken) {
+        this.assertActive(user.id, signal)
+        if (refreshedToken && this.authService.isCurrentOwner(user.id)) {
           headers = {
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,
@@ -193,12 +264,15 @@ export class SupabaseSyncService implements SyncService {
               Prefer: 'resolution=merge-duplicates',
             },
             body: postBody,
+            signal,
           })
+          this.assertActive(user.id, signal)
         }
       }
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => '')
+        this.assertActive(user.id, signal)
         const errorPayload = parsePostgrestErrorPayload(errorText)
         console.error('[SyncService] Cloud push failed:', {
           status: res.status,
@@ -239,12 +313,13 @@ export class SupabaseSyncService implements SyncService {
     localCards: StudyCard[],
     user: AuthUser,
     localDeletedIds: string[] = [],
+    signal?: AbortSignal,
   ): Promise<SyncResult> {
     this.status = 'syncing'
 
-    const pullRes = await this.pullDeck(user)
+    const pullRes = await this.pullDeck(user, signal)
     if (!pullRes.success) {
-      this.status = 'error'
+      if (!signal?.aborted) this.status = 'error'
       return pullRes
     }
 
@@ -261,9 +336,10 @@ export class SupabaseSyncService implements SyncService {
       reconciliation.cards,
       user,
       reconciliation.deletedCardIds,
+      signal,
     )
     if (!pushRes.success) {
-      this.status = 'error'
+      if (!signal?.aborted) this.status = 'error'
       return pushRes
     }
 

@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility } from './accessibility'
 
@@ -390,11 +391,9 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   await signOutBtn.click()
 
   // Verify local storage is cleared of user data and reset to starter cards
-  const storedJson = await page.evaluate(() =>
-    window.localStorage.getItem('jolito-library-v1'),
-  )
+  const storedJson = await page.evaluate(currentDeckJson)
   expect(storedJson).not.toBeNull()
-  const stored = JSON.parse(storedJson!) as {
+  const stored = JSON.parse(storedJson) as {
     version: number
     cards: Array<{ noteId?: string }>
     deletedCardIds: string[]

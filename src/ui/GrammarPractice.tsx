@@ -14,6 +14,7 @@ import { AudioButton } from './AudioButton'
 import './grammar.css'
 
 export function GrammarPractice({
+  saveError,
   practice,
   services,
   onHome,
@@ -22,6 +23,7 @@ export function GrammarPractice({
   onSignIn,
 }: {
   practice: GrammarPracticeState
+  saveError?: string | null
   services: AppServices
   onHome: () => void
   paused: boolean
@@ -248,7 +250,7 @@ export function GrammarPractice({
       answerLabel="Your conjugation"
       placeholder="Type the verb…"
       accents
-      error={practice.error}
+      error={practice.error && (saveError ?? practice.error)}
       correctionRule={context.explanation}
     />
   )

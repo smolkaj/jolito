@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility, settleAnimations } from './accessibility'
 
@@ -79,13 +80,10 @@ for (const width of [320, 393, 768, 1024, 1280]) {
     await expect(page.getByRole('heading', { level: 1 })).not.toContainText(
       'Últimamente yo … mucho con la vecina.',
     )
-    const saved = await page.evaluate(
-      () =>
-        JSON.parse(localStorage.getItem('jolito-library-v1')!) as {
-          version: number
-          cards: { grammar?: { topic: string } }[]
-        },
-    )
+    const saved = JSON.parse(await page.evaluate(currentDeckJson)) as {
+      version: number
+      cards: { grammar?: { topic: string } }[]
+    }
     expect(saved.version).toBe(3)
     expect(
       saved.cards.filter((card) => card.grammar?.topic === 'perfect'),

@@ -16,6 +16,8 @@ describe('SupabaseFeedbackService', () => {
       .fn<() => Promise<string | null>>()
       .mockResolvedValue('refreshed-access-token')
     mockAuth = {
+      getCurrentUser: () => null,
+      isCurrentOwner: (ownerId: string | null) => ownerId === null,
       getUser: vi.fn().mockResolvedValue(mockUser),
       getAccessToken: vi.fn().mockResolvedValue('mock-access-token'),
       refreshSession: refreshSessionSpy,

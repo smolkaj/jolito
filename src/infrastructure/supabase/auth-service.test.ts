@@ -225,20 +225,18 @@ describe('SupabaseAuthService', () => {
     service.destroy()
   })
 
-  it('clears corrupted session data failing schema validation', async () => {
-    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-      corrupt: true,
-    })
-
-    const service = new SupabaseAuthService(
-      'https://example.supabase.co',
-      'anon-key',
-      fakeStorage,
-    )
-
-    const user = await service.getUser()
-    expect(user).toBeNull()
-    expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+  it('preserves invalid session evidence and stops initialization', () => {
+    const raw = JSON.stringify({ corrupt: true })
+    mockStorage['jolito-auth-session-v1'] = raw
+    expect(
+      () =>
+        new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        ),
+    ).toThrow(/sign-in data could not be verified/)
+    expect(mockStorage['jolito-auth-session-v1']).toBe(raw)
   })
 
   it('cleans up refresh timers and listeners on destroy and signOut', async () => {
@@ -258,7 +256,15 @@ describe('SupabaseAuthService', () => {
     service.destroy()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
     await service.signOut()
+    expect(mockStorage['jolito-auth-session-v1']).toBeDefined()
+    const resumed = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+    await resumed.signOut()
     expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+    resumed.destroy()
   })
 
   it('sends magic link OTP and handles network error gracefully', async () => {
@@ -963,6 +969,7 @@ describe('SupabaseAuthService', () => {
       expect(await service.deleteAccount()).toEqual({
         success: false,
         error: 'Network interrupted',
+        outcomeUnknown: true,
       })
       expect(mockStorage['jolito-auth-session-v1']).toBe(stored)
       expect(await service.getUser()).toEqual(user)
@@ -1210,8 +1217,11 @@ describe('SupabaseAuthService', () => {
           await refresh
           expect(mockStorage[storageKey]).toBe(stored)
           expect(listener).not.toHaveBeenCalled()
-          expect(fetchSpy).toHaveBeenCalledTimes(2)
+          // The refresh has its own deadline; its offline fallback can
+          // start the one permitted RPC retry before the deletion deadline.
+          expect(fetchSpy).toHaveBeenCalledTimes(3)
           service.destroy()
+          await vi.advanceTimersByTimeAsync(0)
           expect(vi.getTimerCount()).toBe(0)
         },
       )

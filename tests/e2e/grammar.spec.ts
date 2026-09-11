@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { practiceCards, practiceGrammar } from './practice'
 import {
   createGrammarCards,
@@ -310,13 +311,10 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
   await page.getByRole('button', { name: 'Jolito home', exact: true }).click()
   await page.getByRole('button', { name: 'Manage deck' }).click()
   await expect(page.getByRole('main')).not.toContainText('tener · yo')
-  const saved = await page.evaluate(
-    () =>
-      JSON.parse(localStorage.getItem('jolito-library-v1')!) as {
-        version: number
-        cards: { grammar?: unknown }[]
-      },
-  )
+  const saved = JSON.parse(await page.evaluate(currentDeckJson)) as {
+    version: number
+    cards: { grammar?: unknown }[]
+  }
   expect(saved.version).toBe(3)
   expect(saved.cards.filter((card) => card.grammar)).toHaveLength(2)
 })

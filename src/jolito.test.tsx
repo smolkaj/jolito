@@ -1699,9 +1699,9 @@ describe('Jolito', () => {
     await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
   })
@@ -1810,9 +1810,9 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
@@ -1834,9 +1834,9 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
@@ -1874,9 +1874,9 @@ describe('Jolito', () => {
     expect(readTextSpy).toHaveBeenCalledTimes(1)
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
@@ -2046,7 +2046,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('allows signed in user to sign out, clears local deck, and returns to demo state', async () => {
+  it('signs out to the demo while retaining the account deck in its isolated scope', async () => {
     const user = userEvent.setup({ delay: null })
     const userCards = createStudyCards(
       {
@@ -2074,16 +2074,10 @@ describe('Jolito', () => {
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
 
-    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
+    expect(services.cards.forOwner('usr-1').load([]).cards).toEqual(userCards)
+    expect(services.cards.forOwner(null).load([]).cards).toEqual([])
+    expect(screen.queryByText('zapato')).not.toBeInTheDocument()
 
-    // Local storage has been reset to starter cards and cleared of user cards & tombstones
-    const storedCards = services.memoryCards.load([]).cards
-    expect(storedCards.every((c) => c.noteId.startsWith('starter-'))).toBe(true)
-    expect(storedCards.some((c) => c.prompt === 'zapato')).toBe(false)
-    expect(services.memoryCards.getDeletedCardIds()).toEqual([])
-
-    // Close sync modal and verify UI shows starter demo state with Sign in button
-    fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
@@ -2502,8 +2496,8 @@ describe('Jolito', () => {
       }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
-    expect(spanishInput).toHaveValue('')
-    expect(englishInput).toHaveValue('')
+    expect(screen.getByLabelText(/mexican spanish/i)).toHaveValue('')
+    expect(screen.getByLabelText(/^english/i)).toHaveValue('')
     expect(services.memoryCards.saved).toHaveLength(2)
   })
 

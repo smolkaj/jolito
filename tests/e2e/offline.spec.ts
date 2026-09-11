@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
 
@@ -80,9 +81,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   // 5. Reload while offline and verify cold boot & persistence
   await page.reload()
   await expect(page.getByText('SESSION COMPLETE')).toBeVisible()
-  expect(
-    await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-  ).toContain('Nos vemos al rato')
+  expect(await page.evaluate(currentDeckJson)).toContain('Nos vemos al rato')
 
   // 6. Navigate home while offline
   await page.getByRole('button', { name: /back home/i }).click()

@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility, settleAnimations } from './accessibility'
 
@@ -29,9 +30,7 @@ for (const viewport of [
         .locator('#context')
         .fill('Keep the complete draft after a failed save.')
       const save = page.getByRole('button', { name: 'Save card', exact: true })
-      const before = await page.evaluate(() =>
-        localStorage.getItem('jolito-library-v1'),
-      )
+      const before = await page.evaluate(currentDeckJson)
       await page.evaluate(() => {
         const original = Object.getOwnPropertyDescriptor(
           Storage.prototype,
@@ -55,15 +54,14 @@ for (const viewport of [
           .filter({ hasText: 'couldn’t be saved' })
         await settleAnimations(page)
         await expect(error).toBeInViewport({ ratio: 1 })
+        await expect(save).toBeFocused()
         await expect(page.locator('#spanish')).toHaveValue('Un boleto de metro')
         await expect(page.locator('#english')).toHaveValue('A subway ticket')
         await expect(page.locator('#context')).toHaveValue(
           'Keep the complete draft after a failed save.',
         )
         await expect(save).toHaveText('Save card')
-        expect(
-          await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-        ).toBe(before)
+        expect(await page.evaluate(currentDeckJson)).toBe(before)
       }
       expect((await auditAccessibility(page)).violations).toEqual([])
       await page.screenshot({
@@ -77,9 +75,9 @@ for (const viewport of [
         page.getByRole('alert').filter({ hasText: 'couldn’t be saved' }),
       ).toHaveCount(0)
       await expect(save).toContainText('Saved')
-      expect(
-        await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-      ).toContain('Un boleto de metro')
+      expect(await page.evaluate(currentDeckJson)).toContain(
+        'Un boleto de metro',
+      )
       await page.goto('/#/deck')
       await expect(
         page.getByRole('cell', { name: 'Un boleto de metro', exact: true }),

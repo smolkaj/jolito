@@ -10,12 +10,14 @@ function EditCardModalInner({
   cards = [],
   onClose,
   onSave,
+  saveError,
   onPlayAudio,
 }: {
   card: StudyCard
   cards?: StudyCard[] | undefined
   onClose: () => void
   onSave: (card: StudyCard, updates: UpdateCardParams) => boolean | void
+  saveError?: string | null | undefined
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
@@ -23,12 +25,17 @@ function EditCardModalInner({
   const [context, setContext] = useState(card.context ?? '')
   const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const visibleError =
+    error === 'save-failed'
+      ? (saveError ??
+        'Your changes couldn’t be saved. Free up device storage, then try again.')
+      : error
   const [submitAttempt, setSubmitAttempt] = useState(0)
   const errorRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (!error) return
+    if (!visibleError) return
     errorRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
-  }, [error, submitAttempt])
+  }, [visibleError, submitAttempt])
   const promptInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -71,10 +78,7 @@ function EditCardModalInner({
       context: context.trim(),
       resetProgress: isAlreadyNew ? false : resetProgress,
     })
-    if (saved === false)
-      setError(
-        'Your changes couldn’t be saved. Free up device storage, then try again.',
-      )
+    if (saved === false) setError('save-failed')
   }
 
   return (
@@ -205,13 +209,13 @@ function EditCardModalInner({
             </div>
           </label>
 
-          {error && (
+          {visibleError && (
             <div
               ref={errorRef}
               className="status-banner status-error"
               role="alert"
             >
-              <p>{error}</p>
+              <p>{visibleError}</p>
             </div>
           )}
 
@@ -239,6 +243,7 @@ export function EditCardModal({
   cards,
   onClose,
   onSave,
+  saveError,
   onPlayAudio,
 }: {
   isOpen: boolean
@@ -246,6 +251,7 @@ export function EditCardModal({
   cards?: StudyCard[] | undefined
   onClose: () => void
   onSave: (card: StudyCard, updates: UpdateCardParams) => boolean | void
+  saveError?: string | null | undefined
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   useEffect(() => {
@@ -269,6 +275,7 @@ export function EditCardModal({
       cards={cards}
       onClose={onClose}
       onSave={onSave}
+      saveError={saveError}
       onPlayAudio={onPlayAudio}
     />
   )
