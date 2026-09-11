@@ -3532,7 +3532,7 @@ function LoadedApp({
             />
           </div>
         </nav>
-        {saveError && (view !== 'grammar' || !grammarPractice.error) && (
+        {saveError && !(practicing && !grammar) && !grammarPractice.error && (
           <p className="storage-save-error" role="alert">
             Your changes couldn’t be saved. Free up device storage, then try
             again.
@@ -3604,6 +3604,11 @@ function LoadedApp({
         ) : (
           currentCard && (
             <PracticeCard
+              error={
+                saveError
+                  ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
+                  : null
+              }
               card={currentCard}
               prompt={
                 <>
