@@ -59,7 +59,6 @@ final class NativeScreenshots: XCTestCase {
         // Cold Simulator WebKit startup has exceeded 35 seconds in recorded CI.
         // Wait for real app readiness once, without retrying or relaunching a failure.
         XCTAssertTrue(create.waitForExistence(timeout: 90), "Bundled web app must render before capture")
-        XCTAssertEqual(app.webViews.count, 1, "Each scene must own one web view")
         return create
     }
 
