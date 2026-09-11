@@ -124,7 +124,7 @@ for (const transition of [
           route.request().url().includes('/rpc/delete_user_account') ||
             route.request().url().includes('/auth/v1/logout')
             ? { status: 204 }
-            : { json: route.request().method() === 'GET' ? [] : {} },
+            : { json: route.request().method() === 'GET' ? [] : 1 },
         ),
       )
       await page.goto(

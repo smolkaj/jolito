@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { collectionVersion, createStudyCards } from '../../domain/card'
-import type { SupabaseAuthService } from './auth-service'
+import { SupabaseAuthService } from './auth-service'
 import { SupabaseSyncService } from './sync-service'
 
 const user = { id: 'learner', email: 'learner@example.com' }
@@ -28,6 +28,7 @@ function service(auth: Partial<SupabaseAuthService> = {}) {
   return new SupabaseSyncService(
     {
       getCurrentUser: () => user,
+      isCurrentOwner: (ownerId: string | null) => ownerId === user.id,
       getAccessToken: () => Promise.resolve('token'),
       ...auth,
     } as SupabaseAuthService,
@@ -245,6 +246,7 @@ it.each(['write credentials', 'unauthorized refresh'])(
     let writes = 0
     const sync = service({
       getCurrentUser: () => active,
+      isCurrentOwner: (ownerId: string | null) => ownerId === active.id,
       getAccessToken: () => {
         if (++credentials === 2 && stage === 'write credentials') {
           reached()
@@ -295,6 +297,7 @@ describe('sync account boundaries', () => {
       })
       const auth = {
         getCurrentUser: () => owner,
+        isCurrentOwner: (ownerId: string | null) => ownerId === owner.id,
         getAccessToken: () =>
           interruption === 'token'
             ? held
@@ -438,6 +441,96 @@ for (const stage of ['credentials', 'response', 'body'] as const) {
         release()
         await pending
         vi.useRealTimers()
+      }
+    },
+  )
+}
+
+for (const stage of ['read body', 'write body'] as const) {
+  it.each(['signout', 'switch', 'renewal'] as const)(
+    `checks persisted ownership after a held ${stage} during %s before storage delivery, then resumes in a fresh lifetime`,
+    async (transition) => {
+      const key = 'jolito-auth-session-v1'
+      const storedSession = (id: string) => ({
+        accessToken: `token-${id}`,
+        refreshToken: `refresh-${id}`,
+        expiresAt: Date.now() + 3_600_000,
+        user: { id, email: `${id}@example.com` },
+      })
+      localStorage.setItem(key, JSON.stringify(storedSession(user.id)))
+      const auth = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon',
+        localStorage,
+      )
+      const sync = new SupabaseSyncService(
+        auth,
+        'https://example.supabase.co',
+        'anon',
+        'device',
+      )
+      const reached = deferred<void>()
+      const release = deferred<void>()
+      let hold = true
+      const fetchSpy = vi.fn((_url: string, init?: RequestInit) => {
+        const write = init?.method === 'POST'
+        const data = write ? 2 : [row]
+        const response = Response.json(data)
+        if (hold && write === (stage === 'write body')) {
+          vi.spyOn(response, 'json').mockImplementation(async () => {
+            reached.resolve()
+            await release.promise
+            return data
+          })
+        }
+        return Promise.resolve(response)
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+      try {
+        const pending = sync.syncDeck(cards, user)
+        await reached.promise
+        if (transition === 'signout') localStorage.removeItem(key)
+        else
+          localStorage.setItem(
+            key,
+            JSON.stringify(
+              storedSession(transition === 'switch' ? 'other' : user.id),
+            ),
+          )
+        expect(auth.getCurrentUser()?.id).toBe(user.id)
+        const persisted = localStorage.getItem(key)
+        release.resolve()
+        expect((await pending).success).toBe(transition === 'renewal')
+        expect(fetchSpy).toHaveBeenCalledTimes(
+          stage === 'read body' && transition !== 'renewal' ? 1 : 2,
+        )
+        expect(localStorage.getItem(key)).toBe(persisted)
+        auth.destroy()
+        hold = false
+        localStorage.setItem(key, JSON.stringify(storedSession(user.id)))
+        const resumedAuth = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon',
+          localStorage,
+        )
+        try {
+          const resumed = new SupabaseSyncService(
+            resumedAuth,
+            'https://example.supabase.co',
+            'anon',
+            'device',
+          )
+          expect((await resumed.syncDeck(cards, user)).success).toBe(true)
+          const requests = fetchSpy.mock.calls.length
+          expect((await sync.syncDeck(cards, user)).success).toBe(false)
+          expect(fetchSpy).toHaveBeenCalledTimes(requests)
+        } finally {
+          resumedAuth.destroy()
+        }
+      } finally {
+        release.resolve()
+        auth.destroy()
+        localStorage.removeItem(key)
       }
     },
   )

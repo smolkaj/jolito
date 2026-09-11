@@ -42,7 +42,7 @@ export class SupabaseSyncService implements SyncService {
       const assertOwner = () => {
         if (requestSignal.aborted)
           throw new Error('Cloud sync was interrupted.')
-        if (this.authService.getCurrentUser()?.id !== user.id)
+        if (!this.authService.isCurrentOwner(user.id))
           throw new Error('Your account changed. Please sync again.')
       }
       assertOwner()
