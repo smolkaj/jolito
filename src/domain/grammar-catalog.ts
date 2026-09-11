@@ -10,7 +10,7 @@ export const grammarTopics = {
     verbs: preteriteVerbs,
   },
   perfect: {
-    title: 'Pretérito perfecto compuesto',
+    title: 'Pretérito perfecto',
     description: 'Spanish present perfect',
     families: perfectFamilies,
     verbs: perfectVerbs,

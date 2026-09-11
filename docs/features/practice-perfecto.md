@@ -1,7 +1,6 @@
-# Pretérito perfecto compuesto
+# Pretérito perfecto
 
-Grammar offers a tense selector for **Pretérito indefinido** and **Pretérito perfecto
-compuesto**. Perfecto recalls the whole phrase: **he hablado**, not just the participle.
+Grammar offers a tense selector for **Pretérito indefinido** and **Pretérito perfecto**. Perfecto recalls the whole phrase: **he hablado**, not just the participle.
 Its 20 verbs cover five persons, regular and irregular participles, and accents in
 leído, oído and traído. Each of the 100 forms has two authored sentence contexts.
 
