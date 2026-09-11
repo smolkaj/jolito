@@ -116,8 +116,8 @@ export const gerundVerbs = {
         '{subject} arrived at the office and [{be}] already [writing] an important message.',
       ],
       [
-        'En su cuaderno, {subject} ___ una carta.',
-        'In their notebook, {subject} [{be} writing] a letter.',
+        'En un cuaderno, {subject} ___ una carta.',
+        'In a notebook, {subject} [{be} writing] a letter.',
       ],
     ],
   },
@@ -238,8 +238,8 @@ export const gerundVerbs = {
     forms: gerundForms('durmiendo'),
     contexts: [
       [
-        'En su cuarto {subject} ___ profundamente.',
-        'In their room, {subject} [{be} sleeping] deeply.',
+        'En el cuarto {subject} ___ profundamente.',
+        'In the room, {subject} [{be} sleeping] deeply.',
       ],
       [
         'En el sillón {subject} ___ plácidamente.',
@@ -270,8 +270,8 @@ export const gerundVerbs = {
         'At last, {subject} [{be} able to] rest a bit.',
       ],
       [
-        'Esta semana {subject} ___ concentrarse mejor.',
-        'This week, {subject} [{be} able to] concentrate better.',
+        'Esta semana {subject} ___ trabajar con más calma.',
+        'This week, {subject} [{be} able to] work more calmly.',
       ],
     ],
   },
@@ -368,8 +368,8 @@ export const gerundVerbs = {
         'In the workshop, {subject} [{be} building] a wooden table.',
       ],
       [
-        'Juntos {subject} ___ un proyecto muy especial.',
-        'Together, {subject} [{be} building] a very special project.',
+        'Actualmente {subject} ___ un proyecto muy especial.',
+        'Currently, {subject} [{be} building] a very special project.',
       ],
     ],
   },

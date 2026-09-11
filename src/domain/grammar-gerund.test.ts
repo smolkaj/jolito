@@ -80,7 +80,7 @@ describe('gerund alongside indefinido and perfecto', () => {
         expect(context.spokenPrompt).toContain('…')
         expect(context.explanation.length).toBeGreaterThan(0)
         expect(context.sentence + context.translation).not.toMatch(
-          /[{}]|undefined|Ayer|anoche/,
+          /[{}]|undefined|Ayer|anoche|\bconcentrarse\b|\bjuntos\b/i,
         )
       }
     }
