@@ -378,7 +378,7 @@ describe('preterite practice contracts', () => {
       ).cards.find((c) => c.id === card.id),
     ).toEqual(card)
     expect(
-      studyCardCollectionSchema.safeParse({ version: 4, cards }).success,
+      studyCardCollectionSchema.safeParse({ version: 5, cards }).success,
     ).toBe(false)
     expect(
       studyCardCollectionSchema.safeParse({

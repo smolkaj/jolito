@@ -32,15 +32,19 @@ function connectCloud(cards: unknown[], version: number) {
   }
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (_url: string, init?: RequestInit) => {
+    vi.fn((_url: string, init?: RequestInit) => {
       if (init?.method === 'POST') {
-        row = JSON.parse(String(init.body)) as typeof row
-        return new Response(null, { status: 201 })
+        if (typeof init.body !== 'string')
+          throw new Error('Expected serialized snapshot')
+        row = JSON.parse(init.body) as typeof row
+        return Promise.resolve(new Response(null, { status: 201 }))
       }
-      return Response.json([row])
+      return Promise.resolve(Response.json([row]))
     }),
   )
-  const auth = { getAccessToken: async () => 'token' } as SupabaseAuthService
+  const auth = {
+    getAccessToken: () => Promise.resolve('token'),
+  } as SupabaseAuthService
   return new SupabaseSyncService(
     auth,
     'https://example.supabase.co',

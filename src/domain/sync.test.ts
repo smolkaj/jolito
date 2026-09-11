@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import fc from 'fast-check'
 import {
   resetCardProgress,
   scheduleReview,
@@ -359,5 +360,83 @@ describe('authorship and reset convergence', () => {
     expect(merge(merge(a, b), c)).toEqual(merge(a, merge(b, c)))
     expect(merge(b, c)).toEqual(merge(c, b))
     expect(merge(a, a)).toEqual(a)
+  })
+})
+
+describe('mutation ordering laws', () => {
+  it('is commutative, associative, and idempotent across edits, reviews, and reset epochs', () => {
+    const replica = fc
+      .record({
+        answer: fc.string({ minLength: 1 }),
+        contentRevision: fc.integer({ min: 0, max: 10 }),
+        resetRevision: fc.record({
+          generation: fc.integer({ min: 0, max: 3 }),
+          at: fc.integer({ min: -1000, max: 1000 }),
+        }),
+        schedule: fc.record({
+          state: fc.constantFrom(
+            'new' as const,
+            'learning' as const,
+            'relearning' as const,
+            'review' as const,
+          ),
+          dueAt: fc.integer({ min: -1000, max: 1000 }),
+          intervalDays: fc.integer({ min: 0, max: 10 }),
+          reviews: fc.integer({ min: 0, max: 10 }),
+          lapses: fc.integer({ min: 0, max: 10 }),
+          easeFactor: fc.integer({ min: 1, max: 4 }),
+          lastReviewedAt: fc.option(fc.integer({ min: -1000, max: 1000 }), {
+            nil: undefined,
+          }),
+        }),
+      })
+      .map((value): StudyCard => ({ ...cardA, ...value }))
+    const merge = (a: StudyCard, b: StudyCard) =>
+      reconcileStudyCards([a], [b]).cards[0]!
+    fc.assert(
+      fc.property(replica, replica, replica, (a, b, c) => {
+        expect(merge(a, b)).toEqual(merge(b, a))
+        expect(merge(a, a)).toEqual(a)
+        expect(merge(merge(a, b), c)).toEqual(merge(a, merge(b, c)))
+      }),
+      { numRuns: 200 },
+    )
+  })
+
+  it('keeps repeated edits causal, does not stamp no-op saves, and rejects revision overflow', () => {
+    const edited = updateStudyCard(cardA, { answer: 'hi' }, 1000)
+    const editedAgain = updateStudyCard(edited, { answer: 'hey' }, 1000)
+    expect(editedAgain.contentRevision).toBe(2)
+    expect(
+      updateStudyCard(editedAgain, { answer: ' hey ', resetProgress: false }),
+    ).toEqual(editedAgain)
+    expect(() =>
+      updateStudyCard(
+        { ...cardA, contentRevision: Number.MAX_SAFE_INTEGER },
+        { answer: 'hi' },
+      ),
+    ).toThrow('revision limit')
+    expect(() =>
+      resetCardProgress(
+        {
+          ...cardA,
+          resetRevision: { generation: Number.MAX_SAFE_INTEGER, at: 0 },
+        },
+        0,
+      ),
+    ).toThrow('revision limit')
+  })
+
+  it('discards practice from a losing concurrent reset epoch while equal-time resets converge', () => {
+    const oldReview = scheduleReview(cardA, 'easy', 1000)
+    const a = resetCardProgress(oldReview, 500)
+    const b = resetCardProgress(oldReview, 600)
+    const practicedA = scheduleReview(a, 'easy', 700)
+    expect(reconcileStudyCards([practicedA], [b]).cards).toEqual([b])
+    expect(reconcileStudyCards([b], [practicedA]).cards).toEqual([b])
+    const sameTimeReset = resetCardProgress(oldReview, 500)
+    expect(reconcileStudyCards([sameTimeReset], [practicedA]).cards).toEqual([
+      practicedA,
+    ])
   })
 })
