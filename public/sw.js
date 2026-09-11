@@ -5,7 +5,9 @@ const BUILD_ID = '__JOLITO_BUILD_ID__'
 const CACHE_NAME = `jolito-shell-${BUILD_ID}`
 const BUILD_ASSETS = /* __JOLITO_BUILD_ASSETS__ */ []
 const scopePath = new URL(self.registration.scope).pathname
-const indexUrl = `${scopePath}index.html`
+// Cache the canonical navigation URL; static hosts redirect /index.html to /.
+// A redirected cached Response cannot satisfy a navigation with redirect: manual.
+const shellUrl = scopePath
 const PWA_ASSETS = [
   `${scopePath}manifest.webmanifest`,
   `${scopePath}favicon.svg`,
@@ -28,7 +30,7 @@ const PWA_ASSETS = [
 
 const REQUIRED_URLS = Array.from(
   new Set([
-    indexUrl,
+    shellUrl,
     ...PWA_ASSETS,
     ...BUILD_ASSETS.map((file) => `${scopePath}${file}`),
   ]),
@@ -48,7 +50,7 @@ self.addEventListener('install', (event) => {
               }),
           ),
         )
-        const html = await (await cache.match(indexUrl)).text()
+        const html = await (await cache.match(shellUrl)).text()
         if (
           !html.includes(`<meta name="jolito-build" content="${BUILD_ID}">`)
         ) {
@@ -122,7 +124,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches
         .open(CACHE_NAME)
-        .then(async (cache) => (await cache.match(indexUrl)) ?? fetch(request)),
+        .then(async (cache) => (await cache.match(shellUrl)) ?? fetch(request)),
     )
     return
   }

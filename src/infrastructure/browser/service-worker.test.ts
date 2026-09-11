@@ -133,13 +133,13 @@ describe('complete offline shell lifecycle', () => {
 
       env.fail('network')
       const offline = await oldWorker.dispatch('fetch', env.navigation)
-      expect(await offline.response?.text()).toContain('old:/index.html')
+      expect(await offline.response?.text()).toContain('old:/')
       env.fail(null)
       const recoveredWorker = env.worker('new')
       await recoveredWorker.dispatch('install')
       await recoveredWorker.dispatch('activate')
       const recovered = await recoveredWorker.dispatch('fetch', env.navigation)
-      expect(await recovered.response?.text()).toContain('new:/index.html')
+      expect(await recovered.response?.text()).toContain('new:/')
       const ready = await recoveredWorker.dispatch('message', {
         data: { type: 'CHECK_OFFLINE_READY', buildId: 'new' },
       })
@@ -160,7 +160,7 @@ describe('complete offline shell lifecycle', () => {
     expect(env.stores.has('jolito-shell-different')).toBe(false)
     env.fail('network')
     const offline = await old.dispatch('fetch', env.navigation)
-    expect(await offline.response?.text()).toContain('old:/index.html')
+    expect(await offline.response?.text()).toContain('old:/')
   })
 
   it('never replaces installed HTML with a failed or incomplete deployment on navigation', async () => {
@@ -172,7 +172,7 @@ describe('complete offline shell lifecycle', () => {
       env.fail(failure)
       env.upgrade()
       const result = await worker.dispatch('fetch', env.navigation)
-      expect(await result.response?.text()).toContain('old:/index.html')
+      expect(await result.response?.text()).toContain('old:/')
     }
   })
 

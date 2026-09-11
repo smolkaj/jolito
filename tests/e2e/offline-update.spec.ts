@@ -25,6 +25,11 @@ test('keeps a complete rendered app through failed upgrade, offline reload, and 
   const server = createServer((request, response) => {
     void (async () => {
       const path = new URL(request.url!, 'http://localhost').pathname
+      // Match production static hosting: /index.html redirects to the scope root.
+      if (path === '/index.html') {
+        response.writeHead(308, { Location: '/' }).end()
+        return
+      }
       response.setHeader('Cache-Control', 'no-store')
       response.setHeader('Content-Type', types[extname(path)] ?? 'text/html')
       if (deployment === 'broken' && path !== '/sw.js') {
