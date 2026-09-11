@@ -161,9 +161,12 @@ for (const width of [320, 1280]) {
         expect(saved.schedule.lastReviewedAt).toBeUndefined()
       }
       expect((await auditAccessibility(page)).violations).toEqual([])
+      if (outcome === 'delete')
+        await expect(
+          page.getByRole('dialog').getByRole('alert'),
+        ).toBeInViewport({ ratio: 1 })
       await page.screenshot({
         path: testInfo.outputPath(`editor-${outcome}.png`),
-        fullPage: true,
       })
       const committed = await page.evaluate(currentDeckJson)
       await page.evaluate(() => window.dispatchEvent(new Event('focus')))
