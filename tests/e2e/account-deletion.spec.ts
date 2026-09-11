@@ -35,7 +35,7 @@ for (const viewport of [
       )
       localStorage.setItem(
         'jolito-library-v1',
-        JSON.stringify({ version: 3, cards: initialCards }),
+        JSON.stringify({ version: 3, cards: initialCards, deletedCardIds: [] }),
       )
     }, cards)
     let deletionAttempts = 0
@@ -192,7 +192,7 @@ test('rejected deletion refresh preserves account and private deck through reloa
     )
     localStorage.setItem(
       'jolito-library-v1',
-      JSON.stringify({ version: 3, cards: initialCards }),
+      JSON.stringify({ version: 3, cards: initialCards, deletedCardIds: [] }),
     )
   }, cards)
   const requests: string[] = []
