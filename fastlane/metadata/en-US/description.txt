@@ -1,12 +1,14 @@
-Learn the Mexican Spanish you actually want to use.
+Make the words you meet stick.
 
-Jolito combines active recall spaced repetition with native Mexico City (CDMX) audio and tactile, responsive design. Built for learners who want authentic slang, street idioms, and daily phrasing to stick effortlessly.
+Jolito helps you learn Mexican Spanish with spoken flashcards, active recall, and spaced repetition. Build a personal collection of the words and phrases you want to remember, then practice at your own rhythm.
 
-KEY FEATURES:
+• Create linked Spanish and English flashcards, with an offline dictionary and verb suggestions.
+• Practice by typing an answer, comparing it, and choosing when to review again.
+• Hear pronunciation using your device's speech voices. Mexican Spanish voice quality and availability depend on the voices installed on your device.
+• Bring your existing Anki decks and keep your learning history.
+• Study offline after signing in, then sync your cards and progress when connected.
+• Export your deck and delete your cloud account from within the app.
 
-• Mexican Spanish Focus: Practice authentic Mexican phrasing, colloquial idioms, and everyday Condesa and Roma vocabulary.
-• Active Spaced Repetition: Intelligent review queues resurface cards right before you forget them, transforming vocabulary memorization into a fast, tactile habit.
-• Studio-Quality Pronunciations: Hear authentic CDMX pronunciation with seamless dual-voice options and sensory haptic feedback.
-• Local-First & Offline Ready: All flashcards, schedules, and audio caches are stored directly on your device. Study on flights, the Metro, or off the grid with zero lag.
-• Optional Cloud Sync: Sign in passwordlessly to sync your personal deck seamlessly across all your Apple devices.
-• Privacy-First & Zero Ads: No advertising, no third-party tracking pixels, and no data harvesting. Just focused learning.
+Try the starter demo without an account. Creating a personal deck, importing cards, and saving progress require free email sign-in and an initial internet connection. Subsequent study works offline; offline speech requires installed device voices.
+
+Pay once. No subscription, in-app purchases, advertising, or tracking.

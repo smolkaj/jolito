@@ -1,4 +1,5 @@
-app_identifier("to.joli.app")
-apple_id(ENV["APPLE_ID"]) if ENV["APPLE_ID"]
-itc_team_id(ENV["ITC_TEAM_ID"]) if ENV["ITC_TEAM_ID"]
-team_id(ENV["APPLE_TEAM_ID"]) if ENV["APPLE_TEAM_ID"]
+require 'json'
+
+# Fastlane evaluates Appfile with its directory as the working directory.
+app_identifier(JSON.parse(File.read('release.json')).fetch('bundleId'))
+team_id(ENV['APPLE_TEAM_ID']) if ENV['APPLE_TEAM_ID']

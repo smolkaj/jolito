@@ -1,4 +1,10 @@
-import type { AppServices, Clock, IdGenerator } from '../../application/ports'
+import { Capacitor } from '@capacitor/core'
+import type {
+  AppServices,
+  Clock,
+  IdGenerator,
+  Speaker,
+} from '../../application/ports'
 import { OfflineCardAssistant } from '../../application/card-assistant'
 import { SupabaseAuthService } from '../supabase/auth-service'
 import { SupabaseFeedbackService } from '../supabase/feedback-service'
@@ -34,8 +40,10 @@ export function createBrowserServices(): AppServices {
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
 
-  const speaker = new LayeredNeuralSpeaker()
-  void speaker.prewarm()
+  const speaker: Speaker = Capacitor.isNativePlatform()
+    ? new EnhancedBrowserSpeaker()
+    : new LayeredNeuralSpeaker()
+  void speaker.prewarm?.()
 
   const auth = new SupabaseAuthService()
   const sync = new SupabaseSyncService(auth)
