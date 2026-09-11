@@ -334,3 +334,111 @@ describe('sync account boundaries', () => {
     },
   )
 })
+
+it('uses portable cancellation APIs through rejection and retry', async () => {
+  vi.stubGlobal(
+    'AbortSignal',
+    new Proxy(AbortSignal, {
+      get(target, key, receiver) {
+        const value: unknown = Reflect.get(target, key, receiver)
+        return key === 'timeout' || key === 'any' ? undefined : value
+      },
+    }),
+  )
+  const modernMethod = vi
+    .spyOn(AbortSignal.prototype, 'throwIfAborted')
+    .mockImplementation(() => {
+      throw new Error('Modern cancellation methods are unavailable')
+    })
+  try {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+      .mockResolvedValueOnce(Response.json([row]))
+      .mockResolvedValueOnce(Response.json(2))
+    vi.stubGlobal('fetch', fetchSpy)
+    const sync = service()
+    const lifetime = new AbortController()
+    expect(
+      (await sync.syncDeck(cards, user, [], lifetime.signal)).success,
+    ).toBe(false)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(
+      (await sync.syncDeck(cards, user, [], lifetime.signal)).success,
+    ).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(modernMethod).not.toHaveBeenCalled()
+  } finally {
+    modernMethod.mockRestore()
+  }
+})
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
+for (const stage of ['credentials', 'response', 'body'] as const) {
+  it.each(['deadline', 'disposal'] as const)(
+    `keeps ${stage} waits bounded during %s and supports a fresh retry`,
+    async (interruption) => {
+      vi.useFakeTimers()
+      const credentials = deferred<string>()
+      const response = deferred<Response>()
+      const body = deferred<unknown>()
+      let hold = true
+      const sync = service({
+        getAccessToken: () =>
+          hold && stage === 'credentials'
+            ? credentials.promise
+            : Promise.resolve('token'),
+      })
+      const fetchSpy = vi.fn(() => {
+        if (!hold) return Promise.resolve(Response.json([row]))
+        if (stage === 'response') return response.promise
+        const result = Response.json([row])
+        if (stage === 'body')
+          vi.spyOn(result, 'json').mockImplementation(() => body.promise)
+        return Promise.resolve(result)
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+      const lifetime = new AbortController()
+      const pending = sync.pullDeck(user, lifetime.signal)
+      const release = () => {
+        credentials.resolve('token')
+        response.resolve(Response.json([row]))
+        body.resolve([row])
+      }
+      try {
+        await vi.advanceTimersByTimeAsync(0)
+        const callsBefore = fetchSpy.mock.calls.length
+        if (interruption === 'deadline')
+          await vi.advanceTimersByTimeAsync(10_000)
+        else {
+          lifetime.abort()
+          await vi.advanceTimersByTimeAsync(0)
+        }
+        expect(
+          await Promise.race([pending, Promise.resolve('still waiting')]),
+        ).toMatchObject({ success: false })
+        release()
+        await pending
+        await vi.advanceTimersByTimeAsync(10_000)
+        expect(fetchSpy).toHaveBeenCalledTimes(callsBefore)
+        expect(vi.getTimerCount()).toBe(0)
+        hold = false
+        expect(
+          (await sync.pullDeck(user, new AbortController().signal)).success,
+        ).toBe(true)
+        expect(vi.getTimerCount()).toBe(0)
+      } finally {
+        release()
+        await pending
+        vi.useRealTimers()
+      }
+    },
+  )
+}

@@ -10,6 +10,7 @@ import type {
 import type { StudyCard } from '../../domain/card'
 import { deckSyncPayloadSchema, reconcileStudyCards } from '../../domain/sync'
 import { parsePostgrestErrorPayload } from './postgrest-error'
+import { withRequestDeadline } from '../request-lifetime'
 
 const revisionSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 const MAX_SYNC_ATTEMPTS = 3
@@ -34,48 +35,52 @@ export class SupabaseSyncService implements SyncService {
     path: string,
     body?: unknown,
     signal?: AbortSignal,
-  ): Promise<Response> {
+  ): Promise<unknown> {
     if (!this.supabaseUrl || !this.supabaseAnonKey)
       throw new Error('Cloud sync backend is not configured.')
-    const assertOwner = () => {
-      signal?.throwIfAborted()
-      if (this.authService.getCurrentUser()?.id !== user.id)
-        throw new Error('Your account changed. Please sync again.')
-    }
-    assertOwner()
-    const token = await this.authService.getAccessToken?.()
-    assertOwner()
-    if (!token) throw new Error('Sign in to sync your deck.')
-    const send = (accessToken: string) =>
-      fetch(`${this.supabaseUrl}/rest/v1/${path}`, {
-        method: body === undefined ? 'GET' : 'POST',
-        headers: {
-          apikey: this.supabaseAnonKey,
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        signal: signal
-          ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
-          : AbortSignal.timeout(10_000),
-      })
-    let response = await send(token)
-    assertOwner()
-    if (response.status === 401) {
-      const refreshed = await this.authService.refreshSession?.()
+    return withRequestDeadline(async (requestSignal) => {
+      const assertOwner = () => {
+        if (requestSignal.aborted)
+          throw new Error('Cloud sync was interrupted.')
+        if (this.authService.getCurrentUser()?.id !== user.id)
+          throw new Error('Your account changed. Please sync again.')
+      }
       assertOwner()
-      if (refreshed) response = await send(refreshed)
+      const token = await this.authService.getAccessToken?.()
       assertOwner()
-    }
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '')
-      const error = parsePostgrestErrorPayload(errorText)
-      throw new Error(
-        error?.message ||
-          `Cloud sync failed (HTTP ${response.status}). Please try again.`,
-      )
-    }
-    return response
+      if (!token) throw new Error('Sign in to sync your deck.')
+      const send = (accessToken: string) =>
+        fetch(`${this.supabaseUrl}/rest/v1/${path}`, {
+          method: body === undefined ? 'GET' : 'POST',
+          headers: {
+            apikey: this.supabaseAnonKey,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+          signal: requestSignal,
+        })
+      let response = await send(token)
+      assertOwner()
+      if (response.status === 401) {
+        const refreshed = await this.authService.refreshSession?.()
+        assertOwner()
+        if (refreshed) response = await send(refreshed)
+        assertOwner()
+      }
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+        assertOwner()
+        const error = parsePostgrestErrorPayload(errorText)
+        throw new Error(
+          error?.message ||
+            `Cloud sync failed (HTTP ${response.status}). Please try again.`,
+        )
+      }
+      const data: unknown = await response.json()
+      assertOwner()
+      return data
+    }, signal)
   }
 
   async pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult> {
@@ -96,7 +101,7 @@ export class SupabaseSyncService implements SyncService {
           }),
         )
         .max(1)
-        .safeParse(await response.json())
+        .safeParse(response)
       if (!rows.success)
         return {
           success: false,
@@ -132,7 +137,7 @@ export class SupabaseSyncService implements SyncService {
     try {
       let pending = { cards: localCards, deletedCardIds: localDeletedIds }
       for (let attempt = 0; attempt < MAX_SYNC_ATTEMPTS; attempt++) {
-        signal?.throwIfAborted()
+        if (signal?.aborted) throw new Error('Cloud sync was interrupted.')
         const remote = await this.pullDeck(user, signal)
         if (!remote.success) throw new Error(remote.error)
         if (remote.revision === undefined)
@@ -160,7 +165,7 @@ export class SupabaseSyncService implements SyncService {
           },
           signal,
         )
-        const revision = revisionSchema.nullable().parse(await response.json())
+        const revision = revisionSchema.nullable().parse(response)
         if (revision === null) continue
         if (revision !== remote.revision + 1)
           throw new Error(
