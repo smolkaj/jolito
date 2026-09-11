@@ -38,7 +38,8 @@ final class NativeScreenshots: XCTestCase {
         XCTAssertEqual(spanish.value as? String, "Hola")
         XCTAssertEqual(english.value as? String, "Hello")
         english.tap()
-        english.typeText(" again")
+        // The editor deliberately selects the existing value on focus.
+        english.typeText("Hello again")
         XCTAssertEqual(english.value as? String, "Hello again")
         dismissKeyboard(app)
         capture(app, name: "03-resumed-draft")
@@ -87,13 +88,16 @@ final class NativeScreenshots: XCTestCase {
     }
 
     private func capture(_ app: XCUIApplication, name: String) {
+        XCTAssertEqual(app.state, .runningForeground)
         // WebKit exposes accessibility elements before the compositor paints.
         // Check actual central image content, excluding the status bar/loader.
+        // Capture the screen directly: resolving an app-element screenshot can
+        // block on WebKit's accessibility tree while its first frame is pending.
         let painted = XCTNSPredicateExpectation(
-            predicate: NSPredicate { _, _ in self.hasPaintedContent(app.screenshot().image) }, object: nil
+            predicate: NSPredicate { _, _ in self.hasPaintedContent(XCUIScreen.main.screenshot().image) }, object: nil
         )
         XCTAssertEqual(XCTWaiter.wait(for: [painted], timeout: 30), .completed, "Refusing a blank native screenshot")
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)

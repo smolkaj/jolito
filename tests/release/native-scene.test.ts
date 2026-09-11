@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-test('native scenes leave window creation to the scene delegate', () => {
+void test('native scenes leave window creation to the scene delegate', () => {
   const plist = readFileSync(
     new URL('../../ios/App/App/Info.plist', import.meta.url),
     'utf8',
