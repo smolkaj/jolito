@@ -946,6 +946,7 @@ summary:focus-visible,
 
 /* English Card Theme (Verde Cantera de Oaxaca #b7d3c2 / (183, 211, 194)) */
 .sample-card-en {
+  --english-badge-background: var(--paper);
   --card-shadow-color: var(--turquesa-dark);
   --card-shadow-hover: var(--turquesa-dark);
   color: var(--ink);

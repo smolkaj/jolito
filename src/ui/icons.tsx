@@ -26,7 +26,11 @@ export function EnglishBadge({ className }: { className?: string }) {
       height="14"
       aria-hidden="true"
     >
-      <rect width="20" height="14" fill="var(--turquesa)" />
+      <rect
+        width="20"
+        height="14"
+        fill="var(--english-badge-background, var(--turquesa))"
+      />
       <path
         fill="var(--ink)"
         d="M3.5 3h5v1.5H5v2h3v1.5H5v2h3.5v1.5h-5zM10.5 11.5V3H12l3 5.4V3h1.5v8.5H15l-3-5.4v5.4z"
