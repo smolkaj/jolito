@@ -64,7 +64,13 @@ for (const width of [320, 1280]) {
       const translation = page.locator('.grammar-translation')
       const text = await translation.textContent()
       const before = await translation.boundingBox()
-      await expect(translation.locator('.grammar-filled')).toHaveCount(0)
+      await expect(translation.locator('.grammar-filled')).toHaveText([
+        ...example.highlights,
+      ])
+      await page.screenshot({
+        path: `test-results/english-${example.topic}-${example.person}-${width}-prompt.png`,
+        fullPage: true,
+      })
       await page.getByRole('textbox').press('Enter')
       await settleAnimations(page)
       await expect(translation).toHaveText(text!)
@@ -94,7 +100,9 @@ for (const width of [320, 1280]) {
         ...example.highlights,
       ])
       await page.keyboard.press('4')
-      await expect(translation.locator('.grammar-filled')).toHaveCount(0)
+      await expect(page.locator('.grammar-blank')).toBeVisible()
+      await expect(translation.locator('.grammar-filled')).not.toHaveCount(0)
+      await expect(translation).not.toHaveText(text!)
     })
   }
 }

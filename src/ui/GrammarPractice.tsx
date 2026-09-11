@@ -224,11 +224,7 @@ export function GrammarPractice({
             {context.translationParts.map((part, index) => (
               <span
                 key={index}
-                className={
-                  session.revealed && part.isAnswer
-                    ? 'grammar-filled'
-                    : undefined
-                }
+                className={part.isAnswer ? 'grammar-filled' : undefined}
               >
                 {part.text}
               </span>

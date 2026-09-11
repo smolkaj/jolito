@@ -33,9 +33,23 @@ describe('grammar practice in Jolito', () => {
       )
       await user.click(screen.getByRole('button', { name: 'Start practice' }))
       for (const answer of ['', 'wrong', 'exact']) {
+        const card = grammarQueue(
+          createGrammarCards(0, topic),
+          services.clock.now(),
+          'mixed',
+          topic,
+        )[['', 'wrong', 'exact'].indexOf(answer)]!
+        const expectedHighlights = grammarContext(card)
+          .translationParts.filter((part) => part.isAnswer)
+          .map((part) => part.text)
         const translation = document.querySelector('.grammar-translation')!
         const originalTranslation = translation.textContent
-        expect(translation.querySelector('.grammar-filled')).toBeNull()
+        expect(
+          Array.from(
+            translation.querySelectorAll('.grammar-filled'),
+            (part) => part.textContent,
+          ),
+        ).toEqual(expectedHighlights)
         const sentence = screen.getByRole('heading', { level: 1 })
         const prompt = screen.getByRole('button', { name: 'Play prompt audio' })
         expect(sentence.parentElement).toContainElement(prompt)
@@ -47,12 +61,6 @@ describe('grammar practice in Jolito', () => {
         expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toBe(
           sentence.textContent,
         )
-        const card = grammarQueue(
-          createGrammarCards(0, topic),
-          services.clock.now(),
-          'mixed',
-          topic,
-        )[['', 'wrong', 'exact'].indexOf(answer)]!
         if (answer)
           await user.type(
             screen.getByRole('textbox'),
@@ -65,9 +73,6 @@ describe('grammar practice in Jolito', () => {
           ),
         )
         expect(sentence).not.toHaveTextContent('…')
-        const expectedHighlights = grammarContext(card)
-          .translationParts.filter((part) => part.isAnswer)
-          .map((part) => part.text)
         expect(translation.textContent).toBe(originalTranslation)
         expect(
           Array.from(
