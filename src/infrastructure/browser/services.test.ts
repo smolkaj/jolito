@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+import { Capacitor } from '@capacitor/core'
+import { EnhancedBrowserSpeaker } from './speech'
 import { OfflineCardAssistant } from '../../application/card-assistant'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import {
@@ -33,6 +35,25 @@ describe('createBrowserServices', () => {
 
     speakerSpy.mockRestore()
     assistantSpy.mockRestore()
+  })
+
+  it('uses device speech on native platforms without prewarming network audio', () => {
+    const platform = vi
+      .spyOn(Capacitor, 'isNativePlatform')
+      .mockReturnValue(true)
+    const prewarm = vi.spyOn(LayeredNeuralSpeaker.prototype, 'prewarm')
+    const dictionary = vi
+      .spyOn(OfflineCardAssistant.prototype, 'loadDictionary')
+      .mockResolvedValue(true)
+    const services = createBrowserServices()
+    expect(services.speaker).toBeInstanceOf(EnhancedBrowserSpeaker)
+    expect('prefetch' in services.speaker).toBe(false)
+    expect(prewarm).not.toHaveBeenCalled()
+    ;(services.speaker as EnhancedBrowserSpeaker).destroy()
+
+    platform.mockRestore()
+    prewarm.mockRestore()
+    dictionary.mockRestore()
   })
 
   it('SystemClock provides current epoch timestamp', () => {
