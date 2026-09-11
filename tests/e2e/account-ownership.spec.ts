@@ -121,6 +121,9 @@ test('cross-tab A → B → signed out changes isolate held cloud responses and 
     }),
   )
   await helper.goto('/ownership-helper')
+  const staleRequest = page.waitForEvent('requestfailed', (request) =>
+    request.url().includes('/decks?user_id=eq.A'),
+  )
   await helper.evaluate(
     (auth) =>
       localStorage.setItem('jolito-auth-session-v1', JSON.stringify(auth)),
@@ -129,11 +132,8 @@ test('cross-tab A → B → signed out changes isolate held cloud responses and 
   await expect(
     page.getByRole('row', { name: /card: B-private,/i }),
   ).toBeVisible()
-  const staleResponse = page.waitForResponse((response) =>
-    response.url().includes('/decks?user_id=eq.A'),
-  )
+  expect((await staleRequest).failure()).not.toBeNull()
   release()
-  await (await staleResponse).finished()
   await page.evaluate(
     () =>
       new Promise<void>((resolve) =>

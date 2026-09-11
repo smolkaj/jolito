@@ -1207,13 +1207,20 @@ function LoadedApp({
   setPendingCard,
   isCurrentOwner,
 }: OwnedAppProps & { initialCards: StudyCard[] }) {
-  const lifetime = useRef({ active: true, generation: 0 })
+  const lifetime = useRef({
+    active: true,
+    generation: 0,
+    controller: new AbortController(),
+  })
   useEffect(() => {
     const current = lifetime.current
     current.active = true
+    if (current.controller.signal.aborted)
+      current.controller = new AbortController()
     return () => {
       current.active = false
       current.generation++
+      current.controller.abort()
     }
   }, [])
   const canCommit = useCallback(
@@ -1222,7 +1229,7 @@ function LoadedApp({
   )
   const services = useMemo<AppServices>(() => {
     const guarded = async (
-      operation: () => Promise<SyncResult>,
+      operation: (signal: AbortSignal) => Promise<SyncResult>,
     ): Promise<SyncResult> => {
       const generation = lifetime.current.generation
       const stale = {
@@ -1230,7 +1237,7 @@ function LoadedApp({
         error: 'Your account changed. Please sync again.',
       }
       if (!canCommit()) return stale
-      const result = await operation()
+      const result = await operation(lifetime.current.controller.signal)
       return canCommit() && generation === lifetime.current.generation
         ? result
         : stale
@@ -1240,10 +1247,15 @@ function LoadedApp({
       sync: {
         getStatus: () => baseServices.sync.getStatus(),
         syncDeck: (cards, user, deleted) =>
-          guarded(() => baseServices.sync.syncDeck(cards, user, deleted)),
+          guarded((signal) =>
+            baseServices.sync.syncDeck(cards, user, deleted, signal),
+          ),
         pushDeck: (cards, user, deleted) =>
-          guarded(() => baseServices.sync.pushDeck(cards, user, deleted)),
-        pullDeck: (user) => guarded(() => baseServices.sync.pullDeck(user)),
+          guarded((signal) =>
+            baseServices.sync.pushDeck(cards, user, deleted, signal),
+          ),
+        pullDeck: (user) =>
+          guarded((signal) => baseServices.sync.pullDeck(user, signal)),
       },
     }
   }, [baseServices, canCommit])
