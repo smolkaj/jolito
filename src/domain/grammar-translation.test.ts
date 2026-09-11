@@ -11,8 +11,8 @@ describe('authored English verb alignment', () => {
           const authored = grammarVerb(topic, card.grammar.verb)!.contexts[
             reviews
           ]![1]
-          expect(authored).toMatch(/\[[^\[\]]+\]/)
-          expect(authored.replace(/\[[^\[\]]+\]/g, '')).not.toMatch(/[\[\]]/)
+          expect(authored).toMatch(/\[[^[\]]+\]/)
+          expect(authored.replace(/\[[^[\]]+\]/g, '')).not.toMatch(/[[\]]/)
           const context = grammarContext({
             ...card,
             schedule: { ...card.schedule, reviews },
@@ -20,7 +20,7 @@ describe('authored English verb alignment', () => {
           expect(
             context.translationParts.map((part) => part.text).join(''),
           ).toBe(context.translation)
-          expect(context.translation).not.toMatch(/[\[\]{}]/)
+          expect(context.translation).not.toMatch(/[[\]{}]/)
           const verbs = context.translationParts.filter((part) => part.isAnswer)
           expect(verbs.length).toBeGreaterThan(0)
           for (const part of verbs) expect(part.text.trim()).toBe(part.text)
