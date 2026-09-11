@@ -144,7 +144,13 @@ self.addEventListener('fetch', (event) => {
   // The installed HTML and its assets are one complete build. A navigation must
   // not replace it with HTML from a failed (or only partially deployed) update.
   // Browser service-worker updates install the next build before taking control.
-  if (request.mode === 'navigate') {
+  // App routes use hash fragments at the scope root. Standalone documents
+  // (including Privacy and Acknowledgements) retain their host navigation.
+  if (
+    request.mode === 'navigate' &&
+    (requestUrl.pathname === shellUrl ||
+      requestUrl.pathname === `${scopePath}index.html`)
+  ) {
     event.respondWith(
       caches
         .open(CACHE_NAME)

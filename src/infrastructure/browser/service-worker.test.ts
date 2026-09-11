@@ -254,6 +254,34 @@ describe('complete offline shell lifecycle', () => {
     expect(env.fetch).not.toHaveBeenCalled()
   })
 
+  it('leaves standalone document routes to the host and keeps the app shell intact', async () => {
+    const env = browser()
+    const worker = env.worker('old')
+    await worker.dispatch('install')
+    await worker.dispatch('activate')
+    for (const path of [
+      '/privacy',
+      '/privacy/',
+      '/acknowledgements',
+      '/acknowledgements.html',
+      '/guide/new',
+    ]) {
+      env.fetch.mockClear()
+      const result = await worker.dispatch('fetch', {
+        request: { url: `${origin}${path}`, method: 'GET', mode: 'navigate' },
+      })
+      expect(result.response).toBeUndefined()
+      expect(env.fetch).not.toHaveBeenCalled()
+    }
+    env.fail('network')
+    const offline = await worker.dispatch('fetch', env.navigation)
+    expect(await offline.response?.text()).toContain('old:/')
+    const index = await worker.dispatch('fetch', {
+      request: { url: `${origin}/index.html`, method: 'GET', mode: 'navigate' },
+    })
+    expect(await index.response?.text()).toContain('old:/')
+  })
+
   it('leaves audio and unrelated caches intact and does not intercept APIs', async () => {
     const env = browser()
     env.stores.set('jolito-audio-v1', new Map())

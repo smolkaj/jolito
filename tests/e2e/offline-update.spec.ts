@@ -32,10 +32,14 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
           response.writeHead(308, { Location: '/' }).end()
           return
         }
+        const documentPath =
+          path !== '/' && !extname(path)
+            ? `${path.replace(/\/$/, '')}.html`
+            : path
         response.setHeader('Cache-Control', 'no-store')
         response.setHeader(
           'Content-Type',
-          types[extname(path)] ??
+          types[extname(documentPath)] ??
             (path === '/' ? 'text/html' : 'application/octet-stream'),
         )
         if (
@@ -56,7 +60,7 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
           response.setHeader('Content-Type', 'text/html; charset=utf-8')
         const file = resolve(
           'dist',
-          path === '/' || htmlFallback ? 'index.html' : `.${path}`,
+          path === '/' || htmlFallback ? 'index.html' : `.${documentPath}`,
         )
         let contents = await readFile(file)
         if (path === '/sw.js' && deployment !== 'original') {
@@ -96,6 +100,33 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
     const address = server.address()
     if (!address || typeof address === 'string')
       throw new Error('Missing test server address')
+    const visitDocuments = async (appBuild: 'original' | 'recovered') => {
+      const documents = await context.newPage()
+      for (const [path, title] of [
+        ['/privacy', 'Privacy Policy'],
+        ['/acknowledgements', 'Acknowledgements'],
+      ] as const) {
+        await documents.goto(`http://127.0.0.1:${address.port}${path}`)
+        await expect(
+          documents.getByRole('heading', { name: title, exact: true }),
+        ).toBeVisible()
+        await expect(
+          documents.locator('meta[name="jolito-build"]'),
+        ).toHaveCount(0)
+        await documents
+          .getByRole('link', { name: 'Jolito', exact: true })
+          .click()
+        await expect(
+          documents.getByRole('heading', {
+            name: /make the words you meet stick/i,
+          }),
+        ).toBeVisible()
+        await expect(
+          documents.locator('meta[name="test-deployment"]'),
+        ).toHaveAttribute('content', appBuild)
+      }
+      await documents.close()
+    }
     try {
       await page.goto(`http://127.0.0.1:${address.port}/`)
       await page.locator('html[data-offline-ready="true"]').waitFor()
@@ -106,6 +137,8 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
       await expect(
         page.locator('meta[name="test-deployment"]'),
       ).toHaveAttribute('content', 'original')
+
+      await visitDocuments('original')
 
       const update = () =>
         page.evaluate(async () => {
@@ -160,6 +193,7 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
       ).toHaveAttribute('content', 'original')
       await otherTab.locator('html[data-offline-ready="true"]').waitFor()
       await otherTab.close()
+      await visitDocuments('original')
 
       // A page from a different build (e.g. a hard reload bypassing the worker)
       // cannot borrow the old worker's readiness acknowledgement.
@@ -201,6 +235,7 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
       await expect(
         page.locator('meta[name="test-deployment"]'),
       ).toHaveAttribute('content', 'recovered')
+      await visitDocuments('recovered')
       await page.locator('html[data-offline-ready="true"]').waitFor()
       await context.setOffline(true)
       await page.reload()
