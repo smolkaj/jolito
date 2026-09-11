@@ -223,7 +223,7 @@ export function PracticeCard({
                   }}
                   onClick={() => insertAccent(letter)}
                 >
-                  {letter} <kbd aria-hidden="true">{index + 1}</kbd>
+                  <kbd aria-hidden="true">{index + 1}</kbd> {letter}
                 </button>
               ))}
             </div>
