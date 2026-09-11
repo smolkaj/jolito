@@ -28,6 +28,39 @@ class ReleaseTest < Minitest::Test
     assert_raises(RuntimeError) { ReleaseConfig.api!(env) }
   end
 
+  def signing_env
+    env = api_env.merge({
+      'APPLE_TEAM_ID' => 'ABCDEFGHIJ', 'APPLE_CERTIFICATE_PASS' => 'fixture-password',
+      'APPLE_PROVISIONING_PROFILE' => Base64.strict_encode64('fixture-profile'),
+      'VITE_SUPABASE_URL' => 'https://production.supabase.co',
+      'VITE_SUPABASE_ANON_KEY' => 'public-client-key'
+    })
+    key = OpenSSL::PKey::RSA.new(2048)
+    cert = OpenSSL::X509::Certificate.new
+    cert.version = 2
+    cert.serial = 1
+    cert.subject = cert.issuer = OpenSSL::X509::Name.parse('/CN=Apple Distribution: Fixture')
+    cert.public_key = key.public_key
+    cert.not_before = Time.now - 60
+    cert.not_after = Time.now + 3600
+    cert.sign(key, OpenSSL::Digest.new('SHA256'))
+    env['APPLE_CERTIFICATE_P12'] = Base64.strict_encode64(OpenSSL::PKCS12.create(env['APPLE_CERTIFICATE_PASS'], 'test', key, cert).to_der)
+    env
+  end
+
+  def test_complete_signing_configuration_and_each_missing_field
+    env = signing_env
+    ReleaseConfig.build!(env)
+    %w[APPLE_TEAM_ID APPLE_CERTIFICATE_P12 APPLE_CERTIFICATE_PASS APPLE_PROVISIONING_PROFILE VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY].each do |key|
+      assert_raises(RuntimeError) { ReleaseConfig.build!(env.reject { |name, _| name == key }) }
+    end
+    ['http://localhost', 'https://user:password@example.com', 'https://your-project.supabase.co', 'https://production.supabase.co/path'].each do |url|
+      assert_raises(RuntimeError) { ReleaseConfig.build!(env.merge('VITE_SUPABASE_URL' => url)) }
+    end
+    assert_raises(RuntimeError) { ReleaseConfig.build!(env.merge('APPLE_CERTIFICATE_PASS' => 'wrong')) }
+    assert_raises(RuntimeError) { ReleaseConfig.build!(env.merge('APPLE_PROVISIONING_PROFILE' => 'invalid-base64')) }
+  end
+
   def test_profile_requires_matching_app_team_and_distribution
     env = { 'APPLE_TEAM_ID' => 'ABCDEFGHIJ' }
     profile = {

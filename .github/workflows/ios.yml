@@ -16,6 +16,7 @@ jobs:
   ios-build:
     name: Xcode iOS compilation gate
     runs-on: macos-15
+    timeout-minutes: 20
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
@@ -45,6 +46,7 @@ jobs:
   native-screenshots:
     name: Native screenshots (${{ matrix.device }})
     runs-on: macos-15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -68,12 +70,23 @@ jobs:
       - run: npm run build
       - run: npm run cap:sync
       - run: bundle exec ruby scripts/prepare-native-screenshots.rb
+      - name: Boot Simulator before launching XCTest
+        timeout-minutes: 5
+        run: |
+          SIMULATOR_UDID=$(xcrun simctl list devices available --json | jq -r --arg name "$DEVICE_NAME" '.devices | to_entries[] | select(.key | endswith("iOS-26-2")) | .value[] | select(.name == $name) | .udid' | head -1)
+          test -n "$SIMULATOR_UDID"
+          echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR_UDID"
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          xcrun simctl status_bar "$SIMULATOR_UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
       - name: Capture the bundled app in Simulator
         run: |
           xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
-            -destination "platform=iOS Simulator,name=$DEVICE_NAME" \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
             -configuration Release -resultBundlePath build/screenshots.xcresult \
-            CODE_SIGNING_ALLOWED=NO test
+            -parallel-testing-enabled NO -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 120 \
+            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
       - name: Export screenshots
         run: xcrun xcresulttool export attachments --path build/screenshots.xcresult --output-path build/native-screenshots
       - uses: actions/upload-artifact@v7

@@ -177,6 +177,7 @@ export async function configureStore(api: AppleApi, apply: boolean) {
     current.length !== 1 ||
     !price ||
     relatedId(price, 'appPricePoint') !== point.id ||
+    Boolean(dateSchema.parse(price.attributes.endDate)) ||
     (start && start > today)
   ) {
     throw new Error(

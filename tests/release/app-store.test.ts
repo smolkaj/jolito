@@ -12,7 +12,13 @@ function record(type: string, id: string, attributes = {}, relationships = {}) {
 const reply = (body: unknown) => Promise.resolve(Response.json(body))
 const rel = (type: string, id: string) => ({ data: { type, id } })
 
-function store(options: { wrongPrice?: boolean; unavailable?: boolean } = {}) {
+function store(
+  options: {
+    wrongPrice?: boolean
+    unavailable?: boolean
+    expiringPrice?: boolean
+  } = {},
+) {
   const calls: { url: URL; method: string; body?: string }[] = []
   const request: typeof fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input)
@@ -41,7 +47,10 @@ function store(options: { wrongPrice?: boolean; unavailable?: boolean } = {}) {
         record(
           'appPrices',
           'price',
-          { startDate: null, endDate: null },
+          {
+            startDate: null,
+            endDate: options.expiringPrice ? '2099-01-01' : null,
+          },
           {
             appPricePoint: rel(
               'appPricePoints',
@@ -79,6 +88,10 @@ void test('check is read-only and checks both the paid base price and all territ
   assert.ok(calls.every((c) => c.method === 'GET'))
   await assert.rejects(
     configureStore(store({ wrongPrice: true }).api, false),
+    /US\$2.99/,
+  )
+  await assert.rejects(
+    configureStore(store({ expiringPrice: true }).api, false),
     /US\$2.99/,
   )
   await assert.rejects(

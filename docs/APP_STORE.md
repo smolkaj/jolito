@@ -43,10 +43,28 @@ Store these as GitHub Actions **secrets**, using the exact names below:
 
 Use an App Manager API key with access to Jolito. Create the explicit App ID,
 Apple Distribution certificate, and App Store profile under the enrolled team.
-Export the certificate/private key from Keychain Access on a Mac and create
-base64 values without line wrapping. Transfer credentials directly to GitHub
-secrets; never paste them into a PR, chat, or tracked file. If no Mac is available,
-arrange access to one for initial certificate creation/export.
+A Mac is optional for initial signing setup: create the private key and CSR
+with OpenSSL, submit the CSR in Apple's Certificates portal, download the
+signed `.cer`, and export a modern PKCS#12 bundle. Run these in a private
+credential directory **outside the repository**:
+
+```sh
+openssl req -new -newkey rsa:2048 -nodes -keyout distribution.key -out distribution.csr
+# Upload distribution.csr to Apple and download distribution.cer.
+openssl x509 -inform DER -in distribution.cer -out distribution.pem
+openssl pkcs12 -export -inkey distribution.key -in distribution.pem -out distribution.p12
+```
+
+OpenSSL prompts for the certificate identity and export password; do not put
+passwords in command arguments. Alternatively, export an existing distribution
+certificate/private key from Keychain Access on a Mac. Download the matching
+App Store provisioning profile from Apple. Create base64 values without line
+wrapping and transfer them directly to GitHub secrets; never paste them into a
+PR, chat, or tracked file.
+
+For local commands, install Node 24 and Ruby 3.3.10, then `npm ci` and
+`bundle install`. Commit `Gemfile.lock` when updating Fastlane. Load credentials
+into the environment through your credential manager.
 
 GitHub Actions **variables**:
 
@@ -57,9 +75,7 @@ GitHub Actions **variables**:
 | `VITE_SUPABASE_ANON_KEY` | Existing public client key; never use a service-role key |
 
 The two Supabase values are public client configuration, not privileged secrets.
-For local commands, load the same values into the environment through your
-credential manager. Install Node 24 and Ruby 3.3.10, then `npm ci` and
-`bundle install`. Commit `Gemfile.lock` when updating Fastlane.
+Use the same public values for local release commands.
 
 `TestFlight Beta Deployment` runs only on main, serializes Apple releases,
 selects Xcode 26.3 on macOS 15, validates configuration before building, and
