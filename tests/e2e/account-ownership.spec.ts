@@ -96,7 +96,7 @@ test('cross-tab A → B → signed out changes isolate held cloud responses and 
   await page.route('https://mock.supabase.co/**', async (route) => {
     if (
       route.request().method() === 'GET' &&
-      route.request().url().includes('eq.A')
+      route.request().headers().authorization === 'Bearer token-A'
     ) {
       pullingA = true
       await held
@@ -121,8 +121,11 @@ test('cross-tab A → B → signed out changes isolate held cloud responses and 
     }),
   )
   await helper.goto('/ownership-helper')
-  const staleRequest = page.waitForEvent('requestfailed', (request) =>
-    request.url().includes('/decks?user_id=eq.A'),
+  const staleRequest = page.waitForEvent(
+    'requestfailed',
+    (request) =>
+      request.url().includes('/rpc/read_deck_snapshot') &&
+      request.headers().authorization === 'Bearer token-A',
   )
   await helper.evaluate(
     (auth) =>

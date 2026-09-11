@@ -84,7 +84,8 @@ for (const heldAt of ['response', 'body'] as const) {
           const target =
             args[0] instanceof Request ? args[0].url : args[0].toString()
           const response = await nativeFetch(...args)
-          if (!first || !target.includes('/decks?user_id=eq.A')) return response
+          if (!first || !target.includes('/rpc/read_deck_snapshot'))
+            return response
           first = false
           if (stage === 'response') {
             Object.assign(window, { oldSyncReached: true })
@@ -130,9 +131,10 @@ for (const heldAt of ['response', 'body'] as const) {
         })
         await route.fulfill({ json: revision })
       } else {
-        const owner = new URL(route.request().url()).searchParams
-          .get('user_id')
-          ?.slice(3)
+        const owner = route
+          .request()
+          .headers()
+          .authorization?.replace('Bearer token-', '')
         const snapshot = owner ? cloud.get(owner) : undefined
         await route.fulfill({ json: snapshot ? [snapshot] : [] })
       }

@@ -19,8 +19,8 @@ Learners need reliable multi-device backup and synchronization for their cards a
 
 ## Revision protocol and lifecycle
 
-Each deck row has a monotonic revision. A writer reads the current snapshot,
-reconciles it with local cards and tombstones, then calls `compare_and_set_deck`
+Each deck row has a monotonic revision. A writer reads its owner-scoped snapshot
+through the security-invoker `read_deck_snapshot` RPC, reconciles it with local cards and tombstones, then calls `compare_and_set_deck`
 with that revision. Revision zero creates an absent row. A competing write returns
 null; the client rereads and reconciles before retrying, for at most three attempts.
 The RPC checks its explicit owner against `auth.uid()` and validates the version-four
@@ -41,7 +41,10 @@ local practice and saved cards remain available. Verify the production migration
 workflow succeeds before considering rollout complete. Once the migration lands,
 older clients continue local practice but cannot sync until updated. Preserve
 revision checks during recovery; forward-fix the client instead of restoring
-unconditional table writes.
+unconditional table writes. The PostgREST pre-request hook rejects obsolete
+client table reads and writes with update guidance before older parsers see a
+new payload. The [hosted update recovery flow](../features/client-update-recovery.md)
+preserves drafts and local data while the learner installs the matching client.
 
 ## Consequences
 

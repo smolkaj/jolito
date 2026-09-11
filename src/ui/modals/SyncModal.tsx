@@ -66,6 +66,7 @@ export function SyncModal({
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
+    syncHelp?: boolean
   } | null>(null)
 
   const feedbackTimerRef = useRef<number | null>(null)
@@ -217,6 +218,7 @@ export function SyncModal({
       setStatusMsg({
         type: 'error',
         message: res.error || 'Failed to sync with cloud.',
+        syncHelp: true,
       })
     }
   }
@@ -288,6 +290,19 @@ export function SyncModal({
       role={statusMsg.type === 'error' ? 'alert' : 'status'}
     >
       <p>{statusMsg.message}</p>
+      {statusMsg.syncHelp && (
+        <a
+          href={
+            location.protocol === 'capacitor:'
+              ? 'https://joli.to/update'
+              : '/update'
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Update help (opens a new tab)
+        </a>
+      )}
     </div>
   )
   const showDeletionError =

@@ -333,16 +333,89 @@ describe('Supabase Live Stack Integration', () => {
     expect(pullB.success).toBe(true)
     expect(pullB.cards).toEqual([])
 
-    // 4. Anon user attempting to read decks via PostgREST is blocked by RLS
-    const anonRes = await fetch(`${SUPABASE_URL}/rest/v1/decks?select=*`, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    // 4. Anonymous callers cannot use the snapshot read RPC
+    const anonRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/read_deck_snapshot`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
       },
-    })
-    expect(anonRes.ok).toBe(true)
-    const anonRows = (await anonRes.json()) as unknown[]
-    expect(anonRows).toEqual([])
+    )
+    expect(anonRes.status).toBe(401)
+  })
+  it('guides obsolete clients before parsing or writing, then resumes with the same local cards', async () => {
+    const { user, authService, accessToken } =
+      await createRealTestUser('upgrade')
+    const client = new SupabaseSyncService(
+      authService,
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      'upgrade',
+    )
+    const cards = createStudyCards(
+      {
+        spanish: 'guardar',
+        english: 'save',
+        context: '',
+        bidirectional: false,
+      },
+      'local',
+      0,
+    )
+    expect((await client.syncDeck(cards, user)).success).toBe(true)
+    const before = await client.pullDeck(user)
+    for (const method of ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE']) {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/decks?user_id=eq.${user.id}&select=*`,
+        {
+          method,
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates',
+          },
+          ...(['POST', 'PATCH'].includes(method)
+            ? {
+                body: JSON.stringify({
+                  user_id: user.id,
+                  version: 3,
+                  device_id: 'obsolete',
+                  data: { cards: [] },
+                }),
+              }
+            : {}),
+        },
+      )
+      expect(response.status).toBe(409)
+      if (method !== 'HEAD') {
+        const error = z
+          .object({ message: z.string() })
+          .parse(await response.json())
+        expect(error.message).toContain('Update Jolito')
+        expect(error.message).toContain('Save')
+        expect(error.message).toContain('joli.to/update')
+      }
+      expect(await client.pullDeck(user)).toEqual(before)
+    }
+    const edited = [
+      ...cards,
+      ...createStudyCards(
+        {
+          spanish: 'seguir',
+          english: 'continue',
+          context: '',
+          bidirectional: false,
+        },
+        'next',
+        1,
+      ),
+    ]
+    const resumed = await client.syncDeck(edited, user)
+    expect(resumed.success).toBe(true)
+    expect((await client.pullDeck(user)).cards).toEqual(edited)
   })
   it('reconciles two real devices after both read the same server revision', async () => {
     const { user, authService } = await createRealTestUser('concurrent-sync')
@@ -370,7 +443,7 @@ describe('Supabase Live Stack Integration', () => {
       .mockImplementation(async (input, init) => {
         const response = await transport(input, init)
         const url = input instanceof Request ? input.url : input.toString()
-        if (url.includes('/decks?') && reads < 2) {
+        if (url.endsWith('/rpc/read_deck_snapshot') && reads < 2) {
           if (++reads === 2) release()
           await bothRead
         }
