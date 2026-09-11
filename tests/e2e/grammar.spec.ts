@@ -340,22 +340,38 @@ test('native keyboard controls coexist with grammar audio and grading shortcuts'
   await page.goto('/#/grammar')
   const speechCount = () =>
     page.evaluate(() => window.__speechSynthesisCalls!.length)
+  const expectSentenceAudio = async () => {
+    await expect(page.locator('.audio-button')).toHaveCount(1)
+    const row = page.locator('.grammar-sentence-row')
+    await expect(row.locator('.audio-button')).toHaveCount(1)
+    const sentence = await row.getByRole('heading').textContent()
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.__speechSynthesisCalls!.slice(-1)[0]?.text),
+      )
+      .toBe(sentence)
+  }
   await page.getByRole('button', { name: 'Start practice' }).click()
   await expect.poll(speechCount).toBe(1)
+  await expectSentenceAudio()
   await page.getByRole('textbox').press('Enter')
   await expect.poll(speechCount).toBe(2)
+  await expectSentenceAudio()
   // Separate intentional replays from speech’s double-activation suppression.
   await page.clock.setFixedTime(now + 1000)
   await page.getByRole('status').focus()
   await page.keyboard.press('Space')
   await expect.poll(speechCount).toBe(3)
+  await expectSentenceAudio()
   await page.clock.setFixedTime(now + 2000)
-  const audioButton = page.locator('.reveal-panel .audio-button')
+  const audioButton = page.getByRole('button', { name: 'Play answer audio' })
   await audioButton.press('Space')
   await expect.poll(speechCount).toBe(4)
+  await expectSentenceAudio()
   await page.getByRole('button', { name: /Easy/ }).press('Space')
   await expect(page.getByRole('textbox')).toBeFocused()
   await expect.poll(speechCount).toBe(5)
+  await expectSentenceAudio()
   await page.getByRole('textbox').press('Space')
   await expect(page.getByRole('textbox')).toHaveValue(' ')
   expect(await speechCount()).toBe(5)

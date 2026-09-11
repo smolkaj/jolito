@@ -24,6 +24,7 @@ export function PracticeCard({
   onReveal,
   onGrade,
   onPlayAnswer,
+  showAnswerAudio = true,
   onPlayPrompt,
   onEdit,
   onDelete,
@@ -43,6 +44,7 @@ export function PracticeCard({
   onAnswerChange: (answer: string) => void
   onReveal: () => void
   onGrade: (grade: Grade) => void
+  showAnswerAudio?: boolean
   onPlayAnswer: () => void
   onPlayPrompt?: () => void
   onEdit?: () => void
@@ -216,7 +218,7 @@ export function PracticeCard({
                   correctionRule={correctionRule}
                   expected={card.answer}
                   lang={answerLang}
-                  onPlayAudio={onPlayAnswer}
+                  onPlayAudio={showAnswerAudio ? onPlayAnswer : undefined}
                 />
               </div>
               {children}
