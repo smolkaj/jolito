@@ -158,7 +158,7 @@ for (const failure of ['confirmation', 'cleanup'] as const) {
     )
     expect(envelope.deletion).toBeUndefined()
     expect(envelope.accounts['user:B']).toEqual({
-      version: 3,
+      version: 4,
       cards: accountCards('B'),
       deletedCardIds: [],
     })
