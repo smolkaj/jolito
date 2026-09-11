@@ -117,6 +117,31 @@ afterAll(async () => {
 })
 
 describe('signup alert lifecycle through real Supabase Auth and PostgREST', () => {
+  it('requires mailbox verification for a public password signup before it can trigger an alert', async () => {
+    const email = `unverified-${crypto.randomUUID()}@example.com`
+    const response = await fetch(`${url}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password: 'test-password-for-verification-123!',
+      }),
+    })
+    expect(response.ok).toBe(true)
+    const body: unknown = await response.json()
+    const account = z
+      .object({ id: z.uuid(), email_confirmed_at: z.null().optional() })
+      .parse(body)
+    users.push(account.id)
+    expect(body).not.toHaveProperty('access_token')
+    const env = environment()
+    await worker.scheduled({}, env)
+    expect(env.SEND_EMAIL.send).not.toHaveBeenCalled()
+    await verify(email)
+    await worker.scheduled({}, env)
+    expect(env.SEND_EMAIL.send).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores unverified accounts, then recovers a delivery outage after verification without another sign-in', async () => {
     const user = await unverifiedUser()
     const env = environment()

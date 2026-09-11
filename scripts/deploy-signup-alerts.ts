@@ -90,6 +90,20 @@ export async function deploySignupAlerts(
     cfApi(`/zones/${zone.id}/email/routing/rules`, config.CLOUDFLARE_API_TOKEN),
   ])
   const recipient = verifiedMaintainerInbox(addresses, rules)
+  const authResponse = await fetch(
+    `https://api.supabase.com/v1/projects/${config.SUPABASE_PROJECT_ID}/config/auth`,
+    {
+      headers: { Authorization: `Bearer ${config.SUPABASE_ACCESS_TOKEN}` },
+      signal: AbortSignal.timeout(10_000),
+    },
+  )
+  if (!authResponse.ok)
+    throw new Error(
+      `Supabase Auth configuration failed (HTTP ${authResponse.status})`,
+    )
+  z.object({ mailer_autoconfirm: z.literal(false) }).parse(
+    await authResponse.json(),
+  )
   const keyResponse = await fetch(
     `https://api.supabase.com/v1/projects/${config.SUPABASE_PROJECT_ID}/api-keys`,
     {

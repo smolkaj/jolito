@@ -7,7 +7,10 @@ Send the maintainer an email after a learner verifies their email and signs in
 for the first time. Nothing in the app should wait for, initiate, or retry this
 notification. Unverified accounts are not signups for this purpose.
 
-Supabase Auth is the durable source of truth. A separate, private Cloudflare
+Supabase Auth is the durable source of truth. Deployment enforces email
+confirmation before applying the rollout baseline; auto-confirmed password
+accounts would otherwise impersonate verified learners. The same code-based
+email template serves new and returning users. A separate, private Cloudflare
 Worker checks every five minutes and claims pending notifications through
 service-role-only database functions. Database leases coordinate concurrent
 runs. A successful provider acceptance is recorded before the next run; failed

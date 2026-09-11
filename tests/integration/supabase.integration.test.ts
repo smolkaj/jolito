@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../src/application/ports'
 import type { StudyCard } from '../../src/domain/card'
 import type { SupabaseAuthService } from '../../src/infrastructure/supabase/auth-service'
@@ -49,23 +50,45 @@ describe('Supabase Live Stack Integration', () => {
     authService: AuthService
   }> {
     const email = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`
-    const password = 'integration-test-password-123!'
 
-    const signupRes = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
+    const signupRes = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/generate_link`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: 'magiclink', email }),
       },
-      body: JSON.stringify({ email, password }),
-    })
+    )
 
     if (!signupRes.ok) {
       const errText = await signupRes.text()
       throw new Error(`Failed to create test user: ${errText}`)
     }
 
-    const data = (await signupRes.json()) as {
+    const link = z
+      .object({
+        hashed_token: z.string(),
+        verification_type: z.enum(['signup', 'magiclink']),
+      })
+      .parse(await signupRes.json())
+    const verifyRes = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: link.verification_type,
+        token_hash: link.hashed_token,
+      }),
+    })
+    if (!verifyRes.ok)
+      throw new Error(`Failed to verify test user: HTTP ${verifyRes.status}`)
+    const data = (await verifyRes.json()) as {
       access_token: string
       user: { id: string; email: string }
     }

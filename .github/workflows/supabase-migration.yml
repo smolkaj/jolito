@@ -12,6 +12,8 @@ on:
       - 'src/worker/email-binding.ts'
       - 'scripts/deploy-signup-alerts.ts'
       - 'scripts/cf-utils.ts'
+      - 'scripts/supabase-auth-config.ts'
+      - 'supabase/templates/magic_link.html'
       - 'wrangler.signup-alerts.json'
       - 'package-lock.json'
   pull_request:
@@ -23,6 +25,8 @@ on:
       - 'src/worker/email-binding.ts'
       - 'scripts/deploy-signup-alerts.ts'
       - 'scripts/cf-utils.ts'
+      - 'scripts/supabase-auth-config.ts'
+      - 'supabase/templates/magic_link.html'
       - 'wrangler.signup-alerts.json'
       - 'package-lock.json'
 
@@ -95,6 +99,7 @@ jobs:
             exit 0
           fi
           npx supabase link --project-ref "$SUPABASE_PROJECT_ID" ${SUPABASE_DB_PASSWORD:+--password "$SUPABASE_DB_PASSWORD"}
+          npm run setup:auth
           npx supabase db push --linked --yes
 
   deploy-signup-alerts:

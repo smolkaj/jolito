@@ -69,7 +69,8 @@ describe('signup worker deployment', () => {
       'fetch',
       vi
         .fn()
-        .mockResolvedValue(
+        .mockResolvedValueOnce(Response.json({ mailer_autoconfirm: false }))
+        .mockResolvedValueOnce(
           Response.json([{ name: 'service_role', api_key: 'test-secret-key' }]),
         ),
     )
@@ -103,6 +104,27 @@ describe('signup worker deployment', () => {
     expect(execFileSync).toHaveBeenCalledTimes(1)
     expect(existsSync(configPath)).toBe(false)
     expect(existsSync(secretsPath)).toBe(false)
+  })
+
+  it('refuses to activate notifications when Auth auto-confirms accounts', async () => {
+    vi.mocked(cfApi)
+      .mockResolvedValueOnce([{ id: 'zone-1', account: { id: 'account-1' } }])
+      .mockResolvedValueOnce([
+        { email: 'maintainer@example.com', verified: '2026-01-01' },
+      ])
+      .mockResolvedValueOnce(rules)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json({ mailer_autoconfirm: true })),
+    )
+    await expect(
+      deploySignupAlerts({
+        CLOUDFLARE_API_TOKEN: 'test-cf',
+        SUPABASE_ACCESS_TOKEN: 'test-sb',
+        SUPABASE_PROJECT_ID: 'testproject',
+      }),
+    ).rejects.toThrow()
+    expect(execFileSync).not.toHaveBeenCalled()
   })
 
   it('fails before deploying when a required credential is missing', async () => {

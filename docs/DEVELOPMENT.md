@@ -236,7 +236,14 @@ its Supabase service credential to the public app worker or a branch preview.
 
 Deployment is versioned in `wrangler.signup-alerts.json`,
 `scripts/deploy-signup-alerts.ts`, and the Database Migrations workflow. After
-merging, that workflow applies migrations before deploying the worker. It can
+merging, that workflow runs `npm run setup:auth`, applies migrations, and then
+deploys the worker. Auth configuration requires email confirmation before the
+rollout baseline is captured; the worker deploy also verifies this policy.
+`setup:auth` and `setup:domain` share the same Auth configuration builder. Both
+new-account confirmation and returning-user magic-link emails use the existing
+code-based template. Local Supabase requires confirmation too, and the public
+password-signup integration test verifies that no session or alert exists before
+mailbox verification. It can
 also be rerun through `workflow_dispatch` on main. Configure these GitHub
 repository secrets before enabling production delivery:
 
