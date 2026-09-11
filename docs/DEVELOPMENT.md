@@ -221,3 +221,69 @@ npm run test:e2e
 ```
 
 Use the narrowest useful command while iterating (`npm run test`, `npm run lint`, or `npm run typecheck`), then run the full checks before review. See [QUALITY.md](QUALITY.md) for the test strategy and quality contract.
+
+## Signup notification delivery
+
+[ADR 0007](adr/0007-signup-alerts.md) defines the delivery contract. After a
+learner verifies their email and signs in, `jolito-signup-alerts` sends a plain
+text email to the maintainer. Its five-minute schedule is independent of the
+app. Existing verified accounts are suppressed by the migration; accounts
+still awaiting verification remain eligible. No deck sync is required.
+
+The private worker has no HTTP handler, route, workers.dev address, or preview
+URL. The app preview above exercises the app and privacy copy only. Never bind
+its Supabase service credential to the public app worker or a branch preview.
+
+Deployment is versioned in `wrangler.signup-alerts.json`,
+`scripts/deploy-signup-alerts.ts`, and the Database Migrations workflow. After
+merging, that workflow applies migrations before deploying the worker. It can
+also be rerun through `workflow_dispatch` on main. Configure these GitHub
+repository secrets before enabling production delivery:
+
+- Existing `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_ID` (or
+  `SUPABASE_PROJECT_REF`). The script obtains the runtime service-role key
+  through the Management API; it is never printed or stored in Git.
+- `CLOUDFLARE_API_TOKEN`: Workers Scripts Edit for the Jolito account, Zone Read
+  and Email Routing Rules Read for `joli.to`, and Email Routing Addresses Read
+  for its account. Use a scoped token; this script does not buy a plan or enable
+  paid email sending.
+
+Run `npm run setup:email` to manage the existing forwarding rule for `a@joli.to`.
+The deploy script resolves that rule's single destination, requires that exact
+address to be verified, and restricts `SEND_EMAIL` to it. It sends directly to
+the verified inbox, not the forwarding alias. Missing credentials, ambiguous
+rules, and unverified destinations fail deployment rather than silently
+selecting a different provider. The worker uses Cloudflare's free sends to
+verified destinations and 288 scheduled invocations per day on Workers Free.
+
+`npm run deploy:signup-alerts` reproduces the production worker deployment with
+the same environment variables. Temporary configuration and secret files are
+created with owner-only permissions under `.wrangler/` and removed afterward.
+The checked-in worker config alone is sufficient for the credential-free
+`npm run build:signup-alerts` dry-run, but not a production deployment.
+
+Each invocation claims at most ten accounts. A database lease lasts thirty
+minutes, longer than the scheduled worker's fifteen-minute maximum runtime.
+Successful provider acceptance records `sent`; an explicit provider failure
+becomes eligible again after five minutes. Process or database failure leaves
+the lease to expire. Failed attempts fail the scheduled invocation and emit
+sanitized errors in Cloudflare Workers observability. Check scheduled-event
+failures there; inspect `private.signup_notifications` with administrator access
+for `status`, `attempts`, and `lease_until`. No learner email is copied to that
+table or logged by the worker. Account deletion cascades to notification state.
+Delivered emails remain in the maintainer inbox, as disclosed in the privacy copy.
+
+Delivery is at-least-once, not exactly-once: a crash between provider acceptance
+and receipt persistence can duplicate an alert. Outages may delay alerts; no
+learner action is needed for recovery. To roll back delivery, set `triggers.crons`
+to `[]` in the worker config and deploy. Keep the database table and functions so
+pending events and receipts survive a later re-enable. Do not drop/recreate the
+table during normal deployment: its one-time baseline is migration-owned.
+
+Validation includes `npm run check`, `npm run test:db`, `npm run lint:db`, and
+`npm run test:integration`. Integration tests use the local Supabase container
+only, verify real Auth confirmation and PostgREST calls, and simulate lease
+expiry with local SQL. Provider-outage tests replace the mail binding. An additional test runs the
+actual local Workers runtime and its email binding, which writes the email to
+a local file instead of sending it. No real emails are sent. The rollout test executes the actual migration in a transaction
+and rolls it back. Test files run serially because they share the local database.

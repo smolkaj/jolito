@@ -45,3 +45,5 @@ What becomes easier, harder, or newly required?
 | [0004: Offline deck backup and export](0004-offline-deck-backup-and-export.md)                                             | Accepted | Offline JSON deck backup, export, restore, and merge.                              |
 | [0005: Cloud snapshot sync with Supabase](0005-cloud-snapshot-sync-supabase.md)                                            | Accepted | Zero-cost cloud snapshot sync with Supabase and RLS.                               |
 | [0006: Neural speech synthesis, voice licensing, and device fallback](0006-neural-speech-synthesis-and-voice-licensing.md) | Accepted | Hybrid edge neural speech with aggressive caching and offline Web Speech fallback. |
+
+| [0007: Signup alerts from verified accounts](0007-signup-alerts.md) | Proposed | Private scheduled delivery from Supabase Auth, with durable receipts and free verified-destination email. |

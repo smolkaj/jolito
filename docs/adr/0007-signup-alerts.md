@@ -1,6 +1,7 @@
-# Signup alerts from verified accounts
+# ADR 0007: Signup alerts from verified accounts
 
-Status: implementation in progress.
+- Status: proposed
+- Date: 2026-09-10
 
 Send the maintainer an email after a learner verifies their email and signs in
 for the first time. Nothing in the app should wait for, initiate, or retry this
