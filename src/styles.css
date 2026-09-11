@@ -167,7 +167,7 @@ summary:focus-visible,
   min-height: 100dvh;
   padding-top: max(16px, env(safe-area-inset-top));
   padding-right: max(clamp(20px, 5vw, 80px), env(safe-area-inset-right));
-  padding-bottom: max(40px, env(safe-area-inset-bottom));
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
   padding-left: max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
@@ -610,7 +610,7 @@ summary:focus-visible,
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: clamp(16px, 2.5vh, 32px) 0 max(20px, env(safe-area-inset-bottom));
+  padding: clamp(16px, 2.5vh, 32px) 0 max(21px, env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -2776,7 +2776,7 @@ kbd {
 
   .welcome-hero {
     padding-top: 14px;
-    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   .welcome-hero-main {
