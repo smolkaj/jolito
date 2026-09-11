@@ -13,6 +13,7 @@ target.source_build_phase.add_file_reference(source)
 target.build_configurations.each do |config|
   config.build_settings.merge!({
     'GENERATE_INFOPLIST_FILE' => 'YES', 'SWIFT_VERSION' => '5.0',
+    'PRODUCT_NAME' => '$(TARGET_NAME)',
     'PRODUCT_BUNDLE_IDENTIFIER' => 'to.joli.app.screenshots',
     'TEST_TARGET_NAME' => 'App', 'CODE_SIGNING_ALLOWED' => 'NO',
     'TARGETED_DEVICE_FAMILY' => '1,2'

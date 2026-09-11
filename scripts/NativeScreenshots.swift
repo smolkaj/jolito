@@ -8,7 +8,7 @@ final class NativeScreenshots: XCTestCase {
         XCTAssertTrue(create.waitForExistence(timeout: 30), "Bundled web app must render before capture")
         capture(app, name: "01-welcome")
         create.tap()
-        let spanish = app.textFields.firstMatch
+        let spanish = app.textViews.firstMatch
         XCTAssertTrue(spanish.waitForExistence(timeout: 15), "Card authoring must open in the native app")
         capture(app, name: "02-create")
         app.terminate()

@@ -74,8 +74,11 @@ platform :ios do
           commit: ENV.fetch('GITHUB_SHA', 'local')
         }))
       ensure
-        delete_keychain(keychain_path: keychain) if File.exist?(keychain)
-        FileUtils.rm_f(profile_path) if profile_path
+        begin
+          delete_keychain(keychain_path: keychain) if File.exist?(keychain)
+        ensure
+          FileUtils.rm_f(profile_path) if profile_path
+        end
       end
     end
   end
