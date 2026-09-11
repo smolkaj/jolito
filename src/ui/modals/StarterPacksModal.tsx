@@ -122,10 +122,19 @@ function StarterPacksModalInner({
     return set
   }, [cards])
 
-  const [saveError, setSaveError] = useState(false)
+  const [saveError, setSaveError] = useState(0)
+  const saveErrorRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    if (!saveError) return
+    saveErrorRef.current?.focus({ preventScroll: true })
+    saveErrorRef.current?.scrollIntoView({
+      block: 'center',
+      behavior: 'instant',
+    })
+  }, [saveError])
   const handleAdd = (pack: StarterPack) => {
     const saved = onAddPack(pack)
-    setSaveError(saved === false)
+    setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
     if (saved === false) return
     setAddingPackId(pack.id)
     if (addTimerRef.current) {
@@ -143,7 +152,8 @@ function StarterPacksModalInner({
 
   const handleAddNote = (originalIndex: number) => {
     if (!inspectingPack || !onAddNote) return
-    setSaveError(onAddNote(inspectingPack, originalIndex) === false)
+    const saved = onAddNote(inspectingPack, originalIndex)
+    setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
   }
 
   const inspectNotes = useMemo(() => {
@@ -168,8 +178,8 @@ function StarterPacksModalInner({
         aria-labelledby="starter-packs-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        {saveError && (
-          <p role="alert">
+        {saveError > 0 && (
+          <p ref={saveErrorRef} role="alert" tabIndex={-1}>
             Your cards couldn’t be saved. Free up device storage, then try
             again.
           </p>
