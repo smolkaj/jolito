@@ -84,7 +84,7 @@ for (const width of [320, 393, 768, 1024, 1280]) {
       version: number
       cards: { grammar?: { topic: string } }[]
     }
-    expect(saved.version).toBe(3)
+    expect(saved.version).toBe(4)
     expect(
       saved.cards.filter((card) => card.grammar?.topic === 'perfect'),
     ).toHaveLength(8)
