@@ -2,16 +2,15 @@ import XCTest
 import UIKit
 
 final class NativeScreenshots: XCTestCase {
-    func testStoreScreenshots() throws {
+    func testStoreScreenshotsAndSceneLifecycle() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launch()
-        let create = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Create a card")).firstMatch
-        XCTAssertTrue(create.waitForExistence(timeout: 30), "Bundled web app must render before capture")
+        let create = waitForWelcome(app)
         capture(app, name: "01-welcome")
         create.tap()
         let spanish = app.textFields["Mexican Spanish"]
-        XCTAssertTrue(spanish.waitForExistence(timeout: 15), "Card authoring must open in the native app")
+        XCTAssertTrue(spanish.waitForExistence(timeout: 30), "Card authoring must open in the native app")
         spanish.tap()
         spanish.typeText("Hola")
         // The suggestion list overlays the next field. Dismiss it before
@@ -22,6 +21,49 @@ final class NativeScreenshots: XCTestCase {
         let english = app.textFields["English"]
         english.tap()
         english.typeText("Hello")
+        dismissKeyboard(app)
+        capture(app, name: "02-create")
+
+        // Suspending a scene must preserve the active draft and re-arm input.
+        XCUIDevice.shared.press(.home)
+        let backgrounded = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in
+                app.state == .runningBackground || app.state == .runningBackgroundSuspended
+            }, object: nil
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [backgrounded], timeout: 10), .completed)
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
+        XCTAssertTrue(english.waitForExistence(timeout: 30))
+        XCTAssertEqual(spanish.value as? String, "Hola")
+        XCTAssertEqual(english.value as? String, "Hello")
+        english.tap()
+        english.typeText(" again")
+        XCTAssertEqual(english.value as? String, "Hello again")
+        dismissKeyboard(app)
+        capture(app, name: "03-resumed-draft")
+
+        // A terminated lifetime stays inert; only an explicit new launch starts one.
+        app.terminate()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 10))
+        XCUIDevice.shared.press(.home)
+        XCTAssertEqual(app.state, .notRunning)
+        app.launch()
+        _ = waitForWelcome(app)
+        capture(app, name: "04-relaunched-welcome")
+        app.terminate()
+    }
+
+    private func waitForWelcome(_ app: XCUIApplication) -> XCUIElement {
+        let create = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Create a card")).firstMatch
+        // Cold Simulator WebKit startup has exceeded 35 seconds in recorded CI.
+        // Wait for real app readiness once, without retrying or relaunching a failure.
+        XCTAssertTrue(create.waitForExistence(timeout: 90), "Bundled web app must render before capture")
+        XCTAssertEqual(app.webViews.count, 1, "Each scene must own one web view")
+        return create
+    }
+
+    private func dismissKeyboard(_ app: XCUIApplication) {
         // Blur the editor through the visible page, just as a learner would.
         let dismissKeyboard = app.buttons.matching(NSPredicate(
             format: "label IN %@", ["Done", "Hide keyboard", "Dismiss keyboard"]
@@ -36,8 +78,6 @@ final class NativeScreenshots: XCTestCase {
         )
         XCTAssertEqual(XCTWaiter.wait(for: [keyboardGone], timeout: 10), .completed)
         app.staticTexts["New flashcard"].tap()
-        capture(app, name: "02-create")
-        app.terminate()
     }
 
     override func tearDown() {

@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   ios-build:
-    name: Xcode iOS compilation gate
+    name: Xcode iOS build
     runs-on: macos-15
     timeout-minutes: 20
     env:
@@ -85,7 +85,7 @@ jobs:
             -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
             -configuration Release -resultBundlePath build/screenshots.xcresult \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
-            -default-test-execution-time-allowance 120 \
+            -default-test-execution-time-allowance 300 \
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
       - name: Export screenshots
         if: ${{ !cancelled() }}
@@ -98,3 +98,17 @@ jobs:
             build/native-screenshots
             build/screenshots.xcresult
           retention-days: 14
+
+  ios-gate:
+    name: Xcode iOS compilation gate
+    runs-on: ubuntu-latest
+    needs: [ios-build, native-screenshots]
+    if: ${{ always() }}
+    steps:
+      - name: Require compilation and both native lifecycle runs
+        env:
+          BUILD_RESULT: ${{ needs.ios-build.result }}
+          NATIVE_RESULT: ${{ needs.native-screenshots.result }}
+        run: |
+          test "$BUILD_RESULT" = success
+          test "$NATIVE_RESULT" = success
