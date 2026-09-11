@@ -14,6 +14,11 @@ final class NativeScreenshots: XCTestCase {
         XCTAssertTrue(spanish.waitForExistence(timeout: 15), "Card authoring must open in the native app")
         spanish.tap()
         spanish.typeText("Hola")
+        // The suggestion list overlays the next field. Dismiss it before
+        // editing the translation so a tap cannot select a suggestion.
+        let dismissSuggestions = app.buttons["Dismiss suggestions"]
+        XCTAssertTrue(dismissSuggestions.waitForExistence(timeout: 10))
+        dismissSuggestions.tap()
         let english = app.textFields["English"]
         english.tap()
         english.typeText("Hello")
