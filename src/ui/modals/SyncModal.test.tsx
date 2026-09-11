@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MockAuthService } from '../../test/services'
 import { SyncModal } from './SyncModal'
 
@@ -673,4 +673,49 @@ it('keeps sign-out storage failure actionable and reports success only after ret
   fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
   await waitFor(() => expect(auth.user).toBeNull())
   expect(signOut).toHaveBeenCalledTimes(2)
+})
+
+describe('sync update recovery', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it.each(['http:', 'capacitor:'])(
+    'offers hosted help on %s without closing the active session, and clears it after a successful retry',
+    async (protocol) => {
+      vi.stubGlobal('location', { protocol })
+      const auth = new MockAuthService()
+      auth.user = { id: 'upgrade', email: 'upgrade@example.com' }
+      const close = vi.fn()
+      const sync = vi
+        .fn()
+        .mockResolvedValueOnce({
+          success: false,
+          error: 'Update Jolito to sync.',
+        })
+        .mockResolvedValueOnce({ success: true })
+      render(
+        <SyncModal
+          user={auth.user}
+          onDeleteAccount={() => auth.deleteAccount()}
+          isOpen
+          onClose={close}
+          cards={[]}
+          auth={auth}
+          onSync={sync}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
+      const help = await screen.findByRole('link', { name: /update help/i })
+      expect(help).toHaveAttribute(
+        'href',
+        protocol === 'capacitor:' ? 'https://joli.to/update' : '/update',
+      )
+      expect(help).toHaveAttribute('target', '_blank')
+      expect(help).toHaveAttribute('rel', 'noopener noreferrer')
+      expect(close).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
+      await waitFor(() =>
+        expect(screen.queryByRole('link', { name: /update help/i })).toBeNull(),
+      )
+      expect(close).not.toHaveBeenCalled()
+    },
+  )
 })

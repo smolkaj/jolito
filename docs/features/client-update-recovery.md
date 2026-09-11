@@ -9,7 +9,8 @@ already-shipped adapters display. It neither restores DML grants nor modifies da
 The read RPC is security-invoker and retains the table's owner RLS policy.
 
 The hosted guide stays outside the cached app shell. Current sync failures link to
-it in a new tab, preserving the running editor/practice session. Nothing activates
+it in a new tab, preserving the running editor/practice session. Native iOS uses
+the production HTTPS guide rather than the Capacitor asset origin. Nothing activates
 a waiting worker, clears storage, or reloads a session automatically. Users finish
 or save drafts, export a backup, then close all Jolito windows to let the browser
 activate the complete waiting build. Native installations need an app update from
@@ -54,3 +55,9 @@ waiting update and open hosted guidance without replacing the running app.
 
 References: [Supabase pre-request configuration](https://supabase.com/docs/guides/api/securing-your-api)
 and [PostgREST request transactions](https://docs.postgrest.org/en/v13/references/transactions.html).
+
+An additional manual verification executed the unchanged pre-#303 adapter from
+`e00d077` against the migrated local server: its original read/error path displayed
+the update message before the old v3 parser ran. The archived adapter is not a
+second maintained implementation; the permanent CI test exercises its HTTP
+contract against the real server.

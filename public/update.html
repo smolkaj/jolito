@@ -22,12 +22,9 @@
         --papel: #fdf5f8;
         --card: #ffffff;
         --ink: #1f1b18;
-        --ink-light: #645b53;
         --line: #2b2520;
         --rosa: #d94a7a;
         --rosa-dark: #b83561;
-        --verde: #1b8a5a;
-        --verde-dark: #126340;
         --shadow: 4px 4px 0 var(--line);
       }
       * {
@@ -48,7 +45,7 @@
         align-items: center;
         min-height: 100vh;
       }
-      .privacy-container {
+      .guide-container {
         width: 100%;
         max-width: 680px;
         background: var(--card);
@@ -81,16 +78,6 @@
         color: var(--ink);
         margin-bottom: 8px;
       }
-      .subtitle {
-        color: var(--ink-light);
-        font-size: 15px;
-      }
-      .effective-date {
-        display: inline-block;
-        margin-top: 6px;
-        font-size: 13px;
-        color: var(--ink-light);
-      }
       section {
         margin-bottom: 24px;
       }
@@ -105,14 +92,6 @@
         color: var(--ink);
         line-height: 1.65;
         margin-bottom: 8px;
-      }
-      ul {
-        margin-left: 20px;
-        margin-bottom: 8px;
-      }
-      li {
-        font-size: 15px;
-        margin-bottom: 4px;
       }
       a {
         color: var(--rosa-dark);
@@ -136,16 +115,14 @@
         color: var(--ink);
         text-decoration: none;
         box-shadow: 2px 2px 0 var(--line);
-        transition: transform 120ms ease;
       }
       .return-link:hover {
-        transform: translate(-1px, -1px);
         box-shadow: 3px 3px 0 var(--line);
       }
     </style>
   </head>
   <body>
-    <main class="privacy-container">
+    <main class="guide-container">
       <header>
         <div class="brand-row">
           <a href="/" class="brand-title">Jolito</a>
@@ -169,9 +146,10 @@
         </p>
         <p>
           Export a JSON deck backup from
-          <strong>Manage deck → Backup &amp; export</strong>. If a save or
-          export fails, keep the app open and copy unfinished text somewhere
-          safe before continuing.
+          <strong
+            >Manage deck → Backup &amp; Import → Export backup (JSON)</strong
+          >. If a save or export fails, keep the app open and copy unfinished
+          text somewhere safe before continuing.
         </p>
         <p>
           <strong>Keep the app installed and keep its site data.</strong>

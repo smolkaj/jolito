@@ -291,7 +291,15 @@ export function SyncModal({
     >
       <p>{statusMsg.message}</p>
       {statusMsg.syncHelp && (
-        <a href="/update" target="_blank" rel="noopener noreferrer">
+        <a
+          href={
+            location.protocol === 'capacitor:'
+              ? 'https://joli.to/update'
+              : '/update'
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Update help (opens a new tab)
         </a>
       )}

@@ -105,6 +105,7 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
       for (const [path, title] of [
         ['/privacy', 'Privacy Policy'],
         ['/acknowledgements', 'Acknowledgements'],
+        ['/update', 'Update Jolito safely'],
       ] as const) {
         await documents.goto(`http://127.0.0.1:${address.port}${path}`)
         await expect(
@@ -185,6 +186,7 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
       deployment = 'recovered'
       await context.setOffline(false)
       expect(await update()).toBe('installed')
+      await expect(spanish).toHaveValue('ahor')
       // A new tab also receives the installed old HTML while this update waits.
       const otherTab = await context.newPage()
       await otherTab.goto(`http://127.0.0.1:${address.port}/`)
@@ -194,6 +196,7 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
       await otherTab.locator('html[data-offline-ready="true"]').waitFor()
       await otherTab.close()
       await visitDocuments('original')
+      await expect(spanish).toHaveValue('ahor')
 
       // A page from a different build (e.g. a hard reload bypassing the worker)
       // cannot borrow the old worker's readiness acknowledgement.

@@ -535,3 +535,36 @@ for (const stage of ['read body', 'write body'] as const) {
     },
   )
 }
+
+it.each(['read', 'write'] as const)(
+  'keeps local cards and retries after a missing %s RPC deployment',
+  async (phase) => {
+    const fetchSpy = vi.fn()
+    if (phase === 'write') fetchSpy.mockResolvedValueOnce(Response.json([row]))
+    fetchSpy.mockResolvedValueOnce(
+      Response.json(
+        { code: 'PGRST202', message: 'Could not find the function' },
+        { status: 404 },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchSpy)
+    const client = service()
+    const unchanged = structuredClone(cards)
+    expect(await client.syncDeck(cards, user)).toMatchObject({
+      success: false,
+      error: expect.stringContaining('Cloud sync is being updated') as string,
+    })
+    expect(cards).toEqual(unchanged)
+    expect(
+      fetchSpy.mock.calls.every(([url]) => String(url).includes('/rpc/')),
+    ).toBe(true)
+    fetchSpy
+      .mockResolvedValueOnce(Response.json([row]))
+      .mockResolvedValueOnce(Response.json(2))
+    expect(await client.syncDeck(cards, user)).toMatchObject({
+      success: true,
+      cards,
+      revision: 2,
+    })
+  },
+)

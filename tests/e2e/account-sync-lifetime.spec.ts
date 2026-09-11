@@ -131,9 +131,10 @@ for (const heldAt of ['response', 'body'] as const) {
         })
         await route.fulfill({ json: revision })
       } else {
-        const owner = new URL(route.request().url()).searchParams
-          .get('user_id')
-          ?.slice(3)
+        const owner = route
+          .request()
+          .headers()
+          .authorization?.replace('Bearer token-', '')
         const snapshot = owner ? cloud.get(owner) : undefined
         await route.fulfill({ json: snapshot ? [snapshot] : [] })
       }
