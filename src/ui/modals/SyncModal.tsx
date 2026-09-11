@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { createDeckBackup } from '../../application/deck-backup'
 import { syncDeckWithCloud } from '../../application/deck-sync'
 import type {
@@ -19,6 +19,11 @@ import {
 } from '../icons'
 
 export interface SyncModalProps {
+  user: AuthUser | null
+  onDeleteAccount: () => Promise<{
+    success: boolean
+    error?: string | undefined
+  }>
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
@@ -39,6 +44,8 @@ export interface SyncModalProps {
 }
 
 export function SyncModal({
+  user,
+  onDeleteAccount,
   isOpen,
   onClose,
   cards,
@@ -53,7 +60,6 @@ export function SyncModal({
   onOpenPrivacy,
   onOpenFeedback,
 }: SyncModalProps) {
-  const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
@@ -132,18 +138,12 @@ export function SyncModal({
     return () => clearTransientFeedback()
   }, [])
 
-  useEffect(() => {
-    return auth.onAuthStateChange((currentUser) => {
-      setUser(currentUser)
-    })
-  }, [auth])
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsConfirmingDelete(false)
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
     onClose()
-  }
+  }, [onClose])
 
   useEffect(() => {
     if (!isOpen) return
@@ -155,7 +155,7 @@ export function SyncModal({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   if (!isOpen) return null
 
@@ -240,11 +240,20 @@ export function SyncModal({
   const handleSignOut = async () => {
     clearTransientFeedback()
     setLoadingAction('signout')
-    await auth.signOut()
-    setLoadingAction(null)
-    setIsOtpSent(false)
-    setToken('')
-    setStatusMsg(null)
+    try {
+      await auth.signOut()
+      setIsOtpSent(false)
+      setToken('')
+      setStatusMsg(null)
+    } catch {
+      setStatusMsg({
+        type: 'error',
+        message:
+          'Your sign-in session could not be removed from this device. Allow browser storage access, then try signing out again.',
+      })
+    } finally {
+      setLoadingAction(null)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -262,14 +271,7 @@ export function SyncModal({
           downloadJsonFile(backup.filename, backup.json)
         }
       }
-      if (!auth.deleteAccount) {
-        setStatusMsg({
-          type: 'error',
-          message: 'Account deletion is unavailable. Please try again later.',
-        })
-        return
-      }
-      const authRes = await auth.deleteAccount()
+      const authRes = await onDeleteAccount()
       if (!authRes.success) {
         setStatusMsg({
           type: 'error',

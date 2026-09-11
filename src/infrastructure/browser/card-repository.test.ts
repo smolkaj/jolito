@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGrammarCards } from '../../domain/grammar'
 import { createStudyCards } from '../../domain/card'
-import { LocalStorageCardRepository } from './card-repository'
+import {
+  ACCOUNT_STORAGE_KEY,
+  LocalStorageCardRepository,
+} from './card-repository'
 
 const fallback = createStudyCards(
   {
@@ -22,7 +25,7 @@ describe('LocalStorageCardRepository', () => {
     repo.save(fallback, ['deleted-id-1', 'deleted-id-2'])
     expect(repo.load([])).toMatchObject({ cards: fallback })
     expect(repo.getDeletedCardIds()).toEqual(['deleted-id-1', 'deleted-id-2'])
-    expect(localStorage.getItem('jolito-library-v1')).toContain('deleted-id-1')
+    expect(localStorage.getItem(ACCOUNT_STORAGE_KEY)).toContain('deleted-id-1')
   })
 
   it.each([1, 2])(
@@ -45,8 +48,11 @@ describe('LocalStorageCardRepository', () => {
       ]
       repo.save([...vocabulary, ...grammar])
       expect(
-        JSON.parse(localStorage.getItem('jolito-library-v1')!) as unknown,
-      ).toMatchObject({ version: 3, deletedCardIds: ['removed'] })
+        JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY)!) as unknown,
+      ).toMatchObject({
+        version: 1,
+        guest: { version: 3, deletedCardIds: ['removed'] },
+      })
       expect(
         new LocalStorageCardRepository(localStorage).load([]).cards,
       ).toEqual([...vocabulary, ...grammar])
@@ -61,7 +67,7 @@ describe('LocalStorageCardRepository', () => {
     )
     expect(repo.load([])).toMatchObject({ cards: fallback })
     expect(repo.getDeletedCardIds()).toEqual([])
-    expect(localStorage.getItem('jolito-library-v1')).toContain('Hola')
+    expect(localStorage.getItem(ACCOUNT_STORAGE_KEY)).toContain('Hola')
   })
 
   it('migrates cards from the first prototype', () => {
@@ -84,7 +90,7 @@ describe('LocalStorageCardRepository', () => {
       schedule: { dueAt: 0 },
     })
     expect(repo.getDeletedCardIds()).toEqual([])
-    expect(localStorage.getItem('jolito-library-v1')).toContain('¿Qué onda?')
+    expect(localStorage.getItem(ACCOUNT_STORAGE_KEY)).toContain('¿Qué onda?')
   })
 
   it.each([
@@ -141,13 +147,13 @@ describe('LocalStorageCardRepository', () => {
     }
     const repo = new LocalStorageCardRepository(storage)
     repo.save(fallback, ['old'])
-    const committed = localStorage.getItem('jolito-library-v1')
+    const committed = localStorage.getItem(ACCOUNT_STORAGE_KEY)
     storage.setItem.mockImplementationOnce(() => {
       throw new DOMException('Full', 'QuotaExceededError')
     })
     expect(() => repo.save([], ['new'])).toThrow()
     expect(repo.getDeletedCardIds()).toEqual(['old'])
-    expect(localStorage.getItem('jolito-library-v1')).toBe(committed)
+    expect(localStorage.getItem(ACCOUNT_STORAGE_KEY)).toBe(committed)
     expect(new LocalStorageCardRepository(storage).load([]).cards).toEqual(
       fallback,
     )

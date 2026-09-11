@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility, settleAnimations } from './accessibility'
 
@@ -64,9 +65,7 @@ for (const viewport of [
         name: action === 'edit' ? 'Save changes' : 'Delete card',
         exact: true,
       })
-      const before = await page.evaluate(() =>
-        localStorage.getItem('jolito-library-v1'),
-      )
+      const before = await page.evaluate(currentDeckJson)
       await page.evaluate(() => {
         const original = Object.getOwnPropertyDescriptor(
           Storage.prototype,
@@ -98,9 +97,7 @@ for (const viewport of [
           await expect(selection).toBeChecked()
           await expect(dialog).toContainText(context.trim())
         }
-        expect(
-          await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-        ).toBe(before)
+        expect(await page.evaluate(currentDeckJson)).toBe(before)
       }
       expect((await auditAccessibility(page)).violations).toEqual([])
       await page.screenshot({
@@ -112,9 +109,7 @@ for (const viewport of [
       await confirm.click()
       await expect(dialog).toHaveCount(0)
       await page.reload()
-      const stored = await page.evaluate(
-        () => JSON.parse(localStorage.getItem('jolito-library-v1')!) as unknown,
-      )
+      const stored = JSON.parse(await page.evaluate(currentDeckJson)) as unknown
       if (action === 'edit') {
         expect(stored).toMatchObject({
           cards: [

@@ -258,7 +258,15 @@ describe('SupabaseAuthService', () => {
     service.destroy()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
     await service.signOut()
+    expect(mockStorage['jolito-auth-session-v1']).toBeDefined()
+    const resumed = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+    await resumed.signOut()
     expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+    resumed.destroy()
   })
 
   it('sends magic link OTP and handles network error gracefully', async () => {
@@ -963,6 +971,7 @@ describe('SupabaseAuthService', () => {
       expect(await service.deleteAccount()).toEqual({
         success: false,
         error: 'Network interrupted',
+        outcomeUnknown: true,
       })
       expect(mockStorage['jolito-auth-session-v1']).toBe(stored)
       expect(await service.getUser()).toEqual(user)

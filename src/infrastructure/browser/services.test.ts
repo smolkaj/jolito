@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { Capacitor } from '@capacitor/core'
 import { EnhancedBrowserSpeaker } from './speech'
 import { OfflineCardAssistant } from '../../application/card-assistant'
@@ -23,6 +24,7 @@ describe('createBrowserServices', () => {
 
     expect(speakerSpy).toHaveBeenCalledTimes(1)
     expect(assistantSpy).toHaveBeenCalledTimes(1)
+    expect(services.deletionLock).toBeInstanceOf(BrowserDeletionLock)
     expect(services.clock).toBeDefined()
     expect(services.ids).toBeDefined()
     expect(services.cards).toBeDefined()
@@ -88,6 +90,7 @@ describe('createBrowserServices', () => {
       .spyOn(OfflineCardAssistant.prototype, 'loadDictionary')
       .mockResolvedValue(true)
     const services = createBrowserServices()
+    expect(services.deletionLock).toBeInstanceOf(NativeDeletionLock)
     expect(services.speaker).toBeInstanceOf(EnhancedBrowserSpeaker)
     expect('prefetch' in services.speaker).toBe(false)
     expect(prewarm).not.toHaveBeenCalled()

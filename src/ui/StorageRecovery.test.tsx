@@ -3,7 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { App } from '../jolito'
 import { createTestServices } from '../test/services'
-import { LocalStorageCardRepository } from '../infrastructure/browser/card-repository'
+import {
+  ACCOUNT_STORAGE_KEY,
+  LocalStorageCardRepository,
+} from '../infrastructure/browser/card-repository'
 import { createStudyCards } from '../domain/card'
 
 beforeEach(() => {
@@ -58,7 +61,7 @@ it.each(['vocabulary', 'grammar'] as const)(
     )
     const repository = new LocalStorageCardRepository(localStorage)
     repository.save(cards)
-    const committed = localStorage.getItem('jolito-library-v1')
+    const committed = localStorage.getItem(ACCOUNT_STORAGE_KEY)
     window.history.replaceState(
       {},
       '',
@@ -92,7 +95,7 @@ it.each(['vocabulary', 'grammar'] as const)(
     fireEvent(window, new Event('online'))
     fireEvent(document, new Event('visibilitychange'))
     expect(services.mockSounds.played).toEqual(sounds)
-    expect(localStorage.getItem('jolito-library-v1')).toBe(committed)
+    expect(localStorage.getItem(ACCOUNT_STORAGE_KEY)).toBe(committed)
     expect(new LocalStorageCardRepository(localStorage).load([]).cards).toEqual(
       cards,
     )
@@ -101,10 +104,10 @@ it.each(['vocabulary', 'grammar'] as const)(
     const saved = new LocalStorageCardRepository(localStorage).load([]).cards
     expect(saved.filter((card) => card.schedule.reviews === 1)).toHaveLength(1)
     mounted.unmount()
-    const savedRaw = localStorage.getItem('jolito-library-v1')
+    const savedRaw = localStorage.getItem(ACCOUNT_STORAGE_KEY)
     fireEvent(window, new Event('online'))
     fireEvent(document, new Event('visibilitychange'))
-    expect(localStorage.getItem('jolito-library-v1')).toBe(savedRaw)
+    expect(localStorage.getItem(ACCOUNT_STORAGE_KEY)).toBe(savedRaw)
     render(<App services={services} />)
     expect(new LocalStorageCardRepository(localStorage).load([]).cards).toEqual(
       saved,

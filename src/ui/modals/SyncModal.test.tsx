@@ -12,6 +12,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -90,6 +92,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -133,6 +137,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -177,6 +183,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -216,6 +224,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -255,6 +265,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={onClose}
         cards={[]}
@@ -280,6 +292,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={onClose}
         cards={[]}
@@ -303,6 +317,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -325,6 +341,8 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -357,6 +375,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -397,8 +417,10 @@ describe('SyncModal First-Class OTP Code Entry', () => {
     const sync = new MockSyncService()
     const verifySpy = vi.spyOn(auth, 'verifyOtp')
 
-    render(
+    const { rerender } = render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -426,6 +448,19 @@ describe('SyncModal First-Class OTP Code Entry', () => {
     await waitFor(() => {
       expect(verifySpy).toHaveBeenCalledWith('otp-user@example.com', '123456')
     })
+    rerender(
+      <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onUpdateCards={vi.fn()}
+        auth={auth}
+        sync={sync}
+      />,
+    )
+    expect(screen.getByText('otp-user@example.com')).toBeVisible()
   })
 
   it('allows changing email back to the email input form', async () => {
@@ -434,6 +469,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -466,6 +503,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -517,6 +556,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -552,6 +593,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -595,6 +638,8 @@ describe('SyncModal First-Class OTP Code Entry', () => {
 
     render(
       <SyncModal
+        onDeleteAccount={() => auth.deleteAccount()}
+        user={auth.user}
         isOpen={true}
         onClose={vi.fn()}
         cards={[]}
@@ -620,4 +665,30 @@ describe('SyncModal First-Class OTP Code Entry', () => {
     expect(tokenInput).toHaveValue('482910')
     expect(tokenInput).toHaveClass('otp-code-input')
   })
+})
+
+it('keeps sign-out storage failure actionable and reports success only after retry', async () => {
+  const auth = new MockAuthService()
+  auth.user = { id: 'A', email: 'a@example.com' }
+  const signOut = vi
+    .spyOn(auth, 'signOut')
+    .mockRejectedValueOnce(new DOMException('Access denied', 'SecurityError'))
+  render(
+    <SyncModal
+      onDeleteAccount={() => auth.deleteAccount()}
+      user={auth.user}
+      isOpen={true}
+      onClose={vi.fn()}
+      cards={[]}
+      onUpdateCards={vi.fn()}
+      auth={auth}
+      sync={new MockSyncService()}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
+  await screen.findByText(/session could not be removed/i)
+  expect(auth.user?.id).toBe('A')
+  fireEvent.click(screen.getByRole('button', { name: /sign out/i }))
+  await waitFor(() => expect(auth.user).toBeNull())
+  expect(signOut).toHaveBeenCalledTimes(2)
 })

@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test, type Page } from '@playwright/test'
 import { auditAccessibility } from './accessibility'
 import * as fflate from 'fflate'
@@ -110,9 +111,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
   await page.keyboard.press('Escape')
 
   // Verify local storage is updated with the imported cards
-  const stored = await page.evaluate(() =>
-    localStorage.getItem('jolito-library-v1'),
-  )
+  const stored = await page.evaluate(currentDeckJson)
   expect(stored).toContain('Un boleto de metro')
 
   // Start review with the imported card

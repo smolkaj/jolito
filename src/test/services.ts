@@ -1,4 +1,6 @@
+import { NativeDeletionLock } from '../infrastructure/browser/deletion-lock'
 import type {
+  AccountDeletion,
   AppServices,
   AuthService,
   AuthUser,
@@ -43,33 +45,62 @@ export class SequentialIds implements IdGenerator {
 }
 
 export class MemoryCardRepository implements CardRepository {
-  public saved: StudyCard[] | null = null
   public deletedCardIds: string[] = []
-
+  private scopes: Map<string | null, MemoryCardRepository>
+  private writes: { saved: StudyCard[] | null; deletion?: AccountDeletion }
   constructor(
     private cards: StudyCard[] | null = null,
     deletedCardIds: string[] = [],
+    private readonly ownerId: string | null = null,
+    scopes?: Map<string | null, MemoryCardRepository>,
+    writes?: { saved: StudyCard[] | null; deletion?: AccountDeletion },
   ) {
     this.deletedCardIds = [...deletedCardIds]
+    this.scopes = scopes ?? new Map<string | null, MemoryCardRepository>()
+    this.writes = writes ?? { saved: null }
+    this.scopes.set(ownerId, this)
   }
-
+  get saved() {
+    return this.writes.saved
+  }
+  forOwner(ownerId: string | null): CardRepository {
+    return (
+      this.scopes.get(ownerId) ??
+      new MemoryCardRepository(null, [], ownerId, this.scopes, this.writes)
+    )
+  }
   getDeletedCardIds(): string[] {
     return [...this.deletedCardIds]
   }
-
   load(fallback: StudyCard[]): CardLoadResult {
     return {
       status: this.cards === null ? 'missing' : 'loaded',
       cards: this.cards ?? fallback,
     }
   }
-
+  getPendingDeletion(): AccountDeletion | null {
+    return this.writes.deletion ?? null
+  }
+  setPendingDeletion(phase: AccountDeletion['phase'] | null): void {
+    if (this.ownerId === null) throw new Error('No account')
+    if (phase === null) delete this.writes.deletion
+    else this.writes.deletion = { ownerId: this.ownerId, phase }
+  }
+  forget(): void {
+    if (
+      this.writes.deletion?.ownerId !== this.ownerId ||
+      this.writes.deletion.phase !== 'confirmed'
+    )
+      throw new Error('Deletion is not confirmed')
+    delete this.writes.deletion
+    this.cards = null
+    this.deletedCardIds = []
+    this.writes.saved = []
+  }
   save(cards: StudyCard[], deletedCardIds?: string[]): void {
-    this.saved = cards
+    this.writes.saved = cards
     this.cards = cards
-    if (deletedCardIds !== undefined) {
-      this.deletedCardIds = [...deletedCardIds]
-    }
+    if (deletedCardIds !== undefined) this.deletedCardIds = [...deletedCardIds]
   }
 }
 
@@ -134,6 +165,15 @@ export class MockAuthService implements AuthService {
   public configured = true
   public redirectAuthOccurred = false
   private listeners = new Set<(user: AuthUser | null) => void>()
+
+  getCurrentUser(): AuthUser | null {
+    return this.user
+  }
+
+  setUser(user: AuthUser | null): void {
+    this.user = user
+    this.listeners.forEach((listener) => listener(user))
+  }
 
   isConfigured(): boolean {
     return this.configured
@@ -225,60 +265,69 @@ export class MockAuthService implements AuthService {
 
 export class MockSyncService implements SyncService {
   public status: SyncStatus = 'idle'
-  public remoteCards: StudyCard[] = []
-  public remoteDeletedCardIds: string[] = []
   public syncedCount = 0
-
+  public decks = new Map<
+    string,
+    { cards: StudyCard[]; deletedCardIds: string[] }
+  >()
+  constructor(private fixtureOwner = 'mock-user-1') {}
+  private deck(owner: string) {
+    return this.decks.get(owner) ?? { cards: [], deletedCardIds: [] }
+  }
+  get remoteCards(): StudyCard[] {
+    return this.deck(this.fixtureOwner).cards
+  }
+  set remoteCards(cards: StudyCard[]) {
+    this.decks.set(this.fixtureOwner, {
+      ...this.deck(this.fixtureOwner),
+      cards,
+    })
+  }
+  get remoteDeletedCardIds(): string[] {
+    return this.deck(this.fixtureOwner).deletedCardIds
+  }
+  set remoteDeletedCardIds(deletedCardIds: string[]) {
+    this.decks.set(this.fixtureOwner, {
+      ...this.deck(this.fixtureOwner),
+      deletedCardIds,
+    })
+  }
   getStatus(): SyncStatus {
     return this.status
   }
-
   pushDeck(
     cards: StudyCard[],
     user: AuthUser,
     deletedCardIds: string[] = [],
   ): Promise<SyncResult> {
-    void user
-    this.remoteCards = cards.map((c) => ({ ...c }))
-    this.remoteDeletedCardIds = [...deletedCardIds]
-    return Promise.resolve({
-      success: true,
-      cards: this.remoteCards.map((c) => ({ ...c })),
-      deletedCardIds: [...this.remoteDeletedCardIds],
-      syncedAt: Date.now(),
-    })
+    const deck = {
+      cards: cards.map((card) => ({ ...card })),
+      deletedCardIds: [...deletedCardIds],
+    }
+    this.decks.set(user.id, deck)
+    return Promise.resolve({ success: true, ...deck, syncedAt: Date.now() })
   }
-
   pullDeck(user: AuthUser): Promise<SyncResult> {
-    void user
-    return Promise.resolve({
-      success: true,
-      cards: this.remoteCards.map((c) => ({ ...c })),
-      deletedCardIds: [...this.remoteDeletedCardIds],
-    })
+    return Promise.resolve({ success: true, ...this.deck(user.id) })
   }
-
   syncDeck(
     localCards: StudyCard[],
     user: AuthUser,
     localDeletedIds: string[] = [],
   ): Promise<SyncResult> {
-    void user
-    this.status = 'syncing'
     this.syncedCount++
+    const remote = this.deck(user.id)
     const reconciled = reconcileStudyCards(
       localCards,
-      this.remoteCards,
+      remote.cards,
       localDeletedIds,
-      this.remoteDeletedCardIds,
+      remote.deletedCardIds,
     )
-    this.remoteCards = reconciled.cards.map((c) => ({ ...c }))
-    this.remoteDeletedCardIds = [...reconciled.deletedCardIds]
+    this.decks.set(user.id, reconciled)
     this.status = 'synced'
     return Promise.resolve({
       success: true,
-      cards: this.remoteCards.map((c) => ({ ...c })),
-      deletedCardIds: [...this.remoteDeletedCardIds],
+      ...reconciled,
       syncedAt: Date.now(),
     })
   }
@@ -330,6 +379,7 @@ export function createTestServices(options?: {
   const memoryCards = new MemoryCardRepository(
     options?.cards ?? null,
     options?.deletedCardIds ?? [],
+    options?.user?.id ?? null,
   )
   const mockSpeaker = new MockSpeaker()
   if (options?.speakerSupported !== undefined) {
@@ -344,7 +394,7 @@ export function createTestServices(options?: {
   if (options?.user) {
     mockAuth.user = options.user
   }
-  const mockSync = new MockSyncService()
+  const mockSync = new MockSyncService(options?.user?.id ?? 'mock-user-1')
   if (options?.remoteCards) {
     mockSync.remoteCards = options.remoteCards.map((c) => ({ ...c }))
   }
@@ -354,6 +404,7 @@ export function createTestServices(options?: {
   const mockFeedback = new MockFeedbackService()
 
   return {
+    deletionLock: new NativeDeletionLock(),
     cards: memoryCards,
     speaker: mockSpeaker,
     sounds: mockSounds,

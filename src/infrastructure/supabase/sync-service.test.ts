@@ -24,6 +24,7 @@ const mockCard: StudyCard = {
 
 describe('SupabaseSyncService', () => {
   const mockAuthService: Partial<SupabaseAuthService> = {
+    getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
     getAccessToken: () => Promise.resolve('valid-jwt-token'),
   }
 
@@ -219,6 +220,7 @@ describe('SupabaseSyncService', () => {
   it('retries pullDeck on 401 when refreshSession provides a fresh token', async () => {
     const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
     const authWithRefresh: Partial<SupabaseAuthService> = {
+      getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
       getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
       refreshSession: refreshSpy,
     }
@@ -265,6 +267,7 @@ describe('SupabaseSyncService', () => {
   it('retries pushDeck on 401 when refreshSession provides a fresh token', async () => {
     const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
     const authWithRefresh: Partial<SupabaseAuthService> = {
+      getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
       getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
       refreshSession: refreshSpy,
     }
@@ -378,4 +381,56 @@ describe('SupabaseSyncService', () => {
       }),
     )
   })
+})
+
+describe('sync account boundaries', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it.each(['token', 'refresh', 'pull'] as const)(
+    'does not send the previous deck with a new account token after an interrupted %s',
+    async (interruption) => {
+      let owner = { id: 'A', email: 'a@example.com' }
+      let resolve!: (value: string) => void
+      const held = new Promise<string>((done) => {
+        resolve = done
+      })
+      const auth = {
+        getCurrentUser: () => owner,
+        getAccessToken: () =>
+          interruption === 'token'
+            ? held
+            : Promise.resolve(`token-${owner.id}`),
+        refreshSession: () => held,
+      } as SupabaseAuthService
+      let resolvePull!: (value: Response) => void
+      const pendingPull = new Promise<Response>((done) => {
+        resolvePull = done
+      })
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation(() =>
+          interruption === 'refresh'
+            ? Promise.resolve(new Response(null, { status: 401 }))
+            : pendingPull,
+        )
+      vi.stubGlobal('fetch', fetchSpy)
+      const service = new SupabaseSyncService(
+        auth,
+        'https://example.supabase.co',
+        'key',
+        'device',
+      )
+      const pending = service.syncDeck([mockCard], owner)
+      // Reach the awaited token, refresh, or pull boundary before switching identity.
+      await vi.waitFor(() =>
+        expect(interruption === 'token' || fetchSpy.mock.calls.length > 0).toBe(
+          true,
+        ),
+      )
+      owner = { id: 'B', email: 'b@example.com' }
+      resolve('token-B')
+      resolvePull(new Response(JSON.stringify([])))
+      expect((await pending).success).toBe(false)
+      expect(fetchSpy.mock.calls).toHaveLength(interruption === 'token' ? 0 : 1)
+    },
+  )
 })

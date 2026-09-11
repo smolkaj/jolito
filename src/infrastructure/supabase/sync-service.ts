@@ -32,8 +32,12 @@ export class SupabaseSyncService implements SyncService {
     return this.status
   }
 
-  private async getAuthHeaders(): Promise<Record<string, string> | null> {
+  private async getAuthHeaders(
+    ownerId: string,
+  ): Promise<Record<string, string> | null> {
+    if (this.authService.getCurrentUser()?.id !== ownerId) return null
     const token = (await this.authService.getAccessToken?.()) ?? null
+    if (this.authService.getCurrentUser()?.id !== ownerId) return null
     if (!token || !this.supabaseAnonKey) {
       return null
     }
@@ -49,7 +53,7 @@ export class SupabaseSyncService implements SyncService {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
-    let headers = await this.getAuthHeaders()
+    let headers = await this.getAuthHeaders(user.id)
     if (!headers) {
       return { success: false, error: 'Sign in to access your cloud deck.' }
     }
@@ -58,9 +62,16 @@ export class SupabaseSyncService implements SyncService {
       const fetchUrl = `${this.supabaseUrl}/rest/v1/decks?user_id=eq.${encodeURIComponent(user.id)}&select=*`
       let res = await fetch(fetchUrl, { headers })
 
-      if (res.status === 401 && this.authService.refreshSession) {
+      if (
+        res.status === 401 &&
+        this.authService.refreshSession &&
+        this.authService.getCurrentUser()?.id === user.id
+      ) {
         const refreshedToken = await this.authService.refreshSession()
-        if (refreshedToken) {
+        if (
+          refreshedToken &&
+          this.authService.getCurrentUser()?.id === user.id
+        ) {
           headers = {
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,
@@ -145,7 +156,7 @@ export class SupabaseSyncService implements SyncService {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
 
-    let headers = await this.getAuthHeaders()
+    let headers = await this.getAuthHeaders(user.id)
     if (!headers) {
       return { success: false, error: 'Sign in to sync your deck.' }
     }
@@ -179,9 +190,16 @@ export class SupabaseSyncService implements SyncService {
         body: postBody,
       })
 
-      if (res.status === 401 && this.authService.refreshSession) {
+      if (
+        res.status === 401 &&
+        this.authService.refreshSession &&
+        this.authService.getCurrentUser()?.id === user.id
+      ) {
         const refreshedToken = await this.authService.refreshSession()
-        if (refreshedToken) {
+        if (
+          refreshedToken &&
+          this.authService.getCurrentUser()?.id === user.id
+        ) {
           headers = {
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,

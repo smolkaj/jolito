@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
 import { createStudyCards } from '../../src/domain/card'
 import { auditAccessibility } from './accessibility'
@@ -101,9 +102,7 @@ for (const viewport of [
         await expect(
           page.getByRole('button', { name: /yes, delete cloud data/i }),
         ).toBeEnabled()
-        expect(
-          await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-        ).toContain('secreto')
+        expect(await page.evaluate(currentDeckJson)).toContain('secreto')
         expect(
           await page.evaluate(() =>
             localStorage.getItem('jolito-auth-session-v1'),
@@ -156,9 +155,7 @@ for (const viewport of [
     expect(
       await page.evaluate(() => localStorage.getItem('jolito-auth-session-v1')),
     ).toBeNull()
-    expect(
-      await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-    ).not.toContain('secreto')
+    expect(await page.evaluate(currentDeckJson)).not.toContain('secreto')
     expect(deletionAttempts).toBe(5)
     expect(separateDeckDeletes).toEqual([])
   })

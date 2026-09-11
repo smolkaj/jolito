@@ -1,3 +1,4 @@
+import { createStudyCards } from '../../src/domain/card'
 import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility } from './accessibility'
@@ -699,17 +700,33 @@ test('enforces universal geometric invariants across all pill, chip, and badge e
   }
 
   // 6. Test Modals: Signed-in Cloud Sync Modal (Sync now & Sign out pills on the same line)
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      'jolito-auth-session-v1',
-      JSON.stringify({
-        accessToken: 'mock-token',
-        refreshToken: 'mock-refresh',
-        expiresAt: Date.now() + 3600000,
-        user: { id: 'usr-modal-test', email: 'modal-tester@example.com' },
-      }),
-    )
-  })
+  await page.addInitScript(
+    (initialCards) => {
+      window.localStorage.setItem(
+        'jolito-auth-session-v1',
+        JSON.stringify({
+          accessToken: 'mock-token',
+          refreshToken: 'mock-refresh',
+          expiresAt: Date.now() + 3600000,
+          user: { id: 'usr-modal-test', email: 'modal-tester@example.com' },
+        }),
+      )
+      window.localStorage.setItem(
+        'jolito-libraries-v1',
+        JSON.stringify({
+          version: 1,
+          accounts: {
+            'user:usr-modal-test': { version: 3, cards: initialCards },
+          },
+        }),
+      )
+    },
+    createStudyCards(
+      { spanish: 'propio', english: 'own', context: '', bidirectional: false },
+      'modal-owned-fixture',
+      0,
+    ),
+  )
   await page.goto('/')
   await page.locator('.connection-pill').click()
   await expect(page.locator('.sync-modal')).toBeVisible()
@@ -766,7 +783,8 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  // A new account begins empty; practice appears after the first saved card.
+  await expect(page.getByRole('button', { name: /^practice$/i })).toHaveCount(0)
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)

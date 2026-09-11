@@ -100,6 +100,7 @@ describe('Supabase Live Stack Integration', () => {
     const token = data.access_token
 
     const authService: AuthService = {
+      getCurrentUser: () => authUser,
       getUser: () => Promise.resolve(authUser),
       getAccessToken: () => Promise.resolve(token),
       refreshSession: () => Promise.resolve(token),
@@ -114,6 +115,7 @@ describe('Supabase Live Stack Integration', () => {
 
   it('allows guest to submit feedback end-to-end to local Supabase', async () => {
     const dummyAuth: AuthService = {
+      getCurrentUser: () => null,
       getUser: () => Promise.resolve(null),
       getAccessToken: () => Promise.resolve(null),
       sendMagicLink: () => Promise.resolve({ success: true }),

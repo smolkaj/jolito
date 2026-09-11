@@ -285,8 +285,11 @@ describe('grammar practice in Jolito', () => {
       await waitFor(() =>
         expect(services.mockSync.syncedCount).toBeGreaterThan(1),
       )
-      await act(async () => {
-        await services.mockAuth.verifyOtp('learner@example.com', '123456')
+      act(() => {
+        services.mockAuth.setUser({
+          id: 'learner',
+          email: 'learner@example.com',
+        })
       })
       expect(screen.getByRole('textbox')).toHaveValue('habl')
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
@@ -301,7 +304,7 @@ describe('grammar practice in Jolito', () => {
     },
   )
 
-  it('keeps grammar progress but removes demo vocabulary on ordinary sign-in without a pending card', async () => {
+  it('keeps guest grammar progress isolated when a new account signs in', async () => {
     window.history.replaceState({}, '', '#/grammar')
     const services = createTestServices()
     render(<App services={services} />)
@@ -310,17 +313,11 @@ describe('grammar practice in Jolito', () => {
     await act(async () => {
       await services.mockAuth.verifyOtp('learner@example.com', '123456')
     })
-    await waitFor(() =>
-      expect(
-        services.memoryCards.saved!.some((card) =>
-          card.id.startsWith('starter-'),
-        ),
-      ).toBe(false),
-    )
-    expect(services.memoryCards.saved!.filter(isGrammarCard)).toHaveLength(1)
-    expect(
-      services.memoryCards.saved!.find(isGrammarCard)!.schedule.reviews,
-    ).toBe(1)
+    expect(services.cards.forOwner('mock-user-1').load([]).cards).toEqual([])
+    const guest = services.cards.forOwner(null).load([]).cards
+    expect(guest.filter(isGrammarCard)).toHaveLength(1)
+    expect(guest.find(isGrammarCard)!.schedule.reviews).toBe(1)
+    expect(services.mockSync.remoteCards).toEqual([])
   })
 
   it('retains a just-saved review when initial sign-in sync returns an older snapshot', async () => {

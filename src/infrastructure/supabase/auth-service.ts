@@ -1,8 +1,8 @@
+import { withRequestDeadline } from '../request-lifetime'
 import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../application/ports'
 import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { getCanonicalOrigin } from '../browser/host'
-import { withRequestDeadline } from '../request-lifetime'
 
 const jwtPayloadSchema = z.object({
   sub: z.string().min(1),
@@ -43,6 +43,21 @@ const authSessionResponseSchema = z.object({
   }),
 })
 
+export class SessionStorageError extends Error {
+  constructor() {
+    super(
+      'Your sign-in session could not be saved on this device. Free some browser storage and try again.',
+    )
+  }
+}
+
+type DeletionRequest = {
+  ownerId: string
+  generation: number
+  controller: AbortController
+  dispatched: boolean
+}
+
 const STORAGE_KEY = 'jolito-auth-session-v1'
 const REFRESH_MARGIN_MS = 5 * 60 * 1000 // 5 minutes before expiry
 const RETRY_BACKOFF_MS = 60 * 1000 // 1 minute retry backoff if offline
@@ -50,6 +65,13 @@ const RETRY_BACKOFF_MS = 60 * 1000 // 1 minute retry backoff if offline
 export class SupabaseAuthService implements AuthService {
   private listeners: Set<(user: AuthUser | null) => void> = new Set()
   private currentUser: AuthUser | null = null
+  readonly storedUserBeforeRedirect: AuthUser | null
+  private generation = 0
+  private readonly lifetime = new AbortController()
+  private get destroyed() {
+    return this.lifetime.signal.aborted
+  }
+  private boundStorageHandler: ((event: StorageEvent) => void) | null = null
   private redirectAuthOccurred = false
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
   private inFlightRefresh: {
@@ -57,10 +79,7 @@ export class SupabaseAuthService implements AuthService {
     promise: Promise<string | null>
     preserveSessionOnRejection: boolean
   } | null = null
-  private accountDeletion: {
-    ownerId: string
-    controller: AbortController
-  } | null = null
+  private accountDeletion: DeletionRequest | null = null
   private boundVisibilityHandler: (() => void) | null = null
   private boundOnlineHandler: (() => void) | null = null
   private supabaseUrl: string
@@ -73,13 +92,25 @@ export class SupabaseAuthService implements AuthService {
     storage: Storage = typeof window !== 'undefined'
       ? window.localStorage
       : ({} as Storage),
+    beforeRedirect?: (storedOwner: AuthUser | null) => void,
   ) {
     this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
     this.supabaseAnonKey = supabaseAnonKey
     this.storage = storage
+    this.storedUserBeforeRedirect = this.loadStoredSession()?.user ?? null
+    // Ownership must be durable before a redirect can replace the persisted identity.
+    beforeRedirect?.(this.storedUserBeforeRedirect)
     this.currentUser = this.loadStoredUser()
     this.setupLifecycleListeners()
     this.scheduleNextRefresh()
+  }
+
+  getCurrentUser(): AuthUser | null {
+    return this.destroyed ? null : this.currentUser
+  }
+
+  private isCurrent(generation: number): boolean {
+    return !this.destroyed && generation === this.generation
   }
 
   isConfigured(): boolean {
@@ -93,7 +124,7 @@ export class SupabaseAuthService implements AuthService {
   }
 
   getSessionLink(): string | null {
-    const session = this.currentUser ? this.loadStoredSession() : null
+    const session = this.loadOwnedSession()
     if (!session) return null
     const origin = getCanonicalOrigin() ?? 'https://joli.to'
     const remainingSeconds = Math.max(
@@ -167,8 +198,8 @@ export class SupabaseAuthService implements AuthService {
         user,
       }
 
+      if (!this.saveSession(session)) throw new SessionStorageError()
       this.redirectAuthOccurred = true
-      this.saveSession(session)
 
       // Clean the URL hash so tokens are removed from browser address bar
       if (window.history && window.history.replaceState) {
@@ -180,7 +211,8 @@ export class SupabaseAuthService implements AuthService {
       }
 
       return user
-    } catch {
+    } catch (error) {
+      if (error instanceof SessionStorageError) throw error
       return null
     }
   }
@@ -201,6 +233,14 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
+  private loadOwnedSession(
+    ownerId = this.currentUser?.id,
+  ): StoredSession | null {
+    if (this.destroyed) return null
+    const session = this.loadStoredSession()
+    return ownerId && session?.user.id === ownerId ? session : null
+  }
+
   private loadStoredUser(): AuthUser | null {
     const redirectUser = this.processAuthRedirect()
     if (redirectUser) return redirectUser
@@ -210,12 +250,13 @@ export class SupabaseAuthService implements AuthService {
   }
 
   private scheduleNextRefresh(): void {
+    if (this.destroyed) return
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer)
       this.refreshTimer = null
     }
 
-    const session = this.loadStoredSession()
+    const session = this.loadOwnedSession()
     if (
       !session ||
       !session.refreshToken ||
@@ -247,11 +288,10 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async refreshSession(): Promise<string | null> {
-    if (this.inFlightRefresh) {
-      return this.inFlightRefresh.promise
-    }
-
-    const session = this.loadStoredSession()
+    if (this.destroyed) return null
+    const session = this.loadOwnedSession()
+    if (!session) return null
+    if (this.inFlightRefresh) return this.inFlightRefresh.promise
     if (!session || !session.refreshToken) {
       return session?.accessToken || null
     }
@@ -260,6 +300,11 @@ export class SupabaseAuthService implements AuthService {
       return session.accessToken || null
     }
 
+    const generation = this.generation
+    const isCurrent = () =>
+      this.isCurrent(generation) &&
+      this.loadOwnedSession(session.user.id)?.refreshToken ===
+        session.refreshToken
     const attempt = {
       ownerId: session.user.id,
       promise: Promise.resolve<string | null>(null),
@@ -283,6 +328,7 @@ export class SupabaseAuthService implements AuthService {
           },
         )
 
+        if (!isCurrent()) return null
         if (!res.ok) {
           // If server rejected the refresh token (e.g. 400 invalid grant / expired refresh token)
           if (
@@ -291,8 +337,6 @@ export class SupabaseAuthService implements AuthService {
             res.status === 403 ||
             res.status === 422
           ) {
-            // A deletion must not turn rejected credentials into local logout.
-            // Keep this decision on the attempt: it may outlive deletion's timeout.
             if (!attempt.preserveSessionOnRejection) this.clearSession()
             return null
           }
@@ -301,6 +345,7 @@ export class SupabaseAuthService implements AuthService {
         }
 
         const rawData: unknown = await res.json().catch(() => null)
+        if (!isCurrent()) return null
         const parseResult = supabaseTokenResponseSchema.safeParse(rawData)
 
         if (!parseResult.success) {
@@ -308,6 +353,7 @@ export class SupabaseAuthService implements AuthService {
         }
 
         const data = parseResult.data
+        if (data.user && data.user.id !== session.user.id) return null
         const updatedUser: AuthUser = {
           id: data.user?.id || session.user.id,
           email: data.user?.email ?? session.user.email,
@@ -320,31 +366,44 @@ export class SupabaseAuthService implements AuthService {
           user: updatedUser,
         }
 
-        this.saveSession(newSession)
-        return newSession.accessToken
+        return this.saveSession(newSession) ? newSession.accessToken : null
       } catch {
         // Network failure (offline, timeout, DNS): preserve session for offline use
-        return session.accessToken || null
+        return isCurrent() ? session.accessToken || null : null
       } finally {
         if (this.inFlightRefresh === attempt) this.inFlightRefresh = null
       }
     })()
-
     return attempt.promise
   }
 
-  private saveSession(session: StoredSession): void {
+  private saveSession(session: StoredSession): boolean {
+    if (this.destroyed) return false
     try {
       this.storage.setItem?.(STORAGE_KEY, JSON.stringify(session))
+      if (this.currentUser?.id !== session.user.id) this.generation++
       this.currentUser = session.user
       this.scheduleNextRefresh()
       this.notifyListeners()
+      return true
     } catch {
-      // Storage full or unavailable
+      return false
     }
   }
 
-  private clearSession(): void {
+  private clearSession(expectedOwnerId?: string): void {
+    const persisted = this.loadStoredSession()
+    if (expectedOwnerId && persisted && persisted.user.id !== expectedOwnerId) {
+      // A storage event may still be queued when a network response arrives.
+      this.generation++
+      this.inFlightRefresh = null
+      this.currentUser = persisted.user
+      this.scheduleNextRefresh()
+      this.notifyListeners()
+      return
+    }
+    this.generation++
+    this.inFlightRefresh = null
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer)
       this.refreshTimer = null
@@ -355,6 +414,7 @@ export class SupabaseAuthService implements AuthService {
   }
 
   private notifyListeners(): void {
+    if (this.destroyed) return
     this.listeners.forEach((cb) => {
       try {
         cb(this.currentUser)
@@ -365,10 +425,7 @@ export class SupabaseAuthService implements AuthService {
   }
 
   getUser(): Promise<AuthUser | null> {
-    if (!this.currentUser) {
-      this.currentUser = this.loadStoredUser()
-    }
-
+    if (this.destroyed) return Promise.resolve(null)
     const session = this.loadStoredSession()
     if (
       session &&
@@ -382,17 +439,22 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async getAccessToken(): Promise<string | null> {
-    const session = this.loadStoredSession()
+    if (this.destroyed) return null
+    const generation = this.generation
+    const ownerId = this.currentUser?.id
+    const session = this.loadOwnedSession(ownerId)
     if (!session) return null
 
     const isExpiringSoon = session.expiresAt - Date.now() < REFRESH_MARGIN_MS
     if (isExpiringSoon && session.refreshToken) {
       const refreshedToken = await this.refreshSession()
+      if (!this.isCurrent(generation) || !this.loadOwnedSession(ownerId))
+        return null
       if (refreshedToken) {
         return refreshedToken
       }
       // If refreshSession cleared the session on 400/401, return null
-      return this.loadStoredSession()?.accessToken ?? null
+      return this.loadOwnedSession(ownerId)?.accessToken ?? null
     }
 
     return session.accessToken || null
@@ -472,6 +534,41 @@ export class SupabaseAuthService implements AuthService {
     email: string,
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
+    const generation = ++this.generation
+    this.inFlightRefresh = null
+    const stale = () => ({
+      success: false,
+      error: 'Your sign-in session changed. Please try again.',
+    })
+    if (!this.isCurrent(generation)) return stale()
+    let persistedSession: string | null
+    try {
+      persistedSession = this.storage.getItem?.(STORAGE_KEY) ?? null
+      const initial =
+        persistedSession === null
+          ? null
+          : storedSessionSchema.safeParse(
+              JSON.parse(persistedSession) as unknown,
+            )
+      if (initial && !initial.success) return stale()
+      if ((initial?.data.user.id ?? null) !== (this.currentUser?.id ?? null))
+        return stale()
+    } catch {
+      return { success: false, error: new SessionStorageError().message }
+    }
+    // Storage events can arrive after the response. Compare the operation's
+    // persisted starting session as well as its in-memory identity generation.
+    const isCurrent = () => {
+      if (!this.isCurrent(generation)) return false
+      try {
+        return (
+          (this.storage.getItem?.(STORAGE_KEY) ?? null) === persistedSession
+        )
+      } catch {
+        return false
+      }
+    }
+    if (!isCurrent()) return stale()
     const cleanEmail = email.trim()
     const rawToken = unwrapDomainBoundOtp(token)
 
@@ -513,13 +610,15 @@ export class SupabaseAuthService implements AuthService {
       if (accessToken) {
         const user = this.parseJwtUser(accessToken, cleanEmail)
         if (user) {
-          this.saveSession({
+          const saved = this.saveSession({
             accessToken,
             refreshToken,
             expiresAt: Date.now() + expiresIn * 1000,
             user,
           })
-          return { success: true }
+          return saved
+            ? { success: true }
+            : { success: false, error: new SessionStorageError().message }
         }
       }
     }
@@ -568,6 +667,7 @@ export class SupabaseAuthService implements AuthService {
       ).filter((t): t is string => Boolean(t))
 
       for (const otpType of hashTypes) {
+        if (!isCurrent()) return stale()
         try {
           const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
             method: 'POST',
@@ -581,8 +681,10 @@ export class SupabaseAuthService implements AuthService {
             }),
           })
 
+          if (!isCurrent()) return stale()
           if (res.ok) {
             const rawJson: unknown = await res.json()
+            if (!isCurrent()) return stale()
             const parsed = authSessionResponseSchema.safeParse(rawJson)
             if (parsed.success) {
               const data = parsed.data
@@ -591,14 +693,16 @@ export class SupabaseAuthService implements AuthService {
                 email: data.user.email || cleanEmail,
               }
 
-              this.saveSession({
+              const saved = this.saveSession({
                 accessToken: data.access_token,
                 refreshToken: data.refresh_token,
                 expiresAt: Date.now() + data.expires_in * 1000,
                 user,
               })
 
-              return { success: true }
+              return saved
+                ? { success: true }
+                : { success: false, error: new SessionStorageError().message }
             }
           }
         } catch {
@@ -614,6 +718,7 @@ export class SupabaseAuthService implements AuthService {
     let lastError = 'Invalid or expired sign-in link.'
 
     for (const otpType of types) {
+      if (!isCurrent()) return stale()
       try {
         const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
           method: 'POST',
@@ -628,8 +733,10 @@ export class SupabaseAuthService implements AuthService {
           }),
         })
 
+        if (!isCurrent()) return stale()
         if (res.ok) {
           const rawJson: unknown = await res.json()
+          if (!isCurrent()) return stale()
           const parsed = authSessionResponseSchema.safeParse(rawJson)
           if (parsed.success) {
             const data = parsed.data
@@ -638,14 +745,16 @@ export class SupabaseAuthService implements AuthService {
               email: data.user.email || cleanEmail,
             }
 
-            this.saveSession({
+            const saved = this.saveSession({
               accessToken: data.access_token,
               refreshToken: data.refresh_token,
               expiresAt: Date.now() + data.expires_in * 1000,
               user,
             })
 
-            return { success: true }
+            return saved
+              ? { success: true }
+              : { success: false, error: new SessionStorageError().message }
           }
         }
 
@@ -693,50 +802,60 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async signOut(): Promise<void> {
-    try {
-      const session = this.loadStoredSession()
-      const token = session?.accessToken
-      if (token && this.supabaseUrl && this.supabaseAnonKey) {
-        await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
-          method: 'POST',
-          headers: {
-            apikey: this.supabaseAnonKey,
-            Authorization: `Bearer ${token}`,
-          },
-        }).catch(() => {})
-      }
-    } finally {
-      this.clearSession()
+    if (this.destroyed) return
+    const owner = this.currentUser?.id
+    if (!owner) return
+    const stored = this.loadStoredSession()
+    const token = stored?.user.id === owner ? stored.accessToken : undefined
+    // Fence immediately; a late logout response must never clear a newer login.
+    this.clearSession(owner)
+    if (token && this.supabaseUrl && this.supabaseAnonKey) {
+      await withRequestDeadline(
+        (signal) =>
+          fetch(`${this.supabaseUrl}/auth/v1/logout`, {
+            method: 'POST',
+            headers: {
+              apikey: this.supabaseAnonKey,
+              Authorization: `Bearer ${token}`,
+            },
+            signal,
+          }),
+        this.lifetime.signal,
+      ).catch(() => {})
     }
   }
 
   async deleteAccount(): Promise<{
     success: boolean
     error?: string | undefined
+    outcomeUnknown?: boolean
   }> {
-    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+    if (!this.supabaseUrl || !this.supabaseAnonKey)
       return { success: false, error: 'Cloud sync backend is not configured.' }
-    }
     const ownerId = this.currentUser?.id
-    if (!ownerId)
+    if (this.destroyed || !ownerId || !this.loadOwnedSession(ownerId))
       return { success: false, error: 'Sign in to delete your cloud account.' }
-    if (this.accountDeletion) {
+    if (this.accountDeletion)
       return { success: false, error: 'Account deletion is already running.' }
-    }
 
-    const deletion = { ownerId, controller: new AbortController() }
-    this.accountDeletion = deletion
-    if (this.inFlightRefresh?.ownerId === ownerId) {
-      this.inFlightRefresh.preserveSessionOnRejection = true
+    const deletion: DeletionRequest = {
+      ownerId,
+      generation: this.generation,
+      controller: new AbortController(),
+      dispatched: false,
     }
+    this.accountDeletion = deletion
+    if (this.inFlightRefresh?.ownerId === ownerId)
+      this.inFlightRefresh.preserveSessionOnRejection = true
     try {
       return await withRequestDeadline(
-        (signal) => this.performAccountDeletion(ownerId, signal),
+        (signal) => this.performAccountDeletion(deletion, signal),
         deletion.controller.signal,
       )
     } catch (error) {
       return {
         success: false,
+        ...(deletion.dispatched ? { outcomeUnknown: true } : {}),
         error:
           error instanceof Error ? error.message : 'Account deletion failed.',
       }
@@ -746,75 +865,94 @@ export class SupabaseAuthService implements AuthService {
   }
 
   private async performAccountDeletion(
-    ownerId: string,
+    deletion: DeletionRequest,
     signal: AbortSignal,
-  ): Promise<{ success: boolean; error?: string | undefined }> {
-    const interrupted = {
+  ): Promise<{
+    success: boolean
+    error?: string | undefined
+    outcomeUnknown?: boolean
+  }> {
+    const { ownerId, generation } = deletion
+    const interrupted = () => ({
       success: false,
+      ...(deletion.dispatched ? { outcomeUnknown: true } : {}),
       error: 'Account deletion was interrupted. Please try again.',
+    })
+    const canDispatch = () =>
+      !signal.aborted &&
+      this.isCurrent(generation) &&
+      this.currentUser?.id === ownerId &&
+      Boolean(this.loadOwnedSession(ownerId))
+    const token = await this.getAccessToken()
+    if (signal.aborted) return interrupted()
+    if (!token || !canDispatch())
+      return { success: false, error: 'Sign in to delete your cloud account.' }
+
+    // One database transaction deletes the account and cascades its owned data.
+    const removeAccount = (accessToken: string) => {
+      if (!canDispatch())
+        throw new Error('Your account changed while deletion was pending.')
+      deletion.dispatched = true
+      return fetch(`${this.supabaseUrl}/rest/v1/rpc/delete_user_account`, {
+        method: 'POST',
+        headers: {
+          apikey: this.supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+        signal,
+      })
     }
-    try {
-      const token = await this.getAccessToken()
-      if (signal.aborted) return interrupted
-      if (!token || this.currentUser?.id !== ownerId) {
-        return {
-          success: false,
-          error: 'Sign in to delete your cloud account.',
-        }
+    let response = await removeAccount(token)
+    if (signal.aborted) return interrupted()
+    if (!this.isCurrent(generation) && !response.ok)
+      return {
+        success: false,
+        error: 'Your account changed while deletion was pending.',
       }
-      // One database transaction deletes the account and cascades its owned data.
-      const removeAccount = (accessToken: string) =>
-        fetch(`${this.supabaseUrl}/rest/v1/rpc/delete_user_account`, {
-          method: 'POST',
-          headers: {
-            apikey: this.supabaseAnonKey,
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({}),
-          signal,
+    if (response.status === 401) {
+      const refreshed = await this.refreshSession()
+      if (signal.aborted) return interrupted()
+      if (refreshed && canDispatch()) response = await removeAccount(refreshed)
+    }
+    if (signal.aborted) return interrupted()
+    if (!this.isCurrent(generation) && !response.ok)
+      return {
+        success: false,
+        error: 'Your account changed while deletion was pending.',
+      }
+    if (!response.ok) {
+      const parsed = z
+        .object({
+          message: z.string().optional(),
+          details: z.string().nullable().optional(),
+          msg: z.string().optional(),
         })
-      let response = await removeAccount(token)
-      if (signal.aborted) return interrupted
-      if (response.status === 401) {
-        const refreshed = await this.refreshSession()
-        if (signal.aborted) return interrupted
-        if (refreshed && this.currentUser?.id === ownerId) {
-          response = await removeAccount(refreshed)
-        }
-      }
-      if (signal.aborted) return interrupted
-      if (!response.ok) {
-        const parsed = z
-          .object({
-            message: z.string().optional(),
-            details: z.string().nullable().optional(),
-            msg: z.string().optional(),
-          })
-          .safeParse(await response.json().catch(() => null))
-        if (signal.aborted) return interrupted
-        return {
-          success: false,
-          error:
-            (parsed.success &&
-              (parsed.data.message ||
-                parsed.data.details ||
-                parsed.data.msg)) ||
-            `Failed to delete account (HTTP ${response.status}). Please try again.`,
-        }
-      }
-      if (this.currentUser?.id === ownerId) this.clearSession()
-      return { success: true }
-    } catch (err) {
+        .safeParse(await response.json().catch(() => null))
+      if (signal.aborted) return interrupted()
       return {
         success: false,
         error:
-          err instanceof Error ? err.message : 'Error deleting cloud account.',
+          (parsed.success &&
+            (parsed.data.message || parsed.data.details || parsed.data.msg)) ||
+          `Failed to delete account (HTTP ${response.status}). Please try again.`,
       }
     }
+    // Confirmation invalidates A even after its token changes, while protecting B.
+    if (!this.destroyed && this.currentUser?.id === ownerId) {
+      try {
+        this.clearSession(ownerId)
+      } catch {
+        // The durable receipt lets the application retry local cleanup.
+        return { success: true }
+      }
+    }
+    return { success: true }
   }
 
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void {
+    if (this.destroyed) return () => {}
     this.listeners.add(callback)
     callback(this.currentUser)
     return () => {
@@ -825,6 +963,16 @@ export class SupabaseAuthService implements AuthService {
   private setupLifecycleListeners(): void {
     if (typeof window === 'undefined') return
 
+    this.boundStorageHandler = (event) => {
+      if (this.destroyed || (event.key !== null && event.key !== STORAGE_KEY))
+        return
+      this.generation++
+      this.inFlightRefresh = null
+      this.currentUser = this.loadStoredSession()?.user ?? null
+      this.scheduleNextRefresh()
+      this.notifyListeners()
+    }
+    window.addEventListener('storage', this.boundStorageHandler)
     this.boundVisibilityHandler = () => {
       if (
         typeof document !== 'undefined' &&
@@ -853,7 +1001,15 @@ export class SupabaseAuthService implements AuthService {
   }
 
   destroy(): void {
+    this.lifetime.abort()
     this.accountDeletion?.controller.abort()
+    this.generation++
+    this.inFlightRefresh = null
+    this.listeners.clear()
+    if (this.boundStorageHandler && typeof window !== 'undefined') {
+      window.removeEventListener('storage', this.boundStorageHandler)
+      this.boundStorageHandler = null
+    }
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer)
       this.refreshTimer = null

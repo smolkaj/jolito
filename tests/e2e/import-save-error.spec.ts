@@ -1,3 +1,4 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
 import { auditAccessibility, settleAnimations } from './accessibility'
 
@@ -24,9 +25,7 @@ for (const viewport of [
         name: /import deck \(replace current\)/i,
       })
       await expect(confirm).toBeEnabled()
-      const before = await page.evaluate(() =>
-        localStorage.getItem('jolito-library-v1'),
-      )
+      const before = await page.evaluate(currentDeckJson)
       await page.evaluate(() => {
         const original = Object.getOwnPropertyDescriptor(
           Storage.prototype,
@@ -56,9 +55,7 @@ for (const viewport of [
             (input: HTMLInputElement) => input.files?.[0]?.name,
           ),
         ).toBe('retry-import.txt')
-        expect(
-          await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-        ).toBe(before)
+        expect(await page.evaluate(currentDeckJson)).toBe(before)
       }
       expect((await auditAccessibility(page)).violations).toEqual([])
       await page.screenshot({
@@ -71,9 +68,9 @@ for (const viewport of [
       await expect(page.getByText(/imported \d+ cards?/i)).toBeVisible()
       await expect(confirm).toHaveCount(0)
       await expect(file).toHaveValue('')
-      expect(
-        await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-      ).toContain('Un boleto de metro')
+      expect(await page.evaluate(currentDeckJson)).toContain(
+        'Un boleto de metro',
+      )
       await page.keyboard.press('Escape')
       await page.reload()
       await expect(

@@ -7,9 +7,13 @@ import type {
   Speaker,
 } from '../../application/ports'
 import { OfflineCardAssistant } from '../../application/card-assistant'
-import { SupabaseAuthService } from '../supabase/auth-service'
+import {
+  SessionStorageError,
+  SupabaseAuthService,
+} from '../supabase/auth-service'
 import { SupabaseFeedbackService } from '../supabase/feedback-service'
 import { SupabaseSyncService } from '../supabase/sync-service'
+import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { getOrCreateDeviceId } from './device-id'
 import { LocalStorageCardRepository } from './card-repository'
 import { BrowserHapticsPlayer } from './haptics'
@@ -39,6 +43,13 @@ export {
 }
 
 class StorageInitializationError extends Error {}
+class DeckInitializationError extends Error {
+  constructor(
+    readonly recovery: Extract<CardLoadResult, { status: 'recovery' }>,
+  ) {
+    super(recovery.message)
+  }
+}
 
 function openBrowserStorage(): { storage: Storage; deviceId: string } {
   try {
@@ -58,7 +69,12 @@ export function initializeBrowserServices():
   try {
     return { status: 'ready', services: createBrowserServices() }
   } catch (error) {
-    if (!(error instanceof StorageInitializationError)) throw error
+    if (error instanceof DeckInitializationError) return error.recovery
+    if (
+      !(error instanceof StorageInitializationError) &&
+      !(error instanceof SessionStorageError)
+    )
+      throw error
     return {
       status: 'recovery',
       reason: 'unavailable',
@@ -73,6 +89,18 @@ export function createBrowserServices(): AppServices {
   // Resolve storage and device identity before any service subscribes or prewarms.
   // The startup boundary can then recover without leaving partially created services.
   const { storage, deviceId } = openBrowserStorage()
+  let cards!: LocalStorageCardRepository
+  const auth = new SupabaseAuthService(
+    undefined,
+    undefined,
+    storage,
+    (owner) => {
+      cards = new LocalStorageCardRepository(storage, owner?.id ?? null)
+      const loaded = cards.load([])
+      if (loaded.status === 'recovery')
+        throw new DeckInitializationError(loaded)
+    },
+  )
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
 
@@ -81,7 +109,6 @@ export function createBrowserServices(): AppServices {
     : new LayeredNeuralSpeaker()
   void speaker.prewarm?.()
 
-  const auth = new SupabaseAuthService(undefined, undefined, storage)
   const sync = new SupabaseSyncService(auth, undefined, undefined, deviceId)
   const feedback = new SupabaseFeedbackService(
     auth,
@@ -91,9 +118,12 @@ export function createBrowserServices(): AppServices {
   )
 
   return {
+    deletionLock: Capacitor.isNativePlatform()
+      ? new NativeDeletionLock()
+      : new BrowserDeletionLock(navigator.locks),
     clock: new SystemClock(),
     ids: new RandomIdGenerator(),
-    cards: new LocalStorageCardRepository(storage),
+    cards,
     speaker,
     sounds: new WebAudioSoundPlayer(),
     haptics: new BrowserHapticsPlayer(),

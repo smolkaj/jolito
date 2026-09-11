@@ -1,0 +1,408 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { SupabaseAuthService } from './auth-service'
+
+const key = 'jolito-auth-session-v1'
+const session = (id: string) => ({
+  accessToken: `token-${id}`,
+  refreshToken: `refresh-${id}`,
+  expiresAt: Date.now() + 3600000,
+  user: { id, email: `${id}@example.com` },
+})
+const jwt = (id: string) =>
+  `header.${btoa(JSON.stringify({ sub: id, email: `${id}@example.com` }))}.signature`
+beforeEach(() => {
+  localStorage.clear()
+  window.history.replaceState({}, '', '/')
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
+
+it.each(['signout', 'switch', 'destroy'] as const)(
+  'rejects refresh completion after %s without reviving session, listeners or timers',
+  async (action) => {
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    let resolve!: (response: Response) => void
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('grant_type')
+          ? new Promise<Response>((done) => {
+              resolve = done
+            })
+          : Promise.resolve(new Response(null, { status: 204 })),
+      ),
+    )
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    const listener = vi.fn()
+    auth.onAuthStateChange(listener)
+    const pending = auth.refreshSession()
+    if (action === 'signout') await auth.signOut()
+    if (action === 'switch')
+      await auth.verifyOtp(
+        '',
+        `#access_token=${jwt('B')}&refresh_token=refresh-B`,
+      )
+    if (action === 'destroy') auth.destroy()
+    const stored = localStorage.getItem(key)
+    const notifications = listener.mock.calls.length
+    const timers = vi.getTimerCount()
+    resolve(
+      new Response(
+        JSON.stringify({
+          access_token: 'late-A',
+          refresh_token: 'late-refresh-A',
+          user: { id: 'A' },
+          expires_in: 3600,
+        }),
+      ),
+    )
+    expect(await pending).toBeNull()
+    expect(localStorage.getItem(key)).toBe(stored)
+    expect(listener).toHaveBeenCalledTimes(notifications)
+    expect(vi.getTimerCount()).toBe(timers)
+    if (action === 'switch') expect(auth.getCurrentUser()?.id).toBe('B')
+    else expect(auth.getCurrentUser()).toBeNull()
+    auth.destroy()
+  },
+)
+
+it('captures legacy ownership before an auth redirect replaces the stored session', () => {
+  localStorage.setItem(key, JSON.stringify(session('A')))
+  window.location.hash = `access_token=${jwt('B')}&refresh_token=refresh-B`
+  const auth = new SupabaseAuthService('', '', localStorage)
+  expect(auth.storedUserBeforeRedirect?.id).toBe('A')
+  expect(auth.getCurrentUser()?.id).toBe('B')
+  auth.destroy()
+})
+
+it('fences held OTP and logout completions across later logins and responds to storage account changes', async () => {
+  localStorage.setItem(key, JSON.stringify(session('A')))
+  const requests: Array<(response: Response) => void> = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => new Promise<Response>((resolve) => requests.push(resolve))),
+  )
+  const auth = new SupabaseAuthService(
+    'https://example.supabase.co',
+    'key',
+    localStorage,
+  )
+  const otp = auth.verifyOtp('old@example.com', '123456')
+  await auth.verifyOtp('', `#access_token=${jwt('B')}&refresh_token=refresh-B`)
+  requests.shift()!(
+    new Response(
+      JSON.stringify({
+        access_token: jwt('A'),
+        refresh_token: 'refresh-A',
+        user: { id: 'A' },
+      }),
+    ),
+  )
+  expect((await otp).success).toBe(false)
+  expect(auth.getCurrentUser()?.id).toBe('B')
+  const logout = auth.signOut()
+  await auth.verifyOtp('', `#access_token=${jwt('C')}&refresh_token=refresh-C`)
+  requests.shift()!(new Response(null, { status: 204 }))
+  await logout
+  expect(auth.getCurrentUser()?.id).toBe('C')
+  localStorage.setItem(key, JSON.stringify(session('D')))
+  window.dispatchEvent(new StorageEvent('storage', { key }))
+  expect(auth.getCurrentUser()?.id).toBe('D')
+  auth.destroy()
+  localStorage.setItem(key, JSON.stringify(session('E')))
+  window.dispatchEvent(new StorageEvent('storage', { key }))
+  expect(auth.getCurrentUser()).toBeNull()
+})
+
+it('does not claim a new login or lose the previous owner when session persistence fails, then retries durably', async () => {
+  localStorage.setItem(key, JSON.stringify(session('A')))
+  const auth = new SupabaseAuthService('', '', localStorage)
+  const raw = localStorage.getItem(key)
+  const write = vi
+    .spyOn(Storage.prototype, 'setItem')
+    .mockImplementationOnce(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+  const result = await auth.verifyOtp('', `#access_token=${jwt('B')}`)
+  expect(result.success).toBe(false)
+  expect(result.error).toContain('could not be saved')
+  expect(auth.getCurrentUser()?.id).toBe('A')
+  expect(localStorage.getItem(key)).toBe(raw)
+  write.mockRestore()
+  expect(await auth.verifyOtp('', `#access_token=${jwt('B')}`)).toEqual({
+    success: true,
+  })
+  auth.destroy()
+  const reloaded = new SupabaseAuthService('', '', localStorage)
+  expect(reloaded.getCurrentUser()?.id).toBe('B')
+  reloaded.destroy()
+})
+
+it.each([
+  'same-account-refresh',
+  'A-B-A',
+  'A-B',
+  'A-B-before-storage-event',
+  'destroy',
+] as const)(
+  'finalizes held deletion for the deleted identity after %s without clearing a different identity',
+  async (transition) => {
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    let finish!: (response: Response) => void
+    const started = vi.fn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        started()
+        return new Promise<Response>((resolve) => {
+          finish = resolve
+        })
+      }),
+    )
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    const deletion = auth.deleteAccount()
+    await vi.waitFor(() => expect(started).toHaveBeenCalledOnce())
+    const change = (owner: string) => {
+      localStorage.setItem(key, JSON.stringify(session(owner)))
+      window.dispatchEvent(new StorageEvent('storage', { key }))
+    }
+    if (transition === 'same-account-refresh') change('A')
+    if (transition === 'A-B' || transition === 'A-B-A') change('B')
+    if (transition === 'A-B-A') change('A')
+    if (transition === 'A-B-before-storage-event')
+      localStorage.setItem(key, JSON.stringify(session('B')))
+    if (transition === 'destroy') auth.destroy()
+    const before = localStorage.getItem(key)
+    finish(new Response(null, { status: 204 }))
+    expect(await deletion).toEqual({ success: true })
+    if (
+      transition === 'A-B' ||
+      transition === 'A-B-before-storage-event' ||
+      transition === 'destroy'
+    )
+      expect(localStorage.getItem(key)).toBe(before)
+    else {
+      expect(auth.getCurrentUser()).toBeNull()
+      expect(localStorage.getItem(key)).toBeNull()
+    }
+    auth.destroy()
+  },
+)
+
+it.each(['get-token', 'refresh', 'delete'] as const)(
+  'rejects %s credentials for a newly persisted owner before its storage event, then resumes after delivery',
+  async (operation) => {
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    const request = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', request)
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    localStorage.setItem(key, JSON.stringify(session('B')))
+    const before = localStorage.getItem(key)
+    if (operation === 'get-token')
+      expect(await auth.getAccessToken()).toBeNull()
+    if (operation === 'refresh') expect(await auth.refreshSession()).toBeNull()
+    if (operation === 'delete')
+      expect((await auth.deleteAccount()).success).toBe(false)
+    expect(request).not.toHaveBeenCalled()
+    expect(localStorage.getItem(key)).toBe(before)
+    expect(auth.getCurrentUser()?.id).toBe('A')
+    window.dispatchEvent(new StorageEvent('storage', { key }))
+    expect(await auth.getAccessToken()).toBe('token-B')
+    auth.destroy()
+  },
+)
+
+it.each(['token-refresh', 'deletion-refresh', 'deletion-retry'] as const)(
+  'does not return or dispatch another owner’s token after a held %s before storage event delivery',
+  async (operation) => {
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    let finish!: (response: Response) => void
+    const request = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve
+        }),
+    )
+    vi.stubGlobal('fetch', request)
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    if (operation !== 'deletion-retry')
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...session('A'), expiresAt: 0 }),
+      )
+    const pending =
+      operation === 'token-refresh'
+        ? auth.getAccessToken()
+        : auth.deleteAccount()
+    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce())
+    localStorage.setItem(key, JSON.stringify(session('B')))
+    const before = localStorage.getItem(key)
+    finish(
+      new Response(null, {
+        status: operation === 'deletion-retry' ? 401 : 503,
+      }),
+    )
+    const result = await pending
+    if (operation === 'token-refresh') expect(result).toBeNull()
+    else expect(result).toMatchObject({ success: false })
+    expect(request).toHaveBeenCalledOnce()
+    expect(localStorage.getItem(key)).toBe(before)
+    window.dispatchEvent(new StorageEvent('storage', { key }))
+    expect(await auth.getAccessToken()).toBe('token-B')
+    auth.destroy()
+  },
+)
+
+for (const token of ['123456', 'a'.repeat(64)]) {
+  for (const boundary of ['response', 'body'] as const) {
+    it.each(['switch', 'signout', 'same-owner-refresh', 'destroy'] as const)(
+      `rejects held ${token.length === 6 ? 'numeric' : 'hash'} OTP at ${boundary} after %s and permits a fresh login after reload`,
+      async (transition) => {
+        localStorage.setItem(key, JSON.stringify(session('A')))
+        let release!: () => void
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        const payload = {
+          access_token: jwt('A'),
+          refresh_token: 'verified-refresh-A',
+          expires_in: 3600,
+          user: session('A').user,
+        }
+        const response = new Response(JSON.stringify(payload))
+        const bodyStarted = vi.fn()
+        if (boundary === 'body')
+          vi.spyOn(response, 'json').mockImplementation(async () => {
+            bodyStarted()
+            await held
+            return payload
+          })
+        const request = vi.fn(async () => {
+          if (boundary === 'response') await held
+          return response
+        })
+        vi.stubGlobal('fetch', request)
+        const auth = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'key',
+          localStorage,
+        )
+        const listener = vi.fn()
+        auth.onAuthStateChange(listener)
+        const pending = auth.verifyOtp('A@example.com', token)
+        if (boundary === 'body')
+          await vi.waitFor(() => expect(bodyStarted).toHaveBeenCalledOnce())
+        if (transition === 'switch')
+          localStorage.setItem(key, JSON.stringify(session('B')))
+        if (transition === 'signout') localStorage.removeItem(key)
+        if (transition === 'same-owner-refresh')
+          localStorage.setItem(
+            key,
+            JSON.stringify({ ...session('A'), refreshToken: 'new-refresh-A' }),
+          )
+        if (transition === 'destroy') auth.destroy()
+        const before = localStorage.getItem(key)
+        const notifications = listener.mock.calls.length
+        const timers = vi.getTimerCount()
+        release()
+        expect(await pending).toMatchObject({ success: false })
+        expect(request).toHaveBeenCalledOnce()
+        expect(localStorage.getItem(key)).toBe(before)
+        expect(listener).toHaveBeenCalledTimes(notifications)
+        expect(vi.getTimerCount()).toBe(timers)
+        auth.destroy()
+        const reloaded = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'key',
+          localStorage,
+        )
+        expect(reloaded.getCurrentUser()?.id ?? null).toBe(
+          transition === 'switch' ? 'B' : transition === 'signout' ? null : 'A',
+        )
+        request.mockResolvedValue(new Response(JSON.stringify(payload)))
+        expect(await reloaded.verifyOtp('A@example.com', token)).toEqual({
+          success: true,
+        })
+        expect(reloaded.getCurrentUser()?.id).toBe('A')
+        reloaded.destroy()
+      },
+    )
+  }
+}
+
+it.each(['switch', 'signout', 'destroy'] as const)(
+  'never exports sign-in credentials after %s and resumes only through the active owner lifetime',
+  (transition) => {
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    const auth = new SupabaseAuthService('', '', localStorage)
+    expect(auth.getSessionLink()).toContain(
+      'access_token=token-A&refresh_token=refresh-A',
+    )
+    if (transition === 'switch')
+      localStorage.setItem(key, JSON.stringify(session('B')))
+    if (transition === 'signout') localStorage.removeItem(key)
+    if (transition === 'destroy') auth.destroy()
+    const before = localStorage.getItem(key)
+    expect(auth.getSessionLink()).toBeNull()
+    expect(localStorage.getItem(key)).toBe(before)
+    window.dispatchEvent(new StorageEvent('storage', { key }))
+    if (transition === 'switch')
+      expect(auth.getSessionLink()).toContain(
+        'access_token=token-B&refresh_token=refresh-B',
+      )
+    else expect(auth.getSessionLink()).toBeNull()
+    auth.destroy()
+    expect(auth.getSessionLink()).toBeNull()
+  },
+)
+
+it.each(['123456', 'a'.repeat(64)])(
+  'refuses a new OTP operation from an identity whose persisted session changed before event delivery (%s)',
+  async (token) => {
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    const request = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: jwt('A'),
+          refresh_token: 'fresh-A',
+          user: session('A').user,
+        }),
+      ),
+    )
+    vi.stubGlobal('fetch', request)
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    localStorage.setItem(key, JSON.stringify(session('B')))
+    const before = localStorage.getItem(key)
+    expect(await auth.verifyOtp('A@example.com', token)).toMatchObject({
+      success: false,
+    })
+    expect(request).not.toHaveBeenCalled()
+    expect(localStorage.getItem(key)).toBe(before)
+    auth.destroy()
+  },
+)
