@@ -74,6 +74,7 @@ export function grammarContext(card: GrammarCard) {
   const sentence = capitalize(
     spanish
       .replace('{subject}', subjects[person]!)
+      .replace('{cue}', cueSubject)
       .replace(
         '{estar}',
         cueSubject + ['estoy', 'estás', 'está', 'estamos', 'están'][person]!,

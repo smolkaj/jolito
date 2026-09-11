@@ -42,7 +42,7 @@ export const gerundVerbs = {
     forms: gerundForms('hablando'),
     contexts: [
       [
-        'Ahora mismo {subject} ___ con la vecina.',
+        'Ahora mismo {cue}___ con la vecina.',
         'Right now, {subject} [{be} talking] with the neighbor.',
       ],
       [
@@ -56,7 +56,7 @@ export const gerundVerbs = {
     forms: gerundForms('trabajando'),
     contexts: [
       [
-        'Hoy {subject} ___ desde casa.',
+        'Hoy {cue}___ desde casa.',
         'Today, {subject} [{be} working] from home.',
       ],
       [
@@ -70,7 +70,7 @@ export const gerundVerbs = {
     forms: gerundForms('estudiando'),
     contexts: [
       [
-        'Esta tarde {subject} ___ para el examen.',
+        'Esta tarde {cue}___ para el examen.',
         'This afternoon, {subject} [{be} studying] for the exam.',
       ],
       [
@@ -84,7 +84,7 @@ export const gerundVerbs = {
     forms: gerundForms('comiendo'),
     contexts: [
       [
-        'En este momento {subject} ___ unos tacos al pastor.',
+        'En este momento {cue}___ unos tacos al pastor.',
         'At this moment, {subject} [{be} eating] some tacos al pastor.',
       ],
       [
@@ -98,7 +98,7 @@ export const gerundVerbs = {
     forms: gerundForms('viviendo'),
     contexts: [
       [
-        'Este año {subject} ___ en la Ciudad de México.',
+        'Este año {cue}___ en la Ciudad de México.',
         'This year, {subject} [{be} living] in Mexico City.',
       ],
       [
@@ -112,7 +112,7 @@ export const gerundVerbs = {
     forms: gerundForms('escribiendo'),
     contexts: [
       [
-        'En este momento {subject} ___ un mensaje.',
+        'En este momento {cue}___ un mensaje.',
         'At this moment, {subject} [{be} writing] a message.',
       ],
       [
@@ -126,8 +126,8 @@ export const gerundVerbs = {
     forms: gerundForms('diciendo'),
     contexts: [
       [
-        '{subject} ___ la verdad sobre lo que pasó.',
-        '{subject} [{be} telling] the truth about what happened.',
+        'Siempre {cue}___ la verdad sobre lo que pasó.',
+        'Always, {subject} [{be} telling] the truth about what happened.',
       ],
       [
         '{subject} ___ cosas muy interesantes.',
@@ -140,7 +140,7 @@ export const gerundVerbs = {
     forms: gerundForms('pidiendo'),
     contexts: [
       [
-        'En el restaurante {subject} ___ la cuenta.',
+        'En el restaurante {cue}___ la cuenta.',
         'At the restaurant, {subject} [{be} asking for] the bill.',
       ],
       [
@@ -154,7 +154,7 @@ export const gerundVerbs = {
     forms: gerundForms('sirviendo'),
     contexts: [
       [
-        'En el comedor, {subject} ___ la comida caliente.',
+        'En el comedor, {cue}___ la comida caliente.',
         'In the dining room, {subject} [{be} serving] hot food.',
       ],
       [
@@ -168,7 +168,7 @@ export const gerundVerbs = {
     forms: gerundForms('siguiendo'),
     contexts: [
       [
-        'En la cocina {subject} ___ la receta paso a paso.',
+        'En la cocina {cue}___ la receta paso a paso.',
         'In the kitchen, {subject} [{be} following] the recipe step by step.',
       ],
       [
@@ -182,7 +182,7 @@ export const gerundVerbs = {
     forms: gerundForms('sintiendo'),
     contexts: [
       [
-        'Con este frío {subject} ___ la necesidad de un café.',
+        'Con este frío {cue}___ la necesidad de un café.',
         'With this cold, {subject} [{be} feeling] the need for a coffee.',
       ],
       [
@@ -196,8 +196,8 @@ export const gerundVerbs = {
     forms: gerundForms('viniendo'),
     contexts: [
       [
-        '{subject} ___ en camino hacia acá.',
-        '{subject} [{be} coming] on the way here.',
+        'Ya {cue}___ en camino hacia acá.',
+        'Already, {subject} [{be} coming] on the way here.',
       ],
       [
         '{subject} ___ en metro desde el centro.',
@@ -210,12 +210,12 @@ export const gerundVerbs = {
     forms: gerundForms('vistiendo'),
     contexts: [
       [
-        '{subject} ___ al niño para la escuela.',
-        '{subject} [{be} dressing] the child for school.',
+        'Para la fiesta {cue}___ ropa muy elegante.',
+        'For the party, {subject} [{be} wearing] very elegant clothes.',
       ],
       [
-        'Para la ocasión {subject} ___ ropa muy elegante.',
-        'For the occasion, {subject} [{be} wearing] very elegant clothes.',
+        '{subject} ___ al niño para la escuela.',
+        '{subject} [{be} dressing] the child for school.',
       ],
     ],
   },
@@ -224,7 +224,7 @@ export const gerundVerbs = {
     forms: gerundForms('repitiendo'),
     contexts: [
       [
-        'En clase {subject} ___ las palabras en voz alta.',
+        'En clase {cue}___ las palabras en voz alta.',
         'In class, {subject} [{be} repeating] the words out loud.',
       ],
       [
@@ -238,7 +238,7 @@ export const gerundVerbs = {
     forms: gerundForms('durmiendo'),
     contexts: [
       [
-        'En su cuarto {subject} ___ profundamente.',
+        'En su cuarto {cue}___ profundamente.',
         'In their room, {subject} [{be} sleeping] deeply.',
       ],
       [
@@ -252,7 +252,7 @@ export const gerundVerbs = {
     forms: gerundForms('muriendo'),
     contexts: [
       [
-        'Con este calor {subject} ___ de sed.',
+        'Con este calor {cue}___ de sed.',
         'In this heat, {subject} [{be} dying] of thirst.',
       ],
       [
@@ -266,7 +266,7 @@ export const gerundVerbs = {
     forms: gerundForms('pudiendo'),
     contexts: [
       [
-        'Por fin {subject} ___ descansar un poco.',
+        'Por fin {cue}___ descansar un poco.',
         'At last, {subject} [{be} able to] rest a bit.',
       ],
       [
@@ -280,7 +280,7 @@ export const gerundVerbs = {
     forms: gerundForms('leyendo'),
     contexts: [
       [
-        'En la terraza {subject} ___ un libro nuevo.',
+        'En la terraza {cue}___ un libro nuevo.',
         'On the terrace, {subject} [{be} reading] a new book.',
       ],
       [
@@ -294,12 +294,12 @@ export const gerundVerbs = {
     forms: gerundForms('creyendo'),
     contexts: [
       [
-        '{subject} ___ todo lo que dice la noticia.',
-        '{subject} [{be} believing] everything the news says.',
+        'Por fin {cue}___ en esa posibilidad.',
+        'At last, {subject} [{be} believing] in that possibility.',
       ],
       [
-        'Por primera vez {subject} ___ en esa posibilidad.',
-        'For the first time, {subject} [{be} believing] in that possibility.',
+        '{subject} ___ todo lo que dice la noticia.',
+        '{subject} [{be} believing] everything the news says.',
       ],
     ],
   },
@@ -308,7 +308,7 @@ export const gerundVerbs = {
     forms: gerundForms('trayendo'),
     contexts: [
       [
-        'En la bolsa {subject} ___ el pan dulce.',
+        'En la bolsa {cue}___ el pan dulce.',
         'In the bag, {subject} [{be} bringing] sweet bread.',
       ],
       [
@@ -322,7 +322,7 @@ export const gerundVerbs = {
     forms: gerundForms('cayendo'),
     contexts: [
       [
-        'Cuidado, que {subject} ___ en la misma trampa.',
+        'Cuidado, que {cue}___ en la misma trampa.',
         'Watch out, {subject} [{be} falling] into the same trap.',
       ],
       [
@@ -336,7 +336,7 @@ export const gerundVerbs = {
     forms: gerundForms('oyendo'),
     contexts: [
       [
-        'Desde la ventana {subject} ___ los pájaros cantar.',
+        'Desde la ventana {cue}___ los pájaros cantar.',
         'From the window, {subject} [{be} hearing] the birds sing.',
       ],
       [
@@ -350,7 +350,7 @@ export const gerundVerbs = {
     forms: gerundForms('yendo'),
     contexts: [
       [
-        'Ahora mismo {subject} ___ hacia el mercado.',
+        'Ahora mismo {cue}___ hacia el mercado.',
         'Right now, {subject} [{be} going] toward the market.',
       ],
       [
@@ -364,7 +364,7 @@ export const gerundVerbs = {
     forms: gerundForms('construyendo'),
     contexts: [
       [
-        'En el taller {subject} ___ una mesa de madera.',
+        'En el taller {cue}___ una mesa de madera.',
         'In the workshop, {subject} [{be} building] a wooden table.',
       ],
       [
@@ -378,7 +378,7 @@ export const gerundVerbs = {
     forms: gerundForms('huyendo'),
     contexts: [
       [
-        'Del ruido de la ciudad {subject} ___ hacia el campo.',
+        'Del ruido de la ciudad {cue}___ hacia el campo.',
         'From the city noise, {subject} [{be} fleeing] toward the countryside.',
       ],
       [

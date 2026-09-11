@@ -38,7 +38,7 @@ it('keeps a gerundio draft through tense selection and interruptions, then grade
   ).toHaveTextContent('estoy hablando')
   await waitFor(() =>
     expect(services.mockSpeaker.spoken.slice(-1)[0]).toEqual({
-      text: 'Ahora mismo yo estoy hablando con la vecina.',
+      text: 'Ahora mismo estoy hablando con la vecina.',
       locale: 'es-MX',
     }),
   )
