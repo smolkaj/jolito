@@ -106,7 +106,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
     .getByRole('button', { name: /import deck \(replace current\)/i })
     .click()
 
-  await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await expect(page.getByText(/imported 1 card/i)).toBeVisible()
   await page.keyboard.press('Escape')
 
   // Verify local storage is updated with the imported cards
@@ -148,7 +148,7 @@ test('imports Anki text export deck and updates review cards', async ({
     .getByRole('button', { name: /import deck \(replace current\)/i })
     .click()
 
-  await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await expect(page.getByText(/imported 1 card/i)).toBeVisible()
   await page.keyboard.press('Escape')
 
   await page
@@ -223,9 +223,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
     })
     .click()
   await expect(
-    page.getByText(
-      /successfully imported 2 cards from “mexican spanish vocab”/i,
-    ),
+    page.getByText(/imported 2 cards from “mexican spanish vocab”/i),
   ).toBeVisible()
 
   await page.keyboard.press('Escape')
@@ -417,4 +415,57 @@ test('resets learning history to new card in deck manager edit modal with zero a
   await expect(cardsList.locator('.deck-stat-chip.is-review')).not.toBeVisible()
 
   await page.screenshot({ path: 'test-results/deck-after-reset-progress.png' })
+})
+
+test('reports actual added and skipped cards across sequential imports and reload', async ({
+  page,
+}) => {
+  await page.goto('/#/deck')
+  await dismissDemoModal(page)
+  await page.getByRole('button', { name: /backup & import/i }).click()
+  const file = page.getByLabel(/choose anki deck or backup file/i)
+  await file.setInputFiles({
+    name: 'first.tsv',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hola\thello'),
+  })
+  await page
+    .getByRole('button', { name: /import deck \(replace current\)/i })
+    .click()
+  await expect(
+    page.getByText('Imported 1 card.', { exact: true }),
+  ).toBeVisible()
+  await page.getByRole('radio', { name: /merge/i }).check()
+  await file.setInputFiles({
+    name: 'second.tsv',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('gato\tcat\nhola\thello'),
+  })
+  await page.getByRole('button', { name: /merge deck with library/i }).click()
+  await expect(
+    page.getByText('Imported 1 card. Skipped 1 duplicate.', { exact: true }),
+  ).toBeVisible()
+  await page.screenshot({
+    path: 'test-results/import-added-and-skipped-desktop.png',
+  })
+  expect((await auditAccessibility(page)).violations).toEqual([])
+  await file.setInputFiles({
+    name: 'reordered.tsv',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hola\thello\ngato\tcat'),
+  })
+  await page.getByRole('button', { name: /merge deck with library/i }).click()
+  await expect(
+    page.getByText('Imported 0 cards. Skipped 2 duplicates.', { exact: true }),
+  ).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.screenshot({ path: 'test-results/import-duplicates-mobile.png' })
+  await page.keyboard.press('Escape')
+  await page.reload()
+  const rows = page
+    .getByRole('table', { name: /deck cards/i })
+    .getByRole('row', { name: /card:/i })
+  await expect(rows).toHaveCount(2)
+  await expect(rows.filter({ hasText: 'hola' })).toHaveCount(1)
+  await expect(rows.filter({ hasText: 'gato' })).toHaveCount(1)
 })
