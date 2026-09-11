@@ -106,7 +106,7 @@ export const studyCardSchema = z
   })
 
 // Only legacy boundaries assign baseline revisions; current cards must contain them.
-export function migrateLegacyStudyCard(raw: unknown): unknown {
+function migrateLegacyStudyCard(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
   return {
     contentRevision: 0,

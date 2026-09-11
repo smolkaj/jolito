@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDeckBackup } from '../../application/deck-backup'
+import { parseAnkiText } from '../../domain/anki-import'
+import { mergeStudyCardsSemantic } from '../../domain/card-merge'
 import {
   createStudyCards,
   resetCardProgress,
@@ -123,6 +125,39 @@ describe('card mutation persistence contracts', () => {
     expect((await service.syncDeck([resetAgain], user)).cards).toEqual([
       resetAgain,
     ])
+  })
+
+  it('keeps imported context enrichment through a stale replica, reload, and another sync', async () => {
+    const local = updateStudyCard(initial, { answer: 'hey' }, 1000)
+    const staleReplica = scheduleReview(
+      updateStudyCard(initial, { answer: 'hi' }, 1000),
+      'easy',
+      2000,
+    )
+    const imported = parseAnkiText('hola\thello\tA friendly greeting', 3000)
+    if (!imported.success) throw new Error(imported.error)
+    const merged = mergeStudyCardsSemantic([local], imported.cards)
+    const service = connectCloud([staleReplica], 4)
+    const synced = await service.syncDeck(merged.cards, user)
+    expect(synced).toMatchObject({
+      success: true,
+      cards: [
+        {
+          ...local,
+          context: 'A friendly greeting',
+          contentRevision: 2,
+          schedule: staleReplica.schedule,
+        },
+      ],
+    })
+    new LocalStorageCardRepository(localStorage).save(synced.cards!)
+    const reloaded = new LocalStorageCardRepository(localStorage).load([])
+    expect((await service.syncDeck(reloaded, user)).cards).toEqual(synced.cards)
+    expect((await service.syncDeck([staleReplica], user)).cards).toEqual(
+      synced.cards,
+    )
+    expect(local.context).toBe('')
+    expect(local.contentRevision).toBe(1)
   })
 
   it('rejects missing current metadata and invalid or future versions without downgrading present intent', () => {
