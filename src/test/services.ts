@@ -295,9 +295,6 @@ export class MockSyncService implements SyncService {
       deletedCardIds,
     })
   }
-  pullDeck(user: AuthUser): Promise<SyncResult> {
-    return Promise.resolve({ success: true, ...this.deck(user.id) })
-  }
   syncDeck(
     localCards: StudyCard[],
     user: AuthUser,

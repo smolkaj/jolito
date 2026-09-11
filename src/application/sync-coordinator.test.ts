@@ -23,7 +23,7 @@ function harness() {
   })
   const coordinator = new DeckSyncCoordinator(
     user,
-    { syncDeck, pullDeck: vi.fn() },
+    { syncDeck },
     () => local,
     save,
     status,

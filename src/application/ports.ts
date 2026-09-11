@@ -131,7 +131,6 @@ export type SyncResult = {
 }
 
 export type SyncService = {
-  pullDeck(user: AuthUser, signal?: AbortSignal): Promise<SyncResult>
   syncDeck(
     localCards: StudyCard[],
     user: AuthUser,

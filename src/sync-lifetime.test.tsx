@@ -36,12 +36,7 @@ it('effect cleanup aborts its captured sync while a fresh setup remains usable a
         : Promise.resolve({ success: true, cards, deletedCardIds: [] })
     },
   )
-  const sync: SyncService = {
-    ...services.sync,
-    pullDeck: () =>
-      Promise.resolve({ success: true, cards, deletedCardIds: [] }),
-    syncDeck,
-  }
+  const sync: SyncService = { syncDeck }
   const app = render(
     <StrictMode>
       <App services={{ ...services, sync }} />
