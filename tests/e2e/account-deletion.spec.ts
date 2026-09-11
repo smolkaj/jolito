@@ -251,22 +251,24 @@ test('rejected deletion refresh preserves account and private deck through reloa
     await page.getByRole('button', { name: /yes, delete cloud data/i }).click()
   }
   await page.goto('/')
-  const before = await page.evaluate(() => ({
-    auth: localStorage.getItem('jolito-auth-session-v1'),
-    cards: localStorage.getItem('jolito-library-v1'),
-  }))
+  const before = {
+    auth: await page.evaluate(() =>
+      localStorage.getItem('jolito-auth-session-v1'),
+    ),
+    cards: await page.evaluate(currentDeckJson),
+  }
   await confirmDeletion()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByText('delete@example.com')).toBeVisible()
   await expect(
     page.getByRole('button', { name: /yes, delete cloud data/i }),
   ).toBeEnabled()
-  expect(
-    await page.evaluate(() => ({
-      auth: localStorage.getItem('jolito-auth-session-v1'),
-      cards: localStorage.getItem('jolito-library-v1'),
-    })),
-  ).toEqual(before)
+  expect({
+    auth: await page.evaluate(() =>
+      localStorage.getItem('jolito-auth-session-v1'),
+    ),
+    cards: await page.evaluate(currentDeckJson),
+  }).toEqual(before)
   expect(requests).toEqual(['delete', 'refresh'])
   expect((await auditAccessibility(page)).violations).toEqual([])
   await page.screenshot({
@@ -282,9 +284,7 @@ test('rejected deletion refresh preserves account and private deck through reloa
   expect(
     await page.evaluate(() => localStorage.getItem('jolito-auth-session-v1')),
   ).toBe(before.auth)
-  expect(
-    await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-  ).toContain('secreto')
+  expect(await page.evaluate(currentDeckJson)).toContain('secreto')
 
   // Model explicit same-owner reauthentication. The original session remains
   // unexpired so this reload cannot silently trigger a different expiry flow.
@@ -307,8 +307,6 @@ test('rejected deletion refresh preserves account and private deck through reloa
   expect(
     await page.evaluate(() => localStorage.getItem('jolito-auth-session-v1')),
   ).toBeNull()
-  expect(
-    await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-  ).not.toContain('secreto')
+  expect(await page.evaluate(currentDeckJson)).not.toContain('secreto')
   expect(requests).toEqual(['delete', 'refresh', 'delete'])
 })

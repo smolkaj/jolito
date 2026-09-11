@@ -483,9 +483,14 @@ it.each(['success', 'network-rejection', 'deadline', 'destroy'] as const)(
   },
 )
 
-it.each(['response', 'body'] as const)(
-  'bounds a held refresh %s across destruction and reload without modern AbortSignal helpers',
-  async (heldAt) => {
+it.each([
+  { heldAt: 'response', interruption: 'destroy' },
+  { heldAt: 'body', interruption: 'destroy' },
+  { heldAt: 'response', interruption: 'deadline' },
+  { heldAt: 'body', interruption: 'deadline' },
+] as const)(
+  'bounds a held refresh $heldAt across $interruption and reload without modern AbortSignal helpers',
+  async ({ heldAt, interruption }) => {
     vi.stubGlobal('AbortSignal', {})
     localStorage.setItem(key, JSON.stringify(session('A')))
     let signal!: AbortSignal
@@ -516,9 +521,11 @@ it.each(['response', 'body'] as const)(
     const pending = auth.refreshSession()
     await vi.advanceTimersByTimeAsync(0)
     const before = localStorage.getItem(key)
-    auth.destroy()
+    if (interruption === 'destroy') auth.destroy()
+    else await vi.advanceTimersByTimeAsync(10_000)
     expect(signal?.aborted).toBe(true)
-    expect(await pending).toBeNull()
+    expect(await pending).toBe(interruption === 'destroy' ? null : 'token-A')
+    auth.destroy()
     await vi.advanceTimersByTimeAsync(0)
     expect(vi.getTimerCount()).toBe(0)
     const notifications = listener.mock.calls.length

@@ -1,8 +1,8 @@
-import { withRequestDeadline } from '../request-lifetime'
 import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../application/ports'
 import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { getCanonicalOrigin } from '../browser/host'
+import { withRequestDeadline } from '../request-lifetime'
 
 const jwtPayloadSchema = z.object({
   sub: z.string().min(1),

@@ -475,3 +475,126 @@ test('releases a live deletion when its tab closes and recovers the durable requ
   expect(stored).toContain('B-private')
   await other.close()
 })
+
+test('restores private study progress through failed deletion, later expired auth, reload and same-owner sign-in', async ({
+  page,
+}) => {
+  const requests: string[] = []
+  await page.route('https://mock.supabase.co/**', async (route) => {
+    const url = route.request().url()
+    if (url.includes('/rpc/delete_user_account')) {
+      requests.push('delete')
+      await route.fulfill({
+        status: 401,
+        json: { message: 'Sign in again to delete your account.' },
+      })
+    } else if (url.includes('/auth/v1/token')) {
+      requests.push('refresh')
+      await route.fulfill({
+        status: 400,
+        json: { message: 'Refresh token rejected' },
+      })
+    } else if (url.includes('/auth/v1/verify')) {
+      requests.push('verify')
+      await route.fulfill({
+        json: {
+          access_token: 'reauthenticated-A',
+          refresh_token: 'reauthenticated-refresh-A',
+          expires_in: 3600,
+          user: authSession('A').user,
+        },
+      })
+    } else
+      await route.fulfill({
+        json: route.request().method() === 'GET' ? [] : {},
+      })
+  })
+  await page.goto('/#/deck')
+  await expect(
+    page.getByRole('row', { name: /card: A-private,/i }),
+  ).toBeVisible()
+  // Persist actual study progress before the interrupted account lifecycle.
+  await page.evaluate(() => {
+    const envelope = JSON.parse(
+      localStorage.getItem('jolito-libraries-v1')!,
+    ) as {
+      accounts: Record<
+        string,
+        { cards: Array<{ schedule: Record<string, unknown> }> }
+      >
+    }
+    Object.assign(envelope.accounts['user:A']!.cards[0]!.schedule, {
+      state: 'review',
+      reviews: 7,
+      lapses: 2,
+      intervalDays: 14,
+      dueAt: Date.now() + 14 * 86400000,
+      lastReviewedAt: Date.now(),
+    })
+    localStorage.setItem('jolito-libraries-v1', JSON.stringify(envelope))
+  })
+  await page.reload()
+  await expect(
+    page.getByRole('row', { name: /card: A-private,/i }),
+  ).toBeVisible()
+  const privateDecks = () =>
+    page.evaluate(
+      () =>
+        (
+          JSON.parse(localStorage.getItem('jolito-libraries-v1')!) as {
+            accounts: unknown
+          }
+        ).accounts,
+    )
+  const before = await privateDecks()
+  const authBefore = await page.evaluate(() =>
+    localStorage.getItem('jolito-auth-session-v1'),
+  )
+  await confirmDeletion(page)
+  await expect(page.getByRole('alert')).toBeVisible()
+  expect(requests).toEqual(['delete', 'refresh'])
+  expect(await privateDecks()).toEqual(before)
+  expect(
+    await page.evaluate(() => localStorage.getItem('jolito-auth-session-v1')),
+  ).toBe(authBefore)
+  // A later, independent expiry follows normal sign-out behavior. Its account
+  // library must survive both that transition and another signed-out reload.
+  await page.evaluate(() => {
+    const auth = JSON.parse(
+      localStorage.getItem('jolito-auth-session-v1')!,
+    ) as { expiresAt: number }
+    auth.expiresAt = 0
+    localStorage.setItem('jolito-auth-session-v1', JSON.stringify(auth))
+  })
+  await page.reload()
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem('jolito-auth-session-v1')),
+    )
+    .toBeNull()
+  expect(await privateDecks()).toEqual(before)
+  await page.reload()
+  await expect(
+    page.getByRole('row', { name: /card: A-private,/i }),
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: 'Sign in to build your deck' }).click()
+  await page.getByLabel(/email address/i).fill('A@example.com')
+  await page.getByRole('button', { name: /send sign-in link/i }).click()
+  await page.getByLabel(/6-digit code or sign-in link/i).fill('123456')
+  await page.getByRole('button', { name: /sign in & sync/i }).click()
+  await expect(
+    page.getByRole('row', { name: /card: A-private,/i }),
+  ).toBeVisible()
+  expect(await privateDecks()).toEqual(before)
+  expect(requests).toEqual(['delete', 'refresh', 'refresh', 'verify'])
+  await page.reload()
+  await expect(
+    page.getByRole('row', { name: /card: A-private,/i }),
+  ).toBeVisible()
+  expect(await privateDecks()).toEqual(before)
+  expect((await auditAccessibility(page)).violations).toEqual([])
+  await page.screenshot({
+    path: 'test-results/account-ownership-reauthenticated-progress.png',
+    fullPage: true,
+  })
+})
