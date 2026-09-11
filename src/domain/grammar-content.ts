@@ -58,11 +58,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Anoche {subject} ___ con la vecina.',
-        'Last night, {subject} spoke with the neighbor.',
+        'Last night, {subject} [spoke] with the neighbor.',
       ],
       [
         'Después de cenar, {subject} ___ de la película.',
-        'After dinner, {subject} talked about the movie.',
+        'After dinner, {subject} [talked] about the movie.',
       ],
     ],
   },
@@ -72,11 +72,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{ir} al mercado y ___ en un puesto de tacos.',
-        '{subject} went to the market and ate at a taco stand.',
+        '{subject} went to the market and [ate] at a taco stand.',
       ],
       [
         '{subject} ___ tacos de hongos el domingo.',
-        '{subject} ate mushroom tacos on Sunday.',
+        '{subject} [ate] mushroom tacos on Sunday.',
       ],
     ],
   },
@@ -86,11 +86,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'En ese viaje, {subject} ___ una experiencia increíble.',
-        'On that trip, {subject} had an incredible experience.',
+        'On that trip, {subject} [had] an incredible experience.',
       ],
       [
         'Durante la fiesta, {subject} ___ un momento especial.',
-        'During the party, {subject} experienced a special moment.',
+        'During the party, {subject} [experienced] a special moment.',
       ],
     ],
   },
@@ -100,11 +100,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ pan en la esquina esta mañana.',
-        '{subject} bought bread on the corner this morning.',
+        '{subject} [bought] bread on the corner this morning.',
       ],
       [
         '{ir} al mercado y ___ fruta para el desayuno.',
-        '{subject} went to the market and bought fruit for breakfast.',
+        '{subject} went to the market and [bought] fruit for breakfast.',
       ],
     ],
   },
@@ -114,11 +114,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'En clase, {subject} ___ una palabra nueva.',
-        'In class, {subject} learned a new word.',
+        'In class, {subject} [learned] a new word.',
       ],
       [
         '{subject} ___ a preparar salsa el fin de semana.',
-        '{subject} learned to make salsa over the weekend.',
+        '{subject} [learned] to make salsa over the weekend.',
       ],
     ],
   },
@@ -128,11 +128,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ un mensaje antes de salir.',
-        '{subject} wrote a message before leaving.',
+        '{subject} [wrote] a message before leaving.',
       ],
       [
         'Al volver a casa, {subject} ___ una carta.',
-        'After returning home, {subject} wrote a letter.',
+        'After returning home, {subject} [wrote] a letter.',
       ],
     ],
   },
@@ -142,11 +142,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'El viernes, {subject} ___ al mercado.',
-        'On Friday, {subject} went to the market.',
+        'On Friday, {subject} [went] to the market.',
       ],
       [
         '{subject} ___ a Coyoacán después de comer.',
-        '{subject} went to Coyoacán after lunch.',
+        '{subject} [went] to Coyoacán after lunch.',
       ],
     ],
     note: 'Ir and ser share all preterite forms. The destination here identifies ir.',
@@ -157,11 +157,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Ese día, {subject} ___ parte del equipo ganador.',
-        'That day, {subject} {was} part of the winning team.',
+        'That day, {subject} [{was}] part of the winning team.',
       ],
       [
         '{subject} ___ parte de la solución.',
-        '{subject} {was} part of the solution.',
+        '{subject} [{was}] part of the solution.',
       ],
     ],
     note: 'Ser and ir share all preterite forms. Here, ser describes a role: “was” or “were”.',
@@ -172,11 +172,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Después de comer, {subject} ___ un paseo por el parque.',
-        'After lunch, {subject} took a walk in the park.',
+        'After lunch, {subject} [took] a walk in the park.',
       ],
       [
         '{subject} ___ las gracias al mesero antes de salir.',
-        '{subject} thanked the waiter before leaving.',
+        '{subject} [thanked] the waiter before leaving.',
       ],
     ],
     note: 'Di and dio have no written accent.',
@@ -187,11 +187,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ una película mexicana anoche.',
-        '{subject} watched a Mexican movie last night.',
+        '{subject} [watched] a Mexican movie last night.',
       ],
       [
         'Desde la azotea, {subject} ___ el atardecer.',
-        'From the rooftop, {subject} saw the sunset.',
+        'From the rooftop, {subject} [saw] the sunset.',
       ],
     ],
     note: 'Vi and vio have no written accent.',
@@ -202,11 +202,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'En el camino, {subject} ___ una idea.',
-        'On the way, {subject} had an idea.',
+        'On the way, {subject} [had] an idea.',
       ],
       [
         'El domingo, {subject} ___ tiempo para caminar.',
-        'On Sunday, {subject} had time for a walk.',
+        'On Sunday, {subject} [had] time for a walk.',
       ],
     ],
     note: 'Tener → tuv-, with irregular endings and no accents.',
@@ -215,10 +215,13 @@ export const preteriteVerbs = {
     family: 'irregular',
     forms: ['hice', 'hiciste', 'hizo', 'hicimos', 'hicieron'],
     contexts: [
-      ['{llegar} a casa y ___ la cena.', '{subject} got home and made dinner.'],
+      [
+        '{llegar} a casa y ___ la cena.',
+        '{subject} got home and [made] dinner.',
+      ],
       [
         '{subject} ___ una reservación por teléfono.',
-        '{subject} made a reservation by phone.',
+        '{subject} [made] a reservation by phone.',
       ],
     ],
     note: 'Hacer → hic-, except hizo: z preserves the consonant sound before o.',
@@ -229,11 +232,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Al final, {subject} ___ la verdad.',
-        'In the end, {subject} told the truth.',
+        'In the end, {subject} [told] the truth.',
       ],
       [
         'Durante la cena, {subject} ___ algo interesante.',
-        'During dinner, {subject} said something interesting.',
+        'During dinner, {subject} [said] something interesting.',
       ],
     ],
     note: 'Decir → dij-. After j, use -eron: dijeron, not “dijieron”.',
@@ -244,11 +247,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'El lunes, {subject} ___ en casa todo el día.',
-        'On Monday, {subject} {was} home all day.',
+        'On Monday, {subject} [{was}] home all day.',
       ],
       [
         '{subject} ___ en el museo dos horas el sábado.',
-        '{subject} spent two hours at the museum on Saturday.',
+        '{subject} [spent] two hours at the museum on Saturday.',
       ],
     ],
     note: 'Estar → estuv-, with irregular endings and no accents.',
@@ -259,11 +262,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Esta mañana, {subject} ___ conseguir boletos.',
-        'This morning, {subject} managed to get tickets.',
+        'This morning, {subject} [managed to] get tickets.',
       ],
       [
         '{subject} ___ terminar a tiempo.',
-        '{subject} managed to finish on time.',
+        '{subject} [managed to] finish on time.',
       ],
     ],
     note: 'Poder → pud-. Here it means “managed to”.',
@@ -274,11 +277,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Antes de cenar, {subject} ___ la mesa.',
-        'Before dinner, {subject} set the table.',
+        'Before dinner, {subject} [set] the table.',
       ],
       [
         '{llegar} a casa y ___ música para cocinar.',
-        '{subject} got home and put on music to cook.',
+        '{subject} got home and [put on] music to cook.',
       ],
     ],
     note: 'Poner → pus-, with irregular endings and no accents.',
@@ -289,11 +292,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ en metro a la reunión.',
-        '{subject} came to the meeting by metro.',
+        '{subject} [came] to the meeting by metro.',
       ],
       [
         'El sábado, {subject} ___ a la fiesta.',
-        'On Saturday, {subject} came to the party.',
+        'On Saturday, {subject} [came] to the party.',
       ],
     ],
     note: 'Venir → vin-. Vino has no accent.',
@@ -304,11 +307,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'En el restaurante, {subject} ___ probar algo nuevo.',
-        'At the restaurant, {subject} wanted to try something new.',
+        'At the restaurant, {subject} [wanted] to try something new.',
       ],
       [
         '{subject} ___ ayudar con la cena.',
-        '{subject} wanted to help with dinner.',
+        '{subject} [wanted] to help with dinner.',
       ],
     ],
     note: 'Querer → quis-, with irregular endings and no accents.',
@@ -319,11 +322,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ la noticia por la radio.',
-        '{subject} found out the news on the radio.',
+        '{subject} [found out] the news on the radio.',
       ],
       [
         'Al terminar el partido, {subject} ___ el resultado.',
-        'After the match, {subject} found out the result.',
+        'After the match, {subject} [found out] the result.',
       ],
     ],
     note: 'Saber → sup-. Here it means “found out”.',
@@ -334,11 +337,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ pan dulce para el desayuno.',
-        '{subject} brought sweet bread for breakfast.',
+        '{subject} [brought] sweet bread for breakfast.',
       ],
       [
         'Para la reunión, {subject} ___ algo para compartir.',
-        'For the gathering, {subject} brought something to share.',
+        'For the gathering, {subject} [brought] something to share.',
       ],
     ],
     note: 'Traer → traj-. After j, use -eron: trajeron.',
@@ -349,11 +352,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'El domingo, {subject} ___ por el centro.',
-        'On Sunday, {subject} walked around downtown.',
+        'On Sunday, {subject} [walked] around downtown.',
       ],
       [
         '{subject} ___ por el parque después de comer.',
-        '{subject} walked around the park after lunch.',
+        '{subject} [walked] around the park after lunch.',
       ],
     ],
     note: 'Andar → anduv-, like tuv- and estuv-.',
@@ -364,11 +367,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'El viernes, {subject} ___ hasta Puebla.',
-        'On Friday, {subject} drove to Puebla.',
+        'On Friday, {subject} [drove] to Puebla.',
       ],
       [
         '{subject} ___ por la ciudad de noche.',
-        '{subject} drove through the city at night.',
+        '{subject} [drove] through the city at night.',
       ],
     ],
     note: 'Conducir → conduj-. After j, use -eron: condujeron.',
@@ -379,11 +382,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Antes de salir, {subject} ___ las llaves.',
-        'Before leaving, {subject} looked for the keys.',
+        'Before leaving, {subject} [looked for] the keys.',
       ],
       [
         '{subject} ___ una cafetería cerca de la plaza.',
-        '{subject} looked for a café near the square.',
+        '{subject} [looked for] a café near the square.',
       ],
     ],
   },
@@ -393,11 +396,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ a tiempo a la cita.',
-        '{subject} arrived on time for the appointment.',
+        '{subject} [arrived] on time for the appointment.',
       ],
       [
         '{subject} ___ antes de la lluvia.',
-        '{subject} arrived before the rain.',
+        '{subject} [arrived] before the rain.',
       ],
     ],
   },
@@ -407,11 +410,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ un libro nuevo durante el viaje.',
-        '{subject} started a new book during the trip.',
+        '{subject} [started] a new book during the trip.',
       ],
       [
         'El mes pasado, {subject} ___ a estudiar español.',
-        'Last month, {subject} started studying Spanish.',
+        'Last month, {subject} [started] studying Spanish.',
       ],
     ],
   },
@@ -421,11 +424,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ con tarjeta en la tienda.',
-        '{subject} paid by card at the store.',
+        '{subject} [paid] by card at the store.',
       ],
       [
         'Después de cenar, {subject} ___ la cuenta.',
-        'After dinner, {subject} paid the bill.',
+        'After dinner, {subject} [paid] the bill.',
       ],
     ],
   },
@@ -435,11 +438,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'En la cafetería, {subject} ___ un café de olla.',
-        'At the café, {subject} ordered a café de olla.',
+        'At the café, {subject} [ordered] a café de olla.',
       ],
       [
         '{subject} ___ la cuenta al terminar.',
-        '{subject} asked for the bill at the end.',
+        '{subject} [asked for] the bill at the end.',
       ],
     ],
   },
@@ -449,11 +452,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Anoche, {subject} ___ ocho horas.',
-        'Last night, {subject} slept for eight hours.',
+        'Last night, {subject} [slept] for eight hours.',
       ],
       [
         '{subject} ___ muy bien después del viaje.',
-        '{subject} slept very well after the trip.',
+        '{subject} [slept] very well after the trip.',
       ],
     ],
   },
@@ -463,11 +466,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ el temblor de madrugada.',
-        '{subject} felt the earthquake in the early morning.',
+        '{subject} [felt] the earthquake in the early morning.',
       ],
       [
         'Al escuchar la noticia, {subject} ___ mucha alegría.',
-        'Upon hearing the news, {subject} felt a lot of joy.',
+        'Upon hearing the news, {subject} [felt] a lot of joy.',
       ],
     ],
   },
@@ -477,11 +480,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ la comida al mediodía.',
-        '{subject} served the food at noon.',
+        '{subject} [served] the food at noon.',
       ],
       [
         '{llegar} a casa y ___ el café.',
-        '{subject} got home and served the coffee.',
+        '{subject} got home and [served] the coffee.',
       ],
     ],
   },
@@ -491,11 +494,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{ir} a un restaurante y ___ el menú.',
-        '{subject} went to a restaurant and read the menu.',
+        '{subject} went to a restaurant and [read] the menu.',
       ],
       [
         'Antes de dormir, {subject} ___ un cuento.',
-        'Before bed, {subject} read a short story.',
+        'Before bed, {subject} [read] a short story.',
       ],
     ],
   },
@@ -505,11 +508,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         '{subject} ___ música en la plaza el domingo.',
-        '{subject} heard music in the square on Sunday.',
+        '{subject} [heard] music in the square on Sunday.',
       ],
       [
         'De pronto, {subject} ___ un ruido en la calle.',
-        'Suddenly, {subject} heard a noise in the street.',
+        'Suddenly, {subject} [heard] a noise in the street.',
       ],
     ],
   },
@@ -519,9 +522,12 @@ export const preteriteVerbs = {
     contexts: [
       [
         'Al principio, {subject} ___ la historia.',
-        'At first, {subject} believed the story.',
+        'At first, {subject} [believed] the story.',
       ],
-      ['{subject} ___ que era una broma.', '{subject} thought it was a joke.'],
+      [
+        '{subject} ___ que era una broma.',
+        '{subject} [thought] it was a joke.',
+      ],
     ],
   },
   construir: {
@@ -536,11 +542,11 @@ export const preteriteVerbs = {
     contexts: [
       [
         'El verano pasado, {subject} ___ una mesa de madera.',
-        'Last summer, {subject} built a wooden table.',
+        'Last summer, {subject} [built] a wooden table.',
       ],
       [
         'En la playa, {subject} ___ un castillo de arena.',
-        'At the beach, {subject} built a sandcastle.',
+        'At the beach, {subject} [built] a sandcastle.',
       ],
     ],
     note: 'Construir → construyó, construyeron. Unlike leer, tú and nosotros have no accent: construiste, construimos.',

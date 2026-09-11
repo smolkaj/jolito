@@ -79,8 +79,8 @@ export function grammarContext(card: GrammarCard) {
       .replace('{ir}', cueSubject + preteriteVerbs.ir.forms[person]!)
       .replace('{llegar}', cueSubject + preteriteVerbs.llegar.forms[person]!),
   )
-  const translation = capitalize(
-    english
+  const translate = (text: string) =>
+    text
       .replace('{have}', person === 2 && variant === 0 ? 'has' : 'have')
       .replace(
         '{be}',
@@ -90,8 +90,20 @@ export function grammarContext(card: GrammarCard) {
       .replace(
         '{was}',
         person === 0 || (person === 2 && variant === 0) ? 'was' : 'were',
-      ),
-  )
+      )
+  const subjectIsPronoun = variant === 1 || (person !== 2 && person !== 4)
+  const translationParts = english
+    .split(/(\[[^\]]+\]|\{subject\})/)
+    .filter(Boolean)
+    .map((part, index) => {
+      const isVerb = part.startsWith('[')
+      const text = translate(isVerb ? part.slice(1, -1) : part)
+      return {
+        text: index === 0 ? capitalize(text) : text,
+        isAnswer: isVerb || (part === '{subject}' && subjectIsPronoun),
+      }
+    })
+  const translation = translationParts.map((part) => part.text).join('')
   const family = grammarTopics[card.grammar.topic].families.find(
     (family) => family.id === verb.family,
   )!
@@ -100,6 +112,7 @@ export function grammarContext(card: GrammarCard) {
     spokenPrompt: sentence.replace('___', '…'),
     completed: sentence.replace('___', card.answer),
     translation,
+    translationParts,
     explanation:
       'rule' in family
         ? (verb.note ?? family.rule)

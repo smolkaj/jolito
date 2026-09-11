@@ -216,3 +216,14 @@ ellipsis measured an internal quiet gap of about 260–270ms with both neural vo
 Timing remains voice-dependent, including native fallback. Context contracts verify
 that prompt audio contains exactly the sentence’s remaining words; browser contracts
 retain both-voice prefetch, offline recall, interruption/resume and teardown coverage.
+
+### English alignment during practice
+
+English context templates mark the verb corresponding to the Spanish blank with
+square brackets. Phrasal verbs stay together (`[found out]`); split auxiliaries
+preserve intervening words (`[{have}] never [talked]`). `grammarContext` resolves
+these into text parts and derives the plain translation from those same parts.
+The marked verb and English subject pronouns share the Spanish answer's pink
+accent during both recall and reveal. Names and noun subjects remain neutral.
+English highlighting stays stable as the learner reveals the Spanish answer. The markers are authored catalog
+metadata, never stored in learner cards or sent to speech playback.
