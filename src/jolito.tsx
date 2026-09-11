@@ -197,6 +197,13 @@ function DeleteCardsModal({
   onClose: () => void
   onConfirm: (cards: StudyCard[]) => void
 }) {
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const errorRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    if (!isOpen || !saveError) return
+    errorRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [isOpen, saveError, submitAttempt])
+
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -223,12 +230,6 @@ function DeleteCardsModal({
         aria-labelledby="delete-card-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        {saveError && (
-          <p role="alert">
-            Your changes couldn’t be saved. Free up device storage, then try
-            again.
-          </p>
-        )}
         <div className="modal-header">
           <div className="modal-header-copy">
             <h2 id="delete-card-modal-title">
@@ -286,6 +287,13 @@ function DeleteCardsModal({
           </div>
         )}
 
+        {saveError && (
+          <p ref={errorRef} role="alert">
+            Your changes couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
+
         <div className="delete-modal-actions">
           <button type="button" className="secondary-button" onClick={onClose}>
             Cancel
@@ -293,7 +301,10 @@ function DeleteCardsModal({
           <button
             type="button"
             className="danger-button"
-            onClick={() => onConfirm(cards)}
+            onClick={() => {
+              setSubmitAttempt((attempt) => attempt + 1)
+              onConfirm(cards)
+            }}
           >
             {isSingle ? 'Delete card' : `Delete ${cards.length} cards`}
           </button>
