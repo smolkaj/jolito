@@ -69,7 +69,7 @@ import type { StarterPack } from './domain/starter-decks'
 import { mergeStudyCardsSemantic } from './domain/card-merge'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { downloadJsonFile } from './infrastructure/browser/download'
-import { createBrowserServices } from './infrastructure/browser/services'
+import { initializeBrowserServices } from './infrastructure/browser/services'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
 import {
   type View,
@@ -923,10 +923,23 @@ export function App({
 }: {
   services?: AppServices
 } = {}) {
-  const services = useMemo(
-    () => customServices ?? createBrowserServices(),
-    [customServices],
+  const [initialized, setInitialized] = useState(() =>
+    customServices
+      ? { status: 'ready' as const, services: customServices }
+      : initializeBrowserServices(),
   )
+  if (initialized.status === 'recovery') {
+    return (
+      <StorageRecovery
+        recovery={initialized}
+        onRetry={() => setInitialized(initializeBrowserServices())}
+      />
+    )
+  }
+  return <AppWithServices services={initialized.services} />
+}
+
+function AppWithServices({ services }: { services: AppServices }) {
   const [loaded, setLoaded] = useState(() => services.cards.load(starterCards))
   if (loaded.status === 'recovery') {
     return (

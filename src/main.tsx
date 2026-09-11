@@ -2,31 +2,45 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 import { App } from './jolito'
+import { StorageRecovery } from './ui/StorageRecovery'
 import { enforceCanonicalHost } from './infrastructure/browser/host'
-import { createBrowserServices } from './infrastructure/browser/services'
+import { initializeBrowserServices } from './infrastructure/browser/services'
 import celebrateUrl from '../assets/jolito-celebrate.webp'
 import logoUrl from '../assets/jolito-welcome.webp'
 
 const isRedirecting = enforceCanonicalHost()
 
 if (!isRedirecting) {
-  const services = createBrowserServices()
-
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App services={services} />
-    </StrictMode>,
-  )
-
-  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      void prepareOfflineShell(services)
-    })
+  const root = createRoot(document.getElementById('root')!)
+  const start = () => {
+    const initialized = initializeBrowserServices()
+    if (initialized.status === 'recovery') {
+      root.render(<StorageRecovery recovery={initialized} onRetry={start} />)
+      return
+    }
+    const services = initialized.services
+    root.render(
+      <StrictMode>
+        <App services={services} />
+      </StrictMode>,
+    )
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+      if (document.readyState === 'complete') void prepareOfflineShell(services)
+      else
+        window.addEventListener(
+          'load',
+          () => {
+            void prepareOfflineShell(services)
+          },
+          { once: true },
+        )
+    }
   }
+  start()
 }
 
 async function prepareOfflineShell(
-  services: ReturnType<typeof createBrowserServices>,
+  services: import('./application/ports').AppServices,
 ) {
   if (typeof Image !== 'undefined') {
     const imgCelebrate = new Image()

@@ -5,6 +5,7 @@ import { OfflineCardAssistant } from '../../application/card-assistant'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import {
   createBrowserServices,
+  initializeBrowserServices,
   RandomIdGenerator,
   SystemClock,
 } from './services'
@@ -36,6 +37,47 @@ describe('createBrowserServices', () => {
     speakerSpy.mockRestore()
     assistantSpy.mockRestore()
   })
+
+  it.each(['getter', 'read', 'write'] as const)(
+    'does not partially initialize services when storage %s is denied, then retries',
+    (failure) => {
+      const storage = window.localStorage
+      storage.removeItem('jolito-device-id-v1')
+      const prewarm = vi
+        .spyOn(LayeredNeuralSpeaker.prototype, 'prewarm')
+        .mockResolvedValue(true)
+      const dictionary = vi
+        .spyOn(OfflineCardAssistant.prototype, 'loadDictionary')
+        .mockResolvedValue(true)
+      const denial = () => {
+        throw new DOMException('Access denied', 'SecurityError')
+      }
+      const access =
+        failure === 'getter'
+          ? vi.spyOn(window, 'localStorage', 'get').mockImplementation(denial)
+          : vi
+              .spyOn(
+                Storage.prototype,
+                failure === 'read' ? 'getItem' : 'setItem',
+              )
+              .mockImplementation(denial)
+      expect(initializeBrowserServices()).toMatchObject({
+        status: 'recovery',
+        reason: 'unavailable',
+        raw: null,
+      })
+      expect(prewarm).not.toHaveBeenCalled()
+      expect(dictionary).not.toHaveBeenCalled()
+      access.mockRestore()
+      const ready = initializeBrowserServices()
+      expect(ready.status).toBe('ready')
+      expect(prewarm).toHaveBeenCalledOnce()
+      expect(dictionary).toHaveBeenCalledOnce()
+      if (ready.status === 'ready') ready.services.auth.destroy?.()
+      prewarm.mockRestore()
+      dictionary.mockRestore()
+    },
+  )
 
   it('uses device speech on native platforms without prewarming network audio', () => {
     const platform = vi

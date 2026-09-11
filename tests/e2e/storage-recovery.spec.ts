@@ -56,3 +56,48 @@ for (const viewport of [
     ).toBe(JSON.stringify({ version: 3, cards: [] }))
   })
 }
+
+test('recovers from browser storage denial before creating auth or sync services', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.addInitScript(() => {
+    const storage = window.localStorage
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('Access denied', 'SecurityError')
+      },
+    })
+    window.addEventListener(
+      'restore-storage-access',
+      () => {
+        Object.defineProperty(window, 'localStorage', {
+          configurable: true,
+          value: storage,
+        })
+      },
+      { once: true },
+    )
+  })
+  await page.goto('/')
+  await expect(
+    page.getByRole('heading', { name: 'Let’s protect your saved deck' }),
+  ).toBeVisible()
+  await expect(page.getByText(/couldn’t access device storage/i)).toBeVisible()
+  await page.getByRole('button', { name: 'Try again' }).click()
+  expect(errors).toEqual([])
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event('restore-storage-access')),
+  )
+  await page.getByRole('button', { name: 'Try again' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Create a card' }),
+  ).toBeVisible()
+  await page.locator('html[data-offline-ready="true"]').waitFor()
+  expect(errors).toEqual([])
+  expect(
+    await page.evaluate(() => localStorage.getItem('jolito-device-id-v1')),
+  ).toBeTruthy()
+})
