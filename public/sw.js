@@ -36,6 +36,41 @@ const REQUIRED_URLS = Array.from(
   ]),
 )
 
+// A static host can substitute the SPA document for a missing asset with HTTP
+// 200. Both installation and readiness must validate the cached responses, not
+// just transport success. This inventory contains one HTML document: the root.
+async function verifyShell(cache) {
+  await Promise.all(
+    REQUIRED_URLS.map(async (url) => {
+      const response = await cache.match(url)
+      if (!response?.ok)
+        throw new Error(`Required offline asset is missing: ${url}`)
+      if (url === shellUrl) {
+        const html = await response.text()
+        if (
+          !html.includes(`<meta name="jolito-build" content="${BUILD_ID}">`)
+        ) {
+          throw new Error('Offline HTML belongs to a different build')
+        }
+      } else {
+        const contentType = response.headers
+          .get('Content-Type')
+          ?.split(';')[0]
+          .trim()
+          .toLowerCase()
+        if (
+          contentType === 'text/html' ||
+          contentType === 'application/xhtml+xml'
+        ) {
+          throw new Error(
+            `Required offline asset was replaced with HTML: ${url}`,
+          )
+        }
+      }
+    }),
+  )
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -50,12 +85,7 @@ self.addEventListener('install', (event) => {
               }),
           ),
         )
-        const html = await (await cache.match(shellUrl)).text()
-        if (
-          !html.includes(`<meta name="jolito-build" content="${BUILD_ID}">`)
-        ) {
-          throw new Error('Offline HTML belongs to a different build')
-        }
+        await verifyShell(cache)
       } catch (error) {
         await caches.delete(CACHE_NAME)
         throw error
@@ -92,14 +122,8 @@ self.addEventListener('message', (event) => {
           return
         }
         const cache = await caches.open(CACHE_NAME)
-        const responses = await Promise.all(
-          REQUIRED_URLS.map((url) => cache.match(url)),
-        )
-        event.ports[0]?.postMessage(
-          responses.every((response) => response?.ok)
-            ? 'cached'
-            : 'cache-error',
-        )
+        await verifyShell(cache)
+        event.ports[0]?.postMessage('cached')
       } catch {
         event.ports[0]?.postMessage('cache-error')
       }

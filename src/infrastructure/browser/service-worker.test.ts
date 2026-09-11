@@ -18,6 +18,7 @@ function browser() {
   const stores = new Map<string, Map<string, Response>>()
   let failure: 'network' | 'http' | 'quota' | null = null
   let revision = 'old'
+  let fallbackPath: string | undefined
   const key = (input: string | FetchRequest) =>
     new URL(typeof input === 'string' ? input : input.url, origin).pathname
   const fetch = vi.fn((input: string | FetchRequest) => {
@@ -27,6 +28,12 @@ function browser() {
         `${revision}:${key(input)}<meta name="jolito-build" content="${revision}">`,
         {
           status: failure === 'http' ? 503 : 200,
+          headers: {
+            'Content-Type':
+              key(input) === '/' || key(input) === fallbackPath
+                ? 'text/html; charset=utf-8'
+                : 'application/octet-stream',
+          },
         },
       ),
     )
@@ -108,6 +115,9 @@ function browser() {
     fail: (next: typeof failure) => {
       failure = next
     },
+    substituteHtml: (path?: string) => {
+      fallbackPath = path
+    },
     upgrade: () => {
       revision = 'new'
     },
@@ -141,6 +151,40 @@ describe('complete offline shell lifecycle', () => {
       const recovered = await recoveredWorker.dispatch('fetch', env.navigation)
       expect(await recovered.response?.text()).toContain('new:/')
       const ready = await recoveredWorker.dispatch('message', {
+        data: { type: 'CHECK_OFFLINE_READY', buildId: 'new' },
+      })
+      expect(ready.reply).toHaveBeenCalledWith('cached')
+    },
+  )
+
+  it.each([
+    '/assets/app.js',
+    '/assets/app.css',
+    '/dict/es-en.json',
+    '/favicon.svg',
+    '/fonts/bricolage-grotesque-normal-400-800-latin.woff2',
+  ])(
+    'preserves the old shell when %s is replaced with HTTP 200 HTML, then recovers',
+    async (path) => {
+      const env = browser()
+      const old = env.worker('old')
+      await old.dispatch('install')
+      await old.dispatch('activate')
+      env.upgrade()
+      env.substituteHtml(path)
+      const broken = env.worker('new')
+      await expect(broken.dispatch('install')).rejects.toThrow('HTML')
+      expect(env.stores.has('jolito-shell-new')).toBe(false)
+      expect(broken.claim).not.toHaveBeenCalled()
+      env.fail('network')
+      const offline = await old.dispatch('fetch', env.navigation)
+      expect(await offline.response?.text()).toContain('old:/')
+      env.fail(null)
+      env.substituteHtml()
+      const recovered = env.worker('new')
+      await recovered.dispatch('install')
+      await recovered.dispatch('activate')
+      const ready = await recovered.dispatch('message', {
         data: { type: 'CHECK_OFFLINE_READY', buildId: 'new' },
       })
       expect(ready.reply).toHaveBeenCalledWith('cached')
@@ -188,6 +232,16 @@ describe('complete offline shell lifecycle', () => {
       data: { type: 'CHECK_OFFLINE_READY', buildId: 'new' },
     })
     expect(mismatched.reply).toHaveBeenCalledWith('cache-error')
+    env.stores.get('jolito-shell-old')!.set(
+      '/assets/app.js',
+      new Response('<html>fallback</html>', {
+        headers: { 'Content-Type': 'text/html' },
+      }),
+    )
+    const substituted = await worker.dispatch('message', {
+      data: { type: 'CHECK_OFFLINE_READY', buildId: 'old' },
+    })
+    expect(substituted.reply).toHaveBeenCalledWith('cache-error')
     env.stores.get('jolito-shell-old')!.delete('/assets/app.js')
     const missing = await worker.dispatch('message', {
       data: { type: 'CHECK_OFFLINE_READY', buildId: 'old' },
