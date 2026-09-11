@@ -3535,7 +3535,10 @@ describe('Jolito', () => {
       createdAt: 0,
     }
 
-    services.cards.load = () => [longCard, mediumCard, shortCard]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [longCard, mediumCard, shortCard],
+    })
 
     render(<App services={services} />)
 
@@ -3971,7 +3974,10 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB, cardC]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [cardA, cardB, cardC],
+    })
     render(<App services={services} />)
 
     // Start practice session
@@ -4059,7 +4065,7 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA, cardB] })
     render(<App services={services} />)
 
     await practiceCards(user)
@@ -4198,7 +4204,7 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA] })
     render(<App services={services} />)
 
     await practiceCards(user)
@@ -4248,7 +4254,7 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA] })
     render(<App services={services} />)
 
     await practiceCards(user)
@@ -4338,7 +4344,10 @@ describe('Jolito', () => {
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB, cardC]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [cardA, cardB, cardC],
+    })
     render(<App services={services} />)
 
     // Start practice with 3 cards
@@ -4439,7 +4448,7 @@ describe('Jolito', () => {
       )
     }
 
-    services.cards.load = () => cards
+    services.cards.load = () => ({ status: 'loaded', cards: cards })
     render(<App services={services} />)
 
     // Start practice (queue gets 15 es-en cards, en-es siblings are outside the queue)
@@ -4516,7 +4525,7 @@ describe('Jolito', () => {
       )
     }
 
-    services.cards.load = () => cards
+    services.cards.load = () => ({ status: 'loaded', cards: cards })
     render(<App services={services} />)
 
     // Start practice (queue gets 2 cards: es-01, es-02; en-01 and en-02 are separated into secondary cohort)

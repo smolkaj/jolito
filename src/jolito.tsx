@@ -49,6 +49,7 @@ import {
   type GrammarCard,
 } from './domain/grammar'
 import { useGrammarPractice } from './ui/useGrammarPractice'
+import { StorageRecovery } from './ui/StorageRecovery'
 import { GrammarPractice } from './ui/GrammarPractice'
 import { PracticeMenu } from './ui/PracticeMenu'
 import { useStudySession } from './ui/useStudySession'
@@ -911,10 +912,25 @@ export function App({
     () => customServices ?? createBrowserServices(),
     [customServices],
   )
-  const initialCards = useMemo(
-    () => services.cards.load(starterCards),
-    [services.cards],
-  )
+  const [loaded, setLoaded] = useState(() => services.cards.load(starterCards))
+  if (loaded.status === 'recovery') {
+    return (
+      <StorageRecovery
+        recovery={loaded}
+        onRetry={() => setLoaded(services.cards.load(starterCards))}
+      />
+    )
+  }
+  return <LoadedApp services={services} initialCards={loaded.cards} />
+}
+
+function LoadedApp({
+  services,
+  initialCards,
+}: {
+  services: AppServices
+  initialCards: StudyCard[]
+}) {
   const initialResolved = useMemo<{
     view: View
     queue: string[]

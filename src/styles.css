@@ -5520,3 +5520,20 @@ kbd {
     animation-iteration-count: 1 !important;
   }
 }
+
+.storage-recovery {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+}
+
+.storage-recovery section {
+  max-width: 38rem;
+}
+
+.storage-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}

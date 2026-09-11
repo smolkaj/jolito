@@ -44,12 +44,14 @@ it('keeps a perfecto draft through tense selection and interruptions, then grade
   )
   await user.keyboard('4')
   expect(
-    services.cards.load([]).filter((card) => card.grammar?.topic === 'perfect'),
+    services.cards
+      .load([])
+      .cards.filter((card) => card.grammar?.topic === 'perfect'),
   ).toHaveLength(1)
   expect(
     services.cards
       .load([])
-      .filter((card) => card.grammar?.topic === 'preterite'),
+      .cards.filter((card) => card.grammar?.topic === 'preterite'),
   ).toHaveLength(0)
   app.unmount()
   const spoken = [...services.mockSpeaker.spoken]
