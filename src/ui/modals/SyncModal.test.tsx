@@ -8,7 +8,6 @@ describe('SyncModal Account Deletion and Legal', () => {
     const auth = new MockAuthService()
     auth.user = { id: 'user-del-1', email: 'delete-me@example.com' }
     const sync = new MockSyncService()
-    const deleteRemoteDeckSpy = vi.spyOn(sync, 'deleteRemoteDeck')
     const deleteAccountSpy = vi.spyOn(auth, 'deleteAccount')
 
     render(
@@ -76,10 +75,6 @@ describe('SyncModal Account Deletion and Legal', () => {
     fireEvent.click(newConfirmBtn)
 
     await waitFor(() => {
-      expect(deleteRemoteDeckSpy).toHaveBeenCalledWith({
-        id: 'user-del-1',
-        email: 'delete-me@example.com',
-      })
       expect(deleteAccountSpy).toHaveBeenCalled()
       expect(
         screen.getByText(/cloud account and backup data deleted/i),

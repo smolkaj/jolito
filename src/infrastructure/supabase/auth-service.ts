@@ -696,55 +696,56 @@ export class SupabaseAuthService implements AuthService {
     success: boolean
     error?: string | undefined
   }> {
-    const session = this.loadStoredSession()
-    const token = session?.accessToken
-
-    if (!token || !this.supabaseUrl || !this.supabaseAnonKey) {
-      this.clearSession()
-      return { success: true }
+    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+      return { success: false, error: 'Cloud sync backend is not configured.' }
     }
-
+    const userId = this.currentUser?.id
     try {
-      // 1. Permanently delete the user account in Supabase auth.users via RPC.
-      // Cascades to public.decks and public.feedback via foreign key ON DELETE CASCADE.
-      const rpcRes = await fetch(
-        `${this.supabaseUrl}/rest/v1/rpc/delete_user_account`,
-        {
+      const token = await this.getAccessToken()
+      if (!token || !userId || this.currentUser?.id !== userId) {
+        return {
+          success: false,
+          error: 'Sign in to delete your cloud account.',
+        }
+      }
+      // One database transaction deletes the account and cascades its owned data.
+      const removeAccount = (accessToken: string) =>
+        fetch(`${this.supabaseUrl}/rest/v1/rpc/delete_user_account`, {
           method: 'POST',
           headers: {
             apikey: this.supabaseAnonKey,
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({}),
-        },
-      )
-
-      if (!rpcRes.ok && rpcRes.status !== 404) {
-        const errorData = (await rpcRes.json().catch(() => ({}))) as {
-          message?: string
-          details?: string
-          msg?: string
+          signal: AbortSignal.timeout(10_000),
+        })
+      let response = await removeAccount(token)
+      if (response.status === 401) {
+        const refreshed = await this.refreshSession()
+        if (refreshed && this.currentUser?.id === userId) {
+          response = await removeAccount(refreshed)
         }
+      }
+      if (!response.ok) {
+        const parsed = z
+          .object({
+            message: z.string().optional(),
+            details: z.string().nullable().optional(),
+            msg: z.string().optional(),
+          })
+          .safeParse(await response.json().catch(() => null))
         return {
           success: false,
           error:
-            errorData.message ||
-            errorData.details ||
-            errorData.msg ||
-            `Failed to delete account (HTTP ${rpcRes.status}).`,
+            (parsed.success &&
+              (parsed.data.message ||
+                parsed.data.details ||
+                parsed.data.msg)) ||
+            `Failed to delete account (HTTP ${response.status}). Please try again.`,
         }
       }
-
-      // 2. Invalidate session tokens on the auth server
-      await fetch(`${this.supabaseUrl}/auth/v1/logout`, {
-        method: 'POST',
-        headers: {
-          apikey: this.supabaseAnonKey,
-          Authorization: `Bearer ${token}`,
-        },
-      }).catch(() => {})
-
+      if (this.currentUser?.id === userId) this.clearSession()
       return { success: true }
     } catch (err) {
       return {
@@ -752,8 +753,6 @@ export class SupabaseAuthService implements AuthService {
         error:
           err instanceof Error ? err.message : 'Error deleting cloud account.',
       }
-    } finally {
-      this.clearSession()
     }
   }
 
