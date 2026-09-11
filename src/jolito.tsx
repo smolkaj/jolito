@@ -1029,7 +1029,11 @@ function AppWithServices({ services }: { services: AppServices }) {
         success: false,
         error: 'Sign in to the same account before retrying its deletion.',
       }
+    let recoveringUnknownOutcome: boolean
     try {
+      const previous = repository.getPendingDeletion()
+      recoveringUnknownOutcome =
+        previous?.ownerId === owner && previous.phase === 'requested'
       repository.setPendingDeletion('requested')
     } catch {
       const error =
@@ -1049,7 +1053,8 @@ function AppWithServices({ services }: { services: AppServices }) {
             'Cloud deletion failed. Your local deck has been kept.',
         )
       try {
-        if (result.outcomeUnknown)
+        // A rejected retry cannot establish the original interrupted outcome.
+        if (result.outcomeUnknown || recoveringUnknownOutcome)
           setPendingDeletion({ ownerId: owner, phase: 'requested' })
         else {
           repository.setPendingDeletion(null)

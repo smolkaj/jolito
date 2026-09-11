@@ -203,10 +203,18 @@ test('keeps an interrupted cloud outcome across reload and retries only the orig
   ).toContain('A-private')
   await page.getByRole('button', { name: 'Retry cloud deletion' }).click()
   await expect(
-    page.getByRole('row', { name: /card: A-private,/i }),
+    page.getByText('Cloud deletion unavailable. Local cards retained.'),
   ).toBeVisible()
   await expect(
-    page.getByText('Cloud deletion unavailable. Local cards retained.'),
+    page.getByRole('button', { name: 'Retry cloud deletion' }),
+  ).toBeVisible()
+  await page.reload()
+  await expect(
+    page.getByRole('button', { name: 'Keep local deck' }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Keep local deck' }).click()
+  await expect(
+    page.getByRole('row', { name: /card: A-private,/i }),
   ).toBeVisible()
   await page.reload()
   await expect(
@@ -462,9 +470,13 @@ test('releases a live deletion when its tab closes and recovers the durable requ
   await page.close()
   await other.getByRole('button', { name: 'Retry cloud deletion' }).click()
   await expect(
-    other.getByRole('row', { name: /card: A-private,/i }),
+    other.getByText('Deletion unavailable; your cards are safe.'),
+  ).toBeVisible()
+  await expect(
+    other.getByRole('button', { name: 'Retry cloud deletion' }),
   ).toBeVisible()
   await other.reload()
+  await other.getByRole('button', { name: 'Keep local deck' }).click()
   await expect(
     other.getByRole('row', { name: /card: A-private,/i }),
   ).toBeVisible()
