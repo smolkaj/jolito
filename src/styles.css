@@ -5355,23 +5355,26 @@ kbd {
 
 .delete-confirm-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: flex-end;
 }
 
 .delete-confirm-actions .cancel-delete-btn {
-  height: 38px;
+  flex: 1 0 auto;
+  height: auto;
   min-height: 38px;
-  padding: 0 16px;
+  padding: 8px 16px;
   font-size: 13px;
   border-radius: var(--pill-radius);
 }
 
 .delete-confirm-actions .confirm-delete-btn {
-  height: 38px;
+  flex: 1 0 auto;
+  height: auto;
   min-height: 38px;
-  padding: 0 16px;
+  padding: 8px 16px;
   font-size: 13px;
   border-radius: var(--pill-radius);
   background: var(--tezontle-dark);

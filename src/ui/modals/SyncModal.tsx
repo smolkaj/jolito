@@ -75,6 +75,16 @@ export function SyncModal({
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const statusRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (statusMsg?.type === 'error') {
+      statusRef.current?.scrollIntoView({
+        block: 'center',
+        behavior: 'instant',
+      })
+    }
+  }, [statusMsg])
 
   const handleOpenDeleteConfirm = () => {
     setIsConfirmingDelete(true)
@@ -285,6 +295,18 @@ export function SyncModal({
     }
   }
 
+  const statusBanner = statusMsg && (
+    <div
+      ref={statusRef}
+      className={`status-banner status-${statusMsg.type}`}
+      role={statusMsg.type === 'error' ? 'alert' : 'status'}
+    >
+      <p>{statusMsg.message}</p>
+    </div>
+  )
+  const showDeletionError =
+    user && isConfirmingDelete && statusMsg?.type === 'error'
+
   return (
     <div className="modal-backdrop" onClick={handleClose} role="presentation">
       <div
@@ -317,14 +339,7 @@ export function SyncModal({
           </button>
         </div>
 
-        {statusMsg && (
-          <div
-            className={`status-banner status-${statusMsg.type}`}
-            role={statusMsg.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{statusMsg.message}</p>
-          </div>
-        )}
+        {!showDeletionError && statusBanner}
 
         {!isBackendConfigured && !user ? (
           <div className="sync-notice-card">
@@ -444,6 +459,7 @@ export function SyncModal({
                   />
                 </div>
 
+                {showDeletionError && statusBanner}
                 <div className="delete-confirm-actions">
                   <button
                     type="button"
