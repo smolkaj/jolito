@@ -197,6 +197,16 @@ npm run test:e2e                # runs full desktop and mobile touch target audi
 maestro test tests/native/smoke.yaml
 ```
 
+The required iOS CI gate includes compilation and the actual bundled app on
+iPhone and iPad. Its XCTest checks first launch, a draft across background/resume,
+resumed input, termination and a fresh launch. Cold Simulator WebKit startup has
+exceeded 35 seconds in recorded runs, so readiness has a bounded 90-second budget;
+this is a test-runner allowance, not a product startup performance target. The
+test waits for accessible controls and painted content and does not retry failed
+launches. Each run retains its screenshots and XCTest diagnostics as artifacts.
+Scene windows are created only by `SceneDelegate`; the launch-screen storyboard
+does not create the application window.
+
 ### Releasing to TestFlight and the App Store
 
 Follow the [App Store Release Guide](APP_STORE.md) for enrollment, signing,
