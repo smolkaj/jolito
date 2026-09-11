@@ -249,7 +249,7 @@ repository secrets before enabling production delivery:
 
 - Existing `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_ID` (or
   `SUPABASE_PROJECT_REF`). The script obtains the runtime service-role key
-  through the Management API; it is never printed or stored in Git.
+  through the Management API; it is never exposed in logs or stored in Git.
 - `CLOUDFLARE_API_TOKEN`: Workers Scripts Edit for the Jolito account, Zone Read
   and Email Routing Rules Read for `joli.to`, and Email Routing Addresses Read
   for its account. Use a scoped token; this script does not buy a plan or enable

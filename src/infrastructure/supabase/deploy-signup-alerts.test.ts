@@ -14,6 +14,7 @@ vi.mock('../../../scripts/cf-utils.ts', () => ({
   loadEnvLocal: vi.fn(),
 }))
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.resetAllMocks()
   vi.unstubAllGlobals()
 })
@@ -74,9 +75,14 @@ describe('signup worker deployment', () => {
           Response.json([{ name: 'service_role', api_key: 'test-secret-key' }]),
         ),
     )
+    const masks = vi.spyOn(console, 'log').mockImplementation(() => {})
     let configPath = ''
     let secretsPath = ''
     vi.mocked(execFileSync).mockImplementation((_file, args) => {
+      expect(masks.mock.calls).toEqual([
+        ['::add-mask::maintainer@example.com'],
+        ['::add-mask::test-secret-key'],
+      ])
       const argumentsList = args as string[]
       configPath = argumentsList[3]!
       secretsPath = argumentsList[5]!
@@ -97,6 +103,7 @@ describe('signup worker deployment', () => {
       return Buffer.from('')
     })
     await deploySignupAlerts({
+      GITHUB_ACTIONS: 'true',
       CLOUDFLARE_API_TOKEN: 'test-cf',
       SUPABASE_ACCESS_TOKEN: 'test-sb',
       SUPABASE_PROJECT_ID: 'testproject',

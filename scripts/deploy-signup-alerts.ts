@@ -119,6 +119,18 @@ export async function deploySignupAlerts(
   const serviceKey = keys.find((key) => key.name === 'service_role')?.api_key
   if (!serviceKey) throw new Error('Supabase service_role key is unavailable')
 
+  // Wrangler prints the binding destination. Mask dynamically resolved values
+  // before invoking it in the public Actions log.
+  if (env.GITHUB_ACTIONS === 'true') {
+    for (const value of [recipient, serviceKey]) {
+      const escaped = value
+        .replace(/%/g, '%25')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+      console.log(`::add-mask::${escaped}`)
+    }
+  }
+
   mkdirSync('.wrangler', { recursive: true })
   const directory = mkdtempSync('.wrangler/signup-alerts-')
   try {
