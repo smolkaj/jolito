@@ -12,7 +12,7 @@ import familyLogoUrl from '../assets/jolito-family.webp'
 import logoUrl from '../assets/jolito-welcome.webp'
 import sampleAguacateUrl from '../assets/sample-aguacate.webp'
 import { createCards } from './application/create-cards'
-import { importAnkiDeck } from './application/anki-import'
+import { applyAnkiImport } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'
 import { syncDeckWithCloud } from './application/deck-sync'
 import type {
@@ -61,7 +61,7 @@ import {
 } from './application/deck-management'
 import { findDuplicateNoteCards, getDuplicateGroups } from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
-import { parseAnkiDeck } from './domain/anki-import'
+import { parseAnkiDeck, type ParseAnkiResult } from './domain/anki-import'
 import { reconcileStudyCards, type SyncStatus } from './domain/sync'
 import { StarterPacksModal } from './ui/modals/StarterPacksModal'
 import type { StarterPack } from './domain/starter-decks'
@@ -329,22 +329,20 @@ function DeckBackupModalInner({
     message: string
     details?: string[] | undefined
   } | null>(null)
-  const [selectedImportData, setSelectedImportData] = useState<{
-    fileData: ArrayBuffer | string
-    filename: string
-    count: number
-    deckName?: string | undefined
-    stats?:
-      | { newCount: number; reviewCount: number; learningCount: number }
-      | undefined
-  } | null>(null)
+  const [selectedImportData, setSelectedImportData] = useState<Extract<
+    ParseAnkiResult,
+    { success: true }
+  > | null>(null)
   const [isParsingImport, setIsParsingImport] = useState(false)
+  const importReadState = useRef({ generation: 0 })
   const [isExported, setIsExported] = useState(false)
   const exportedTimerRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    const importState = importReadState.current
     return () => {
+      importState.generation++
       if (exportedTimerRef.current !== null) {
         window.clearTimeout(exportedTimerRef.current)
       }
@@ -367,21 +365,19 @@ function DeckBackupModalInner({
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const generation = ++importReadState.current.generation
+    setSelectedImportData(null)
     setIsParsingImport(true)
     setBackupStatus(null)
 
     try {
       const buffer = await file.arrayBuffer()
+      if (generation !== importReadState.current.generation) return
       const parsed = await parseAnkiDeck(buffer, file.name, clock.now())
+      if (generation !== importReadState.current.generation) return
       setIsParsingImport(false)
       if (parsed.success) {
-        setSelectedImportData({
-          fileData: buffer,
-          filename: file.name,
-          count: parsed.count,
-          deckName: parsed.deckName,
-          stats: parsed.stats,
-        })
+        setSelectedImportData(parsed)
         const deckInfo = parsed.deckName ? ` from “${parsed.deckName}”` : ''
         const statsInfo = parsed.stats
           ? ` (${parsed.stats.newCount} new, ${parsed.stats.reviewCount} review)`
@@ -399,6 +395,7 @@ function DeckBackupModalInner({
         })
       }
     } catch (err) {
+      if (generation !== importReadState.current.generation) return
       setIsParsingImport(false)
       setSelectedImportData(null)
       setBackupStatus({
@@ -408,14 +405,14 @@ function DeckBackupModalInner({
     }
   }
 
-  const handleRestore = async () => {
+  const handleRestore = () => {
     if (!selectedImportData) return
-    const result = await importAnkiDeck(
+    // Commit the validated preview synchronously against the latest rendered deck.
+    // A second asynchronous parse would capture stale cards during background sync.
+    const result = applyAnkiImport(
       cards,
-      selectedImportData.fileData,
+      selectedImportData,
       mode,
-      clock,
-      selectedImportData.filename,
       deletedCardIds,
     )
     if (result.success) {

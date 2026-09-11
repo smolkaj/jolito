@@ -1,8 +1,7 @@
 import type { StudyCard } from '../domain/card'
 import { mergeStudyCardsSemantic } from '../domain/card-merge'
-import { parseAnkiDeck, type AnkiImportStats } from '../domain/anki-import'
+import type { AnkiImportStats, ParseAnkiResult } from '../domain/anki-import'
 import type { RestoreMode } from './deck-backup'
-import type { Clock } from './ports'
 
 export type ImportAnkiResult =
   | {
@@ -20,15 +19,12 @@ export type ImportAnkiResult =
       details?: string[] | undefined
     }
 
-export async function importAnkiDeck(
+export function applyAnkiImport(
   currentCards: StudyCard[],
-  fileData: ArrayBuffer | Uint8Array | string,
+  parsed: ParseAnkiResult,
   mode: RestoreMode,
-  clock: Clock,
-  filename?: string,
   deletedCardIds: readonly string[] = [],
-): Promise<ImportAnkiResult> {
-  const parsed = await parseAnkiDeck(fileData, filename, clock.now())
+): ImportAnkiResult {
   if (!parsed.success) {
     return {
       success: false,

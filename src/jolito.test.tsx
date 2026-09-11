@@ -15,6 +15,16 @@ import { createCards } from './application/create-cards'
 import { starterCards } from './application/starter-cards'
 import { OfflineCardAssistant } from './application/card-assistant'
 import { createTestServices } from './test/services'
+import * as ankiParser from './domain/anki-import'
+import type { SyncResult } from './application/ports'
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((complete) => {
+    resolve = complete
+  })
+  return { promise, resolve }
+}
 
 class SpeechSynthesisUtteranceMock {
   lang = ''
@@ -1423,9 +1433,7 @@ describe('Jolito', () => {
     })
     await user.click(restoreBtn)
 
-    expect(
-      await screen.findByText(/successfully imported 1 cards/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/imported 1 card/i)).toBeInTheDocument()
     expect(services.memoryCards.saved).toHaveLength(1)
     expect(services.memoryCards.saved?.[0]?.prompt).toBe('Buenos días')
   })
@@ -1484,9 +1492,7 @@ describe('Jolito', () => {
     })
     await user.click(mergeBtn)
 
-    expect(
-      await screen.findByText(/successfully imported 1 cards/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/imported 1 card/i)).toBeInTheDocument()
     expect(services.memoryCards.saved?.length).toBeGreaterThan(1)
     expect(
       services.memoryCards.saved?.some((c) => c.prompt === 'Buenas noches'),
@@ -1521,10 +1527,125 @@ describe('Jolito', () => {
     })
     await user.click(importBtn)
 
-    expect(
-      await screen.findByText(/successfully imported 2 cards/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/imported 2 cards/i)).toBeInTheDocument()
     expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('commits the parsed import against the latest deck after an interrupted file read and cloud sync', async () => {
+    const user = userEvent.setup({ delay: null })
+    const initial = createStudyCards(
+      { spanish: 'perro', english: 'dog', context: '', bidirectional: false },
+      'local',
+      1000,
+    )
+    const remote = createStudyCards(
+      { spanish: 'gato', english: 'cat', context: '', bidirectional: false },
+      'remote',
+      1000,
+    )
+    const services = createTestServices({
+      cards: initial,
+      user: { id: 'learner', email: 'learner@example.com' },
+    })
+    const parseSpy = vi.spyOn(ankiParser, 'parseAnkiDeck')
+    render(<App services={services} />)
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+    await user.click(screen.getByLabelText(/merge/i))
+    const syncResult = deferred<SyncResult>()
+    vi.spyOn(services.sync, 'syncDeck').mockImplementationOnce(
+      () => syncResult.promise,
+    )
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    const read = deferred<ArrayBuffer>()
+    const file = new File(['hola\thello'], 'held.tsv', { type: 'text/plain' })
+    Object.defineProperty(file, 'arrayBuffer', { value: () => read.promise })
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      file,
+    )
+    await act(async () => {
+      syncResult.resolve({
+        success: true,
+        cards: [...initial, ...remote],
+        deletedCardIds: [],
+      })
+      await syncResult.promise
+    })
+    expect(
+      services.memoryCards.saved?.some((card) => card.id === remote[0]!.id),
+    ).toBe(true)
+    await act(async () => {
+      read.resolve(new TextEncoder().encode('hola\thello').buffer)
+      await read.promise
+    })
+    await screen.findByText(/found 1 cards/i)
+    await user.click(
+      screen.getByRole('button', { name: /merge deck with library/i }),
+    )
+    await screen.findByText('Imported 1 card.')
+    expect(parseSpy).toHaveBeenCalledTimes(1)
+    expect(
+      services.memoryCards.saved?.map((card) => card.prompt).sort(),
+    ).toEqual(['gato', 'hola', 'perro'])
+    parseSpy.mockRestore()
+  })
+
+  it('keeps the newest file preview when earlier reads complete later and stays inert after closing', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+    const firstRead = deferred<ArrayBuffer>()
+    const firstFile = new File(['old'], 'old.tsv', { type: 'text/plain' })
+    Object.defineProperty(firstFile, 'arrayBuffer', {
+      value: () => firstRead.promise,
+    })
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      firstFile,
+    )
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      new File(['hola\thello\ngato\tcat'], 'new.tsv', { type: 'text/plain' }),
+    )
+    await screen.findByText(/found 2 cards/i)
+    await act(async () => {
+      firstRead.resolve(new TextEncoder().encode('perro\tdog').buffer)
+      await firstRead.promise
+    })
+    expect(screen.getByText(/found 2 cards/i)).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: /import deck \(replace current\)/i }),
+    )
+    expect(services.memoryCards.saved?.map((card) => card.prompt)).toEqual([
+      'hola',
+      'gato',
+    ])
+    const lastRead = deferred<ArrayBuffer>()
+    const lastFile = new File(['closed'], 'closed.tsv', { type: 'text/plain' })
+    Object.defineProperty(lastFile, 'arrayBuffer', {
+      value: () => lastRead.promise,
+    })
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      lastFile,
+    )
+    await user.keyboard('{Escape}')
+    const parseSpy = vi.spyOn(ankiParser, 'parseAnkiDeck')
+    await act(async () => {
+      lastRead.resolve(new TextEncoder().encode('perro\tdog').buffer)
+      await lastRead.promise
+    })
+    expect(parseSpy).not.toHaveBeenCalled()
+    expect(services.memoryCards.saved?.map((card) => card.prompt)).toEqual([
+      'hola',
+      'gato',
+    ])
+    parseSpy.mockRestore()
   })
 
   it('displays error message when importing invalid file', async () => {
