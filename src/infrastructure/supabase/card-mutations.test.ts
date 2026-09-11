@@ -49,6 +49,7 @@ function connectCloud(cards: unknown[], version: number) {
   )
   const auth = {
     getCurrentUser: () => user,
+    isCurrentOwner: (ownerId: string | null) => ownerId === user.id,
     getAccessToken: () => Promise.resolve('token'),
   } as SupabaseAuthService
   return new SupabaseSyncService(

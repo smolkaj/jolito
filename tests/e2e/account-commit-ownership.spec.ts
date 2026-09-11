@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { createStudyCards } from '../../src/domain/card'
+import { collectionVersion, createStudyCards } from '../../src/domain/card'
 
 const session = (id: string) => ({
   accessToken: `token-${id}`,
@@ -8,7 +8,7 @@ const session = (id: string) => ({
   user: { id, email: `${id}@example.com` },
 })
 const collection = (id: string) => ({
-  version: 3,
+  version: collectionVersion,
   cards: createStudyCards(
     {
       spanish: `${id}-private`,
