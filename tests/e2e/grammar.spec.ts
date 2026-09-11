@@ -90,6 +90,9 @@ for (const viewport of [
     await expect(
       page.getByRole('heading', { name: 'Grammar', exact: true }),
     ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Home', exact: true }),
+    ).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: `test-results/grammar-${viewport.width}-home.png`,
@@ -581,3 +584,35 @@ for (const topic of ['preterite', 'perfect'] as const) {
     expect(await plays()).toBe(ended)
   })
 }
+
+test('grammar chooser home button navigates to welcome and preserves unfinished round across resume', async ({
+  page,
+}) => {
+  await page.goto('/#/grammar')
+  await expect(
+    page.getByRole('heading', { name: 'Grammar', exact: true }),
+  ).toBeVisible()
+  const homeBtn = page.getByRole('button', { name: 'Home', exact: true })
+  await expect(homeBtn).toBeVisible()
+  await homeBtn.click()
+  await expect(
+    page.getByRole('heading', { name: /Make the words/ }),
+  ).toBeVisible()
+
+  await practiceGrammar(page)
+  await page.getByRole('button', { name: 'Start practice' }).click()
+  await page.getByRole('textbox').fill('habl')
+  await page.getByRole('button', { name: 'Grammar', exact: true }).click()
+  await expect(homeBtn).toBeVisible()
+  await homeBtn.click()
+  await expect(
+    page.getByRole('heading', { name: /Make the words/ }),
+  ).toBeVisible()
+
+  await practiceGrammar(page)
+  await expect(
+    page.getByRole('button', { name: 'Resume practice' }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Resume practice' }).click()
+  await expect(page.getByRole('textbox')).toHaveValue('habl')
+})

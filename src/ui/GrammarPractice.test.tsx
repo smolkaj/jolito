@@ -498,4 +498,48 @@ describe('grammar practice in Jolito', () => {
     ).toBe(1)
     save.mockRestore()
   })
+
+  it('navigates back to home from grammar chooser and preserves an unfinished round across return', async () => {
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    render(<App services={services} />)
+    const user = userEvent.setup()
+
+    // Chooser displays the Home button
+    const homeButton = screen.getByRole('button', { name: 'Home' })
+    expect(homeButton).toBeVisible()
+
+    // Clicking Home returns to the welcome screen
+    await user.click(homeButton)
+    expect(
+      screen.getByRole('heading', { name: /Make the words/ }),
+    ).toBeVisible()
+
+    // Return to grammar via Practice menu
+    await user.click(screen.getByRole('button', { name: /Practice/ }))
+    await user.click(screen.getByRole('menuitem', { name: 'Grammar' }))
+    expect(screen.getByRole('heading', { name: 'Grammar' })).toBeVisible()
+
+    // Start practice, type an answer, pause via Grammar back button
+    await user.click(screen.getByRole('button', { name: 'Start practice' }))
+    await user.type(screen.getByRole('textbox'), 'habl')
+    await user.click(screen.getByRole('button', { name: 'Grammar' }))
+
+    // Chooser now has Resume practice, Start new, and the Home button
+    expect(screen.getByRole('button', { name: 'Home' })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Resume practice' }),
+    ).toBeVisible()
+
+    // Navigating home and back preserves the in-progress answer
+    await user.click(screen.getByRole('button', { name: 'Home' }))
+    expect(
+      screen.getByRole('heading', { name: /Make the words/ }),
+    ).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: /Practice/ }))
+    await user.click(screen.getByRole('menuitem', { name: 'Grammar' }))
+    await user.click(screen.getByRole('button', { name: 'Resume practice' }))
+    expect(screen.getByRole('textbox')).toHaveValue('habl')
+  })
 })

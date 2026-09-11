@@ -21,7 +21,8 @@ using the same practice flow with independent schedules.
   rotates sentence contexts without giving the answer away.
 - Setup offers tense and pattern selection and Start practice. An unfinished
   round offers Resume practice and Start new, with equal widths. The ← Grammar header
-  action returns to this selection screen while preserving the unfinished round.
+  action returns to this selection screen while preserving the unfinished round, and
+  the ← Home header action returns to the welcome dashboard.
 - Mexican Spanish: yo, tú, él/ella/usted, nosotros/as, ellos/ellas/ustedes.
   Vosotros is deliberately outside this initial Mexican Spanish set.
 

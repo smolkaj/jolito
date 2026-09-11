@@ -3431,12 +3431,16 @@ export function App({
           <Brand onClick={goHome} />
           <div className="nav-actions" data-nosnippet>
             {grammar ? (
-              grammarPractice.mode !== 'choose' && (
+              grammarPractice.mode !== 'choose' ? (
                 <button
                   className="text-button"
                   onClick={grammarPractice.choose}
                 >
                   <span aria-hidden="true">←</span> Grammar
+                </button>
+              ) : (
+                <button className="text-button" onClick={goHome}>
+                  <span aria-hidden="true">←</span> Home
                 </button>
               )
             ) : (
