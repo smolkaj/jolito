@@ -120,7 +120,7 @@ for (const failure of ['confirmation', 'cleanup'] as const) {
         await route.fulfill({ status: 204 })
       } else
         await route.fulfill({
-          json: route.request().method() === 'GET' ? [] : {},
+          json: route.request().method() === 'GET' ? [] : 1,
         })
     })
     await page.goto('/#/deck')
@@ -200,7 +200,7 @@ test('keeps an interrupted cloud outcome across reload and retries only the orig
         })
     } else
       await route.fulfill({
-        json: route.request().method() === 'GET' ? [] : {},
+        json: route.request().method() === 'GET' ? [] : 1,
       })
   })
   await page.goto('/#/deck')

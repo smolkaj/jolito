@@ -140,7 +140,7 @@ it('does not contact the cloud without a durable request, and keeps unknown outc
   const mounted = render(<App services={services} />)
   const user = userEvent.setup()
   await user.click(
-    screen.getByRole('button', { name: /deck synced with cloud/i }),
+    await screen.findByRole('button', { name: /deck synced with cloud/i }),
   )
   await user.click(
     screen.getByRole('button', { name: /delete cloud account & data/i }),
