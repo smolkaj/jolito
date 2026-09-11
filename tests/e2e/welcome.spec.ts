@@ -231,6 +231,8 @@ test('advances progress bar visibly during practice with bidirectional cards', a
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: now - 1000,
       },
       {
@@ -249,6 +251,8 @@ test('advances progress bar visibly during practice with bidirectional cards', a
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: now - 1000,
       },
     )

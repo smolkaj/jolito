@@ -358,7 +358,7 @@ describe('preterite practice contracts', () => {
       version: 1,
       cards: starterCards,
     })
-    expect(legacy.version).toBe(3)
+    expect(legacy.version).toBe(4)
     expect(legacy.cards).toEqual(starterCards)
     const card = scheduleReview(createGrammarCards(now)[0]!, 'easy', now)
     const cards = [...legacy.cards, card]

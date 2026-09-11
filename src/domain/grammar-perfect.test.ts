@@ -95,7 +95,7 @@ describe('perfecto alongside indefinido', () => {
     )
     expect(
       studyCardCollectionSchema.parse({ version: 2, cards: [past] }),
-    ).toMatchObject({ version: 3, cards: [past] })
+    ).toMatchObject({ version: 4, cards: [past] })
     const cards = [past, perfect]
     expect(
       parseDeckBackup(JSON.stringify({ version: 3, cards })),

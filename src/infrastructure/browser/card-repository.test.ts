@@ -51,7 +51,7 @@ describe('LocalStorageCardRepository', () => {
         JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY)!) as unknown,
       ).toMatchObject({
         version: 1,
-        guest: { version: 3, deletedCardIds: ['removed'] },
+        guest: { version: 4, deletedCardIds: ['removed'] },
       })
       expect(
         new LocalStorageCardRepository(localStorage).load([]).cards,

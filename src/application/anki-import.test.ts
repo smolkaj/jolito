@@ -48,6 +48,8 @@ describe('importAnkiDeck application service', () => {
         reviews: 3,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 1700000000000,
     },
   ]

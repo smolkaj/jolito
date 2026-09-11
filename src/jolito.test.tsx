@@ -460,6 +460,8 @@ describe('Jolito', () => {
             reviews: 1,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: 0,
         },
       ],
@@ -2832,6 +2834,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 1000,
       },
       {
@@ -2850,6 +2854,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 3000,
       },
       {
@@ -2868,6 +2874,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 2000,
       },
     ]
@@ -3490,6 +3498,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     }
     const mediumCard: StudyCard = {
@@ -3508,6 +3518,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     }
     const shortCard: StudyCard = {
@@ -3526,6 +3538,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     }
 
@@ -3929,6 +3943,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -3947,6 +3963,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardC: StudyCard = {
@@ -3965,6 +3983,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4038,6 +4058,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -4056,6 +4078,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4120,6 +4144,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: now,
       }
     })
@@ -4195,6 +4221,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4245,6 +4273,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4299,6 +4329,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -4317,6 +4349,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardC: StudyCard = {
@@ -4335,6 +4369,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4419,6 +4455,8 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
         {
@@ -4437,6 +4475,8 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
       )
@@ -4496,6 +4536,8 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
         {
@@ -4514,6 +4556,8 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
       )
@@ -4562,6 +4606,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: now,
       }
     })
@@ -4646,6 +4692,8 @@ describe('Jolito', () => {
             lapses: 0,
             lastReviewedAt: now - 86400000,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now - 86400000,
         },
         {
@@ -4665,6 +4713,8 @@ describe('Jolito', () => {
             lapses: 0,
             lastReviewedAt: now - 86400000,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now - 86400000,
         },
       )
@@ -4776,6 +4826,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4839,6 +4891,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -4857,6 +4911,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4936,6 +4992,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
           {
@@ -4954,6 +5012,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -5008,6 +5068,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
           {
@@ -5026,6 +5088,8 @@ describe('Jolito', () => {
               reviews: 2,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -5106,6 +5170,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -5159,6 +5225,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -5203,6 +5271,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 1000,
       }
       const services = createTestServices({ cards: [card] })
