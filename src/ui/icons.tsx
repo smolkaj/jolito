@@ -3,8 +3,8 @@ export function MexicoFlag({ className }: { className?: string }) {
     <svg
       className={`language-icon flag-mx ${className ?? ''}`}
       viewBox="0 0 18 12"
-      width="20"
-      height="14"
+      width="18"
+      height="12"
       aria-hidden="true"
     >
       <rect width="6" height="12" fill="#006847" />
