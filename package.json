@@ -33,7 +33,8 @@
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
     "deploy": "npm run build && wrangler deploy",
-    "deploy:preview": "npm run build && wrangler versions upload"
+    "deploy:preview": "npm run build && wrangler versions upload",
+    "test:release": "node --test tests/release/*.test.ts"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",

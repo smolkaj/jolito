@@ -1,91 +1,109 @@
+require_relative 'release_config'
+require 'tmpdir'
+require 'securerandom'
+require 'fileutils'
+require 'open3'
+
 default_platform(:ios)
 
 platform :ios do
-  desc "Build the iOS archive (.ipa) without uploading"
-  lane :build do
-    build_app(
-      project: "ios/App/App.xcodeproj",
-      scheme: "App",
-      export_method: "app-store",
-      output_directory: "build",
-      output_name: "Jolito.ipa",
-      clean: true
+  private_lane :connect do
+    ReleaseConfig.api!
+    app_store_connect_api_key(
+      key_id: ENV.fetch('APP_STORE_CONNECT_API_KEY_KEY_ID'),
+      issuer_id: ENV.fetch('APP_STORE_CONNECT_API_KEY_ISSUER_ID'),
+      key_content: ENV.fetch('APP_STORE_CONNECT_API_KEY_KEY'),
+      is_key_content_base64: true
     )
   end
 
-  desc "Build and push a new beta build to Apple TestFlight"
+  desc 'Build, sign and upload one uniquely numbered TestFlight candidate'
   lane :beta do
-    # 1. Sync project capabilities and certificates if configured
-    if ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
-      app_store_connect_api_key(
-        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
-        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
-        is_key_content_base64: true
-      )
+    ReleaseConfig.build!
+    connect
+    settings = ReleaseConfig::SETTINGS
+    version = settings.fetch('version')
+    bundle_id = settings.fetch('bundleId')
+    number = ReleaseConfig.build_number!(latest_testflight_build_number(
+      app_identifier: bundle_id, version: version, initial_build_number: 0
+    ) + 1)
+
+    Dir.mktmpdir('jolito-signing-') do |temp|
+      keychain = File.join(temp, 'release.keychain-db')
+      password = SecureRandom.hex(32)
+      profile_path = nil
+      begin
+        certificate = File.join(temp, 'distribution.p12')
+        profile_file = File.join(temp, 'distribution.mobileprovision')
+        File.binwrite(certificate, Base64.strict_decode64(ENV.fetch('APPLE_CERTIFICATE_P12')))
+        File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
+        File.chmod(0600, certificate, profile_file)
+        xml, status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
+        UI.user_error!('Cannot decode provisioning profile') unless status.success?
+        profile = Plist.parse_xml(xml)
+        uuid = ReleaseConfig.profile!(profile)
+        profile_path = install_provisioning_profile(path: profile_file)
+        create_keychain(path: keychain, password: password, default_keychain: false,
+                        unlock: true, timeout: 3600, add_to_search_list: true)
+        import_certificate(certificate_path: certificate,
+                           certificate_password: ENV.fetch('APPLE_CERTIFICATE_PASS'),
+                           keychain_path: keychain, keychain_password: password)
+        update_code_signing_settings(
+          use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
+          targets: ['App'], build_configurations: ['Release'],
+          team_id: ENV.fetch('APPLE_TEAM_ID'), code_sign_identity: 'Apple Distribution',
+          profile_uuid: uuid, bundle_identifier: bundle_id
+        )
+        build_app(
+          project: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'), scheme: 'App', configuration: 'Release',
+          export_method: 'app-store', output_directory: File.join(ReleaseConfig::ROOT, 'build'), output_name: 'Jolito.ipa',
+          clean: true,
+          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number}",
+          export_options: {
+            signingStyle: 'manual', teamID: ENV.fetch('APPLE_TEAM_ID'),
+            provisioningProfiles: { bundle_id => uuid }, manageAppVersionAndBuildNumber: false
+          }
+        )
+        upload_to_testflight(
+          app_identifier: bundle_id, ipa: File.join(ReleaseConfig::ROOT, 'build/Jolito.ipa'),
+          changelog: "#{ENV.fetch('RELEASE_NOTES', 'Initial paid release')}\nSource: #{ENV.fetch('GITHUB_SHA', 'local')}",
+          skip_waiting_for_build_processing: false
+        )
+        File.write(File.join(ReleaseConfig::ROOT, 'build/release.json'), JSON.pretty_generate({
+          bundleId: bundle_id, version: version, buildNumber: number,
+          commit: ENV.fetch('GITHUB_SHA', 'local')
+        }))
+      ensure
+        delete_keychain(keychain_path: keychain) if File.exist?(keychain)
+        FileUtils.rm_f(profile_path) if profile_path
+      end
     end
-
-    # 2. Build the iOS archive (.ipa)
-    build_app(
-      project: "ios/App/App.xcodeproj",
-      scheme: "App",
-      export_method: "app-store",
-      output_directory: "build",
-      output_name: "Jolito.ipa",
-      clean: true
-    )
-
-    # 3. Upload to TestFlight
-    upload_to_testflight(
-      skip_waiting_for_build_processing: true
-    )
   end
 
-  desc "Build and submit release build to the Apple App Store"
+  desc 'Submit the explicit TestFlight build; never rebuild or choose latest'
   lane :release do |options|
-    # 1. Sync project capabilities and certificates if configured
-    if ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
-      app_store_connect_api_key(
-        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
-        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
-        is_key_content_base64: true
-      )
-    end
-
-    # 2. Build the iOS archive (.ipa)
-    build_app(
-      project: "ios/App/App.xcodeproj",
-      scheme: "App",
-      export_method: "app-store",
-      output_directory: "build",
-      output_name: "Jolito.ipa",
-      clean: true
-    )
-
-    # 3. Upload to App Store Connect
+    number = ReleaseConfig.build_number!(options[:build_number])
+    connect
     upload_to_app_store(
-      skip_screenshots: options[:upload_screenshots] != true && options[:upload_screenshots] != "true",
-      skip_metadata: options[:upload_metadata] != true && options[:upload_metadata] != "true",
-      skip_waiting_for_build_processing: true,
-      submit_for_review: false
+      app_identifier: ReleaseConfig::SETTINGS.fetch('bundleId'),
+      app_version: ReleaseConfig::SETTINGS.fetch('version'), build_number: number,
+      skip_binary_upload: true, skip_metadata: true, skip_screenshots: true,
+      submit_for_review: true, automatic_release: true,
+      precheck_include_in_app_purchases: false, force: true
     )
   end
 
-  desc "Upload App Store metadata and screenshots without building a binary"
+  desc 'Upload reviewed listing copy and native screenshots without a binary'
   lane :metadata do
-    if ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
-      app_store_connect_api_key(
-        key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
-        issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-        key_content: ENV["APP_STORE_CONNECT_API_KEY_KEY"],
-        is_key_content_base64: true
-      )
-    end
-
+    connect
+    UI.user_error!('Capture and review native screenshots first; see docs/APP_STORE.md') unless File.directory?(File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots/en-US'))
     upload_to_app_store(
-      skip_binary_upload: true,
-      skip_waiting_for_build_processing: true
+      app_identifier: ReleaseConfig::SETTINGS.fetch('bundleId'),
+      app_version: ReleaseConfig::SETTINGS.fetch('version'),
+      screenshots_path: File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots'),
+      metadata_path: File.join(ReleaseConfig::ROOT, 'fastlane/metadata'),
+      skip_binary_upload: true, submit_for_review: false,
+      precheck_include_in_app_purchases: false, force: true
     )
   end
 end

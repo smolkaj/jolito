@@ -15,14 +15,22 @@ permissions:
 jobs:
   ios-build:
     name: Xcode iOS compilation gate
-    runs-on: macos-latest
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: bundle exec ruby tests/release/release_test.rb
       - run: npm ci --no-audit
+      - run: npm run test:release
       - run: npm run build
       - run: npm run cap:sync
       - name: Build Xcode iOS scheme
@@ -30,6 +38,49 @@ jobs:
           xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
             -destination 'generic/platform=iOS' \
-            -configuration Debug \
+            -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+  native-screenshots:
+    name: Native screenshots (${{ matrix.device }})
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        device: ['iPhone 17 Pro Max', 'iPad Pro 13-inch (M4)']
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      DEVICE_NAME: ${{ matrix.device }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: npm ci --no-audit
+      - run: npm run build
+      - run: npm run cap:sync
+      - run: bundle exec ruby scripts/prepare-native-screenshots.rb
+      - name: Capture the bundled app in Simulator
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
+            -destination "platform=iOS Simulator,name=$DEVICE_NAME" \
+            -configuration Release -resultBundlePath build/screenshots.xcresult \
+            CODE_SIGNING_ALLOWED=NO test
+      - name: Export screenshots
+        run: xcrun xcresulttool export attachments --path build/screenshots.xcresult --output-path build/native-screenshots
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: native-screenshots-${{ matrix.device }}
+          path: |
+            build/native-screenshots
+            build/screenshots.xcresult
+          retention-days: 14

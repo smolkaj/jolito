@@ -15,3 +15,7 @@ public/*.svg
 public/*.wasm
 supabase/.temp/
 fastlane/screenshots/
+
+vendor/
+build/
+fastlane/native-screenshots/

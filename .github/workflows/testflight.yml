@@ -4,43 +4,53 @@ on:
   workflow_dispatch:
     inputs:
       release_notes:
-        description: 'What changed in this beta build?'
-        required: false
-        default: 'Mexican Spanish practice improvements and sensory haptics'
+        description: 'What changed in this candidate?'
+        required: true
+        default: 'Initial paid iPhone and iPad release'
 
 permissions:
   contents: read
 
+concurrency:
+  group: apple-release
+  cancel-in-progress: false
+
 jobs:
   testflight:
-    name: Build & Deploy to TestFlight
-    runs-on: macos-latest
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+      APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+      APPLE_CERTIFICATE_PASS: ${{ secrets.APPLE_CERTIFICATE_PASS }}
+      APPLE_PROVISIONING_PROFILE: ${{ secrets.APPLE_PROVISIONING_PROFILE }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      RELEASE_NOTES: ${{ inputs.release_notes }}
     steps:
       - uses: actions/checkout@v7
-
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-
-      - name: Setup Ruby for Fastlane
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
-          bundler-cache: false
-
-      - name: Install dependencies
-        run: |
-          npm ci --no-audit
-          npm run build
-          npm run cap:sync
-          gem install fastlane --no-document
-
-      - name: Run Fastlane Beta
-        env:
-          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
-          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
-          APPLE_CERTIFICATE_PASS: ${{ secrets.APPLE_CERTIFICATE_PASS }}
-        run: |
-          fastlane ios beta
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: bundle exec ruby fastlane/release_config.rb build
+      - run: npm ci --no-audit
+      - run: npm run check
+      - run: npm run cap:sync
+      - run: bundle exec fastlane ios beta
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-release-${{ github.sha }}
+          path: |
+            build/Jolito.ipa
+            build/release.json
+          if-no-files-found: error
+          retention-days: 30
