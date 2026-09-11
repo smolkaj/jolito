@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import type { StudyCard, UpdateCardParams } from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
-import { MexicoFlag, UsFlag } from '../icons'
+import { MexicoFlag, EnglishBadge } from '../icons'
 import { AudioButton } from '../AudioButton'
 import { handleFocusSelect } from '../utils'
 
@@ -111,7 +111,7 @@ function EditCardModalInner({
           <div className="field-group">
             <div className="field-label-row">
               <label htmlFor="edit-prompt">
-                {isEsToEn ? <MexicoFlag /> : <UsFlag />}{' '}
+                {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}{' '}
                 {isEsToEn ? 'Mexican Spanish (Prompt)' : 'English (Prompt)'}
               </label>
               {prompt.trim() && (
@@ -139,7 +139,7 @@ function EditCardModalInner({
           <div className="field-group">
             <div className="field-label-row">
               <label htmlFor="edit-answer">
-                {isEsToEn ? <UsFlag /> : <MexicoFlag />}{' '}
+                {isEsToEn ? <EnglishBadge /> : <MexicoFlag />}{' '}
                 {isEsToEn ? 'English (Answer)' : 'Mexican Spanish (Answer)'}
               </label>
               {answer.trim() && (
