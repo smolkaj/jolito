@@ -51,7 +51,15 @@ export class SupabaseAuthService implements AuthService {
   private currentUser: AuthUser | null = null
   private redirectAuthOccurred = false
   private refreshTimer: ReturnType<typeof setTimeout> | null = null
-  private inFlightRefresh: Promise<string | null> | null = null
+  private inFlightRefresh: {
+    ownerId: string
+    promise: Promise<string | null>
+    preserveSessionOnRejection: boolean
+  } | null = null
+  private accountDeletion: {
+    ownerId: string
+    controller: AbortController
+  } | null = null
   private boundVisibilityHandler: (() => void) | null = null
   private boundOnlineHandler: (() => void) | null = null
   private supabaseUrl: string
@@ -239,7 +247,7 @@ export class SupabaseAuthService implements AuthService {
 
   async refreshSession(): Promise<string | null> {
     if (this.inFlightRefresh) {
-      return this.inFlightRefresh
+      return this.inFlightRefresh.promise
     }
 
     const session = this.loadStoredSession()
@@ -251,7 +259,14 @@ export class SupabaseAuthService implements AuthService {
       return session.accessToken || null
     }
 
-    this.inFlightRefresh = (async () => {
+    const attempt = {
+      ownerId: session.user.id,
+      promise: Promise.resolve<string | null>(null),
+      preserveSessionOnRejection:
+        this.accountDeletion?.ownerId === session.user.id,
+    }
+    this.inFlightRefresh = attempt
+    attempt.promise = (async () => {
       try {
         const res = await fetch(
           `${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
@@ -275,7 +290,9 @@ export class SupabaseAuthService implements AuthService {
             res.status === 403 ||
             res.status === 422
           ) {
-            this.clearSession()
+            // A deletion must not turn rejected credentials into local logout.
+            // Keep this decision on the attempt: it may outlive deletion's timeout.
+            if (!attempt.preserveSessionOnRejection) this.clearSession()
             return null
           }
           // Server error (5xx) or rate limit: preserve session for offline resilience
@@ -308,11 +325,11 @@ export class SupabaseAuthService implements AuthService {
         // Network failure (offline, timeout, DNS): preserve session for offline use
         return session.accessToken || null
       } finally {
-        this.inFlightRefresh = null
+        if (this.inFlightRefresh === attempt) this.inFlightRefresh = null
       }
     })()
 
-    return this.inFlightRefresh
+    return attempt.promise
   }
 
   private saveSession(session: StoredSession): void {
@@ -699,10 +716,61 @@ export class SupabaseAuthService implements AuthService {
     if (!this.supabaseUrl || !this.supabaseAnonKey) {
       return { success: false, error: 'Cloud sync backend is not configured.' }
     }
-    const userId = this.currentUser?.id
+    const ownerId = this.currentUser?.id
+    if (!ownerId)
+      return { success: false, error: 'Sign in to delete your cloud account.' }
+    if (this.accountDeletion) {
+      return { success: false, error: 'Account deletion is already running.' }
+    }
+
+    const deletion = { ownerId, controller: new AbortController() }
+    this.accountDeletion = deletion
+    if (this.inFlightRefresh?.ownerId === ownerId) {
+      this.inFlightRefresh.preserveSessionOnRejection = true
+    }
+    const signal = deletion.controller.signal
+    let timedOut = false
+    let onAbort: () => void = () => {}
+    const interrupted = new Promise<{ success: boolean; error: string }>(
+      (resolve) => {
+        onAbort = () =>
+          resolve({
+            success: false,
+            error: timedOut
+              ? 'Account deletion timed out. Please try again.'
+              : 'Account deletion was interrupted. Please try again.',
+          })
+        signal.addEventListener('abort', onAbort, { once: true })
+      },
+    )
+    const timeout = setTimeout(() => {
+      timedOut = true
+      deletion.controller.abort()
+    }, 10_000)
+    try {
+      return await Promise.race([
+        this.performAccountDeletion(ownerId, signal),
+        interrupted,
+      ])
+    } finally {
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', onAbort)
+      if (this.accountDeletion === deletion) this.accountDeletion = null
+    }
+  }
+
+  private async performAccountDeletion(
+    ownerId: string,
+    signal: AbortSignal,
+  ): Promise<{ success: boolean; error?: string | undefined }> {
+    const interrupted = {
+      success: false,
+      error: 'Account deletion was interrupted. Please try again.',
+    }
     try {
       const token = await this.getAccessToken()
-      if (!token || !userId || this.currentUser?.id !== userId) {
+      if (signal.aborted) return interrupted
+      if (!token || this.currentUser?.id !== ownerId) {
         return {
           success: false,
           error: 'Sign in to delete your cloud account.',
@@ -718,15 +786,18 @@ export class SupabaseAuthService implements AuthService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({}),
-          signal: AbortSignal.timeout(10_000),
+          signal,
         })
       let response = await removeAccount(token)
+      if (signal.aborted) return interrupted
       if (response.status === 401) {
         const refreshed = await this.refreshSession()
-        if (refreshed && this.currentUser?.id === userId) {
+        if (signal.aborted) return interrupted
+        if (refreshed && this.currentUser?.id === ownerId) {
           response = await removeAccount(refreshed)
         }
       }
+      if (signal.aborted) return interrupted
       if (!response.ok) {
         const parsed = z
           .object({
@@ -735,6 +806,7 @@ export class SupabaseAuthService implements AuthService {
             msg: z.string().optional(),
           })
           .safeParse(await response.json().catch(() => null))
+        if (signal.aborted) return interrupted
         return {
           success: false,
           error:
@@ -745,7 +817,7 @@ export class SupabaseAuthService implements AuthService {
             `Failed to delete account (HTTP ${response.status}). Please try again.`,
         }
       }
-      if (this.currentUser?.id === userId) this.clearSession()
+      if (this.currentUser?.id === ownerId) this.clearSession()
       return { success: true }
     } catch (err) {
       return {
@@ -795,6 +867,7 @@ export class SupabaseAuthService implements AuthService {
   }
 
   destroy(): void {
+    this.accountDeletion?.controller.abort()
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer)
       this.refreshTimer = null
