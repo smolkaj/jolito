@@ -225,20 +225,18 @@ describe('SupabaseAuthService', () => {
     service.destroy()
   })
 
-  it('clears corrupted session data failing schema validation', async () => {
-    mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-      corrupt: true,
-    })
-
-    const service = new SupabaseAuthService(
-      'https://example.supabase.co',
-      'anon-key',
-      fakeStorage,
-    )
-
-    const user = await service.getUser()
-    expect(user).toBeNull()
-    expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+  it('preserves invalid session evidence and stops initialization', () => {
+    const raw = JSON.stringify({ corrupt: true })
+    mockStorage['jolito-auth-session-v1'] = raw
+    expect(
+      () =>
+        new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        ),
+    ).toThrow(/sign-in data could not be verified/)
+    expect(mockStorage['jolito-auth-session-v1']).toBe(raw)
   })
 
   it('cleans up refresh timers and listeners on destroy and signOut', async () => {

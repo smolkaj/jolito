@@ -44,6 +44,9 @@ export function StorageRecovery({
           >
             Reload Jolito
           </button>
+          <a className="text-button" href="mailto:a@joli.to">
+            Get help
+          </a>
         </div>
         {downloadError && (
           <p role="alert">

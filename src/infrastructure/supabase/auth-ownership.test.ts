@@ -605,3 +605,28 @@ it.each(['A', null] as const)(
     auth.destroy()
   },
 )
+
+it('uses the verified startup snapshot for both legacy ownership and active identity when later reads fail', () => {
+  localStorage.setItem(key, JSON.stringify(session('A')))
+  const original = Object.getOwnPropertyDescriptor(
+    Storage.prototype,
+    'getItem',
+  )!.value as (this: Storage, key: string) => string | null
+  let reads = 0
+  const read = vi
+    .spyOn(Storage.prototype, 'getItem')
+    .mockImplementation(function (this: Storage, name: string) {
+      if (name === key && ++reads > 1)
+        throw new DOMException('Read unavailable', 'SecurityError')
+      return original.call(this, name)
+    })
+  const beforeRedirect = vi.fn()
+  const auth = new SupabaseAuthService('', '', localStorage, beforeRedirect)
+  expect(beforeRedirect).toHaveBeenCalledExactlyOnceWith(session('A').user)
+  expect(auth.storedUserBeforeRedirect).toEqual(session('A').user)
+  expect(auth.getCurrentUser()).toEqual(session('A').user)
+  expect(auth.isCurrentOwner('A')).toBe(false)
+  read.mockRestore()
+  expect(auth.isCurrentOwner('A')).toBe(true)
+  auth.destroy()
+})

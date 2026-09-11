@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createStudyCards } from '../../domain/card'
 import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { Capacitor } from '@capacitor/core'
 import { EnhancedBrowserSpeaker } from './speech'
@@ -118,3 +119,101 @@ describe('createBrowserServices', () => {
     expect(id1).not.toEqual(id2)
   })
 })
+
+it.each(
+  [
+    { failure: 'transient first read', raw: null },
+    { failure: 'malformed JSON', raw: '{broken' },
+    { failure: 'invalid session schema', raw: '{"user":{"id":"A"}}' },
+    { failure: 'empty stored value', raw: '' },
+  ].flatMap((failure) =>
+    [false, true].map((redirect) => ({ ...failure, redirect })),
+  ),
+)(
+  'preserves ownership evidence through $failure with redirect=$redirect, then retries safely',
+  ({ failure, raw, redirect }) => {
+    localStorage.clear()
+    const authKey = 'jolito-auth-session-v1'
+    const legacyKey = 'jolito-library-v1'
+    const valid = JSON.stringify({
+      accessToken: 'A-token',
+      refreshToken: 'A-refresh',
+      expiresAt: Date.now() + 3600000,
+      user: { id: 'A', email: 'A@example.com' },
+    })
+    const storedAuth = raw ?? valid
+    const legacy = JSON.stringify({
+      version: 3,
+      cards: createStudyCards(
+        {
+          spanish: 'A-private',
+          english: 'A',
+          context: '',
+          bidirectional: false,
+        },
+        'A',
+        0,
+      ),
+      deletedCardIds: [],
+    })
+    localStorage.setItem(authKey, storedAuth)
+    localStorage.setItem(legacyKey, legacy)
+    const hash = redirect
+      ? `#access_token=header.${btoa(JSON.stringify({ sub: 'B', email: 'B@example.com' }))}.signature&refresh_token=B-refresh`
+      : '#/deck'
+    window.history.replaceState({}, '', hash)
+    const prewarm = vi
+      .spyOn(LayeredNeuralSpeaker.prototype, 'prewarm')
+      .mockResolvedValue(true)
+    const dictionary = vi
+      .spyOn(OfflineCardAssistant.prototype, 'loadDictionary')
+      .mockResolvedValue(true)
+    const get = Object.getOwnPropertyDescriptor(Storage.prototype, 'getItem')!
+      .value as (this: Storage, key: string) => string | null
+    let firstRead = true
+    const read = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(function (this: Storage, key: string) {
+        if (key === authKey && firstRead) {
+          firstRead = false
+          if (failure === 'transient first read')
+            throw new DOMException('Blocked', 'SecurityError')
+        }
+        return get.call(this, key)
+      })
+    const result = initializeBrowserServices()
+    if (result.status === 'ready') result.services.auth.destroy?.()
+    expect(result).toMatchObject({ status: 'recovery' })
+    expect(localStorage.getItem(authKey)).toBe(storedAuth)
+    expect(localStorage.getItem(legacyKey)).toBe(legacy)
+    expect(localStorage.getItem('jolito-libraries-v1')).toBeNull()
+    expect(window.location.hash).toBe(hash)
+    expect(prewarm).not.toHaveBeenCalled()
+    expect(dictionary).not.toHaveBeenCalled()
+    read.mockRestore()
+    if (failure !== 'transient first read') {
+      // A second attempt cannot erase malformed evidence and reinterpret absence.
+      expect(initializeBrowserServices()).toMatchObject({ status: 'recovery' })
+      expect(localStorage.getItem(authKey)).toBe(storedAuth)
+    }
+    // Restore access to the original session, then retry the unchanged intent.
+    localStorage.setItem(authKey, valid)
+    const retried = initializeBrowserServices()
+    expect(retried.status).toBe('ready')
+    if (retried.status === 'ready') {
+      expect(retried.services.auth.getCurrentUser()?.id).toBe(
+        redirect ? 'B' : 'A',
+      )
+      expect(localStorage.getItem('jolito-libraries-v1')).toContain('user:A')
+      expect(localStorage.getItem('jolito-libraries-v1')).not.toContain(
+        '"guest"',
+      )
+      retried.services.auth.destroy?.()
+    }
+    expect(localStorage.getItem(legacyKey)).toBe(legacy)
+    prewarm.mockRestore()
+    dictionary.mockRestore()
+    window.history.replaceState({}, '', '/')
+    localStorage.clear()
+  },
+)

@@ -188,6 +188,11 @@ function getCardScheduleBadge(
   return { label: `Due in ${daysUntilDue}d`, type: 'review' }
 }
 
+const STORAGE_SAVE_ERROR =
+  'Your changes couldn’t be saved. Free up device storage, then try again.'
+const OWNERSHIP_SAVE_ERROR =
+  'Your account couldn’t be verified. Allow browser storage access, then try again. Your changes have not been saved.'
+
 function DeleteCardsModal({
   isOpen,
   cards,
@@ -195,7 +200,7 @@ function DeleteCardsModal({
   onConfirm,
   saveError,
 }: {
-  saveError: boolean
+  saveError: string | null
   isOpen: boolean
   cards: StudyCard[] | null
   onClose: () => void
@@ -293,8 +298,7 @@ function DeleteCardsModal({
 
         {saveError && (
           <p ref={errorRef} role="alert">
-            Your changes couldn’t be saved. Free up device storage, then try
-            again.
+            {saveError}
           </p>
         )}
 
@@ -319,6 +323,7 @@ function DeleteCardsModal({
 }
 
 function DeckBackupModalInner({
+  saveError,
   onClose,
   cards,
   deletedCardIds = [],
@@ -327,6 +332,7 @@ function DeckBackupModalInner({
   user,
   sync,
 }: {
+  saveError?: string | null
   onClose: () => void
   cards: StudyCard[]
   deletedCardIds?: string[]
@@ -352,6 +358,7 @@ function DeckBackupModalInner({
     type: 'success' | 'error' | 'info'
     message: string
     details?: string[] | undefined
+    saveFailed?: boolean
   } | null>(null)
   const [selectedImportData, setSelectedImportData] = useState<Extract<
     ParseAnkiResult,
@@ -451,6 +458,7 @@ function DeckBackupModalInner({
     if (result.success) {
       if (onUpdateCards(result.cards) === false) {
         setBackupStatus({
+          saveFailed: true,
           type: 'error',
           message:
             'Your cards couldn’t be saved. Free up device storage, then try importing again.',
@@ -518,7 +526,11 @@ function DeckBackupModalInner({
             className={`status-banner status-${backupStatus.type}`}
             role={backupStatus.type === 'error' ? 'alert' : 'status'}
           >
-            <p>{backupStatus.message}</p>
+            <p>
+              {backupStatus.saveFailed
+                ? (saveError ?? backupStatus.message)
+                : backupStatus.message}
+            </p>
             {backupStatus.details && (
               <ul className="status-details">
                 {backupStatus.details.map((detail, idx) => (
@@ -654,6 +666,7 @@ function DeckBackupModalInner({
 
 function DeckBackupModal(props: {
   isOpen: boolean
+  saveError?: string | null
   onClose: () => void
   cards: StudyCard[]
   deletedCardIds?: string[]
@@ -1262,7 +1275,7 @@ function LoadedApp({
   }, [initialCards, services.clock])
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
-  const [saveError, setSaveError] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const vocabularyCards = useMemo(
     () => cards.filter((card) => !isGrammarCard(card)),
     [cards],
@@ -1469,7 +1482,10 @@ function LoadedApp({
       syncToCloud = true,
       newDeletedCardIds?: string[],
     ) => {
-      if (!canCommit()) return false
+      if (!canCommit()) {
+        if (lifetime.current.active) setSaveError(OWNERSHIP_SAVE_ERROR)
+        return false
+      }
       const nextDeletedIds = new Set(
         newDeletedCardIds ?? deletedCardIdsRef.current,
       )
@@ -1479,10 +1495,10 @@ function LoadedApp({
       try {
         services.cards.save(newCards, deletedIdsArray)
       } catch {
-        setSaveError(true)
+        setSaveError(STORAGE_SAVE_ERROR)
         return false
       }
-      setSaveError(false)
+      setSaveError(null)
       deletedCardIdsRef.current = nextDeletedIds
       const previousCards = cardsRef.current
       cardsRef.current = newCards
@@ -2576,8 +2592,7 @@ function LoadedApp({
             </nav>
             {saveError && (
               <p className="storage-save-error" role="alert">
-                Your changes couldn’t be saved. Free up device storage, then try
-                again.
+                {saveError}
               </p>
             )}
             <RedirectAuthNotice
@@ -2816,6 +2831,7 @@ function LoadedApp({
           onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
+          saveError={saveError}
           isOpen={editingCard !== null}
           card={editingCard}
           cards={cards}
@@ -3164,8 +3180,7 @@ function LoadedApp({
                   className="storage-save-error"
                   role="alert"
                 >
-                  Your changes couldn’t be saved. Free up device storage, then
-                  try again.
+                  {saveError}
                 </p>
               )}
               <button
@@ -3213,6 +3228,7 @@ function LoadedApp({
           onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
+          saveError={saveError}
           isOpen={editingCard !== null}
           card={editingCard}
           cards={cards}
@@ -3311,8 +3327,7 @@ function LoadedApp({
           </nav>
           {saveError && (
             <p className="storage-save-error" role="alert">
-              Your changes couldn’t be saved. Free up device storage, then try
-              again.
+              {saveError}
             </p>
           )}
           <RedirectAuthNotice
@@ -3694,6 +3709,7 @@ function LoadedApp({
           />
         </main>
         <StarterPacksModal
+          saveErrorMessage={saveError}
           isOpen={isStarterPacksOpen}
           onClose={() => setIsStarterPacksOpen(false)}
           cards={cards}
@@ -3702,6 +3718,7 @@ function LoadedApp({
         />
 
         <DeckBackupModal
+          saveError={saveError}
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}
           cards={cards}
@@ -3731,6 +3748,7 @@ function LoadedApp({
           onOpenFeedback={openFeedbackModal}
         />
         <EditCardModal
+          saveError={saveError}
           isOpen={editingCard !== null}
           card={editingCard}
           cards={cards}
@@ -3814,8 +3832,7 @@ function LoadedApp({
         </nav>
         {saveError && !(practicing && !grammar) && !grammarPractice.error && (
           <p className="storage-save-error" role="alert">
-            Your changes couldn’t be saved. Free up device storage, then try
-            again.
+            {saveError}
           </p>
         )}
         <RedirectAuthNotice
@@ -3841,6 +3858,7 @@ function LoadedApp({
         )}
         {grammar ? (
           <GrammarPractice
+            saveError={saveError}
             practice={grammarPractice}
             services={services}
             onHome={goHome}
@@ -3888,9 +3906,9 @@ function LoadedApp({
           currentCard && (
             <PracticeCard
               error={
-                saveError
+                saveError === STORAGE_SAVE_ERROR
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
-                  : null
+                  : saveError
               }
               card={currentCard}
               prompt={
@@ -3970,6 +3988,7 @@ function LoadedApp({
         onOpenFeedback={openFeedbackModal}
       />
       <EditCardModal
+        saveError={saveError}
         isOpen={editingCard !== null}
         card={editingCard}
         cards={cards}

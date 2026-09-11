@@ -51,6 +51,16 @@ export class SessionStorageError extends Error {
   }
 }
 
+export class SessionOwnershipError extends Error {
+  constructor(readonly reason: 'unavailable' | 'corrupt') {
+    super(
+      reason === 'unavailable'
+        ? 'Jolito couldn’t read your saved sign-in. Allow browser storage access, then try again.'
+        : 'Your saved sign-in data could not be verified. Use Get help for assistance recovering access to the original account.',
+    )
+  }
+}
+
 type DeletionRequest = {
   ownerId: string
   generation: number
@@ -97,10 +107,11 @@ export class SupabaseAuthService implements AuthService {
     this.supabaseUrl = (supabaseUrl || '').replace(/\/+$/, '')
     this.supabaseAnonKey = supabaseAnonKey
     this.storage = storage
-    this.storedUserBeforeRedirect = this.loadStoredSession()?.user ?? null
+    const storedSession = this.readStoredSession()
+    this.storedUserBeforeRedirect = storedSession?.user ?? null
     // Ownership must be durable before a redirect can replace the persisted identity.
     beforeRedirect?.(this.storedUserBeforeRedirect)
-    this.currentUser = this.loadStoredUser()
+    this.currentUser = this.processAuthRedirect() ?? storedSession?.user ?? null
     this.setupLifecycleListeners()
     this.scheduleNextRefresh()
   }
@@ -229,15 +240,20 @@ export class SupabaseAuthService implements AuthService {
   }
 
   private readStoredSession(): StoredSession | null {
-    const raw = this.storage.getItem?.(STORAGE_KEY)
-    if (!raw) return null
-    const parsed: unknown = JSON.parse(raw)
-    const validation = storedSessionSchema.safeParse(parsed)
-    if (!validation.success) {
-      this.storage.removeItem?.(STORAGE_KEY)
-      throw new Error('Stored sign-in session is invalid.')
+    let raw: string | null
+    try {
+      raw = this.storage.getItem(STORAGE_KEY)
+    } catch {
+      throw new SessionOwnershipError('unavailable')
     }
-    return validation.data
+    if (raw === null) return null
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      return storedSessionSchema.parse(parsed)
+    } catch {
+      // Invalid bytes are evidence, not proof that this is a guest session.
+      throw new SessionOwnershipError('corrupt')
+    }
   }
 
   private loadStoredSession(): StoredSession | null {
@@ -254,14 +270,6 @@ export class SupabaseAuthService implements AuthService {
     if (this.destroyed) return null
     const session = this.loadStoredSession()
     return ownerId && session?.user.id === ownerId ? session : null
-  }
-
-  private loadStoredUser(): AuthUser | null {
-    const redirectUser = this.processAuthRedirect()
-    if (redirectUser) return redirectUser
-
-    const session = this.loadStoredSession()
-    return session?.user ?? null
   }
 
   private scheduleNextRefresh(): void {
@@ -410,7 +418,7 @@ export class SupabaseAuthService implements AuthService {
   }
 
   private clearSession(expectedOwnerId?: string): void {
-    const persisted = this.loadStoredSession()
+    const persisted = this.readStoredSession()
     if (expectedOwnerId && persisted && persisted.user.id !== expectedOwnerId) {
       // A storage event may still be queued when a network response arrives.
       this.generation++
@@ -984,9 +992,16 @@ export class SupabaseAuthService implements AuthService {
     this.boundStorageHandler = (event) => {
       if (this.destroyed || (event.key !== null && event.key !== STORAGE_KEY))
         return
+      let session: StoredSession | null
+      try {
+        session = this.readStoredSession()
+      } catch {
+        // Keep the active identity and drafts until ownership can be verified.
+        return
+      }
       this.generation++
       this.inFlightRefresh = null
-      this.currentUser = this.loadStoredSession()?.user ?? null
+      this.currentUser = session?.user ?? null
       this.scheduleNextRefresh()
       this.notifyListeners()
     }

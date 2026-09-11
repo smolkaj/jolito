@@ -9,6 +9,7 @@ import type {
 import { OfflineCardAssistant } from '../../application/card-assistant'
 import {
   SessionStorageError,
+  SessionOwnershipError,
   SupabaseAuthService,
 } from '../supabase/auth-service'
 import { SupabaseFeedbackService } from '../supabase/feedback-service'
@@ -72,12 +73,14 @@ export function initializeBrowserServices():
     if (error instanceof DeckInitializationError) return error.recovery
     if (
       !(error instanceof StorageInitializationError) &&
-      !(error instanceof SessionStorageError)
+      !(error instanceof SessionStorageError) &&
+      !(error instanceof SessionOwnershipError)
     )
       throw error
     return {
       status: 'recovery',
-      reason: 'unavailable',
+      reason:
+        error instanceof SessionOwnershipError ? error.reason : 'unavailable',
       raw: null,
       cards: [],
       message: error.message,
