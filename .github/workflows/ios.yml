@@ -88,6 +88,7 @@ jobs:
             -default-test-execution-time-allowance 120 \
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
       - name: Export screenshots
+        if: ${{ !cancelled() }}
         run: xcrun xcresulttool export attachments --path build/screenshots.xcresult --output-path build/native-screenshots
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}

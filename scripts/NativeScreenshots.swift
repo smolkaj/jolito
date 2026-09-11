@@ -14,17 +14,33 @@ final class NativeScreenshots: XCTestCase {
         XCTAssertTrue(spanish.waitForExistence(timeout: 15), "Card authoring must open in the native app")
         spanish.tap()
         spanish.typeText("Hola")
-        let english = app.textViews.element(boundBy: 1)
-        english.tap()
-        english.typeText("Hello")
+        // WKWebView exposes only the focused textarea as a native TextView.
+        // The associated HTML label focuses the other editor through the UI.
+        app.staticTexts["English"].tap()
+        app.textViews.firstMatch.typeText("Hello")
         // Blur the editor through the visible page, just as a learner would.
-        app.staticTexts["New flashcard"].tap()
+        let dismissKeyboard = app.buttons.matching(NSPredicate(
+            format: "label IN %@", ["Done", "Hide keyboard", "Dismiss keyboard"]
+        )).firstMatch
+        if dismissKeyboard.exists {
+            dismissKeyboard.tap()
+        } else {
+            app.staticTexts["New flashcard"].tap()
+        }
         let keyboardGone = XCTNSPredicateExpectation(
             predicate: NSPredicate { _, _ in !app.keyboards.firstMatch.exists }, object: nil
         )
         XCTAssertEqual(XCTWaiter.wait(for: [keyboardGone], timeout: 10), .completed)
+        app.staticTexts["New flashcard"].tap()
         capture(app, name: "02-create")
         app.terminate()
+    }
+
+    override func tearDown() {
+        if testRun?.hasSucceeded == false {
+            print(XCUIApplication().debugDescription)
+        }
+        super.tearDown()
     }
 
     private func capture(_ app: XCUIApplication, name: String) {
