@@ -45,8 +45,8 @@ test.beforeEach(async ({ page }) => {
         JSON.stringify({
           version: 1,
           accounts: {
-            'user:A': { version: 3, cards: a },
-            'user:B': { version: 3, cards: b },
+            'user:A': { version: 3, cards: a, deletedCardIds: [] },
+            'user:B': { version: 3, cards: b, deletedCardIds: [] },
           },
         }),
       )
