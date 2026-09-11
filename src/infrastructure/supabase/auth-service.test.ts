@@ -1004,6 +1004,219 @@ describe('SupabaseAuthService', () => {
       service.destroy()
     })
 
+    describe('interrupted deletion lifecycle', () => {
+      const services: SupabaseAuthService[] = []
+      const storageKey = 'jolito-auth-session-v1'
+      function ownedService() {
+        const service = createService()
+        services.push(service)
+        return service
+      }
+      function reloadService() {
+        const service = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+        services.push(service)
+        return service
+      }
+      function heldResponse() {
+        let resolve!: (response: Response) => void
+        const promise = new Promise<Response>((complete) => {
+          resolve = complete
+        })
+        return { promise, resolve }
+      }
+      function refreshedSession() {
+        return new Response(
+          JSON.stringify({
+            access_token: 'reauthenticated-token',
+            refresh_token: 'reauthenticated-refresh',
+            expires_in: 3600,
+            user,
+          }),
+        )
+      }
+      beforeEach(() => vi.useFakeTimers())
+      afterEach(() => {
+        for (const service of services.splice(0)) service.destroy()
+        vi.useRealTimers()
+      })
+
+      it('dispatches without AbortSignal.timeout and preserves failure → retry behavior', async () => {
+        vi.stubGlobal(
+          'AbortSignal',
+          new Proxy(AbortSignal, {
+            get(target, key, receiver) {
+              const value: unknown = Reflect.get(target, key, receiver)
+              return key === 'timeout' ? undefined : value
+            },
+          }),
+        )
+        const service = ownedService()
+        const stored = mockStorage[storageKey]
+        const fetchSpy = vi
+          .fn()
+          .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+          .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        vi.stubGlobal('fetch', fetchSpy)
+        expect((await service.deleteAccount()).success).toBe(false)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(mockStorage[storageKey]).toBe(stored)
+        expect((await service.deleteAccount()).success).toBe(true)
+        expect(fetchSpy).toHaveBeenCalledTimes(2)
+        expect(mockStorage[storageKey]).toBeUndefined()
+        expect(vi.getTimerCount()).toBe(0)
+      })
+
+      for (const entry of ['rpc401', 'expired', 'held-refresh'] as const) {
+        it.each([400, 401, 403, 422])(
+          `preserves auth when ${entry} refresh is rejected with HTTP %i, then reauthenticates and retries`,
+          async (status) => {
+            const service = ownedService()
+            const held = heldResponse()
+            const fetchSpy = vi.fn((url: string) =>
+              url.includes('/auth/v1/token')
+                ? held.promise
+                : Promise.resolve(new Response('{}', { status: 401 })),
+            )
+            vi.stubGlobal('fetch', fetchSpy)
+            if (entry === 'expired') {
+              mockStorage[storageKey] = JSON.stringify({
+                accessToken: 'expired-token',
+                refreshToken: 'delete-refresh',
+                expiresAt: Date.now() - 1,
+                user,
+              })
+            }
+            const stored = mockStorage[storageKey]
+            const listener = vi.fn()
+            service.onAuthStateChange(listener)
+            listener.mockClear()
+            const existingRefresh =
+              entry === 'held-refresh' ? service.refreshSession() : undefined
+            const deletion = service.deleteAccount()
+            await vi.advanceTimersByTimeAsync(0)
+            expect(
+              fetchSpy.mock.calls.filter(([url]) =>
+                url.includes('/auth/v1/token'),
+              ),
+            ).toHaveLength(1)
+            held.resolve(new Response('{}', { status }))
+            expect((await deletion).success).toBe(false)
+            await existingRefresh
+            expect(mockStorage[storageKey]).toBe(stored)
+            expect(listener).not.toHaveBeenCalled()
+            service.destroy()
+
+            // Reauthentication is explicit. A separate future expiry lifecycle
+            // is an ownership concern, not confirmation of account deletion.
+            fetchSpy.mockImplementation((url: string) =>
+              Promise.resolve(
+                url.includes('/auth/v1/')
+                  ? refreshedSession()
+                  : new Response(null, { status: 204 }),
+              ),
+            )
+            const reloaded = reloadService()
+            expect(
+              (await reloaded.verifyOtp(user.email, '123456')).success,
+            ).toBe(true)
+            expect((await reloaded.deleteAccount()).success).toBe(true)
+            expect(mockStorage[storageKey]).toBeUndefined()
+          },
+        )
+      }
+
+      for (const interruption of ['deadline', 'destroy'] as const) {
+        for (const stage of ['rpc', 'refresh'] as const) {
+          it(`bounds ${stage} during ${interruption}, ignores late responses and permits a fresh-instance retry`, async () => {
+            const service = ownedService()
+            const stored = mockStorage[storageKey]
+            const listener = vi.fn()
+            service.onAuthStateChange(listener)
+            listener.mockClear()
+            const held = heldResponse()
+            const fetchSpy = vi.fn((url: string) =>
+              stage === 'refresh' && !url.includes('/auth/v1/token')
+                ? Promise.resolve(new Response('{}', { status: 401 }))
+                : held.promise,
+            )
+            vi.stubGlobal('fetch', fetchSpy)
+            let result: { success: boolean } | undefined
+            const deletion = service.deleteAccount().then((value) => {
+              result = value
+            })
+            await vi.advanceTimersByTimeAsync(0)
+            expect(fetchSpy).toHaveBeenCalledTimes(stage === 'rpc' ? 1 : 2)
+            if (interruption === 'destroy') service.destroy()
+            await vi.advanceTimersByTimeAsync(
+              interruption === 'deadline' ? 10_001 : 0,
+            )
+            expect(result?.success).toBe(false)
+            await deletion
+            expect(mockStorage[storageKey]).toBe(stored)
+            expect(listener).not.toHaveBeenCalled()
+            service.destroy()
+            expect(vi.getTimerCount()).toBe(0)
+
+            held.resolve(
+              stage === 'rpc'
+                ? new Response(null, { status: 204 })
+                : new Response('{}', { status: 400 }),
+            )
+            await vi.advanceTimersByTimeAsync(0)
+            window.dispatchEvent(new Event('online'))
+            document.dispatchEvent(new Event('visibilitychange'))
+            await vi.advanceTimersByTimeAsync(60_000)
+            expect(mockStorage[storageKey]).toBe(stored)
+            expect(listener).not.toHaveBeenCalled()
+            expect(fetchSpy).toHaveBeenCalledTimes(stage === 'rpc' ? 1 : 2)
+            expect(vi.getTimerCount()).toBe(0)
+            fetchSpy.mockResolvedValue(new Response(null, { status: 204 }))
+            const reloaded = reloadService()
+            expect(await reloaded.getUser()).toEqual(user)
+            expect((await reloaded.deleteAccount()).success).toBe(true)
+            expect(mockStorage[storageKey]).toBeUndefined()
+          })
+        }
+      }
+
+      it.each([400, 401, 403, 422])(
+        'retains auth when an already-running refresh rejects with HTTP %i after the deletion deadline',
+        async (status) => {
+          const service = ownedService()
+          const stored = mockStorage[storageKey]
+          const held = heldResponse()
+          const fetchSpy = vi.fn((url: string) =>
+            url.includes('/auth/v1/token')
+              ? held.promise
+              : Promise.resolve(new Response('{}', { status: 401 })),
+          )
+          vi.stubGlobal('fetch', fetchSpy)
+          const listener = vi.fn()
+          service.onAuthStateChange(listener)
+          listener.mockClear()
+          const refresh = service.refreshSession()
+          let result: { success: boolean } | undefined
+          const deletion = service.deleteAccount().then((value) => {
+            result = value
+          })
+          await vi.advanceTimersByTimeAsync(10_001)
+          expect(result?.success).toBe(false)
+          await deletion
+          held.resolve(new Response('{}', { status }))
+          await refresh
+          expect(mockStorage[storageKey]).toBe(stored)
+          expect(listener).not.toHaveBeenCalled()
+          expect(fetchSpy).toHaveBeenCalledTimes(2)
+          service.destroy()
+          expect(vi.getTimerCount()).toBe(0)
+        },
+      )
+    })
+
     it('does not claim successful deletion without credentials or backend configuration', async () => {
       const fetchSpy = vi.fn()
       vi.stubGlobal('fetch', fetchSpy)
