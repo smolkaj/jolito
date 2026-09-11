@@ -220,7 +220,20 @@ export function GrammarPractice({
               }
             />
           </div>
-          <p className="grammar-translation">{context.translation}</p>
+          <p className="grammar-translation" lang="en">
+            {context.translationParts.map((part, index) => (
+              <span
+                key={index}
+                className={
+                  session.revealed && part.isAnswer
+                    ? 'grammar-filled'
+                    : undefined
+                }
+              >
+                {part.text}
+              </span>
+            ))}
+          </p>
         </>
       }
       answer={session.answer}

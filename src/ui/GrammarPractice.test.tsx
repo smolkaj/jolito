@@ -5,7 +5,12 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SyncResult } from '../application/ports'
 import { App } from '../jolito'
 import { createTestServices } from '../test/services'
-import { createGrammarCards, isGrammarCard } from '../domain/grammar'
+import {
+  createGrammarCards,
+  grammarContext,
+  grammarQueue,
+  isGrammarCard,
+} from '../domain/grammar'
 import { scheduleReview, DAY } from '../domain/card'
 
 async function begin() {
@@ -28,6 +33,9 @@ describe('grammar practice in Jolito', () => {
       )
       await user.click(screen.getByRole('button', { name: 'Start practice' }))
       for (const answer of ['', 'wrong', 'exact']) {
+        const translation = document.querySelector('.grammar-translation')!
+        const originalTranslation = translation.textContent
+        expect(translation.querySelector('.grammar-filled')).toBeNull()
         const sentence = screen.getByRole('heading', { level: 1 })
         const prompt = screen.getByRole('button', { name: 'Play prompt audio' })
         expect(sentence.parentElement).toContainElement(prompt)
@@ -39,9 +47,12 @@ describe('grammar practice in Jolito', () => {
         expect(services.mockSpeaker.spoken.slice(-1)[0]?.text).toBe(
           sentence.textContent,
         )
-        const card = createGrammarCards(0, topic)[
-          ['', 'wrong', 'exact'].indexOf(answer)
-        ]!
+        const card = grammarQueue(
+          createGrammarCards(0, topic),
+          services.clock.now(),
+          'mixed',
+          topic,
+        )[['', 'wrong', 'exact'].indexOf(answer)]!
         if (answer)
           await user.type(
             screen.getByRole('textbox'),
@@ -54,6 +65,16 @@ describe('grammar practice in Jolito', () => {
           ),
         )
         expect(sentence).not.toHaveTextContent('…')
+        const expectedHighlights = grammarContext(card)
+          .translationParts.filter((part) => part.isAnswer)
+          .map((part) => part.text)
+        expect(translation.textContent).toBe(originalTranslation)
+        expect(
+          Array.from(
+            translation.querySelectorAll('.grammar-filled'),
+            (part) => part.textContent,
+          ),
+        ).toEqual(expectedHighlights)
         expect(document.querySelectorAll('.audio-button')).toHaveLength(1)
         expect(sentence.parentElement).toContainElement(
           screen.getByRole('button', { name: 'Play answer audio' }),
@@ -65,6 +86,12 @@ describe('grammar practice in Jolito', () => {
         )
         const resumed = screen.getByRole('heading', { level: 1 })
         expect(resumed.textContent).toBe(sentence.textContent)
+        expect(
+          Array.from(
+            document.querySelectorAll('.grammar-translation .grammar-filled'),
+            (part) => part.textContent,
+          ),
+        ).toEqual(expectedHighlights)
         expect(document.querySelectorAll('.audio-button')).toHaveLength(1)
         await user.click(
           screen.getByRole('button', { name: 'Play answer audio' }),
@@ -235,7 +262,12 @@ describe('grammar practice in Jolito', () => {
         topic,
       )
       await user.click(screen.getByRole('button', { name: 'Start practice' }))
-      const card = createGrammarCards(0, topic)[0]!
+      const card = grammarQueue(
+        createGrammarCards(0, topic),
+        services.clock.now(),
+        'mixed',
+        topic,
+      )[0]!
       await user.type(screen.getByRole('textbox'), 'habl')
       const prompt = screen.getByRole('heading', { level: 1 }).textContent
       services.mockSync.remoteCards = [

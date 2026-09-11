@@ -37,11 +37,11 @@ export const perfectVerbs = {
     contexts: [
       [
         'Últimamente {subject} ___ mucho con la vecina.',
-        'Lately, {subject} {have} talked a lot with the neighbor.',
+        'Lately, {subject} [{have} talked] a lot with the neighbor.',
       ],
       [
         '{subject} nunca ___ de eso con su familia.',
-        '{subject} {have} never talked about that with their family.',
+        '{subject} [{have}] never [talked] about that with their family.',
       ],
     ],
   },
@@ -51,11 +51,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} nunca ___ chapulines.',
-        '{subject} {have} never eaten grasshoppers.',
+        '{subject} [{have}] never [eaten] grasshoppers.',
       ],
       [
         'Últimamente {subject} ___ más verduras.',
-        'Lately, {subject} {have} eaten more vegetables.',
+        'Lately, {subject} [{have} eaten] more vegetables.',
       ],
     ],
   },
@@ -65,11 +65,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ en varias ciudades.',
-        '{subject} {have} lived in several cities.',
+        '{subject} [{have} lived] in several cities.',
       ],
       [
         'Hasta ahora, {subject} ___ muchas experiencias nuevas.',
-        'So far, {subject} {have} had many new experiences.',
+        'So far, {subject} [{have} had] many new experiences.',
       ],
     ],
   },
@@ -79,11 +79,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ mucho en este proyecto últimamente.',
-        '{subject} {have} worked a lot on this project lately.',
+        '{subject} [{have} worked] a lot on this project lately.',
       ],
       [
         '{subject} nunca ___ en un restaurante.',
-        '{subject} {have} never worked in a restaurant.',
+        '{subject} [{have}] never [worked] in a restaurant.',
       ],
     ],
   },
@@ -93,11 +93,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ por México varias veces.',
-        '{subject} {have} traveled around Mexico several times.',
+        '{subject} [{have} traveled] around Mexico several times.',
       ],
       [
         '{subject} nunca ___ en avión.',
-        '{subject} {have} never traveled by plane.',
+        '{subject} [{have}] never [traveled] by plane.',
       ],
     ],
   },
@@ -107,11 +107,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} nunca ___ ropa por internet.',
-        '{subject} {have} never bought clothes online.',
+        '{subject} [{have}] never [bought] clothes online.',
       ],
       [
         'En estos meses, {subject} ___ varios libros usados.',
-        'Over these months, {subject} {have} bought several secondhand books.',
+        'Over these months, {subject} [{have} bought] several secondhand books.',
       ],
     ],
   },
@@ -121,11 +121,11 @@ export const perfectVerbs = {
     contexts: [
       [
         'Desde el inicio del curso, {subject} ___ muchas palabras.',
-        'Since the course began, {subject} {have} learned many words.',
+        'Since the course began, {subject} [{have} learned] many words.',
       ],
       [
         '{subject} ___ mucho de sus errores.',
-        '{subject} {have} learned a lot from their mistakes.',
+        '{subject} [{have} learned] a lot from their mistakes.',
       ],
     ],
   },
@@ -135,11 +135,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ ese museo varias veces.',
-        '{subject} {have} visited that museum several times.',
+        '{subject} [{have} visited] that museum several times.',
       ],
       [
         '{estar} de vacaciones y ___ varios pueblos de la región.',
-        '{subject} {be} on vacation and {have} visited several towns in the region.',
+        '{subject} {be} on vacation and [{have} visited] several towns in the region.',
       ],
     ],
   },
@@ -149,11 +149,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} todavía no ___ el libro.',
-        '{subject} {have} not finished the book yet.',
+        '{subject} [{have}] not [finished] the book yet.',
       ],
       [
         'Hasta ahora, {subject} ___ tres cursos de español.',
-        'So far, {subject} {have} completed three Spanish courses.',
+        'So far, {subject} [{have} completed] three Spanish courses.',
       ],
     ],
   },
@@ -163,11 +163,11 @@ export const perfectVerbs = {
     contexts: [
       [
         'Últimamente {subject} ___ ejercicio todos los días.',
-        'Lately, {subject} {have} exercised every day.',
+        'Lately, {subject} [{have} exercised] every day.',
       ],
       [
         '{subject} nunca ___ tortillas a mano.',
-        '{subject} {have} never made tortillas by hand.',
+        '{subject} [{have}] never [made] tortillas by hand.',
       ],
     ],
   },
@@ -177,11 +177,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ lo mismo varias veces.',
-        '{subject} {have} said the same thing several times.',
+        '{subject} [{have} said] the same thing several times.',
       ],
       [
         '{subject} todavía no ___ nada del viaje.',
-        '{subject} {have} not said anything about the trip yet.',
+        '{subject} [{have}] not [said] anything about the trip yet.',
       ],
     ],
   },
@@ -189,10 +189,13 @@ export const perfectVerbs = {
     family: 'irregular',
     forms: perfectForms('visto'),
     contexts: [
-      ['{subject} nunca ___ el mar.', '{subject} {have} never seen the sea.'],
+      [
+        '{subject} nunca ___ el mar.',
+        '{subject} [{have}] never [seen] the sea.',
+      ],
       [
         'Últimamente {subject} ___ muchas películas mexicanas.',
-        'Lately, {subject} {have} watched many Mexican movies.',
+        'Lately, {subject} [{have} watched] many Mexican movies.',
       ],
     ],
   },
@@ -202,11 +205,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ mucho esfuerzo en este proyecto.',
-        '{subject} {have} put a lot of effort into this project.',
+        '{subject} [{have} put] a lot of effort into this project.',
       ],
       [
         '{subject} todavía no ___ fecha para la reunión.',
-        '{subject} {have} not set a date for the meeting yet.',
+        '{subject} [{have}] not [set] a date for the meeting yet.',
       ],
     ],
   },
@@ -216,11 +219,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ varias cartas a sus amigos.',
-        '{subject} {have} written several letters to their friends.',
+        '{subject} [{have} written] several letters to their friends.',
       ],
       [
         '{subject} nunca ___ un cuento.',
-        '{subject} {have} never written a short story.',
+        '{subject} [{have}] never [written] a short story.',
       ],
     ],
   },
@@ -230,11 +233,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} todavía no ___ el regalo.',
-        '{subject} {have} not opened the gift yet.',
+        '{subject} [{have}] not [opened] the gift yet.',
       ],
       [
         '{subject} ___ esa puerta muchas veces.',
-        '{subject} {have} opened that door many times.',
+        '{subject} [{have} opened] that door many times.',
       ],
     ],
   },
@@ -244,11 +247,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ a ese pueblo varias veces.',
-        '{subject} {have} returned to that town several times.',
+        '{subject} [{have} returned] to that town several times.',
       ],
       [
         '{subject} todavía no ___ de vacaciones.',
-        '{subject} {have} not returned from vacation yet.',
+        '{subject} [{have}] not [returned] from vacation yet.',
       ],
     ],
   },
@@ -258,11 +261,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} nunca ___ un vaso en esa casa.',
-        '{subject} {have} never broken a glass in that house.',
+        '{subject} [{have}] never [broken] a glass in that house.',
       ],
       [
         '{subject} ___ varios platos a lo largo de los años.',
-        '{subject} {have} broken several plates over the years.',
+        '{subject} [{have} broken] several plates over the years.',
       ],
     ],
   },
@@ -272,11 +275,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ varios libros de esa autora.',
-        '{subject} {have} read several books by that author.',
+        '{subject} [{have} read] several books by that author.',
       ],
       [
         '{subject} todavía no ___ el mensaje.',
-        '{subject} {have} not read the message yet.',
+        '{subject} [{have}] not [read] the message yet.',
       ],
     ],
   },
@@ -286,11 +289,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} nunca ___ esa canción.',
-        '{subject} {have} never heard that song.',
+        '{subject} [{have}] never [heard] that song.',
       ],
       [
         'Últimamente {subject} ___ mucho ruido en la calle.',
-        'Lately, {subject} {have} heard a lot of noise in the street.',
+        'Lately, {subject} [{have} heard] a lot of noise in the street.',
       ],
     ],
   },
@@ -300,11 +303,11 @@ export const perfectVerbs = {
     contexts: [
       [
         '{subject} ___ comida para compartir muchas veces.',
-        '{subject} {have} brought food to share many times.',
+        '{subject} [{have} brought] food to share many times.',
       ],
       [
         '{subject} todavía no ___ los documentos.',
-        '{subject} {have} not brought the documents yet.',
+        '{subject} [{have}] not [brought] the documents yet.',
       ],
     ],
   },
