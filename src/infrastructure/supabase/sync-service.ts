@@ -72,6 +72,10 @@ export class SupabaseSyncService implements SyncService {
         const errorText = await response.text().catch(() => '')
         assertOwner()
         const error = parsePostgrestErrorPayload(errorText)
+        if (error?.code === 'PGRST202')
+          throw new Error(
+            'Cloud sync is being updated. Your local changes are saved. Please try syncing again shortly; update help is at https://joli.to/update.',
+          )
         throw new Error(
           error?.message ||
             `Cloud sync failed (HTTP ${response.status}). Please try again.`,
@@ -87,7 +91,7 @@ export class SupabaseSyncService implements SyncService {
     try {
       const response = await this.request(
         user,
-        `decks?user_id=eq.${encodeURIComponent(user.id)}&select=user_id,revision,updated_at,data`,
+        'rpc/read_deck_snapshot',
         undefined,
         signal,
       )

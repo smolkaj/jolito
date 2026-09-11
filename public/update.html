@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en" style="background-color: #fdf5f8; color-scheme: light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fdf5f8" />
+    <title>Update Jolito</title>
+    <meta
+      name="description"
+      content="Update Jolito safely while keeping your local cards and unfinished work."
+    />
+    <link rel="canonical" href="https://joli.to/update" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      :root {
+        --papel: #fdf5f8;
+        --card: #ffffff;
+        --ink: #1f1b18;
+        --ink-light: #645b53;
+        --line: #2b2520;
+        --rosa: #d94a7a;
+        --rosa-dark: #b83561;
+        --verde: #1b8a5a;
+        --verde-dark: #126340;
+        --shadow: 4px 4px 0 var(--line);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: var(--papel);
+        color: var(--ink);
+        line-height: 1.6;
+        padding: 24px 16px 64px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .privacy-container {
+        width: 100%;
+        max-width: 680px;
+        background: var(--card);
+        border: 2.5px solid var(--line);
+        border-radius: 24px;
+        padding: clamp(24px, 5vw, 40px);
+        box-shadow: var(--shadow);
+      }
+      header {
+        margin-bottom: 28px;
+        border-bottom: 2px solid #f0e6eb;
+        padding-bottom: 20px;
+      }
+      .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .brand-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      h1 {
+        font-size: clamp(26px, 4vw, 32px);
+        font-weight: 800;
+        line-height: 1.2;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        color: var(--ink-light);
+        font-size: 15px;
+      }
+      .effective-date {
+        display: inline-block;
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--ink-light);
+      }
+      section {
+        margin-bottom: 24px;
+      }
+      h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      p {
+        font-size: 15px;
+        color: var(--ink);
+        line-height: 1.65;
+        margin-bottom: 8px;
+      }
+      ul {
+        margin-left: 20px;
+        margin-bottom: 8px;
+      }
+      li {
+        font-size: 15px;
+        margin-bottom: 4px;
+      }
+      a {
+        color: var(--rosa-dark);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      a:hover {
+        color: var(--rosa);
+      }
+      .return-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 24px;
+        padding: 10px 20px;
+        background: var(--papel);
+        border: 2px solid var(--line);
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--ink);
+        text-decoration: none;
+        box-shadow: 2px 2px 0 var(--line);
+        transition: transform 120ms ease;
+      }
+      .return-link:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 var(--line);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="privacy-container">
+      <header>
+        <div class="brand-row">
+          <a href="/" class="brand-title">Jolito</a>
+        </div>
+        <h1>Update Jolito safely</h1>
+      </header>
+      <section>
+        <p>
+          If cloud sync asks you to update, reports a deck schema mismatch, or
+          says “permission denied for table decks,” your app needs the latest
+          sync support. Your local deck can stay on this device while you
+          update.
+        </p>
+      </section>
+      <section>
+        <h2>Keep your work first</h2>
+        <p>
+          Return to the app and finish or save any card you are editing.
+          Complete your current practice answer before closing it. An unfinished
+          answer or unsaved draft will not survive closing the app.
+        </p>
+        <p>
+          Export a JSON deck backup from
+          <strong>Manage deck → Backup &amp; export</strong>. If a save or
+          export fails, keep the app open and copy unfinished text somewhere
+          safe before continuing.
+        </p>
+        <p>
+          <strong>Keep the app installed and keep its site data.</strong>
+          Clearing browser storage or uninstalling can erase cards that have not
+          synced.
+        </p>
+      </section>
+      <section>
+        <h2>Browser or home-screen app</h2>
+        <p>
+          Connect to the internet. Open Jolito once so the browser can download
+          the update, then close every Jolito tab and window, including the
+          home-screen app. Close this guide too. Reopen Jolito in the same
+          browser or home-screen app and choose
+          <strong>Cloud sync → Sync now</strong>.
+        </p>
+        <p>
+          A reload alone may keep the old version while another Jolito tab is
+          open. If the update was still downloading, repeat the close-and-reopen
+          step once it has finished. If sync says it is being updated, keep your
+          local deck and retry shortly.
+        </p>
+      </section>
+      <section>
+        <h2>Native iPhone or iPad app</h2>
+        <p>
+          Install the latest Jolito update from the same place you installed the
+          app, such as TestFlight. Reopening a native app does not download new
+          app code. Keep the existing installation and its data; then open it
+          and sync again.
+        </p>
+      </section>
+      <section>
+        <h2>If sync still fails</h2>
+        <p>
+          Keep your backup and local app data. You can continue practicing
+          locally. Use <strong>Cloud sync → Feedback</strong> to report the
+          message, or email <a href="mailto:a@joli.to">a@joli.to</a>. Do not
+          delete your account to repair sync.
+        </p>
+      </section>
+      <a href="/" class="return-link">← Return to Jolito</a>
+    </main>
+  </body>
+</html>
