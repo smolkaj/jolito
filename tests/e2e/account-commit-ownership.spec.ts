@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { collectionVersion, createStudyCards } from '../../src/domain/card'
+import {
+  collectionVersion,
+  createStudyCards,
+  studyCardCollectionSchema,
+} from '../../src/domain/card'
 
 const session = (id: string) => ({
   accessToken: `token-${id}`,
@@ -7,20 +11,21 @@ const session = (id: string) => ({
   expiresAt: Date.now() + 3600000,
   user: { id, email: `${id}@example.com` },
 })
-const collection = (id: string) => ({
-  version: collectionVersion,
-  cards: createStudyCards(
-    {
-      spanish: `${id}-private`,
-      english: id,
-      context: '',
-      bidirectional: false,
-    },
-    id,
-    0,
-  ),
-  deletedCardIds: [],
-})
+const collection = (id: string) =>
+  studyCardCollectionSchema.parse({
+    version: collectionVersion,
+    cards: createStudyCards(
+      {
+        spanish: `${id}-private`,
+        english: id,
+        context: '',
+        bidirectional: false,
+      },
+      id,
+      0,
+    ),
+    deletedCardIds: [],
+  })
 async function settle(page: Page) {
   await page.evaluate(
     () =>
