@@ -111,4 +111,107 @@ test.describe('Feedback modal & submission', () => {
     await page.keyboard.press('Escape')
     await expect(errorBanner).not.toBeVisible()
   })
+
+  test('preserves consistent vertical baseline and right alignment of Feedback button across home, deck, and app views', async ({
+    page,
+  }) => {
+    // 1. Verify desktop alignment parity across all standard views
+    await page.setViewportSize({ width: 1280, height: 800 })
+
+    const desktopViews = [
+      { name: 'home', path: '/' },
+      { name: 'deck', path: '/#/deck' },
+      { name: 'complete', path: '/#/complete' },
+      { name: 'grammar', path: '/#/grammar' },
+    ]
+
+    const desktopMeasurements: Array<{
+      name: string
+      bottomOffset: number
+      rightOffset: number
+    }> = []
+
+    for (const view of desktopViews) {
+      await page.goto(view.path)
+      const feedbackBtn = page
+        .locator('.app-footer')
+        .getByRole('button', { name: /^feedback$/i })
+      await expect(feedbackBtn).toBeVisible()
+
+      const box = await feedbackBtn.boundingBox()
+      expect(box).not.toBeNull()
+
+      desktopMeasurements.push({
+        name: view.name,
+        bottomOffset: 800 - (box!.y + box!.height),
+        rightOffset: 1280 - (box!.x + box!.width),
+      })
+    }
+
+    const firstDesktop = desktopMeasurements[0]
+    expect(firstDesktop).toBeDefined()
+    if (!firstDesktop) return
+
+    for (const m of desktopMeasurements.slice(1)) {
+      // Allow at most 1px subpixel variation across flex and grid baseline rendering
+      expect(
+        Math.abs(m.bottomOffset - firstDesktop.bottomOffset),
+        `Vertical bottom offset mismatch between home (${firstDesktop.bottomOffset}px) and ${m.name} (${m.bottomOffset}px)`,
+      ).toBeLessThanOrEqual(1)
+
+      expect(
+        Math.abs(m.rightOffset - firstDesktop.rightOffset),
+        `Right offset mismatch between home (${firstDesktop.rightOffset}px) and ${m.name} (${m.rightOffset}px)`,
+      ).toBeLessThanOrEqual(1)
+    }
+
+    // 2. Verify mobile alignment parity across views
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    const mobileViews = [
+      { name: 'home', path: '/' },
+      { name: 'deck', path: '/#/deck' },
+      { name: 'complete', path: '/#/complete' },
+      { name: 'grammar', path: '/#/grammar' },
+    ]
+
+    const mobileMeasurements: Array<{
+      name: string
+      bottomOffset: number
+      rightOffset: number
+    }> = []
+
+    for (const view of mobileViews) {
+      await page.goto(view.path)
+      const feedbackBtn = page
+        .locator('.app-footer')
+        .getByRole('button', { name: /^feedback$/i })
+      await expect(feedbackBtn).toBeVisible()
+
+      const box = await feedbackBtn.boundingBox()
+      expect(box).not.toBeNull()
+
+      mobileMeasurements.push({
+        name: view.name,
+        bottomOffset: 844 - (box!.y + box!.height),
+        rightOffset: 390 - (box!.x + box!.width),
+      })
+    }
+
+    const firstMobile = mobileMeasurements[0]
+    expect(firstMobile).toBeDefined()
+    if (!firstMobile) return
+
+    for (const m of mobileMeasurements.slice(1)) {
+      expect(
+        Math.abs(m.bottomOffset - firstMobile.bottomOffset),
+        `Mobile bottom offset mismatch between home (${firstMobile.bottomOffset}px) and ${m.name} (${m.bottomOffset}px)`,
+      ).toBeLessThanOrEqual(1)
+
+      expect(
+        Math.abs(m.rightOffset - firstMobile.rightOffset),
+        `Mobile right offset mismatch between home (${firstMobile.rightOffset}px) and ${m.name} (${m.rightOffset}px)`,
+      ).toBeLessThanOrEqual(1)
+    }
+  })
 })
