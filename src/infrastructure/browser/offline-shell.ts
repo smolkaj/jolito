@@ -35,10 +35,18 @@ export function startOfflineShell(): () => void {
       channel = new MessageChannel()
       channel.port1.onmessage = (event: MessageEvent<unknown>) =>
         finish(event.data === 'cached')
-      worker.postMessage({ type: 'CHECK_OFFLINE_READY' }, [channel.port2])
+      const buildId = document.querySelector<HTMLMetaElement>(
+        'meta[name="jolito-build"]',
+      )?.content
+      worker.postMessage({ type: 'CHECK_OFFLINE_READY', buildId }, [
+        channel.port2,
+      ])
     })().catch(() => finish(false))
   }
-  const suspend = () => cancel?.()
+  const suspend = () => {
+    window.removeEventListener('load', prepare)
+    cancel?.()
+  }
   const resume = (event: PageTransitionEvent) => {
     if (event.persisted) prepare()
   }

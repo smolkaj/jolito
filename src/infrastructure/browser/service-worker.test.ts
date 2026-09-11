@@ -23,9 +23,12 @@ function browser() {
   const fetch = vi.fn((input: string | FetchRequest) => {
     if (failure === 'network') return Promise.reject(new Error('offline'))
     return Promise.resolve(
-      new Response(`${revision}:${key(input)}`, {
-        status: failure === 'http' ? 503 : 200,
-      }),
+      new Response(
+        `${revision}:${key(input)}<meta name="jolito-build" content="${revision}">`,
+        {
+          status: failure === 'http' ? 503 : 200,
+        },
+      ),
     )
   })
   const caches = {
@@ -33,12 +36,12 @@ function browser() {
     delete: (name: string) => Promise.resolve(stores.delete(name)),
     open: (name: string) => {
       let entries = stores.get(name)
-      if (!entries) stores.set(name, (entries = new Map()))
+      if (!entries) stores.set(name, (entries = new Map<string, Response>()))
       const store = entries
       return Promise.resolve({
         match: (input: string | FetchRequest) =>
           Promise.resolve(store.get(key(input))?.clone()),
-        addAll: async (urls: string[]) => {
+        addAll: async (urls: (string | FetchRequest)[]) => {
           const responses = await Promise.all(urls.map(fetch))
           if (responses.some((response) => !response.ok))
             throw new Error('HTTP error')
@@ -74,6 +77,7 @@ function browser() {
         fetch,
         URL,
         Response,
+        Request,
       },
     )
     async function dispatch(type: string, details: Partial<WorkerEvent> = {}) {
@@ -129,19 +133,35 @@ describe('complete offline shell lifecycle', () => {
 
       env.fail('network')
       const offline = await oldWorker.dispatch('fetch', env.navigation)
-      expect(await offline.response?.text()).toBe('old:/index.html')
+      expect(await offline.response?.text()).toContain('old:/index.html')
       env.fail(null)
       const recoveredWorker = env.worker('new')
       await recoveredWorker.dispatch('install')
       await recoveredWorker.dispatch('activate')
       const recovered = await recoveredWorker.dispatch('fetch', env.navigation)
-      expect(await recovered.response?.text()).toBe('new:/index.html')
+      expect(await recovered.response?.text()).toContain('new:/index.html')
       const ready = await recoveredWorker.dispatch('message', {
-        data: { type: 'CHECK_OFFLINE_READY' },
+        data: { type: 'CHECK_OFFLINE_READY', buildId: 'new' },
       })
       expect(ready.reply).toHaveBeenCalledWith('cached')
     },
   )
+
+  it('rejects an install whose HTML came from a different deployment', async () => {
+    const env = browser()
+    const old = env.worker('old')
+    await old.dispatch('install')
+    await old.dispatch('activate')
+    env.upgrade()
+    const mismatched = env.worker('different')
+    await expect(mismatched.dispatch('install')).rejects.toThrow(
+      'different build',
+    )
+    expect(env.stores.has('jolito-shell-different')).toBe(false)
+    env.fail('network')
+    const offline = await old.dispatch('fetch', env.navigation)
+    expect(await offline.response?.text()).toContain('old:/index.html')
+  })
 
   it('never replaces installed HTML with a failed or incomplete deployment on navigation', async () => {
     const env = browser()
@@ -152,7 +172,7 @@ describe('complete offline shell lifecycle', () => {
       env.fail(failure)
       env.upgrade()
       const result = await worker.dispatch('fetch', env.navigation)
-      expect(await result.response?.text()).toBe('old:/index.html')
+      expect(await result.response?.text()).toContain('old:/index.html')
     }
   })
 
@@ -161,12 +181,16 @@ describe('complete offline shell lifecycle', () => {
     const worker = env.worker('old')
     await worker.dispatch('install')
     const ready = await worker.dispatch('message', {
-      data: { type: 'CHECK_OFFLINE_READY' },
+      data: { type: 'CHECK_OFFLINE_READY', buildId: 'old' },
     })
     expect(ready.reply).toHaveBeenCalledWith('cached')
+    const mismatched = await worker.dispatch('message', {
+      data: { type: 'CHECK_OFFLINE_READY', buildId: 'new' },
+    })
+    expect(mismatched.reply).toHaveBeenCalledWith('cache-error')
     env.stores.get('jolito-shell-old')!.delete('/assets/app.js')
     const missing = await worker.dispatch('message', {
-      data: { type: 'CHECK_OFFLINE_READY' },
+      data: { type: 'CHECK_OFFLINE_READY', buildId: 'old' },
     })
     expect(missing.reply).toHaveBeenCalledWith('cache-error')
     env.fetch.mockClear()

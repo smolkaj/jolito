@@ -1,7 +1,8 @@
-/* global self, caches, fetch, URL */
+/* global self, caches, fetch, URL, Request */
 
 // Replaced by the explicit Vite offline-shell build step.
-const CACHE_NAME = 'jolito-shell-__JOLITO_BUILD_ID__'
+const BUILD_ID = '__JOLITO_BUILD_ID__'
+const CACHE_NAME = `jolito-shell-${BUILD_ID}`
 const BUILD_ASSETS = /* __JOLITO_BUILD_ASSETS__ */ []
 const scopePath = new URL(self.registration.scope).pathname
 const indexUrl = `${scopePath}index.html`
@@ -39,12 +40,26 @@ self.addEventListener('install', (event) => {
       try {
         const cache = await caches.open(CACHE_NAME)
         // addAll is atomic: neither HTTP failures nor quota errors publish a partial shell.
-        await cache.addAll(REQUIRED_URLS)
+        await cache.addAll(
+          REQUIRED_URLS.map(
+            (url) =>
+              new Request(new URL(url, self.location.origin), {
+                cache: 'reload',
+              }),
+          ),
+        )
+        const html = await (await cache.match(indexUrl)).text()
+        if (
+          !html.includes(`<meta name="jolito-build" content="${BUILD_ID}">`)
+        ) {
+          throw new Error('Offline HTML belongs to a different build')
+        }
       } catch (error) {
         await caches.delete(CACHE_NAME)
         throw error
       }
-      await self.skipWaiting()
+      // Updates wait for old tabs to close, keeping their HTML and lazy assets
+      // usable until the browser can activate the new complete build safely.
     })(),
   )
 })
@@ -70,6 +85,10 @@ self.addEventListener('message', (event) => {
   event.waitUntil(
     (async () => {
       try {
+        if (event.data.buildId !== BUILD_ID) {
+          event.ports[0]?.postMessage('cache-error')
+          return
+        }
         const cache = await caches.open(CACHE_NAME)
         const responses = await Promise.all(
           REQUIRED_URLS.map((url) => cache.match(url)),

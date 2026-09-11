@@ -23,6 +23,10 @@ npm run build
 npm run preview
 ```
 
+The production Vite build emits a service worker with an explicit asset list and a build fingerprint shared with the HTML. Installation caches the complete shell, dictionary, and bundled assets before activation; a failed update preserves the installed build. Navigation uses that installed HTML so it cannot mix new HTML with old assets. Successful updates wait until all existing Jolito tabs/PWA windows close, then activate on reopening. No manual cache-version bump is needed.
+
+Offline readiness verifies both the page's build fingerprint and every required cached response. The request times out after 30 seconds and releases its timer/message ports on completion or page exit; BFCache restoration starts a new request. API calls and audio caches are owned by their application services, outside this shell inventory.
+
 Open [http://localhost:4173](http://localhost:4173) once while online before testing an offline reload. Jolito pairs a studio-quality neural voice engine with local service worker caching and practice prefetching, falling back gracefully to device speech synthesis when offline or for un-cached phrases.
 
 ## Cloud synchronization & Supabase
