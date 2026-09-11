@@ -3549,11 +3549,13 @@ export function App({
                     <p className="eyebrow direction-eyebrow">
                       {currentCard.direction === 'es-en' ? (
                         <>
-                          <MexicoFlag /> MEXICAN SPANISH → <EnglishBadge /> ENGLISH
+                          <MexicoFlag /> MEXICAN SPANISH → <EnglishBadge />{' '}
+                          ENGLISH
                         </>
                       ) : (
                         <>
-                          <EnglishBadge /> ENGLISH → <MexicoFlag /> MEXICAN SPANISH
+                          <EnglishBadge /> ENGLISH → <MexicoFlag /> MEXICAN
+                          SPANISH
                         </>
                       )}
                     </p>
