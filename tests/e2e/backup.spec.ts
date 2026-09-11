@@ -106,7 +106,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
     .getByRole('button', { name: /import deck \(replace current\)/i })
     .click()
 
-  await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await expect(page.getByText(/imported 1 card/i)).toBeVisible()
   await page.keyboard.press('Escape')
 
   // Verify local storage is updated with the imported cards
@@ -148,7 +148,7 @@ test('imports Anki text export deck and updates review cards', async ({
     .getByRole('button', { name: /import deck \(replace current\)/i })
     .click()
 
-  await expect(page.getByText(/successfully imported 1 cards/i)).toBeVisible()
+  await expect(page.getByText(/imported 1 card/i)).toBeVisible()
   await page.keyboard.press('Escape')
 
   await page
@@ -223,9 +223,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
     })
     .click()
   await expect(
-    page.getByText(
-      /successfully imported 2 cards from “mexican spanish vocab”/i,
-    ),
+    page.getByText(/imported 2 cards from “mexican spanish vocab”/i),
   ).toBeVisible()
 
   await page.keyboard.press('Escape')

@@ -1,3 +1,4 @@
+import { normalizeCardKey } from './duplicate'
 import * as fflate from 'fflate'
 import {
   chooseScene,
@@ -412,7 +413,7 @@ export function parseAnkiText(content: string, now: number): ParseAnkiResult {
   const dataRows = parseCsvTsvRows(content, delimiter)
   const cards: StudyCard[] = []
 
-  for (const [rowIndex, rawCols] of dataRows.entries()) {
+  for (const rawCols of dataRows) {
     const firstCol = rawCols[0]?.trim() || ''
     if (firstCol.startsWith('#')) continue
 
@@ -434,7 +435,9 @@ export function parseAnkiText(content: string, now: number): ParseAnkiResult {
 
     const direction = detectDirection(prompt, answer)
     const scene = chooseScene(prompt, answer, context)
-    const noteId = `anki-txt-${rowIndex + 1}`
+    // Text exports have no source IDs. Use exactly the semantic merge identity,
+    // with an injective JSON encoding rather than row positions or a short hash.
+    const noteId = `anki-txt-v2:${JSON.stringify(normalizeCardKey(prompt, direction))}`
 
     const candidate = {
       id: `${noteId}:${direction}`,

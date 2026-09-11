@@ -416,13 +416,14 @@ function DeckBackupModalInner({
       mode,
       clock,
       selectedImportData.filename,
+      deletedCardIds,
     )
     if (result.success) {
       onUpdateCards(result.cards)
       const deckInfo = result.deckName ? ` from “${result.deckName}”` : ''
       setBackupStatus({
         type: 'success',
-        message: `Successfully imported ${result.importedCount} cards${deckInfo} (${result.count} total cards in library).`,
+        message: `Imported ${result.addedCount} ${result.addedCount === 1 ? 'card' : 'cards'}${deckInfo}.${result.skippedCount ? ` Skipped ${result.skippedCount} ${result.skippedCount === 1 ? 'duplicate' : 'duplicates'}.` : ''}`,
       })
       setSelectedImportData(null)
       if (fileInputRef.current) {
