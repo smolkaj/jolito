@@ -61,6 +61,17 @@ test('welcome owns snapping through navigation, resize, keyboard input and teard
   await welcome.focus()
   await page.keyboard.press('End')
   await expect(start).toBeInViewport()
+  // End targets the bottom, which can be past the snap point for a long story.
+  // Visibility becomes true mid-animation; finish this trip before Home.
+  await expect
+    .poll(() =>
+      welcome.evaluate((element) =>
+        Math.abs(
+          element.scrollHeight - element.clientHeight - element.scrollTop,
+        ),
+      ),
+    )
+    .toBeLessThanOrEqual(1)
   await page.keyboard.press('Home')
   await atTop()
   await cue.click()
@@ -164,4 +175,61 @@ test.describe('touch scroll round trips', () => {
     }
     await touch.detach()
   })
+})
+
+test('intro fits its header naturally and keeps its boundary through content changes', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('/')
+  const welcome = page.getByRole('main')
+  const why = page.locator('#why-jolito')
+  const cue = page.getByRole('link', {
+    name: /scroll down to explore why jolito/i,
+  })
+  const boundary = () =>
+    why.evaluate((element) => element.getBoundingClientRect().top)
+
+  // Model a taller header (large text or an account notice) arriving while the
+  // intro is open. The panel should allocate remaining space, not add a guessed
+  // header height to a separately viewport-sized hero.
+  const headerSize = await page.addStyleTag({
+    content: '.welcome-page .topbar { min-height: 140px; }',
+  })
+  await expect.poll(boundary).toBe(852)
+  await expect(cue).toBeInViewport({ ratio: 1 })
+  await cue.click()
+  await expect
+    .poll(async () => Math.abs(await boundary()))
+    .toBeLessThanOrEqual(1)
+  await headerSize.evaluate((element) =>
+    element.parentNode?.removeChild(element),
+  )
+  await expect
+    .poll(async () => Math.abs(await boundary()))
+    .toBeLessThanOrEqual(1)
+  await page.getByRole('button', { name: /^start learning/i }).click()
+  await expect
+    .poll(() => welcome.evaluate((element) => element.scrollTop))
+    .toBe(0)
+  await expect.poll(boundary).toBe(852)
+
+  // Oversized intro content stays in the same panel and remains reachable.
+  await page.addStyleTag({
+    content: '.welcome-page .topbar { min-height: 500px; }',
+  })
+  await expect.poll(boundary).toBeGreaterThan(852)
+  await cue.focus()
+  await expect(cue).toBeInViewport({ ratio: 1 })
+  await cue.press('Enter')
+  await expect
+    .poll(async () => Math.abs(await boundary()))
+    .toBeLessThanOrEqual(1)
+  await page.getByRole('button', { name: /^start learning/i }).click()
+  await expect
+    .poll(() => welcome.evaluate((element) => element.scrollTop))
+    .toBe(0)
+  await expect(
+    page.getByRole('navigation', { name: 'Main navigation' }),
+  ).toBeInViewport()
 })

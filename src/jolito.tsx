@@ -2246,162 +2246,167 @@ export function App({
   if (view === 'welcome') {
     return (
       <>
-        <main ref={welcomeRef} className="app-shell welcome-page" tabIndex={0}>
-          <nav className="topbar" aria-label="Main navigation">
-            <Brand />
-            <div className="nav-actions" data-nosnippet>
-              <button
-                className="text-button"
-                onClick={() => navigateTo('deck')}
-              >
-                Manage deck
-              </button>
-              <ConnectionPill
-                authUser={authUser}
-                syncStatus={syncStatus}
-                isOnline={isOnline}
-                onClick={() => openSyncModal()}
-              />
-            </div>
-          </nav>
-          <RedirectAuthNotice
-            message={redirectAuthBanner}
-            onDismiss={() => setRedirectAuthBanner(null)}
-            onCopySessionLink={handleCopySessionLink}
-          />
-          <section className="welcome-hero">
-            <div className="welcome-hero-main">
-              <div className="hero-copy">
-                <img
-                  src={logoUrl}
-                  alt=""
-                  aria-hidden="true"
-                  className="welcome-mascot-img"
+        <main ref={welcomeRef} className="welcome-page" tabIndex={0}>
+          <div className="welcome-panel welcome-intro">
+            <nav className="topbar" aria-label="Main navigation">
+              <Brand />
+              <div className="nav-actions" data-nosnippet>
+                <button
+                  className="text-button"
+                  onClick={() => navigateTo('deck')}
+                >
+                  Manage deck
+                </button>
+                <ConnectionPill
+                  authUser={authUser}
+                  syncStatus={syncStatus}
+                  isOnline={isOnline}
+                  onClick={() => openSyncModal()}
                 />
-                <h1>
-                  Make the words <br />
-                  you meet <em>stick.</em>
-                </h1>
-                <p className="lede">
-                  Create beautiful, spoken flashcards.
-                  <br />
-                  Practice them at your rhythm.
-                </p>
-                <div className="hero-actions" data-nosnippet>
-                  <button
-                    className="primary-button"
-                    onClick={() => navigateTo('create')}
-                  >
-                    Create a card <span aria-hidden="true">→</span>
-                  </button>
-                  <PracticeMenu
-                    onCards={handlePractice}
-                    onGrammar={() => navigateTo('grammar')}
+              </div>
+            </nav>
+            <RedirectAuthNotice
+              message={redirectAuthBanner}
+              onDismiss={() => setRedirectAuthBanner(null)}
+              onCopySessionLink={handleCopySessionLink}
+            />
+            <section className="welcome-hero">
+              <div className="welcome-hero-main">
+                <div className="hero-copy">
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="welcome-mascot-img"
                   />
+                  <h1>
+                    Make the words <br />
+                    you meet <em>stick.</em>
+                  </h1>
+                  <p className="lede">
+                    Create beautiful, spoken flashcards.
+                    <br />
+                    Practice them at your rhythm.
+                  </p>
+                  <div className="hero-actions" data-nosnippet>
+                    <button
+                      className="primary-button"
+                      onClick={() => navigateTo('create')}
+                    >
+                      Create a card <span aria-hidden="true">→</span>
+                    </button>
+                    <PracticeMenu
+                      onCards={handlePractice}
+                      onGrammar={() => navigateTo('grammar')}
+                    />
+                  </div>
+                </div>
+                <div className="hero-visual" data-nosnippet>
+                  {/* English Card (concise meaning) */}
+                  <button
+                    type="button"
+                    className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
+                    onClick={() => onSampleCardClick('english')}
+                    aria-label={
+                      activeSampleSide === 'english'
+                        ? `Play pronunciation for English card: ${starterHeroSampleCards.english.text}`
+                        : `Show English card: ${starterHeroSampleCards.english.text}`
+                    }
+                  >
+                    <div className="sample-card-header">
+                      <span className="sample-badge">
+                        <UsFlag /> ENGLISH
+                      </span>
+                      <span className="sample-listen-hint" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div className="sample-card-body">
+                      <div className="sample-illustration" aria-hidden="true">
+                        <img
+                          src={sampleAguacateUrl}
+                          alt=""
+                          className="sample-art-image"
+                        />
+                      </div>
+                      <p className="sample-phrase">
+                        {starterHeroSampleCards.english.text}
+                      </p>
+                    </div>
+                  </button>
+                  {/* Mexican Spanish Card */}
+                  <button
+                    type="button"
+                    className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
+                    onClick={() => onSampleCardClick('spanish')}
+                    aria-label={
+                      activeSampleSide === 'spanish'
+                        ? `Play pronunciation for Mexican Spanish card: ${starterHeroSampleCards.spanish.text}`
+                        : `Show Mexican Spanish card: ${starterHeroSampleCards.spanish.text}`
+                    }
+                  >
+                    <div className="sample-card-header">
+                      <span className="sample-badge">
+                        <MexicoFlag /> MEXICAN SPANISH
+                      </span>
+                      <span className="sample-listen-hint" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div className="sample-card-body">
+                      <div className="sample-illustration" aria-hidden="true">
+                        <img
+                          src={sampleAguacateUrl}
+                          alt=""
+                          className="sample-art-image"
+                        />
+                      </div>
+                      <p className="sample-phrase">
+                        {starterHeroSampleCards.spanish.text}
+                      </p>
+                    </div>
+                  </button>
                 </div>
               </div>
-              <div className="hero-visual" data-nosnippet>
-                {/* English Card (concise meaning) */}
-                <button
-                  type="button"
-                  className={`sample-card sample-card-en ${activeSampleSide === 'english' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'english' ? 'is-playing' : ''}`}
-                  onClick={() => onSampleCardClick('english')}
-                  aria-label={
-                    activeSampleSide === 'english'
-                      ? `Play pronunciation for English card: ${starterHeroSampleCards.english.text}`
-                      : `Show English card: ${starterHeroSampleCards.english.text}`
-                  }
+              <div className="welcome-hero-footer">
+                <div
+                  className="welcome-hero-footer-spacer"
+                  aria-hidden="true"
+                />
+                <a
+                  href="#why-jolito"
+                  className="hero-scroll-cue"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (window.location.hash !== '#why-jolito') {
+                      window.history.pushState(
+                        { view: 'welcome' },
+                        '',
+                        '#why-jolito',
+                      )
+                    }
+                    document.getElementById('why-jolito')?.scrollIntoView()
+                  }}
+                  aria-label="Scroll down to explore Why Jolito"
                 >
-                  <div className="sample-card-header">
-                    <span className="sample-badge">
-                      <UsFlag /> ENGLISH
-                    </span>
-                    <span className="sample-listen-hint" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                      </svg>
-                    </span>
-                  </div>
-                  <div className="sample-card-body">
-                    <div className="sample-illustration" aria-hidden="true">
-                      <img
-                        src={sampleAguacateUrl}
-                        alt=""
-                        className="sample-art-image"
-                      />
-                    </div>
-                    <p className="sample-phrase">
-                      {starterHeroSampleCards.english.text}
-                    </p>
-                  </div>
-                </button>
-                {/* Mexican Spanish Card */}
-                <button
-                  type="button"
-                  className={`sample-card sample-card-es ${activeSampleSide === 'spanish' ? 'is-foreground' : 'is-background'} ${samplePlaying && activeSampleSide === 'spanish' ? 'is-playing' : ''}`}
-                  onClick={() => onSampleCardClick('spanish')}
-                  aria-label={
-                    activeSampleSide === 'spanish'
-                      ? `Play pronunciation for Mexican Spanish card: ${starterHeroSampleCards.spanish.text}`
-                      : `Show Mexican Spanish card: ${starterHeroSampleCards.spanish.text}`
-                  }
-                >
-                  <div className="sample-card-header">
-                    <span className="sample-badge">
-                      <MexicoFlag /> MEXICAN SPANISH
-                    </span>
-                    <span className="sample-listen-hint" aria-hidden="true">
-                      <svg viewBox="0 0 24 24">
-                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
-                      </svg>
-                    </span>
-                  </div>
-                  <div className="sample-card-body">
-                    <div className="sample-illustration" aria-hidden="true">
-                      <img
-                        src={sampleAguacateUrl}
-                        alt=""
-                        className="sample-art-image"
-                      />
-                    </div>
-                    <p className="sample-phrase">
-                      {starterHeroSampleCards.spanish.text}
-                    </p>
-                  </div>
-                </button>
+                  <span className="scroll-cue-text">Why Jolito?</span>
+                  <span className="scroll-cue-arrow" aria-hidden="true">
+                    ↓
+                  </span>
+                </a>
+                <AppFooter
+                  onOpenFeedback={openFeedbackModal}
+                  showPrivacy={false}
+                />
               </div>
-            </div>
-            <div className="welcome-hero-footer">
-              <div className="welcome-hero-footer-spacer" aria-hidden="true" />
-              <a
-                href="#why-jolito"
-                className="hero-scroll-cue"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (window.location.hash !== '#why-jolito') {
-                    window.history.pushState(
-                      { view: 'welcome' },
-                      '',
-                      '#why-jolito',
-                    )
-                  }
-                  document.getElementById('why-jolito')?.scrollIntoView()
-                }}
-                aria-label="Scroll down to explore Why Jolito"
-              >
-                <span className="scroll-cue-text">Why Jolito?</span>
-                <span className="scroll-cue-arrow" aria-hidden="true">
-                  ↓
-                </span>
-              </a>
-              <AppFooter
-                onOpenFeedback={openFeedbackModal}
-                showPrivacy={false}
-              />
-            </div>
-          </section>
+            </section>
+          </div>
           <section
-            className="welcome-why"
+            className="welcome-panel welcome-why"
             id="why-jolito"
             aria-labelledby="why-jolito-title"
           >
