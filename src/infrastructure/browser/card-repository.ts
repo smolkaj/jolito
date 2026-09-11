@@ -79,7 +79,7 @@ const restoreLegacy = (raw: unknown): StudyCard[] | null => {
 export class LocalStorageCardRepository implements CardRepository {
   private deletedCardIds: string[] = []
 
-  constructor(private readonly storage: StorageLike = window.localStorage) {}
+  constructor(private readonly storage?: StorageLike) {}
 
   getDeletedCardIds(): string[] {
     return [...this.deletedCardIds]
@@ -95,7 +95,7 @@ export class LocalStorageCardRepository implements CardRepository {
     let raw: string | null = null
     try {
       for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY, LEGACY_KEY]) {
-        raw = this.storage.getItem(key)
+        raw = (this.storage ?? window.localStorage).getItem(key)
         if (raw === null) continue
         const parsed = parseJson(raw)
         const current = key === LEGACY_KEY ? null : restoreCurrent(parsed)
@@ -160,7 +160,8 @@ export class LocalStorageCardRepository implements CardRepository {
       cards,
       deletedCardIds,
     })
-    this.storage.setItem(STORAGE_KEY, JSON.stringify(collection))
+    const storage = this.storage ?? window.localStorage
+    storage.setItem(STORAGE_KEY, JSON.stringify(collection))
     this.deletedCardIds = [...deletedCardIds]
   }
 }

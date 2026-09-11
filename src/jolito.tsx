@@ -311,7 +311,7 @@ function DeckBackupModalInner({
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
-  ) => void
+  ) => boolean | void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -417,7 +417,14 @@ function DeckBackupModalInner({
       deletedCardIds,
     )
     if (result.success) {
-      onUpdateCards(result.cards)
+      if (onUpdateCards(result.cards) === false) {
+        setBackupStatus({
+          type: 'error',
+          message:
+            'Your cards couldn’t be saved. Free up device storage, then try importing again.',
+        })
+        return
+      }
       const deckInfo = result.deckName ? ` from “${result.deckName}”` : ''
       setBackupStatus({
         type: 'success',
@@ -621,7 +628,7 @@ function DeckBackupModal(props: {
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
-  ) => void
+  ) => boolean | void
   clock: { now(): number }
   user: AuthUser | null
   sync: SyncService
@@ -959,6 +966,7 @@ function LoadedApp({
   }, [initialCards, services.clock])
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
+  const [saveError, setSaveError] = useState(false)
   const vocabularyCards = useMemo(
     () => cards.filter((card) => !isGrammarCard(card)),
     [cards],
@@ -1153,15 +1161,20 @@ function LoadedApp({
       syncToCloud = true,
       newDeletedCardIds?: string[],
     ) => {
-      if (newDeletedCardIds !== undefined) {
-        deletedCardIdsRef.current = new Set(newDeletedCardIds)
-      }
-      for (const card of newCards) {
-        deletedCardIdsRef.current.delete(card.id)
-      }
-      const deletedIdsArray = Array.from(deletedCardIdsRef.current)
+      const nextDeletedIds = new Set(
+        newDeletedCardIds ?? deletedCardIdsRef.current,
+      )
+      for (const card of newCards) nextDeletedIds.delete(card.id)
+      const deletedIdsArray = Array.from(nextDeletedIds)
 
-      services.cards.save(newCards, deletedIdsArray)
+      try {
+        services.cards.save(newCards, deletedIdsArray)
+      } catch {
+        setSaveError(true)
+        return false
+      }
+      setSaveError(false)
+      deletedCardIdsRef.current = nextDeletedIds
       const previousCards = cardsRef.current
       cardsRef.current = newCards
       setCards(newCards)
@@ -1217,6 +1230,7 @@ function LoadedApp({
           )
         }
       }
+      return true
     },
     [
       filterCards,
@@ -1235,7 +1249,7 @@ function LoadedApp({
       const newCards = cardsRef.current.map((c) =>
         c.id === card.id ? updated : c,
       )
-      onUpdateCards(newCards)
+      if (!onUpdateCards(newCards)) return
       setEditingCard(null)
     },
     [onUpdateCards, services.clock],
@@ -1248,11 +1262,10 @@ function LoadedApp({
       for (const id of idsToDelete) {
         updatedCards = deleteStudyCard(updatedCards, id)
       }
-      for (const id of idsToDelete) {
-        deletedCardIdsRef.current.add(id)
-      }
-      const updatedDeletedIds = Array.from(deletedCardIdsRef.current)
-      onUpdateCards(updatedCards, true, updatedDeletedIds)
+      const updatedDeletedIds = Array.from(
+        new Set([...deletedCardIdsRef.current, ...idsToDelete]),
+      )
+      if (!onUpdateCards(updatedCards, true, updatedDeletedIds)) return
       setSelectedCardIds((prev) => {
         const next = new Set(prev)
         for (const id of idsToDelete) {
@@ -1323,7 +1336,7 @@ function LoadedApp({
       if (created.length === 0) return
 
       const userCards = filterOutStarterCards(cardsRef.current)
-      onUpdateCards([...created, ...userCards])
+      if (!onUpdateCards([...created, ...userCards])) return
       const savedSpanish = params.spanish.trim()
       setSavedToast(savedSpanish)
       if (savedToastTimerRef.current !== null) {
@@ -1410,6 +1423,7 @@ function LoadedApp({
           })
           if (created.length > 0) {
             userCards = [...created, ...userCards]
+            if (!onUpdateCardsRef.current(userCards, false)) return
             const savedSpanish = pending.spanish.trim()
             setSavedToast(savedSpanish)
             if (savedToastTimerRef.current !== null) {
@@ -1432,9 +1446,6 @@ function LoadedApp({
           setPendingCard(null)
           pendingCardRef.current = null
           setIsSyncOpen(false)
-
-          const deletedIds = Array.from(deletedCardIdsRef.current)
-          onUpdateCardsRef.current(userCards, false, deletedIds)
         }
 
         const deletedIds = Array.from(deletedCardIdsRef.current)
@@ -1450,7 +1461,7 @@ function LoadedApp({
               Array.from(deletedCardIdsRef.current),
               newDeletedIds,
             )
-            onUpdateCardsRef.current(
+            return onUpdateCardsRef.current(
               reconciled.cards,
               false,
               reconciled.deletedCardIds,
@@ -1463,6 +1474,13 @@ function LoadedApp({
       } else if (prevUser !== null) {
         // Explicit transition from signed in to signed out:
         // Clear local user deck and restore clean starter demo deck
+        // Sign-out must still remove private data from the screen if storage fails.
+        try {
+          services.cards.save(starterCards, [])
+          setSaveError(false)
+        } catch {
+          setSaveError(true)
+        }
         grammarResetRef.current()
         cardsRef.current = starterCards
         setCards(starterCards)
@@ -1481,7 +1499,13 @@ function LoadedApp({
         setIsDemoDeckDismissed(false)
       }
     })
-  }, [services.auth, services.clock, services.ids, services.sync])
+  }, [
+    services.auth,
+    services.cards,
+    services.clock,
+    services.ids,
+    services.sync,
+  ])
 
   const isSyncingRef = useRef(false)
   const syncDebounceTimerRef = useRef<number | null>(null)
@@ -1506,8 +1530,12 @@ function LoadedApp({
           Array.from(deletedCardIdsRef.current),
           res.deletedCardIds ?? [],
         )
-        onUpdateCards(reconciled.cards, false, reconciled.deletedCardIds)
-        setSyncStatus('synced')
+        const saved = onUpdateCards(
+          reconciled.cards,
+          false,
+          reconciled.deletedCardIds,
+        )
+        setSyncStatus(saved ? 'synced' : 'error')
       } else if (!res.success) {
         setSyncStatus('error')
       }
@@ -1706,10 +1734,6 @@ function LoadedApp({
     }
   }, [])
 
-  useEffect(() => {
-    services.cards.save(cards, deletedCardIds)
-  }, [cards, deletedCardIds, services.cards])
-
   const grade = useCallback(
     (gradeValue: Grade) => {
       if (!currentCard) return
@@ -1723,8 +1747,7 @@ function LoadedApp({
       const nextCards = updatedCards.map((card) =>
         card.id === reviewed.id ? reviewed : card,
       )
-      cardsRef.current = nextCards
-      setCards(nextCards)
+      if (!onUpdateCards(nextCards, false)) return
 
       const { isComplete } = advanceOnGrade(
         currentCard.id,
@@ -1744,6 +1767,7 @@ function LoadedApp({
     [
       advanceOnGrade,
       currentCard,
+      onUpdateCards,
       flushSync,
       navigateTo,
       playGradeSensory,
@@ -2191,7 +2215,8 @@ function LoadedApp({
       ...cardsRef.current.filter((existing) => existing.id !== card.id),
       card,
     ]
-    onUpdateCards(next, false)
+    if (!onUpdateCards(next, false))
+      throw new Error('Progress could not be saved')
     scheduleDebouncedSync()
   }
   const grammarPractice = useGrammarPractice({
@@ -2279,6 +2304,12 @@ function LoadedApp({
                 />
               </div>
             </nav>
+            {saveError && (
+              <p className="storage-save-error" role="alert">
+                Your changes couldn’t be saved. Free up device storage, then try
+                again.
+              </p>
+            )}
             <RedirectAuthNotice
               message={redirectAuthBanner}
               onDismiss={() => setRedirectAuthBanner(null)}
@@ -2587,6 +2618,12 @@ function LoadedApp({
               />
             </div>
           </nav>
+          {saveError && (
+            <p className="storage-save-error" role="alert">
+              Your changes couldn’t be saved. Free up device storage, then try
+              again.
+            </p>
+          )}
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
@@ -2986,6 +3023,12 @@ function LoadedApp({
               />
             </div>
           </nav>
+          {saveError && (
+            <p className="storage-save-error" role="alert">
+              Your changes couldn’t be saved. Free up device storage, then try
+              again.
+            </p>
+          )}
           <RedirectAuthNotice
             message={redirectAuthBanner}
             onDismiss={() => setRedirectAuthBanner(null)}
@@ -3477,6 +3520,12 @@ function LoadedApp({
             />
           </div>
         </nav>
+        {saveError && (view !== 'grammar' || !grammarPractice.error) && (
+          <p className="storage-save-error" role="alert">
+            Your changes couldn’t be saved. Free up device storage, then try
+            again.
+          </p>
+        )}
         <RedirectAuthNotice
           message={redirectAuthBanner}
           onDismiss={() => setRedirectAuthBanner(null)}

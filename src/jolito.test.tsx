@@ -1346,7 +1346,7 @@ describe('Jolito', () => {
     // Simulate an external background save / card update
     act(() => {
       services.cards.save([
-        ...services.memoryCards.saved!.map((c) => ({ ...c })),
+        ...services.memoryCards.load([]).cards.map((c) => ({ ...c })),
       ])
     })
 
@@ -1982,7 +1982,7 @@ describe('Jolito', () => {
     expect(services.mockSync.remoteCards).toHaveLength(1)
     expect(services.mockSync.remoteCards[0]?.id).toBe('note-2:es-en')
     expect(services.mockSync.remoteDeletedCardIds).toContain('note-1:es-en')
-    expect(services.memoryCards.load([])).toHaveLength(1)
+    expect(services.memoryCards.load([]).cards).toHaveLength(1)
     expect(services.memoryCards.getDeletedCardIds()).toContain('note-1:es-en')
   })
 
@@ -2065,8 +2065,8 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Verify user is signed in with custom deck in storage
-    expect(services.memoryCards.load([])).toHaveLength(1)
-    expect(services.memoryCards.load([])[0]?.prompt).toBe('zapato')
+    expect(services.memoryCards.load([]).cards).toHaveLength(1)
+    expect(services.memoryCards.load([]).cards[0]?.prompt).toBe('zapato')
 
     // Open sync modal and click sign out
     await user.click(screen.getByRole('button', { name: /synced/i }))
@@ -2077,7 +2077,7 @@ describe('Jolito', () => {
     expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
 
     // Local storage has been reset to starter cards and cleared of user cards & tombstones
-    const storedCards = services.memoryCards.load([])
+    const storedCards = services.memoryCards.load([]).cards
     expect(storedCards.every((c) => c.noteId.startsWith('starter-'))).toBe(true)
     expect(storedCards.some((c) => c.prompt === 'zapato')).toBe(false)
     expect(services.memoryCards.getDeletedCardIds()).toEqual([])

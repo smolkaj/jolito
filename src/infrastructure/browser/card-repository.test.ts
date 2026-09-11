@@ -166,7 +166,7 @@ describe('LocalStorageCardRepository', () => {
     localStorage.setItem('ritmo-library-v1', raw)
     const storage = {
       getItem: localStorage.getItem.bind(localStorage),
-      setItem: vi.fn(() => {
+      setItem: vi.fn<(key: string, value: string) => void>(() => {
         throw new Error('Full')
       }),
     }
