@@ -325,12 +325,14 @@ function DeckBackupModalInner({
   saveError,
   onClose,
   cards,
+  deletedCardIds,
   onUpdateCards,
   clock,
 }: {
   saveError?: string | null
   onClose: () => void
   cards: StudyCard[]
+  deletedCardIds: string[]
   onUpdateCards: (
     newCards: StudyCard[],
     syncToCloud?: boolean,
@@ -652,6 +654,7 @@ function DeckBackupModal(props: {
   saveError?: string | null
   onClose: () => void
   cards: StudyCard[]
+  deletedCardIds: string[]
   onUpdateCards: (
     newCards: StudyCard[],
     syncToCloud?: boolean,
@@ -3642,6 +3645,7 @@ function LoadedApp({
           isOpen={isBackupOpen}
           onClose={() => setIsBackupOpen(false)}
           cards={cards}
+          deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           clock={services.clock}
         />
