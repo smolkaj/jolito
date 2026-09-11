@@ -1,8 +1,9 @@
 /* global self, caches, fetch, URL */
 
-const CACHE_NAME = 'jolito-shell-v9'
+// Replaced by the explicit Vite offline-shell build step.
+const CACHE_NAME = 'jolito-shell-__JOLITO_BUILD_ID__'
+const BUILD_ASSETS = /* __JOLITO_BUILD_ASSETS__ */ []
 const scopePath = new URL(self.registration.scope).pathname
-const shellUrl = scopePath
 const indexUrl = `${scopePath}index.html`
 const PWA_ASSETS = [
   `${scopePath}manifest.webmanifest`,
@@ -24,100 +25,100 @@ const PWA_ASSETS = [
   `${scopePath}dict/es-lemmas.json`,
 ]
 
+const REQUIRED_URLS = Array.from(
+  new Set([
+    indexUrl,
+    ...PWA_ASSETS,
+    ...BUILD_ASSETS.map((file) => `${scopePath}${file}`),
+  ]),
+)
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) =>
-        Promise.all(
-          [shellUrl, indexUrl, ...PWA_ASSETS].map((url) =>
-            cache.add(url).catch(() => {}),
-          ),
-        ),
-      )
-      .then(() => self.skipWaiting()),
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME)
+        // addAll is atomic: neither HTTP failures nor quota errors publish a partial shell.
+        await cache.addAll(REQUIRED_URLS)
+      } catch (error) {
+        await caches.delete(CACHE_NAME)
+        throw error
+      }
+      await self.skipWaiting()
+    })(),
   )
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter(
-              (key) => key !== CACHE_NAME && !key.startsWith('jolito-audio-'),
-            )
-            .map((key) => caches.delete(key)),
-        ),
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(
+        keys
+          .filter(
+            (key) => key.startsWith('jolito-shell-') && key !== CACHE_NAME,
+          )
+          .map((key) => caches.delete(key)),
       )
-      .then(() => self.clients.claim()),
+      await self.clients.claim()
+    })(),
   )
 })
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type !== 'CACHE_URLS' || !Array.isArray(event.data.urls))
-    return
-
-  const uniqueUrls = Array.from(new Set(event.data.urls)).filter(
-    (url) =>
-      typeof url === 'string' &&
-      new URL(url, self.location.origin).origin === self.location.origin,
-  )
+  if (event.data?.type !== 'CHECK_OFFLINE_READY') return
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) =>
-        Promise.all(uniqueUrls.map((url) => cache.add(url).catch(() => {}))),
-      )
-      .then(() => event.ports[0]?.postMessage('cached'))
-      .catch(() => event.ports[0]?.postMessage('cached')),
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME)
+        const responses = await Promise.all(
+          REQUIRED_URLS.map((url) => cache.match(url)),
+        )
+        event.ports[0]?.postMessage(
+          responses.every((response) => response?.ok)
+            ? 'cached'
+            : 'cache-error',
+        )
+      } catch {
+        event.ports[0]?.postMessage('cache-error')
+      }
+    })(),
   )
 })
 
 self.addEventListener('fetch', (event) => {
   const request = event.request
   const requestUrl = new URL(request.url)
-  if (request.method !== 'GET' || requestUrl.origin !== self.location.origin)
+  if (
+    request.method !== 'GET' ||
+    requestUrl.origin !== self.location.origin ||
+    requestUrl.pathname.startsWith(`${scopePath}api/`)
+  )
     return
 
-  // Audio TTS requests are managed explicitly by NeuralVoiceEngine in jolito-audio-v1 cache.
-  // Avoid duplicating or competing with the app audio cache.
-  if (requestUrl.pathname.startsWith('/api/tts')) {
-    return
-  }
-
+  // The installed HTML and its assets are one complete build. A navigation must
+  // not replace it with HTML from a failed (or only partially deployed) update.
+  // Browser service-worker updates install the next build before taking control.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone()
-          void caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(indexUrl, copy))
-          return response
-        })
-        .catch(
-          async () => (await caches.match(indexUrl)) ?? caches.match(shellUrl),
-        ),
+      caches
+        .open(CACHE_NAME)
+        .then(async (cache) => (await cache.match(indexUrl)) ?? fetch(request)),
     )
     return
   }
 
-  event.respondWith(
-    caches.match(request, { ignoreVary: true }).then(
-      (cached) =>
-        cached ??
-        fetch(request).then((response) => {
-          if (response.ok) {
-            const copy = response.clone()
-            void caches
-              .open(CACHE_NAME)
-              .then((cache) => cache.put(request, copy))
-          }
-          return response
-        }),
-    ),
-  )
+  // Only the installer writes the shell. Runtime requests do not create a second
+  // cache population path, and APIs/audio remain owned by their app services.
+  if (REQUIRED_URLS.includes(requestUrl.pathname)) {
+    event.respondWith(
+      caches
+        .open(CACHE_NAME)
+        .then(
+          async (cache) =>
+            (await cache.match(request, { ignoreVary: true })) ??
+            fetch(request),
+        ),
+    )
+  }
 })

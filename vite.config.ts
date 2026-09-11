@@ -1,6 +1,7 @@
 import type { Connect, Plugin } from 'vite'
 import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import react from '@vitejs/plugin-react'
+import { offlineShellPlugin } from './scripts/offline-shell-plugin.ts'
 
 function createTtsMiddleware(): Connect.NextHandleFunction {
   return (req, res, next) => {
@@ -99,7 +100,7 @@ function apiDevPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), apiDevPlugin()],
+  plugins: [react(), apiDevPlugin(), offlineShellPlugin()],
   server: {
     fs: {
       allow: [searchForWorkspaceRoot(process.cwd()), '..'],
