@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { createStudyCards } from '../domain/card'
+import { createStudyCards, type Grade } from '../domain/card'
 import { createGrammarCards } from '../domain/grammar'
 import { PracticeCard } from './PracticeCard'
 
@@ -173,4 +174,107 @@ it('keeps a correction rule with the expected answer through pause/resume and re
   expect(screen.queryByText('Rule:')).not.toBeInTheDocument()
   app.rerender(<PracticeCard {...initial} correctionRule={correctionRule} />)
   expect(screen.queryByText('Rule:')).not.toBeInTheDocument()
+})
+
+function AccentPractice({
+  paused = false,
+  revealed = false,
+  accents = true,
+  onGrade = vi.fn(),
+}) {
+  const [answer, setAnswer] = useState('')
+  return (
+    <PracticeCard
+      {...props()}
+      answer={answer}
+      onAnswerChange={setAnswer}
+      paused={paused}
+      revealed={revealed}
+      accents={accents}
+      onGrade={onGrade}
+    />
+  )
+}
+
+describe('accent keyboard insertion', () => {
+  it('inserts all accents and shares selection/caret behavior with pointer insertion', async () => {
+    const user = userEvent.setup()
+    render(<AccentPractice />)
+    const input = screen.getByRole<HTMLInputElement>('textbox')
+    await user.keyboard('12345')
+    expect(input).toHaveValue('áéíóú')
+    input.setSelectionRange(1, 2)
+    await user.keyboard('2x')
+    expect(input).toHaveValue('áéxíóú')
+    expect(input.selectionStart).toBe(3)
+    input.setSelectionRange(2, 4)
+    await user.click(screen.getByRole('button', { name: 'Insert ó' }))
+    expect(input).toHaveValue('áéóóú')
+    expect(input).toHaveFocus()
+    expect(input.selectionStart).toBe(3)
+    await user.keyboard('1')
+    expect(input).toHaveValue('áéóáóú')
+  })
+
+  it('respects modifiers/composition, pause/resume, reveal grading and teardown', async () => {
+    const user = userEvent.setup()
+    const grade = vi.fn<(value: Grade) => void>()
+    const app = render(<AccentPractice onGrade={grade} />)
+    const input = screen.getByRole('textbox')
+    for (const modifier of [
+      'ctrlKey',
+      'metaKey',
+      'altKey',
+      'shiftKey',
+      'isComposing',
+    ]) {
+      expect(fireEvent.keyDown(input, { key: '1', [modifier]: true })).toBe(
+        true,
+      )
+    }
+    expect(input).toHaveValue('')
+    await user.keyboard('1')
+    app.rerender(<AccentPractice paused onGrade={grade} />)
+    fireEvent.keyDown(input, { key: '2' })
+    expect(input).toHaveValue('á')
+    app.rerender(<AccentPractice onGrade={grade} />)
+    fireEvent(document, new Event('visibilitychange'))
+    await user.keyboard('2')
+    expect(fireEvent.keyDown(input, { key: '2', repeat: true })).toBe(false)
+    expect(input).toHaveValue('áé')
+    expect(grade).not.toHaveBeenCalled()
+    app.rerender(<AccentPractice revealed onGrade={grade} />)
+    await user.keyboard('1234')
+    expect(grade.mock.calls.map(([value]) => value)).toEqual([
+      'again',
+      'hard',
+      'good',
+      'easy',
+    ])
+    app.rerender(<AccentPractice onGrade={grade} />)
+    await user.keyboard('3')
+    expect(screen.getByRole('textbox')).toHaveValue('áéí')
+    app.unmount()
+    fireEvent.keyDown(window, { key: '1' })
+    expect(grade).toHaveBeenCalledTimes(4)
+  })
+
+  it('leaves number typing unchanged without grammar accents and outside the answer field', async () => {
+    const user = userEvent.setup()
+    const app = render(<AccentPractice accents={false} />)
+    await user.keyboard('12345')
+    expect(screen.getByRole('textbox')).toHaveValue('12345')
+    app.rerender(
+      <>
+        <AccentPractice />
+        <input aria-label="Other field" />
+      </>,
+    )
+    await user.click(screen.getByRole('textbox', { name: 'Other field' }))
+    await user.keyboard('12345')
+    expect(screen.getByRole('textbox', { name: 'Other field' })).toHaveValue(
+      '12345',
+    )
+    expect(fireEvent.keyDown(window, { key: '1' })).toBe(true)
+  })
 })
