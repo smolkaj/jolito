@@ -170,6 +170,10 @@ export class MockAuthService implements AuthService {
     return this.user
   }
 
+  isCurrentOwner(ownerId: string | null): boolean {
+    return (this.user?.id ?? null) === ownerId
+  }
+
   setUser(user: AuthUser | null): void {
     this.user = user
     this.listeners.forEach((listener) => listener(user))

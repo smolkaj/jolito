@@ -109,6 +109,17 @@ export class SupabaseAuthService implements AuthService {
     return this.destroyed ? null : this.currentUser
   }
 
+  isCurrentOwner(ownerId: string | null): boolean {
+    if (this.destroyed || (this.currentUser?.id ?? null) !== ownerId)
+      return false
+    try {
+      return (this.readStoredSession()?.user.id ?? null) === ownerId
+    } catch {
+      // Unreadable auth cannot establish a valid guest or account lifetime.
+      return false
+    }
+  }
+
   private isCurrent(generation: number): boolean {
     return !this.destroyed && generation === this.generation
   }
@@ -217,17 +228,21 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
+  private readStoredSession(): StoredSession | null {
+    const raw = this.storage.getItem?.(STORAGE_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    const validation = storedSessionSchema.safeParse(parsed)
+    if (!validation.success) {
+      this.storage.removeItem?.(STORAGE_KEY)
+      throw new Error('Stored sign-in session is invalid.')
+    }
+    return validation.data
+  }
+
   private loadStoredSession(): StoredSession | null {
     try {
-      const raw = this.storage.getItem?.(STORAGE_KEY)
-      if (!raw) return null
-      const parsed: unknown = JSON.parse(raw)
-      const validation = storedSessionSchema.safeParse(parsed)
-      if (!validation.success) {
-        this.storage.removeItem?.(STORAGE_KEY)
-        return null
-      }
-      return validation.data
+      return this.readStoredSession()
     } catch {
       return null
     }

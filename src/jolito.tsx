@@ -1022,7 +1022,7 @@ function AppWithServices({ services }: { services: AppServices }) {
   ) => {
     if (
       !owner ||
-      services.auth.getCurrentUser()?.id !== owner ||
+      !services.auth.isCurrentOwner(owner) ||
       !services.auth.deleteAccount
     )
       return {
@@ -1096,7 +1096,7 @@ function AppWithServices({ services }: { services: AppServices }) {
   const isCurrentOwner = useCallback(
     () =>
       identityRef.current.epoch === identity.epoch &&
-      (services.auth.getCurrentUser()?.id ?? null) === ownerId,
+      services.auth.isCurrentOwner(ownerId),
     [identity.epoch, ownerId, services.auth],
   )
   const ownedServices = useMemo(

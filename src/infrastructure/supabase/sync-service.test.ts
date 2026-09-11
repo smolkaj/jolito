@@ -25,6 +25,7 @@ const mockCard: StudyCard = {
 describe('SupabaseSyncService', () => {
   const mockAuthService: Partial<SupabaseAuthService> = {
     getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
+    isCurrentOwner: (ownerId: string | null) => ownerId === 'usr-1',
     getAccessToken: () => Promise.resolve('valid-jwt-token'),
   }
 
@@ -221,6 +222,7 @@ describe('SupabaseSyncService', () => {
     const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
     const authWithRefresh: Partial<SupabaseAuthService> = {
       getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
+      isCurrentOwner: (ownerId: string | null) => ownerId === 'usr-1',
       getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
       refreshSession: refreshSpy,
     }
@@ -268,6 +270,7 @@ describe('SupabaseSyncService', () => {
     const refreshSpy = vi.fn().mockResolvedValue('refreshed-jwt-token')
     const authWithRefresh: Partial<SupabaseAuthService> = {
       getCurrentUser: () => ({ id: 'usr-1', email: 'u@example.com' }),
+      isCurrentOwner: (ownerId: string | null) => ownerId === 'usr-1',
       getAccessToken: vi.fn().mockResolvedValue('expired-jwt-token'),
       refreshSession: refreshSpy,
     }
@@ -395,6 +398,7 @@ describe('sync account boundaries', () => {
       })
       const auth = {
         getCurrentUser: () => owner,
+        isCurrentOwner: (ownerId: string | null) => ownerId === owner?.id,
         getAccessToken: () =>
           interruption === 'token'
             ? held

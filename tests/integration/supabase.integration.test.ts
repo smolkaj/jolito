@@ -101,6 +101,7 @@ describe('Supabase Live Stack Integration', () => {
 
     const authService: AuthService = {
       getCurrentUser: () => authUser,
+      isCurrentOwner: (ownerId: string | null) => ownerId === authUser.id,
       getUser: () => Promise.resolve(authUser),
       getAccessToken: () => Promise.resolve(token),
       refreshSession: () => Promise.resolve(token),
@@ -116,6 +117,7 @@ describe('Supabase Live Stack Integration', () => {
   it('allows guest to submit feedback end-to-end to local Supabase', async () => {
     const dummyAuth: AuthService = {
       getCurrentUser: () => null,
+      isCurrentOwner: (ownerId: string | null) => ownerId === null,
       getUser: () => Promise.resolve(null),
       getAccessToken: () => Promise.resolve(null),
       sendMagicLink: () => Promise.resolve({ success: true }),

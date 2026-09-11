@@ -97,6 +97,8 @@ export type AuthUser = {
 
 export type AuthService = {
   getCurrentUser(): AuthUser | null
+  /** Commit fence: active and persisted ownership must both match, including guest. */
+  isCurrentOwner(ownerId: string | null): boolean
   getUser(): Promise<AuthUser | null>
   isConfigured?(): boolean
   consumeRedirectAuth?(): boolean

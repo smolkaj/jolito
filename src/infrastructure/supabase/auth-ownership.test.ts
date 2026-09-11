@@ -554,3 +554,54 @@ it.each([
     expect(vi.getTimerCount()).toBe(0)
   },
 )
+
+it.each([
+  { initial: 'A', next: null },
+  { initial: 'A', next: 'B' },
+  { initial: null, next: 'B' },
+  { initial: 'A', next: 'A' },
+] as const)(
+  'validates local commit ownership through $initial → persisted $next → event → reload and teardown',
+  ({ initial, next }) => {
+    if (initial) localStorage.setItem(key, JSON.stringify(session(initial)))
+    const auth = new SupabaseAuthService('', '', localStorage)
+    expect(auth.isCurrentOwner(initial)).toBe(true)
+    if (next)
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...session(next),
+          accessToken: `renewed-${next}`,
+          refreshToken: `renewed-refresh-${next}`,
+        }),
+      )
+    else localStorage.removeItem(key)
+    expect(auth.isCurrentOwner(initial)).toBe(initial === next)
+    expect(auth.isCurrentOwner(next)).toBe(initial === next)
+    window.dispatchEvent(new StorageEvent('storage', { key }))
+    expect(auth.isCurrentOwner(next)).toBe(true)
+    auth.destroy()
+    expect(auth.isCurrentOwner(next)).toBe(false)
+    const reloaded = new SupabaseAuthService('', '', localStorage)
+    expect(reloaded.isCurrentOwner(next)).toBe(true)
+    reloaded.destroy()
+    expect(reloaded.isCurrentOwner(next)).toBe(false)
+  },
+)
+
+it.each(['A', null] as const)(
+  'rejects local commits for %s while auth storage is unavailable, then resumes after recovery',
+  (owner) => {
+    if (owner) localStorage.setItem(key, JSON.stringify(session(owner)))
+    const auth = new SupabaseAuthService('', '', localStorage)
+    const read = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage blocked', 'SecurityError')
+      })
+    expect(auth.isCurrentOwner(owner)).toBe(false)
+    read.mockRestore()
+    expect(auth.isCurrentOwner(owner)).toBe(true)
+    auth.destroy()
+  },
+)

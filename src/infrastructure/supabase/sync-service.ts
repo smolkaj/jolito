@@ -35,9 +35,9 @@ export class SupabaseSyncService implements SyncService {
   private async getAuthHeaders(
     ownerId: string,
   ): Promise<Record<string, string> | null> {
-    if (this.authService.getCurrentUser()?.id !== ownerId) return null
+    if (!this.authService.isCurrentOwner(ownerId)) return null
     const token = (await this.authService.getAccessToken?.()) ?? null
-    if (this.authService.getCurrentUser()?.id !== ownerId) return null
+    if (!this.authService.isCurrentOwner(ownerId)) return null
     if (!token || !this.supabaseAnonKey) {
       return null
     }
@@ -65,13 +65,10 @@ export class SupabaseSyncService implements SyncService {
       if (
         res.status === 401 &&
         this.authService.refreshSession &&
-        this.authService.getCurrentUser()?.id === user.id
+        this.authService.isCurrentOwner(user.id)
       ) {
         const refreshedToken = await this.authService.refreshSession()
-        if (
-          refreshedToken &&
-          this.authService.getCurrentUser()?.id === user.id
-        ) {
+        if (refreshedToken && this.authService.isCurrentOwner(user.id)) {
           headers = {
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,
@@ -193,13 +190,10 @@ export class SupabaseSyncService implements SyncService {
       if (
         res.status === 401 &&
         this.authService.refreshSession &&
-        this.authService.getCurrentUser()?.id === user.id
+        this.authService.isCurrentOwner(user.id)
       ) {
         const refreshedToken = await this.authService.refreshSession()
-        if (
-          refreshedToken &&
-          this.authService.getCurrentUser()?.id === user.id
-        ) {
+        if (refreshedToken && this.authService.isCurrentOwner(user.id)) {
           headers = {
             ...headers,
             Authorization: `Bearer ${refreshedToken}`,
