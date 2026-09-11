@@ -33,18 +33,18 @@ afterEach(() => {
 })
 
 it.each(
-  ['syncDeck', 'pushDeck'].flatMap((operation) =>
-    ['token', 'response', 'body', 'refresh'].flatMap((heldAt) =>
+  ['read', 'write'].flatMap((phase) =>
+    ['token', 'response', 'body', 'error body', 'refresh'].flatMap((heldAt) =>
       ['account round trip', 'deadline'].map((interruption) => ({
-        operation,
+        phase,
         heldAt,
         interruption,
       })),
     ),
   ),
 )(
-  'stops disposed $operation at $heldAt across $interruption and permits a fresh A lifetime',
-  async ({ operation, heldAt, interruption }) => {
+  'stops a disposed sync $phase at $heldAt across $interruption and permits a fresh A lifetime',
+  async ({ phase, heldAt, interruption }) => {
     vi.useFakeTimers()
     // The iOS 15 path must not depend on static AbortSignal helpers.
     vi.stubGlobal('AbortSignal', {})
@@ -52,13 +52,19 @@ it.each(
     let owner = ownerA
     const heldToken = deferred<string>()
     const heldResponse = deferred<Response>()
-    const heldBody = deferred<never>()
+    const heldBody = deferred<unknown>()
     let holding = true
     let reached = false
+    let credentials = 0
     const auth = {
       isCurrentOwner: (id: string | null) => id === owner.id,
       getAccessToken: () => {
-        if (holding && heldAt === 'token') {
+        credentials++
+        if (
+          holding &&
+          heldAt === 'token' &&
+          (phase === 'read' || credentials === 2)
+        ) {
           reached = true
           return heldToken.promise
         }
@@ -76,30 +82,28 @@ it.each(
       if (init.method === 'POST') {
         pushes.push(JSON.parse(init.body as string))
       }
-      if (holding) {
+      if (holding && (init.method === 'POST') === (phase === 'write')) {
         if (heldAt === 'response') {
           reached = true
           return heldResponse.promise
         }
         if (heldAt === 'refresh')
           return Promise.resolve(new Response(null, { status: 401 }))
-        if (heldAt === 'body') {
+        if (heldAt === 'body' || heldAt === 'error body') {
           const read = () => {
             reached = true
             return heldBody.promise
           }
           return Promise.resolve({
-            ok: operation === 'syncDeck',
-            status: 403,
+            ok: heldAt === 'body',
+            status: heldAt === 'body' ? 200 : 403,
             json: read,
             text: read,
           })
         }
       }
       return Promise.resolve(
-        init.method === 'POST'
-          ? new Response(null, { status: 204 })
-          : new Response('[]'),
+        init.method === 'POST' ? Response.json(1) : new Response('[]'),
       )
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -110,11 +114,7 @@ it.each(
       'device',
     )
     const lifetime = new AbortController()
-    const run =
-      operation === 'syncDeck'
-        ? service.syncDeck.bind(service)
-        : service.pushDeck.bind(service)
-    const oldSync = run(oldCards, ownerA, [], lifetime.signal)
+    const oldSync = service.syncDeck(oldCards, ownerA, [], lifetime.signal)
     await vi.waitFor(() => expect(reached).toBe(true))
     if (interruption === 'account round trip') {
       owner = ownerB
@@ -130,17 +130,21 @@ it.each(
     holding = false
     const freshLifetime = new AbortController()
     expect(
-      (await run(freshCards, ownerA, [], freshLifetime.signal)).success,
+      (await service.syncDeck(freshCards, ownerA, [], freshLifetime.signal))
+        .success,
     ).toBe(true)
     expect(pushes).toHaveLength(previousPushes + 1)
     expect(pushes[pushes.length - 1]).toMatchObject({
-      user_id: 'A',
-      data: { cards: freshCards },
+      p_user_id: 'A',
+      p_expected_revision: 0,
+      p_data: { cards: freshCards },
     })
     const dispatchCount = fetchMock.mock.calls.length
     heldToken.resolve('token-A')
     heldResponse.resolve(new Response('[]'))
-    heldBody.resolve((operation === 'syncDeck' ? [] : 'denied') as never)
+    heldBody.resolve(
+      heldAt === 'error body' ? 'denied' : phase === 'read' ? [] : 1,
+    )
     await vi.advanceTimersByTimeAsync(0)
     expect(fetchMock).toHaveBeenCalledTimes(dispatchCount)
     expect(pushes).toHaveLength(previousPushes + 1)

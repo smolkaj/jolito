@@ -1,11 +1,10 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { createDeckBackup } from '../../application/deck-backup'
-import { syncDeckWithCloud } from '../../application/deck-sync'
 import type {
   AuthService,
   AuthUser,
   Clock,
-  SyncService,
+  SyncResult,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { unwrapDomainBoundOtp } from '../../domain/auth'
@@ -27,14 +26,8 @@ export interface SyncModalProps {
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  deletedCardIds?: string[]
-  onUpdateCards: (
-    newCards: StudyCard[],
-    syncToCloud?: boolean,
-    newDeletedCardIds?: string[],
-  ) => boolean | void
   auth: AuthService
-  sync: SyncService
+  onSync: () => Promise<SyncResult>
   clock?: Clock | undefined
   onDownloadBackup?: ((cards: StudyCard[]) => void) | undefined
   onSaveLocally?: (() => void) | undefined
@@ -49,10 +42,8 @@ export function SyncModal({
   isOpen,
   onClose,
   cards,
-  deletedCardIds = [],
-  onUpdateCards,
   auth,
-  sync,
+  onSync,
   clock,
   onDownloadBackup,
   onSaveLocally,
@@ -204,7 +195,7 @@ export function SyncModal({
     if (res.success) {
       setStatusMsg({
         type: 'success',
-        message: 'Signed in! Deck synchronized with cloud.',
+        message: 'Signed in.',
       })
     } else {
       setStatusMsg({
@@ -218,14 +209,7 @@ export function SyncModal({
     if (!user) return
     setLoadingAction('sync')
     setStatusMsg(null)
-    const res = await syncDeckWithCloud({
-      localCards: cards,
-      localDeletedIds: deletedCardIds,
-      user,
-      syncService: sync,
-      onCardsUpdated: (newCards, newDeletedIds) =>
-        onUpdateCards(newCards, false, newDeletedIds),
-    })
+    const res = await onSync()
     setLoadingAction(null)
     if (res.success) {
       triggerTransientFeedback('synced', 2500)

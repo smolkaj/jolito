@@ -46,7 +46,7 @@ for (const width of [320, 375]) {
         { auth, collection },
       )
       await page.route('https://mock.supabase.co/**', (route) =>
-        route.fulfill({ json: route.request().method() === 'GET' ? [] : {} }),
+        route.fulfill({ json: route.request().method() === 'GET' ? [] : 1 }),
       )
       await page.goto(
         action === 'grammar'
@@ -240,7 +240,7 @@ for (const failure of [
           : route.request().url(),
       )
       await route.fulfill({
-        json: route.request().method() === 'GET' ? [] : {},
+        json: route.request().method() === 'GET' ? [] : 1,
       })
     })
     const token = `header.${Buffer.from(JSON.stringify({ sub: 'B', email: 'B@example.com' })).toString('base64url')}.signature`

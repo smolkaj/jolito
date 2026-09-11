@@ -222,6 +222,7 @@ test('rejected deletion refresh preserves account and private deck through reloa
           ? [
               {
                 user_id: 'deletion-user',
+                revision: 1,
                 updated_at: new Date().toISOString(),
                 data: {
                   version: 3,
@@ -233,7 +234,7 @@ test('rejected deletion refresh preserves account and private deck through reloa
                 },
               },
             ]
-          : {},
+          : 2,
     })
   })
   async function confirmDeletion() {

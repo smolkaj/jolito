@@ -16,13 +16,12 @@ import sampleAguacateUrl from '../assets/sample-aguacate.webp'
 import { createCards } from './application/create-cards'
 import { applyAnkiImport } from './application/anki-import'
 import { createDeckBackup, type RestoreMode } from './application/deck-backup'
-import { syncDeckWithCloud } from './application/deck-sync'
+import { DeckSyncCoordinator } from './application/sync-coordinator'
 import type {
   AppServices,
   CardRepository,
   AuthUser,
   PrefetchItem,
-  SyncService,
   SyncResult,
 } from './application/ports'
 import {
@@ -67,7 +66,7 @@ import {
 import { findDuplicateNoteCards, getDuplicateGroups } from './domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from './domain/lexicon'
 import { parseAnkiDeck, type ParseAnkiResult } from './domain/anki-import'
-import { reconcileStudyCards, type SyncStatus } from './domain/sync'
+import { type SyncStatus } from './domain/sync'
 import { StarterPacksModal } from './ui/modals/StarterPacksModal'
 import type { StarterPack } from './domain/starter-decks'
 import { mergeStudyCardsSemantic } from './domain/card-merge'
@@ -326,24 +325,20 @@ function DeckBackupModalInner({
   saveError,
   onClose,
   cards,
-  deletedCardIds = [],
+  deletedCardIds,
   onUpdateCards,
   clock,
-  user,
-  sync,
 }: {
   saveError?: string | null
   onClose: () => void
   cards: StudyCard[]
-  deletedCardIds?: string[]
+  deletedCardIds: string[]
   onUpdateCards: (
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
   ) => boolean | void
   clock: { now(): number }
-  user: AuthUser | null
-  sync: SyncService
 }) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -473,16 +468,6 @@ function DeckBackupModalInner({
       setSelectedImportData(null)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
-      }
-      if (user) {
-        void syncDeckWithCloud({
-          localCards: result.cards,
-          localDeletedIds: deletedCardIds,
-          user,
-          syncService: sync,
-          onCardsUpdated: (newCards, newDeletedIds) =>
-            onUpdateCards(newCards, false, newDeletedIds),
-        })
       }
     } else {
       setBackupStatus({
@@ -669,15 +654,13 @@ function DeckBackupModal(props: {
   saveError?: string | null
   onClose: () => void
   cards: StudyCard[]
-  deletedCardIds?: string[]
+  deletedCardIds: string[]
   onUpdateCards: (
     newCards: StudyCard[],
     syncToCloud?: boolean,
     newDeletedCardIds?: string[],
   ) => boolean | void
   clock: { now(): number }
-  user: AuthUser | null
-  sync: SyncService
 }) {
   if (!props.isOpen) return null
   return <DeckBackupModalInner {...props} />
@@ -1197,7 +1180,7 @@ function OwnedApp(props: OwnedAppProps) {
 }
 
 function LoadedApp({
-  services: baseServices,
+  services,
   accountNotice,
   onDismissAccountNotice,
   onDeleteAccount,
@@ -1207,58 +1190,18 @@ function LoadedApp({
   setPendingCard,
   isCurrentOwner,
 }: OwnedAppProps & { initialCards: StudyCard[] }) {
-  const lifetime = useRef({
-    active: true,
-    generation: 0,
-    controller: new AbortController(),
-  })
+  const lifetime = useRef({ active: true })
   useEffect(() => {
     const current = lifetime.current
     current.active = true
-    if (current.controller.signal.aborted)
-      current.controller = new AbortController()
     return () => {
       current.active = false
-      current.generation++
-      current.controller.abort()
     }
   }, [])
   const canCommit = useCallback(
     () => lifetime.current.active && isCurrentOwner(),
     [isCurrentOwner],
   )
-  const services = useMemo<AppServices>(() => {
-    const guarded = async (
-      operation: (signal: AbortSignal) => Promise<SyncResult>,
-    ): Promise<SyncResult> => {
-      const generation = lifetime.current.generation
-      const stale = {
-        success: false,
-        error: 'Your account changed. Please sync again.',
-      }
-      if (!canCommit()) return stale
-      const result = await operation(lifetime.current.controller.signal)
-      return canCommit() && generation === lifetime.current.generation
-        ? result
-        : stale
-    }
-    return {
-      ...baseServices,
-      sync: {
-        getStatus: () => baseServices.sync.getStatus(),
-        syncDeck: (cards, user, deleted) =>
-          guarded((signal) =>
-            baseServices.sync.syncDeck(cards, user, deleted, signal),
-          ),
-        pushDeck: (cards, user, deleted) =>
-          guarded((signal) =>
-            baseServices.sync.pushDeck(cards, user, deleted, signal),
-          ),
-        pullDeck: (user) =>
-          guarded((signal) => baseServices.sync.pullDeck(user, signal)),
-      },
-    }
-  }, [baseServices, canCommit])
   const initialResolved = useMemo<{
     view: View
     queue: string[]
@@ -1488,6 +1431,17 @@ function LoadedApp({
     queueRef.current = queue
   })
 
+  const coordinatorRef = useRef<DeckSyncCoordinator | null>(null)
+  const requestSync = useCallback((): Promise<SyncResult> => {
+    if (!canCommit() || !coordinatorRef.current) {
+      return Promise.resolve({
+        success: false,
+        error: 'Sign in to sync your deck with the cloud.',
+      })
+    }
+    return coordinatorRef.current.request()
+  }, [canCommit])
+
   const onUpdateCards = useCallback(
     (
       newCards: StudyCard[],
@@ -1523,16 +1477,7 @@ function LoadedApp({
       if (becameEmpty && viewRef.current === 'review') {
         navigateTo('complete')
       }
-      if (syncToCloud && authUserRef.current) {
-        setSyncStatus('syncing')
-        void services.sync
-          .syncDeck(newCards, authUserRef.current, deletedIdsArray)
-          .then((res) => {
-            if (res.success) setSyncStatus('synced')
-            else setSyncStatus('error')
-          })
-          .catch(() => setSyncStatus('error'))
-      }
+      if (syncToCloud) void requestSync()
 
       if (typeof services.speaker.pruneUnusedAudio === 'function') {
         const nextActiveItems = getActiveAudioItems(newCards)
@@ -1576,7 +1521,7 @@ function LoadedApp({
       services.cards,
       services.clock,
       services.speaker,
-      services.sync,
+      requestSync,
     ],
   )
 
@@ -1786,79 +1731,43 @@ function LoadedApp({
         pendingCardRef.current = null
         setIsSyncOpen(false)
       }
-
-      const deletedIds = Array.from(deletedCardIdsRef.current)
-      void syncDeckWithCloud({
-        localCards: userCards,
-        localDeletedIds: deletedIds,
-        user,
-        syncService: services.sync,
-        onCardsUpdated: (newCards, newDeletedIds) => {
-          const reconciled = reconcileStudyCards(
-            filterOutStarterCards(cardsRef.current),
-            newCards,
-            Array.from(deletedCardIdsRef.current),
-            newDeletedIds,
-          )
-          return onUpdateCardsRef.current(
-            reconciled.cards,
-            false,
-            reconciled.deletedCardIds,
-          )
-        },
-      }).then((res) => {
-        if (res.success) setSyncStatus('synced')
-        else setSyncStatus('error')
-      })
     }
-  }, [services.clock, services.ids, services.sync, setPendingCard])
+  }, [services.clock, services.ids, setPendingCard])
 
-  const isSyncingRef = useRef(false)
+  useEffect(() => {
+    const user = authUserRef.current
+    if (!user) return
+    const coordinator = new DeckSyncCoordinator(
+      user,
+      services.sync,
+      () => ({
+        cards: filterOutStarterCards(cardsRef.current),
+        deletedCardIds: Array.from(deletedCardIdsRef.current),
+      }),
+      (deck) =>
+        canCommit() &&
+        onUpdateCardsRef.current(deck.cards, false, deck.deletedCardIds),
+      (status) => {
+        if (canCommit()) setSyncStatus(status)
+      },
+    )
+    coordinatorRef.current = coordinator
+    void coordinator.request()
+    return () => {
+      coordinator.dispose()
+      coordinatorRef.current = null
+    }
+  }, [services.sync, canCommit])
+
   const syncDebounceTimerRef = useRef<number | null>(null)
-
-  const performSync = useCallback(async () => {
-    if (isSyncingRef.current || !authUserRef.current) return
-    isSyncingRef.current = true
-    setSyncStatus('syncing')
-    try {
-      const userCards = filterOutStarterCards(cardsRef.current)
-      const deletedIds = Array.from(deletedCardIdsRef.current)
-      const res = await services.sync.syncDeck(
-        userCards,
-        authUserRef.current,
-        deletedIds,
-      )
-      if (res.success && res.cards) {
-        // Reconcile server response against current in-flight local deck to prevent overwriting intermediate edits or reviews
-        const reconciled = reconcileStudyCards(
-          cardsRef.current,
-          res.cards,
-          Array.from(deletedCardIdsRef.current),
-          res.deletedCardIds ?? [],
-        )
-        const saved = onUpdateCards(
-          reconciled.cards,
-          false,
-          reconciled.deletedCardIds,
-        )
-        setSyncStatus(saved ? 'synced' : 'error')
-      } else if (!res.success) {
-        setSyncStatus('error')
-      }
-    } catch {
-      setSyncStatus('error')
-    } finally {
-      isSyncingRef.current = false
-    }
-  }, [onUpdateCards, services.sync])
 
   const flushSync = useCallback(() => {
     if (syncDebounceTimerRef.current !== null) {
       window.clearTimeout(syncDebounceTimerRef.current)
       syncDebounceTimerRef.current = null
     }
-    void performSync()
-  }, [performSync])
+    void requestSync()
+  }, [requestSync])
 
   const flushSyncRef = useRef(flushSync)
   useEffect(() => {
@@ -1872,9 +1781,9 @@ function LoadedApp({
     }
     syncDebounceTimerRef.current = window.setTimeout(() => {
       syncDebounceTimerRef.current = null
-      void performSync()
+      void requestSync()
     }, 1500)
-  }, [performSync])
+  }, [requestSync])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -2836,10 +2745,8 @@ function LoadedApp({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
-          deletedCardIds={deletedCardIds}
-          onUpdateCards={onUpdateCards}
           auth={services.auth}
-          sync={services.sync}
+          onSync={requestSync}
           clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
@@ -3233,10 +3140,8 @@ function LoadedApp({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
-          deletedCardIds={deletedCardIds}
-          onUpdateCards={onUpdateCards}
           auth={services.auth}
-          sync={services.sync}
+          onSync={requestSync}
           clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
@@ -3743,8 +3648,6 @@ function LoadedApp({
           deletedCardIds={deletedCardIds}
           onUpdateCards={onUpdateCards}
           clock={services.clock}
-          user={authUser}
-          sync={services.sync}
         />
 
         <SyncModal
@@ -3753,10 +3656,8 @@ function LoadedApp({
           isOpen={isSyncOpen}
           onClose={closeSyncModal}
           cards={cards}
-          deletedCardIds={deletedCardIds}
-          onUpdateCards={onUpdateCards}
           auth={services.auth}
-          sync={services.sync}
+          onSync={requestSync}
           clock={services.clock}
           onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
           pendingCardPrompt={
@@ -3995,10 +3896,8 @@ function LoadedApp({
         isOpen={isSyncOpen}
         onClose={closeSyncModal}
         cards={cards}
-        deletedCardIds={deletedCardIds}
-        onUpdateCards={onUpdateCards}
         auth={services.auth}
-        sync={services.sync}
+        onSync={requestSync}
         clock={services.clock}
         onSaveLocally={pendingCard ? handleSavePendingLocally : undefined}
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}

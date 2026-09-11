@@ -54,7 +54,7 @@ async function openEditor(card = initial, now = 1000) {
   services.cards.save([card])
   const mounted = render(<App services={services} />)
   const user = userEvent.setup()
-  await waitFor(() => expect(services.mockSync.status).toBe('synced'))
+  await screen.findByRole('button', { name: /synced/i })
   await user.click(screen.getByRole('row', { name: /card: hola,/i }))
   const saved = () =>
     new LocalStorageCardRepository(localStorage, owner.id).load([]).cards

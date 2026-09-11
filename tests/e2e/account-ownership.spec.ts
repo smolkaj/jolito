@@ -42,7 +42,7 @@ test('auth redirect migrates the previous owner before loading a new account, th
   await page.route('https://mock.supabase.co/**', async (route) => {
     if (route.request().method() === 'POST')
       pushes.push(route.request().postDataJSON())
-    await route.fulfill({ json: route.request().method() === 'GET' ? [] : {} })
+    await route.fulfill({ json: route.request().method() === 'GET' ? [] : 1 })
   })
   await page.goto(`/#access_token=${jwt('B')}&refresh_token=refresh-B`)
   await expect(
@@ -106,7 +106,7 @@ test('cross-tab A → B → signed out changes isolate held cloud responses and 
         body: route.request().postDataJSON(),
         authorization: route.request().headers().authorization,
       })
-    await route.fulfill({ json: route.request().method() === 'GET' ? [] : {} })
+    await route.fulfill({ json: route.request().method() === 'GET' ? [] : 1 })
   })
   await page.goto('/#/deck')
   await expect(
@@ -187,7 +187,7 @@ test('failed ownership migration preserves the old auth owner through reload bef
     { initial: cards('A'), auth: session('A') },
   )
   await page.route('https://mock.supabase.co/**', (route) =>
-    route.fulfill({ json: route.request().method() === 'GET' ? [] : {} }),
+    route.fulfill({ json: route.request().method() === 'GET' ? [] : 1 }),
   )
   await page.goto(`/#access_token=${jwt('B')}&refresh_token=refresh-B`)
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible()
@@ -270,7 +270,7 @@ for (const token of ['123456', 'a'.repeat(64)]) {
         })
       } else
         await route.fulfill({
-          json: route.request().method() === 'GET' ? [] : {},
+          json: route.request().method() === 'GET' ? [] : 1,
         })
     })
     await page.goto('/#/deck')

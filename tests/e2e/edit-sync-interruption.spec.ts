@@ -62,6 +62,7 @@ for (const width of [320, 1280]) {
         { collection, user },
       )
       let cloud: { cards: StudyCard[]; deletedCardIds: string[] } = collection
+      let revision = 1
       let hold = false
       let pending = false
       let release!: () => void
@@ -70,12 +71,28 @@ for (const width of [320, 1280]) {
       })
       await page.route('https://mock.supabase.co/**', async (route) => {
         if (route.request().method() === 'POST') {
-          cloud = (route.request().postDataJSON() as { data: typeof cloud })
-            .data
-          await route.fulfill({ json: {} })
+          const write = route.request().postDataJSON() as {
+            p_user_id: string
+            p_expected_revision: number
+            p_data: typeof cloud
+          }
+          expect(new URL(route.request().url()).pathname).toBe(
+            '/rest/v1/rpc/compare_and_set_deck',
+          )
+          expect(write.p_user_id).toBe(user.id)
+          if (write.p_expected_revision !== revision) {
+            await route.fulfill({ json: null })
+            return
+          }
+          cloud = write.p_data
+          revision += 1
+          await route.fulfill({ json: revision })
           return
         }
         const snapshot = {
+          user_id: user.id,
+          revision,
+          updated_at: new Date(now).toISOString(),
           data: {
             version: collectionVersion,
             app: 'jolito',
@@ -111,6 +128,7 @@ for (const width of [320, 1280]) {
         outcome === 'delete'
           ? { cards: [], deletedCardIds: [initial.id] }
           : { cards: [remote], deletedCardIds: [] }
+      revision += 1
       hold = true
       await page.evaluate(() => window.dispatchEvent(new Event('focus')))
       await expect.poll(() => pending).toBe(true)

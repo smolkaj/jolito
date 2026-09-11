@@ -33,16 +33,10 @@ it('effect cleanup aborts its captured sync while a fresh setup remains usable a
       signals.push(signal!)
       return signals.length === 1
         ? oldResult
-        : Promise.resolve({ success: true, cards })
+        : Promise.resolve({ success: true, cards, deletedCardIds: [] })
     },
   )
-  const sync: SyncService = {
-    ...services.sync,
-    getStatus: () => 'idle',
-    pushDeck: () => Promise.resolve({ success: true }),
-    pullDeck: () => Promise.resolve({ success: true, cards }),
-    syncDeck,
-  }
+  const sync: SyncService = { syncDeck }
   const app = render(
     <StrictMode>
       <App services={{ ...services, sync }} />
@@ -51,6 +45,11 @@ it('effect cleanup aborts its captured sync while a fresh setup remains usable a
   await waitFor(() => expect(signals).toHaveLength(2))
   expect(signals[0]!.aborted).toBe(true)
   expect(signals[1]!.aborted).toBe(false)
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: /deck synced with cloud/i }),
+    ).toBeInTheDocument(),
+  )
   await act(async () => {
     release({
       success: true,

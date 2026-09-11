@@ -12,7 +12,17 @@ type HeldSyncWindow = Window & {
   oldSyncReached: boolean
   oldSyncReleased: boolean
 }
-type CloudPush = { user_id: string; data: { cards: unknown[] } }
+type CloudPush = {
+  p_user_id: string
+  p_expected_revision: number
+  p_data: { cards: unknown[]; updatedAt: string }
+}
+type CloudSnapshot = {
+  user_id: string
+  revision: number
+  updated_at: string
+  data: CloudPush['p_data']
+}
 
 const collection = (owner: string) =>
   studyCardCollectionSchema.parse({
@@ -101,13 +111,24 @@ for (const heldAt of ['response', 'body'] as const) {
       },
     )
     const pushes: CloudPush[] = []
-    const cloud = new Map<string, CloudPush>()
+    const cloud = new Map<string, CloudSnapshot>()
     await page.route('https://mock.supabase.co/**', async (route) => {
       if (route.request().method() === 'POST') {
         const snapshot = route.request().postDataJSON() as CloudPush
         pushes.push(snapshot)
-        cloud.set(snapshot.user_id, snapshot)
-        await route.fulfill({ json: {} })
+        const currentRevision = cloud.get(snapshot.p_user_id)?.revision ?? 0
+        if (snapshot.p_expected_revision !== currentRevision) {
+          await route.fulfill({ json: null })
+          return
+        }
+        const revision = currentRevision + 1
+        cloud.set(snapshot.p_user_id, {
+          user_id: snapshot.p_user_id,
+          revision,
+          updated_at: snapshot.p_data.updatedAt,
+          data: snapshot.p_data,
+        })
+        await route.fulfill({ json: revision })
       } else {
         const owner = new URL(route.request().url()).searchParams
           .get('user_id')
