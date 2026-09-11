@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthUser } from '../../application/ports'
 import { SupabaseAuthService } from './auth-service'
 
 describe('SupabaseAuthService', () => {
@@ -906,9 +905,11 @@ describe('SupabaseAuthService', () => {
         'https://example.supabase.co/rest/v1/rpc/delete_user_account',
         expect.objectContaining({
           method: 'POST',
-          headers: expect.objectContaining({
+          headers: {
+            apikey: 'anon-key',
+            'Content-Type': 'application/json',
             Authorization: 'Bearer delete-token',
-          }),
+          },
         }),
       )
       expect(await service.getUser()).toBeNull()
@@ -922,13 +923,11 @@ describe('SupabaseAuthService', () => {
       async (status) => {
         const service = createService()
         const stored = mockStorage['jolito-auth-session-v1']
-        const fetchSpy = vi
-          .fn()
-          .mockResolvedValue(
-            new Response(JSON.stringify({ message: 'Deletion unavailable' }), {
-              status,
-            }),
-          )
+        const fetchSpy = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ message: 'Deletion unavailable' }), {
+            status,
+          }),
+        )
         vi.stubGlobal('fetch', fetchSpy)
         const listener = vi.fn()
         service.onAuthStateChange(listener)
@@ -995,9 +994,11 @@ describe('SupabaseAuthService', () => {
       expect(fetchSpy).toHaveBeenLastCalledWith(
         'https://example.supabase.co/rest/v1/rpc/delete_user_account',
         expect.objectContaining({
-          headers: expect.objectContaining({
+          headers: {
+            apikey: 'anon-key',
+            'Content-Type': 'application/json',
             Authorization: 'Bearer fresh-token',
-          }),
+          },
         }),
       )
       service.destroy()
