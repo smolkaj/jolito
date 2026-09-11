@@ -93,6 +93,7 @@
   overflow-wrap: anywhere;
 }
 .grammar-blank,
+.grammar-filled,
 .grammar-verb-cue {
   color: var(--rosa-dark);
 }

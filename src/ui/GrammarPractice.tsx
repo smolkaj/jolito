@@ -194,21 +194,19 @@ export function GrammarPractice({
           </p>
           <div className="grammar-sentence-row">
             <h1 className="grammar-sentence" lang="es">
+              {before}
               {session.revealed ? (
-                context.completed
+                <span className="grammar-filled">{current.answer}</span>
               ) : (
-                <>
-                  {before}
-                  <span
-                    className="grammar-blank"
-                    aria-label="missing verb"
-                    lang="en"
-                  >
-                    …
-                  </span>
-                  {after}
-                </>
+                <span
+                  className="grammar-blank"
+                  aria-label="missing verb"
+                  lang="en"
+                >
+                  …
+                </span>
               )}
+              {after}
             </h1>
             <AudioButton
               prompt={!session.revealed}
