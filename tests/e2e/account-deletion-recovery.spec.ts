@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { createStudyCards } from '../../src/domain/card'
+import {
+  collectionVersion,
+  createStudyCards,
+  studyCardCollectionSchema,
+} from '../../src/domain/card'
 import { auditAccessibility } from './accessibility'
 
 const accountCards = (id: string) =>
@@ -13,6 +17,12 @@ const accountCards = (id: string) =>
     id,
     0,
   )
+const accountCollection = (id: string) =>
+  studyCardCollectionSchema.parse({
+    version: collectionVersion,
+    cards: accountCards(id),
+    deletedCardIds: [],
+  })
 const authSession = (id: string) => ({
   accessToken: `token-${id}`,
   refreshToken: `refresh-${id}`,
@@ -45,13 +55,17 @@ test.beforeEach(async ({ page }) => {
         JSON.stringify({
           version: 1,
           accounts: {
-            'user:A': { version: 3, cards: a, deletedCardIds: [] },
-            'user:B': { version: 3, cards: b, deletedCardIds: [] },
+            'user:A': a,
+            'user:B': b,
           },
         }),
       )
     },
-    { a: accountCards('A'), b: accountCards('B'), auth: authSession('A') },
+    {
+      a: accountCollection('A'),
+      b: accountCollection('B'),
+      auth: authSession('A'),
+    },
   )
 })
 
