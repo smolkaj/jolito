@@ -1219,8 +1219,11 @@ describe('SupabaseAuthService', () => {
           await refresh
           expect(mockStorage[storageKey]).toBe(stored)
           expect(listener).not.toHaveBeenCalled()
-          expect(fetchSpy).toHaveBeenCalledTimes(2)
+          // The refresh has its own deadline; its offline fallback can
+          // start the one permitted RPC retry before the deletion deadline.
+          expect(fetchSpy).toHaveBeenCalledTimes(3)
           service.destroy()
+          await vi.advanceTimersByTimeAsync(0)
           expect(vi.getTimerCount()).toBe(0)
         },
       )

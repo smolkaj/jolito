@@ -314,59 +314,62 @@ export class SupabaseAuthService implements AuthService {
     this.inFlightRefresh = attempt
     attempt.promise = (async () => {
       try {
-        const res = await fetch(
-          `${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
-          {
-            method: 'POST',
-            headers: {
-              apikey: this.supabaseAnonKey,
-              'Content-Type': 'application/json',
+        return await withRequestDeadline(async (signal) => {
+          const res = await fetch(
+            `${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+            {
+              method: 'POST',
+              signal,
+              headers: {
+                apikey: this.supabaseAnonKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                refresh_token: session.refreshToken,
+              }),
             },
-            body: JSON.stringify({
-              refresh_token: session.refreshToken,
-            }),
-          },
-        )
+          )
 
-        if (!isCurrent()) return null
-        if (!res.ok) {
-          // If server rejected the refresh token (e.g. 400 invalid grant / expired refresh token)
-          if (
-            res.status === 400 ||
-            res.status === 401 ||
-            res.status === 403 ||
-            res.status === 422
-          ) {
-            if (!attempt.preserveSessionOnRejection) this.clearSession()
-            return null
+          if (signal.aborted || !isCurrent()) return null
+          if (!res.ok) {
+            // If server rejected the refresh token (e.g. 400 invalid grant / expired refresh token)
+            if (
+              res.status === 400 ||
+              res.status === 401 ||
+              res.status === 403 ||
+              res.status === 422
+            ) {
+              if (!attempt.preserveSessionOnRejection) this.clearSession()
+              return null
+            }
+            // Server error (5xx) or rate limit: preserve session for offline resilience
+            return session.accessToken || null
           }
-          // Server error (5xx) or rate limit: preserve session for offline resilience
-          return session.accessToken || null
-        }
 
-        const rawData: unknown = await res.json().catch(() => null)
-        if (!isCurrent()) return null
-        const parseResult = supabaseTokenResponseSchema.safeParse(rawData)
+          const rawData: unknown = await res.json().catch(() => null)
+          if (signal.aborted || !isCurrent()) return null
+          const parseResult = supabaseTokenResponseSchema.safeParse(rawData)
 
-        if (!parseResult.success) {
-          return session.accessToken || null
-        }
+          if (!parseResult.success) {
+            return session.accessToken || null
+          }
 
-        const data = parseResult.data
-        if (data.user && data.user.id !== session.user.id) return null
-        const updatedUser: AuthUser = {
-          id: data.user?.id || session.user.id,
-          email: data.user?.email ?? session.user.email,
-        }
+          const data = parseResult.data
+          if (data.user && data.user.id !== session.user.id) return null
+          const updatedUser: AuthUser = {
+            id: data.user?.id || session.user.id,
+            email: data.user?.email ?? session.user.email,
+          }
 
-        const newSession: StoredSession = {
-          accessToken: data.access_token,
-          refreshToken: data.refresh_token,
-          expiresAt: Date.now() + data.expires_in * 1000,
-          user: updatedUser,
-        }
+          const newSession: StoredSession = {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            expiresAt: Date.now() + data.expires_in * 1000,
+            user: updatedUser,
+          }
 
-        return this.saveSession(newSession) ? newSession.accessToken : null
+          return this.saveSession(newSession) ? newSession.accessToken : null
+        }, this.lifetime.signal)
       } catch {
         // Network failure (offline, timeout, DNS): preserve session for offline use
         return isCurrent() ? session.accessToken || null : null

@@ -52,7 +52,6 @@ it.each(['signout', 'switch', 'destroy'] as const)(
     if (action === 'destroy') auth.destroy()
     const stored = localStorage.getItem(key)
     const notifications = listener.mock.calls.length
-    const timers = vi.getTimerCount()
     resolve(
       new Response(
         JSON.stringify({
@@ -66,7 +65,8 @@ it.each(['signout', 'switch', 'destroy'] as const)(
     expect(await pending).toBeNull()
     expect(localStorage.getItem(key)).toBe(stored)
     expect(listener).toHaveBeenCalledTimes(notifications)
-    expect(vi.getTimerCount()).toBe(timers)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(vi.getTimerCount()).toBe(action === 'switch' ? 1 : 0)
     if (action === 'switch') expect(auth.getCurrentUser()?.id).toBe('B')
     else expect(auth.getCurrentUser()).toBeNull()
     auth.destroy()
@@ -185,7 +185,15 @@ it.each([
     if (transition === 'destroy') auth.destroy()
     const before = localStorage.getItem(key)
     finish(new Response(null, { status: 204 }))
-    expect(await deletion).toEqual({ success: true })
+    expect(await deletion).toEqual(
+      transition === 'destroy'
+        ? {
+            success: false,
+            error: 'Request was interrupted. Please try again.',
+            outcomeUnknown: true,
+          }
+        : { success: true },
+    )
     if (
       transition === 'A-B' ||
       transition === 'A-B-before-storage-event' ||
@@ -404,5 +412,138 @@ it.each(['123456', 'a'.repeat(64)])(
     expect(request).not.toHaveBeenCalled()
     expect(localStorage.getItem(key)).toBe(before)
     auth.destroy()
+  },
+)
+it.each(['success', 'network-rejection', 'deadline', 'destroy'] as const)(
+  'signs out without modern AbortSignal helpers across %s and leaves no active work',
+  async (outcome) => {
+    vi.stubGlobal('AbortSignal', {})
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    let finish!: (response: Response) => void
+    let fail!: (reason: Error) => void
+    let signal!: AbortSignal
+    const request = vi.fn((_url: string, init: RequestInit) => {
+      signal = init.signal!
+      return new Promise<Response>((resolve, reject) => {
+        finish = resolve
+        fail = reject
+        signal.addEventListener(
+          'abort',
+          () => reject(new DOMException('Aborted', 'AbortError')),
+          { once: true },
+        )
+      })
+    })
+    vi.stubGlobal('fetch', request)
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    const listener = vi.fn()
+    auth.onAuthStateChange(listener)
+    const settled = auth.signOut().then(
+      () => null,
+      (cause: unknown) => cause,
+    )
+    expect(request).toHaveBeenCalledOnce()
+    expect(localStorage.getItem(key)).toBeNull()
+    const notifications = listener.mock.calls.length
+    if (outcome === 'success') finish(new Response(null, { status: 204 }))
+    if (outcome === 'network-rejection') fail(new Error('Offline'))
+    if (outcome === 'deadline') await vi.advanceTimersByTimeAsync(10_000)
+    if (outcome === 'destroy') auth.destroy()
+    expect(await settled).toBeNull()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(listener).toHaveBeenCalledTimes(notifications)
+    if (outcome === 'deadline' || outcome === 'destroy')
+      expect(signal.aborted).toBe(true)
+    if (outcome !== 'destroy') {
+      await auth.verifyOtp(
+        '',
+        `#access_token=${jwt('B')}&refresh_token=refresh-B`,
+      )
+      expect(auth.getCurrentUser()?.id).toBe('B')
+      const retry = auth.signOut()
+      finish(new Response(null, { status: 204 }))
+      await retry
+      await vi.advanceTimersByTimeAsync(0)
+      expect(request).toHaveBeenCalledTimes(2)
+      expect(localStorage.getItem(key)).toBeNull()
+      expect(vi.getTimerCount()).toBe(0)
+    }
+    auth.destroy()
+    const ended = listener.mock.calls.length
+    window.dispatchEvent(new Event('online'))
+    document.dispatchEvent(new Event('visibilitychange'))
+    await auth.signOut()
+    expect(vi.getTimerCount()).toBe(0)
+    expect(listener).toHaveBeenCalledTimes(ended)
+  },
+)
+
+it.each(['response', 'body'] as const)(
+  'bounds a held refresh %s across destruction and reload without modern AbortSignal helpers',
+  async (heldAt) => {
+    vi.stubGlobal('AbortSignal', {})
+    localStorage.setItem(key, JSON.stringify(session('A')))
+    let signal!: AbortSignal
+    let finish!: (value: never) => void
+    const payload = {
+      access_token: 'renewed-A',
+      refresh_token: 'renewed-refresh-A',
+      expires_in: 3600,
+      user: { id: 'A', email: 'A@example.com' },
+    }
+    const request = vi.fn((_url: string, init: RequestInit) => {
+      signal = init.signal!
+      const held = new Promise<never>((resolve) => {
+        finish = resolve
+      })
+      return heldAt === 'response'
+        ? held
+        : Promise.resolve({ ok: true, json: () => held })
+    })
+    vi.stubGlobal('fetch', request)
+    const auth = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    const listener = vi.fn()
+    auth.onAuthStateChange(listener)
+    const pending = auth.refreshSession()
+    await vi.advanceTimersByTimeAsync(0)
+    const before = localStorage.getItem(key)
+    auth.destroy()
+    expect(signal?.aborted).toBe(true)
+    expect(await pending).toBeNull()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(vi.getTimerCount()).toBe(0)
+    const notifications = listener.mock.calls.length
+    finish(
+      (heldAt === 'response'
+        ? new Response(JSON.stringify(payload))
+        : payload) as never,
+    )
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(localStorage.getItem(key)).toBe(before)
+    expect(listener).toHaveBeenCalledTimes(notifications)
+    expect(vi.getTimerCount()).toBe(0)
+    request.mockImplementation((_url: string, init: RequestInit) => {
+      signal = init.signal!
+      return Promise.resolve(new Response(JSON.stringify(payload))) as never
+    })
+    const reloaded = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'key',
+      localStorage,
+    )
+    expect(await reloaded.refreshSession()).toBe('renewed-A')
+    expect(signal.aborted).toBe(true)
+    reloaded.destroy()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(vi.getTimerCount()).toBe(0)
   },
 )
