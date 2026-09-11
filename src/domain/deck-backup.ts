@@ -3,16 +3,21 @@ import { collectionVersionSchema } from './card'
 import {
   directions,
   studyCardSchema,
+  legacyStudyCardSchema,
+  migrateCardEnvelope,
   type Direction,
   type StudyCard,
 } from './card'
 
-export const deckBackupEnvelopeSchema = z.object({
-  version: collectionVersionSchema,
-  app: z.string().optional(),
-  exportedAt: z.string().optional(),
-  cards: z.array(studyCardSchema),
-})
+export const deckBackupEnvelopeSchema = z.preprocess(
+  migrateCardEnvelope,
+  z.object({
+    version: collectionVersionSchema,
+    app: z.string().optional(),
+    exportedAt: z.string().optional(),
+    cards: z.array(studyCardSchema),
+  }),
+)
 
 export type DeckBackupEnvelope = z.infer<typeof deckBackupEnvelopeSchema>
 
@@ -69,6 +74,8 @@ function restoreLegacyCards(raw: unknown): StudyCard[] | null {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     })
   }
@@ -98,7 +105,7 @@ export function parseDeckBackup(rawJson: string): ParseDeckBackupResult {
   }
 
   // Check 2: Raw array of StudyCards
-  const rawCardsResult = z.array(studyCardSchema).safeParse(parsed)
+  const rawCardsResult = z.array(legacyStudyCardSchema).safeParse(parsed)
   if (rawCardsResult.success) {
     return {
       success: true,

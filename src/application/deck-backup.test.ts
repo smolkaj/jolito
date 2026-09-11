@@ -23,6 +23,8 @@ const cardA: StudyCard = {
     reviews: 0,
     lapses: 0,
   },
+  contentRevision: 0,
+  resetRevision: { generation: 0, at: 0 },
   createdAt: 1000,
 }
 
@@ -42,6 +44,8 @@ const cardB: StudyCard = {
     reviews: 3,
     lapses: 0,
   },
+  contentRevision: 0,
+  resetRevision: { generation: 0, at: 0 },
   createdAt: 2000,
 }
 
@@ -56,7 +60,7 @@ describe('createDeckBackup', () => {
       exportedAt: string
       cards: StudyCard[]
     }
-    expect(parsed.version).toBe(3)
+    expect(parsed.version).toBe(4)
     expect(parsed.app).toBe('jolito')
     expect(parsed.exportedAt).toBe('2026-08-23T14:30:00.000Z')
     expect(parsed.cards).toHaveLength(2)

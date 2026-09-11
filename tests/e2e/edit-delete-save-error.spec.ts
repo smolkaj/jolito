@@ -115,7 +115,7 @@ for (const viewport of [
           cards: [
             {
               prompt: 'Un boleto nuevo',
-              context: context.trim(),
+              context,
               schedule: { state: 'new', reviews: 0 },
             },
           ],

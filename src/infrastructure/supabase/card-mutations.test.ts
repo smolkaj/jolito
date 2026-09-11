@@ -1,0 +1,268 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createDeckBackup } from '../../application/deck-backup'
+import { parseAnkiText } from '../../domain/anki-import'
+import { mergeStudyCardsSemantic } from '../../domain/card-merge'
+import {
+  createStudyCards,
+  resetCardProgress,
+  scheduleReview,
+  updateStudyCard,
+} from '../../domain/card'
+import { parseDeckBackup } from '../../domain/deck-backup'
+import { deckSyncPayloadSchema } from '../../domain/sync'
+import {
+  ACCOUNT_STORAGE_KEY,
+  LocalStorageCardRepository,
+} from '../browser/card-repository'
+import type { SupabaseAuthService } from './auth-service'
+import { SupabaseSyncService } from './sync-service'
+
+const user = { id: 'learner', email: 'learner@example.com' }
+const initial = createStudyCards(
+  { spanish: 'hola', english: 'hello', context: '', bidirectional: false },
+  'note',
+  1000,
+)[0]!
+
+function connectCloud(cards: unknown[], version: number) {
+  let row = {
+    updated_at: '2026-09-10T00:00:00.000Z',
+    data: {
+      version,
+      app: 'jolito',
+      deviceId: 'cloud',
+      updatedAt: '2026-09-10T00:00:00.000Z',
+      cards,
+    },
+  }
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        if (typeof init.body !== 'string')
+          throw new Error('Expected serialized snapshot')
+        row = JSON.parse(init.body) as typeof row
+        return Promise.resolve(new Response(null, { status: 201 }))
+      }
+      return Promise.resolve(Response.json([row]))
+    }),
+  )
+  const auth = {
+    getCurrentUser: () => user,
+    isCurrentOwner: (ownerId: string | null) => ownerId === user.id,
+    getAccessToken: () => Promise.resolve('token'),
+  } as SupabaseAuthService
+  return new SupabaseSyncService(
+    auth,
+    'https://example.supabase.co',
+    'anon',
+    'local',
+  )
+}
+
+function legacyCard() {
+  return JSON.parse(
+    JSON.stringify(initial, (key, value: unknown) =>
+      key === 'contentRevision' || key === 'resetRevision' ? undefined : value,
+    ),
+  ) as unknown
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  localStorage.clear()
+})
+
+describe('card mutation persistence contracts', () => {
+  it.each([1, 2, 3])(
+    'migrates v%i through storage, cloud, and backup without losing IDs or progress',
+    async (version) => {
+      const legacy = legacyCard()
+      localStorage.setItem(
+        'jolito-library-v1',
+        JSON.stringify({ version, cards: [legacy] }),
+      )
+      const repo = new LocalStorageCardRepository(localStorage, user.id)
+      expect(repo.load([]).cards).toEqual([initial])
+      expect(
+        parseDeckBackup(JSON.stringify({ version, cards: [legacy] })),
+      ).toMatchObject({ success: true, cards: [initial] })
+      const service = connectCloud([legacy], version)
+      expect((await service.pullDeck(user)).cards).toEqual([initial])
+      const edited = updateStudyCard(
+        repo.load([]).cards[0]!,
+        { answer: 'hi' },
+        1000,
+      )
+      const synced = await service.syncDeck([edited], user)
+      expect(synced).toMatchObject({ success: true, cards: [edited] })
+      repo.save(synced.cards!)
+      expect(
+        JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY)!),
+      ).toMatchObject({
+        version: 1,
+        accounts: { [`user:${user.id}`]: { version: 4, cards: [edited] } },
+      })
+      const reloaded = new LocalStorageCardRepository(
+        localStorage,
+        user.id,
+      ).load([]).cards
+      const backup = createDeckBackup(reloaded, { now: () => 1000 })
+      expect(JSON.parse(backup.json)).toMatchObject({ version: 4 })
+      expect(parseDeckBackup(backup.json)).toMatchObject({
+        success: true,
+        cards: [edited],
+      })
+      expect((await service.syncDeck(reloaded, user)).cards).toEqual([edited])
+    },
+  )
+
+  it('upgrades version-three collections inside the account envelope without changing another owner’s cards', () => {
+    const otherCard = { ...initial, id: 'other-card', noteId: 'other-note' }
+    localStorage.setItem(
+      ACCOUNT_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        accounts: {
+          [`user:${user.id}`]: {
+            version: 3,
+            cards: [legacyCard()],
+            deletedCardIds: ['deleted'],
+          },
+          'user:other': {
+            version: 3,
+            cards: [otherCard],
+            deletedCardIds: ['other-deleted'],
+          },
+        },
+      }),
+    )
+    const repo = new LocalStorageCardRepository(localStorage, user.id)
+    const loaded = repo.load([])
+    expect(loaded).toMatchObject({ status: 'loaded', cards: [initial] })
+    const edited = updateStudyCard(loaded.cards[0]!, { answer: 'hi' }, 1000)
+    repo.save([edited])
+    expect(
+      JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY)!),
+    ).toMatchObject({
+      version: 1,
+      accounts: {
+        [`user:${user.id}`]: {
+          version: 4,
+          cards: [edited],
+          deletedCardIds: ['deleted'],
+        },
+        'user:other': {
+          version: 4,
+          cards: [otherCard],
+          deletedCardIds: ['other-deleted'],
+        },
+      },
+    })
+    expect(
+      new LocalStorageCardRepository(localStorage, user.id).load([]).cards,
+    ).toEqual([edited])
+    expect(repo.forOwner('other').load([]).cards).toEqual([otherCard])
+  })
+
+  it('round-trips an edit and reset through sync, reload, backup, further practice, and sync again', async () => {
+    const reviewed = scheduleReview(initial, 'easy', 5000)
+    const service = connectCloud([reviewed], 4)
+    const edited = updateStudyCard(
+      reviewed,
+      { answer: 'hi', resetProgress: true },
+      1000,
+    )
+    const synced = await service.syncDeck([edited], user)
+    expect(synced).toMatchObject({ success: true, cards: [edited] })
+    new LocalStorageCardRepository(localStorage, user.id).save(synced.cards!)
+    const reloaded = new LocalStorageCardRepository(localStorage, user.id).load(
+      [],
+    ).cards
+    const backup = createDeckBackup(reloaded, { now: () => 1000 })
+    const restored = parseDeckBackup(backup.json)
+    expect(restored).toMatchObject({ success: true, cards: [edited] })
+    const practiced = scheduleReview(reloaded[0]!, 'good', 1000)
+    expect((await service.syncDeck([practiced], user)).cards).toEqual([
+      practiced,
+    ])
+    expect((await service.syncDeck([reviewed], user)).cards).toEqual([
+      practiced,
+    ])
+    const resetAgain = resetCardProgress(practiced, 500)
+    expect((await service.syncDeck([resetAgain], user)).cards).toEqual([
+      resetAgain,
+    ])
+  })
+
+  it('keeps imported context enrichment through a stale replica, reload, and another sync', async () => {
+    const local = updateStudyCard(initial, { answer: 'hey' }, 1000)
+    const staleReplica = scheduleReview(
+      updateStudyCard(initial, { answer: 'hi' }, 1000),
+      'easy',
+      2000,
+    )
+    const imported = parseAnkiText('hola\thello\tA friendly greeting', 3000)
+    if (!imported.success) throw new Error(imported.error)
+    const merged = mergeStudyCardsSemantic([local], imported.cards)
+    const service = connectCloud([staleReplica], 4)
+    const synced = await service.syncDeck(merged.cards, user)
+    expect(synced).toMatchObject({
+      success: true,
+      cards: [
+        {
+          ...local,
+          context: 'A friendly greeting',
+          contentRevision: 2,
+          schedule: staleReplica.schedule,
+        },
+      ],
+    })
+    new LocalStorageCardRepository(localStorage, user.id).save(synced.cards!)
+    const reloaded = new LocalStorageCardRepository(localStorage, user.id).load(
+      [],
+    ).cards
+    expect((await service.syncDeck(reloaded, user)).cards).toEqual(synced.cards)
+    expect((await service.syncDeck([staleReplica], user)).cards).toEqual(
+      synced.cards,
+    )
+    expect(local.context).toBe('')
+    expect(local.contentRevision).toBe(1)
+  })
+
+  it('rejects missing current metadata and invalid or future versions without downgrading present intent', () => {
+    for (const version of [4, 5]) {
+      expect(
+        deckSyncPayloadSchema.safeParse({
+          version,
+          app: 'jolito',
+          updatedAt: '',
+          deviceId: '',
+          cards: [legacyCard()],
+        }).success,
+      ).toBe(false)
+      expect(
+        parseDeckBackup(JSON.stringify({ version, cards: [legacyCard()] }))
+          .success,
+      ).toBe(false)
+    }
+    const edited = updateStudyCard(
+      initial,
+      { answer: 'hi', resetProgress: true },
+      1000,
+    )
+    for (const version of [1, 2, 3, 4]) {
+      expect(
+        parseDeckBackup(JSON.stringify({ version, cards: [edited] })),
+      ).toMatchObject({ success: true, cards: [edited] })
+      expect(
+        parseDeckBackup(
+          JSON.stringify({
+            version,
+            cards: [{ ...edited, contentRevision: -1 }],
+          }),
+        ).success,
+      ).toBe(false)
+    }
+  })
+})

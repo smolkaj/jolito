@@ -49,11 +49,11 @@ export const reviewScheduleSchema = z.preprocess(
   }),
 )
 
-// Versions 1 and 2 retain their card IDs and schedules. Version 3 adds a tense
-// that older clients cannot validate; all writers use the same current version.
-export const collectionVersion = 3 as const
+// Version 4 separates content authorship and explicit resets from review progress.
+// Older clients reject this envelope instead of silently stripping mutation intent.
+export const collectionVersion = 4 as const
 export const collectionVersionSchema = z
-  .union([z.literal(1), z.literal(2), z.literal(3)])
+  .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)])
   .transform(() => collectionVersion)
 export const grammarExerciseSchema = z.object({
   topic: z.enum(
@@ -75,6 +75,15 @@ export const studyCardSchema = z
     schedule: reviewScheduleSchema,
     grammar: grammarExerciseSchema.optional(),
     createdAt: z.number().default(0),
+    contentRevision: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(Number.MAX_SAFE_INTEGER),
+    resetRevision: z.object({
+      generation: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      at: scheduleTimestampSchema,
+    }),
   })
   .superRefine((card, ctx) => {
     if (!card.grammar) return
@@ -96,11 +105,40 @@ export const studyCardSchema = z
     }
   })
 
-export const studyCardCollectionSchema = z.object({
-  version: collectionVersionSchema,
-  cards: z.array(studyCardSchema),
-  deletedCardIds: z.array(z.string()).default([]),
-})
+// Only legacy boundaries assign baseline revisions; current cards must contain them.
+function migrateLegacyStudyCard(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
+  return {
+    contentRevision: 0,
+    resetRevision: { generation: 0, at: 0 },
+    ...raw,
+  }
+}
+
+export const legacyStudyCardSchema = z.preprocess(
+  migrateLegacyStudyCard,
+  studyCardSchema,
+)
+
+export function migrateCardEnvelope(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
+  const envelope = raw as Record<string, unknown>
+  if (
+    ![1, 2, 3].includes(envelope.version as number) ||
+    !Array.isArray(envelope.cards)
+  )
+    return raw
+  return { ...envelope, cards: envelope.cards.map(migrateLegacyStudyCard) }
+}
+
+export const studyCardCollectionSchema = z.preprocess(
+  migrateCardEnvelope,
+  z.object({
+    version: collectionVersionSchema,
+    cards: z.array(studyCardSchema),
+    deletedCardIds: z.array(z.string()).default([]),
+  }),
+)
 
 export const newNoteSchema = z.object({
   spanish: z.string().trim().min(1),
@@ -187,6 +225,8 @@ export function createStudyCards(
       context,
       scene,
       schedule: createNewReviewSchedule(now),
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     },
   ]
@@ -201,6 +241,8 @@ export function createStudyCards(
       context,
       scene,
       schedule: createNewReviewSchedule(now, DAY),
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     })
   }
@@ -577,7 +619,17 @@ export function resetCardProgress(card: StudyCard, now: number): StudyCard {
   return {
     ...card,
     schedule: createNewReviewSchedule(now),
+    resetRevision: {
+      generation: nextRevision(card.resetRevision.generation),
+      at: now,
+    },
   }
+}
+
+function nextRevision(revision: number): number {
+  if (revision >= Number.MAX_SAFE_INTEGER)
+    throw new Error('Card revision limit reached.')
+  return revision + 1
 }
 
 export function updateStudyCard(
@@ -593,17 +645,24 @@ export function updateStudyCard(
   const context =
     parsed.context !== undefined ? parsed.context.trim() : existing.context
   const scene = chooseScene(prompt, answer, context)
-  const schedule = parsed.resetProgress
-    ? createNewReviewSchedule(now)
-    : existing.schedule
+  const card = parsed.resetProgress
+    ? resetCardProgress(existing, now)
+    : existing
+  const changed =
+    prompt !== existing.prompt ||
+    answer !== existing.answer ||
+    context !== existing.context ||
+    scene !== existing.scene
 
   return {
-    ...existing,
+    ...card,
     prompt,
     answer,
     context,
     scene,
-    schedule,
+    contentRevision: changed
+      ? nextRevision(existing.contentRevision)
+      : existing.contentRevision,
   }
 }
 

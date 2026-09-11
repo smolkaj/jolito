@@ -315,7 +315,7 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
     version: number
     cards: { grammar?: unknown }[]
   }
-  expect(saved.version).toBe(3)
+  expect(saved.version).toBe(4)
   expect(saved.cards.filter((card) => card.grammar)).toHaveLength(2)
 })
 

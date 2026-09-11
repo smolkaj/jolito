@@ -20,6 +20,8 @@ const mockCard: StudyCard = {
   direction: 'es-en',
   context: 'greeting',
   scene: 'conversation',
+  contentRevision: 0,
+  resetRevision: { generation: 0, at: 0 },
   createdAt: 0,
   schedule: {
     state: 'review',

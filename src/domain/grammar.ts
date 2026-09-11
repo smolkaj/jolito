@@ -28,6 +28,8 @@ export function createGrammarCards(
       direction: 'en-es' as const,
       context: '',
       scene: 'conversation' as const,
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
       schedule: createNewReviewSchedule(now),
       grammar: { topic, verb, person: index },

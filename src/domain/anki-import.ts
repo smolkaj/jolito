@@ -456,6 +456,8 @@ export function parseAnkiText(content: string, now: number): ParseAnkiResult {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -667,6 +669,8 @@ export async function parseAnkiPackage(
         context,
         scene,
         schedule,
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: cardIdNum > 1000000000000 ? cardIdNum : now,
       }
 

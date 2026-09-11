@@ -1,4 +1,4 @@
-import type { StudyCard } from './card'
+import { updateStudyCard, type StudyCard } from './card'
 import { normalizeCardKey } from './duplicate'
 
 export interface MergeSemanticResult {
@@ -20,20 +20,19 @@ export function mergeStudyCardsSemantic(
   existingCards: StudyCard[],
   incomingCards: StudyCard[],
 ): MergeSemanticResult {
-  const existingByKey = new Map<string, { card: StudyCard; index: number }>()
-  const existingById = new Map<string, { card: StudyCard; index: number }>()
+  const existingByKey = new Map<string, number>()
+  const existingById = new Map<string, number>()
 
   // Result array starts as a shallow copy of existing cards so we preserve their exact order
-  const merged: StudyCard[] = existingCards.map((card, index) => {
+  const merged = [...existingCards]
+  existingCards.forEach((card, index) => {
     const key = card.grammar
       ? card.id
       : normalizeCardKey(card.prompt, card.direction)
-    const entry = { card: { ...card }, index }
     if (!existingByKey.has(key)) {
-      existingByKey.set(key, entry)
+      existingByKey.set(key, index)
     }
-    existingById.set(card.id, entry)
-    return entry.card
+    existingById.set(card.id, index)
   })
 
   let addedCount = 0
@@ -54,18 +53,22 @@ export function mergeStudyCardsSemantic(
     }
 
     // Check if matched by exact ID or semantic key
-    const match = existingById.get(incoming.id) || existingByKey.get(key)
+    const match = existingById.get(incoming.id) ?? existingByKey.get(key)
 
-    if (match) {
+    if (match !== undefined) {
       skippedCount++
       // If existing card has empty context and incoming has rich context, enrich it
-      const existingCard = merged[match.index]
+      const existingCard = merged[match]
       if (
         existingCard &&
         !existingCard.context.trim() &&
         incoming.context.trim()
       ) {
-        existingCard.context = incoming.context.trim()
+        merged[match] = updateStudyCard(
+          existingCard,
+          { context: incoming.context },
+          existingCard.createdAt,
+        )
         enrichedCount++
       }
       seenIncomingKeys.add(key)

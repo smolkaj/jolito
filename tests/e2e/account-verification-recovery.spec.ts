@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { createStudyCards } from '../../src/domain/card'
+import {
+  collectionVersion,
+  createStudyCards,
+  studyCardCollectionSchema,
+} from '../../src/domain/card'
 import { auditAccessibility } from './accessibility'
 
 const auth = {
@@ -8,15 +12,15 @@ const auth = {
   expiresAt: Date.now() + 3600000,
   user: { id: 'A', email: 'A@example.com' },
 }
-const collection = {
-  version: 3,
+const collection = studyCardCollectionSchema.parse({
+  version: collectionVersion,
   cards: createStudyCards(
     { spanish: 'A-private', english: 'A', context: '', bidirectional: false },
     'A',
     0,
   ),
   deletedCardIds: [],
-}
+})
 for (const width of [320, 375]) {
   for (const action of [
     'grade',
@@ -194,7 +198,13 @@ for (const failure of [
           : failure === 'empty value'
             ? ''
             : JSON.stringify(auth)
-    const legacy = JSON.stringify(collection)
+    const legacy = JSON.stringify(
+      { ...collection, version: 3 },
+      (key, value: unknown) =>
+        key === 'contentRevision' || key === 'resetRevision'
+          ? undefined
+          : value,
+    )
     await page.addInitScript(
       ({ raw, legacy, transient }) => {
         if (localStorage.getItem('startup-ownership-seeded')) return

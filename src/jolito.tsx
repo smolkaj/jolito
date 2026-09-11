@@ -1581,11 +1581,17 @@ function LoadedApp({
   )
 
   const handleSaveEdit = useCallback(
-    (card: StudyCard, updates: UpdateCardParams) => {
-      const now = services.clock.now()
-      const updated = updateStudyCard(card, updates, now)
-      const newCards = cardsRef.current.map((c) =>
-        c.id === card.id ? updated : c,
+    (cardId: string, updates: UpdateCardParams) => {
+      const current = cardsRef.current.find((card) => card.id === cardId)
+      if (!current) {
+        setSaveError(
+          'This card was removed from your deck. Your draft is still here.',
+        )
+        return false
+      }
+      const updated = updateStudyCard(current, updates, services.clock.now())
+      const newCards = cardsRef.current.map((card) =>
+        card.id === cardId ? updated : card,
       )
       if (!onUpdateCards(newCards)) return false
       setEditingCard(null)
