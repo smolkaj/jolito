@@ -93,10 +93,14 @@ consumer speech endpoint; voice availability depends on installed OS voices.
 
 Complete these App Store Connect declarations against the release candidate:
 
-- **App Privacy:** email address and other user content (cards, study progress,
-  and submitted feedback), linked to the account, used for app functionality;
-  no tracking or advertising. The anonymous starter demo does not upload a
-  personal deck. Publish the declaration; do not select “Data Not Collected.”
+- **App Privacy:** declare Email Address (sign-in), User ID (Supabase account
+  identifier), Other User Content (cards and notes), Product Interaction
+  (synced review counts and learning schedules), and Customer Support
+  (submitted feedback and its context). These are linked to the account and
+  used for app functionality, with no tracking or advertising. This mapping
+  follows [Apple's data-type definitions](https://developer.apple.com/app-store/app-privacy-details/);
+  verify it against the final candidate and publish the declaration. The
+  anonymous demo does not upload a personal deck. Do not select “Data Not Collected.”
 - **Privacy policy:** `https://joli.to/privacy`; verify it opens externally and
   in the app. Confirm the policy covers the native app's actual data flows.
 - **Age rating:** answer Apple's current questionnaire using the bundled

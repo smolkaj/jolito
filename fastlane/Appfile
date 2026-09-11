@@ -1,4 +1,5 @@
-require_relative 'release_config'
+require 'json'
 
-app_identifier(ReleaseConfig::SETTINGS.fetch('bundleId'))
+# Fastlane evaluates Appfile with its directory as the working directory.
+app_identifier(JSON.parse(File.read('release.json')).fetch('bundleId'))
 team_id(ENV['APPLE_TEAM_ID']) if ENV['APPLE_TEAM_ID']

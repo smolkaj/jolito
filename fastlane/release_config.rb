@@ -2,6 +2,7 @@ require 'base64'
 require 'json'
 require 'openssl'
 require 'uri'
+require 'date'
 
 # No credentials are interpolated into validation errors or shell commands.
 module ReleaseConfig
@@ -21,10 +22,23 @@ module ReleaseConfig
     raise 'APP_STORE_CONNECT_API_KEY_KEY must contain a base64-encoded .p8 private key'
   end
 
+  def self.public_client_key!(key)
+    return if key.match?(/\Asb_publishable_[A-Za-z0-9_-]{16,}\z/)
+    parts = key.split('.')
+    raise ArgumentError unless parts.length == 3
+    claims = JSON.parse(Base64.urlsafe_decode64(parts[1]))
+    valid = claims.is_a?(Hash) && claims['role'] == 'anon' &&
+            claims['exp'].is_a?(Integer) && claims['exp'] > Time.now.to_i
+    raise ArgumentError unless valid
+  rescue ArgumentError, JSON::ParserError
+    raise 'VITE_SUPABASE_ANON_KEY must be a public publishable key or unexpired anon JWT; never a service-role/secret key'
+  end
+
   def self.build!(env = ENV)
     api!(env)
     required!(env, %w[APPLE_TEAM_ID APPLE_CERTIFICATE_P12 APPLE_CERTIFICATE_PASS APPLE_PROVISIONING_PROFILE VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY])
     raise 'APPLE_TEAM_ID must be a 10-character team ID' unless env.fetch('APPLE_TEAM_ID').match?(/\A[A-Z0-9]{10}\z/)
+    public_client_key!(env.fetch('VITE_SUPABASE_ANON_KEY'))
     url = URI.parse(env.fetch('VITE_SUPABASE_URL'))
     raise 'VITE_SUPABASE_URL must be a production HTTPS origin' unless url.scheme == 'https' && url.host && !url.host.include?('your-project') && !url.userinfo && ['', '/'].include?(url.path) && !url.query && !url.fragment
     cert = OpenSSL::PKCS12.new(Base64.strict_decode64(env.fetch('APPLE_CERTIFICATE_P12')), env.fetch('APPLE_CERTIFICATE_PASS'))
@@ -42,7 +56,9 @@ module ReleaseConfig
   def self.profile!(profile, env = ENV)
     expected = "#{env.fetch('APPLE_TEAM_ID')}.#{SETTINGS.fetch('bundleId')}"
     raise 'Provisioning profile does not match the app/team' unless profile.dig('Entitlements', 'application-identifier') == expected && profile.fetch('TeamIdentifier').include?(env.fetch('APPLE_TEAM_ID'))
-    raise 'An unexpired App Store distribution profile is required' unless profile.fetch('ExpirationDate') > Time.now && !profile['ProvisionedDevices'] && !profile['ProvisionsAllDevices'] && profile.dig('Entitlements', 'get-task-allow') == false
+    expiry = profile.fetch('ExpirationDate')
+    valid_expiry = (expiry.is_a?(Time) || expiry.is_a?(DateTime)) && expiry.to_time > Time.now
+    raise 'An unexpired App Store distribution profile is required' unless valid_expiry && !profile['ProvisionedDevices'] && !profile['ProvisionsAllDevices'] && profile.dig('Entitlements', 'get-task-allow') == false
     profile.fetch('UUID')
   end
 end

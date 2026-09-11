@@ -10,14 +10,13 @@ final class NativeScreenshots: XCTestCase {
         XCTAssertTrue(create.waitForExistence(timeout: 30), "Bundled web app must render before capture")
         capture(app, name: "01-welcome")
         create.tap()
-        let spanish = app.textViews.element(boundBy: 0)
+        let spanish = app.textFields["Mexican Spanish"]
         XCTAssertTrue(spanish.waitForExistence(timeout: 15), "Card authoring must open in the native app")
         spanish.tap()
         spanish.typeText("Hola")
-        // WKWebView exposes only the focused textarea as a native TextView.
-        // The associated HTML label focuses the other editor through the UI.
-        app.staticTexts["English"].tap()
-        app.textViews.firstMatch.typeText("Hello")
+        let english = app.textFields["English"]
+        english.tap()
+        english.typeText("Hello")
         // Blur the editor through the visible page, just as a learner would.
         let dismissKeyboard = app.buttons.matching(NSPredicate(
             format: "label IN %@", ["Done", "Hide keyboard", "Dismiss keyboard"]
