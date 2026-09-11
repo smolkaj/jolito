@@ -270,7 +270,7 @@ for (const token of ['123456', 'a'.repeat(64)]) {
         })
       } else
         await route.fulfill({
-          json: route.request().method() === 'GET' ? [] : {},
+          json: route.request().method() === 'GET' ? [] : 1,
         })
     })
     await page.goto('/#/deck')

@@ -275,7 +275,7 @@ for (const boundary of [
           status: 401,
           json: { message: 'Sign in again.' },
         })
-      } else await route.fulfill({ json: request.method() === 'GET' ? [] : {} })
+      } else await route.fulfill({ json: request.method() === 'GET' ? [] : 1 })
     })
     await page.goto('/#/deck')
     await expect(
@@ -367,7 +367,7 @@ for (const failure of ['confirmation', 'cleanup'] as const) {
         await route.fulfill({ status: 204 })
       } else
         await route.fulfill({
-          json: route.request().method() === 'GET' ? [] : {},
+          json: route.request().method() === 'GET' ? [] : 1,
         })
     })
     await page.goto('/#/deck')
@@ -473,7 +473,7 @@ test('releases a live deletion when its tab closes and recovers the durable requ
         })
     } else
       await route.fulfill({
-        json: route.request().method() === 'GET' ? [] : {},
+        json: route.request().method() === 'GET' ? [] : 1,
       })
   })
   await page.goto('/#/deck')
@@ -532,7 +532,7 @@ test('restores private study progress through failed deletion, later expired aut
       })
     } else
       await route.fulfill({
-        json: route.request().method() === 'GET' ? [] : {},
+        json: route.request().method() === 'GET' ? [] : 1,
       })
   })
   await page.goto('/#/deck')
