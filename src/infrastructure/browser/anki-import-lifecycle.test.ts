@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { zipSync } from 'fflate'
-import { getSqlJs } from '../../domain/anki-sql'
+import { getSqlJs } from './anki-sql'
+import { parseAnkiPackage } from './anki-package'
 import {
   updateStudyCard,
   scheduleReview,
@@ -23,7 +24,7 @@ async function importAnkiDeck(
 ) {
   return applyAnkiImport(
     currentCards,
-    await parseAnkiDeck(data, filename, clock.now()),
+    await parseAnkiDeck(data, filename, clock.now(), parseAnkiPackage),
     mode,
     deletedIds,
   )
@@ -221,7 +222,12 @@ it('preserves distinct Anki package identities with similar prompts during repla
   `)
   const archive = zipSync({ 'collection.anki2': db.export() })
   db.close()
-  const parsed = await parseAnkiDeck(archive, 'two-meanings.apkg', 1000)
+  const parsed = await parseAnkiDeck(
+    archive,
+    'two-meanings.apkg',
+    1000,
+    parseAnkiPackage,
+  )
   if (!parsed.success) throw new Error(parsed.error)
   expect(parsed.source).toBe('package')
   expect(parsed.cards).toHaveLength(2)
