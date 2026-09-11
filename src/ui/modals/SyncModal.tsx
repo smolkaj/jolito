@@ -75,6 +75,16 @@ export function SyncModal({
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const statusRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (statusMsg?.type === 'error') {
+      statusRef.current?.scrollIntoView({
+        block: 'center',
+        behavior: 'instant',
+      })
+    }
+  }, [statusMsg])
 
   const handleOpenDeleteConfirm = () => {
     setIsConfirmingDelete(true)
@@ -252,29 +262,20 @@ export function SyncModal({
           downloadJsonFile(backup.filename, backup.json)
         }
       }
-      if (sync.deleteRemoteDeck) {
-        const deleteRes = await sync.deleteRemoteDeck(user)
-        if (!deleteRes.success) {
-          setStatusMsg({
-            type: 'error',
-            message: deleteRes.error || 'Failed to delete cloud deck.',
-          })
-          setLoadingAction(null)
-          return
-        }
+      if (!auth.deleteAccount) {
+        setStatusMsg({
+          type: 'error',
+          message: 'Account deletion is unavailable. Please try again later.',
+        })
+        return
       }
-      if (auth.deleteAccount) {
-        const authRes = await auth.deleteAccount()
-        if (!authRes.success) {
-          setStatusMsg({
-            type: 'error',
-            message: authRes.error || 'Failed to delete cloud account.',
-          })
-          setLoadingAction(null)
-          return
-        }
-      } else {
-        await auth.signOut()
+      const authRes = await auth.deleteAccount()
+      if (!authRes.success) {
+        setStatusMsg({
+          type: 'error',
+          message: authRes.error || 'Failed to delete cloud account.',
+        })
+        return
       }
       setIsOtpSent(false)
       setToken('')
@@ -293,6 +294,18 @@ export function SyncModal({
       setLoadingAction(null)
     }
   }
+
+  const statusBanner = statusMsg && (
+    <div
+      ref={statusRef}
+      className={`status-banner status-${statusMsg.type}`}
+      role={statusMsg.type === 'error' ? 'alert' : 'status'}
+    >
+      <p>{statusMsg.message}</p>
+    </div>
+  )
+  const showDeletionError =
+    user && isConfirmingDelete && statusMsg?.type === 'error'
 
   return (
     <div className="modal-backdrop" onClick={handleClose} role="presentation">
@@ -326,14 +339,7 @@ export function SyncModal({
           </button>
         </div>
 
-        {statusMsg && (
-          <div
-            className={`status-banner status-${statusMsg.type}`}
-            role={statusMsg.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{statusMsg.message}</p>
-          </div>
-        )}
+        {!showDeletionError && statusBanner}
 
         {!isBackendConfigured && !user ? (
           <div className="sync-notice-card">
@@ -453,6 +459,7 @@ export function SyncModal({
                   />
                 </div>
 
+                {showDeletionError && statusBanner}
                 <div className="delete-confirm-actions">
                   <button
                     type="button"

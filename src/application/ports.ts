@@ -127,9 +127,6 @@ export type SyncService = {
     user: AuthUser,
     localDeletedIds?: string[],
   ): Promise<SyncResult>
-  deleteRemoteDeck?(
-    user: AuthUser,
-  ): Promise<{ success: boolean; error?: string | undefined }>
 }
 
 export type FeedbackResult = {

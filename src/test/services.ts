@@ -282,15 +282,6 @@ export class MockSyncService implements SyncService {
       syncedAt: Date.now(),
     })
   }
-
-  deleteRemoteDeck(
-    user: AuthUser,
-  ): Promise<{ success: boolean; error?: string | undefined }> {
-    void user
-    this.remoteCards = []
-    this.remoteDeletedCardIds = []
-    return Promise.resolve({ success: true })
-  }
 }
 
 export class MockFeedbackService implements FeedbackService {

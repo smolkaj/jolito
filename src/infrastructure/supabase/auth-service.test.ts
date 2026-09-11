@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AuthUser } from '../../application/ports'
 import { SupabaseAuthService } from './auth-service'
 
 describe('SupabaseAuthService', () => {
@@ -876,147 +875,365 @@ describe('SupabaseAuthService', () => {
   })
 
   describe('deleteAccount', () => {
-    it('calls delete_user_account RPC, server logout, clears session, and notifies listeners', async () => {
+    const user = { id: 'delete-user', email: 'delete@example.com' }
+    function createService() {
       mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'token-delete-1',
-        refreshToken: 'refresh-delete-1',
+        accessToken: 'delete-token',
+        refreshToken: 'delete-refresh',
         expiresAt: Date.now() + 600000,
-        user: { id: 'u1', email: 'delete@example.com' },
+        user,
       })
-
-      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 })
-      vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
+      return new SupabaseAuthService(
         'https://example.supabase.co',
         'anon-key',
         fakeStorage,
       )
+    }
 
-      let notifiedUser: AuthUser | null | undefined = undefined
-      service.onAuthStateChange((u) => {
-        notifiedUser = u
-      })
-
-      const res = await service.deleteAccount()
-      expect(res.success).toBe(true)
-
-      // First call should be RPC delete_user_account
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.supabase.co/rest/v1/rpc/delete_user_account',
-        expect.anything(),
-      )
-      const firstCallArgs = fetchSpy.mock.calls[0] as unknown as [
-        string,
-        { method: string; headers: Record<string, string> },
-      ]
-      expect(firstCallArgs[1].method).toBe('POST')
-      expect(firstCallArgs[1].headers).toMatchObject({
-        apikey: 'anon-key',
-        Authorization: 'Bearer token-delete-1',
-        'Content-Type': 'application/json',
-      })
-
-      // Second call should be auth logout
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.supabase.co/auth/v1/logout',
-        expect.anything(),
-      )
-      const secondCallArgs = fetchSpy.mock.calls[1] as unknown as [
-        string,
-        { method: string; headers: Record<string, string> },
-      ]
-      expect(secondCallArgs[1].method).toBe('POST')
-      expect(secondCallArgs[1].headers).toMatchObject({
-        apikey: 'anon-key',
-        Authorization: 'Bearer token-delete-1',
-      })
-
-      expect(await service.getUser()).toBeNull()
-      expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
-      expect(notifiedUser).toBeNull()
-    })
-
-    it('returns error if delete_user_account RPC returns non-404 failure', async () => {
-      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'token-fail',
-        refreshToken: 'refresh-fail',
-        expiresAt: Date.now() + 600000,
-        user: { id: 'u-err', email: 'fail@example.com' },
-      })
-
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ message: 'Database deletion error' }),
-      })
-      vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-
-      const res = await service.deleteAccount()
-      expect(res.success).toBe(false)
-      expect(res.error).toBe('Database deletion error')
-      // Local session is cleared even on failure
-      expect(await service.getUser()).toBeNull()
-    })
-
-    it('tolerates 404 RPC on unmigrated backends and falls back gracefully to logout', async () => {
-      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'token-404',
-        refreshToken: 'refresh-404',
-        expiresAt: Date.now() + 600000,
-        user: { id: 'u-404', email: 'legacy@example.com' },
-      })
-
+    it('deletes the account with one atomic RPC and clears local auth only after success', async () => {
+      const service = createService()
       const fetchSpy = vi
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 404 })
-        .mockResolvedValueOnce({ ok: true, status: 200 })
+        .mockResolvedValue(new Response(null, { status: 204 }))
       vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-
-      const res = await service.deleteAccount()
-      expect(res.success).toBe(true)
+      const listener = vi.fn()
+      service.onAuthStateChange(listener)
+      const result = await service.deleteAccount()
+      expect(result).toEqual({ success: true })
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.supabase.co/auth/v1/logout',
-        expect.objectContaining({ method: 'POST' }),
+        'https://example.supabase.co/rest/v1/rpc/delete_user_account',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            apikey: 'anon-key',
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer delete-token',
+          },
+        }),
+      )
+      expect(await service.getUser()).toBeNull()
+      expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+      expect(listener).toHaveBeenLastCalledWith(null)
+      service.destroy()
+    })
+
+    it.each([400, 403, 404, 429, 500, 503])(
+      'preserves the account across HTTP %i failure, reload and successful retry',
+      async (status) => {
+        const service = createService()
+        const stored = mockStorage['jolito-auth-session-v1']
+        const fetchSpy = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ message: 'Deletion unavailable' }), {
+            status,
+          }),
+        )
+        vi.stubGlobal('fetch', fetchSpy)
+        const listener = vi.fn()
+        service.onAuthStateChange(listener)
+        listener.mockClear()
+        expect(await service.deleteAccount()).toEqual({
+          success: false,
+          error: 'Deletion unavailable',
+        })
+        expect(mockStorage['jolito-auth-session-v1']).toBe(stored)
+        expect(listener).not.toHaveBeenCalled()
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        service.destroy()
+        const reloaded = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+        expect(await reloaded.getUser()).toEqual(user)
+        fetchSpy.mockResolvedValue(new Response(null, { status: 204 }))
+        expect(await reloaded.deleteAccount()).toEqual({ success: true })
+        expect(await reloaded.getUser()).toBeNull()
+        reloaded.destroy()
+      },
+    )
+
+    it('preserves local auth after network interruption and retries the deletion', async () => {
+      const service = createService()
+      const stored = mockStorage['jolito-auth-session-v1']
+      const fetchSpy = vi
+        .fn()
+        .mockRejectedValue(new Error('Network interrupted'))
+      vi.stubGlobal('fetch', fetchSpy)
+      expect(await service.deleteAccount()).toEqual({
+        success: false,
+        error: 'Network interrupted',
+      })
+      expect(mockStorage['jolito-auth-session-v1']).toBe(stored)
+      expect(await service.getUser()).toEqual(user)
+      fetchSpy.mockResolvedValue(new Response(null, { status: 204 }))
+      expect((await service.deleteAccount()).success).toBe(true)
+      expect(await service.getUser()).toBeNull()
+      service.destroy()
+    })
+
+    it('refreshes an unauthorized token once before retrying the atomic deletion', async () => {
+      const service = createService()
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              access_token: 'fresh-token',
+              refresh_token: 'fresh-refresh',
+              expires_in: 3600,
+              user,
+            }),
+          ),
+        )
+        .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      vi.stubGlobal('fetch', fetchSpy)
+      expect((await service.deleteAccount()).success).toBe(true)
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+      expect(fetchSpy).toHaveBeenLastCalledWith(
+        'https://example.supabase.co/rest/v1/rpc/delete_user_account',
+        expect.objectContaining({
+          headers: {
+            apikey: 'anon-key',
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer fresh-token',
+          },
+        }),
+      )
+      service.destroy()
+    })
+
+    describe('interrupted deletion lifecycle', () => {
+      const services: SupabaseAuthService[] = []
+      const storageKey = 'jolito-auth-session-v1'
+      function ownedService() {
+        const service = createService()
+        services.push(service)
+        return service
+      }
+      function reloadService() {
+        const service = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+        services.push(service)
+        return service
+      }
+      function heldResponse() {
+        let resolve!: (response: Response) => void
+        const promise = new Promise<Response>((complete) => {
+          resolve = complete
+        })
+        return { promise, resolve }
+      }
+      function refreshedSession() {
+        return new Response(
+          JSON.stringify({
+            access_token: 'reauthenticated-token',
+            refresh_token: 'reauthenticated-refresh',
+            expires_in: 3600,
+            user,
+          }),
+        )
+      }
+      beforeEach(() => vi.useFakeTimers())
+      afterEach(() => {
+        for (const service of services.splice(0)) service.destroy()
+        vi.useRealTimers()
+      })
+
+      it('dispatches without AbortSignal.timeout and preserves failure → retry behavior', async () => {
+        vi.stubGlobal(
+          'AbortSignal',
+          new Proxy(AbortSignal, {
+            get(target, key, receiver) {
+              const value: unknown = Reflect.get(target, key, receiver)
+              return key === 'timeout' ? undefined : value
+            },
+          }),
+        )
+        const service = ownedService()
+        const stored = mockStorage[storageKey]
+        const fetchSpy = vi
+          .fn()
+          .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+          .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        vi.stubGlobal('fetch', fetchSpy)
+        expect((await service.deleteAccount()).success).toBe(false)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(mockStorage[storageKey]).toBe(stored)
+        expect((await service.deleteAccount()).success).toBe(true)
+        expect(fetchSpy).toHaveBeenCalledTimes(2)
+        expect(mockStorage[storageKey]).toBeUndefined()
+        expect(vi.getTimerCount()).toBe(0)
+      })
+
+      for (const entry of ['rpc401', 'expired', 'held-refresh'] as const) {
+        it.each([400, 401, 403, 422])(
+          `preserves auth when ${entry} refresh is rejected with HTTP %i, then reauthenticates and retries`,
+          async (status) => {
+            const service = ownedService()
+            const held = heldResponse()
+            const fetchSpy = vi.fn((url: string) =>
+              url.includes('/auth/v1/token')
+                ? held.promise
+                : Promise.resolve(new Response('{}', { status: 401 })),
+            )
+            vi.stubGlobal('fetch', fetchSpy)
+            if (entry === 'expired') {
+              mockStorage[storageKey] = JSON.stringify({
+                accessToken: 'expired-token',
+                refreshToken: 'delete-refresh',
+                expiresAt: Date.now() - 1,
+                user,
+              })
+            }
+            const stored = mockStorage[storageKey]
+            const listener = vi.fn()
+            service.onAuthStateChange(listener)
+            listener.mockClear()
+            const existingRefresh =
+              entry === 'held-refresh' ? service.refreshSession() : undefined
+            const deletion = service.deleteAccount()
+            await vi.advanceTimersByTimeAsync(0)
+            expect(
+              fetchSpy.mock.calls.filter(([url]) =>
+                url.includes('/auth/v1/token'),
+              ),
+            ).toHaveLength(1)
+            held.resolve(new Response('{}', { status }))
+            expect((await deletion).success).toBe(false)
+            await existingRefresh
+            expect(mockStorage[storageKey]).toBe(stored)
+            expect(listener).not.toHaveBeenCalled()
+            service.destroy()
+
+            // Reauthentication is explicit. A separate future expiry lifecycle
+            // is an ownership concern, not confirmation of account deletion.
+            fetchSpy.mockImplementation((url: string) =>
+              Promise.resolve(
+                url.includes('/auth/v1/')
+                  ? refreshedSession()
+                  : new Response(null, { status: 204 }),
+              ),
+            )
+            const reloaded = reloadService()
+            expect(
+              (await reloaded.verifyOtp(user.email, '123456')).success,
+            ).toBe(true)
+            expect((await reloaded.deleteAccount()).success).toBe(true)
+            expect(mockStorage[storageKey]).toBeUndefined()
+          },
+        )
+      }
+
+      for (const interruption of ['deadline', 'destroy'] as const) {
+        for (const stage of ['rpc', 'refresh'] as const) {
+          it(`bounds ${stage} during ${interruption}, ignores late responses and permits a fresh-instance retry`, async () => {
+            const service = ownedService()
+            const stored = mockStorage[storageKey]
+            const listener = vi.fn()
+            service.onAuthStateChange(listener)
+            listener.mockClear()
+            const held = heldResponse()
+            const fetchSpy = vi.fn((url: string) =>
+              stage === 'refresh' && !url.includes('/auth/v1/token')
+                ? Promise.resolve(new Response('{}', { status: 401 }))
+                : held.promise,
+            )
+            vi.stubGlobal('fetch', fetchSpy)
+            let result: { success: boolean } | undefined
+            const deletion = service.deleteAccount().then((value) => {
+              result = value
+            })
+            await vi.advanceTimersByTimeAsync(0)
+            expect(fetchSpy).toHaveBeenCalledTimes(stage === 'rpc' ? 1 : 2)
+            if (interruption === 'destroy') service.destroy()
+            await vi.advanceTimersByTimeAsync(
+              interruption === 'deadline' ? 10_001 : 0,
+            )
+            expect(result?.success).toBe(false)
+            await deletion
+            expect(mockStorage[storageKey]).toBe(stored)
+            expect(listener).not.toHaveBeenCalled()
+            service.destroy()
+            expect(vi.getTimerCount()).toBe(0)
+
+            held.resolve(
+              stage === 'rpc'
+                ? new Response(null, { status: 204 })
+                : new Response('{}', { status: 400 }),
+            )
+            await vi.advanceTimersByTimeAsync(0)
+            window.dispatchEvent(new Event('online'))
+            document.dispatchEvent(new Event('visibilitychange'))
+            await vi.advanceTimersByTimeAsync(60_000)
+            expect(mockStorage[storageKey]).toBe(stored)
+            expect(listener).not.toHaveBeenCalled()
+            expect(fetchSpy).toHaveBeenCalledTimes(stage === 'rpc' ? 1 : 2)
+            expect(vi.getTimerCount()).toBe(0)
+            fetchSpy.mockResolvedValue(new Response(null, { status: 204 }))
+            const reloaded = reloadService()
+            expect(await reloaded.getUser()).toEqual(user)
+            expect((await reloaded.deleteAccount()).success).toBe(true)
+            expect(mockStorage[storageKey]).toBeUndefined()
+          })
+        }
+      }
+
+      it.each([400, 401, 403, 422])(
+        'retains auth when an already-running refresh rejects with HTTP %i after the deletion deadline',
+        async (status) => {
+          const service = ownedService()
+          const stored = mockStorage[storageKey]
+          const held = heldResponse()
+          const fetchSpy = vi.fn((url: string) =>
+            url.includes('/auth/v1/token')
+              ? held.promise
+              : Promise.resolve(new Response('{}', { status: 401 })),
+          )
+          vi.stubGlobal('fetch', fetchSpy)
+          const listener = vi.fn()
+          service.onAuthStateChange(listener)
+          listener.mockClear()
+          const refresh = service.refreshSession()
+          let result: { success: boolean } | undefined
+          const deletion = service.deleteAccount().then((value) => {
+            result = value
+          })
+          await vi.advanceTimersByTimeAsync(10_001)
+          expect(result?.success).toBe(false)
+          await deletion
+          held.resolve(new Response('{}', { status }))
+          await refresh
+          expect(mockStorage[storageKey]).toBe(stored)
+          expect(listener).not.toHaveBeenCalled()
+          expect(fetchSpy).toHaveBeenCalledTimes(2)
+          service.destroy()
+          expect(vi.getTimerCount()).toBe(0)
+        },
       )
     })
 
-    it('clears session and returns error if network throws during deletion', async () => {
-      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'token-err',
-        refreshToken: 'refresh-err',
-        expiresAt: Date.now() + 600000,
-        user: { id: 'u2', email: 'delete-err@example.com' },
-      })
-
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockRejectedValue(new Error('Network error')),
-      )
-
-      const service = new SupabaseAuthService(
+    it('does not claim successful deletion without credentials or backend configuration', async () => {
+      const fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+      const signedOut = new SupabaseAuthService(
         'https://example.supabase.co',
         'anon-key',
         fakeStorage,
       )
-
-      const res = await service.deleteAccount()
-      expect(res.success).toBe(false)
-      expect(res.error).toBe('Network error')
-      expect(await service.getUser()).toBeNull()
-      expect(mockStorage['jolito-auth-session-v1']).toBeUndefined()
+      expect((await signedOut.deleteAccount()).success).toBe(false)
+      signedOut.destroy()
+      const service = createService()
+      service.destroy()
+      const unconfigured = new SupabaseAuthService('', '', fakeStorage)
+      expect((await unconfigured.deleteAccount()).success).toBe(false)
+      expect(await unconfigured.getUser()).toEqual(user)
+      expect(fetchSpy).not.toHaveBeenCalled()
+      unconfigured.destroy()
     })
   })
 })
