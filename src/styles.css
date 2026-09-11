@@ -843,7 +843,7 @@ summary:focus-visible,
 .language-icon {
   display: inline-block;
   vertical-align: -1px;
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(18, 24, 21, 0.25);
   flex-shrink: 0;
