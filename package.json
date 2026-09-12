@@ -11,7 +11,7 @@
     "dev": "vite",
     "format": "prettier --cache --write .",
     "format:check": "prettier --cache --check .",
-    "lint": "eslint --cache .",
+    "lint": "eslint --cache --max-warnings 0 .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
