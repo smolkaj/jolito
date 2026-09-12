@@ -45,6 +45,7 @@ describe('LocalStorageCardRepository', () => {
       const grammar = [
         ...createGrammarCards(123).slice(0, 2),
         ...createGrammarCards(123, 'perfect').slice(0, 2),
+        ...createGrammarCards(123, 'gerund').slice(0, 2),
       ]
       repo.save([...vocabulary, ...grammar])
       expect(

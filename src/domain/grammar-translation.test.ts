@@ -3,7 +3,7 @@ import { createGrammarCards, grammarContext } from './grammar'
 import { grammarVerb } from './grammar-catalog'
 
 describe('authored English verb alignment', () => {
-  it.each(['preterite', 'perfect'] as const)(
+  it.each(['preterite', 'perfect', 'gerund'] as const)(
     'resolves every %s person and context into clean text with explicit verb spans',
     (topic) => {
       for (const card of createGrammarCards(0, topic)) {
@@ -41,6 +41,12 @@ describe('authored English verb alignment', () => {
     ['perfect', 'hablar', 4, 0, ['have talked']],
     ['perfect', 'hablar', 4, 1, ['You all', 'have', 'talked']],
     ['perfect', 'visitar', 2, 1, ['You', 'have visited']],
+    ['gerund', 'hablar', 0, 0, ['I', 'am talking']],
+    ['gerund', 'hablar', 2, 0, ['is talking']],
+    ['gerund', 'hablar', 2, 1, ['you', 'are talking']],
+    ['gerund', 'dormir', 0, 0, ['I', 'am sleeping']],
+    ['gerund', 'poder', 2, 0, ['is able to']],
+    ['gerund', 'ir', 0, 0, ['I', 'am going']],
   ] as const)(
     'aligns %s %s person %s context %s without capturing other verbs or negation',
     (topic, verb, person, reviews, expected) => {
