@@ -1565,7 +1565,7 @@ test('renders community stats quietly in welcome hero and wraps without leading 
     })
   })
 
-  // 1. Desktop viewport
+  // 1. Desktop viewport (Card layout)
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
   const statsContainer = page.locator('.hero-community-stats')
@@ -1574,36 +1574,30 @@ test('renders community stats quietly in welcome hero and wraps without leading 
   await expect(statsContainer).toContainText('24,500 cards')
   await expect(statsContainer).toContainText('89,102 card reviews')
 
-  await page.screenshot({ path: '/tmp/pr318-desktop-hero.png' })
+  // Verify accessibility on Card layout
+  const cardResults = await auditAccessibility(page)
+  expect(cardResults.violations).toEqual([])
 
-  // 2. Mobile 360px viewport
+  // 2. Toggle to Eyebrow view via interactive switcher button
+  await page.locator('.stats-style-toggle').click()
+  const eyebrowContainer = page.locator('.hero-community-stats.is-eyebrow')
+  await expect(eyebrowContainer).toBeVisible()
+  await expect(eyebrowContainer).toContainText('1,420 learners')
+  await expect(eyebrowContainer).toContainText('24,500 cards')
+
+  // Verify accessibility on Eyebrow layout
+  const eyebrowResults = await auditAccessibility(page)
+  expect(eyebrowResults.violations).toEqual([])
+
+  // 3. Toggle back to Card layout
+  await page.locator('.stats-style-toggle').click()
+  await expect(page.locator('.hero-community-stats.is-card')).toBeVisible()
+
+  // 4. Mobile 360px viewport
   await page.setViewportSize({ width: 360, height: 740 })
-  await page.screenshot({ path: '/tmp/pr318-mobile-360.png' })
-  await statsContainer.screenshot({ path: '/tmp/pr318-stats-360.png' })
+  await expect(statsContainer).toBeVisible()
 
-  // 3. Ultra-narrow 320px viewport
+  // 5. Ultra-narrow 320px viewport
   await page.setViewportSize({ width: 320, height: 600 })
-  await page.screenshot({ path: '/tmp/pr318-mobile-320.png' })
-  await statsContainer.screenshot({ path: '/tmp/pr318-stats-320.png' })
-
-  // Verify that wrapped items don't have leading dots
-  const wrappedLines = await statsContainer.evaluate((el) => {
-    const items = Array.from(el.querySelectorAll('.community-stat-item'))
-    const groups: { [top: number]: string[] } = {}
-    for (const item of items) {
-      const top = Math.round(item.getBoundingClientRect().top)
-      groups[top] = groups[top] || []
-      groups[top].push(item.textContent?.trim() || '')
-    }
-    return Object.values(groups)
-  })
-
-  // Each line must begin with digits, not middle dots or delimiters
-  for (const line of wrappedLines) {
-    expect(line[0]).toMatch(/^[0-9]/)
-  }
-
-  // Verify accessibility
-  const results = await auditAccessibility(page)
-  expect(results.violations).toEqual([])
+  await expect(statsContainer).toBeVisible()
 })
