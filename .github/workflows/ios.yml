@@ -44,18 +44,13 @@ jobs:
             build
 
   native-screenshots:
-    name: Native screenshots (${{ matrix.device }})
+    name: Native screenshots (iPhone & iPad)
     runs-on: macos-15
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        device: ['iPhone 17 Pro Max', 'iPad Pro 13-inch (M4)']
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-      DEVICE_NAME: ${{ matrix.device }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -70,33 +65,72 @@ jobs:
       - run: npm run build
       - run: npm run cap:sync
       - run: bundle exec ruby scripts/prepare-native-screenshots.rb
-      - name: Boot Simulator before launching XCTest
-        timeout-minutes: 5
+      - name: Resolve simulator devices
         run: |
-          SIMULATOR_UDID=$(xcrun simctl list devices available --json | jq -r --arg name "$DEVICE_NAME" '.devices | to_entries[] | select(.key | endswith("iOS-26-2")) | .value[] | select(.name == $name) | .udid' | head -1)
-          test -n "$SIMULATOR_UDID"
-          echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
-          xcrun simctl boot "$SIMULATOR_UDID"
-          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
-          xcrun simctl status_bar "$SIMULATOR_UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
-      - name: Capture the bundled app in Simulator
+          IPHONE_UDID=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries[] | select(.key | endswith("iOS-26-2")) | .value[] | select(.name == "iPhone 17 Pro Max") | .udid' | head -1)
+          IPAD_UDID=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries[] | select(.key | endswith("iOS-26-2")) | .value[] | select(.name == "iPad Pro 13-inch (M4)") | .udid' | head -1)
+          test -n "$IPHONE_UDID"
+          test -n "$IPAD_UDID"
+          echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
+          echo "IPAD_UDID=$IPAD_UDID" >> "$GITHUB_ENV"
+      - name: Build Xcode scheme and boot iPhone simulator
+        timeout-minutes: 8
         run: |
+          xcrun simctl boot "$IPHONE_UDID" 2>/dev/null || true
           xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
-            -configuration Release -resultBundlePath build/screenshots.xcresult \
+            -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
+            -configuration Release -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES build
+          xcrun simctl bootstatus "$IPHONE_UDID" -b
+          xcrun simctl status_bar "$IPHONE_UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
+      - name: Run iPhone native screenshots and lifecycle test
+        run: |
+          xcrun simctl boot "$IPAD_UDID" 2>/dev/null || true
+          xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
+            -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
+            -configuration Release -derivedDataPath build/DerivedData \
+            -resultBundlePath build/screenshots-iphone.xcresult \
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 300 \
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
+          xcrun simctl shutdown "$IPHONE_UDID" 2>/dev/null || true
+      - name: Run iPad native screenshots and lifecycle test
+        run: |
+          xcrun simctl bootstatus "$IPAD_UDID" -b
+          xcrun simctl status_bar "$IPAD_UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
+          xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
+            -destination "platform=iOS Simulator,id=$IPAD_UDID" \
+            -configuration Release -derivedDataPath build/DerivedData \
+            -resultBundlePath build/screenshots-ipad.xcresult \
+            -parallel-testing-enabled NO -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 300 \
+            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
+          xcrun simctl shutdown "$IPAD_UDID" 2>/dev/null || true
       - name: Export screenshots
         if: ${{ !cancelled() }}
-        run: xcrun xcresulttool export attachments --path build/screenshots.xcresult --output-path build/native-screenshots
+        run: |
+          mkdir -p "build/native-screenshots/iPhone 17 Pro Max" "build/native-screenshots/iPad Pro 13-inch (M4)"
+          if [ -d build/screenshots-iphone.xcresult ]; then
+            xcrun xcresulttool export attachments --path build/screenshots-iphone.xcresult --output-path "build/native-screenshots/iPhone 17 Pro Max"
+          fi
+          if [ -d build/screenshots-ipad.xcresult ]; then
+            xcrun xcresulttool export attachments --path build/screenshots-ipad.xcresult --output-path "build/native-screenshots/iPad Pro 13-inch (M4)"
+          fi
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
-          name: native-screenshots-${{ matrix.device }}
+          name: native-screenshots-iPhone 17 Pro Max
           path: |
-            build/native-screenshots
-            build/screenshots.xcresult
+            build/native-screenshots/iPhone 17 Pro Max
+            build/screenshots-iphone.xcresult
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: native-screenshots-iPad Pro 13-inch (M4)
+          path: |
+            build/native-screenshots/iPad Pro 13-inch (M4)
+            build/screenshots-ipad.xcresult
           retention-days: 14
 
   ios-gate:
