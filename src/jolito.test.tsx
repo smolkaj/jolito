@@ -463,15 +463,18 @@ describe('Jolito', () => {
     expect(statsBadge).toHaveTextContent('310 card reviews')
   })
 
-  it('omits community stats badge when community stats are unavailable or have 0 learners', () => {
+  it('omits community stats content when community stats are unavailable or have 0 learners', () => {
     const services = createTestServices({
       communityStats: null,
     })
     const { container } = render(<App services={services} />)
 
     expect(
-      container.querySelector('.hero-community-stats'),
+      container.querySelector('.community-stat-item'),
     ).not.toBeInTheDocument()
+    expect(container.querySelector('.hero-community-stats')).toHaveTextContent(
+      '',
+    )
 
     const zeroServices = createTestServices({
       communityStats: {
@@ -482,8 +485,11 @@ describe('Jolito', () => {
     })
     const { container: zeroContainer } = render(<App services={zeroServices} />)
     expect(
-      zeroContainer.querySelector('.hero-community-stats'),
+      zeroContainer.querySelector('.community-stat-item'),
     ).not.toBeInTheDocument()
+    expect(
+      zeroContainer.querySelector('.hero-community-stats'),
+    ).toHaveTextContent('')
   })
 
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {

@@ -48,12 +48,16 @@ export class BrowserCommunityStatsService implements CommunityStatsService {
       return null
     }
 
+    const fetchSignal = signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(5_000)])
+      : AbortSignal.timeout(5_000)
+
     // 1. Try edge endpoint first (cached on Cloudflare edge with $0 DB cost)
     try {
       const res = await this.fetchFn(this.statsEndpoint, {
         method: 'GET',
         headers: { Accept: 'application/json' },
-        signal: signal ?? AbortSignal.timeout(5_000),
+        signal: fetchSignal,
       })
       if (res.ok) {
         const json: unknown = await res.json()
@@ -78,7 +82,7 @@ export class BrowserCommunityStatsService implements CommunityStatsService {
               Authorization: `Bearer ${this.supabaseAnonKey}`,
               'Content-Type': 'application/json',
             },
-            signal: signal ?? AbortSignal.timeout(5_000),
+            signal: fetchSignal,
           },
         )
         if (res.ok) {

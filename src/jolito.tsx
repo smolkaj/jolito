@@ -2598,34 +2598,33 @@ function LoadedApp({
                       onGrammar={() => navigateTo('grammar')}
                     />
                   </div>
-                  {communityStats && (
-                    <p className="hero-community-stats" data-nosnippet>
-                      <span className="community-stat-item">
-                        <strong className="community-stat-number">
-                          {communityStats.learners.toLocaleString()}
-                        </strong>{' '}
-                        {communityStats.learners === 1 ? 'learner' : 'learners'}
-                      </span>
-                      <span className="community-stat-sep" aria-hidden="true">
-                        ·
-                      </span>
-                      <span className="community-stat-item">
-                        <strong className="community-stat-number">
-                          {communityStats.cards.toLocaleString()}
-                        </strong>{' '}
-                        {communityStats.cards === 1 ? 'card' : 'cards'}
-                      </span>
-                      <span className="community-stat-sep" aria-hidden="true">
-                        ·
-                      </span>
-                      <span className="community-stat-item">
-                        <strong className="community-stat-number">
-                          {communityStats.reviews.toLocaleString()}
-                        </strong>{' '}
-                        card {communityStats.reviews === 1 ? 'review' : 'reviews'}
-                      </span>
-                    </p>
-                  )}
+                  <p className="hero-community-stats" data-nosnippet>
+                    {communityStats && (
+                      <>
+                        <span className="community-stat-item">
+                          <strong className="community-stat-number">
+                            {communityStats.learners.toLocaleString()}
+                          </strong>{' '}
+                          {communityStats.learners === 1
+                            ? 'learner'
+                            : 'learners'}
+                        </span>
+                        <span className="community-stat-item">
+                          <strong className="community-stat-number">
+                            {communityStats.cards.toLocaleString()}
+                          </strong>{' '}
+                          {communityStats.cards === 1 ? 'card' : 'cards'}
+                        </span>
+                        <span className="community-stat-item">
+                          <strong className="community-stat-number">
+                            {communityStats.reviews.toLocaleString()}
+                          </strong>{' '}
+                          card{' '}
+                          {communityStats.reviews === 1 ? 'review' : 'reviews'}
+                        </span>
+                      </>
+                    )}
+                  </p>
                 </div>
                 <div className="hero-visual" data-nosnippet>
                   {/* English Card (concise meaning) */}

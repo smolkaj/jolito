@@ -811,7 +811,7 @@ summary:focus-visible,
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0;
   min-height: 1.25rem;
   margin-top: 16px;
   font-size: 0.8125rem;
@@ -826,16 +826,17 @@ summary:focus-visible,
   gap: 4px;
 }
 
+.community-stat-item + .community-stat-item::before {
+  content: '·';
+  margin-inline: 8px;
+  color: var(--ink-faint);
+  user-select: none;
+}
+
 .community-stat-number {
   font-weight: 600;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-}
-
-.community-stat-sep {
-  color: var(--ink-faint);
-  user-select: none;
-  font-size: 0.75rem;
 }
 
 .hero-visual {
