@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   quality:
@@ -23,6 +24,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit
+      - name: Verify mainline health
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: node scripts/check-main-health.ts
       - run: npm run check
 
   browser-shard:

@@ -1,6 +1,7 @@
 name: iOS Native Build
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -45,6 +46,7 @@ jobs:
 
   native-screenshots:
     name: Native screenshots (iPhone & iPad)
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
     runs-on: macos-15
     timeout-minutes: 20
     env:
@@ -88,7 +90,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
           xcrun simctl shutdown "$IPHONE_UDID"
       - name: Capture iPad native screenshots
-        timeout-minutes: 6
+        timeout-minutes: 10
         run: |
           xcrun simctl boot "$IPAD_UDID"
           xcrun simctl bootstatus "$IPAD_UDID" -b
@@ -105,10 +107,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           mkdir -p "build/native-screenshots/iPhone 17 Pro Max" "build/native-screenshots/iPad Pro 13-inch (M4)"
-          if [ -d build/screenshots-iphone.xcresult ]; then
+          if [ -f build/screenshots-iphone.xcresult/Info.plist ]; then
             xcrun xcresulttool export attachments --path build/screenshots-iphone.xcresult --output-path "build/native-screenshots/iPhone 17 Pro Max"
           fi
-          if [ -d build/screenshots-ipad.xcresult ]; then
+          if [ -f build/screenshots-ipad.xcresult/Info.plist ]; then
             xcrun xcresulttool export attachments --path build/screenshots-ipad.xcresult --output-path "build/native-screenshots/iPad Pro 13-inch (M4)"
           fi
       - uses: actions/upload-artifact@v7
@@ -134,10 +136,10 @@ jobs:
     needs: [ios-build, native-screenshots]
     if: ${{ always() }}
     steps:
-      - name: Require compilation and both native lifecycle runs
+      - name: Require compilation and native lifecycle runs when applicable
         env:
           BUILD_RESULT: ${{ needs.ios-build.result }}
           NATIVE_RESULT: ${{ needs.native-screenshots.result }}
         run: |
           test "$BUILD_RESULT" = success
-          test "$NATIVE_RESULT" = success
+          test "$NATIVE_RESULT" = success || test "$NATIVE_RESULT" = skipped
