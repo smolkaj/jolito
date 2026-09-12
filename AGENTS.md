@@ -20,6 +20,10 @@ git worktree remove ../jolito-<task> && git worktree prune
 - After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
 - For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 
+# Hindsight reflection
+
+Before submitting a PR for review, pause and run the [hindsight reflection](.agents/skills/hindsight-reflection) to evaluate whether the change is a genuine improvement and whether starting fresh yields a simpler design.
+
 # Independent review loop
 
 Every PR must pass the [independent PR review loop](.agents/skills/independent-pr-review) before merge.
