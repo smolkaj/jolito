@@ -441,6 +441,38 @@ describe('Jolito', () => {
     expect(footerInner).toHaveAttribute('data-nosnippet')
   })
 
+  it('renders community stats badge in the welcome hero when stats are available', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 3,
+        cards: 284,
+        reviews: 310,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    const statsBadge = await screen.findByLabelText(
+      'Community statistics: 3 learners, 284 cards, 310 reviews',
+    )
+    expect(statsBadge).toBeInTheDocument()
+    expect(statsBadge).toHaveAttribute('data-nosnippet')
+    expect(container.querySelector('.hero-community-stats')).toBeInTheDocument()
+    expect(statsBadge).toHaveTextContent('3 learners')
+    expect(statsBadge).toHaveTextContent('284 cards')
+    expect(statsBadge).toHaveTextContent('310 reviews')
+  })
+
+  it('omits community stats badge when community stats are unavailable', () => {
+    const services = createTestServices({
+      communityStats: null,
+    })
+    const { container } = render(<App services={services} />)
+
+    expect(
+      container.querySelector('.hero-community-stats'),
+    ).not.toBeInTheDocument()
+  })
+
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
     const services = createTestServices({
       cards: [

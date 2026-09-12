@@ -807,6 +807,39 @@ summary:focus-visible,
   outline-offset: -3px;
 }
 
+.hero-community-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 6px 14px;
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  width: fit-content;
+}
+
+.community-stat-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.community-stat-number {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-stat-sep {
+  color: var(--ink-faint);
+  user-select: none;
+  font-size: 0.75rem;
+}
+
 .hero-visual {
   position: relative;
   min-height: 460px;
@@ -2866,6 +2899,10 @@ kbd {
   .hero-actions button,
   .complete-actions button {
     width: 100%;
+  }
+
+  .hero-community-stats {
+    margin-inline: auto;
   }
 
   .hero-visual {

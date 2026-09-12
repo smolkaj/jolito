@@ -17,6 +17,7 @@ import { SupabaseSyncService } from '../supabase/sync-service'
 import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { getOrCreateDeviceId } from './device-id'
 import { LocalStorageCardRepository } from './card-repository'
+import { BrowserCommunityStatsService } from './community-stats-service'
 import { BrowserHapticsPlayer } from './haptics'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
@@ -119,6 +120,7 @@ export function createBrowserServices(): AppServices {
     undefined,
     '/api/feedback',
   )
+  const communityStats = new BrowserCommunityStatsService()
 
   return {
     deletionLock: Capacitor.isNativePlatform()
@@ -134,5 +136,6 @@ export function createBrowserServices(): AppServices {
     auth,
     sync,
     feedback,
+    communityStats,
   }
 }

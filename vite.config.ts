@@ -83,18 +83,72 @@ function createFeedbackMiddleware(): Connect.NextHandleFunction {
   }
 }
 
+function createStatsMiddleware(): Connect.NextHandleFunction {
+  return (req, res, next) => {
+    const reqUrl = req.url
+    if (!reqUrl || !reqUrl.startsWith('/api/stats')) {
+      next()
+      return
+    }
+    void (async () => {
+      try {
+        const supabaseUrl =
+          process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || ''
+        if (supabaseUrl.includes('mock.supabase.co')) {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.end(
+            JSON.stringify({
+              learners: 3,
+              cards: 284,
+              reviews: 310,
+            }),
+          )
+          return
+        }
+        const { handleCommunityStatsRequest } =
+          await import('./src/worker/stats-route.ts')
+        const hostHeader = req.headers.host
+        const origin = `http://${typeof hostHeader === 'string' ? hostHeader : 'localhost'}`
+        const fullUrl = new URL(reqUrl, origin)
+        const webReq = new Request(fullUrl.toString(), {
+          method: req.method ?? 'GET',
+          headers: req.headers as HeadersInit,
+        })
+        const webRes = await handleCommunityStatsRequest(webReq, {
+          SUPABASE_URL: supabaseUrl,
+          SUPABASE_ANON_KEY:
+            process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY,
+        })
+        res.statusCode = webRes.status
+        webRes.headers.forEach((val, key) => {
+          res.setHeader(key, val)
+        })
+        const buf = Buffer.from(await webRes.arrayBuffer())
+        res.end(buf)
+      } catch (err) {
+        next(err)
+      }
+    })()
+  }
+}
+
 function apiDevPlugin(): Plugin {
   const ttsMiddleware = createTtsMiddleware()
   const feedbackMiddleware = createFeedbackMiddleware()
+  const statsMiddleware = createStatsMiddleware()
   return {
     name: 'jolito-api-dev',
     configureServer(server) {
       server.middlewares.use(ttsMiddleware)
       server.middlewares.use(feedbackMiddleware)
+      server.middlewares.use(statsMiddleware)
     },
     configurePreviewServer(server) {
       server.middlewares.use(ttsMiddleware)
       server.middlewares.use(feedbackMiddleware)
+      server.middlewares.use(statsMiddleware)
     },
   }
 }

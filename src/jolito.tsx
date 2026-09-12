@@ -21,6 +21,7 @@ import type {
   AppServices,
   CardRepository,
   AuthUser,
+  CommunityStats,
   PrefetchItem,
   SyncResult,
 } from './application/ports'
@@ -1267,6 +1268,23 @@ function LoadedApp({
   }, [view, saveError, createSubmitAttempt])
   const welcomeRef = useRef<HTMLElement>(null)
   const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
+  const [communityStats, setCommunityStats] = useState<CommunityStats | null>(
+    null,
+  )
+
+  useEffect(() => {
+    if (!services.communityStats) return
+    const controller = new AbortController()
+    services.communityStats
+      .getCommunityStats(controller.signal)
+      .then((stats) => {
+        if (!controller.signal.aborted && stats) {
+          setCommunityStats(stats)
+        }
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [services.communityStats])
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -2580,6 +2598,38 @@ function LoadedApp({
                       onGrammar={() => navigateTo('grammar')}
                     />
                   </div>
+                  {communityStats && (
+                    <div
+                      className="hero-community-stats"
+                      data-nosnippet
+                      aria-label={`Community statistics: ${communityStats.learners} learners, ${communityStats.cards} cards, ${communityStats.reviews} reviews`}
+                    >
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.learners}
+                        </strong>{' '}
+                        learners
+                      </span>
+                      <span className="community-stat-sep" aria-hidden="true">
+                        ·
+                      </span>
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.cards}
+                        </strong>{' '}
+                        cards
+                      </span>
+                      <span className="community-stat-sep" aria-hidden="true">
+                        ·
+                      </span>
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.reviews}
+                        </strong>{' '}
+                        reviews
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="hero-visual" data-nosnippet>
                   {/* English Card (concise meaning) */}

@@ -8,6 +8,8 @@ import type {
   CardRepository,
   CardLoadResult,
   Clock,
+  CommunityStats,
+  CommunityStatsService,
   Earcon,
   FeedbackResult,
   FeedbackService,
@@ -337,6 +339,14 @@ export class MockFeedbackService implements FeedbackService {
   }
 }
 
+export class MockCommunityStatsService implements CommunityStatsService {
+  constructor(public stats: CommunityStats | null = null) {}
+
+  getCommunityStats(): Promise<CommunityStats | null> {
+    return Promise.resolve(this.stats)
+  }
+}
+
 export const TEST_LEXICON: LexiconEntry[] = SEED_LEXICON
 
 export function createTestServices(options?: {
@@ -348,6 +358,7 @@ export function createTestServices(options?: {
   speakerSupported?: boolean
   assistant?: CardAssistant
   user?: AuthUser | null
+  communityStats?: CommunityStats | null
 }): AppServices & {
   memoryCards: MemoryCardRepository
   mockSpeaker: MockSpeaker
@@ -359,6 +370,7 @@ export function createTestServices(options?: {
   mockAuth: MockAuthService
   mockSync: MockSyncService
   mockFeedback: MockFeedbackService
+  mockCommunityStats: MockCommunityStatsService
 } {
   const memoryCards = new MemoryCardRepository(
     options?.cards ?? null,
@@ -386,6 +398,9 @@ export function createTestServices(options?: {
     mockSync.remoteDeletedCardIds = [...options.remoteDeletedCardIds]
   }
   const mockFeedback = new MockFeedbackService()
+  const mockCommunityStats = new MockCommunityStatsService(
+    options?.communityStats ?? null,
+  )
 
   return {
     deletionLock: new NativeDeletionLock(),
@@ -399,6 +414,7 @@ export function createTestServices(options?: {
     auth: mockAuth,
     sync: mockSync,
     feedback: mockFeedback,
+    communityStats: mockCommunityStats,
     memoryCards,
     mockSpeaker,
     mockSounds,
@@ -408,5 +424,6 @@ export function createTestServices(options?: {
     mockAuth,
     mockSync,
     mockFeedback,
+    mockCommunityStats,
   }
 }
