@@ -22,7 +22,7 @@ git worktree remove ../jolito-<task> && git worktree prune
 
 # Hindsight reflection
 
-Before submitting a PR for review, pause and run the [hindsight reflection](.agents/skills/hindsight-reflection) to evaluate whether the change is a genuine improvement and whether starting fresh yields a simpler design.
+Before submitting a PR for review, pause and run the [hindsight reflection](.agents/skills/hindsight-reflection) to evaluate whether the change is a genuine improvement, whether starting fresh yields a simpler design, or if the direction should be dropped.
 
 # Independent review loop
 
