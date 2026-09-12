@@ -94,6 +94,10 @@ export function grammarContext(card: GrammarCard) {
         person === 0 || (person === 2 && variant === 0) ? 'was' : 'were',
       )
   const subjectIsPronoun = variant === 1 || (person !== 2 && person !== 4)
+  // Only highlight the subject pronoun when it immediately precedes the target
+  // verb phrase. In coordinated sentences (e.g. "{subject} arrived home and [{be}]..."),
+  // the subject belongs to the introductory clause, not the blank.
+  const subjectIntroducesVerb = /\{subject\}\s*\[/.test(english)
   const translationParts = english
     .split(/(\[[^\]]+\]|\{subject\})/)
     .filter(Boolean)
@@ -102,7 +106,9 @@ export function grammarContext(card: GrammarCard) {
       const text = translate(isVerb ? part.slice(1, -1) : part)
       return {
         text: index === 0 ? capitalize(text) : text,
-        isAnswer: isVerb || (part === '{subject}' && subjectIsPronoun),
+        isAnswer:
+          isVerb ||
+          (part === '{subject}' && subjectIsPronoun && subjectIntroducesVerb),
       }
     })
   const translation = translationParts.map((part) => part.text).join('')

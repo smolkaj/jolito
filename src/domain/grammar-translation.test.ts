@@ -30,9 +30,11 @@ describe('authored English verb alignment', () => {
   )
 
   it.each([
-    ['preterite', 'comer', 0, 0, ['I', 'ate']],
+    ['preterite', 'comer', 0, 0, ['ate']],
+    ['preterite', 'comer', 0, 1, ['I', 'ate']],
     ['preterite', 'poder', 0, 0, ['I', 'managed to']],
-    ['preterite', 'poner', 0, 1, ['I', 'put on']],
+    ['preterite', 'poner', 0, 1, ['put on']],
+    ['preterite', 'poner', 0, 0, ['I', 'set']],
     ['preterite', 'ser', 2, 0, ['was']],
     ['preterite', 'ser', 2, 1, ['You', 'were']],
     ['perfect', 'hablar', 2, 0, ['has talked']],
@@ -40,13 +42,16 @@ describe('authored English verb alignment', () => {
     ['perfect', 'terminar', 0, 0, ['I', 'have', 'finished']],
     ['perfect', 'hablar', 4, 0, ['have talked']],
     ['perfect', 'hablar', 4, 1, ['You all', 'have', 'talked']],
-    ['perfect', 'visitar', 2, 1, ['You', 'have visited']],
+    ['perfect', 'visitar', 2, 1, ['have visited']],
+    ['perfect', 'visitar', 0, 0, ['I', 'have visited']],
     ['gerund', 'hablar', 0, 0, ['I', 'am talking']],
     ['gerund', 'hablar', 2, 0, ['is talking']],
     ['gerund', 'hablar', 2, 1, ['you', 'are talking']],
     ['gerund', 'dormir', 0, 0, ['I', 'am sleeping']],
     ['gerund', 'poder', 2, 0, ['is able to']],
     ['gerund', 'ir', 0, 0, ['I', 'am going']],
+    ['gerund', 'comer', 0, 0, ['am', 'eating']],
+    ['gerund', 'comer', 0, 1, ['I', 'am eating']],
   ] as const)(
     'aligns %s %s person %s context %s without capturing other verbs or negation',
     (topic, verb, person, reviews, expected) => {
