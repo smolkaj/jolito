@@ -21,6 +21,7 @@ import type {
   AppServices,
   CardRepository,
   AuthUser,
+  CommunityStats,
   PrefetchItem,
   SyncResult,
 } from './application/ports'
@@ -1267,6 +1268,42 @@ function LoadedApp({
   }, [view, saveError, createSubmitAttempt])
   const welcomeRef = useRef<HTMLElement>(null)
   const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
+  const [communityStats, setCommunityStats] = useState<CommunityStats | null>(
+    null,
+  )
+  const [statsLayout, setStatsLayout] = useState<'card' | 'eyebrow'>(() => {
+    if (typeof window !== 'undefined') {
+      const param = new URLSearchParams(window.location.search).get('stats')
+      if (param === 'card' || param === 'eyebrow') return param
+    }
+    return 'card'
+  })
+
+  const toggleStatsLayout = useCallback(() => {
+    setStatsLayout((curr) => {
+      const next = curr === 'card' ? 'eyebrow' : 'card'
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.set('stats', next)
+        window.history.replaceState(null, '', url.toString())
+      }
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    if (view !== 'welcome' || !services.communityStats) return
+    const controller = new AbortController()
+    services.communityStats
+      .getCommunityStats(controller.signal)
+      .then((stats) => {
+        if (!controller.signal.aborted && stats && stats.learners > 0) {
+          setCommunityStats(stats)
+        }
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [view, services.communityStats])
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -2559,6 +2596,70 @@ function LoadedApp({
                     aria-hidden="true"
                     className="welcome-mascot-img"
                   />
+                  {statsLayout === 'eyebrow' && (
+                    <div
+                      className="hero-community-stats is-eyebrow"
+                      data-nosnippet
+                    >
+                      {communityStats && (
+                        <div className="hero-eyebrow-pill">
+                          <span
+                            className="community-pulse-indicator"
+                            aria-hidden="true"
+                          >
+                            <span className="community-pulse-ring" />
+                            <span className="community-pulse-core" />
+                          </span>
+                          <span className="hero-eyebrow-text">
+                            <span className="community-stat-item">
+                              <strong className="community-stat-number">
+                                {communityStats.learners.toLocaleString()}
+                              </strong>{' '}
+                              {communityStats.learners === 1
+                                ? 'learner'
+                                : 'learners'}
+                              <span
+                                className="community-stat-delimiter"
+                                aria-hidden="true"
+                              >
+                                &nbsp;·
+                              </span>
+                            </span>
+                            <span className="community-stat-item">
+                              <strong className="community-stat-number">
+                                {communityStats.cards.toLocaleString()}
+                              </strong>{' '}
+                              {communityStats.cards === 1 ? 'card' : 'cards'}
+                              <span
+                                className="community-stat-delimiter"
+                                aria-hidden="true"
+                              >
+                                &nbsp;·
+                              </span>
+                            </span>
+                            <span className="community-stat-item">
+                              <strong className="community-stat-number">
+                                {communityStats.reviews.toLocaleString()}
+                              </strong>{' '}
+                              card{' '}
+                              {communityStats.reviews === 1
+                                ? 'review'
+                                : 'reviews'}
+                            </span>
+                          </span>
+                          <button
+                            type="button"
+                            className="stats-style-toggle"
+                            onClick={toggleStatsLayout}
+                            title="Switch to card layout (Direction 2)"
+                            aria-label="Switch community stats to card layout"
+                          >
+                            ⇄ Card view
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <h1>
                     Make the words <br />
                     you meet <em>stick.</em>
@@ -2580,6 +2681,79 @@ function LoadedApp({
                       onGrammar={() => navigateTo('grammar')}
                     />
                   </div>
+                  {statsLayout === 'card' && (
+                    <div
+                      className="hero-community-stats is-card"
+                      data-nosnippet
+                    >
+                      {communityStats && (
+                        <div className="hero-community-card">
+                          <div className="community-card-header">
+                            <div className="community-card-title-group">
+                              <span
+                                className="community-pulse-indicator"
+                                aria-hidden="true"
+                              >
+                                <span className="community-pulse-ring" />
+                                <span className="community-pulse-core" />
+                              </span>
+                              <span className="community-card-kicker">
+                                COMMUNITY RHYTHM
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              className="stats-style-toggle"
+                              onClick={toggleStatsLayout}
+                              title="Switch to eyebrow layout (Direction 1)"
+                              aria-label="Switch community stats to eyebrow layout"
+                            >
+                              ⇄ Eyebrow view
+                            </button>
+                          </div>
+                          <div className="community-card-metrics">
+                            <div className="community-stat-item community-metric-tile">
+                              <span className="community-stat-number metric-number">
+                                {communityStats.learners.toLocaleString()}
+                              </span>{' '}
+                              <span className="metric-label">
+                                {communityStats.learners === 1
+                                  ? 'learner'
+                                  : 'learners'}
+                              </span>
+                            </div>
+                            <div
+                              className="community-metric-divider"
+                              aria-hidden="true"
+                            />
+                            <div className="community-stat-item community-metric-tile">
+                              <span className="community-stat-number metric-number">
+                                {communityStats.cards.toLocaleString()}
+                              </span>{' '}
+                              <span className="metric-label">
+                                {communityStats.cards === 1 ? 'card' : 'cards'}
+                              </span>
+                            </div>
+                            <div
+                              className="community-metric-divider"
+                              aria-hidden="true"
+                            />
+                            <div className="community-stat-item community-metric-tile">
+                              <span className="community-stat-number metric-number">
+                                {communityStats.reviews.toLocaleString()}
+                              </span>{' '}
+                              <span className="metric-label">
+                                card{' '}
+                                {communityStats.reviews === 1
+                                  ? 'review'
+                                  : 'reviews'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="hero-visual" data-nosnippet>
                   {/* English Card (concise meaning) */}

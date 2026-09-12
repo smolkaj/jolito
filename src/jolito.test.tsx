@@ -441,6 +441,57 @@ describe('Jolito', () => {
     expect(footerInner).toHaveAttribute('data-nosnippet')
   })
 
+  it('renders community stats badge in the welcome hero when stats are available', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 3,
+        cards: 284,
+        reviews: 310,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    const statsBadge = await waitFor(() => {
+      const el = container.querySelector('.hero-community-stats')
+      expect(el).toBeInTheDocument()
+      return el!
+    })
+    expect(statsBadge).toBeInTheDocument()
+    expect(statsBadge).toHaveAttribute('data-nosnippet')
+    expect(statsBadge).toHaveTextContent('3 learners')
+    expect(statsBadge).toHaveTextContent('284 cards')
+    expect(statsBadge).toHaveTextContent('310 card reviews')
+  })
+
+  it('omits community stats content when community stats are unavailable or have 0 learners', () => {
+    const services = createTestServices({
+      communityStats: null,
+    })
+    const { container } = render(<App services={services} />)
+
+    expect(
+      container.querySelector('.community-stat-item'),
+    ).not.toBeInTheDocument()
+    expect(container.querySelector('.hero-community-stats')).toHaveTextContent(
+      '',
+    )
+
+    const zeroServices = createTestServices({
+      communityStats: {
+        learners: 0,
+        cards: 0,
+        reviews: 0,
+      },
+    })
+    const { container: zeroContainer } = render(<App services={zeroServices} />)
+    expect(
+      zeroContainer.querySelector('.community-stat-item'),
+    ).not.toBeInTheDocument()
+    expect(
+      zeroContainer.querySelector('.hero-community-stats'),
+    ).toHaveTextContent('')
+  })
+
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
     const services = createTestServices({
       cards: [

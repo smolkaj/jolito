@@ -1,8 +1,9 @@
 import type { StudyCard } from '../domain/card'
 import type { FeedbackSubmission } from '../domain/feedback'
 import type { AutocompleteSuggestion, LexiconEntry } from '../domain/lexicon'
+import type { CommunityStats } from '../domain/community-stats'
 
-export type { FeedbackSubmission }
+export type { FeedbackSubmission, CommunityStats }
 
 export type Clock = {
   now(): number
@@ -151,6 +152,10 @@ export type FeedbackService = {
   ): Promise<FeedbackResult>
 }
 
+export type CommunityStatsService = {
+  getCommunityStats(signal?: AbortSignal): Promise<CommunityStats | null>
+}
+
 export type DeletionLock = {
   /** Excludes deletion, recovery and cancellation for this storage lifetime. */
   run<T>(operation: () => T | Promise<T>): Promise<T>
@@ -168,4 +173,5 @@ export type AppServices = {
   auth: AuthService
   sync: SyncService
   feedback: FeedbackService
+  communityStats?: CommunityStatsService
 }
