@@ -32,9 +32,43 @@ describe('BrowserCommunityStatsService', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
+  it('fetches from https://joli.to/api/stats on native platforms', async () => {
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      if (url === 'https://joli.to/api/stats') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              learners: 3,
+              cards: 284,
+              reviews: 310,
+            }),
+            { status: 200 },
+          ),
+        )
+      }
+      return Promise.reject(new Error('Unexpected call'))
+    })
+
+    const service = new BrowserCommunityStatsService({
+      fetchFn: mockFetch,
+      isNative: true,
+    })
+
+    const stats = await service.getCommunityStats()
+    expect(stats).toEqual({
+      learners: 3,
+      cards: 284,
+      reviews: 310,
+    })
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://joli.to/api/stats',
+      expect.anything(),
+    )
+  })
+
   it('falls back to Supabase RPC when edge endpoint returns error on native platforms', async () => {
     const mockFetch = vi.fn().mockImplementation((url: string) => {
-      if (url === '/api/stats') {
+      if (url === 'https://joli.to/api/stats') {
         return Promise.resolve(new Response('Not Found', { status: 404 }))
       }
       if (url === 'https://test.supabase.co/rest/v1/rpc/get_community_stats') {

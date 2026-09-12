@@ -1273,18 +1273,18 @@ function LoadedApp({
   )
 
   useEffect(() => {
-    if (!services.communityStats) return
+    if (view !== 'welcome' || !services.communityStats) return
     const controller = new AbortController()
     services.communityStats
       .getCommunityStats(controller.signal)
       .then((stats) => {
-        if (!controller.signal.aborted && stats) {
+        if (!controller.signal.aborted && stats && stats.learners > 0) {
           setCommunityStats(stats)
         }
       })
       .catch(() => {})
     return () => controller.abort()
-  }, [services.communityStats])
+  }, [view, services.communityStats])
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -2599,36 +2599,32 @@ function LoadedApp({
                     />
                   </div>
                   {communityStats && (
-                    <div
-                      className="hero-community-stats"
-                      data-nosnippet
-                      aria-label={`Community statistics: ${communityStats.learners} learners, ${communityStats.cards} cards, ${communityStats.reviews} reviews`}
-                    >
+                    <p className="hero-community-stats" data-nosnippet>
                       <span className="community-stat-item">
                         <strong className="community-stat-number">
-                          {communityStats.learners}
+                          {communityStats.learners.toLocaleString()}
                         </strong>{' '}
-                        learners
+                        {communityStats.learners === 1 ? 'learner' : 'learners'}
                       </span>
                       <span className="community-stat-sep" aria-hidden="true">
                         ·
                       </span>
                       <span className="community-stat-item">
                         <strong className="community-stat-number">
-                          {communityStats.cards}
+                          {communityStats.cards.toLocaleString()}
                         </strong>{' '}
-                        cards
+                        {communityStats.cards === 1 ? 'card' : 'cards'}
                       </span>
                       <span className="community-stat-sep" aria-hidden="true">
                         ·
                       </span>
                       <span className="community-stat-item">
                         <strong className="community-stat-number">
-                          {communityStats.reviews}
+                          {communityStats.reviews.toLocaleString()}
                         </strong>{' '}
-                        reviews
+                        card {communityStats.reviews === 1 ? 'review' : 'reviews'}
                       </span>
-                    </div>
+                    </p>
                   )}
                 </div>
                 <div className="hero-visual" data-nosnippet>

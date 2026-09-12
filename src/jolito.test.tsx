@@ -451,18 +451,19 @@ describe('Jolito', () => {
     })
     const { container } = render(<App services={services} />)
 
-    const statsBadge = await screen.findByLabelText(
-      'Community statistics: 3 learners, 284 cards, 310 reviews',
-    )
+    const statsBadge = await waitFor(() => {
+      const el = container.querySelector('.hero-community-stats')
+      expect(el).toBeInTheDocument()
+      return el!
+    })
     expect(statsBadge).toBeInTheDocument()
     expect(statsBadge).toHaveAttribute('data-nosnippet')
-    expect(container.querySelector('.hero-community-stats')).toBeInTheDocument()
     expect(statsBadge).toHaveTextContent('3 learners')
     expect(statsBadge).toHaveTextContent('284 cards')
-    expect(statsBadge).toHaveTextContent('310 reviews')
+    expect(statsBadge).toHaveTextContent('310 card reviews')
   })
 
-  it('omits community stats badge when community stats are unavailable', () => {
+  it('omits community stats badge when community stats are unavailable or have 0 learners', () => {
     const services = createTestServices({
       communityStats: null,
     })
@@ -470,6 +471,18 @@ describe('Jolito', () => {
 
     expect(
       container.querySelector('.hero-community-stats'),
+    ).not.toBeInTheDocument()
+
+    const zeroServices = createTestServices({
+      communityStats: {
+        learners: 0,
+        cards: 0,
+        reviews: 0,
+      },
+    })
+    const { container: zeroContainer } = render(<App services={zeroServices} />)
+    expect(
+      zeroContainer.querySelector('.hero-community-stats'),
     ).not.toBeInTheDocument()
   })
 

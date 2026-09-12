@@ -17,11 +17,13 @@ insert into public.decks (user_id, device_id, version, data, revision) values
     'deletedCardIds', jsonb_build_array()
   ), 1);
 
--- User 2 has 1 card with 0 reviews
+-- User 2 has 1 card with 0 reviews and 1 card with corrupted/non-numeric reviews
 insert into public.decks (user_id, device_id, version, data, revision) values
   ('b0000000-0000-0000-0000-000000000002', 'dev-2', 4, jsonb_build_object(
     'cards', jsonb_build_array(
-      jsonb_build_object('id', 'card-3', 'schedule', jsonb_build_object('reviews', 0))
+      jsonb_build_object('id', 'card-3', 'schedule', jsonb_build_object('reviews', 0)),
+      jsonb_build_object('id', 'card-corrupt-1', 'schedule', jsonb_build_object('reviews', 'not-a-number')),
+      jsonb_build_object('id', 'card-corrupt-2', 'schedule', jsonb_build_object('reviews', ''))
     ),
     'deletedCardIds', jsonb_build_array()
   ), 1);
@@ -36,13 +38,13 @@ select is(
 );
 select is(
   (public.get_community_stats()->>'cards')::integer,
-  3,
+  5,
   'Returns total cards count across decks'
 );
 select is(
   (public.get_community_stats()->>'reviews')::integer,
   5,
-  'Returns total reviews count across decks'
+  'Returns total reviews count across decks safely ignoring non-numeric values'
 );
 
 -- Authenticated access

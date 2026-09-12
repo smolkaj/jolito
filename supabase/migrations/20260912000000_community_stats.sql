@@ -19,7 +19,13 @@ begin
   select
     coalesce(sum(case when jsonb_typeof(data->'cards') = 'array' then jsonb_array_length(data->'cards') else 0 end), 0),
     coalesce(sum((
-      select coalesce(sum((card->'schedule'->>'reviews')::bigint), 0)
+      select coalesce(sum(
+        case
+          when (card->'schedule'->>'reviews') ~ '^[0-9]+$'
+          then (card->'schedule'->>'reviews')::bigint
+          else 0
+        end
+      ), 0)
       from jsonb_array_elements(
         case when jsonb_typeof(data->'cards') = 'array' then data->'cards' else '[]'::jsonb end
       ) as card

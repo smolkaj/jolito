@@ -21,7 +21,10 @@ export class BrowserCommunityStatsService implements CommunityStatsService {
   private isNative: boolean
 
   constructor(config: CommunityStatsConfig = {}) {
-    this.statsEndpoint = config.statsEndpoint ?? '/api/stats'
+    this.isNative = config.isNative ?? Capacitor.isNativePlatform()
+    this.statsEndpoint =
+      config.statsEndpoint ??
+      (this.isNative ? 'https://joli.to/api/stats' : '/api/stats')
     this.supabaseUrl = (
       config.supabaseUrl ??
       (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL
@@ -36,7 +39,6 @@ export class BrowserCommunityStatsService implements CommunityStatsService {
         : '')
     this.fetchFn =
       config.fetchFn ?? ((input, init) => globalThis.fetch(input, init))
-    this.isNative = config.isNative ?? Capacitor.isNativePlatform()
   }
 
   async getCommunityStats(
