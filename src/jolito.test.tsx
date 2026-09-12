@@ -492,6 +492,47 @@ describe('Jolito', () => {
     ).toHaveTextContent('')
   })
 
+  it('switches between all 4 community stats layouts using the switcher toolbar', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 3,
+        cards: 284,
+        reviews: 310,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    await waitFor(() => {
+      expect(
+        container.querySelector('.hero-community-stats.is-editorial'),
+      ).toBeInTheDocument()
+    })
+
+    // Click 2. Whisper Pill
+    fireEvent.click(screen.getByRole('button', { name: '2. Whisper Pill' }))
+    expect(
+      container.querySelector('.hero-community-stats.is-whisper'),
+    ).toBeInTheDocument()
+
+    // Click 3. Mascot Lockup
+    fireEvent.click(screen.getByRole('button', { name: '3. Mascot Lockup' }))
+    expect(
+      container.querySelector('.hero-community-stats.is-mascot'),
+    ).toBeInTheDocument()
+
+    // Click 4. Hero Footer
+    fireEvent.click(screen.getByRole('button', { name: '4. Hero Footer' }))
+    expect(
+      container.querySelector('.hero-community-stats.is-footer'),
+    ).toBeInTheDocument()
+
+    // Click back to 1. Editorial
+    fireEvent.click(screen.getByRole('button', { name: '1. Editorial' }))
+    expect(
+      container.querySelector('.hero-community-stats.is-editorial'),
+    ).toBeInTheDocument()
+  })
+
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
     const services = createTestServices({
       cards: [

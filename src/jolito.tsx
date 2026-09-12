@@ -1271,25 +1271,33 @@ function LoadedApp({
   const [communityStats, setCommunityStats] = useState<CommunityStats | null>(
     null,
   )
-  const [statsLayout, setStatsLayout] = useState<'card' | 'eyebrow'>(() => {
+  const [statsLayout, setStatsLayout] = useState<
+    'editorial' | 'whisper' | 'mascot' | 'footer'
+  >(() => {
     if (typeof window !== 'undefined') {
-      const param = new URLSearchParams(window.location.search).get('stats')
-      if (param === 'card' || param === 'eyebrow') return param
+      const param = new URLSearchParams(window.location.search).get('style')
+      if (
+        param === 'editorial' ||
+        param === 'whisper' ||
+        param === 'mascot' ||
+        param === 'footer'
+      )
+        return param
     }
-    return 'card'
+    return 'editorial'
   })
 
-  const toggleStatsLayout = useCallback(() => {
-    setStatsLayout((curr) => {
-      const next = curr === 'card' ? 'eyebrow' : 'card'
+  const selectStatsLayout = useCallback(
+    (style: 'editorial' | 'whisper' | 'mascot' | 'footer') => {
+      setStatsLayout(style)
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href)
-        url.searchParams.set('stats', next)
+        url.searchParams.set('style', style)
         window.history.replaceState(null, '', url.toString())
       }
-      return next
-    })
-  }, [])
+    },
+    [],
+  )
 
   useEffect(() => {
     if (view !== 'welcome' || !services.communityStats) return
@@ -2590,27 +2598,113 @@ function LoadedApp({
             <section className="welcome-hero">
               <div className="welcome-hero-main">
                 <div className="hero-copy">
-                  <img
-                    src={logoUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="welcome-mascot-img"
-                  />
-                  {statsLayout === 'eyebrow' && (
-                    <div
-                      className="hero-community-stats is-eyebrow"
+                  {statsLayout === 'mascot' ? (
+                    <div className="hero-mascot-row">
+                      <img
+                        src={logoUrl}
+                        alt=""
+                        aria-hidden="true"
+                        className="welcome-mascot-img"
+                      />
+                      <div
+                        className="hero-community-stats is-mascot"
+                        data-nosnippet
+                      >
+                        {communityStats && (
+                          <div className="community-speech-bubble">
+                            <span
+                              className="bubble-pointer"
+                              aria-hidden="true"
+                            />
+                            <p className="bubble-line">
+                              <span className="community-stat-item">
+                                <strong className="community-stat-number">
+                                  {communityStats.reviews.toLocaleString()}
+                                </strong>{' '}
+                                card reviews practiced
+                              </span>
+                            </p>
+                            <p className="bubble-subline">
+                              by{' '}
+                              <span className="community-stat-item">
+                                <strong className="community-stat-number">
+                                  {communityStats.learners.toLocaleString()}
+                                </strong>{' '}
+                                {communityStats.learners === 1
+                                  ? 'learner'
+                                  : 'learners'}
+                              </span>{' '}
+                              across{' '}
+                              <span className="community-stat-item">
+                                <strong className="community-stat-number">
+                                  {communityStats.cards.toLocaleString()}
+                                </strong>{' '}
+                                cards
+                              </span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={logoUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="welcome-mascot-img"
+                    />
+                  )}
+                  {statsLayout === 'editorial' && (
+                    <p
+                      className="hero-community-stats is-editorial"
                       data-nosnippet
                     >
                       {communityStats && (
-                        <div className="hero-eyebrow-pill">
+                        <span className="community-editorial-eyebrow">
+                          <span className="community-stat-item">
+                            <strong className="community-stat-number">
+                              {communityStats.learners.toLocaleString()}
+                            </strong>{' '}
+                            {communityStats.learners === 1
+                              ? 'learner'
+                              : 'learners'}
+                            &nbsp;·
+                          </span>{' '}
+                          <span className="community-stat-item">
+                            <strong className="community-stat-number">
+                              {communityStats.cards.toLocaleString()}
+                            </strong>{' '}
+                            {communityStats.cards === 1 ? 'card' : 'cards'}
+                            &nbsp;·
+                          </span>{' '}
+                          <span className="community-stat-item">
+                            <strong className="community-stat-number">
+                              {communityStats.reviews.toLocaleString()}
+                            </strong>{' '}
+                            card{' '}
+                            {communityStats.reviews === 1
+                              ? 'review'
+                              : 'reviews'}{' '}
+                            practiced
+                          </span>
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {statsLayout === 'whisper' && (
+                    <div
+                      className="hero-community-stats is-whisper"
+                      data-nosnippet
+                    >
+                      {communityStats && (
+                        <div className="community-whisper-pill">
                           <span
-                            className="community-pulse-indicator"
+                            className="community-whisper-icon"
                             aria-hidden="true"
                           >
-                            <span className="community-pulse-ring" />
-                            <span className="community-pulse-core" />
+                            🌱
                           </span>
-                          <span className="hero-eyebrow-text">
+                          <span className="community-whisper-text">
                             <span className="community-stat-item">
                               <strong className="community-stat-number">
                                 {communityStats.learners.toLocaleString()}
@@ -2618,25 +2712,15 @@ function LoadedApp({
                               {communityStats.learners === 1
                                 ? 'learner'
                                 : 'learners'}
-                              <span
-                                className="community-stat-delimiter"
-                                aria-hidden="true"
-                              >
-                                &nbsp;·
-                              </span>
-                            </span>
+                              &nbsp;·
+                            </span>{' '}
                             <span className="community-stat-item">
                               <strong className="community-stat-number">
                                 {communityStats.cards.toLocaleString()}
                               </strong>{' '}
                               {communityStats.cards === 1 ? 'card' : 'cards'}
-                              <span
-                                className="community-stat-delimiter"
-                                aria-hidden="true"
-                              >
-                                &nbsp;·
-                              </span>
-                            </span>
+                              &nbsp;·
+                            </span>{' '}
                             <span className="community-stat-item">
                               <strong className="community-stat-number">
                                 {communityStats.reviews.toLocaleString()}
@@ -2647,15 +2731,6 @@ function LoadedApp({
                                 : 'reviews'}
                             </span>
                           </span>
-                          <button
-                            type="button"
-                            className="stats-style-toggle"
-                            onClick={toggleStatsLayout}
-                            title="Switch to card layout (Direction 2)"
-                            aria-label="Switch community stats to card layout"
-                          >
-                            ⇄ Card view
-                          </button>
                         </div>
                       )}
                     </div>
@@ -2681,79 +2756,6 @@ function LoadedApp({
                       onGrammar={() => navigateTo('grammar')}
                     />
                   </div>
-                  {statsLayout === 'card' && (
-                    <div
-                      className="hero-community-stats is-card"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <div className="hero-community-card">
-                          <div className="community-card-header">
-                            <div className="community-card-title-group">
-                              <span
-                                className="community-pulse-indicator"
-                                aria-hidden="true"
-                              >
-                                <span className="community-pulse-ring" />
-                                <span className="community-pulse-core" />
-                              </span>
-                              <span className="community-card-kicker">
-                                COMMUNITY RHYTHM
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              className="stats-style-toggle"
-                              onClick={toggleStatsLayout}
-                              title="Switch to eyebrow layout (Direction 1)"
-                              aria-label="Switch community stats to eyebrow layout"
-                            >
-                              ⇄ Eyebrow view
-                            </button>
-                          </div>
-                          <div className="community-card-metrics">
-                            <div className="community-stat-item community-metric-tile">
-                              <span className="community-stat-number metric-number">
-                                {communityStats.learners.toLocaleString()}
-                              </span>{' '}
-                              <span className="metric-label">
-                                {communityStats.learners === 1
-                                  ? 'learner'
-                                  : 'learners'}
-                              </span>
-                            </div>
-                            <div
-                              className="community-metric-divider"
-                              aria-hidden="true"
-                            />
-                            <div className="community-stat-item community-metric-tile">
-                              <span className="community-stat-number metric-number">
-                                {communityStats.cards.toLocaleString()}
-                              </span>{' '}
-                              <span className="metric-label">
-                                {communityStats.cards === 1 ? 'card' : 'cards'}
-                              </span>
-                            </div>
-                            <div
-                              className="community-metric-divider"
-                              aria-hidden="true"
-                            />
-                            <div className="community-stat-item community-metric-tile">
-                              <span className="community-stat-number metric-number">
-                                {communityStats.reviews.toLocaleString()}
-                              </span>{' '}
-                              <span className="metric-label">
-                                card{' '}
-                                {communityStats.reviews === 1
-                                  ? 'review'
-                                  : 'reviews'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
                 <div className="hero-visual" data-nosnippet>
                   {/* English Card (concise meaning) */}
@@ -2827,10 +2829,44 @@ function LoadedApp({
                 </div>
               </div>
               <div className="welcome-hero-footer">
-                <div
-                  className="welcome-hero-footer-spacer"
-                  aria-hidden="true"
-                />
+                {statsLayout === 'footer' ? (
+                  <div
+                    className="hero-community-stats is-footer"
+                    data-nosnippet
+                  >
+                    {communityStats && (
+                      <span className="community-footer-stats">
+                        <span className="community-stat-item">
+                          <strong className="community-stat-number">
+                            {communityStats.learners.toLocaleString()}
+                          </strong>{' '}
+                          {communityStats.learners === 1
+                            ? 'learner'
+                            : 'learners'}
+                          &nbsp;·
+                        </span>{' '}
+                        <span className="community-stat-item">
+                          <strong className="community-stat-number">
+                            {communityStats.cards.toLocaleString()}
+                          </strong>{' '}
+                          {communityStats.cards === 1 ? 'card' : 'cards'}&nbsp;·
+                        </span>{' '}
+                        <span className="community-stat-item">
+                          <strong className="community-stat-number">
+                            {communityStats.reviews.toLocaleString()}
+                          </strong>{' '}
+                          card{' '}
+                          {communityStats.reviews === 1 ? 'review' : 'reviews'}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    className="welcome-hero-footer-spacer"
+                    aria-hidden="true"
+                  />
+                )}
                 <a
                   href="#why-jolito"
                   className="hero-scroll-cue"
@@ -2932,6 +2968,50 @@ function LoadedApp({
               </div>
             </div>
           </section>
+          <aside
+            className="stats-preview-switcher"
+            aria-label="Community stats style switcher"
+          >
+            <span className="switcher-label">Stats layout:</span>
+            <div
+              className="switcher-buttons"
+              role="group"
+              aria-label="Layout preview options"
+            >
+              <button
+                type="button"
+                className={`switcher-btn ${statsLayout === 'editorial' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('editorial')}
+                aria-pressed={statsLayout === 'editorial'}
+              >
+                1. Editorial
+              </button>
+              <button
+                type="button"
+                className={`switcher-btn ${statsLayout === 'whisper' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('whisper')}
+                aria-pressed={statsLayout === 'whisper'}
+              >
+                2. Whisper Pill
+              </button>
+              <button
+                type="button"
+                className={`switcher-btn ${statsLayout === 'mascot' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('mascot')}
+                aria-pressed={statsLayout === 'mascot'}
+              >
+                3. Mascot Lockup
+              </button>
+              <button
+                type="button"
+                className={`switcher-btn ${statsLayout === 'footer' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('footer')}
+                aria-pressed={statsLayout === 'footer'}
+              >
+                4. Hero Footer
+              </button>
+            </div>
+          </aside>
         </main>
         <SyncModal
           user={authUser}

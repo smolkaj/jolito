@@ -1565,39 +1565,48 @@ test('renders community stats quietly in welcome hero and wraps without leading 
     })
   })
 
-  // 1. Desktop viewport (Card layout)
+  // 1. Desktop viewport (Direction 1: Editorial by default)
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
-  const statsContainer = page.locator('.hero-community-stats')
-  await expect(statsContainer).toBeVisible()
-  await expect(statsContainer).toContainText('1,420 learners')
-  await expect(statsContainer).toContainText('24,500 cards')
-  await expect(statsContainer).toContainText('89,102 card reviews')
+  const editorialContainer = page.locator('.hero-community-stats.is-editorial')
+  await expect(editorialContainer).toBeVisible()
+  await expect(editorialContainer).toContainText('1,420 learners')
+  await expect(editorialContainer).toContainText('24,500 cards')
+  await expect(editorialContainer).toContainText('89,102 card reviews')
 
-  // Verify accessibility on Card layout
-  const cardResults = await auditAccessibility(page)
-  expect(cardResults.violations).toEqual([])
+  const editorialResults = await auditAccessibility(page)
+  expect(editorialResults.violations).toEqual([])
 
-  // 2. Toggle to Eyebrow view via interactive switcher button
-  await page.locator('.stats-style-toggle').click()
-  const eyebrowContainer = page.locator('.hero-community-stats.is-eyebrow')
-  await expect(eyebrowContainer).toBeVisible()
-  await expect(eyebrowContainer).toContainText('1,420 learners')
-  await expect(eyebrowContainer).toContainText('24,500 cards')
+  // 2. Switch to Direction 2: Whisper Pill
+  await page.getByRole('button', { name: '2. Whisper Pill' }).click()
+  const whisperContainer = page.locator('.hero-community-stats.is-whisper')
+  await expect(whisperContainer).toBeVisible()
+  await expect(whisperContainer).toContainText('1,420 learners')
+  const whisperResults = await auditAccessibility(page)
+  expect(whisperResults.violations).toEqual([])
 
-  // Verify accessibility on Eyebrow layout
-  const eyebrowResults = await auditAccessibility(page)
-  expect(eyebrowResults.violations).toEqual([])
+  // 3. Switch to Direction 3: Mascot Lockup
+  await page.getByRole('button', { name: '3. Mascot Lockup' }).click()
+  const mascotContainer = page.locator('.hero-community-stats.is-mascot')
+  await expect(mascotContainer).toBeVisible()
+  await expect(mascotContainer).toContainText('89,102 card reviews practiced')
+  const mascotResults = await auditAccessibility(page)
+  expect(mascotResults.violations).toEqual([])
 
-  // 3. Toggle back to Card layout
-  await page.locator('.stats-style-toggle').click()
-  await expect(page.locator('.hero-community-stats.is-card')).toBeVisible()
+  // 4. Switch to Direction 4: Hero Footer
+  await page.getByRole('button', { name: '4. Hero Footer' }).click()
+  const footerContainer = page.locator('.hero-community-stats.is-footer')
+  await expect(footerContainer).toBeVisible()
+  await expect(footerContainer).toContainText('1,420 learners')
+  const footerResults = await auditAccessibility(page)
+  expect(footerResults.violations).toEqual([])
 
-  // 4. Mobile 360px viewport
+  // 5. Mobile 360px viewport
   await page.setViewportSize({ width: 360, height: 740 })
-  await expect(statsContainer).toBeVisible()
+  await page.getByRole('button', { name: '1. Editorial' }).click()
+  await expect(editorialContainer).toBeVisible()
 
-  // 5. Ultra-narrow 320px viewport
+  // 6. Ultra-narrow 320px viewport
   await page.setViewportSize({ width: 320, height: 600 })
-  await expect(statsContainer).toBeVisible()
+  await expect(editorialContainer).toBeVisible()
 })
