@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   quality:
@@ -23,11 +24,23 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit
+      - name: Verify mainline health
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: node scripts/check-main-health.ts
       - run: npm run check
 
-  browser:
-    name: Browser smoke tests
+  browser-shard:
+    name: Browser smoke shard (${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -44,16 +57,28 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium webkit
-      - run: npm run test:e2e
+      - run: npm run test:e2e -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shardIndex }}
           path: |
             playwright-report/
             test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  browser:
+    name: Browser smoke tests
+    runs-on: ubuntu-latest
+    needs: [browser-shard]
+    if: ${{ always() }}
+    steps:
+      - name: Require all browser shards to pass
+        env:
+          SHARD_RESULTS: ${{ needs.browser-shard.result }}
+        run: |
+          test "$SHARD_RESULTS" = success
 
   supabase-integration:
     name: Local Supabase integration & RLS

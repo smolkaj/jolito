@@ -20,7 +20,7 @@
     "lint:db": "supabase db lint --local --fail-on error",
     "test:integration": "vitest run tests/integration",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run build:signup-alerts",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:release && npm run build && npm run build:signup-alerts",
     "build:signup-alerts": "wrangler deploy --config wrangler.signup-alerts.json --dry-run",
     "build": "tsc && vite build",
     "preview": "vite preview",
