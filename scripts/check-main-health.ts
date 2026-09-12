@@ -9,38 +9,74 @@ export interface WorkflowRun {
   createdAt?: string
 }
 
+export interface OpenPullRequest {
+  number: number
+  title: string
+  createdAt: string
+}
+
 export interface HealthEvaluation {
   healthy: boolean
   message: string
   failures?: WorkflowRun[]
   hotfixBypass?: boolean
+  mutexBlocked?: boolean
   latest?: Record<string, WorkflowRun>
 }
 
 export function evaluateMainHealth(
   runs: WorkflowRun[],
-  { prTitle = '', headRef = '' }: { prTitle?: string; headRef?: string } = {},
+  {
+    prTitle = '',
+    prNumber = 0,
+    openPrs = [],
+  }: {
+    prTitle?: string
+    prNumber?: number
+    openPrs?: OpenPullRequest[]
+  } = {},
 ): HealthEvaluation {
-  // Hotfix escape hatch: if this PR is explicitly fixing main, do not block it
-  const isHotfix =
-    headRef.startsWith('fix-main/') ||
-    headRef.startsWith('hotfix/') ||
-    prTitle.toLowerCase().includes('fix-main') ||
-    prTitle.toLowerCase().includes('[fix-main]')
+  // Canonical escape hatch: PR title must start with 'fix-main:'
+  const isHotfix = prTitle.trim().startsWith('fix-main:')
 
   if (isHotfix) {
+    // Mechanical Mutex: Ensure only ONE fix-main PR is active at any time
+    const activeFixPrs = openPrs
+      .filter((pr) => pr.title.trim().startsWith('fix-main:'))
+      .sort((a, b) => {
+        if (a.createdAt !== b.createdAt) {
+          return a.createdAt.localeCompare(b.createdAt)
+        }
+        return a.number - b.number
+      })
+
+    if (activeFixPrs.length > 0 && prNumber > 0) {
+      const lockHolder = activeFixPrs[0]
+      if (lockHolder && lockHolder.number !== prNumber) {
+        return {
+          healthy: false,
+          mutexBlocked: true,
+          message:
+            `❌ BLOCKED: Another mainline fix PR (#${lockHolder.number}: "${lockHolder.title}") is already active.\n` +
+            `   Only ONE fix-main PR may run at a time to prevent conflicting fixes.`,
+        }
+      }
+    }
+
     return {
       healthy: true,
       hotfixBypass: true,
       message:
-        'PR is explicitly marked as a mainline hotfix. Bypassing mainline health check.',
+        '✓ PR holds the canonical fix-main mutex lock. Bypassing mainline health check.',
     }
   }
 
   // Core workflows that define mainline health
   const CORE_WORKFLOWS = ['Quality', 'iOS Native Build', 'CodeQL']
 
-  const completed = runs.filter((r) => r.status === 'completed')
+  const completed = runs
+    .filter((r) => r.status === 'completed')
+    .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
   const latestByWorkflow: Record<string, WorkflowRun> = {}
 
   for (const run of completed) {
@@ -80,7 +116,7 @@ export function evaluateMainHealth(
 
 export function main(): void {
   const prTitle = process.env.PR_TITLE ?? ''
-  const headRef = process.env.HEAD_REF ?? ''
+  const prNumber = Number(process.env.PR_NUMBER) || 0
 
   // Only run when in CI or explicitly requested
   if (!process.env.GITHUB_ACTIONS && !process.argv.includes('--force')) {
@@ -91,39 +127,67 @@ export function main(): void {
   }
 
   try {
-    const output = execFileSync(
+    const isHotfix = prTitle.trim().startsWith('fix-main:')
+    const repoArgs = process.env.GH_REPO ? ['--repo', process.env.GH_REPO] : []
+    let openPrs: OpenPullRequest[] = []
+
+    if (isHotfix) {
+      const prsOutput = execFileSync(
+        'gh',
+        [
+          'pr',
+          'list',
+          ...repoArgs,
+          '--state',
+          'open',
+          '--limit',
+          '100',
+          '--json',
+          'number,title,createdAt',
+        ],
+        { encoding: 'utf8' },
+      )
+      openPrs = JSON.parse(prsOutput) as OpenPullRequest[]
+    }
+
+    const runsOutput = execFileSync(
       'gh',
       [
         'run',
         'list',
+        ...repoArgs,
         '--branch',
         'main',
         '--event',
         'push',
         '--limit',
-        '15',
+        '20',
         '--json',
         'workflowName,conclusion,status,url,headSha,createdAt',
       ],
       { encoding: 'utf8' },
     )
 
-    const runs = JSON.parse(output) as WorkflowRun[]
-    const result = evaluateMainHealth(runs, { prTitle, headRef })
+    const runs = JSON.parse(runsOutput) as WorkflowRun[]
+    const result = evaluateMainHealth(runs, { prTitle, prNumber, openPrs })
 
     if (!result.healthy) {
       console.error(
         '\n================================================================',
       )
-      console.error('BLOCKED: origin/main is currently failing CI!')
+      console.error('BLOCKED: Cannot proceed with PR!')
       console.error(
         '================================================================',
       )
       console.error(result.message)
-      console.error(
-        '\nPRs cannot be tested or merged on top of a broken mainline.',
-      )
-      console.error('Fix main first or name your branch fix-main/* to bypass.')
+      if (!result.mutexBlocked) {
+        console.error(
+          '\nPRs cannot be tested or merged on top of a broken mainline.',
+        )
+        console.error(
+          "To land a hotfix for main, prefix the PR title with 'fix-main:'.",
+        )
+      }
       console.error(
         '================================================================\n',
       )
@@ -134,7 +198,10 @@ export function main(): void {
   } catch (err) {
     const error = err as Error
     if (process.env.GITHUB_ACTIONS) {
-      console.error('Failed to query mainline runs via gh CLI:', error.message)
+      console.error(
+        'Failed to execute mainline health gate via gh CLI:',
+        error.message,
+      )
       process.exit(1)
     } else {
       console.warn('Unable to verify mainline health locally:', error.message)
