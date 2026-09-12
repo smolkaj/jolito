@@ -73,19 +73,12 @@ jobs:
           test -n "$IPAD_UDID"
           echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
           echo "IPAD_UDID=$IPAD_UDID" >> "$GITHUB_ENV"
-      - name: Build Xcode scheme and boot iPhone simulator
+      - name: Capture iPhone native screenshots
         timeout-minutes: 8
         run: |
-          xcrun simctl boot "$IPHONE_UDID" 2>/dev/null || true
-          xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
-            -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
-            -configuration Release -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES build
+          xcrun simctl boot "$IPHONE_UDID"
           xcrun simctl bootstatus "$IPHONE_UDID" -b
           xcrun simctl status_bar "$IPHONE_UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
-      - name: Run iPhone native screenshots and lifecycle test
-        run: |
-          xcrun simctl boot "$IPAD_UDID" 2>/dev/null || true
           xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
             -destination "platform=iOS Simulator,id=$IPHONE_UDID" \
             -configuration Release -derivedDataPath build/DerivedData \
@@ -93,9 +86,11 @@ jobs:
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 300 \
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
-          xcrun simctl shutdown "$IPHONE_UDID" 2>/dev/null || true
-      - name: Run iPad native screenshots and lifecycle test
+          xcrun simctl shutdown "$IPHONE_UDID"
+      - name: Capture iPad native screenshots
+        timeout-minutes: 6
         run: |
+          xcrun simctl boot "$IPAD_UDID"
           xcrun simctl bootstatus "$IPAD_UDID" -b
           xcrun simctl status_bar "$IPAD_UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
           xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
@@ -105,7 +100,7 @@ jobs:
             -parallel-testing-enabled NO -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 300 \
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
-          xcrun simctl shutdown "$IPAD_UDID" 2>/dev/null || true
+          xcrun simctl shutdown "$IPAD_UDID"
       - name: Export screenshots
         if: ${{ !cancelled() }}
         run: |
