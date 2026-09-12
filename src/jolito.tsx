@@ -2608,12 +2608,24 @@ function LoadedApp({
                           {communityStats.learners === 1
                             ? 'learner'
                             : 'learners'}
+                          <span
+                            className="community-stat-delimiter"
+                            aria-hidden="true"
+                          >
+                            &nbsp;·
+                          </span>
                         </span>
                         <span className="community-stat-item">
                           <strong className="community-stat-number">
                             {communityStats.cards.toLocaleString()}
                           </strong>{' '}
                           {communityStats.cards === 1 ? 'card' : 'cards'}
+                          <span
+                            className="community-stat-delimiter"
+                            aria-hidden="true"
+                          >
+                            &nbsp;·
+                          </span>
                         </span>
                         <span className="community-stat-item">
                           <strong className="community-stat-number">

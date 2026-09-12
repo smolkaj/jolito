@@ -4,6 +4,7 @@ import type {
   CommunityStatsService,
 } from '../../application/ports'
 import { communityStatsSchema } from '../../domain/community-stats'
+import { withRequestDeadline } from '../request-lifetime'
 
 export interface CommunityStatsConfig {
   supabaseUrl?: string
@@ -48,50 +49,46 @@ export class BrowserCommunityStatsService implements CommunityStatsService {
       return null
     }
 
-    const fetchSignal = signal
-      ? AbortSignal.any([signal, AbortSignal.timeout(5_000)])
-      : AbortSignal.timeout(5_000)
-
     // 1. Try edge endpoint first (cached on Cloudflare edge with $0 DB cost)
     try {
-      const res = await this.fetchFn(this.statsEndpoint, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        signal: fetchSignal,
-      })
-      if (res.ok) {
+      const stats = await withRequestDeadline(async (fetchSignal) => {
+        const res = await this.fetchFn(this.statsEndpoint, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: fetchSignal,
+        })
+        if (!res.ok) return null
         const json: unknown = await res.json()
         const parsed = communityStatsSchema.safeParse(json)
-        if (parsed.success) {
-          return parsed.data
-        }
-      }
+        return parsed.success ? parsed.data : null
+      }, signal)
+      if (stats) return stats
     } catch {
-      // Fall through to direct Supabase RPC fallback on native platforms
+      // Fall through to direct RPC when native
     }
 
     // 2. Direct Supabase RPC fallback (native Capacitor only, e.g. iOS where edge routes don't exist on origin)
     if (this.isNative && this.supabaseUrl && this.supabaseAnonKey) {
       try {
-        const res = await this.fetchFn(
-          `${this.supabaseUrl}/rest/v1/rpc/get_community_stats`,
-          {
-            method: 'POST',
-            headers: {
-              apikey: this.supabaseAnonKey,
-              Authorization: `Bearer ${this.supabaseAnonKey}`,
-              'Content-Type': 'application/json',
+        const stats = await withRequestDeadline(async (fetchSignal) => {
+          const res = await this.fetchFn(
+            `${this.supabaseUrl}/rest/v1/rpc/get_community_stats`,
+            {
+              method: 'POST',
+              headers: {
+                apikey: this.supabaseAnonKey,
+                Authorization: `Bearer ${this.supabaseAnonKey}`,
+                'Content-Type': 'application/json',
+              },
+              signal: fetchSignal,
             },
-            signal: fetchSignal,
-          },
-        )
-        if (res.ok) {
+          )
+          if (!res.ok) return null
           const json: unknown = await res.json()
           const parsed = communityStatsSchema.safeParse(json)
-          if (parsed.success) {
-            return parsed.data
-          }
-        }
+          return parsed.success ? parsed.data : null
+        }, signal)
+        if (stats) return stats
       } catch {
         // Fall through to graceful null
       }

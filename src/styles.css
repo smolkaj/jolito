@@ -811,7 +811,7 @@ summary:focus-visible,
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0;
+  gap: 6px;
   min-height: 1.25rem;
   margin-top: 16px;
   font-size: 0.8125rem;
@@ -821,14 +821,10 @@ summary:focus-visible,
 }
 
 .community-stat-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 4px;
+  white-space: nowrap;
 }
 
-.community-stat-item + .community-stat-item::before {
-  content: '·';
-  margin-inline: 8px;
+.community-stat-delimiter {
   color: var(--ink-faint);
   user-select: none;
 }

@@ -175,4 +175,43 @@ describe('BrowserCommunityStatsService', () => {
     const stats = await service.getCommunityStats()
     expect(stats).toBeNull()
   })
+
+  it('operates safely on iOS 15/16 baseline without static AbortSignal helpers', async () => {
+    vi.stubGlobal(
+      'AbortSignal',
+      new Proxy(AbortSignal, {
+        get(target, key, receiver) {
+          if (key === 'any' || key === 'timeout') {
+            return undefined
+          }
+          return Reflect.get(target, key, receiver) as unknown
+        },
+      }),
+    )
+
+    try {
+      const mockFetch = vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            learners: 3,
+            cards: 284,
+            reviews: 310,
+          }),
+          { status: 200 },
+        ),
+      )
+      const service = new BrowserCommunityStatsService({
+        fetchFn: mockFetch,
+      })
+      const controller = new AbortController()
+      const stats = await service.getCommunityStats(controller.signal)
+      expect(stats).toEqual({
+        learners: 3,
+        cards: 284,
+        reviews: 310,
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

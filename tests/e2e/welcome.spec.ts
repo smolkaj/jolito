@@ -1549,3 +1549,61 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
+
+test('renders community stats quietly in welcome hero and wraps without leading punctuation on narrow screens', async ({
+  page,
+}) => {
+  await page.route('**/api/stats', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        learners: 1420,
+        cards: 24500,
+        reviews: 89102,
+      }),
+    })
+  })
+
+  // 1. Desktop viewport
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+  const statsContainer = page.locator('.hero-community-stats')
+  await expect(statsContainer).toBeVisible()
+  await expect(statsContainer).toContainText('1,420 learners')
+  await expect(statsContainer).toContainText('24,500 cards')
+  await expect(statsContainer).toContainText('89,102 card reviews')
+
+  await page.screenshot({ path: '/tmp/pr318-desktop-hero.png' })
+
+  // 2. Mobile 360px viewport
+  await page.setViewportSize({ width: 360, height: 740 })
+  await page.screenshot({ path: '/tmp/pr318-mobile-360.png' })
+  await statsContainer.screenshot({ path: '/tmp/pr318-stats-360.png' })
+
+  // 3. Ultra-narrow 320px viewport
+  await page.setViewportSize({ width: 320, height: 600 })
+  await page.screenshot({ path: '/tmp/pr318-mobile-320.png' })
+  await statsContainer.screenshot({ path: '/tmp/pr318-stats-320.png' })
+
+  // Verify that wrapped items don't have leading dots
+  const wrappedLines = await statsContainer.evaluate((el) => {
+    const items = Array.from(el.querySelectorAll('.community-stat-item'))
+    const groups: { [top: number]: string[] } = {}
+    for (const item of items) {
+      const top = Math.round(item.getBoundingClientRect().top)
+      groups[top] = groups[top] || []
+      groups[top].push(item.textContent?.trim() || '')
+    }
+    return Object.values(groups)
+  })
+
+  // Each line must begin with digits, not middle dots or delimiters
+  for (const line of wrappedLines) {
+    expect(line[0]).toMatch(/^[0-9]/)
+  }
+
+  // Verify accessibility
+  const results = await auditAccessibility(page)
+  expect(results.violations).toEqual([])
+})
