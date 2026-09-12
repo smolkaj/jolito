@@ -9,6 +9,13 @@ for (const width of [320, 1280]) {
       verb: 'comer',
       person: 0,
       reviews: 0,
+      highlights: ['ate'],
+    },
+    {
+      topic: 'preterite',
+      verb: 'comer',
+      person: 0,
+      reviews: 1,
       highlights: ['I', 'ate'],
     },
     {
@@ -24,6 +31,13 @@ for (const width of [320, 1280]) {
       person: 2,
       reviews: 0,
       highlights: ['has talked'],
+    },
+    {
+      topic: 'gerund',
+      verb: 'comer',
+      person: 0,
+      reviews: 0,
+      highlights: ['am', 'eating'],
     },
   ] as const) {
     test(`English alignment for ${example.topic} ${example.person}/${example.reviews} at ${width}px`, async ({
@@ -68,7 +82,7 @@ for (const width of [320, 1280]) {
         ...example.highlights,
       ])
       await page.screenshot({
-        path: `test-results/english-${example.topic}-${example.person}-${width}-prompt.png`,
+        path: `test-results/english-${example.topic}-${example.person}-${example.reviews}-${width}-prompt.png`,
         fullPage: true,
       })
       await page.getByRole('textbox').press('Enter')
@@ -91,7 +105,7 @@ for (const width of [320, 1280]) {
       expect((await translation.boundingBox())!.height).toBe(before!.height)
       expect((await auditAccessibility(page)).violations).toEqual([])
       await page.screenshot({
-        path: `test-results/english-${example.topic}-${example.person}-${width}.png`,
+        path: `test-results/english-${example.topic}-${example.person}-${example.reviews}-${width}.png`,
         fullPage: true,
       })
       await page.getByRole('button', { name: 'Grammar', exact: true }).click()
