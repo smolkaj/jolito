@@ -20,6 +20,12 @@ git worktree remove ../jolito-<task> && git worktree prune
 - After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
 - For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 
+# Visual verification & remote inspection
+
+- The user connects remotely over `ghostty` + `mosh` + `zellij`.
+- Because `mosh` synchronizes character cells and drops terminal graphics protocols (Kitty / Sixel), terminal `chafa` previews render via Unicode character glyphs with low resolution (insufficient for fine typography). Do not provide terminal `chafa` preview commands.
+- For UI inspections and visual verification, provide the live Cloudflare branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and GitHub PR image diffs/attachments. If sharing preview captures before opening a PR, upload rendered preview images to a viewable web host with at least 24–72h persistence (e.g. Litterbox 72h: `curl -s -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@<path>" https://litterbox.catbox.moe/resources/internals/api.php`) so the user can inspect high-resolution visuals directly in the browser.
+
 # Hindsight reflection
 
 Before submitting a PR for review, pause and run the [hindsight reflection](.agents/skills/hindsight-reflection) to evaluate whether the change is a genuine improvement, whether starting fresh yields a simpler design, or if the direction should be dropped.
