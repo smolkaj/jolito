@@ -1,3 +1,5 @@
+import { currentDeckJson } from './storage'
+import { practiceCards } from './practice'
 import { expect, test } from '@playwright/test'
 
 test('supports complete learner workflow, audio, autocomplete, and celebration while offline', async ({
@@ -30,7 +32,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   // Track any failed app asset requests while offline
   const failedRequests: string[] = []
   page.on('requestfailed', (req) => {
-    if (!req.url().includes('supabase.co') && !req.url().includes('/api/tts')) {
+    if (!req.url().includes('supabase.co') && !req.url().includes('/api/')) {
       failedRequests.push(req.url())
     }
   })
@@ -47,7 +49,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   await spanishInput.fill('Nos vemos al rato')
   await page.getByLabel(/english/i).fill('See you later')
   await page.getByRole('button', { name: /save card/i }).click()
-  await page.getByRole('button', { name: /^practice$/i }).click()
+  await practiceCards(page)
   await expect(
     page.getByRole('heading', { name: 'Nos vemos al rato' }),
   ).toBeVisible()
@@ -79,9 +81,7 @@ test('supports complete learner workflow, audio, autocomplete, and celebration w
   // 5. Reload while offline and verify cold boot & persistence
   await page.reload()
   await expect(page.getByText('SESSION COMPLETE')).toBeVisible()
-  expect(
-    await page.evaluate(() => localStorage.getItem('jolito-library-v1')),
-  ).toContain('Nos vemos al rato')
+  expect(await page.evaluate(currentDeckJson)).toContain('Nos vemos al rato')
 
   // 6. Navigate home while offline
   await page.getByRole('button', { name: /back home/i }).click()

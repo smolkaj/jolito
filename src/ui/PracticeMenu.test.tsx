@@ -1,0 +1,80 @@
+import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { expect, it, vi } from 'vitest'
+import { PracticeMenu } from './PracticeMenu'
+
+it('supports keyboard opening, navigation, dismissal and the latest action after rerender', async () => {
+  const user = userEvent.setup()
+  const onCards = vi.fn()
+  const onGrammar = vi.fn()
+  const app = render(<PracticeMenu onCards={onCards} onGrammar={onGrammar} />)
+  const trigger = screen.getByRole('button', { name: 'Practice' })
+  trigger.focus()
+  await user.keyboard('{ArrowDown}')
+  expect(screen.getByRole('menuitem', { name: 'Cards' })).toHaveFocus()
+  await user.keyboard('{ArrowDown}')
+  expect(screen.getByRole('menuitem', { name: 'Grammar' })).toHaveFocus()
+  await user.keyboard('{Control>}c{/Control}')
+  expect(screen.getByRole('menuitem', { name: 'Grammar' })).toHaveFocus()
+  await user.keyboard('{ArrowDown}{End}{Home}gC')
+  expect(screen.getByRole('menuitem', { name: 'Cards' })).toHaveFocus()
+  await user.keyboard('{Escape}')
+  expect(trigger).toHaveFocus()
+  expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  await user.keyboard('{ArrowUp}')
+  expect(screen.getByRole('menuitem', { name: 'Grammar' })).toHaveFocus()
+  await user.keyboard('{ArrowUp}')
+  expect(screen.getByRole('menuitem', { name: 'Cards' })).toHaveFocus()
+  const updatedCards = vi.fn()
+  app.rerender(<PracticeMenu onCards={updatedCards} onGrammar={onGrammar} />)
+  fireEvent(document, new Event('visibilitychange'))
+  expect(screen.getByRole('menuitem', { name: 'Cards' })).toHaveFocus()
+  await user.keyboard('{Enter}')
+  expect(updatedCards).toHaveBeenCalledOnce()
+  expect(onCards).not.toHaveBeenCalled()
+  expect(onGrammar).not.toHaveBeenCalled()
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  await user.click(trigger)
+  await user.click(screen.getByRole('menuitem', { name: 'Grammar' }))
+  expect(onGrammar).toHaveBeenCalledOnce()
+})
+
+it('dismisses without selecting on outside interaction and Tab, and removes its listener on teardown', async () => {
+  const user = userEvent.setup()
+  const action = vi.fn()
+  const add = vi.spyOn(document, 'addEventListener')
+  const remove = vi.spyOn(document, 'removeEventListener')
+  const app = render(
+    <>
+      <PracticeMenu onCards={action} onGrammar={action} />
+      <button>Outside</button>
+    </>,
+  )
+  const trigger = screen.getByRole('button', { name: 'Practice' })
+  await user.click(trigger)
+  await user.click(screen.getByRole('button', { name: 'Outside' }))
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Outside' })).toHaveFocus()
+  await user.click(trigger)
+  await user.tab()
+  expect(screen.getByRole('button', { name: 'Outside' })).toHaveFocus()
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  await user.click(trigger)
+  await user.tab({ shift: true })
+  expect(trigger).toHaveFocus()
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  await user.click(trigger)
+  await user.click(trigger)
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  await user.click(trigger)
+  const listeners = add.mock.calls.filter(([event]) => event === 'pointerdown')
+  app.unmount()
+  for (const [event, listener] of listeners) {
+    expect(remove).toHaveBeenCalledWith(event, listener)
+  }
+  fireEvent.pointerDown(document.body)
+  fireEvent.keyDown(document, { key: 'Enter' })
+  expect(action).not.toHaveBeenCalled()
+  add.mockRestore()
+  remove.mockRestore()
+})

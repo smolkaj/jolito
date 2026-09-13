@@ -30,6 +30,14 @@ The PR author briefly describes behavior changed and verification performed. Scr
 
 Coverage is a guardrail, not a score. The `src/domain` and `src/application` core must maintain at least 95% statement, branch, function, and line coverage. UI coverage is judged by behavior-focused integration and browser tests rather than a blanket percentage.
 
+## Generalized testing & defect prevention
+
+When writing regression tests for bugs or fixing escaped defects:
+
+- **Generalize beyond the point bug:** Tests must aim to generalize beyond a specific bug and catch an entire class of similar bugs. Never write a test that only guards the one line or exact parameter that failed.
+- **Hardware & platform round-trip lifecycle contracts:** Browser/hardware adapters (Web Audio, Speech Synthesis, WakeLock, Storage Persistence, Service Workers) must be tested against complete round-trip lifecycles (`active -> suspended/backgrounded/interrupted -> wake/resume -> active`), not isolated entry transitions. Tests must also verify teardown immobility: once `destroy()` is called, subsequent events or gestures must never revive listeners, timers, or background work.
+- **Asynchronous interleaving tests:** Core interactive loops (such as active study sessions) must be tested with simulated concurrent interruptions (e.g. background cloud sync reconciliation, token updates, tab visibility changes, or viewport re-orientation mid-session) to verify the queue and active state remain invariant.
+
 ## Accessibility and performance
 
 Keyboard operation is a core Jolito feature. Every primary workflow must work without a mouse, retain obvious focus, and expose semantic labels. Browser tests run automated accessibility scans for key screens. We will add visual-regression and performance budgets when the first stable product surfaces exist, so the baselines represent intentional design rather than a prototype.

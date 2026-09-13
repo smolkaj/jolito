@@ -111,8 +111,11 @@ export function sessionPracticedCount(session: StudySession): number {
   return session.practicedCardIds?.length ?? 0
 }
 
-export function formatPracticedSummary(practicedCount: number): string {
-  return `${practicedCount} ${practicedCount === 1 ? 'card' : 'cards'} practiced`
+export function formatPracticedSummary(
+  practicedCount: number,
+  unit: 'card' | 'form' = 'card',
+): string {
+  return `${practicedCount} ${unit}${practicedCount === 1 ? '' : 's'} practiced`
 }
 
 export function filterSessionCards(

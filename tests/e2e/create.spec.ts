@@ -85,3 +85,42 @@ for (const vp of testViewports) {
     }
   })
 }
+
+test('typing english first mounts suggestions below english field and auto-fills on selection', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 832 })
+  await page.goto('/#/create')
+  await page.waitForLoadState('networkidle')
+
+  const englishInput = page.locator('#english')
+  const spanishInput = page.locator('#spanish')
+  await englishInput.waitFor({ state: 'visible' })
+
+  await englishInput.pressSequentially('avocado')
+
+  const suggestions = page.locator('#english-suggestions')
+  await suggestions.waitFor({ state: 'visible' })
+
+  // Verify the suggestion container is inside the English field group, not Spanish
+  const englishFieldGroup = page
+    .locator('.field-group')
+    .filter({ has: englishInput })
+  await expect(englishFieldGroup.locator('#english-suggestions')).toBeVisible()
+
+  // Verify primary text is avocado and secondary is aguacate
+  const option = suggestions.locator('.suggestion-item').first()
+  await expect(option.locator('.suggestion-primary')).toHaveText('avocado')
+  await expect(option.locator('.suggestion-secondary')).toHaveText('aguacate')
+
+  // Capture screenshot of the English suggestions open below the English field
+  await page.screenshot({
+    path: '/tmp/jolito-english-suggestions-preview.png',
+  })
+
+  // Click suggestion
+  await option.click()
+  await expect(spanishInput).toHaveValue('aguacate')
+  await expect(englishInput).toHaveValue('avocado')
+  await expect(suggestions).not.toBeVisible()
+})

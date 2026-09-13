@@ -13,6 +13,7 @@ infrastructure ────────────┴────────�
 
 ## Engineering philosophy
 
+- **Optimize for agents, not humans.** The primary authors and maintainers of this codebase are autonomous coding agents. Design architecture, modularity, and interfaces for agent comprehension, shallow call-graph traversal, and concurrent worktree evolution, rather than human ergonomic habits or dogmatic abstractions.
 - **Simplicity above all.** Every layer of indirection, abstraction, or "just in case" parameter must justify its existence. When in doubt, leave it out.
 - **Reject ambient magic & dual systems.** Favor explicit, inspectable code over invisible runtime interception or complex build-time code generation. Avoid building static-only solutions that will require a second, divergent mechanism for dynamic/user-created data later.
 - **Know the ideal north star.** Design the unconstrained ideal first. If taking a pragmatic shortcut, explicitly name what was traded away and why.
@@ -29,7 +30,11 @@ infrastructure ────────────┴────────�
 5. **Validate boundaries with Zod.** Untrusted input (storage, network, AI payloads, import archives) must be validated with runtime Zod schemas.
 6. **Data migrations are mandatory.** When changing storage representations, provide an explicit, tested migration for existing cards.
 7. **Visual verification is mandatory.** DOM presence is not visual correctness. Author and reviewer must visually verify rendered appearance, layering, and contrast on UI changes.
-8. **Zero idle activity & deterministic teardown.** When no user interaction or media playback is active, the application must consume zero CPU cycles and zero battery. No ambient polling loops (`setInterval`), unthrottled `requestAnimationFrame` cycles, or persistent network keep-alives may run during idle. Media pipelines (including Web Audio `AudioContext`) must suspend within seconds of inactivity and immediately upon tab backgrounding (`visibilitychange` / `pagehide`). All observers, listeners, and subsystem handles must implement explicit `destroy()` teardown.
+8. **Zero idle activity, lifecycle resilience & deterministic teardown.** When no user interaction or media playback is active, the application must consume zero CPU cycles and zero battery. No ambient polling loops (`setInterval`), unthrottled `requestAnimationFrame` cycles, or persistent network keep-alives may run during idle. Media pipelines (including Web Audio `AudioContext`) must suspend within seconds of inactivity and immediately upon tab backgrounding (`visibilitychange` / `pagehide`).
+   - _Round-trip lifecycle resilience:_ Suspended subsystems must cleanly, automatically re-arm so subsequent user interaction immediately wakes them without wedged state, stalled promises, or missing gesture listeners.
+   - _Teardown immobility:_ Destroyed subsystems must be strictly inert; subsequent events, visibility toggles, or user gestures must never revive listeners, timers, or background activity.
+9. **Re-entrant asynchronous resilience & zero-dependency subscriptions.** Active UI state machines (such as review sessions) must be resilient to asynchronous background events (cloud sync reconciliation, storage events, auth changes, device rotation) without reverting the active queue or corrupting user progress. Long-lived event subscriptions must never close over volatile React state or callbacks in `useEffect` dependency arrays; they must use stable refs or singleton dispatchers.
+10. **100% Config-as-code & zero manual drift.** All application infrastructure, domain configuration, DNS records (Cloudflare, Resend DKIM/SPF/MX), cloud authentication settings (Supabase Auth Site URL, redirect URI allowlists, custom SMTP), email templates, and database schemas must be 100% defined as code and version-controlled. No manual dashboard tweaks, uncommitted curl calls, or imperative console clicks may serve as the permanent source of truth. Any environment setup, synchronization, or deployment must be reproducible end-to-end via versioned scripts (`npm run setup:domain`, `npm run setup:email`, migrations, Wrangler config).
 
 ## Dependency rules
 
@@ -57,6 +62,25 @@ supabase/migrations
 
 Do not add a build orchestrator or microservices until repository scale proves
 the need.
+
+## Practice presentation boundary
+
+Vocabulary and grammar use one practice page branch for navigation, progress, notices
+and dialogs. `PracticeCard` owns the recall/feedback/rating interaction and keyboard
+lifecycle; `SessionComplete` owns completion presentation. Learning modes supply
+content and capabilities, while their session hooks own scheduling and persistence.
+`useStudyAudio` owns speech interruption and teardown for both modes.
+Domain locale selection also owns content language: `PracticeCard` derives the input
+and feedback language from its card, and `AnswerComparison` requires that language.
+Prompts declare their content language; English interface labels remain English.
+Grammar topics share one catalog for canonical forms, labels and pattern groups.
+Identity validation, queue selection and spoken contexts use this catalog; a new tense
+adds content rather than another session or audio implementation.
+
+Do not fork shared practice controls or override their geometry in mode-specific CSS.
+Compare corresponding states across modes when changing the shared experience. The
+[practice coherence audit](features/practice-coherence-audit.md) records the deliberate
+content differences and the browser/lifecycle contracts that enforce this boundary.
 
 ## Current and target topology
 

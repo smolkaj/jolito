@@ -257,6 +257,126 @@ describe('LayeredNeuralSpeaker', () => {
     })
   })
 
+  it('awaits in-flight prefetch for explicit user clicks with a 1500ms grace window', async () => {
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('aguacate', 'es-MX', {
+      cardSeed: 'sample-aguacate',
+      explicit: true,
+    })
+    expect(played).toBe(true)
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      1500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: true }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('initiates and awaits fetch for uncached phrases on explicit user interaction while online', async () => {
+    const fetchSpy = vi
+      .spyOn(neuralEngine, 'fetchAndCacheAudio')
+      .mockResolvedValue(true)
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('palabra nueva', 'es-MX', {
+      cardSeed: 'seed-123',
+      explicit: true,
+    })
+    expect(played).toBe(true)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'palabra nueva',
+      'es-MX',
+      expect.objectContaining({ cardSeed: 'seed-123' }),
+    )
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'palabra nueva',
+      'es-MX',
+      expect.any(String),
+      1500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'palabra nueva',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: true }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('prioritizes explicit grace timeout (1500ms) over disk-cache timeout (150ms) on explicit clicks', async () => {
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'hasDiskAudio').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('aguacate', 'es-MX', {
+      cardSeed: 'sample-aguacate',
+      explicit: true,
+    })
+    expect(played).toBe(true)
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      1500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'aguacate',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: true }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
   it('discards delayed awaitAudio playback and fallback when superseded by another speech action', async () => {
     let resolveAwaitAudio!: (ready: boolean) => void
     const awaitPromise = new Promise<boolean>((resolve) => {
@@ -475,11 +595,19 @@ describe('NeuralVoiceEngine', () => {
     expect(STARTER_PHRASES.length).toBeGreaterThan(0)
     expect(
       STARTER_PHRASES.some(
-        (p) => p.text === 'aguacate' && p.locale === 'es-MX',
+        (p) =>
+          p.text === 'aguacate' &&
+          p.locale === 'es-MX' &&
+          p.cardSeed === 'sample-aguacate',
       ),
     ).toBe(true)
     expect(
-      STARTER_PHRASES.some((p) => p.text === 'avocado' && p.locale === 'en-US'),
+      STARTER_PHRASES.some(
+        (p) =>
+          p.text === 'avocado' &&
+          p.locale === 'en-US' &&
+          p.cardSeed === 'sample-aguacate',
+      ),
     ).toBe(true)
   })
 
@@ -1882,5 +2010,125 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
     speaker.destroy()
     expect(destroySpy).toHaveBeenCalled()
     expect(fallbackDestroySpy).toHaveBeenCalled()
+  })
+
+  it('re-arms unlock listeners in NeuralVoiceEngine after suspension so gestures wake context', async () => {
+    const engine = new NeuralVoiceEngine()
+    const mockCtxObj = {
+      state: 'suspended' as AudioContextState,
+      destination: {},
+      resume: vi.fn().mockImplementation(() => {
+        mockCtxObj.state = 'running'
+        return Promise.resolve()
+      }),
+      suspend: vi.fn().mockImplementation(() => {
+        mockCtxObj.state = 'suspended'
+        return Promise.resolve()
+      }),
+    }
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockCtxObj as unknown as AudioContext
+
+    // 1. Initial touch unlocks and removes listeners
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(mockCtxObj.resume).toHaveBeenCalledTimes(1)
+
+    // 2. Suspend engine
+    await engine.suspend()
+    expect(mockCtxObj.state).toBe('suspended')
+
+    // 3. Subsequent gesture wakes context back up
+    mockCtxObj.resume.mockClear()
+    window.dispatchEvent(new Event('touchstart'))
+    expect(mockCtxObj.resume).toHaveBeenCalledTimes(1)
+
+    engine.destroy()
+  })
+
+  it('cancels idle suspend and re-arms unlock listeners on orientationchange and visibilitychange visible in NeuralVoiceEngine', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine(200, 2000)
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+      onended: null as (() => void) | null,
+    }
+    const mockCtxObj = {
+      state: 'running' as AudioContextState,
+      createBufferSource: vi.fn().mockReturnValue(mockSource),
+      destination: {},
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockImplementation(() => {
+        mockCtxObj.state = 'suspended'
+        return Promise.resolve()
+      }),
+    }
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockCtxObj as unknown as AudioContext
+
+    const buffer = { duration: 1.0 } as unknown as AudioBuffer
+    engine.registerAudioBuffer('hola', 'es-MX', buffer)
+    engine.playAudio('hola', 'es-MX')
+
+    // Playback finishes, idle timer starts
+    mockSource.onended?.()
+
+    // Screen rotates
+    window.dispatchEvent(new Event('orientationchange'))
+
+    // Advance halfway through idle delay
+    vi.advanceTimersByTime(1000)
+    expect(mockCtxObj.suspend).not.toHaveBeenCalled()
+
+    // Visibility visible event occurs
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    engine.destroy()
+    vi.useRealTimers()
+  })
+
+  it('does not re-install unlock listeners or resume audio context after destroy', () => {
+    vi.useFakeTimers()
+    const engine = new NeuralVoiceEngine(200, 2000)
+    const mockCtxObj = {
+      state: 'suspended' as AudioContextState,
+      resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockResolvedValue(undefined),
+    }
+    ;(engine as unknown as { audioContext: AudioContext }).audioContext =
+      mockCtxObj as unknown as AudioContext
+
+    engine.destroy()
+    mockCtxObj.resume.mockClear()
+    mockCtxObj.suspend.mockClear()
+
+    // Gestures should not resume
+    window.dispatchEvent(new Event('pointerdown'))
+    window.dispatchEvent(new Event('touchstart'))
+    window.dispatchEvent(new Event('keydown'))
+    expect(mockCtxObj.resume).not.toHaveBeenCalled()
+
+    // Lifecycle events should not re-arm listeners
+    window.dispatchEvent(new Event('orientationchange'))
+    window.dispatchEvent(new Event('pageshow'))
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    window.dispatchEvent(new Event('pointerdown'))
+    expect(mockCtxObj.resume).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(5000)
+    expect(mockCtxObj.suspend).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 })

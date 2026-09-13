@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 import type { AuthService, AuthUser } from '../../src/application/ports'
-import type { StudyCard } from '../../src/domain/card'
-import type { SupabaseAuthService } from '../../src/infrastructure/supabase/auth-service'
+import { createStudyCards, type StudyCard } from '../../src/domain/card'
 import { SupabaseFeedbackService } from '../../src/infrastructure/supabase/feedback-service'
 import { SupabaseSyncService } from '../../src/infrastructure/supabase/sync-service'
 
@@ -49,23 +49,45 @@ describe('Supabase Live Stack Integration', () => {
     authService: AuthService
   }> {
     const email = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`
-    const password = 'integration-test-password-123!'
 
-    const signupRes = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
+    const signupRes = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/generate_link`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type: 'magiclink', email }),
       },
-      body: JSON.stringify({ email, password }),
-    })
+    )
 
     if (!signupRes.ok) {
       const errText = await signupRes.text()
       throw new Error(`Failed to create test user: ${errText}`)
     }
 
-    const data = (await signupRes.json()) as {
+    const link = z
+      .object({
+        hashed_token: z.string(),
+        verification_type: z.enum(['signup', 'magiclink']),
+      })
+      .parse(await signupRes.json())
+    const verifyRes = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: link.verification_type,
+        token_hash: link.hashed_token,
+      }),
+    })
+    if (!verifyRes.ok)
+      throw new Error(`Failed to verify test user: HTTP ${verifyRes.status}`)
+    const data = (await verifyRes.json()) as {
       access_token: string
       user: { id: string; email: string }
     }
@@ -77,6 +99,8 @@ describe('Supabase Live Stack Integration', () => {
     const token = data.access_token
 
     const authService: AuthService = {
+      getCurrentUser: () => authUser,
+      isCurrentOwner: (ownerId: string | null) => ownerId === authUser.id,
       getUser: () => Promise.resolve(authUser),
       getAccessToken: () => Promise.resolve(token),
       refreshSession: () => Promise.resolve(token),
@@ -91,6 +115,8 @@ describe('Supabase Live Stack Integration', () => {
 
   it('allows guest to submit feedback end-to-end to local Supabase', async () => {
     const dummyAuth: AuthService = {
+      getCurrentUser: () => null,
+      isCurrentOwner: (ownerId: string | null) => ownerId === null,
       getUser: () => Promise.resolve(null),
       getAccessToken: () => Promise.resolve(null),
       sendMagicLink: () => Promise.resolve({ success: true }),
@@ -260,13 +286,13 @@ describe('Supabase Live Stack Integration', () => {
     const userB = await createRealTestUser('sync-b')
 
     const syncServiceA = new SupabaseSyncService(
-      userA.authService as unknown as SupabaseAuthService,
+      userA.authService,
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
       'device-a',
     )
     const syncServiceB = new SupabaseSyncService(
-      userB.authService as unknown as SupabaseAuthService,
+      userB.authService,
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
       'device-b',
@@ -288,11 +314,13 @@ describe('Supabase Live Stack Integration', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: Date.now(),
     }
 
     // 1. User A pushes deck
-    const pushResult = await syncServiceA.pushDeck([sampleCard], userA.user)
+    const pushResult = await syncServiceA.syncDeck([sampleCard], userA.user)
     expect(pushResult.success).toBe(true)
 
     // 2. User A pulls deck -> sees their card
@@ -305,15 +333,140 @@ describe('Supabase Live Stack Integration', () => {
     expect(pullB.success).toBe(true)
     expect(pullB.cards).toEqual([])
 
-    // 4. Anon user attempting to read decks via PostgREST is blocked by RLS
-    const anonRes = await fetch(`${SUPABASE_URL}/rest/v1/decks?select=*`, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    // 4. Anonymous callers cannot use the snapshot read RPC
+    const anonRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/read_deck_snapshot`,
+      {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
       },
+    )
+    expect(anonRes.status).toBe(401)
+  })
+  it('guides obsolete clients before parsing or writing, then resumes with the same local cards', async () => {
+    const { user, authService, accessToken } =
+      await createRealTestUser('upgrade')
+    const client = new SupabaseSyncService(
+      authService,
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      'upgrade',
+    )
+    const cards = createStudyCards(
+      {
+        spanish: 'guardar',
+        english: 'save',
+        context: '',
+        bidirectional: false,
+      },
+      'local',
+      0,
+    )
+    expect((await client.syncDeck(cards, user)).success).toBe(true)
+    const before = await client.pullDeck(user)
+    for (const method of ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE']) {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/decks?user_id=eq.${user.id}&select=*`,
+        {
+          method,
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Prefer: 'resolution=merge-duplicates',
+          },
+          ...(['POST', 'PATCH'].includes(method)
+            ? {
+                body: JSON.stringify({
+                  user_id: user.id,
+                  version: 3,
+                  device_id: 'obsolete',
+                  data: { cards: [] },
+                }),
+              }
+            : {}),
+        },
+      )
+      expect(response.status).toBe(409)
+      if (method !== 'HEAD') {
+        const error = z
+          .object({ message: z.string() })
+          .parse(await response.json())
+        expect(error.message).toContain('Update Jolito')
+        expect(error.message).toContain('Save')
+        expect(error.message).toContain('joli.to/update')
+      }
+      expect(await client.pullDeck(user)).toEqual(before)
+    }
+    const edited = [
+      ...cards,
+      ...createStudyCards(
+        {
+          spanish: 'seguir',
+          english: 'continue',
+          context: '',
+          bidirectional: false,
+        },
+        'next',
+        1,
+      ),
+    ]
+    const resumed = await client.syncDeck(edited, user)
+    expect(resumed.success).toBe(true)
+    expect((await client.pullDeck(user)).cards).toEqual(edited)
+  })
+  it('reconciles two real devices after both read the same server revision', async () => {
+    const { user, authService } = await createRealTestUser('concurrent-sync')
+    const device = (id: string) =>
+      new SupabaseSyncService(authService, SUPABASE_URL, SUPABASE_ANON_KEY, id)
+    const a = createStudyCards(
+      { spanish: 'uno', english: 'one', context: '', bidirectional: false },
+      'a',
+      0,
+    )
+    const b = createStudyCards(
+      { spanish: 'dos', english: 'two', context: '', bidirectional: false },
+      'b',
+      0,
+    )
+    const transport = globalThis.fetch
+    let reads = 0
+    let writes = 0
+    let release!: () => void
+    const bothRead = new Promise<void>((resolve) => {
+      release = resolve
     })
-    expect(anonRes.ok).toBe(true)
-    const anonRows = (await anonRes.json()) as unknown[]
-    expect(anonRows).toEqual([])
+    const intercepted = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const response = await transport(input, init)
+        const url = input instanceof Request ? input.url : input.toString()
+        if (url.endsWith('/rpc/read_deck_snapshot') && reads < 2) {
+          if (++reads === 2) release()
+          await bothRead
+        }
+        if (url.endsWith('/rpc/compare_and_set_deck')) writes++
+        return response
+      })
+    try {
+      const results = await Promise.all([
+        device('a').syncDeck(a, user),
+        device('b').syncDeck(b, user),
+      ])
+      expect(results).toEqual([
+        expect.objectContaining({ success: true }),
+        expect.objectContaining({ success: true }),
+      ])
+      const committed = await device('reader').pullDeck(user)
+      expect(committed.revision).toBe(2)
+      expect(committed.cards?.map((c) => c.id).sort()).toEqual(
+        [...a, ...b].map((c) => c.id).sort(),
+      )
+      expect(writes).toBe(3)
+    } finally {
+      intercepted.mockRestore()
+    }
   })
 })

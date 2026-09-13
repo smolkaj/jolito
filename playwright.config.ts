@@ -15,7 +15,14 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'webkit',
+      testMatch: 'welcome-scroll.spec.ts',
+      use: { ...devices['iPhone 13'] },
+    },
+  ],
   webServer: {
     command: `VITE_SUPABASE_URL=${supabaseUrl} VITE_SUPABASE_ANON_KEY=${supabaseAnonKey} npm run build && npm run preview -- --host 127.0.0.1 --port ${port}`,
     url: `http://127.0.0.1:${port}`,

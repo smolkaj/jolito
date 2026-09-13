@@ -23,16 +23,33 @@ git worktree remove ../jolito-<task> && git worktree prune
 # Visual verification & remote inspection
 
 - The user connects remotely over `ghostty` + `mosh` + `zellij`.
-- Because `mosh` synchronizes character cells and drops terminal graphics protocols (Kitty / Sixel), terminal `chafa` previews render via Unicode character glyphs with low resolution (insufficient for fine typography).
-- For UI inspections and visual verification, always upload rendered preview images to a viewable web host with at least 24–72h persistence (e.g. Litterbox 72h: `curl -s -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@<path>" https://litterbox.catbox.moe/resources/internals/api.php`, or GitHub PR attachments / commit links) alongside live Cloudflare branch previews, so the user can inspect high-resolution visuals directly in the browser without links expiring.
+- Because `mosh` synchronizes character cells and drops terminal graphics protocols (Kitty / Sixel), terminal `chafa` previews render via Unicode character glyphs with low resolution (insufficient for fine typography). Do not provide terminal `chafa` preview commands.
+- For UI inspections and visual verification, provide the live Cloudflare branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and GitHub PR image diffs/attachments. If sharing preview captures before opening a PR, upload rendered preview images to a viewable web host with at least 24–72h persistence (e.g. Litterbox 72h: `curl -s -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@<path>" https://litterbox.catbox.moe/resources/internals/api.php`) so the user can inspect high-resolution visuals directly in the browser.
+
+# Hindsight reflection
+
+Before submitting a PR for review, pause and run the [hindsight reflection](.agents/skills/hindsight-reflection) to evaluate whether the change is a genuine improvement, whether starting fresh yields a simpler design, or if the direction should be dropped.
 
 # Independent review loop
 
 Every PR must pass the [independent PR review loop](.agents/skills/independent-pr-review) before merge.
 
+# Escaped defect analysis & post-mortem
+
+Whenever investigating or fixing a bug observed by a user or in production:
+
+1. **Mandatory escape analysis:** Never treat a bug fix as just an isolated patch. Before declaring work complete, explicitly answer and document in the PR:
+   - **Root cause:** What was the underlying conceptual, state-machine, or architectural flaw?
+   - **Escape vector:** How did this reach main/production? Which PR introduced the regression?
+   - **Testing pyramid blind spot:** Why did the existing unit, integration, and CI/E2E gates pass when the bug was introduced? (e.g. mock fidelity divergence, 1-shot transition tests without round-trip verification, linear test scripts without asynchronous interleavings).
+2. **Generalize tests to catch the entire class:** Tests must aim to generalize beyond the specific bug and catch a whole class of similar bugs. Never write a test that only guards the one line or exact parameter that failed:
+   - For hardware/browser subsystems (audio, speech, network, persistence): write **round-trip lifecycle contract tests** (`active -> suspended/backgrounded/interrupted -> wake/resume -> active`) and **teardown immobility tests**.
+   - For UI flows and state machines: write **asynchronous interruption tests** verifying that concurrent events (background sync, token refresh, visibility toggles, storage events) mid-session do not revert or corrupt user progress.
+3. **Close the systemic gap:** The PR must introduce the preventative test or architectural invariant that would have blocked the original regression PR from merging. Do not declare a bug task complete until the testing blind spot itself is permanently closed.
+
 # Philosophy & invariants
 
 All agent work must strictly preserve the repository's [Engineering philosophy and core invariants](docs/ARCHITECTURE.md#engineering-philosophy) and [Design principles](docs/DESIGN.md):
 
-- **Philosophy:** Simplicity above all; reject ambient magic & dual systems; know the ideal north star; test-first & DAMP; walking skeleton first; churn is free. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#engineering-philosophy).
-- **Invariants:** Strictly $0.00 operating costs; local-first & offline by default; keyboard-first & accessible (zero WCAG violations); never fail silently; validate boundaries with Zod; data migrations are mandatory; visual verification is mandatory; zero idle activity & deterministic teardown. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#core-invariants).
+- **Philosophy:** Optimize for agents, not humans; simplicity above all; reject ambient magic & dual systems; know the ideal north star; test-first & DAMP; walking skeleton first; churn is free. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#engineering-philosophy).
+- **Invariants:** Strictly $0.00 operating costs; local-first & offline by default; keyboard-first & accessible (zero WCAG violations); never fail silently; validate boundaries with Zod; data migrations are mandatory; visual verification is mandatory; zero idle activity & deterministic teardown; 100% config-as-code & zero manual drift. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#core-invariants).

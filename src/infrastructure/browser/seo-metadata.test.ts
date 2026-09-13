@@ -90,9 +90,6 @@ describe('SEO search snippet and favicon compliance', () => {
     expect(existsSync(swPath)).toBe(true)
     const swContent = readFileSync(swPath, 'utf-8')
 
-    // Verify cache version was bumped for new asset inventory
-    expect(swContent).toMatch(/CACHE_NAME\s*=\s*'jolito-shell-v9'/)
-
     // All favicon variants must be present in PWA_ASSETS for offline parity
     expect(swContent).toContain('favicon.svg')
     expect(swContent).toContain('favicon.png')

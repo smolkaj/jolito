@@ -1,21 +1,23 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import type { StudyCard, UpdateCardParams } from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
-import { MexicoFlag, UsFlag } from '../icons'
+import { MexicoFlag, EnglishBadge } from '../icons'
 import { AudioButton } from '../AudioButton'
 import { handleFocusSelect } from '../utils'
 
 function EditCardModalInner({
   card,
-  cards = [],
+  cards,
   onClose,
   onSave,
+  saveError,
   onPlayAudio,
 }: {
   card: StudyCard
-  cards?: StudyCard[] | undefined
+  cards: StudyCard[]
   onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
+  onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
+  saveError?: string | null | undefined
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
@@ -23,6 +25,17 @@ function EditCardModalInner({
   const [context, setContext] = useState(card.context ?? '')
   const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const visibleError =
+    error === 'save-failed'
+      ? (saveError ??
+        'Your changes couldn’t be saved. Free up device storage, then try again.')
+      : error
+  const [submitAttempt, setSubmitAttempt] = useState(0)
+  const errorRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!visibleError) return
+    errorRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [visibleError, submitAttempt])
   const promptInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -33,8 +46,9 @@ function EditCardModalInner({
   const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
   const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
 
+  const currentCard = cards.find((current) => current.id === card.id)
   const isAlreadyNew =
-    card.schedule.state === 'new' && card.schedule.reviews === 0
+    currentCard?.schedule.state === 'new' && currentCard.schedule.reviews === 0
 
   const duplicateConflict = useMemo(() => {
     const matches = findDuplicateCards(cards, {
@@ -47,6 +61,7 @@ function EditCardModalInner({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
+    setSubmitAttempt((attempt) => attempt + 1)
     const trimmedPrompt = prompt.trim()
     const trimmedAnswer = answer.trim()
     if (!trimmedPrompt) {
@@ -58,12 +73,15 @@ function EditCardModalInner({
       return
     }
     setError(null)
-    onSave(card, {
-      prompt: trimmedPrompt,
-      answer: trimmedAnswer,
-      context: context.trim(),
+    const saved = onSave(card.id, {
+      ...(trimmedPrompt !== card.prompt ? { prompt: trimmedPrompt } : {}),
+      ...(trimmedAnswer !== card.answer ? { answer: trimmedAnswer } : {}),
+      ...(context.trim() !== card.context.trim()
+        ? { context: context.trim() }
+        : {}),
       resetProgress: isAlreadyNew ? false : resetProgress,
     })
+    if (saved === false) setError('save-failed')
   }
 
   return (
@@ -92,12 +110,6 @@ function EditCardModalInner({
           </button>
         </div>
 
-        {error && (
-          <div className="status-banner status-error" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
-
         {duplicateConflict && (
           <div className="status-banner edit-duplicate-notice" role="status">
             <p>
@@ -111,7 +123,7 @@ function EditCardModalInner({
           <div className="field-group">
             <div className="field-label-row">
               <label htmlFor="edit-prompt">
-                {isEsToEn ? <MexicoFlag /> : <UsFlag />}{' '}
+                {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}{' '}
                 {isEsToEn ? 'Mexican Spanish (Prompt)' : 'English (Prompt)'}
               </label>
               {prompt.trim() && (
@@ -139,7 +151,7 @@ function EditCardModalInner({
           <div className="field-group">
             <div className="field-label-row">
               <label htmlFor="edit-answer">
-                {isEsToEn ? <UsFlag /> : <MexicoFlag />}{' '}
+                {isEsToEn ? <EnglishBadge /> : <MexicoFlag />}{' '}
                 {isEsToEn ? 'English (Answer)' : 'Mexican Spanish (Answer)'}
               </label>
               {answer.trim() && (
@@ -179,26 +191,38 @@ function EditCardModalInner({
           </div>
 
           <label
-            className={`toggle-row edit-card-toggle-row ${isAlreadyNew ? 'disabled' : ''}`}
+            className={`toggle-row edit-card-toggle-row ${!currentCard || isAlreadyNew ? 'disabled' : ''}`}
           >
             <input
               id="edit-reset-progress"
               name="resetProgress"
               type="checkbox"
               checked={resetProgress && !isAlreadyNew}
-              disabled={isAlreadyNew}
+              disabled={!currentCard || isAlreadyNew}
               onChange={(e) => setResetProgress(e.target.checked)}
             />
             <span className="toggle" aria-hidden="true" />
             <div className="toggle-label-group">
               <span className="toggle-title">Reset learning progress</span>
               <span className="toggle-description">
-                {isAlreadyNew
-                  ? 'Card is already brand new (0 reviews)'
-                  : 'Treat as a new card and restart review history'}
+                {!currentCard
+                  ? 'This card is no longer in your deck.'
+                  : isAlreadyNew
+                    ? 'Card is already brand new (0 reviews)'
+                    : 'Treat as a new card and restart review history'}
               </span>
             </div>
           </label>
+
+          {visibleError && (
+            <div
+              ref={errorRef}
+              className="status-banner status-error"
+              role="alert"
+            >
+              <p>{visibleError}</p>
+            </div>
+          )}
 
           <div className="edit-modal-actions">
             <button
@@ -224,13 +248,15 @@ export function EditCardModal({
   cards,
   onClose,
   onSave,
+  saveError,
   onPlayAudio,
 }: {
   isOpen: boolean
   card: StudyCard | null
-  cards?: StudyCard[] | undefined
+  cards: StudyCard[]
   onClose: () => void
-  onSave: (card: StudyCard, updates: UpdateCardParams) => void
+  onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
+  saveError?: string | null | undefined
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
 }) {
   useEffect(() => {
@@ -254,6 +280,7 @@ export function EditCardModal({
       cards={cards}
       onClose={onClose}
       onSave={onSave}
+      saveError={saveError}
       onPlayAudio={onPlayAudio}
     />
   )

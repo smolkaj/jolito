@@ -17,6 +17,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    fileParallelism: !isIntegration,
     include: isIntegration
       ? ['tests/integration/**/*.test.ts']
       : ['src/**/*.test.{ts,tsx}'],

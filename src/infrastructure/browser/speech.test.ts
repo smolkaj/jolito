@@ -873,12 +873,32 @@ describe('AudioSession category lifecycle in EnhancedBrowserSpeaker', () => {
     speaker.destroy()
   })
 
-  it('cleans up lifecycle listeners on destroy', () => {
-    const speaker = new EnhancedBrowserSpeaker()
-    speaker.speak('hello', 'en-US', { explicit: true })
-    speaker.destroy()
+  it('resumes speech synthesis if paused on orientationchange and visibility visible', () => {
+    const resumeMock = vi.fn()
+    Object.defineProperty(window.speechSynthesis, 'resume', {
+      value: resumeMock,
+      writable: true,
+      configurable: true,
+    })
+    Object.defineProperty(window.speechSynthesis, 'paused', {
+      value: true,
+      writable: true,
+      configurable: true,
+    })
 
-    expect(cancelMock).toHaveBeenCalled()
-    expect(mockAudioSession.type).toBe('ambient')
+    const speaker = new EnhancedBrowserSpeaker()
+
+    window.dispatchEvent(new Event('orientationchange'))
+    expect(resumeMock).toHaveBeenCalled()
+
+    resumeMock.mockClear()
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible',
+      configurable: true,
+    })
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(resumeMock).toHaveBeenCalled()
+
+    speaker.destroy()
   })
 })

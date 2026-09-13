@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import {
+  grammarCardId,
+  grammarVerb,
+  grammarTopics,
+  type GrammarTopic,
+} from './grammar-catalog'
 
 export const grades = ['again', 'hard', 'good', 'easy'] as const
 export const directions = ['es-en', 'en-es'] as const
@@ -9,6 +15,9 @@ export const gradeSchema = z.enum(grades)
 export const directionSchema = z.enum(directions)
 export const sceneSchema = z.enum(scenes)
 export const cardStateSchema = z.enum(cardStates)
+
+// JavaScript dates support at most 100 million days on either side of epoch.
+const scheduleTimestampSchema = z.number().min(-8.64e15).max(8.64e15)
 
 export const reviewScheduleSchema = z.preprocess(
   (val) => {
@@ -31,32 +40,105 @@ export const reviewScheduleSchema = z.preprocess(
   },
   z.object({
     state: cardStateSchema.default('new'),
-    dueAt: z.number(),
+    dueAt: scheduleTimestampSchema,
     intervalDays: z.number(),
     easeFactor: z.number().default(2.5),
-    reviews: z.number(),
-    lapses: z.number(),
-    lastReviewedAt: z.number().optional(),
+    reviews: z.number().int().nonnegative(),
+    lapses: z.number().int().nonnegative(),
+    lastReviewedAt: scheduleTimestampSchema.optional(),
   }),
 )
 
-export const studyCardSchema = z.object({
-  id: z.string().min(1),
-  noteId: z.string().min(1),
-  prompt: z.string().trim().min(1),
-  answer: z.string().trim().min(1),
-  direction: directionSchema,
-  context: z.string(),
-  scene: sceneSchema,
-  schedule: reviewScheduleSchema,
-  createdAt: z.number().default(0),
+// Version 4 separates content authorship and explicit resets from review progress.
+// Older clients reject this envelope instead of silently stripping mutation intent.
+export const collectionVersion = 4 as const
+export const collectionVersionSchema = z
+  .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)])
+  .transform(() => collectionVersion)
+export const grammarExerciseSchema = z.object({
+  topic: z.enum(
+    Object.keys(grammarTopics) as [GrammarTopic, ...GrammarTopic[]],
+  ),
+  verb: z.string().min(1),
+  person: z.number().int().min(0).max(4),
 })
 
-export const studyCardCollectionSchema = z.object({
-  version: z.literal(1),
-  cards: z.array(studyCardSchema),
-  deletedCardIds: z.array(z.string()).default([]),
-})
+export const studyCardSchema = z
+  .object({
+    id: z.string().min(1),
+    noteId: z.string().min(1),
+    prompt: z.string().trim().min(1),
+    answer: z.string().trim().min(1),
+    direction: directionSchema,
+    context: z.string(),
+    scene: sceneSchema,
+    schedule: reviewScheduleSchema,
+    grammar: grammarExerciseSchema.optional(),
+    createdAt: z.number().default(0),
+    contentRevision: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(Number.MAX_SAFE_INTEGER),
+    resetRevision: z.object({
+      generation: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      at: scheduleTimestampSchema,
+    }),
+  })
+  .superRefine((card, ctx) => {
+    if (!card.grammar) return
+    const { topic, verb, person } = card.grammar
+    const content = grammarVerb(topic, verb)
+    if (
+      !content ||
+      card.id !== grammarCardId(verb, person, topic) ||
+      card.noteId !== card.id ||
+      card.answer !== content.forms[person] ||
+      card.direction !== 'en-es'
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['grammar'],
+        message:
+          'Grammar exercise identity and answer must match its verb and person.',
+      })
+    }
+  })
+
+// Only legacy boundaries assign baseline revisions; current cards must contain them.
+function migrateLegacyStudyCard(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
+  return {
+    contentRevision: 0,
+    resetRevision: { generation: 0, at: 0 },
+    ...raw,
+  }
+}
+
+export const legacyStudyCardSchema = z.preprocess(
+  migrateLegacyStudyCard,
+  studyCardSchema,
+)
+
+export function migrateCardEnvelope(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
+  const envelope = raw as Record<string, unknown>
+  if (
+    ![1, 2, 3].includes(envelope.version as number) ||
+    !Array.isArray(envelope.cards)
+  )
+    return raw
+  return { ...envelope, cards: envelope.cards.map(migrateLegacyStudyCard) }
+}
+
+export const studyCardCollectionSchema = z.preprocess(
+  migrateCardEnvelope,
+  z.object({
+    version: collectionVersionSchema,
+    cards: z.array(studyCardSchema),
+    deletedCardIds: z.array(z.string()).default([]),
+  }),
+)
 
 export const newNoteSchema = z.object({
   spanish: z.string().trim().min(1),
@@ -143,6 +225,8 @@ export function createStudyCards(
       context,
       scene,
       schedule: createNewReviewSchedule(now),
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     },
   ]
@@ -157,6 +241,8 @@ export function createStudyCards(
       context,
       scene,
       schedule: createNewReviewSchedule(now, DAY),
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     })
   }
@@ -533,7 +619,17 @@ export function resetCardProgress(card: StudyCard, now: number): StudyCard {
   return {
     ...card,
     schedule: createNewReviewSchedule(now),
+    resetRevision: {
+      generation: nextRevision(card.resetRevision.generation),
+      at: now,
+    },
   }
+}
+
+function nextRevision(revision: number): number {
+  if (revision >= Number.MAX_SAFE_INTEGER)
+    throw new Error('Card revision limit reached.')
+  return revision + 1
 }
 
 export function updateStudyCard(
@@ -549,17 +645,24 @@ export function updateStudyCard(
   const context =
     parsed.context !== undefined ? parsed.context.trim() : existing.context
   const scene = chooseScene(prompt, answer, context)
-  const schedule = parsed.resetProgress
-    ? createNewReviewSchedule(now)
-    : existing.schedule
+  const card = parsed.resetProgress
+    ? resetCardProgress(existing, now)
+    : existing
+  const changed =
+    prompt !== existing.prompt ||
+    answer !== existing.answer ||
+    context !== existing.context ||
+    scene !== existing.scene
 
   return {
-    ...existing,
+    ...card,
     prompt,
     answer,
     context,
     scene,
-    schedule,
+    contentRevision: changed
+      ? nextRevision(existing.contentRevision)
+      : existing.contentRevision,
   }
 }
 
@@ -570,8 +673,10 @@ export function deleteStudyCard(
   return cards.filter((card) => card.id !== cardIdToDelete)
 }
 
-export function localeForPrompt(card: Pick<StudyCard, 'direction'>): string {
-  return card.direction === 'es-en' ? 'es-MX' : 'en-US'
+export function localeForPrompt(
+  card: Pick<StudyCard, 'direction' | 'grammar'>,
+): string {
+  return card.grammar || card.direction === 'es-en' ? 'es-MX' : 'en-US'
 }
 
 export function localeForAnswer(card: Pick<StudyCard, 'direction'>): string {

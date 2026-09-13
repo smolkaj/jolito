@@ -1,4 +1,5 @@
-import AxeBuilder from '@axe-core/playwright'
+import { practiceCards } from './practice'
+import { auditAccessibility } from './accessibility'
 import { expect, test } from '@playwright/test'
 
 test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => {
@@ -14,7 +15,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.goto('/')
 
     // 1. Welcome screen primary touch targets
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice$/i,
+    })
     await expect(practiceBtn).toBeVisible()
     const practiceBox = await practiceBtn.boundingBox()
     expect(practiceBox).not.toBeNull()
@@ -29,7 +32,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(createBox!.width).toBeGreaterThanOrEqual(44)
 
     // 2. Study screen controls
-    await practiceBtn.click()
+    await practiceCards(page)
     const answerInput = page.getByLabel(/your answer/i)
     await expect(answerInput).toBeVisible()
     const inputBox = await answerInput.boundingBox()
@@ -85,16 +88,29 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(cueBox!.height).toBeGreaterThanOrEqual(44)
     expect(cueBox!.width).toBeGreaterThanOrEqual(44)
 
+    // Verify Why Jolito scroll cue and Feedback button do not overlap or collide
+    const heroFooter = page.locator('.welcome-hero-footer')
+    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+    await expect(feedbackBtn).toBeVisible()
+    const feedbackBox = await feedbackBtn.boundingBox()
+    expect(feedbackBox).not.toBeNull()
+    expect(cueBox!.x + cueBox!.width).toBeLessThanOrEqual(feedbackBox!.x)
+
+    // Privacy is housed cleanly in SyncModal / deck footer, not colliding in hero fold
+    await expect(
+      heroFooter.getByRole('button', { name: /^privacy$/i }),
+    ).not.toBeVisible()
+
     // Initial accessibility check on mobile welcome screen
-    const welcomeAxe = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const welcomeAxe = await auditAccessibility(page)
     expect(welcomeAxe.violations).toEqual([])
 
     // 2. Tap Practice on mobile
-    const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice$/i,
+    })
     await expect(practiceBtn).toBeVisible()
-    await practiceBtn.click()
+    await practiceCards(page)
 
     // Verify study view is active and responsive
     const answerInput = page.getByLabel(/your answer/i)
@@ -122,9 +138,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.waitForTimeout(250)
     await page.screenshot({ path: 'test-results/mobile-revealed.png' })
 
-    const reviewAxe = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const reviewAxe = await auditAccessibility(page)
     expect(reviewAxe.violations).toEqual([])
 
     // 5. Tap Good to grade
@@ -213,7 +227,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await scrollCue.click()
     await expect(page).toHaveURL(/#why-jolito$/)
     await expect
-      .poll(async () => page.evaluate(() => window.scrollY))
+      .poll(async () =>
+        page.locator('.welcome-page').evaluate((element) => element.scrollTop),
+      )
       .toBeGreaterThan(100)
     await page.waitForTimeout(400)
 
@@ -238,7 +254,163 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(startBtn).toBeVisible()
     await startBtn.click()
     await expect
-      .poll(async () => page.evaluate(() => window.scrollY))
+      .poll(async () =>
+        page.locator('.welcome-page').evaluate((element) => element.scrollTop),
+      )
       .toBeLessThanOrEqual(5)
+  })
+
+  test('preserves review progress, queue integrity, and audio controls across device rotation and backgrounding', async ({
+    page,
+  }) => {
+    await page.goto('/')
+
+    // 1. Start practice session in mobile portrait (393x852)
+    const practiceBtn = page.getByRole('button', {
+      name: /^practice$/i,
+    })
+    await expect(practiceBtn).toBeVisible()
+    await practiceCards(page)
+
+    // First card: aguacate
+    const answerInput = page.getByLabel(/your answer/i)
+    await expect(answerInput).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+
+    // Answer and grade first card
+    await answerInput.fill('avocado')
+    await answerInput.press('Enter')
+    const easyBtn = page.getByRole('button', { name: /easy/i })
+    await expect(easyBtn).toBeVisible()
+    await easyBtn.click()
+
+    // 2. Queue has advanced to second card: 'qué padre'
+    await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'aguacate' }),
+    ).not.toBeVisible()
+
+    // 3. Simulate device rotation to landscape (852x393)
+    await page.setViewportSize({ width: 852, height: 393 })
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('orientationchange'))
+    })
+
+    // 4. Simulate iOS lifecycle interruption (brief backgrounding/foregrounding on rotate)
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await page.waitForTimeout(100)
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+
+    // 5. Invariant: Card queue did NOT jump backwards or reset; 'qué padre' remains active
+    await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'aguacate' }),
+    ).not.toBeVisible()
+
+    // Audio button remains functional and does not crash or wedge
+    const audioBtn = page.getByRole('button', { name: /play prompt audio/i })
+    if (await audioBtn.isVisible()) {
+      await audioBtn.click()
+    }
+
+    // 6. Rotate back to portrait (393x852)
+    await page.setViewportSize({ width: 393, height: 852 })
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('orientationchange'))
+    })
+
+    // Answer and grade card 2
+    const landscapeInput = page.getByLabel(/your answer/i)
+    await expect(landscapeInput).toBeVisible()
+    await landscapeInput.fill('how cool')
+    await landscapeInput.press('Enter')
+    await page.getByRole('button', { name: /easy/i }).click()
+
+    // 7. Cleanly completes review session
+    await expect(page.getByRole('heading', { name: /¡hecho!/i })).toBeVisible()
+  })
+
+  test('guarantees zero bounding-box overlap and clearance between Why Jolito cue and Feedback on narrow 375px mobile viewports', async ({
+    page,
+  }) => {
+    // Test on iPhone SE (375x667)
+    await page.setViewportSize({ width: 375, height: 667 })
+    await page.goto('/')
+
+    const scrollCue = page.getByRole('link', {
+      name: /^scroll down to explore why jolito$/i,
+    })
+    const heroFooter = page.locator('.welcome-hero-footer')
+    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+
+    await expect(scrollCue).toBeVisible()
+    await expect(feedbackBtn).toBeVisible()
+
+    const cueBox = await scrollCue.boundingBox()
+    const feedbackBox = await feedbackBtn.boundingBox()
+
+    expect(cueBox).not.toBeNull()
+    expect(feedbackBox).not.toBeNull()
+
+    // Ensure strictly no horizontal collision and at least an 8px clearance gap
+    expect(feedbackBox!.x - (cueBox!.x + cueBox!.width)).toBeGreaterThanOrEqual(
+      8,
+    )
+
+    // Capture screenshot on 375px viewport for visual verification
+    await page.screenshot({ path: 'test-results/mobile-375-welcome.png' })
+  })
+
+  test('anchors home actions to the viewport bottom and right-aligns Feedback on narrow screens', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 375, height: 667 },
+      { width: 393, height: 852 },
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto('/')
+
+      const heroFooter = page.locator('.welcome-hero-footer')
+      const feedbackBtn = heroFooter.getByRole('button', {
+        name: /^feedback$/i,
+      })
+
+      await expect(heroFooter).toBeVisible()
+      await expect(feedbackBtn).toBeVisible()
+
+      const [footerBox, feedbackBox, viewportSize] = await Promise.all([
+        heroFooter.boundingBox(),
+        feedbackBtn.boundingBox(),
+        page.evaluate(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })),
+      ])
+
+      expect(footerBox).not.toBeNull()
+      expect(feedbackBox).not.toBeNull()
+      expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(
+        viewportSize.height,
+      )
+      expect(
+        viewportSize.height - (footerBox!.y + footerBox!.height),
+      ).toBeLessThanOrEqual(32)
+      expect(
+        viewportSize.width - (feedbackBox!.x + feedbackBox!.width),
+      ).toBeLessThanOrEqual(16)
+    }
   })
 })

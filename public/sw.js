@@ -1,9 +1,13 @@
-/* global self, caches, fetch, URL */
+/* global self, caches, fetch, URL, Request */
 
-const CACHE_NAME = 'jolito-shell-v9'
+// Replaced by the explicit Vite offline-shell build step.
+const BUILD_ID = '__JOLITO_BUILD_ID__'
+const CACHE_NAME = `jolito-shell-${BUILD_ID}`
+const BUILD_ASSETS = /* __JOLITO_BUILD_ASSETS__ */ []
 const scopePath = new URL(self.registration.scope).pathname
+// Cache the canonical navigation URL; static hosts redirect /index.html to /.
+// A redirected cached Response cannot satisfy a navigation with redirect: manual.
 const shellUrl = scopePath
-const indexUrl = `${scopePath}index.html`
 const PWA_ASSETS = [
   `${scopePath}manifest.webmanifest`,
   `${scopePath}favicon.svg`,
@@ -24,100 +28,148 @@ const PWA_ASSETS = [
   `${scopePath}dict/es-lemmas.json`,
 ]
 
+const REQUIRED_URLS = Array.from(
+  new Set([
+    shellUrl,
+    ...PWA_ASSETS,
+    ...BUILD_ASSETS.map((file) => `${scopePath}${file}`),
+  ]),
+)
+
+// A static host can substitute the SPA document for a missing asset with HTTP
+// 200. Both installation and readiness must validate the cached responses, not
+// just transport success. This inventory contains one HTML document: the root.
+async function verifyShell(cache) {
+  await Promise.all(
+    REQUIRED_URLS.map(async (url) => {
+      const response = await cache.match(url)
+      if (!response?.ok)
+        throw new Error(`Required offline asset is missing: ${url}`)
+      if (url === shellUrl) {
+        const html = await response.text()
+        if (
+          !html.includes(`<meta name="jolito-build" content="${BUILD_ID}">`)
+        ) {
+          throw new Error('Offline HTML belongs to a different build')
+        }
+      } else {
+        const contentType = response.headers
+          .get('Content-Type')
+          ?.split(';')[0]
+          .trim()
+          .toLowerCase()
+        if (
+          contentType === 'text/html' ||
+          contentType === 'application/xhtml+xml'
+        ) {
+          throw new Error(
+            `Required offline asset was replaced with HTML: ${url}`,
+          )
+        }
+      }
+    }),
+  )
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) =>
-        Promise.all(
-          [shellUrl, indexUrl, ...PWA_ASSETS].map((url) =>
-            cache.add(url).catch(() => {}),
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME)
+        // addAll is atomic: neither HTTP failures nor quota errors publish a partial shell.
+        await cache.addAll(
+          REQUIRED_URLS.map(
+            (url) =>
+              new Request(new URL(url, self.location.origin), {
+                cache: 'reload',
+              }),
           ),
-        ),
-      )
-      .then(() => self.skipWaiting()),
+        )
+        await verifyShell(cache)
+      } catch (error) {
+        await caches.delete(CACHE_NAME)
+        throw error
+      }
+      // Updates wait for old tabs to close, keeping their HTML and lazy assets
+      // usable until the browser can activate the new complete build safely.
+    })(),
   )
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter(
-              (key) => key !== CACHE_NAME && !key.startsWith('jolito-audio-'),
-            )
-            .map((key) => caches.delete(key)),
-        ),
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(
+        keys
+          .filter(
+            (key) => key.startsWith('jolito-shell-') && key !== CACHE_NAME,
+          )
+          .map((key) => caches.delete(key)),
       )
-      .then(() => self.clients.claim()),
+      await self.clients.claim()
+    })(),
   )
 })
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type !== 'CACHE_URLS' || !Array.isArray(event.data.urls))
-    return
-
-  const uniqueUrls = Array.from(new Set(event.data.urls)).filter(
-    (url) =>
-      typeof url === 'string' &&
-      new URL(url, self.location.origin).origin === self.location.origin,
-  )
+  if (event.data?.type !== 'CHECK_OFFLINE_READY') return
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) =>
-        Promise.all(uniqueUrls.map((url) => cache.add(url).catch(() => {}))),
-      )
-      .then(() => event.ports[0]?.postMessage('cached'))
-      .catch(() => event.ports[0]?.postMessage('cached')),
+    (async () => {
+      try {
+        if (event.data.buildId !== BUILD_ID) {
+          event.ports[0]?.postMessage('cache-error')
+          return
+        }
+        const cache = await caches.open(CACHE_NAME)
+        await verifyShell(cache)
+        event.ports[0]?.postMessage('cached')
+      } catch {
+        event.ports[0]?.postMessage('cache-error')
+      }
+    })(),
   )
 })
 
 self.addEventListener('fetch', (event) => {
   const request = event.request
   const requestUrl = new URL(request.url)
-  if (request.method !== 'GET' || requestUrl.origin !== self.location.origin)
+  if (
+    request.method !== 'GET' ||
+    requestUrl.origin !== self.location.origin ||
+    requestUrl.pathname.startsWith(`${scopePath}api/`)
+  )
     return
 
-  // Audio TTS requests are managed explicitly by NeuralVoiceEngine in jolito-audio-v1 cache.
-  // Avoid duplicating or competing with the app audio cache.
-  if (requestUrl.pathname.startsWith('/api/tts')) {
-    return
-  }
-
-  if (request.mode === 'navigate') {
+  // The installed HTML and its assets are one complete build. A navigation must
+  // not replace it with HTML from a failed (or only partially deployed) update.
+  // Browser service-worker updates install the next build before taking control.
+  // App routes use hash fragments at the scope root. Standalone documents
+  // (including Privacy and Acknowledgements) retain their host navigation.
+  if (
+    request.mode === 'navigate' &&
+    (requestUrl.pathname === shellUrl ||
+      requestUrl.pathname === `${scopePath}index.html`)
+  ) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone()
-          void caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(indexUrl, copy))
-          return response
-        })
-        .catch(
-          async () => (await caches.match(indexUrl)) ?? caches.match(shellUrl),
-        ),
+      caches
+        .open(CACHE_NAME)
+        .then(async (cache) => (await cache.match(shellUrl)) ?? fetch(request)),
     )
     return
   }
 
-  event.respondWith(
-    caches.match(request, { ignoreVary: true }).then(
-      (cached) =>
-        cached ??
-        fetch(request).then((response) => {
-          if (response.ok) {
-            const copy = response.clone()
-            void caches
-              .open(CACHE_NAME)
-              .then((cache) => cache.put(request, copy))
-          }
-          return response
-        }),
-    ),
-  )
+  // Only the installer writes the shell. Runtime requests do not create a second
+  // cache population path, and APIs/audio remain owned by their app services.
+  if (REQUIRED_URLS.includes(requestUrl.pathname)) {
+    event.respondWith(
+      caches
+        .open(CACHE_NAME)
+        .then(
+          async (cache) =>
+            (await cache.match(request, { ignoreVary: true })) ??
+            fetch(request),
+        ),
+    )
+  }
 })

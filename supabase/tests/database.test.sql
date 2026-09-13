@@ -6,7 +6,7 @@ select has_table('public', 'decks', 'public.decks table exists');
 select has_table('public', 'feedback', 'public.feedback table exists');
 
 -- 2. Verify columns
-select columns_are('public', 'decks', array['user_id', 'updated_at', 'device_id', 'version', 'data'], 'decks has expected columns');
+select columns_are('public', 'decks', array['user_id', 'updated_at', 'device_id', 'version', 'data', 'revision'], 'decks has expected columns');
 select columns_are('public', 'feedback', array['id', 'user_id', 'email', 'message', 'context', 'created_at'], 'feedback has expected columns');
 
 -- 3. Verify RLS is enabled
@@ -49,8 +49,8 @@ set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
 set local "request.jwt.claims" = '{"role": "authenticated", "sub": "11111111-1111-1111-1111-111111111111"}';
 
 select lives_ok(
-  $$ insert into public.decks (user_id, device_id, data) values ('11111111-1111-1111-1111-111111111111', 'dev-a', '{"cards":[]}'::jsonb) $$,
-  'User A can insert own deck'
+  $$ select public.compare_and_set_deck('11111111-1111-1111-1111-111111111111', 0, '{"app":"jolito","version":4,"deviceId":"dev-a","cards":[],"deletedCardIds":[]}'::jsonb) $$,
+  'User A can create own deck through the revision protocol'
 );
 
 select results_eq(

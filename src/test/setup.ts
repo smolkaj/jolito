@@ -10,3 +10,7 @@ if (
 ) {
   window.HTMLElement.prototype.scrollIntoView = () => {}
 }
+
+if (typeof window !== 'undefined' && !window.HTMLElement.prototype.scrollTo) {
+  window.HTMLElement.prototype.scrollTo = () => {}
+}

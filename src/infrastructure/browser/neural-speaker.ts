@@ -26,9 +26,13 @@ export function isShortPhraseForDualVoice(text: string): boolean {
   return words.length > 0 && words.length <= 3 && clean.length <= 30
 }
 
-export const STARTER_PHRASES: Array<{ text: string; locale: string }> = [
-  { text: 'aguacate', locale: 'es-MX' },
-  { text: 'avocado', locale: 'en-US' },
+export const STARTER_PHRASES: Array<{
+  text: string
+  locale: string
+  cardSeed?: string | undefined
+}> = [
+  { text: 'aguacate', locale: 'es-MX', cardSeed: 'sample-aguacate' },
+  { text: 'avocado', locale: 'en-US', cardSeed: 'sample-aguacate' },
   { text: 'qué padre', locale: 'es-MX' },
   { text: 'how cool', locale: 'en-US' },
   { text: '¿dónde está el metro?', locale: 'es-MX' },
@@ -122,7 +126,9 @@ export class NeuralVoiceEngine {
   private audioContext: AudioContext | null = null
   private audioCache: LruAudioCache
   private audioBlobs = new Map<string, string>()
+  private isDestroyed = false
   private idleTimer: number | null = null
+  private cleanupGestureListeners: (() => void) | null = null
   private cleanupLifecycleListeners: (() => void) | null = null
   private readonly idleDelayMs: number
 
@@ -134,7 +140,58 @@ export class NeuralVoiceEngine {
     this.idleDelayMs = idleDelayMs
     this.initContext()
     void this.getCache()
+    this.installUnlockListeners()
     this.installLifecycleListeners()
+  }
+
+  private installUnlockListeners(): void {
+    if (this.isDestroyed || typeof window === 'undefined') return
+    if (this.cleanupGestureListeners) return
+    const unlock = () => {
+      configureAudioSessionCategory('ambient')
+      if (
+        this.audioContext &&
+        (this.audioContext.state as string) !== 'running' &&
+        typeof this.audioContext.resume === 'function'
+      ) {
+        void this.audioContext
+          .resume()
+          .then(() => {
+            if (
+              this.currentSource === null &&
+              this.currentAudioElement === null
+            ) {
+              this.scheduleIdleSuspend()
+            }
+          })
+          .catch(() => {})
+      } else if (
+        this.currentSource === null &&
+        this.currentAudioElement === null
+      ) {
+        this.scheduleIdleSuspend()
+      }
+      this.removeUnlockListeners()
+    }
+    window.addEventListener('pointerdown', unlock, {
+      passive: true,
+      once: true,
+    })
+    window.addEventListener('touchstart', unlock, {
+      passive: true,
+      once: true,
+    })
+    window.addEventListener('keydown', unlock, { passive: true, once: true })
+    this.cleanupGestureListeners = () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('touchstart', unlock)
+      window.removeEventListener('keydown', unlock)
+      this.cleanupGestureListeners = null
+    }
+  }
+
+  private removeUnlockListeners(): void {
+    this.cleanupGestureListeners?.()
   }
 
   private installLifecycleListeners(): void {
@@ -143,17 +200,32 @@ export class NeuralVoiceEngine {
       if (document.visibilityState === 'hidden') {
         this.stopAudio()
         void this.suspend()
+      } else if (document.visibilityState === 'visible') {
+        this.cancelIdleSuspend()
+        this.installUnlockListeners()
       }
     }
     const handlePageHide = () => {
       this.stopAudio()
       void this.suspend()
     }
+    const handlePageShow = () => {
+      this.cancelIdleSuspend()
+      this.installUnlockListeners()
+    }
+    const handleOrientation = () => {
+      this.cancelIdleSuspend()
+      this.installUnlockListeners()
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('pagehide', handlePageHide)
+    window.addEventListener('pageshow', handlePageShow)
+    window.addEventListener('orientationchange', handleOrientation)
     this.cleanupLifecycleListeners = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('pagehide', handlePageHide)
+      window.removeEventListener('pageshow', handlePageShow)
+      window.removeEventListener('orientationchange', handleOrientation)
       this.cleanupLifecycleListeners = null
     }
   }
@@ -171,11 +243,15 @@ export class NeuralVoiceEngine {
         // Audio is non-critical; never fail loudly
       }
     }
+    if (!this.isDestroyed) {
+      this.installUnlockListeners()
+    }
   }
 
   private scheduleIdleSuspend(): void {
     this.cancelIdleSuspend()
     if (
+      this.isDestroyed ||
       this.currentSource !== null ||
       this.currentAudioElement !== null ||
       typeof window === 'undefined'
@@ -948,6 +1024,7 @@ export class NeuralVoiceEngine {
           STARTER_PHRASES.map((p) => ({
             text: p.text,
             locale: p.locale,
+            cardSeed: p.cardSeed,
             bothVoices: true,
           })),
           fetchFn,
@@ -980,7 +1057,7 @@ export class NeuralVoiceEngine {
       this.cancelIdleSuspend()
 
       if (
-        this.audioContext.state === 'suspended' &&
+        (this.audioContext.state as string) !== 'running' &&
         typeof this.audioContext.resume === 'function'
       ) {
         this.audioContext.resume().catch(() => {})
@@ -1013,8 +1090,10 @@ export class NeuralVoiceEngine {
   }
 
   destroy(): void {
+    this.isDestroyed = true
     this.stopAudio()
     this.cancelIdleSuspend()
+    this.removeUnlockListeners()
     this.cleanupLifecycleListeners?.()
     void this.suspend()
   }
@@ -1153,8 +1232,11 @@ export class LayeredNeuralSpeaker implements Speaker {
       normLocale,
       voice,
     )
+    const isExplicitOnline =
+      Boolean(options?.explicit) &&
+      (typeof navigator === 'undefined' || navigator.onLine !== false)
 
-    if (isInFlight || isDiskCached) {
+    if (isInFlight || isDiskCached || isExplicitOnline) {
       if (!isInFlight) {
         // Trigger hydration from disk/network into memory
         void this.neuralEngine
@@ -1167,7 +1249,8 @@ export class LayeredNeuralSpeaker implements Speaker {
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
-      const graceTimeout = isDiskCached ? 150 : 200
+      const graceTimeout = options?.explicit ? 1500 : isDiskCached ? 150 : 1000
+
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
         .then((ready) => {
@@ -1193,7 +1276,7 @@ export class LayeredNeuralSpeaker implements Speaker {
       return true
     }
 
-    // 3. Uncached and not in-flight: fire background fetch for subsequent plays and speak via fallback synchronously
+    // Fire background fetch for subsequent plays and speak via fallback synchronously
     void this.neuralEngine
       .fetchAndCacheAudio(cleanText, normLocale, {
         voice,

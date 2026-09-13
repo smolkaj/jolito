@@ -1,5 +1,6 @@
+import { currentDeckJson } from './storage'
 import { expect, test } from '@playwright/test'
-import AxeBuilder from '@axe-core/playwright'
+import { auditAccessibility } from './accessibility'
 
 test('opens cloud sync modal without automatically detectable WCAG violations and allows interaction', async ({
   page,
@@ -12,9 +13,8 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   ).toBeVisible()
 
   // Verify zero WCAG 2.1 A/AA accessibility violations in sync dialog
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Verify modal has opaque surface
@@ -32,9 +32,92 @@ test('opens cloud sync modal without automatically detectable WCAG violations an
   const emailInput = page.getByLabel(/email address/i)
   await expect(previewHeading.or(emailInput)).toBeVisible()
 
-  // Save screenshot for autonomous visual inspection
+  // Ensure web fonts are completely loaded before evaluating styles and rendering
+  await page.evaluate(() => document.fonts.ready)
+  const isFontLoaded = await page.evaluate(() =>
+    document.fonts.check('12px "Bricolage Grotesque"'),
+  )
+  expect(isFontLoaded).toBe(true)
+
+  // Verify typography and computed style parity across modal legal links
+  const modal = page.getByRole('dialog', { name: /cloud sync/i })
+  const privacyBtn = modal.getByRole('button', { name: /^privacy$/i })
+  const feedbackBtn = modal.getByRole('button', { name: /^feedback$/i })
+  const ackLink = modal.getByRole('link', { name: /acknowledgements/i })
+  await expect(privacyBtn).toBeVisible()
+  await expect(feedbackBtn).toBeVisible()
+  await expect(ackLink).toBeVisible()
+
+  const [privacyStyle, ackStyle] = await Promise.all([
+    privacyBtn.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontFamily: s.fontFamily,
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
+        color: s.color,
+        textDecorationLine: s.textDecorationLine,
+        cursor: s.cursor,
+        paddingTop: s.paddingTop,
+        paddingBottom: s.paddingBottom,
+        paddingLeft: s.paddingLeft,
+        paddingRight: s.paddingRight,
+        borderTopWidth: s.borderTopWidth,
+        borderBottomWidth: s.borderBottomWidth,
+        backgroundColor: s.backgroundColor,
+      }
+    }),
+    ackLink.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontFamily: s.fontFamily,
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
+        color: s.color,
+        textDecorationLine: s.textDecorationLine,
+        cursor: s.cursor,
+        paddingTop: s.paddingTop,
+        paddingBottom: s.paddingBottom,
+        paddingLeft: s.paddingLeft,
+        paddingRight: s.paddingRight,
+        borderTopWidth: s.borderTopWidth,
+        borderBottomWidth: s.borderBottomWidth,
+        backgroundColor: s.backgroundColor,
+      }
+    }),
+  ])
+
+  // Full rendered typographic & reset contract: sibling legal links must not diverge
+  expect(privacyStyle.fontFamily).toBe(ackStyle.fontFamily)
+  expect(privacyStyle.fontSize).toBe(ackStyle.fontSize)
+  expect(privacyStyle.fontWeight).toBe(ackStyle.fontWeight)
+  expect(privacyStyle.fontWeight).toBe('400')
+  expect(privacyStyle.lineHeight).toBe(ackStyle.lineHeight)
+  expect(privacyStyle.color).toBe(ackStyle.color)
+  expect(privacyStyle.textDecorationLine).toBe('underline')
+  expect(ackStyle.textDecorationLine).toBe('underline')
+  expect(privacyStyle.cursor).toBe('pointer')
+  expect(ackStyle.cursor).toBe('pointer')
+  expect(privacyStyle.paddingTop).toBe(ackStyle.paddingTop)
+  expect(privacyStyle.paddingBottom).toBe(ackStyle.paddingBottom)
+  expect(privacyStyle.borderTopWidth).toBe('0px')
+  expect(ackStyle.borderTopWidth).toBe('0px')
+  expect(privacyStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+  expect(ackStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)')
+
+  // Save screenshot of the legal footer and full modal for visual verification
+  await page.locator('.sync-modal-legal').screenshot({
+    path: '/tmp/legal-footer-desktop.png',
+    animations: 'disabled',
+  })
   await page.screenshot({
     path: 'test-results/sync-modal.png',
+    animations: 'disabled',
+  })
+  await page.screenshot({
+    path: '/tmp/sync-modal-after.png',
     animations: 'disabled',
   })
 
@@ -84,6 +167,14 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
 }) => {
   // Inject mock fetch to simulate Supabase OTP auth responses
   await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'standalone', {
+      value: true,
+      configurable: true,
+    })
     const originalFetch = window.fetch.bind(window)
     window.fetch = async (input, init) => {
       const url = typeof input === 'string' ? input : (input as Request).url
@@ -99,6 +190,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     window.localStorage.setItem('e2e-sync-test', 'true')
   })
 
+  await page.setViewportSize({ width: 375, height: 667 })
   await page.goto('/')
 
   const signInBtn = page.getByRole('button', { name: /sign in|tap to sync/i })
@@ -115,34 +207,27 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
     await emailInput.fill('pwa-learner@example.com')
     await page.getByRole('button', { name: /send sign-in link/i }).click()
 
-    // On standard browser, verify clean confirmation screen without paste input
+    // In the iOS Home Screen app, explain the email-to-browser handoff.
     await expect(
-      page.getByText(/Click the sign-in link sent to/i),
+      page.getByText(
+        /Tap the link in your email, then tap Copy sign-in link in Jolito’s top banner/i,
+      ),
     ).toBeVisible()
-    await expect(page.getByLabel(/sign-in link/i)).not.toBeVisible()
+
+    const linkInput = page.getByLabel(/6-digit code or sign-in link/i)
+    await expect(linkInput).toBeVisible()
+    await expect(linkInput).toBeFocused()
 
     // Click resend link and verify inline checkmark animation without status banner
-    const resendBtn = page.locator('.resend-link-button')
+    const resendBtn = page.locator('.resend-text-button')
     await resendBtn.click()
     await expect(resendBtn).toHaveClass(/is-sent/)
     await expect(resendBtn).toContainText(/link sent!/i)
     await expect(page.locator('.status-banner')).toHaveCount(0)
 
-    // Capture screenshot of standard browser email confirmation with animated resend button
+    // Capture the iOS Home Screen email confirmation with immediate code entry.
     await page.screenshot({
       path: 'test-results/sync-modal-sent-step.png',
-    })
-
-    // Toggle paste link manually
-    const pasteToggle = page.getByRole('button', {
-      name: /paste link manually/i,
-    })
-    await pasteToggle.click()
-    await expect(page.getByLabel(/sign-in link/i)).toBeVisible()
-
-    // Capture screenshot of link entry step
-    await page.screenshot({
-      path: 'test-results/sync-modal-link-step.png',
       animations: 'disabled',
     })
   } else {
@@ -154,9 +239,7 @@ test('renders iOS Home Screen guidance and sign-in link input with zero WCAG vio
   }
 
   // Check accessibility
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
 
@@ -200,9 +283,7 @@ test('renders iOS redirect auth notification banner with zero WCAG violations an
   })
 
   // Check accessibility of banner on mobile
-  const mobileResults = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const mobileResults = await auditAccessibility(page)
   expect(mobileResults.violations).toEqual([])
 
   // Click copy link button and verify visual feedback
@@ -283,9 +364,7 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   })
 
   // Zero WCAG violations in signed-in state
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 
   // Visually verify animated synced button state and accessibility
@@ -301,9 +380,10 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     path: 'test-results/sync-button-animated.png',
   })
 
-  const animatedResults = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-    .analyze()
+  // Allow keyframe pop/fade animation (320ms) to settle to 100% opacity for full contrast
+  await page.waitForTimeout(350)
+
+  const animatedResults = await auditAccessibility(page)
   expect(animatedResults.violations).toEqual([])
 
   // Click sign out
@@ -311,11 +391,9 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
   await signOutBtn.click()
 
   // Verify local storage is cleared of user data and reset to starter cards
-  const storedJson = await page.evaluate(() =>
-    window.localStorage.getItem('jolito-library-v1'),
-  )
+  const storedJson = await page.evaluate(currentDeckJson)
   expect(storedJson).not.toBeNull()
-  const stored = JSON.parse(storedJson!) as {
+  const stored = JSON.parse(storedJson) as {
     version: number
     cards: Array<{ noteId?: string }>
     deletedCardIds: string[]
@@ -345,41 +423,151 @@ test('renders signed-in cloud sync account view with zero WCAG violations', asyn
     await expect(
       page.getByRole('button', { name: /change email/i }),
     ).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: /paste link manually/i }),
-    ).toBeVisible()
 
-    // Capture screenshot of sent confirmation
-    await page.screenshot({
-      path: 'test-results/sync-modal-sent-step.png',
-      animations: 'disabled',
-    })
-
-    // Verify zero WCAG violations on sent screen
-    const sentResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
-    expect(sentResults.violations).toEqual([])
-
-    // Toggle paste link manually
-    await page.getByRole('button', { name: /paste link manually/i }).click()
-    const linkInput = page.getByLabel(/sign-in link/i)
+    const linkInput = page.getByLabel(/6-digit code or sign-in link/i)
     await expect(linkInput).toBeVisible()
     await expect(linkInput).toBeFocused()
     await expect(
       page.getByRole('button', { name: /sign in & sync/i }),
     ).toBeVisible()
 
-    // Capture screenshot of paste form
+    // Capture screenshot of sent confirmation / code entry
     await page.screenshot({
-      path: 'test-results/sync-modal-link-step.png',
+      path: 'test-results/sync-modal-standard-sent-step.png',
       animations: 'disabled',
     })
+
+    // Verify zero WCAG violations on sent screen
+    const sentResults = await auditAccessibility(page)
+    expect(sentResults.violations).toEqual([])
   } else {
     // Check accessibility of unconfigured state after sign-out
-    const postSignOutResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze()
+    const postSignOutResults = await auditAccessibility(page)
     expect(postSignOutResults.violations).toEqual([])
   }
+})
+
+test('displays guarded account deletion flow with zero WCAG violations', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const session = {
+      accessToken:
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWRlbC05OSIsImVtYWlsIjoibGVhcm5lckBleGFtcGxlLmNvbSJ9.signature',
+      refreshToken: 'refresh-99',
+      expiresAt: Date.now() + 3600 * 1000,
+      user: {
+        id: 'user-del-99',
+        email: 'learner@example.com',
+      },
+    }
+    window.localStorage.setItem(
+      'jolito-auth-session-v1',
+      JSON.stringify(session),
+    )
+  })
+
+  await page.goto('/')
+
+  // Open sync modal from header
+  await page
+    .getByRole('button', { name: /signed in|tap to sync|sync/i })
+    .first()
+    .click()
+  await expect(
+    page.getByRole('heading', { name: /^cloud sync$/i }),
+  ).toBeVisible()
+  await expect(page.getByText('learner@example.com')).toBeVisible()
+
+  // Click Delete cloud account & data
+  await page
+    .getByRole('button', { name: /delete cloud account & data/i })
+    .click()
+
+  // Verify warning text
+  await expect(
+    page.getByText(/permanently deletes your account and backups/i),
+  ).toBeVisible()
+
+  // Verify input is auto-focused
+  const confirmInput = page.getByPlaceholder('DELETE')
+  await expect(confirmInput).toBeFocused()
+
+  // Verify backup checkbox is checked by default
+  const backupCheckbox = page.getByRole('checkbox', {
+    name: /download an offline backup/i,
+  })
+  await expect(backupCheckbox).toBeChecked()
+
+  // Verify confirm button is disabled initially
+  const confirmBtn = page.getByRole('button', {
+    name: /yes, delete cloud data/i,
+  })
+  await expect(confirmBtn).toBeDisabled()
+
+  // Verify zero WCAG violations on confirmation UI
+  const results = await auditAccessibility(page)
+  expect(results.violations).toEqual([])
+
+  // Capture screenshot of modal for visual inspection
+  await page.locator('.modal-content.sync-modal').screenshot({
+    path: '/tmp/sync-delete-confirm.png',
+    animations: 'disabled',
+  })
+
+  // Typing non-matching text keeps button disabled
+  await confirmInput.fill('del')
+  await expect(confirmBtn).toBeDisabled()
+
+  // Typing DELETE enables confirm button
+  await confirmInput.fill('DELETE')
+  await expect(confirmBtn).toBeEnabled()
+})
+
+test('renders cloud sync legal footer with typographic parity on mobile viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await page.goto('/')
+
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await expect(
+    page.getByRole('heading', { name: /^cloud sync$/i }),
+  ).toBeVisible()
+
+  // Ensure fonts loaded
+  await page.evaluate(() => document.fonts.ready)
+
+  const privacyBtn = page.getByRole('button', { name: /^privacy$/i })
+  const ackLink = page.getByRole('link', { name: /acknowledgements/i })
+  await expect(privacyBtn).toBeVisible()
+  await expect(ackLink).toBeVisible()
+
+  const [privacyStyle, ackStyle] = await Promise.all([
+    privacyBtn.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
+      }
+    }),
+    ackLink.evaluate((el) => {
+      const s = window.getComputedStyle(el)
+      return {
+        fontSize: s.fontSize,
+        fontWeight: s.fontWeight,
+        lineHeight: s.lineHeight,
+      }
+    }),
+  ])
+
+  expect(privacyStyle.fontWeight).toBe('400')
+  expect(privacyStyle.fontWeight).toBe(ackStyle.fontWeight)
+  expect(privacyStyle.lineHeight).toBe(ackStyle.lineHeight)
+
+  await page.locator('.sync-modal-legal').screenshot({
+    path: '/tmp/legal-footer-mobile.png',
+    animations: 'disabled',
+  })
 })

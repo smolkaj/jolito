@@ -1,11 +1,14 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react'
-import { syncDeckWithCloud } from '../../application/deck-sync'
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { createDeckBackup } from '../../application/deck-backup'
 import type {
   AuthService,
   AuthUser,
-  SyncService,
+  Clock,
+  SyncResult,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
+import { unwrapDomainBoundOtp } from '../../domain/auth'
+import { downloadJsonFile } from '../../infrastructure/browser/download'
 import { isIOS, isStandalone } from '../../infrastructure/browser/environment'
 import {
   ClipboardIcon,
@@ -15,42 +18,45 @@ import {
 } from '../icons'
 
 export interface SyncModalProps {
+  user: AuthUser | null
+  onDeleteAccount: () => Promise<{
+    success: boolean
+    error?: string | undefined
+  }>
   isOpen: boolean
   onClose: () => void
   cards: StudyCard[]
-  deletedCardIds?: string[]
-  onUpdateCards: (
-    newCards: StudyCard[],
-    syncToCloud?: boolean,
-    newDeletedCardIds?: string[],
-  ) => void
   auth: AuthService
-  sync: SyncService
+  onSync: () => Promise<SyncResult>
+  clock?: Clock | undefined
+  onDownloadBackup?: ((cards: StudyCard[]) => void) | undefined
   onSaveLocally?: (() => void) | undefined
   pendingCardPrompt?: string | undefined
   onOpenPrivacy?: (() => void) | undefined
+  onOpenFeedback?: (() => void) | undefined
 }
 
 export function SyncModal({
+  user,
+  onDeleteAccount,
   isOpen,
   onClose,
   cards,
-  deletedCardIds = [],
-  onUpdateCards,
   auth,
-  sync,
+  onSync,
+  clock,
+  onDownloadBackup,
   onSaveLocally,
   pendingCardPrompt,
   onOpenPrivacy,
+  onOpenFeedback,
 }: SyncModalProps) {
-  const [user, setUser] = useState<AuthUser | null>(null)
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
-  const [showPasteLink, setShowPasteLink] = useState(
-    () => isStandalone() && isIOS(),
-  )
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [backupBeforeDelete, setBackupBeforeDelete] = useState(true)
   const [transientFeedback, setTransientFeedback] = useState<
     'synced' | 'resent' | 'pasted' | null
   >(null)
@@ -60,10 +66,37 @@ export function SyncModal({
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
     message: string
+    syncHelp?: boolean
   } | null>(null)
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
+  const deleteInputRef = useRef<HTMLInputElement | null>(null)
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const statusRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (statusMsg?.type === 'error') {
+      statusRef.current?.scrollIntoView({
+        block: 'center',
+        behavior: 'instant',
+      })
+    }
+  }, [statusMsg])
+
+  const handleOpenDeleteConfirm = () => {
+    setIsConfirmingDelete(true)
+    setDeleteConfirmText('')
+    setBackupBeforeDelete(true)
+    setTimeout(() => deleteInputRef.current?.focus(), 0)
+  }
+
+  const handleCancelDeleteConfirm = () => {
+    setIsConfirmingDelete(false)
+    setDeleteConfirmText('')
+    setBackupBeforeDelete(true)
+    setTimeout(() => deleteTriggerRef.current?.focus(), 0)
+  }
 
   const loading = loadingAction !== null
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
@@ -97,23 +130,24 @@ export function SyncModal({
     return () => clearTransientFeedback()
   }, [])
 
-  useEffect(() => {
-    return auth.onAuthStateChange((currentUser) => {
-      setUser(currentUser)
-    })
-  }, [auth])
+  const handleClose = useCallback(() => {
+    setIsConfirmingDelete(false)
+    setDeleteConfirmText('')
+    setBackupBeforeDelete(true)
+    onClose()
+  }, [onClose])
 
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        handleClose()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   if (!isOpen) return null
 
@@ -142,7 +176,7 @@ export function SyncModal({
       try {
         const text = await navigator.clipboard.readText()
         if (text) {
-          setToken(text.trim())
+          setToken(unwrapDomainBoundOtp(text))
           triggerTransientFeedback('pasted', 1500)
         }
       } catch {
@@ -162,12 +196,12 @@ export function SyncModal({
     if (res.success) {
       setStatusMsg({
         type: 'success',
-        message: 'Signed in! Deck synchronized with cloud.',
+        message: 'Signed in.',
       })
     } else {
       setStatusMsg({
         type: 'error',
-        message: res.error || 'Invalid sign-in link.',
+        message: res.error || 'Invalid sign-in link or code.',
       })
     }
   }
@@ -176,14 +210,7 @@ export function SyncModal({
     if (!user) return
     setLoadingAction('sync')
     setStatusMsg(null)
-    const res = await syncDeckWithCloud({
-      localCards: cards,
-      localDeletedIds: deletedCardIds,
-      user,
-      syncService: sync,
-      onCardsUpdated: (newCards, newDeletedIds) =>
-        onUpdateCards(newCards, false, newDeletedIds),
-    })
+    const res = await onSync()
     setLoadingAction(null)
     if (res.success) {
       triggerTransientFeedback('synced', 2500)
@@ -191,6 +218,7 @@ export function SyncModal({
       setStatusMsg({
         type: 'error',
         message: res.error || 'Failed to sync with cloud.',
+        syncHelp: true,
       })
     }
   }
@@ -198,11 +226,20 @@ export function SyncModal({
   const handleSignOut = async () => {
     clearTransientFeedback()
     setLoadingAction('signout')
-    await auth.signOut()
-    setLoadingAction(null)
-    setIsOtpSent(false)
-    setToken('')
-    setStatusMsg(null)
+    try {
+      await auth.signOut()
+      setIsOtpSent(false)
+      setToken('')
+      setStatusMsg(null)
+    } catch {
+      setStatusMsg({
+        type: 'error',
+        message:
+          'Your sign-in session could not be removed from this device. Allow browser storage access, then try signing out again.',
+      })
+    } finally {
+      setLoadingAction(null)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -211,32 +248,26 @@ export function SyncModal({
     setLoadingAction('delete')
     setStatusMsg(null)
     try {
-      if (sync.deleteRemoteDeck) {
-        const deleteRes = await sync.deleteRemoteDeck(user)
-        if (!deleteRes.success) {
-          setStatusMsg({
-            type: 'error',
-            message: deleteRes.error || 'Failed to delete cloud deck.',
-          })
-          setLoadingAction(null)
-          return
+      if (backupBeforeDelete) {
+        if (onDownloadBackup) {
+          onDownloadBackup(cards)
+        } else {
+          const backupClock = clock ?? { now: () => Date.now() }
+          const backup = createDeckBackup(cards, backupClock)
+          downloadJsonFile(backup.filename, backup.json)
         }
       }
-      if (auth.deleteAccount) {
-        const authRes = await auth.deleteAccount()
-        if (!authRes.success) {
-          setStatusMsg({
-            type: 'error',
-            message: authRes.error || 'Failed to delete cloud account.',
-          })
-          setLoadingAction(null)
-          return
-        }
-      } else {
-        await auth.signOut()
+      const authRes = await onDeleteAccount()
+      if (!authRes.success) {
+        setStatusMsg({
+          type: 'error',
+          message: authRes.error || 'Failed to delete cloud account.',
+        })
+        return
       }
       setIsOtpSent(false)
       setToken('')
+      setDeleteConfirmText('')
       setIsConfirmingDelete(false)
       setStatusMsg({
         type: 'info',
@@ -252,8 +283,33 @@ export function SyncModal({
     }
   }
 
+  const statusBanner = statusMsg && (
+    <div
+      ref={statusRef}
+      className={`status-banner status-${statusMsg.type}`}
+      role={statusMsg.type === 'error' ? 'alert' : 'status'}
+    >
+      <p>{statusMsg.message}</p>
+      {statusMsg.syncHelp && (
+        <a
+          href={
+            location.protocol === 'capacitor:'
+              ? 'https://joli.to/update'
+              : '/update'
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Update help (opens a new tab)
+        </a>
+      )}
+    </div>
+  )
+  const showDeletionError =
+    user && isConfirmingDelete && statusMsg?.type === 'error'
+
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
+    <div className="modal-backdrop" onClick={handleClose} role="presentation">
       <div
         className="modal-content sync-modal"
         role="dialog"
@@ -277,21 +333,14 @@ export function SyncModal({
           <button
             type="button"
             className="modal-close"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close dialog"
           >
             ✕
           </button>
         </div>
 
-        {statusMsg && (
-          <div
-            className={`status-banner status-${statusMsg.type}`}
-            role={statusMsg.type === 'error' ? 'alert' : 'status'}
-          >
-            <p>{statusMsg.message}</p>
-          </div>
-        )}
+        {!showDeletionError && statusBanner}
 
         {!isBackendConfigured && !user ? (
           <div className="sync-notice-card">
@@ -363,40 +412,82 @@ export function SyncModal({
             </div>
 
             {isConfirmingDelete ? (
-              <div className="sync-delete-confirm-box" role="alert">
+              <form
+                className="sync-delete-confirm-box"
+                role="group"
+                aria-label="Confirm cloud account deletion"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (deleteConfirmText.trim() === 'DELETE' && !loading) {
+                    void handleDeleteAccount()
+                  }
+                }}
+              >
                 <p className="delete-confirm-text">
-                  Permanently delete your cloud backup from Jolito servers?
-                  Local flashcards on this device remain untouched.
+                  Permanently deletes your account and backups from Jolito
+                  servers. Other connected devices will stop syncing.
                 </p>
+
+                <label className="delete-backup-option">
+                  <input
+                    type="checkbox"
+                    checked={backupBeforeDelete}
+                    onChange={(e) => setBackupBeforeDelete(e.target.checked)}
+                  />
+                  <span>
+                    Download an offline backup to this device before deleting
+                  </span>
+                </label>
+
+                <div className="delete-confirm-input-wrap">
+                  <label
+                    htmlFor="delete-confirm-input"
+                    className="delete-input-label"
+                  >
+                    Type <strong>DELETE</strong> to confirm:
+                  </label>
+                  <input
+                    ref={deleteInputRef}
+                    id="delete-confirm-input"
+                    type="text"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder="DELETE"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="delete-input"
+                  />
+                </div>
+
+                {showDeletionError && statusBanner}
                 <div className="delete-confirm-actions">
                   <button
                     type="button"
-                    className="danger-button confirm-delete-btn"
-                    onClick={() => {
-                      void handleDeleteAccount()
-                    }}
+                    className="secondary-button cancel-delete-btn"
+                    onClick={handleCancelDeleteConfirm}
                     disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="danger-button confirm-delete-btn"
+                    disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
                   >
                     {loadingAction === 'delete'
                       ? 'Deleting…'
                       : 'Yes, delete cloud data'}
                   </button>
-                  <button
-                    type="button"
-                    className="secondary-button cancel-delete-btn"
-                    onClick={() => setIsConfirmingDelete(false)}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
                 </div>
-              </div>
+              </form>
             ) : (
               <div className="sync-account-footer">
                 <button
+                  ref={deleteTriggerRef}
                   type="button"
                   className="modal-link-btn delete-account-link"
-                  onClick={() => setIsConfirmingDelete(true)}
+                  onClick={handleOpenDeleteConfirm}
                   disabled={loading}
                 >
                   Delete cloud account & data
@@ -435,105 +526,63 @@ export function SyncModal({
                   : 'Send sign-in link →'}
             </button>
           </form>
-        ) : !showPasteLink ? (
-          <div className="sync-sent-pane">
-            <p className="sync-explanation">
-              {pendingCardPrompt ? (
-                <>
-                  Click the sign-in link sent to <strong>{email.trim()}</strong>
-                  . Your card “{pendingCardPrompt}” will be saved to your deck
-                  automatically.
-                </>
-              ) : (
-                <>
-                  Click the sign-in link sent to <strong>{email.trim()}</strong>{' '}
-                  to connect your account.
-                </>
-              )}
-            </p>
-            <div className="sync-sent-actions">
-              <button
-                type="button"
-                className={`secondary-button resend-link-button ${isLinkResent ? 'is-sent' : ''}`}
-                disabled={loading}
-                onClick={() => {
-                  void handleSendLink(true)
-                }}
-              >
-                {isLinkResent ? (
-                  <span className="resend-button-sent">
-                    <span className="resend-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="resend-button-text">Link sent!</span>
-                  </span>
-                ) : (
-                  <span>
-                    {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
-                  </span>
-                )}
-              </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setShowPasteLink(true)
-                    setTimeout(() => pasteInputRef.current?.focus(), 0)
-                  }}
-                >
-                  Paste link manually
-                </button>
-              </div>
-            </div>
-          </div>
         ) : (
           <form
             onSubmit={(e) => {
               void handleVerifyOtp(e)
             }}
-            className="sync-auth-form"
+            className="sync-auth-form sync-sent-pane"
           >
             {isStandalone() && isIOS() ? (
               <p className="sync-explanation">
-                Open the email in Safari, tap <strong>Copy sign-in link</strong>{' '}
-                on the top banner, then paste it here:
+                Tap the link in your email, then tap{' '}
+                <strong>Copy sign-in link</strong> in Jolito’s top banner, or
+                enter the 6-digit code below:
+              </p>
+            ) : pendingCardPrompt ? (
+              <p className="sync-explanation">
+                Click the sign-in link sent to <strong>{email.trim()}</strong>,
+                or enter the 6-digit code below. Your card “{pendingCardPrompt}”
+                will be saved to your deck automatically:
               </p>
             ) : (
               <p className="sync-explanation">
-                Paste the sign-in link or 6-digit code sent to{' '}
-                <strong>{email.trim()}</strong>:
+                Click the sign-in link sent to <strong>{email.trim()}</strong>,
+                or enter the 6-digit code below:
               </p>
             )}
             <div className="field-group">
-              <label htmlFor="sync-otp">Sign-in link or code</label>
+              <label htmlFor="sync-otp">6-digit code or sign-in link</label>
               <div className="link-input-wrap">
                 <input
                   ref={pasteInputRef}
                   id="sync-otp"
+                  name="one-time-code"
                   type="text"
                   required
                   autoFocus
-                  placeholder="Paste link or code"
+                  placeholder="e.g. 123456 or paste link"
                   autoComplete="one-time-code"
+                  inputMode={
+                    token.trim().length === 0 || /^[\d\s-]+$/.test(token.trim())
+                      ? 'numeric'
+                      : 'text'
+                  }
                   value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  className="link-input"
+                  onChange={(e) =>
+                    setToken(unwrapDomainBoundOtp(e.target.value))
+                  }
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData('text')
+                    if (pasted) {
+                      const unwrapped = unwrapDomainBoundOtp(pasted)
+                      if (unwrapped !== pasted) {
+                        e.preventDefault()
+                        setToken(unwrapped)
+                      }
+                    }
+                  }}
+                  className={`link-input ${/^[\d\s-]+$/.test(token.trim()) && /\d/.test(token.trim()) ? 'otp-code-input' : ''}`}
                 />
                 {typeof navigator !== 'undefined' &&
                   typeof navigator.clipboard?.readText === 'function' && (
@@ -582,11 +631,18 @@ export function SyncModal({
                     void handleSendLink(true)
                   }}
                 >
-                  {isLinkResent
-                    ? 'Link sent! ✓'
-                    : loadingAction === 'send'
-                      ? 'Resending…'
-                      : 'Resend link'}
+                  {isLinkResent ? (
+                    <span className="resend-button-sent">
+                      <span className="resend-button-check" aria-hidden="true">
+                        ✓
+                      </span>
+                      <span className="resend-button-text">Link sent!</span>
+                    </span>
+                  ) : (
+                    <span>
+                      {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
+                    </span>
+                  )}
                 </button>
                 <span className="sync-sub-action-dot" aria-hidden="true">
                   ·
@@ -596,7 +652,6 @@ export function SyncModal({
                   className="modal-link-btn"
                   onClick={() => {
                     setIsOtpSent(false)
-                    setShowPasteLink(isStandalone() && isIOS())
                     setToken('')
                     setStatusMsg(null)
                   }}
@@ -615,9 +670,9 @@ export function SyncModal({
         <div className="sync-modal-legal">
           <button
             type="button"
-            className="modal-link-btn sync-privacy-link"
+            className="sync-privacy-link"
             onClick={() => {
-              onClose()
+              handleClose()
               if (onOpenPrivacy) {
                 onOpenPrivacy()
               } else {
@@ -625,8 +680,36 @@ export function SyncModal({
               }
             }}
           >
-            Privacy Policy
+            Privacy
           </button>
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>
+          <button
+            type="button"
+            className="sync-privacy-link"
+            onClick={() => {
+              handleClose()
+              if (onOpenFeedback) {
+                onOpenFeedback()
+              } else {
+                window.location.hash = '#/feedback'
+              }
+            }}
+          >
+            Feedback
+          </button>
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>
+          <a
+            href="/acknowledgements"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sync-privacy-link"
+          >
+            Acknowledgements
+          </a>
         </div>
       </div>
     </div>

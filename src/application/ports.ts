@@ -1,9 +1,9 @@
 import type { StudyCard } from '../domain/card'
 import type { FeedbackSubmission } from '../domain/feedback'
 import type { AutocompleteSuggestion, LexiconEntry } from '../domain/lexicon'
-import type { SyncStatus } from '../domain/sync'
+import type { CommunityStats } from '../domain/community-stats'
 
-export type { FeedbackSubmission }
+export type { FeedbackSubmission, CommunityStats }
 
 export type Clock = {
   now(): number
@@ -13,9 +13,29 @@ export type IdGenerator = {
   nextId(prefix?: string): string
 }
 
+export type CardLoadResult =
+  | { status: 'missing' | 'loaded' | 'migrated'; cards: StudyCard[] }
+  | {
+      status: 'recovery'
+      reason: 'corrupt' | 'unsupported' | 'unavailable' | 'migration-failed'
+      cards: []
+      raw: string | null
+      message: string
+    }
+
+export type AccountDeletion = {
+  ownerId: string
+  phase: 'requested' | 'confirmed'
+}
+
 export type CardRepository = {
-  load(fallback: StudyCard[]): StudyCard[]
+  getPendingDeletion(): AccountDeletion | null
+  setPendingDeletion(phase: AccountDeletion['phase'] | null): void
+  forOwner(ownerId: string | null): CardRepository
+  forget(): void
+  load(fallback: StudyCard[]): CardLoadResult
   getDeletedCardIds(): string[]
+  /** Commits atomically or throws; callers must save before publishing state. */
   save(cards: StudyCard[], deletedCardIds?: string[]): void
 }
 
@@ -76,6 +96,9 @@ export type AuthUser = {
 }
 
 export type AuthService = {
+  getCurrentUser(): AuthUser | null
+  /** Commit fence: active and persisted ownership must both match, including guest. */
+  isCurrentOwner(ownerId: string | null): boolean
   getUser(): Promise<AuthUser | null>
   isConfigured?(): boolean
   consumeRedirectAuth?(): boolean
@@ -90,7 +113,11 @@ export type AuthService = {
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }>
   signOut(): Promise<void>
-  deleteAccount?(): Promise<{ success: boolean; error?: string | undefined }>
+  deleteAccount?(): Promise<{
+    success: boolean
+    error?: string | undefined
+    outcomeUnknown?: boolean
+  }>
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void
   destroy?(): void
 }
@@ -101,24 +128,16 @@ export type SyncResult = {
   deletedCardIds?: string[] | undefined
   error?: string | undefined
   syncedAt?: number | undefined
+  revision?: number | undefined
 }
 
 export type SyncService = {
-  getStatus(): SyncStatus
-  pushDeck(
-    cards: StudyCard[],
-    user: AuthUser,
-    deletedCardIds?: string[],
-  ): Promise<SyncResult>
-  pullDeck(user: AuthUser): Promise<SyncResult>
   syncDeck(
     localCards: StudyCard[],
     user: AuthUser,
     localDeletedIds?: string[],
+    signal?: AbortSignal,
   ): Promise<SyncResult>
-  deleteRemoteDeck?(
-    user: AuthUser,
-  ): Promise<{ success: boolean; error?: string | undefined }>
 }
 
 export type FeedbackResult = {
@@ -133,7 +152,17 @@ export type FeedbackService = {
   ): Promise<FeedbackResult>
 }
 
+export type CommunityStatsService = {
+  getCommunityStats(signal?: AbortSignal): Promise<CommunityStats | null>
+}
+
+export type DeletionLock = {
+  /** Excludes deletion, recovery and cancellation for this storage lifetime. */
+  run<T>(operation: () => T | Promise<T>): Promise<T>
+}
+
 export type AppServices = {
+  deletionLock: DeletionLock
   clock: Clock
   ids: IdGenerator
   cards: CardRepository
@@ -144,4 +173,5 @@ export type AppServices = {
   auth: AuthService
   sync: SyncService
   feedback: FeedbackService
+  communityStats?: CommunityStatsService
 }

@@ -4,14 +4,9 @@ import { ShieldIcon } from '../icons'
 export interface PrivacyModalProps {
   isOpen: boolean
   onClose: () => void
-  onOpenFeedback?: () => void
 }
 
-export function PrivacyModal({
-  isOpen,
-  onClose,
-  onOpenFeedback,
-}: PrivacyModalProps) {
+export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,8 +63,9 @@ export function PrivacyModal({
           <section className="privacy-section">
             <h3>2. What We Collect</h3>
             <p>
-              <strong>Email:</strong> Used only to send your passwordless
-              sign-in link. Never shared, sold, or used for marketing.
+              <strong>Email:</strong> Used for passwordless sign-in and to
+              notify Jolito’s maintainer when you join. Never sold or used for
+              marketing.
             </p>
             <p>
               <strong>Your Decks & Progress:</strong> Synced to your private
@@ -92,7 +88,9 @@ export function PrivacyModal({
               To permanently delete your cloud data, tap{' '}
               <strong>Cloud sync → Delete cloud account & data</strong> in the
               app. We immediately and permanently delete your user record, cloud
-              decks, and feedback from our servers.
+              decks, feedback, and signup notification records from our servers.
+              Emails already delivered to the maintainer’s inbox are not removed
+              automatically.
             </p>
           </section>
 
@@ -117,31 +115,23 @@ export function PrivacyModal({
               >
                 Steffen Smolka
               </a>
+              . You can reach me at{' '}
+              <a href="mailto:a@joli.to" className="privacy-contact-link">
+                a@joli.to
+              </a>
               .
             </p>
             <p>
-              You can open an issue{' '}
+              See our{' '}
               <a
-                href="https://github.com/smolkaj/jolito"
+                href="/acknowledgements"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="privacy-contact-link"
               >
-                on GitHub
+                acknowledgements
               </a>{' '}
-              or submit feedback{' '}
-              <a
-                href="#/feedback"
-                className="privacy-contact-link"
-                onClick={(e) => {
-                  e.preventDefault()
-                  onClose()
-                  onOpenFeedback?.()
-                }}
-              >
-                directly in the app
-              </a>
-              .
+              for the open-source projects and creators that power Jolito.
             </p>
           </section>
         </div>

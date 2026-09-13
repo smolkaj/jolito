@@ -24,6 +24,7 @@ export interface UseStudyAudioOptions {
   haptics?: HapticsPlayer | undefined
   currentCard?: StudyCard | undefined
   view?: string | undefined
+  paused?: boolean | undefined
   autoplayPrompt?: boolean | undefined
   staggerMs?: number | undefined
 }
@@ -34,6 +35,7 @@ export function useStudyAudio({
   haptics,
   currentCard,
   view,
+  paused = false,
   autoplayPrompt = true,
   staggerMs = DEFAULT_REVEAL_AUDIO_STAGGER_MS,
 }: UseStudyAudioOptions) {
@@ -151,6 +153,7 @@ export function useStudyAudio({
   useEffect(() => {
     if (
       view !== 'review' ||
+      paused ||
       !autoplayPrompt ||
       !currentCardId ||
       !currentPrompt
@@ -163,6 +166,7 @@ export function useStudyAudio({
       explicit: false,
     })
   }, [
+    paused,
     autoplayPrompt,
     currentCardId,
     currentPrompt,
@@ -172,20 +176,21 @@ export function useStudyAudio({
     view,
   ])
 
-  // Automatically cancel pending audio on view or card transition
+  // A dialog interrupts playback; the next interaction can resume normally.
+  useEffect(() => {
+    if (!paused) return
+    cancelPendingAudio()
+    speaker.stop?.()
+  }, [paused, cancelPendingAudio, speaker])
+
+  // One lifecycle for both learning modes and manual audio outside practice.
   useEffect(() => {
     cancelPendingAudio()
-  }, [cancelPendingAudio, currentCardId, view])
-
-  // Cleanup pending timer on unmount
-  useEffect(() => {
     return () => {
-      if (revealAudioTimerRef.current !== null) {
-        window.clearTimeout(revealAudioTimerRef.current)
-        revealAudioTimerRef.current = null
-      }
+      cancelPendingAudio()
+      speaker.stop?.()
     }
-  }, [])
+  }, [cancelPendingAudio, currentCardId, view, speaker])
 
   return {
     audioUnavailable,

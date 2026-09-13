@@ -1,6 +1,7 @@
 name: iOS Native Build
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -14,15 +15,24 @@ permissions:
 
 jobs:
   ios-build:
-    name: Xcode iOS compilation gate
-    runs-on: macos-latest
+    name: Xcode iOS build
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: bundle exec ruby tests/release/release_test.rb
       - run: npm ci --no-audit
+      - run: npm run test:release
       - run: npm run build
       - run: npm run cap:sync
       - name: Build Xcode iOS scheme
@@ -30,6 +40,89 @@ jobs:
           xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
             -destination 'generic/platform=iOS' \
-            -configuration Debug \
+            -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+  native-screenshots:
+    name: Native screenshots (iPhone & iPad)
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.pull_request.title, 'fix-main:') ||
+      contains(github.event.pull_request.title, '[test-native]') ||
+      contains(github.event.pull_request.labels.*.name, 'test-native')
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: npm ci --no-audit
+      - run: npm run build
+      - run: npm run cap:sync
+      - run: bundle exec ruby scripts/prepare-native-screenshots.rb
+      - name: Resolve simulator devices
+        run: |
+          IPHONE_UDID=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries[] | select(.key | endswith("iOS-26-2")) | .value[] | select(.name == "iPhone 17 Pro Max") | .udid' | head -1)
+          IPAD_UDID=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries[] | select(.key | endswith("iOS-26-2")) | .value[] | select(.name == "iPad Pro 13-inch (M4)") | .udid' | head -1)
+          test -n "$IPHONE_UDID"
+          test -n "$IPAD_UDID"
+          echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
+          echo "IPAD_UDID=$IPAD_UDID" >> "$GITHUB_ENV"
+      - name: Capture iPhone native screenshots
+        timeout-minutes: 25
+        run: bash scripts/capture-native-screenshots.sh "$IPHONE_UDID" build/screenshots-iphone.xcresult "iPhone 17 Pro Max"
+      - name: Capture iPad native screenshots
+        timeout-minutes: 25
+        run: bash scripts/capture-native-screenshots.sh "$IPAD_UDID" build/screenshots-ipad.xcresult "iPad Pro 13-inch (M4)"
+      - name: Export screenshots
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p "build/native-screenshots/iPhone 17 Pro Max" "build/native-screenshots/iPad Pro 13-inch (M4)"
+          if [ -f build/screenshots-iphone.xcresult/Info.plist ]; then
+            xcrun xcresulttool export attachments --path build/screenshots-iphone.xcresult --output-path "build/native-screenshots/iPhone 17 Pro Max"
+          fi
+          if [ -f build/screenshots-ipad.xcresult/Info.plist ]; then
+            xcrun xcresulttool export attachments --path build/screenshots-ipad.xcresult --output-path "build/native-screenshots/iPad Pro 13-inch (M4)"
+          fi
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: native-screenshots-iPhone 17 Pro Max
+          path: |
+            build/native-screenshots/iPhone 17 Pro Max
+            build/screenshots-iphone.xcresult
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: native-screenshots-iPad Pro 13-inch (M4)
+          path: |
+            build/native-screenshots/iPad Pro 13-inch (M4)
+            build/screenshots-ipad.xcresult
+          retention-days: 14
+
+  ios-gate:
+    name: Xcode iOS compilation gate
+    runs-on: ubuntu-latest
+    needs: [ios-build, native-screenshots]
+    if: ${{ always() }}
+    steps:
+      - name: Require compilation and native lifecycle runs when applicable
+        env:
+          BUILD_RESULT: ${{ needs.ios-build.result }}
+          NATIVE_RESULT: ${{ needs.native-screenshots.result }}
+        run: |
+          test "$BUILD_RESULT" = success
+          test "$NATIVE_RESULT" = success || test "$NATIVE_RESULT" = skipped

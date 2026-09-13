@@ -1,3 +1,4 @@
+import { practiceCards } from './test/practice'
 import {
   act,
   fireEvent,
@@ -14,6 +15,16 @@ import { createCards } from './application/create-cards'
 import { starterCards } from './application/starter-cards'
 import { OfflineCardAssistant } from './application/card-assistant'
 import { createTestServices } from './test/services'
+import * as ankiParser from './domain/anki-import'
+import type { SyncResult } from './application/ports'
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((complete) => {
+    resolve = complete
+  })
+  return { promise, resolve }
+}
 
 class SpeechSynthesisUtteranceMock {
   lang = ''
@@ -76,7 +87,7 @@ describe('Jolito', () => {
       'Useful when getting around CDMX.',
     )
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     expect(
       screen.getByRole('heading', { name: '¿Dónde está el metro?' }),
@@ -97,7 +108,7 @@ describe('Jolito', () => {
     // Advance clock by 1 day to practice the reverse card on day 2
     services.fixedClock.currentTime += 24 * 60 * 60 * 1000
     await user.click(screen.getByRole('button', { name: /back home/i }))
-    await user.click(screen.getByRole('button', { name: /^practice/i }))
+    await practiceCards(user)
 
     expect(
       screen.getByRole('heading', { name: 'Where can I find the metro?' }),
@@ -172,7 +183,7 @@ describe('Jolito', () => {
     const services = createTestServices({ cards, clockTime: now })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // First card: gato (es-en)
     expect(screen.getByRole('heading', { name: 'gato' })).toBeInTheDocument()
@@ -191,7 +202,7 @@ describe('Jolito', () => {
     // On day 2, reverse production cards become due
     services.fixedClock.currentTime += 24 * 60 * 60 * 1000
     await user.click(screen.getByRole('button', { name: /back home/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     expect(screen.getByRole('heading', { name: 'cat' })).toBeInTheDocument()
     await user.keyboard('{Enter}')
@@ -218,7 +229,7 @@ describe('Jolito', () => {
     await user.type(screen.getByLabelText(/english/i), 'how cool')
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     expect(screen.getByRole('status')).toHaveTextContent(
       /audio isn’t available/i,
@@ -236,7 +247,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Card 1 (aguacate): fail with Again -> requeued at end
     await user.keyboard('{Enter}')
@@ -281,7 +292,7 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByLabelText(/practice both directions/i))
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Type with missing inverted question mark, missing accents, and typo in restaurante
     await user.type(
@@ -307,7 +318,7 @@ describe('Jolito', () => {
     await user.type(screen.getByLabelText(/spanish/i), 'Hola')
     await user.type(screen.getByLabelText(/english/i), 'Hello')
     await user.click(screen.getByRole('button', { name: /save card/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Type with lowercase 'hello' when expected is 'Hello'
     await user.type(screen.getByLabelText('Your answer'), 'hello')
@@ -371,7 +382,7 @@ describe('Jolito', () => {
     const user = userEvent.setup({ delay: null })
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByLabelText('Your answer')).toBeInTheDocument()
   })
 
@@ -430,6 +441,80 @@ describe('Jolito', () => {
     expect(footerInner).toHaveAttribute('data-nosnippet')
   })
 
+  it('renders community stats in the welcome hero footer when stats are available', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 3,
+        cards: 284,
+        reviews: 310,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    const statsBadge = await waitFor(() => {
+      const el = container.querySelector(
+        '.welcome-hero-footer .hero-community-stats',
+      )
+      expect(el).toBeInTheDocument()
+      return el!
+    })
+    expect(statsBadge).toBeInTheDocument()
+    expect(statsBadge).toHaveAttribute('data-nosnippet')
+    expect(statsBadge).toHaveTextContent('3 users')
+    expect(statsBadge).toHaveTextContent('284 cards')
+    expect(statsBadge).toHaveTextContent('310 reps')
+  })
+
+  it('omits community stats content when community stats are unavailable or have 0 learners', () => {
+    const services = createTestServices({
+      communityStats: null,
+    })
+    const { container } = render(<App services={services} />)
+
+    expect(
+      container.querySelector('.community-stat-item'),
+    ).not.toBeInTheDocument()
+    expect(container.querySelector('.hero-community-stats')).toBeNull()
+
+    const zeroServices = createTestServices({
+      communityStats: {
+        learners: 0,
+        cards: 0,
+        reviews: 0,
+      },
+    })
+    const { container: zeroContainer } = render(<App services={zeroServices} />)
+    expect(
+      zeroContainer.querySelector('.community-stat-item'),
+    ).not.toBeInTheDocument()
+    expect(zeroContainer.querySelector('.hero-community-stats')).toBeNull()
+  })
+
+  it('formats singular stats accurately for 1 user, 1 card, and 1 rep', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 1,
+        cards: 1,
+        reviews: 1,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    await waitFor(() => {
+      const el = container.querySelector(
+        '.welcome-hero-footer .hero-community-stats',
+      )
+      expect(el).toBeInTheDocument()
+    })
+
+    const el = container.querySelector(
+      '.welcome-hero-footer .hero-community-stats',
+    )!
+    expect(el).toHaveTextContent('1 user')
+    expect(el).toHaveTextContent('1 card')
+    expect(el).toHaveTextContent('1 rep')
+  })
+
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
     const services = createTestServices({
       cards: [
@@ -449,6 +534,8 @@ describe('Jolito', () => {
             reviews: 1,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: 0,
         },
       ],
@@ -485,7 +572,7 @@ describe('Jolito', () => {
     window.location.hash = ''
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
@@ -540,6 +627,89 @@ describe('Jolito', () => {
     expect(screen.getByLabelText(/context/i)).toHaveValue('')
     expect(
       screen.queryByRole('listbox', { name: /spanish suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports typing English first: shows suggestions under English field with English primary and auto-fills Spanish on selection', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const englishInput = screen.getByLabelText(/english/i)
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(englishInput, 'avocado')
+
+    const listbox = screen.getByRole('listbox', {
+      name: /english suggestions/i,
+    })
+    expect(listbox).toBeInTheDocument()
+
+    // Assert that the suggestion container is inside the English field group, not Spanish
+    expect(englishInput.closest('.field-group')).toContainElement(listbox)
+    expect(spanishInput.closest('.field-group')).not.toContainElement(listbox)
+
+    // Check English primary term and Spanish secondary translation
+    const option = screen.getByRole('option')
+    const primary = option.querySelector('.suggestion-primary')
+    const secondary = option.querySelector('.suggestion-secondary')
+    expect(primary).toHaveTextContent('avocado')
+    expect(secondary).toHaveTextContent('aguacate')
+
+    // Click suggestion item
+    await user.click(option)
+
+    // Verifies auto-fill of Spanish and English
+    expect(spanishInput).toHaveValue('aguacate')
+    expect(englishInput).toHaveValue('avocado')
+    expect(
+      screen.queryByRole('listbox', { name: /english suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports keyboard navigation (ArrowDown + Enter) on English suggestions', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const englishInput = screen.getByLabelText(/english/i)
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(englishInput, 'beer')
+
+    expect(
+      screen.getByRole('listbox', { name: /english suggestions/i }),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('option', { selected: true })).toBeInTheDocument()
+
+    await user.keyboard('{Enter}')
+    expect(spanishInput).toHaveValue('chela')
+    expect(englishInput).toHaveValue('beer')
+    expect(
+      screen.queryByRole('listbox', { name: /english suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('dismisses English suggestions when focusing Spanish input', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const englishInput = screen.getByLabelText(/english/i)
+    const spanishInput = screen.getByLabelText(/mexican spanish/i)
+    await user.type(englishInput, 'beer')
+
+    expect(
+      screen.getByRole('listbox', { name: /english suggestions/i }),
+    ).toBeInTheDocument()
+
+    // Focus Spanish input
+    await user.click(spanishInput)
+    expect(
+      screen.queryByRole('listbox', { name: /english suggestions/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -1074,7 +1244,7 @@ describe('Jolito', () => {
     expect(reverseAnswer).toHaveAttribute('autocapitalize', 'none')
 
     // 2. Check study review answer field
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     const studyAnswerInput = screen.getByLabelText('Your answer')
     expect(studyAnswerInput).toHaveAttribute('autocapitalize', 'none')
 
@@ -1135,7 +1305,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Prompt wrap contains heading and prompt audio button side by side
     const promptHeading = screen.getByRole('heading', { name: 'aguacate' })
@@ -1205,6 +1375,7 @@ describe('Jolito', () => {
       return {
         success: true,
         cards: cards.map((c) => ({ ...c })),
+        deletedCardIds: [],
         syncedAt: Date.now(),
       }
     }
@@ -1217,7 +1388,7 @@ describe('Jolito', () => {
     // Reset spoken list before starting review
     services.mockSpeaker.spoken = []
 
-    await user.click(screen.getByRole('button', { name: /^practice/i }))
+    await practiceCards(user)
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -1237,7 +1408,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -1252,7 +1423,7 @@ describe('Jolito', () => {
     // Simulate an external background save / card update
     act(() => {
       services.cards.save([
-        ...services.memoryCards.saved!.map((c) => ({ ...c })),
+        ...services.memoryCards.load([]).cards.map((c) => ({ ...c })),
       ])
     })
 
@@ -1339,9 +1510,7 @@ describe('Jolito', () => {
     })
     await user.click(restoreBtn)
 
-    expect(
-      await screen.findByText(/successfully imported 1 cards/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/imported 1 card/i)).toBeInTheDocument()
     expect(services.memoryCards.saved).toHaveLength(1)
     expect(services.memoryCards.saved?.[0]?.prompt).toBe('Buenos días')
   })
@@ -1400,9 +1569,7 @@ describe('Jolito', () => {
     })
     await user.click(mergeBtn)
 
-    expect(
-      await screen.findByText(/successfully imported 1 cards/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/imported 1 card/i)).toBeInTheDocument()
     expect(services.memoryCards.saved?.length).toBeGreaterThan(1)
     expect(
       services.memoryCards.saved?.some((c) => c.prompt === 'Buenas noches'),
@@ -1437,10 +1604,125 @@ describe('Jolito', () => {
     })
     await user.click(importBtn)
 
-    expect(
-      await screen.findByText(/successfully imported 2 cards/i),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/imported 2 cards/i)).toBeInTheDocument()
     expect(services.memoryCards.saved).toHaveLength(2)
+  })
+
+  it('commits the parsed import against the latest deck after an interrupted file read and cloud sync', async () => {
+    const user = userEvent.setup({ delay: null })
+    const initial = createStudyCards(
+      { spanish: 'perro', english: 'dog', context: '', bidirectional: false },
+      'local',
+      1000,
+    )
+    const remote = createStudyCards(
+      { spanish: 'gato', english: 'cat', context: '', bidirectional: false },
+      'remote',
+      1000,
+    )
+    const services = createTestServices({
+      cards: initial,
+      user: { id: 'learner', email: 'learner@example.com' },
+    })
+    const parseSpy = vi.spyOn(ankiParser, 'parseAnkiDeck')
+    render(<App services={services} />)
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+    await user.click(screen.getByLabelText(/merge/i))
+    const syncResult = deferred<SyncResult>()
+    vi.spyOn(services.sync, 'syncDeck').mockImplementationOnce(
+      () => syncResult.promise,
+    )
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+    })
+    const read = deferred<ArrayBuffer>()
+    const file = new File(['hola\thello'], 'held.tsv', { type: 'text/plain' })
+    Object.defineProperty(file, 'arrayBuffer', { value: () => read.promise })
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      file,
+    )
+    await act(async () => {
+      syncResult.resolve({
+        success: true,
+        cards: [...initial, ...remote],
+        deletedCardIds: [],
+      })
+      await syncResult.promise
+    })
+    expect(
+      services.memoryCards.saved?.some((card) => card.id === remote[0]!.id),
+    ).toBe(true)
+    await act(async () => {
+      read.resolve(new TextEncoder().encode('hola\thello').buffer)
+      await read.promise
+    })
+    await screen.findByText(/found 1 cards/i)
+    await user.click(
+      screen.getByRole('button', { name: /merge deck with library/i }),
+    )
+    await screen.findByText('Imported 1 card.')
+    expect(parseSpy).toHaveBeenCalledTimes(1)
+    expect(
+      services.memoryCards.saved?.map((card) => card.prompt).sort(),
+    ).toEqual(['gato', 'hola', 'perro'])
+    parseSpy.mockRestore()
+  })
+
+  it('keeps the newest file preview when earlier reads complete later and stays inert after closing', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await user.click(screen.getByRole('button', { name: /backup & import/i }))
+    const firstRead = deferred<ArrayBuffer>()
+    const firstFile = new File(['old'], 'old.tsv', { type: 'text/plain' })
+    Object.defineProperty(firstFile, 'arrayBuffer', {
+      value: () => firstRead.promise,
+    })
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      firstFile,
+    )
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      new File(['hola\thello\ngato\tcat'], 'new.tsv', { type: 'text/plain' }),
+    )
+    await screen.findByText(/found 2 cards/i)
+    await act(async () => {
+      firstRead.resolve(new TextEncoder().encode('perro\tdog').buffer)
+      await firstRead.promise
+    })
+    expect(screen.getByText(/found 2 cards/i)).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: /import deck \(replace current\)/i }),
+    )
+    expect(services.memoryCards.saved?.map((card) => card.prompt)).toEqual([
+      'hola',
+      'gato',
+    ])
+    const lastRead = deferred<ArrayBuffer>()
+    const lastFile = new File(['closed'], 'closed.tsv', { type: 'text/plain' })
+    Object.defineProperty(lastFile, 'arrayBuffer', {
+      value: () => lastRead.promise,
+    })
+    await user.upload(
+      screen.getByLabelText(/choose anki deck or backup file/i),
+      lastFile,
+    )
+    await user.keyboard('{Escape}')
+    const parseSpy = vi.spyOn(ankiParser, 'parseAnkiDeck')
+    await act(async () => {
+      lastRead.resolve(new TextEncoder().encode('perro\tdog').buffer)
+      await lastRead.promise
+    })
+    expect(parseSpy).not.toHaveBeenCalled()
+    expect(services.memoryCards.saved?.map((card) => card.prompt)).toEqual([
+      'hola',
+      'gato',
+    ])
+    parseSpy.mockRestore()
   })
 
   it('displays error message when importing invalid file', async () => {
@@ -1486,22 +1768,17 @@ describe('Jolito', () => {
       await screen.findByText(/Click the sign-in link sent to/i),
     ).toBeInTheDocument()
 
-    // On standard desktop browser, no paste input is shown by default
-    expect(screen.queryByLabelText(/sign-in link/i)).not.toBeInTheDocument()
-
-    // User can manually toggle paste link input if desired
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
+    // 6-digit OTP code / sign-in link input is immediately visible
+    const tokenInput = screen.getByLabelText(/6-digit code or sign-in link/i)
+    expect(tokenInput).toBeInTheDocument()
 
     // Enter link / token
-    const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
   })
@@ -1531,7 +1808,9 @@ describe('Jolito', () => {
 
     // In iOS standalone mode, paste input and hint are directly visible
     expect(
-      await screen.findByText(/Open the email in Safari, tap/i),
+      await screen.findByText(
+        /Tap the link in your email.*Jolito’s top banner/i,
+      ),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/sign-in link/i)).toBeInTheDocument()
 
@@ -1601,10 +1880,6 @@ describe('Jolito', () => {
     await user.type(emailInput, 'pasted-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
-
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(
       tokenInput,
@@ -1612,9 +1887,9 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
@@ -1629,10 +1904,6 @@ describe('Jolito', () => {
     await user.type(emailInput, 'pasted-magiclink@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
-
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(
       tokenInput,
@@ -1640,9 +1911,9 @@ describe('Jolito', () => {
     )
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
@@ -1669,10 +1940,6 @@ describe('Jolito', () => {
     await user.type(emailInput, 'clipboard-learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
 
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
-
     const pasteBtn = screen.getByRole('button', {
       name: /paste from clipboard/i,
     })
@@ -1684,9 +1951,9 @@ describe('Jolito', () => {
     expect(readTextSpy).toHaveBeenCalledTimes(1)
     await user.click(screen.getByRole('button', { name: /sign in & sync/i }))
 
-    expect(
-      await screen.findByText(/deck synchronized with cloud/i),
-    ).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
+    )
     expect(screen.getByText('Signed in')).toBeInTheDocument()
   })
 
@@ -1697,7 +1964,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
@@ -1768,7 +2035,7 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // Trigger sync now via SyncModal
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
 
@@ -1792,7 +2059,7 @@ describe('Jolito', () => {
     expect(services.mockSync.remoteCards).toHaveLength(1)
     expect(services.mockSync.remoteCards[0]?.id).toBe('note-2:es-en')
     expect(services.mockSync.remoteDeletedCardIds).toContain('note-1:es-en')
-    expect(services.memoryCards.load([])).toHaveLength(1)
+    expect(services.memoryCards.load([]).cards).toHaveLength(1)
     expect(services.memoryCards.getDeletedCardIds()).toContain('note-1:es-en')
   })
 
@@ -1832,7 +2099,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Open sync modal and trigger sync
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
 
@@ -1856,7 +2123,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('allows signed in user to sign out, clears local deck, and returns to demo state', async () => {
+  it('signs out to the demo while retaining the account deck in its isolated scope', async () => {
     const user = userEvent.setup({ delay: null })
     const userCards = createStudyCards(
       {
@@ -1875,25 +2142,19 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Verify user is signed in with custom deck in storage
-    expect(services.memoryCards.load([])).toHaveLength(1)
-    expect(services.memoryCards.load([])[0]?.prompt).toBe('zapato')
+    expect(services.memoryCards.load([]).cards).toHaveLength(1)
+    expect(services.memoryCards.load([]).cards[0]?.prompt).toBe('zapato')
 
     // Open sync modal and click sign out
-    await user.click(screen.getByRole('button', { name: /synced/i }))
+    await user.click(await screen.findByRole('button', { name: /synced/i }))
     expect(screen.getByText('sync-user@example.com')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /sign out/i }))
 
-    expect(await screen.findByLabelText(/email address/i)).toBeInTheDocument()
+    expect(services.cards.forOwner('usr-1').load([]).cards).toEqual(userCards)
+    expect(services.cards.forOwner(null).load([]).cards).toEqual([])
+    expect(screen.queryByText('zapato')).not.toBeInTheDocument()
 
-    // Local storage has been reset to starter cards and cleared of user cards & tombstones
-    const storedCards = services.memoryCards.load([])
-    expect(storedCards.every((c) => c.noteId.startsWith('starter-'))).toBe(true)
-    expect(storedCards.some((c) => c.prompt === 'zapato')).toBe(false)
-    expect(services.memoryCards.getDeletedCardIds()).toEqual([])
-
-    // Close sync modal and verify UI shows starter demo state with Sign in button
-    fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
@@ -1940,10 +2201,6 @@ describe('Jolito', () => {
     const emailInput = screen.getByLabelText(/email address/i)
     await user.type(emailInput, 'learner@example.com')
     await user.click(screen.getByRole('button', { name: /send sign-in link/i }))
-
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
 
     const pasteBtn = screen.getByRole('button', {
       name: /paste from clipboard/i,
@@ -2023,7 +2280,7 @@ describe('Jolito', () => {
     })
     render(<App services={authedServices} />)
     expect(
-      screen.getByRole('button', { name: /deck synced with cloud/i }),
+      await screen.findByRole('button', { name: /deck synced with cloud/i }),
     ).toBeInTheDocument()
 
     window.dispatchEvent(new Event('offline'))
@@ -2063,7 +2320,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Initial state: 2 cards in queue, 0% progress
     const progress = screen.getByRole('progressbar', {
@@ -2216,7 +2473,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // 3. Navigate to review and practice all due cards
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'chido' })).toBeInTheDocument()
   })
 
@@ -2302,10 +2559,7 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /save card & send link/i }),
     )
 
-    // 4. Guest toggles paste input and enters link / code
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
+    // 4. Guest enters OTP code directly into visible input
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(
@@ -2319,8 +2573,8 @@ describe('Jolito', () => {
       }),
     ).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/saved “chido”/i)
-    expect(spanishInput).toHaveValue('')
-    expect(englishInput).toHaveValue('')
+    expect(screen.getByLabelText(/mexican spanish/i)).toHaveValue('')
+    expect(screen.getByLabelText(/^english/i)).toHaveValue('')
     expect(services.memoryCards.saved).toHaveLength(2)
   })
 
@@ -2356,7 +2610,9 @@ describe('Jolito', () => {
     )
 
     expect(
-      await screen.findByText(/Open the email in Safari, tap/i),
+      await screen.findByText(
+        /Tap the link in your email.*Jolito’s top banner/i,
+      ),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/sign-in link/i)).toBeInTheDocument()
 
@@ -2462,10 +2718,6 @@ describe('Jolito', () => {
       screen.getByRole('button', { name: /save card & send link/i }),
     )
 
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
-    )
-
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
     await user.click(
@@ -2535,9 +2787,6 @@ describe('Jolito', () => {
     await user.type(emailInput, 'existing-user@example.com')
     await user.click(
       screen.getByRole('button', { name: /save card & send link/i }),
-    )
-    await user.click(
-      screen.getByRole('button', { name: /paste link manually/i }),
     )
     const tokenInput = screen.getByLabelText(/sign-in link/i)
     await user.type(tokenInput, '123456')
@@ -2660,6 +2909,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 1000,
       },
       {
@@ -2678,6 +2929,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 3000,
       },
       {
@@ -2696,6 +2949,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 2000,
       },
     ]
@@ -3081,7 +3336,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Start practice session
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
@@ -3134,7 +3389,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'aguacate' }),
     ).toBeInTheDocument()
@@ -3230,7 +3485,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Finish 4 demo cards
     for (let i = 0; i < 4; i++) {
@@ -3274,7 +3529,9 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // 1. Welcome view displays clean Practice button
-    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^practice$/i }),
+    ).toBeInTheDocument()
 
     // 2. Create view displays 'Save card' (not 'Sign in to save')
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
@@ -3316,6 +3573,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     }
     const mediumCard: StudyCard = {
@@ -3334,6 +3593,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     }
     const shortCard: StudyCard = {
@@ -3352,15 +3613,20 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: 0,
     }
 
-    services.cards.load = () => [longCard, mediumCard, shortCard]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [longCard, mediumCard, shortCard],
+    })
 
     render(<App services={services} />)
 
     // 1. Study view scaling
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     const studyHeading = screen.getByRole('heading', { name: longPrompt })
     expect(studyHeading).toHaveClass('study-prompt', 'is-long')
 
@@ -3714,7 +3980,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // With 0 cards due, practice leads straight to complete view
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: /you’re caught up\./i }),
     ).toBeInTheDocument()
@@ -3752,6 +4018,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -3770,6 +4038,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardC: StudyCard = {
@@ -3788,14 +4058,19 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB, cardC]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [cardA, cardB, cardC],
+    })
     render(<App services={services} />)
 
     // Start practice session
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'uno' })).toBeInTheDocument()
 
     // Answer first card with Easy (4) to graduate it
@@ -3816,7 +4091,9 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // Topbar in deck should have Practice button
-    const practiceButton = screen.getByRole('button', { name: /^practice$/i })
+    const practiceButton = screen.getByRole('button', {
+      name: /^practice$/i,
+    })
     expect(practiceButton).toBeInTheDocument()
 
     // Resume review session via Practice button
@@ -3856,6 +4133,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -3874,13 +4153,15 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA, cardB] })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'palabra-a' }),
     ).toBeInTheDocument()
@@ -3894,7 +4175,7 @@ describe('Jolito', () => {
 
     // Navigate away to deck and resume
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Finish card B
     expect(
@@ -3938,6 +4219,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: now,
       }
     })
@@ -3948,7 +4231,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'palabra-01' }),
     ).toBeInTheDocument()
@@ -4013,13 +4296,15 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA] })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'palabra' })).toBeInTheDocument()
 
     // Click brand logo to go home
@@ -4035,7 +4320,7 @@ describe('Jolito', () => {
     expect(practiceHeroButton).toBeInTheDocument()
 
     // Click Practice to return to active card
-    await user.click(practiceHeroButton)
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'palabra' })).toBeInTheDocument()
   })
 
@@ -4063,13 +4348,15 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA]
+    services.cards.load = () => ({ status: 'loaded', cards: [cardA] })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'palabra original' }),
     ).toBeInTheDocument()
@@ -4087,7 +4374,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }))
 
     // Resume review via Practice button
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'palabra actualizada' }),
     ).toBeInTheDocument()
@@ -4117,6 +4404,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -4135,6 +4424,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardC: StudyCard = {
@@ -4153,14 +4444,19 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
-    services.cards.load = () => [cardA, cardB, cardC]
+    services.cards.load = () => ({
+      status: 'loaded',
+      cards: [cardA, cardB, cardC],
+    })
     render(<App services={services} />)
 
     // Start practice with 3 cards
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'card-1' })).toBeInTheDocument()
 
     // Answer card 1 with Easy (4) -> 1 completed out of 3 (33%)
@@ -4194,7 +4490,7 @@ describe('Jolito', () => {
     )
 
     // Resume review via Practice button
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'card-2' })).toBeInTheDocument()
 
     // 1 completed out of 2 total -> 50%
@@ -4234,6 +4530,8 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
         {
@@ -4252,16 +4550,18 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
       )
     }
 
-    services.cards.load = () => cards
+    services.cards.load = () => ({ status: 'loaded', cards: cards })
     render(<App services={services} />)
 
     // Start practice (queue gets 15 es-en cards, en-es siblings are outside the queue)
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'es-01' })).toBeInTheDocument()
 
     const progressBar = screen.getByRole('progressbar', {
@@ -4311,6 +4611,8 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
         {
@@ -4329,16 +4631,18 @@ describe('Jolito', () => {
             reviews: 0,
             lapses: 0,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now,
         },
       )
     }
 
-    services.cards.load = () => cards
+    services.cards.load = () => ({ status: 'loaded', cards: cards })
     render(<App services={services} />)
 
     // Start practice (queue gets 2 cards: es-01, es-02; en-01 and en-02 are separated into secondary cohort)
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(screen.getByRole('heading', { name: 'es-01' })).toBeInTheDocument()
 
     const progressBar = screen.getByRole('progressbar', {
@@ -4377,6 +4681,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: now,
       }
     })
@@ -4389,7 +4695,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // 1. Click Practice on home screen -> starts batch 1 with 15 cards
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('heading', { name: 'palabra-01' }),
     ).toBeInTheDocument()
@@ -4461,6 +4767,8 @@ describe('Jolito', () => {
             lapses: 0,
             lastReviewedAt: now - 86400000,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now - 86400000,
         },
         {
@@ -4480,6 +4788,8 @@ describe('Jolito', () => {
             lapses: 0,
             lastReviewedAt: now - 86400000,
           },
+          contentRevision: 0,
+          resetRevision: { generation: 0, at: 0 },
           createdAt: now - 86400000,
         },
       )
@@ -4489,7 +4799,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Start practice -> queues exactly 14 cards (all 14 primary active cards, 0 secondary siblings)
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toHaveAttribute('aria-valuetext', '14 cards remaining')
@@ -4545,7 +4855,7 @@ describe('Jolito', () => {
     })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // First card: rate Again (requeued)
     expect(screen.getByRole('heading', { name: 'hola' })).toBeInTheDocument()
@@ -4591,6 +4901,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4605,7 +4917,7 @@ describe('Jolito', () => {
     expect(services.mockSync.syncedCount).toBeGreaterThanOrEqual(1)
     const initialSyncs = services.mockSync.syncedCount
 
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
     await user.keyboard('{Enter}')
     await user.keyboard('4') // Easy -> finishes session and flushes sync
 
@@ -4654,6 +4966,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
     const cardB: StudyCard = {
@@ -4672,6 +4986,8 @@ describe('Jolito', () => {
         reviews: 0,
         lapses: 0,
       },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
       createdAt: now,
     }
 
@@ -4708,7 +5024,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Start practice
-    await user.click(screen.getByRole('button', { name: /^practice$/i }))
+    await practiceCards(user)
 
     // Trigger debounced/focus sync (syncCallCount = 2, returns pending promise)
     window.dispatchEvent(new Event('focus'))
@@ -4751,6 +5067,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
           {
@@ -4769,6 +5087,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -4823,6 +5143,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
           {
@@ -4841,6 +5163,8 @@ describe('Jolito', () => {
               reviews: 2,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -4921,6 +5245,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -4974,6 +5300,8 @@ describe('Jolito', () => {
               reviews: 0,
               lapses: 0,
             },
+            contentRevision: 0,
+            resetRevision: { generation: 0, at: 0 },
             createdAt: 1000,
           },
         ],
@@ -5018,6 +5346,8 @@ describe('Jolito', () => {
           reviews: 0,
           lapses: 0,
         },
+        contentRevision: 0,
+        resetRevision: { generation: 0, at: 0 },
         createdAt: 1000,
       }
       const services = createTestServices({ cards: [card] })
@@ -5025,7 +5355,7 @@ describe('Jolito', () => {
       render(<App services={services} />)
 
       // Enter review
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      await practiceCards(user)
 
       // Prompt auto-play should pass cardSeed: 'c1:turn0'
       expect(
@@ -5082,7 +5412,7 @@ describe('Jolito', () => {
       render(<App services={services} />)
 
       // Enter review
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      await practiceCards(user)
 
       expect(services.mockSpeaker.prunedCalls).toHaveLength(0)
 
@@ -5092,13 +5422,24 @@ describe('Jolito', () => {
       )
       await user.click(screen.getByRole('button', { name: /^delete card$/i }))
 
-      // Prune should have been called with only the remaining active card's items
+      // Vocabulary removal keeps the remaining card and available grammar audio.
       expect(services.mockSpeaker.prunedCalls).toHaveLength(1)
       const prunedActiveItems = services.mockSpeaker.prunedCalls[0]
-      expect(prunedActiveItems).toEqual([
-        { text: 'plátano', locale: 'es-MX' },
-        { text: 'banana', locale: 'en-US' },
-      ])
+      expect(prunedActiveItems).toEqual(
+        expect.arrayContaining([
+          { text: 'plátano', locale: 'es-MX' },
+          { text: 'banana', locale: 'en-US' },
+          { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
+          {
+            text: 'Después de cenar, yo hablé de la película.',
+            locale: 'es-MX',
+          },
+        ]),
+      )
+      expect(prunedActiveItems).not.toContainEqual({
+        text: 'aguacate',
+        locale: 'es-MX',
+      })
     })
 
     it('prunes unused audio cache entries when card text is edited', async () => {
@@ -5120,7 +5461,7 @@ describe('Jolito', () => {
       render(<App services={services} />)
 
       // Open in-study edit modal
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      await practiceCards(user)
       await user.click(
         screen.getByRole('button', { name: /edit card: aguacate/i }),
       )
@@ -5136,10 +5477,21 @@ describe('Jolito', () => {
         services.mockSpeaker.prunedCalls[
           services.mockSpeaker.prunedCalls.length - 1
         ]
-      expect(lastPruned).toEqual([
-        { text: 'palta', locale: 'es-MX' },
-        { text: 'avocado', locale: 'en-US' },
-      ])
+      expect(lastPruned).toEqual(
+        expect.arrayContaining([
+          { text: 'palta', locale: 'es-MX' },
+          { text: 'avocado', locale: 'en-US' },
+          { text: 'Anoche yo hablé con la vecina.', locale: 'es-MX' },
+          {
+            text: 'Después de cenar, yo hablé de la película.',
+            locale: 'es-MX',
+          },
+        ]),
+      )
+      expect(lastPruned).not.toContainEqual({
+        text: 'aguacate',
+        locale: 'es-MX',
+      })
     })
 
     it('cancels pending reveal answer audio when navigating away before stagger expires', async () => {
@@ -5161,7 +5513,7 @@ describe('Jolito', () => {
       render(<App services={services} />)
 
       // Enter review
-      await user.click(screen.getByRole('button', { name: /^practice$/i }))
+      await practiceCards(user)
       services.mockSpeaker.spokenCalls = []
 
       // Reveal card
@@ -5221,7 +5573,7 @@ describe('Jolito', () => {
         '',
         '#why-jolito',
       )
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith()
       scrollIntoViewSpy.mockRestore()
       pushStateSpy.mockRestore()
 
@@ -5269,14 +5621,14 @@ describe('Jolito', () => {
       // Clicking start learning smooth-scrolls back to the top and resets hash if at #why-jolito
       window.location.hash = '#why-jolito'
       const scrollToSpy = vi
-        .spyOn(window, 'scrollTo')
+        .spyOn(screen.getByRole('main'), 'scrollTo')
         .mockImplementation(() => {})
       const pushStateSpy2 = vi
         .spyOn(window.history, 'pushState')
         .mockImplementation(() => {})
       await user.click(startBtn)
       expect(pushStateSpy2).toHaveBeenCalledWith({ view: 'welcome' }, '', '#/')
-      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0 })
       scrollToSpy.mockRestore()
       pushStateSpy2.mockRestore()
     })
@@ -5295,40 +5647,47 @@ describe('Jolito', () => {
         .mockImplementation(() => {})
 
       vi.advanceTimersByTime(100)
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith()
 
       // Simulating popstate back to #/ triggers scrollTo top
       const scrollToSpy = vi
-        .spyOn(window, 'scrollTo')
+        .spyOn(screen.getByRole('main'), 'scrollTo')
         .mockImplementation(() => {})
       window.location.hash = '#/'
       window.dispatchEvent(new PopStateEvent('popstate'))
 
-      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0 })
 
       // Simulating popstate forward to #/why-jolito triggers scrollIntoView
       window.location.hash = '#/why-jolito'
       window.dispatchEvent(new PopStateEvent('popstate'))
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ behavior: 'smooth' })
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith()
 
       scrollIntoViewSpy.mockRestore()
       scrollToSpy.mockRestore()
       vi.useRealTimers()
     })
 
-    it('opens Privacy modal via footer link and via #/privacy hash navigation', async () => {
+    it('opens Privacy modal via #/privacy hash navigation, Sync modal, and deck footer', async () => {
       window.location.hash = '#/'
       const services = createTestServices()
 
       render(<App services={services} />)
 
-      const privacyBtn = screen.getByRole('button', { name: /^privacy$/i })
-      expect(privacyBtn).toBeInTheDocument()
-
-      fireEvent.click(privacyBtn)
+      // Welcome hero only has Feedback button, not Privacy
       expect(
-        screen.getByRole('heading', { name: /privacy policy/i }),
+        screen.getByRole('button', { name: /^feedback$/i }),
       ).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^privacy$/i })).toBeNull()
+
+      // Open Privacy via #/privacy hash
+      window.location.hash = '#/privacy'
+      window.dispatchEvent(new PopStateEvent('popstate'))
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /privacy policy/i }),
+        ).toBeInTheDocument()
+      })
 
       fireEvent.click(
         screen.getByRole('button', { name: /close privacy policy/i }),
@@ -5337,13 +5696,131 @@ describe('Jolito', () => {
         screen.queryByRole('heading', { name: /privacy policy/i }),
       ).toBeNull()
 
-      window.location.hash = '#/privacy'
-      window.dispatchEvent(new PopStateEvent('popstate'))
+      // Open Privacy via Sync Modal legal link
+      const syncPill = screen.getByRole('button', { name: /sign in/i })
+      fireEvent.click(syncPill)
+      expect(
+        screen.getByRole('heading', { name: /^cloud sync$/i }),
+      ).toBeInTheDocument()
+
+      const modalPrivacyBtn = screen.getByRole('button', { name: /^privacy$/i })
+      fireEvent.click(modalPrivacyBtn)
       await waitFor(() => {
         expect(
           screen.getByRole('heading', { name: /privacy policy/i }),
         ).toBeInTheDocument()
       })
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /close privacy policy/i }),
+      )
+    })
+  })
+
+  describe('Curated Starter Packs', () => {
+    it('allows opening starter packs modal from deck manager and adding curated cards', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      // 1. Navigate to deck manager
+      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+
+      // 2. Dismiss guest demo deck modal if open
+      const exploreDemoBtn = screen.queryByRole('button', {
+        name: /explore demo deck/i,
+      })
+      if (exploreDemoBtn) {
+        await user.click(exploreDemoBtn)
+      }
+
+      // 3. Click "Starter packs" button in deck header actions
+      const starterPacksBtn = screen.getByRole('button', {
+        name: /^starter packs$/i,
+      })
+      await user.click(starterPacksBtn)
+
+      // 4. Modal opens with all packs
+      expect(
+        screen.getByRole('dialog', { name: /curated starter packs/i }),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Mexican Street Phrases')).toBeInTheDocument()
+      expect(screen.getByText('Top Verbs: 1–50')).toBeInTheDocument()
+
+      // 5. Click "Add Mexican Street Phrases"
+      const addStreetBtn = screen.getByRole('button', {
+        name: /^add mexican street phrases/i,
+      })
+      await user.click(addStreetBtn)
+
+      // 6. Button in modal becomes disabled and says "In your deck"
+      expect(
+        screen.getByRole('button', {
+          name: /mexican street phrases is already added to your deck/i,
+        }),
+      ).toBeDisabled()
+
+      // 8. Close modal
+      await user.click(screen.getByLabelText('Close dialog'))
+      expect(
+        screen.queryByRole('dialog', { name: /curated starter packs/i }),
+      ).not.toBeInTheDocument()
+
+      // 9. Deck manager now shows the newly added street phrases (both es-en and en-es reciprocal cards)
+      expect(screen.getAllByText('¿Mande?').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('preserves active study session queue and in-flight card across concurrent background interruptions and lifecycle events', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      // 1. Start practice session (sample starter cards)
+      await practiceCards(user)
+      expect(
+        screen.getByRole('heading', { name: 'aguacate' }),
+      ).toBeInTheDocument()
+
+      // 2. Answer and grade card 1
+      const answerInput = screen.getByLabelText('Your answer')
+      await user.type(answerInput, 'avocado')
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+
+      // 3. Queue advances to card 2: 'qué padre'
+      expect(
+        screen.getByRole('heading', { name: 'qué padre' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'aguacate' }),
+      ).not.toBeInTheDocument()
+
+      // 4. Concurrently simulate background lifecycle interruptions (visibility, orientation, focus)
+      act(() => {
+        window.dispatchEvent(new Event('visibilitychange'))
+        window.dispatchEvent(new Event('orientationchange'))
+        window.dispatchEvent(new Event('focus'))
+      })
+
+      // 5. Invariant: Active card must STILL be 'qué padre' and not revert to 'aguacate'
+      expect(
+        screen.getByRole('heading', { name: 'qué padre' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('heading', { name: 'aguacate' }),
+      ).not.toBeInTheDocument()
+
+      // 6. Answer and grade card 2
+      const answerInput2 = screen.getByLabelText('Your answer')
+      await user.type(answerInput2, 'how cool')
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+
+      // 7. Cleanly advances and finishes session
+      expect(
+        screen.getByRole('heading', { name: '¡Hecho!' }),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
     })
   })
 })

@@ -1,0 +1,8 @@
+{
+  "bundleId": "to.joli.app",
+  "version": "1.0",
+  "baseTerritory": "USA",
+  "price": "2.99",
+  "availableInNewTerritories": true,
+  "excludedTerritories": []
+}

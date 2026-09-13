@@ -212,4 +212,35 @@ describe('useStudySession', () => {
       becameEmpty: false,
     })
   })
+
+  it('keeps stable callback references and prevents queue reversion on filterCards without deletions', () => {
+    const { result } = renderHook(() =>
+      useStudySession(createStudySession(['c1', 'c2'])),
+    )
+
+    const initialFilterCards = result.current.filterCards
+    const initialAdvanceOnGrade = result.current.advanceOnGrade
+    const initialStartSession = result.current.startSession
+
+    // Advance session by grading c1
+    act(() => {
+      result.current.advanceOnGrade('c1', graduatedSchedule, [])
+    })
+
+    expect(result.current.queue).toEqual(['c2'])
+    expect(result.current.currentCardId).toBe('c2')
+
+    // Callbacks must retain stable references across state updates
+    expect(result.current.filterCards).toBe(initialFilterCards)
+    expect(result.current.advanceOnGrade).toBe(initialAdvanceOnGrade)
+    expect(result.current.startSession).toBe(initialStartSession)
+
+    // Call filterCards with full card set: must not revert queue to c1
+    act(() => {
+      result.current.filterCards(new Set(['c1', 'c2']))
+    })
+
+    expect(result.current.queue).toEqual(['c2'])
+    expect(result.current.currentCardId).toBe('c2')
+  })
 })

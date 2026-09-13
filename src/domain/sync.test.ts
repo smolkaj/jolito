@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { StudyCard } from './card'
+import fc from 'fast-check'
+import {
+  resetCardProgress,
+  scheduleReview,
+  updateStudyCard,
+  type StudyCard,
+} from './card'
 import { deckSyncPayloadSchema, reconcileStudyCards } from './sync'
 
 const cardA: StudyCard = {
@@ -18,6 +24,8 @@ const cardA: StudyCard = {
     reviews: 0,
     lapses: 0,
   },
+  contentRevision: 0,
+  resetRevision: { generation: 0, at: 0 },
   createdAt: 1000,
 }
 
@@ -37,6 +45,8 @@ const cardB: StudyCard = {
     reviews: 2,
     lapses: 0,
   },
+  contentRevision: 0,
+  resetRevision: { generation: 0, at: 0 },
   createdAt: 2000,
 }
 
@@ -293,5 +303,140 @@ describe('reconcileStudyCards', () => {
     )
     expect(result.cards[0]?.schedule.reviews).toBe(5)
     expect(result.cards[0]?.schedule.lastReviewedAt).toBe(2000)
+  })
+})
+
+describe('authorship and reset convergence', () => {
+  it('preserves an edit while an interrupted sync returns a concurrent review, in either device order', () => {
+    const edited = updateStudyCard(
+      cardA,
+      { answer: 'hi', context: 'informal' },
+      1000,
+    )
+    const reviewed = scheduleReview(cardA, 'easy', 1000)
+    const expected = { ...edited, schedule: reviewed.schedule }
+    expect(reconcileStudyCards([edited], [reviewed]).cards).toEqual([expected])
+    expect(reconcileStudyCards([reviewed], [edited]).cards).toEqual([expected])
+  })
+
+  it('keeps explicit reset intent through old reviews and subsequent practice, including equal and backward clocks', () => {
+    const reviewed = scheduleReview(cardA, 'easy', 5000)
+    const reset = resetCardProgress(reviewed, 1000)
+    for (const [first, second] of [
+      [reset, reviewed],
+      [reviewed, reset],
+    ]) {
+      expect(reconcileStudyCards([first!], [second!]).cards).toEqual([reset])
+    }
+    const practiced = scheduleReview(reset, 'good', 1000)
+    expect(reconcileStudyCards([reviewed], [practiced]).cards).toEqual([
+      practiced,
+    ])
+    const resetAgain = updateStudyCard(practiced, { resetProgress: true }, 500)
+    expect(reconcileStudyCards([practiced], [resetAgain]).cards).toEqual([
+      resetAgain,
+    ])
+  })
+
+  it('totally orders concurrent equal-time edits and permits another edit after convergence', () => {
+    const a = updateStudyCard(cardA, { answer: 'hi' }, 1000)
+    const b = updateStudyCard(cardA, { answer: 'hey' }, 1000)
+    const ab = reconcileStudyCards([a], [b]).cards
+    expect(reconcileStudyCards([b], [a]).cards).toEqual(ab)
+    const editedAgain = updateStudyCard(ab[0]!, { answer: 'hello again' }, 500)
+    expect(reconcileStudyCards([b], [editedAgain]).cards).toEqual([editedAgain])
+    expect(reconcileStudyCards([editedAgain], [a]).cards).toEqual([editedAgain])
+  })
+
+  it('converges across three replicas and equal schedule precedence without depending on merge grouping', () => {
+    const a = updateStudyCard(cardA, { answer: 'hi' }, 1000)
+    const b = scheduleReview(cardA, 'easy', 1000)
+    const c = {
+      ...b,
+      schedule: { ...b.schedule, easeFactor: 3, lastReviewedAt: 2000 },
+    }
+    const merge = (x: StudyCard, y: StudyCard) =>
+      reconcileStudyCards([x], [y]).cards[0]!
+    expect(merge(merge(a, b), c)).toEqual(merge(a, merge(b, c)))
+    expect(merge(b, c)).toEqual(merge(c, b))
+    expect(merge(a, a)).toEqual(a)
+  })
+})
+
+describe('mutation ordering laws', () => {
+  it('is commutative, associative, and idempotent across edits, reviews, and reset epochs', () => {
+    const replica = fc
+      .record({
+        answer: fc.string({ minLength: 1 }),
+        contentRevision: fc.integer({ min: 0, max: 10 }),
+        resetRevision: fc.record({
+          generation: fc.integer({ min: 0, max: 3 }),
+          at: fc.integer({ min: -1000, max: 1000 }),
+        }),
+        schedule: fc.record({
+          state: fc.constantFrom(
+            'new' as const,
+            'learning' as const,
+            'relearning' as const,
+            'review' as const,
+          ),
+          dueAt: fc.integer({ min: -1000, max: 1000 }),
+          intervalDays: fc.integer({ min: 0, max: 10 }),
+          reviews: fc.integer({ min: 0, max: 10 }),
+          lapses: fc.integer({ min: 0, max: 10 }),
+          easeFactor: fc.integer({ min: 1, max: 4 }),
+          lastReviewedAt: fc.option(fc.integer({ min: -1000, max: 1000 }), {
+            nil: undefined,
+          }),
+        }),
+      })
+      .map((value): StudyCard => ({ ...cardA, ...value }))
+    const merge = (a: StudyCard, b: StudyCard) =>
+      reconcileStudyCards([a], [b]).cards[0]!
+    fc.assert(
+      fc.property(replica, replica, replica, (a, b, c) => {
+        expect(merge(a, b)).toEqual(merge(b, a))
+        expect(merge(a, a)).toEqual(a)
+        expect(merge(merge(a, b), c)).toEqual(merge(a, merge(b, c)))
+      }),
+      { numRuns: 200 },
+    )
+  })
+
+  it('keeps repeated edits causal, does not stamp no-op saves, and rejects revision overflow', () => {
+    const edited = updateStudyCard(cardA, { answer: 'hi' }, 1000)
+    const editedAgain = updateStudyCard(edited, { answer: 'hey' }, 1000)
+    expect(editedAgain.contentRevision).toBe(2)
+    expect(
+      updateStudyCard(editedAgain, { answer: ' hey ', resetProgress: false }),
+    ).toEqual(editedAgain)
+    expect(() =>
+      updateStudyCard(
+        { ...cardA, contentRevision: Number.MAX_SAFE_INTEGER },
+        { answer: 'hi' },
+      ),
+    ).toThrow('revision limit')
+    expect(() =>
+      resetCardProgress(
+        {
+          ...cardA,
+          resetRevision: { generation: Number.MAX_SAFE_INTEGER, at: 0 },
+        },
+        0,
+      ),
+    ).toThrow('revision limit')
+  })
+
+  it('discards practice from a losing concurrent reset epoch while equal-time resets converge', () => {
+    const oldReview = scheduleReview(cardA, 'easy', 1000)
+    const a = resetCardProgress(oldReview, 500)
+    const b = resetCardProgress(oldReview, 600)
+    const practicedA = scheduleReview(a, 'easy', 700)
+    expect(reconcileStudyCards([practicedA], [b]).cards).toEqual([b])
+    expect(reconcileStudyCards([b], [practicedA]).cards).toEqual([b])
+    const sameTimeReset = resetCardProgress(oldReview, 500)
+    expect(reconcileStudyCards([sameTimeReset], [practicedA]).cards).toEqual([
+      practicedA,
+    ])
   })
 })
