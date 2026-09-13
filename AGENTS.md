@@ -21,6 +21,10 @@ git worktree remove ../jolito-<task> && git worktree prune
 - After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
 - For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 
+# Hindsight reflection
+
+Before submitting a PR for review, pause and run the [hindsight reflection](.agents/skills/hindsight-reflection) to evaluate whether the change is a genuine improvement, whether starting fresh yields a simpler design, or if the direction should be dropped.
+
 # Independent review loop
 
 Every PR must pass the [independent PR review loop](.agents/skills/independent-pr-review) before merge.
@@ -42,5 +46,5 @@ Whenever investigating or fixing a bug observed by a user or in production:
 
 All agent work must strictly preserve the repository's [Engineering philosophy and core invariants](docs/ARCHITECTURE.md#engineering-philosophy) and [Design principles](docs/DESIGN.md):
 
-- **Philosophy:** Simplicity above all; reject ambient magic & dual systems; know the ideal north star; test-first & DAMP; walking skeleton first; churn is free. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#engineering-philosophy).
+- **Philosophy:** Optimize for agents, not humans; simplicity above all; reject ambient magic & dual systems; know the ideal north star; test-first & DAMP; walking skeleton first; churn is free. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#engineering-philosophy).
 - **Invariants:** Strictly $0.00 operating costs; local-first & offline by default; keyboard-first & accessible (zero WCAG violations); never fail silently; validate boundaries with Zod; data migrations are mandatory; visual verification is mandatory; zero idle activity & deterministic teardown; 100% config-as-code & zero manual drift. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#core-invariants).

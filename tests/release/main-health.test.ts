@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   evaluateMainHealth,
   type WorkflowRun,
+  type OpenPullRequest,
 } from '../../scripts/check-main-health.ts'
 
 void test('evaluates mainline as healthy when all core workflows succeed', () => {
@@ -105,7 +106,7 @@ void test('ignores in-progress runs and evaluates the latest completed run', () 
   assert.equal(result.healthy, true)
 })
 
-void test('allows hotfix PRs to bypass failing mainline check to break deadlocks', () => {
+void test('allows canonical fix-main: title prefix to acquire mutex and bypass check', () => {
   const runs: WorkflowRun[] = [
     {
       workflowName: 'iOS Native Build',
@@ -116,15 +117,147 @@ void test('allows hotfix PRs to bypass failing mainline check to break deadlocks
     },
   ]
 
-  const byBranch = evaluateMainHealth(runs, {
-    headRef: 'fix-main/restore-simulator',
-  })
-  assert.equal(byBranch.healthy, true)
-  assert.equal(byBranch.hotfixBypass, true)
+  const openPrs: OpenPullRequest[] = [
+    {
+      number: 100,
+      title: 'fix-main: restore simulator timeout',
+      createdAt: '2026-09-12T01:00:00Z',
+    },
+  ]
 
-  const byTitle = evaluateMainHealth(runs, {
+  const result = evaluateMainHealth(runs, {
+    prTitle: 'fix-main: restore simulator timeout',
+    prNumber: 100,
+    openPrs,
+  })
+  assert.equal(result.healthy, true)
+  assert.equal(result.hotfixBypass, true)
+  assert.match(result.message, /mutex lock/)
+})
+
+void test('rejects non-canonical bypass attempts when mainline is failing', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'failure',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2',
+    },
+  ]
+
+  // Titles that do not start with canonical 'fix-main:' are rejected
+  const nonCanonical1 = evaluateMainHealth(runs, {
+    prTitle: 'hotfix: broken simulator',
+  })
+  assert.equal(nonCanonical1.healthy, false)
+
+  const nonCanonical2 = evaluateMainHealth(runs, {
     prTitle: 'fix(ci): [fix-main] restore simulator',
   })
-  assert.equal(byTitle.healthy, true)
-  assert.equal(byTitle.hotfixBypass, true)
+  assert.equal(nonCanonical2.healthy, false)
+})
+
+void test('enforces mechanical mutex when multiple fix-main PRs compete', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'failure',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2',
+    },
+  ]
+
+  const openPrs: OpenPullRequest[] = [
+    {
+      number: 100,
+      title: 'fix-main: first fix attempt',
+      createdAt: '2026-09-12T01:00:00Z',
+    },
+    {
+      number: 101,
+      title: 'fix-main: competing second attempt',
+      createdAt: '2026-09-12T01:05:00Z',
+    },
+  ]
+
+  // First PR acquires lock
+  const first = evaluateMainHealth(runs, {
+    prTitle: 'fix-main: first fix attempt',
+    prNumber: 100,
+    openPrs,
+  })
+  assert.equal(first.healthy, true)
+  assert.equal(first.hotfixBypass, true)
+
+  // Second PR is blocked by the mutex
+  const second = evaluateMainHealth(runs, {
+    prTitle: 'fix-main: competing second attempt',
+    prNumber: 101,
+    openPrs,
+  })
+  assert.equal(second.healthy, false)
+  assert.equal(second.mutexBlocked, true)
+  assert.match(second.message, /#100/)
+  assert.match(second.message, /conflicting fixes/)
+})
+
+void test('trims leading whitespace from PR title when checking canonical prefix', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'failure',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2',
+    },
+  ]
+
+  const result = evaluateMainHealth(runs, {
+    prTitle: '   fix-main: fix with whitespace   ',
+  })
+  assert.equal(result.healthy, true)
+  assert.equal(result.hotfixBypass, true)
+})
+
+void test('correctly resolves the latest run even if input runs are unsorted', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: 'failure',
+      status: 'completed',
+      headSha: 'old1234',
+      createdAt: '2026-09-11T10:00:00Z',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/old',
+    },
+    {
+      workflowName: 'Quality',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'new1234',
+      createdAt: '2026-09-12T10:00:00Z',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/new',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'new1234',
+      createdAt: '2026-09-12T10:00:00Z',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/ios',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'new1234',
+      createdAt: '2026-09-12T10:00:00Z',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/codeql',
+    },
+  ]
+
+  const result = evaluateMainHealth(runs)
+  assert.equal(result.healthy, true)
+  assert.match(result.message, /healthy/)
 })

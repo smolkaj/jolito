@@ -13,6 +13,7 @@ infrastructure ────────────┴────────�
 
 ## Engineering philosophy
 
+- **Optimize for agents, not humans.** The primary authors and maintainers of this codebase are autonomous coding agents. Design architecture, modularity, and interfaces for agent comprehension, shallow call-graph traversal, and concurrent worktree evolution, rather than human ergonomic habits or dogmatic abstractions.
 - **Simplicity above all.** Every layer of indirection, abstraction, or "just in case" parameter must justify its existence. When in doubt, leave it out.
 - **Reject ambient magic & dual systems.** Favor explicit, inspectable code over invisible runtime interception or complex build-time code generation. Avoid building static-only solutions that will require a second, divergent mechanism for dynamic/user-created data later.
 - **Know the ideal north star.** Design the unconstrained ideal first. If taking a pragmatic shortcut, explicitly name what was traded away and why.

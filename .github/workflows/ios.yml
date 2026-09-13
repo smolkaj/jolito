@@ -46,9 +46,14 @@ jobs:
 
   native-screenshots:
     name: Native screenshots (iPhone & iPad)
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.pull_request.title, 'fix-main:') ||
+      contains(github.event.pull_request.title, '[test-native]') ||
+      contains(github.event.pull_request.labels.*.name, 'test-native')
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
@@ -76,7 +81,7 @@ jobs:
           echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
           echo "IPAD_UDID=$IPAD_UDID" >> "$GITHUB_ENV"
       - name: Capture iPhone native screenshots
-        timeout-minutes: 8
+        timeout-minutes: 12
         run: |
           xcrun simctl boot "$IPHONE_UDID"
           xcrun simctl bootstatus "$IPHONE_UDID" -b
@@ -90,7 +95,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test
           xcrun simctl shutdown "$IPHONE_UDID"
       - name: Capture iPad native screenshots
-        timeout-minutes: 10
+        timeout-minutes: 12
         run: |
           xcrun simctl boot "$IPAD_UDID"
           xcrun simctl bootstatus "$IPAD_UDID" -b

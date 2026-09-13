@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 jobs:
   quality:
@@ -28,8 +29,9 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           PR_TITLE: ${{ github.event.pull_request.title }}
-          HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node scripts/check-main-health.ts
       - run: npm run check
 
