@@ -1690,7 +1690,16 @@ test('renders community stats quietly in welcome hero footer on desktop and hide
   const desktopResults = await auditAccessibility(page)
   expect(desktopResults.violations).toEqual([])
 
-  // 2. Mobile 360px viewport: community stats completely hidden to preserve clean mobile screen
+  // 2. Tablet & intermediate viewports (700px, 640px): community stats stay visible longer with 0 WCAG violations
+  for (const width of [700, 640]) {
+    await page.setViewportSize({ width, height: 800 })
+    await expect(footerStats).toBeVisible()
+    await expect(footerStats).toContainText('1,420 users')
+    const intermediateResults = await auditAccessibility(page)
+    expect(intermediateResults.violations).toEqual([])
+  }
+
+  // 3. Mobile 360px viewport: community stats completely hidden to preserve clean mobile screen
   await page.setViewportSize({ width: 360, height: 740 })
   await expect(footerStats).toBeHidden()
   await expect(page.locator('.hero-copy .hero-community-stats')).toHaveCount(0)

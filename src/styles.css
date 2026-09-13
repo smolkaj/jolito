@@ -856,7 +856,7 @@ summary:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .welcome-hero-footer .hero-community-stats {
     display: none !important;
   }
@@ -2779,6 +2779,11 @@ kbd {
     font-size: clamp(38px, 5vw, 48px);
   }
 
+  .welcome-hero-footer .hero-scroll-cue {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
   .create-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 32px;
@@ -2884,6 +2889,10 @@ kbd {
 
   .welcome-hero-footer-spacer {
     min-width: 0;
+  }
+
+  .welcome-hero-footer .hero-community-stats {
+    font-size: 0.7rem;
   }
 
   .welcome-hero-footer .hero-scroll-cue {
