@@ -91,7 +91,6 @@ import {
   MexicoFlag,
   SyncAlertIcon,
   SyncSpinnerIcon,
-  CardsSparkleIcon,
   EnglishBadge,
   UserIcon,
 } from './ui/icons'
@@ -1271,51 +1270,6 @@ function LoadedApp({
   const [isDemoDeckDismissed, setIsDemoDeckDismissed] = useState(false)
   const [communityStats, setCommunityStats] = useState<CommunityStats | null>(
     null,
-  )
-  const [statsLayout, setStatsLayout] = useState<
-    | 'pill-tactile'
-    | 'eyebrow-minimal'
-    | 'eyebrow-no-mascot'
-    | 'pill-subtle'
-    | 'adaptive-hybrid'
-  >(() => {
-    if (typeof window !== 'undefined') {
-      const param = new URLSearchParams(window.location.search).get('style')
-      if (
-        param === 'pill-tactile' ||
-        param === 'eyebrow-minimal' ||
-        param === 'eyebrow-no-mascot' ||
-        param === 'pill-subtle' ||
-        param === 'adaptive-hybrid'
-      ) {
-        return param
-      }
-      if (param === 'mascot-pill' || param === 'whisper') return 'pill-tactile'
-      if (param === 'editorial' || param === 'eyebrow') return 'eyebrow-minimal'
-      if (param === 'no-mascot') return 'eyebrow-no-mascot'
-      if (param === 'mascot-bubble' || param === 'mascot') return 'pill-subtle'
-      if (param === 'adaptive' || param === 'footer') return 'adaptive-hybrid'
-    }
-    return 'adaptive-hybrid'
-  })
-
-  const selectStatsLayout = useCallback(
-    (
-      style:
-        | 'pill-tactile'
-        | 'eyebrow-minimal'
-        | 'eyebrow-no-mascot'
-        | 'pill-subtle'
-        | 'adaptive-hybrid',
-    ) => {
-      setStatsLayout(style)
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href)
-        url.searchParams.set('style', style)
-        window.history.replaceState(null, '', url.toString())
-      }
-    },
-    [],
   )
 
   useEffect(() => {
@@ -2616,173 +2570,13 @@ function LoadedApp({
             />
             <section className="welcome-hero">
               <div className="welcome-hero-main">
-                <div
-                  className={`hero-copy ${statsLayout === 'eyebrow-no-mascot' ? 'has-no-mascot' : ''}`}
-                >
-                  {statsLayout !== 'eyebrow-no-mascot' && (
-                    <img
-                      src={logoUrl}
-                      alt=""
-                      aria-hidden="true"
-                      className="welcome-mascot-img"
-                    />
-                  )}
-                  {statsLayout === 'pill-tactile' && (
-                    <div
-                      className="hero-community-stats is-pill-tactile"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <div className="community-tactile-pill">
-                          <CardsSparkleIcon className="community-mini-cards-icon" />
-                          <span className="community-pill-text">
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.learners.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.learners === 1
-                                ? 'learner'
-                                : 'learners'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.cards.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.cards === 1 ? 'card' : 'cards'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.reviews.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.reviews === 1
-                                ? 'review'
-                                : 'reviews'}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {(statsLayout === 'eyebrow-minimal' ||
-                    statsLayout === 'eyebrow-no-mascot') && (
-                    <div
-                      className="hero-community-stats is-eyebrow-minimal"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <p className="community-minimal-eyebrow">
-                          <span className="community-stat-item">
-                            <strong className="community-stat-number">
-                              {communityStats.learners.toLocaleString()}
-                            </strong>{' '}
-                            {communityStats.learners === 1
-                              ? 'learner'
-                              : 'learners'}
-                            &nbsp;/
-                          </span>{' '}
-                          <span className="community-stat-item">
-                            <strong className="community-stat-number">
-                              {communityStats.cards.toLocaleString()}
-                            </strong>{' '}
-                            {communityStats.cards === 1 ? 'card' : 'cards'}
-                            &nbsp;/
-                          </span>{' '}
-                          <span className="community-stat-item">
-                            <strong className="community-stat-number">
-                              {communityStats.reviews.toLocaleString()}
-                            </strong>{' '}
-                            {communityStats.reviews === 1
-                              ? 'review'
-                              : 'reviews'}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {statsLayout === 'pill-subtle' && (
-                    <div
-                      className="hero-community-stats is-pill-subtle"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <div className="community-subtle-pill">
-                          <span
-                            className="community-pulse-indicator"
-                            aria-hidden="true"
-                          >
-                            <span className="community-pulse-ring" />
-                            <span className="community-pulse-core" />
-                          </span>
-                          <span className="community-pill-text">
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.learners.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.learners === 1
-                                ? 'learner'
-                                : 'learners'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.cards.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.cards === 1 ? 'card' : 'cards'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.reviews.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.reviews === 1
-                                ? 'review'
-                                : 'reviews'}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {statsLayout === 'adaptive-hybrid' && (
-                    <div
-                      className="hero-community-stats is-adaptive-mobile-pill"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <div className="community-tactile-pill">
-                          <CardsSparkleIcon className="community-mini-cards-icon" />
-                          <span className="community-pill-text">
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.learners.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.learners === 1
-                                ? 'learner'
-                                : 'learners'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.cards.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.cards === 1 ? 'card' : 'cards'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.reviews.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.reviews === 1
-                                ? 'review'
-                                : 'reviews'}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="hero-copy">
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="welcome-mascot-img"
+                  />
                   <h1>
                     Make the words <br />
                     you meet <em>stick.</em>
@@ -2877,36 +2671,29 @@ function LoadedApp({
                 </div>
               </div>
               <div className="welcome-hero-footer">
-                {statsLayout === 'adaptive-hybrid' ? (
-                  <div
-                    className="hero-community-stats is-adaptive-desktop-footer"
-                    data-nosnippet
-                  >
-                    {communityStats && (
-                      <span className="community-footer-stats">
-                        <span className="community-stat-item">
-                          <strong className="community-stat-number">
-                            {communityStats.learners.toLocaleString()}
-                          </strong>{' '}
-                          {communityStats.learners === 1
-                            ? 'learner'
-                            : 'learners'}
-                          &nbsp;·
-                        </span>{' '}
-                        <span className="community-stat-item">
-                          <strong className="community-stat-number">
-                            {communityStats.cards.toLocaleString()}
-                          </strong>{' '}
-                          {communityStats.cards === 1 ? 'card' : 'cards'}&nbsp;·
-                        </span>{' '}
-                        <span className="community-stat-item">
-                          <strong className="community-stat-number">
-                            {communityStats.reviews.toLocaleString()}
-                          </strong>{' '}
-                          {communityStats.reviews === 1 ? 'review' : 'reviews'}
-                        </span>
+                {communityStats && communityStats.learners > 0 ? (
+                  <div className="hero-community-stats" data-nosnippet>
+                    <span className="community-footer-stats">
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.learners.toLocaleString()}
+                        </strong>{' '}
+                        {communityStats.learners === 1 ? 'learner' : 'learners'}
+                        &nbsp;·
+                      </span>{' '}
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.cards.toLocaleString()}
+                        </strong>{' '}
+                        {communityStats.cards === 1 ? 'card' : 'cards'}&nbsp;·
+                      </span>{' '}
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.reviews.toLocaleString()}
+                        </strong>{' '}
+                        {communityStats.reviews === 1 ? 'rep' : 'reps'}
                       </span>
-                    )}
+                    </span>
                   </div>
                 ) : (
                   <div
@@ -3015,58 +2802,6 @@ function LoadedApp({
               </div>
             </div>
           </section>
-          <aside
-            className="stats-preview-switcher"
-            aria-label="Community stats style switcher"
-          >
-            <span className="switcher-label">Stats layout:</span>
-            <div
-              className="switcher-buttons"
-              role="group"
-              aria-label="Layout preview options"
-            >
-              <button
-                type="button"
-                className={`switcher-btn ${statsLayout === 'adaptive-hybrid' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('adaptive-hybrid')}
-                aria-pressed={statsLayout === 'adaptive-hybrid'}
-              >
-                ★ Adaptive (Footer / Pill)
-              </button>
-              <button
-                type="button"
-                className={`switcher-btn ${statsLayout === 'pill-tactile' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('pill-tactile')}
-                aria-pressed={statsLayout === 'pill-tactile'}
-              >
-                2A. Tactile Pill
-              </button>
-              <button
-                type="button"
-                className={`switcher-btn ${statsLayout === 'eyebrow-minimal' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('eyebrow-minimal')}
-                aria-pressed={statsLayout === 'eyebrow-minimal'}
-              >
-                2B. Minimal Eyebrow
-              </button>
-              <button
-                type="button"
-                className={`switcher-btn ${statsLayout === 'eyebrow-no-mascot' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('eyebrow-no-mascot')}
-                aria-pressed={statsLayout === 'eyebrow-no-mascot'}
-              >
-                2B*. No Mascot
-              </button>
-              <button
-                type="button"
-                className={`switcher-btn ${statsLayout === 'pill-subtle' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('pill-subtle')}
-                aria-pressed={statsLayout === 'pill-subtle'}
-              >
-                2C. Soft Glow Pill
-              </button>
-            </div>
-          </aside>
         </main>
         <SyncModal
           user={authUser}

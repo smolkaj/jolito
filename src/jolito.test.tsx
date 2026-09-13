@@ -441,7 +441,7 @@ describe('Jolito', () => {
     expect(footerInner).toHaveAttribute('data-nosnippet')
   })
 
-  it('renders community stats badge in the welcome hero when stats are available', async () => {
+  it('renders community stats in the welcome hero footer when stats are available', async () => {
     const services = createTestServices({
       communityStats: {
         learners: 3,
@@ -452,7 +452,9 @@ describe('Jolito', () => {
     const { container } = render(<App services={services} />)
 
     const statsBadge = await waitFor(() => {
-      const el = container.querySelector('.hero-community-stats')
+      const el = container.querySelector(
+        '.welcome-hero-footer .hero-community-stats',
+      )
       expect(el).toBeInTheDocument()
       return el!
     })
@@ -460,7 +462,7 @@ describe('Jolito', () => {
     expect(statsBadge).toHaveAttribute('data-nosnippet')
     expect(statsBadge).toHaveTextContent('3 learners')
     expect(statsBadge).toHaveTextContent('284 cards')
-    expect(statsBadge).toHaveTextContent('310 reviews')
+    expect(statsBadge).toHaveTextContent('310 reps')
   })
 
   it('omits community stats content when community stats are unavailable or have 0 learners', () => {
@@ -472,9 +474,7 @@ describe('Jolito', () => {
     expect(
       container.querySelector('.community-stat-item'),
     ).not.toBeInTheDocument()
-    expect(container.querySelector('.hero-community-stats')).toHaveTextContent(
-      '',
-    )
+    expect(container.querySelector('.hero-community-stats')).toBeNull()
 
     const zeroServices = createTestServices({
       communityStats: {
@@ -487,72 +487,32 @@ describe('Jolito', () => {
     expect(
       zeroContainer.querySelector('.community-stat-item'),
     ).not.toBeInTheDocument()
-    expect(
-      zeroContainer.querySelector('.hero-community-stats'),
-    ).toHaveTextContent('')
+    expect(zeroContainer.querySelector('.hero-community-stats')).toBeNull()
   })
 
-  it('switches between all 4 community stats layouts using the switcher toolbar', async () => {
+  it('formats singular stats accurately for 1 learner, 1 card, and 1 rep', async () => {
     const services = createTestServices({
       communityStats: {
-        learners: 3,
-        cards: 284,
-        reviews: 310,
+        learners: 1,
+        cards: 1,
+        reviews: 1,
       },
     })
     const { container } = render(<App services={services} />)
 
-    // Default is adaptive-hybrid (renders desktop footer & mobile pill)
     await waitFor(() => {
-      expect(
-        container.querySelector(
-          '.hero-community-stats.is-adaptive-desktop-footer',
-        ),
-      ).toBeInTheDocument()
-      expect(
-        container.querySelector(
-          '.hero-community-stats.is-adaptive-mobile-pill',
-        ),
-      ).toBeInTheDocument()
+      const el = container.querySelector(
+        '.welcome-hero-footer .hero-community-stats',
+      )
+      expect(el).toBeInTheDocument()
     })
 
-    // Click 2A. Tactile Pill
-    fireEvent.click(screen.getByRole('button', { name: '2A. Tactile Pill' }))
-    expect(
-      container.querySelector('.hero-community-stats.is-pill-tactile'),
-    ).toBeInTheDocument()
-
-    // Click 2B. Minimal Eyebrow
-    fireEvent.click(screen.getByRole('button', { name: '2B. Minimal Eyebrow' }))
-    expect(
-      container.querySelector('.hero-community-stats.is-eyebrow-minimal'),
-    ).toBeInTheDocument()
-    expect(container.querySelector('.welcome-mascot-img')).toBeInTheDocument()
-
-    // Click 2B*. No Mascot
-    fireEvent.click(screen.getByRole('button', { name: '2B*. No Mascot' }))
-    expect(
-      container.querySelector('.hero-community-stats.is-eyebrow-minimal'),
-    ).toBeInTheDocument()
-    expect(
-      container.querySelector('.welcome-mascot-img'),
-    ).not.toBeInTheDocument()
-
-    // Click 2C. Soft Glow Pill
-    fireEvent.click(screen.getByRole('button', { name: '2C. Soft Glow Pill' }))
-    expect(
-      container.querySelector('.hero-community-stats.is-pill-subtle'),
-    ).toBeInTheDocument()
-
-    // Click back to Adaptive
-    fireEvent.click(
-      screen.getByRole('button', { name: '★ Adaptive (Footer / Pill)' }),
-    )
-    expect(
-      container.querySelector(
-        '.hero-community-stats.is-adaptive-desktop-footer',
-      ),
-    ).toBeInTheDocument()
+    const el = container.querySelector(
+      '.welcome-hero-footer .hero-community-stats',
+    )!
+    expect(el).toHaveTextContent('1 learner')
+    expect(el).toHaveTextContent('1 card')
+    expect(el).toHaveTextContent('1 rep')
   })
 
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {

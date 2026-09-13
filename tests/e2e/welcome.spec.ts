@@ -1550,7 +1550,7 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   expect(results.violations).toEqual([])
 })
 
-test('renders community stats quietly in welcome hero and switches between design directions', async ({
+test('renders community stats quietly in welcome hero footer on desktop and hides completely on mobile', async ({
   page,
 }) => {
   await page.route('**/api/stats', async (route) => {
@@ -1565,64 +1565,27 @@ test('renders community stats quietly in welcome hero and switches between desig
     })
   })
 
-  // 1. Desktop viewport (Adaptive hybrid: desktop footer visible, mobile pill hidden)
+  // 1. Desktop viewport: community stats visible in footer with 0 WCAG violations
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
-  const adaptiveFooter = page.locator(
-    '.hero-community-stats.is-adaptive-desktop-footer',
-  )
-  const adaptiveMobilePill = page.locator(
-    '.hero-community-stats.is-adaptive-mobile-pill',
-  )
-  await expect(adaptiveFooter).toBeVisible()
-  await expect(adaptiveMobilePill).toBeHidden()
-  await expect(adaptiveFooter).toContainText('1,420 learners')
-  await expect(adaptiveFooter).toContainText('24,500 cards')
-  await expect(adaptiveFooter).toContainText('89,102 reviews')
+  const footerStats = page.locator('.welcome-hero-footer .hero-community-stats')
+  await expect(footerStats).toBeVisible()
+  await expect(footerStats).toContainText('1,420 learners')
+  await expect(footerStats).toContainText('24,500 cards')
+  await expect(footerStats).toContainText('89,102 reps')
 
   const desktopResults = await auditAccessibility(page)
   expect(desktopResults.violations).toEqual([])
 
-  // 2. Mobile 360px viewport (Adaptive hybrid: mobile pill visible, desktop footer hidden, left-justified)
+  // 2. Mobile 360px viewport: community stats completely hidden to preserve clean mobile screen
   await page.setViewportSize({ width: 360, height: 740 })
-  await expect(adaptiveMobilePill).toBeVisible()
-  await expect(adaptiveFooter).toBeHidden()
-  await expect(adaptiveMobilePill).toHaveCSS('justify-content', 'flex-start')
-  await expect(adaptiveMobilePill).toContainText('1,420 learners')
-  await expect(adaptiveMobilePill).toContainText('89,102 reviews')
+  await expect(footerStats).toBeHidden()
+  await expect(page.locator('.hero-copy .hero-community-stats')).toHaveCount(0)
 
-  // 3. Switch to Direction 2A: Tactile Pill
-  await page.getByRole('button', { name: '2A. Tactile Pill' }).click()
-  const tactilePill = page.locator('.hero-community-stats.is-pill-tactile')
-  await expect(tactilePill).toBeVisible()
-  await expect(tactilePill).toContainText('1,420 learners')
-  const pillResults = await auditAccessibility(page)
-  expect(pillResults.violations).toEqual([])
+  const mobileResults = await auditAccessibility(page)
+  expect(mobileResults.violations).toEqual([])
 
-  // 4. Switch to Direction 2B: Minimal Eyebrow
-  await page.getByRole('button', { name: '2B. Minimal Eyebrow' }).click()
-  const minimalEyebrow = page.locator(
-    '.hero-community-stats.is-eyebrow-minimal',
-  )
-  await expect(minimalEyebrow).toBeVisible()
-  await expect(minimalEyebrow).toContainText('1,420 learners')
-  const eyebrowResults = await auditAccessibility(page)
-  expect(eyebrowResults.violations).toEqual([])
-
-  // 4b. Switch to Direction 2B*: No Mascot
-  await page.getByRole('button', { name: '2B*. No Mascot' }).click()
-  await expect(minimalEyebrow).toBeVisible()
-  await expect(page.locator('.welcome-mascot-img')).toBeHidden()
-
-  // 5. Switch to Direction 2C: Soft Glow Pill
-  await page.getByRole('button', { name: '2C. Soft Glow Pill' }).click()
-  const subtlePill = page.locator('.hero-community-stats.is-pill-subtle')
-  await expect(subtlePill).toBeVisible()
-  await expect(subtlePill).toContainText('1,420 learners')
-  const subtleResults = await auditAccessibility(page)
-  expect(subtleResults.violations).toEqual([])
-
-  // 6. Ultra-narrow 320px viewport test
+  // 3. Ultra-narrow 320px viewport
   await page.setViewportSize({ width: 320, height: 600 })
-  await expect(subtlePill).toBeVisible()
+  await expect(footerStats).toBeHidden()
 })
