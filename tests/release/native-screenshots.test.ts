@@ -1,9 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const scriptPath = path.resolve('scripts/capture-native-screenshots.sh')
+const scriptPath = fileURLToPath(
+  new URL('../../scripts/capture-native-screenshots.sh', import.meta.url),
+)
 
 void test('capture-native-screenshots.sh exists and is executable', () => {
   assert.equal(fs.existsSync(scriptPath), true)

@@ -66,10 +66,10 @@ final class NativeScreenshots: XCTestCase {
     private func openCardAuthoring(create: XCUIElement, in app: XCUIApplication) -> XCUIElement {
         let spanish = app.textFields["Mexican Spanish"]
         for _ in 0..<3 {
-            if spanish.waitForExistence(timeout: 5) { break }
             if create.isHittable {
                 create.tap()
             }
+            if spanish.waitForExistence(timeout: 5) { break }
         }
         XCTAssertTrue(spanish.waitForExistence(timeout: 30), "Card authoring must open in the native app")
         return spanish
