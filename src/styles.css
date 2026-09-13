@@ -603,9 +603,9 @@ summary:focus-visible,
 }
 
 .welcome-hero {
-  --hero-card-scale: clamp(0.7, calc(0.2 + (100vw / 1312px)), 1);
-  --sample-card-offset: clamp(32px, 4.5vw, 48px);
-  --sample-card-y-offset: clamp(26px, 3.8vw, 40px);
+  --hero-card-scale: clamp(0.58, calc(0.08 + (100vw / 1350px)), 1);
+  --sample-card-offset: clamp(24px, 3.5vw, 48px);
+  --sample-card-y-offset: clamp(20px, 3vw, 40px);
   width: min(1080px, 100%);
   flex: 1;
   margin: 0 auto;
@@ -2772,7 +2772,7 @@ kbd {
 @media (max-width: 860px) {
   .welcome-hero-main {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-    gap: clamp(16px, 3vw, 28px);
+    gap: clamp(24px, 4vw, 36px);
   }
 
   .hero-copy h1 {
