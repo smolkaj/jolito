@@ -725,7 +725,7 @@ summary:focus-visible,
 .hero-copy h1 {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: clamp(38px, 5.2vw, 70px);
+  font-size: clamp(44px, 5.4vw, 70px);
   font-weight: var(--display-weight, 600);
   line-height: 1.06;
   letter-spacing: var(--display-letter-spacing, -2px);
@@ -2776,7 +2776,7 @@ kbd {
   }
 
   .hero-copy h1 {
-    font-size: clamp(34px, 4.8vw, 46px);
+    font-size: clamp(38px, 5vw, 48px);
   }
 
   .create-layout {
@@ -2931,7 +2931,7 @@ kbd {
   }
 
   .hero-copy h1 {
-    font-size: clamp(36px, 9.5vw, 52px);
+    font-size: clamp(38px, 10.5vw, 54px);
     letter-spacing: -1.8px;
   }
 
