@@ -1570,7 +1570,7 @@ test('renders community stats quietly in welcome hero footer on desktop and hide
   await page.goto('/')
   const footerStats = page.locator('.welcome-hero-footer .hero-community-stats')
   await expect(footerStats).toBeVisible()
-  await expect(footerStats).toContainText('1,420 learners')
+  await expect(footerStats).toContainText('1,420 users')
   await expect(footerStats).toContainText('24,500 cards')
   await expect(footerStats).toContainText('89,102 reps')
 

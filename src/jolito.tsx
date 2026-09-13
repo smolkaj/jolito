@@ -2678,7 +2678,7 @@ function LoadedApp({
                         <strong className="community-stat-number">
                           {communityStats.learners.toLocaleString()}
                         </strong>{' '}
-                        {communityStats.learners === 1 ? 'learner' : 'learners'}
+                        {communityStats.learners === 1 ? 'user' : 'users'}
                         &nbsp;·
                       </span>{' '}
                       <span className="community-stat-item">

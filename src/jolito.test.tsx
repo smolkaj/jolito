@@ -460,7 +460,7 @@ describe('Jolito', () => {
     })
     expect(statsBadge).toBeInTheDocument()
     expect(statsBadge).toHaveAttribute('data-nosnippet')
-    expect(statsBadge).toHaveTextContent('3 learners')
+    expect(statsBadge).toHaveTextContent('3 users')
     expect(statsBadge).toHaveTextContent('284 cards')
     expect(statsBadge).toHaveTextContent('310 reps')
   })
@@ -490,7 +490,7 @@ describe('Jolito', () => {
     expect(zeroContainer.querySelector('.hero-community-stats')).toBeNull()
   })
 
-  it('formats singular stats accurately for 1 learner, 1 card, and 1 rep', async () => {
+  it('formats singular stats accurately for 1 user, 1 card, and 1 rep', async () => {
     const services = createTestServices({
       communityStats: {
         learners: 1,
@@ -510,7 +510,7 @@ describe('Jolito', () => {
     const el = container.querySelector(
       '.welcome-hero-footer .hero-community-stats',
     )!
-    expect(el).toHaveTextContent('1 learner')
+    expect(el).toHaveTextContent('1 user')
     expect(el).toHaveTextContent('1 card')
     expect(el).toHaveTextContent('1 rep')
   })
