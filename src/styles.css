@@ -708,6 +708,10 @@ summary:focus-visible,
   z-index: 2;
 }
 
+.hero-copy.has-no-mascot {
+  padding-top: 24px;
+}
+
 .welcome-mascot-img {
   width: 124px;
   height: 124px;
@@ -3206,7 +3210,7 @@ kbd {
   }
 
   .hero-community-stats {
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .hero-community-stats.is-adaptive-mobile-pill {

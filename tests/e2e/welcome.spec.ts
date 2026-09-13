@@ -1578,19 +1578,18 @@ test('renders community stats quietly in welcome hero and switches between desig
   await expect(adaptiveMobilePill).toBeHidden()
   await expect(adaptiveFooter).toContainText('1,420 learners')
   await expect(adaptiveFooter).toContainText('24,500 cards')
-  await expect(adaptiveFooter).toContainText('89,102 card reviews')
+  await expect(adaptiveFooter).toContainText('89,102 reviews')
 
   const desktopResults = await auditAccessibility(page)
   expect(desktopResults.violations).toEqual([])
 
-  // 2. Mobile 360px viewport (Adaptive hybrid: mobile pill visible, desktop footer hidden)
+  // 2. Mobile 360px viewport (Adaptive hybrid: mobile pill visible, desktop footer hidden, left-justified)
   await page.setViewportSize({ width: 360, height: 740 })
   await expect(adaptiveMobilePill).toBeVisible()
   await expect(adaptiveFooter).toBeHidden()
+  await expect(adaptiveMobilePill).toHaveCSS('justify-content', 'flex-start')
   await expect(adaptiveMobilePill).toContainText('1,420 learners')
-  await expect(adaptiveMobilePill).toContainText(
-    '89,102 card reviews practiced',
-  )
+  await expect(adaptiveMobilePill).toContainText('89,102 reviews')
 
   // 3. Switch to Direction 2A: Tactile Pill
   await page.getByRole('button', { name: '2A. Tactile Pill' }).click()
@@ -1609,6 +1608,11 @@ test('renders community stats quietly in welcome hero and switches between desig
   await expect(minimalEyebrow).toContainText('1,420 learners')
   const eyebrowResults = await auditAccessibility(page)
   expect(eyebrowResults.violations).toEqual([])
+
+  // 4b. Switch to Direction 2B*: No Mascot
+  await page.getByRole('button', { name: '2B*. No Mascot' }).click()
+  await expect(minimalEyebrow).toBeVisible()
+  await expect(page.locator('.welcome-mascot-img')).toBeHidden()
 
   // 5. Switch to Direction 2C: Soft Glow Pill
   await page.getByRole('button', { name: '2C. Soft Glow Pill' }).click()

@@ -1273,20 +1273,26 @@ function LoadedApp({
     null,
   )
   const [statsLayout, setStatsLayout] = useState<
-    'pill-tactile' | 'eyebrow-minimal' | 'pill-subtle' | 'adaptive-hybrid'
+    | 'pill-tactile'
+    | 'eyebrow-minimal'
+    | 'eyebrow-no-mascot'
+    | 'pill-subtle'
+    | 'adaptive-hybrid'
   >(() => {
     if (typeof window !== 'undefined') {
       const param = new URLSearchParams(window.location.search).get('style')
       if (
         param === 'pill-tactile' ||
         param === 'eyebrow-minimal' ||
+        param === 'eyebrow-no-mascot' ||
         param === 'pill-subtle' ||
         param === 'adaptive-hybrid'
       ) {
         return param
       }
       if (param === 'mascot-pill' || param === 'whisper') return 'pill-tactile'
-      if (param === 'editorial') return 'eyebrow-minimal'
+      if (param === 'editorial' || param === 'eyebrow') return 'eyebrow-minimal'
+      if (param === 'no-mascot') return 'eyebrow-no-mascot'
       if (param === 'mascot-bubble' || param === 'mascot') return 'pill-subtle'
       if (param === 'adaptive' || param === 'footer') return 'adaptive-hybrid'
     }
@@ -1296,7 +1302,11 @@ function LoadedApp({
   const selectStatsLayout = useCallback(
     (
       style:
-        'pill-tactile' | 'eyebrow-minimal' | 'pill-subtle' | 'adaptive-hybrid',
+        | 'pill-tactile'
+        | 'eyebrow-minimal'
+        | 'eyebrow-no-mascot'
+        | 'pill-subtle'
+        | 'adaptive-hybrid',
     ) => {
       setStatsLayout(style)
       if (typeof window !== 'undefined') {
@@ -2606,13 +2616,17 @@ function LoadedApp({
             />
             <section className="welcome-hero">
               <div className="welcome-hero-main">
-                <div className="hero-copy">
-                  <img
-                    src={logoUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="welcome-mascot-img"
-                  />
+                <div
+                  className={`hero-copy ${statsLayout === 'eyebrow-no-mascot' ? 'has-no-mascot' : ''}`}
+                >
+                  {statsLayout !== 'eyebrow-no-mascot' && (
+                    <img
+                      src={logoUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="welcome-mascot-img"
+                    />
+                  )}
                   {statsLayout === 'pill-tactile' && (
                     <div
                       className="hero-community-stats is-pill-tactile"
@@ -2642,28 +2656,23 @@ function LoadedApp({
                               <strong className="community-stat-number">
                                 {communityStats.reviews.toLocaleString()}
                               </strong>{' '}
-                              card{' '}
                               {communityStats.reviews === 1
                                 ? 'review'
-                                : 'reviews'}{' '}
-                              practiced
+                                : 'reviews'}
                             </span>
                           </span>
                         </div>
                       )}
                     </div>
                   )}
-                  {statsLayout === 'eyebrow-minimal' && (
+                  {(statsLayout === 'eyebrow-minimal' ||
+                    statsLayout === 'eyebrow-no-mascot') && (
                     <div
                       className="hero-community-stats is-eyebrow-minimal"
                       data-nosnippet
                     >
                       {communityStats && (
                         <p className="community-minimal-eyebrow">
-                          <span
-                            className="community-eyebrow-dot"
-                            aria-hidden="true"
-                          />
                           <span className="community-stat-item">
                             <strong className="community-stat-number">
                               {communityStats.learners.toLocaleString()}
@@ -2684,7 +2693,9 @@ function LoadedApp({
                             <strong className="community-stat-number">
                               {communityStats.reviews.toLocaleString()}
                             </strong>{' '}
-                            reviews practiced
+                            {communityStats.reviews === 1
+                              ? 'review'
+                              : 'reviews'}
                           </span>
                         </p>
                       )}
@@ -2725,11 +2736,9 @@ function LoadedApp({
                               <strong className="community-stat-number">
                                 {communityStats.reviews.toLocaleString()}
                               </strong>{' '}
-                              card{' '}
                               {communityStats.reviews === 1
                                 ? 'review'
-                                : 'reviews'}{' '}
-                              practiced
+                                : 'reviews'}
                             </span>
                           </span>
                         </div>
@@ -2765,11 +2774,9 @@ function LoadedApp({
                               <strong className="community-stat-number">
                                 {communityStats.reviews.toLocaleString()}
                               </strong>{' '}
-                              card{' '}
                               {communityStats.reviews === 1
                                 ? 'review'
-                                : 'reviews'}{' '}
-                              practiced
+                                : 'reviews'}
                             </span>
                           </span>
                         </div>
@@ -2896,7 +2903,6 @@ function LoadedApp({
                           <strong className="community-stat-number">
                             {communityStats.reviews.toLocaleString()}
                           </strong>{' '}
-                          card{' '}
                           {communityStats.reviews === 1 ? 'review' : 'reviews'}
                         </span>
                       </span>
@@ -3042,6 +3048,14 @@ function LoadedApp({
                 aria-pressed={statsLayout === 'eyebrow-minimal'}
               >
                 2B. Minimal Eyebrow
+              </button>
+              <button
+                type="button"
+                className={`switcher-btn ${statsLayout === 'eyebrow-no-mascot' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('eyebrow-no-mascot')}
+                aria-pressed={statsLayout === 'eyebrow-no-mascot'}
+              >
+                2B*. No Mascot
               </button>
               <button
                 type="button"

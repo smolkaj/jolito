@@ -460,7 +460,7 @@ describe('Jolito', () => {
     expect(statsBadge).toHaveAttribute('data-nosnippet')
     expect(statsBadge).toHaveTextContent('3 learners')
     expect(statsBadge).toHaveTextContent('284 cards')
-    expect(statsBadge).toHaveTextContent('310 card reviews')
+    expect(statsBadge).toHaveTextContent('310 reviews')
   })
 
   it('omits community stats content when community stats are unavailable or have 0 learners', () => {
@@ -527,6 +527,16 @@ describe('Jolito', () => {
     expect(
       container.querySelector('.hero-community-stats.is-eyebrow-minimal'),
     ).toBeInTheDocument()
+    expect(container.querySelector('.welcome-mascot-img')).toBeInTheDocument()
+
+    // Click 2B*. No Mascot
+    fireEvent.click(screen.getByRole('button', { name: '2B*. No Mascot' }))
+    expect(
+      container.querySelector('.hero-community-stats.is-eyebrow-minimal'),
+    ).toBeInTheDocument()
+    expect(
+      container.querySelector('.welcome-mascot-img'),
+    ).not.toBeInTheDocument()
 
     // Click 2C. Soft Glow Pill
     fireEvent.click(screen.getByRole('button', { name: '2C. Soft Glow Pill' }))
