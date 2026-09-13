@@ -603,6 +603,9 @@ summary:focus-visible,
 }
 
 .welcome-hero {
+  --hero-card-scale: clamp(0.58, calc(0.08 + (100vw / 1350px)), 1);
+  --sample-card-offset: clamp(24px, 3.5vw, 48px);
+  --sample-card-y-offset: clamp(20px, 3vw, 40px);
   width: min(1080px, 100%);
   flex: 1;
   margin: 0 auto;
@@ -618,7 +621,7 @@ summary:focus-visible,
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  align-items: center;
+  align-items: end;
   gap: clamp(32px, 5vw, 64px);
   margin-top: clamp(8px, 2vh, 28px);
 }
@@ -719,7 +722,20 @@ summary:focus-visible,
   pointer-events: none;
 }
 
-.hero-copy h1,
+.hero-copy h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(44px, 5.4vw, 70px);
+  font-weight: var(--display-weight, 600);
+  line-height: 1.06;
+  letter-spacing: var(--display-letter-spacing, -2px);
+  color: var(--ink);
+}
+
+.hero-headline-lead {
+  white-space: nowrap;
+}
+
 .create-layout h1,
 .complete-card h1 {
   margin: 0;
@@ -840,7 +856,7 @@ summary:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .welcome-hero-footer .hero-community-stats {
     display: none !important;
   }
@@ -848,10 +864,13 @@ summary:focus-visible,
 
 .hero-visual {
   position: relative;
-  min-height: 460px;
+  min-height: calc(460px * var(--hero-card-scale, 1));
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: scale(var(--hero-card-scale, 1));
+  transform-origin: center center;
+  transition: transform 140ms ease;
 }
 
 /* Sample Interactive Bilingual Cards (Chroma-Brutalist Mexican Personality) */
@@ -908,37 +927,61 @@ summary:focus-visible,
 
 /* Foreground Card */
 .sample-card.is-foreground {
-  transform: translate(calc(-50% - 48px), calc(-50% + 40px)) rotate(-3deg);
+  transform: translate(
+      calc(-50% - var(--sample-card-offset, 48px)),
+      calc(-50% + var(--sample-card-y-offset, 40px))
+    )
+    rotate(-3deg);
   box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 2;
 }
 
 .sample-card.is-foreground:hover {
-  transform: translate(calc(-50% - 51px), calc(-50% + 36px)) rotate(-3deg);
+  transform: translate(
+      calc(-50% - var(--sample-card-offset, 48px) - 3px),
+      calc(-50% + var(--sample-card-y-offset, 40px) - 4px)
+    )
+    rotate(-3deg);
   box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-foreground:active {
-  transform: translate(calc(-50% - 46px), calc(-50% + 42px)) rotate(-3deg);
+  transform: translate(
+      calc(-50% - var(--sample-card-offset, 48px) + 2px),
+      calc(-50% + var(--sample-card-y-offset, 40px) + 2px)
+    )
+    rotate(-3deg);
   box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
 /* Background Card */
 .sample-card.is-background {
-  transform: translate(calc(-50% + 48px), calc(-50% - 40px)) rotate(5deg);
+  transform: translate(
+      calc(-50% + var(--sample-card-offset, 48px)),
+      calc(-50% - var(--sample-card-y-offset, 40px))
+    )
+    rotate(5deg);
   box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 1;
   opacity: 0.98;
 }
 
 .sample-card.is-background:hover {
-  transform: translate(calc(-50% + 45px), calc(-50% - 44px)) rotate(5deg);
+  transform: translate(
+      calc(-50% + var(--sample-card-offset, 48px) - 3px),
+      calc(-50% - var(--sample-card-y-offset, 40px) - 4px)
+    )
+    rotate(5deg);
   opacity: 1;
   box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-background:active {
-  transform: translate(calc(-50% + 50px), calc(-50% - 38px)) rotate(5deg);
+  transform: translate(
+      calc(-50% + var(--sample-card-offset, 48px) + 2px),
+      calc(-50% - var(--sample-card-y-offset, 40px) + 2px)
+    )
+    rotate(5deg);
   box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
@@ -2728,13 +2771,17 @@ kbd {
 /* Responsive Breakpoints */
 @media (max-width: 860px) {
   .welcome-hero-main {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
-    gap: 28px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    gap: clamp(24px, 4vw, 36px);
   }
 
-  .hero-visual {
-    min-height: 440px;
-    transform: translateX(20px) scale(0.9);
+  .hero-copy h1 {
+    font-size: clamp(38px, 5vw, 48px);
+  }
+
+  .welcome-hero-footer .hero-scroll-cue {
+    padding: 10px 20px;
+    font-size: 14px;
   }
 
   .create-layout {
@@ -2844,6 +2891,10 @@ kbd {
     min-width: 0;
   }
 
+  .welcome-hero-footer .hero-community-stats {
+    font-size: 0.7rem;
+  }
+
   .welcome-hero-footer .hero-scroll-cue {
     grid-column: 2;
     justify-self: center;
@@ -2889,7 +2940,7 @@ kbd {
   }
 
   .hero-copy h1 {
-    font-size: clamp(40px, 11vw, 54px);
+    font-size: clamp(38px, 10.5vw, 54px);
     letter-spacing: -1.8px;
   }
 

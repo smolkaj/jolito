@@ -141,7 +141,8 @@ export function WelcomeView({
                 className="welcome-mascot-img"
               />
               <h1>
-                Make the words <br />
+                <span className="hero-headline-lead">Make the words</span>{' '}
+                <br />
                 you meet <em>stick.</em>
               </h1>
               <p className="lede">

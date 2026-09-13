@@ -968,6 +968,9 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
     { name: 'iPhone SE (375x667)', width: 375, height: 667 },
     { name: 'iPhone 14 (390x844)', width: 390, height: 844 },
     { name: 'iPhone Pro Max (430x932)', width: 430, height: 932 },
+    { name: 'Tablet Narrow (681x800)', width: 681, height: 800 },
+    { name: 'Tablet Mid (768x1024)', width: 768, height: 1024 },
+    { name: 'Tablet Wide (860x900)', width: 860, height: 900 },
     { name: 'Desktop (1280x800)', width: 1280, height: 800 },
   ]
 
@@ -1008,6 +1011,116 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
         ).toBe(dims.docClientHeight)
       }
     }
+  }
+})
+
+test('scales hero cards fluidly without clipping and preserves 2-line headline layout across resizing', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  // Intermediate viewports spanning tablet and narrow desktop ranges
+  const intermediateWidths = [1200, 1024, 900, 860, 800, 768, 720, 700, 681]
+
+  let prevCardWidth = Infinity
+  for (const width of intermediateWidths) {
+    await page.setViewportSize({ width, height: 800 })
+
+    await expect
+      .poll(
+        async () =>
+          page.evaluate((targetWidth) => {
+            const visual = document.querySelector('.hero-visual')
+            if (!visual || window.getComputedStyle(visual).display === 'none') {
+              return false
+            }
+            const cards = Array.from(
+              document.querySelectorAll('.sample-card'),
+            ).map((card) => card.getBoundingClientRect())
+            if (cards.length === 0) return false
+            return cards.every((c) => c.left >= 0 && c.right <= targetWidth)
+          }, width),
+        { timeout: 2000 },
+      )
+      .toBe(true)
+
+    const info = await page.evaluate(() => {
+      const h1 = document.querySelector('.hero-copy h1')
+      const visual = document.querySelector('.hero-visual')
+      const cards = Array.from(document.querySelectorAll('.sample-card')).map(
+        (card) => {
+          const rect = card.getBoundingClientRect()
+          return {
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+          }
+        },
+      )
+      const h1Rect = h1 ? h1.getBoundingClientRect() : null
+      const h1LineHeight = h1
+        ? parseFloat(window.getComputedStyle(h1).lineHeight)
+        : 0
+      const lines =
+        h1Rect && h1LineHeight > 0
+          ? Math.round(h1Rect.height / h1LineHeight)
+          : 0
+
+      return {
+        lines,
+        visualDisplay: visual
+          ? window.getComputedStyle(visual).display
+          : 'none',
+        cards,
+      }
+    })
+
+    // 1. Cards must be visible at width >= 681
+    expect(info.visualDisplay).not.toBe('none')
+
+    // 2. Both cards must stay strictly within the viewport boundaries (never clipped)
+    for (const card of info.cards) {
+      expect(card.left).toBeGreaterThanOrEqual(0)
+      expect(card.right).toBeLessThanOrEqual(width)
+    }
+
+    // 3. Card dimensions must scale down as width decreases from 1024 to 681
+    const currentCardWidth = Math.max(...info.cards.map((c) => c.width))
+    if (width < 1024) {
+      expect(currentCardWidth).toBeLessThanOrEqual(prevCardWidth + 0.5)
+    }
+    prevCardWidth = currentCardWidth
+
+    // 4. Headline must stay cleanly structured as 2 lines (never breaking into 3 lines)
+    expect(info.lines).toBe(2)
+  }
+
+  // Mobile viewports (< 680px): cards disappear cleanly and headline remains 2 lines
+  for (const width of [679, 500, 390, 340]) {
+    await page.setViewportSize({ width, height: 800 })
+
+    const info = await page.evaluate(() => {
+      const h1 = document.querySelector('.hero-copy h1')
+      const visual = document.querySelector('.hero-visual')
+      const h1Rect = h1 ? h1.getBoundingClientRect() : null
+      const h1LineHeight = h1
+        ? parseFloat(window.getComputedStyle(h1).lineHeight)
+        : 0
+      const lines =
+        h1Rect && h1LineHeight > 0
+          ? Math.round(h1Rect.height / h1LineHeight)
+          : 0
+
+      return {
+        lines,
+        visualDisplay: visual
+          ? window.getComputedStyle(visual).display
+          : 'none',
+      }
+    })
+
+    expect(info.visualDisplay).toBe('none')
+    expect(info.lines).toBe(2)
   }
 })
 
@@ -1577,7 +1690,16 @@ test('renders community stats quietly in welcome hero footer on desktop and hide
   const desktopResults = await auditAccessibility(page)
   expect(desktopResults.violations).toEqual([])
 
-  // 2. Mobile 360px viewport: community stats completely hidden to preserve clean mobile screen
+  // 2. Tablet & intermediate viewports (700px, 640px): community stats stay visible longer with 0 WCAG violations
+  for (const width of [700, 640]) {
+    await page.setViewportSize({ width, height: 800 })
+    await expect(footerStats).toBeVisible()
+    await expect(footerStats).toContainText('1,420 users')
+    const intermediateResults = await auditAccessibility(page)
+    expect(intermediateResults.violations).toEqual([])
+  }
+
+  // 3. Mobile 360px viewport: community stats completely hidden to preserve clean mobile screen
   await page.setViewportSize({ width: 360, height: 740 })
   await expect(footerStats).toBeHidden()
   await expect(page.locator('.hero-copy .hero-community-stats')).toHaveCount(0)
