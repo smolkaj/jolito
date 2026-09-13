@@ -502,34 +502,46 @@ describe('Jolito', () => {
     })
     const { container } = render(<App services={services} />)
 
+    // Default is adaptive-hybrid (renders desktop footer & mobile pill)
     await waitFor(() => {
       expect(
-        container.querySelector('.hero-community-stats.is-mascot-bubble'),
+        container.querySelector(
+          '.hero-community-stats.is-adaptive-desktop-footer',
+        ),
+      ).toBeInTheDocument()
+      expect(
+        container.querySelector(
+          '.hero-community-stats.is-adaptive-mobile-pill',
+        ),
       ).toBeInTheDocument()
     })
 
-    // Click 3B. Mascot Pill
-    fireEvent.click(screen.getByRole('button', { name: '3B. Mascot Pill' }))
+    // Click 2A. Tactile Pill
+    fireEvent.click(screen.getByRole('button', { name: '2A. Tactile Pill' }))
     expect(
-      container.querySelector('.hero-community-stats.is-mascot-pill'),
+      container.querySelector('.hero-community-stats.is-pill-tactile'),
     ).toBeInTheDocument()
 
-    // Click 4A. Ambient Ribbon
-    fireEvent.click(screen.getByRole('button', { name: '4A. Ambient Ribbon' }))
+    // Click 2B. Minimal Eyebrow
+    fireEvent.click(screen.getByRole('button', { name: '2B. Minimal Eyebrow' }))
     expect(
-      container.querySelector('.hero-community-stats.is-ribbon'),
+      container.querySelector('.hero-community-stats.is-eyebrow-minimal'),
     ).toBeInTheDocument()
 
-    // Click 4B. Adaptive
-    fireEvent.click(screen.getByRole('button', { name: '4B. Adaptive' }))
+    // Click 2C. Soft Glow Pill
+    fireEvent.click(screen.getByRole('button', { name: '2C. Soft Glow Pill' }))
     expect(
-      container.querySelector('.hero-community-stats.is-adaptive-footer'),
+      container.querySelector('.hero-community-stats.is-pill-subtle'),
     ).toBeInTheDocument()
 
-    // Click back to 3A. Mascot Bubble
-    fireEvent.click(screen.getByRole('button', { name: '3A. Mascot Bubble' }))
+    // Click back to Adaptive
+    fireEvent.click(
+      screen.getByRole('button', { name: '★ Adaptive (Footer / Pill)' }),
+    )
     expect(
-      container.querySelector('.hero-community-stats.is-mascot-bubble'),
+      container.querySelector(
+        '.hero-community-stats.is-adaptive-desktop-footer',
+      ),
     ).toBeInTheDocument()
   })
 

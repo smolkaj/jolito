@@ -397,3 +397,31 @@ export function ClipboardIcon({
     </svg>
   )
 }
+
+export function CardsSparkleIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-cards-sparkle ${className}`.trim()}
+      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <rect x="2" y="4" width="9" height="10" rx="2" />
+      <path d="M5 2h7a2 2 0 0 1 2 2v8" />
+    </svg>
+  )
+}

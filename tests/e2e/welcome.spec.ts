@@ -1550,7 +1550,7 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   expect(results.violations).toEqual([])
 })
 
-test('renders community stats quietly in welcome hero and wraps without leading punctuation on narrow screens', async ({
+test('renders community stats quietly in welcome hero and switches between design directions', async ({
   page,
 }) => {
   await page.route('**/api/stats', async (route) => {
@@ -1565,59 +1565,60 @@ test('renders community stats quietly in welcome hero and wraps without leading 
     })
   })
 
-  // 1. Desktop viewport (Direction 3A: Mascot Bubble by default)
+  // 1. Desktop viewport (Adaptive hybrid: desktop footer visible, mobile pill hidden)
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/')
-  const mascotBubbleContainer = page.locator(
-    '.hero-community-stats.is-mascot-bubble',
+  const adaptiveFooter = page.locator(
+    '.hero-community-stats.is-adaptive-desktop-footer',
   )
-  await expect(mascotBubbleContainer).toBeVisible()
-  await expect(mascotBubbleContainer).toContainText(
-    '89,102 card reviews practiced!',
+  const adaptiveMobilePill = page.locator(
+    '.hero-community-stats.is-adaptive-mobile-pill',
   )
-  await expect(mascotBubbleContainer).toContainText('24,500 cards')
-  await expect(mascotBubbleContainer).toContainText('1,420 learners')
+  await expect(adaptiveFooter).toBeVisible()
+  await expect(adaptiveMobilePill).toBeHidden()
+  await expect(adaptiveFooter).toContainText('1,420 learners')
+  await expect(adaptiveFooter).toContainText('24,500 cards')
+  await expect(adaptiveFooter).toContainText('89,102 card reviews')
 
-  const bubbleResults = await auditAccessibility(page)
-  expect(bubbleResults.violations).toEqual([])
+  const desktopResults = await auditAccessibility(page)
+  expect(desktopResults.violations).toEqual([])
 
-  // 2. Switch to Direction 3B: Mascot Pill
-  await page.getByRole('button', { name: '3B. Mascot Pill' }).click()
-  const mascotPillContainer = page.locator(
-    '.hero-community-stats.is-mascot-pill',
+  // 2. Mobile 360px viewport (Adaptive hybrid: mobile pill visible, desktop footer hidden)
+  await page.setViewportSize({ width: 360, height: 740 })
+  await expect(adaptiveMobilePill).toBeVisible()
+  await expect(adaptiveFooter).toBeHidden()
+  await expect(adaptiveMobilePill).toContainText('1,420 learners')
+  await expect(adaptiveMobilePill).toContainText(
+    '89,102 card reviews practiced',
   )
-  await expect(mascotPillContainer).toBeVisible()
-  await expect(mascotPillContainer).toContainText('89,102 reviews')
+
+  // 3. Switch to Direction 2A: Tactile Pill
+  await page.getByRole('button', { name: '2A. Tactile Pill' }).click()
+  const tactilePill = page.locator('.hero-community-stats.is-pill-tactile')
+  await expect(tactilePill).toBeVisible()
+  await expect(tactilePill).toContainText('1,420 learners')
   const pillResults = await auditAccessibility(page)
   expect(pillResults.violations).toEqual([])
 
-  // 3. Switch to Direction 4A: Ambient Ribbon
-  await page.getByRole('button', { name: '4A. Ambient Ribbon' }).click()
-  const ribbonContainer = page.locator('.hero-community-stats.is-ribbon')
-  await expect(ribbonContainer).toBeVisible()
-  await expect(ribbonContainer).toContainText('1,420 learners')
-  await expect(ribbonContainer).toContainText('89,102 card reviews practiced')
-  const ribbonResults = await auditAccessibility(page)
-  expect(ribbonResults.violations).toEqual([])
-
-  // 4. Switch to Direction 4B: Adaptive
-  await page.getByRole('button', { name: '4B. Adaptive' }).click()
-  const adaptiveFooterContainer = page.locator(
-    '.hero-community-stats.is-adaptive-footer',
+  // 4. Switch to Direction 2B: Minimal Eyebrow
+  await page.getByRole('button', { name: '2B. Minimal Eyebrow' }).click()
+  const minimalEyebrow = page.locator(
+    '.hero-community-stats.is-eyebrow-minimal',
   )
-  await expect(adaptiveFooterContainer).toBeVisible()
-  await expect(adaptiveFooterContainer).toContainText('1,420 learners')
-  const adaptiveResults = await auditAccessibility(page)
-  expect(adaptiveResults.violations).toEqual([])
+  await expect(minimalEyebrow).toBeVisible()
+  await expect(minimalEyebrow).toContainText('1,420 learners')
+  const eyebrowResults = await auditAccessibility(page)
+  expect(eyebrowResults.violations).toEqual([])
 
-  // 5. Mobile 360px viewport (Adaptive shows mascot on mobile)
-  await page.setViewportSize({ width: 360, height: 740 })
-  const adaptiveMascotContainer = page.locator(
-    '.hero-community-stats.is-adaptive-mascot',
-  )
-  await expect(adaptiveMascotContainer).toBeVisible()
+  // 5. Switch to Direction 2C: Soft Glow Pill
+  await page.getByRole('button', { name: '2C. Soft Glow Pill' }).click()
+  const subtlePill = page.locator('.hero-community-stats.is-pill-subtle')
+  await expect(subtlePill).toBeVisible()
+  await expect(subtlePill).toContainText('1,420 learners')
+  const subtleResults = await auditAccessibility(page)
+  expect(subtleResults.violations).toEqual([])
 
-  // 6. Ultra-narrow 320px viewport
+  // 6. Ultra-narrow 320px viewport test
   await page.setViewportSize({ width: 320, height: 600 })
-  await expect(adaptiveMascotContainer).toBeVisible()
+  await expect(subtlePill).toBeVisible()
 })
