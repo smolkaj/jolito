@@ -1272,23 +1272,27 @@ function LoadedApp({
     null,
   )
   const [statsLayout, setStatsLayout] = useState<
-    'editorial' | 'whisper' | 'mascot' | 'footer'
+    'mascot-bubble' | 'mascot-pill' | 'footer-ribbon' | 'adaptive'
   >(() => {
     if (typeof window !== 'undefined') {
       const param = new URLSearchParams(window.location.search).get('style')
       if (
-        param === 'editorial' ||
-        param === 'whisper' ||
-        param === 'mascot' ||
-        param === 'footer'
-      )
+        param === 'mascot-bubble' ||
+        param === 'mascot-pill' ||
+        param === 'footer-ribbon' ||
+        param === 'adaptive'
+      ) {
         return param
+      }
+      if (param === 'mascot' || param === 'editorial') return 'mascot-bubble'
+      if (param === 'whisper') return 'mascot-pill'
+      if (param === 'footer') return 'footer-ribbon'
     }
-    return 'editorial'
+    return 'mascot-bubble'
   })
 
   const selectStatsLayout = useCallback(
-    (style: 'editorial' | 'whisper' | 'mascot' | 'footer') => {
+    (style: 'mascot-bubble' | 'mascot-pill' | 'footer-ribbon' | 'adaptive') => {
       setStatsLayout(style)
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href)
@@ -2598,53 +2602,99 @@ function LoadedApp({
             <section className="welcome-hero">
               <div className="welcome-hero-main">
                 <div className="hero-copy">
-                  {statsLayout === 'mascot' ? (
-                    <div className="hero-mascot-row">
+                  {statsLayout === 'mascot-bubble' ||
+                  statsLayout === 'mascot-pill' ||
+                  statsLayout === 'adaptive' ? (
+                    <div
+                      className={`hero-mascot-row ${statsLayout === 'adaptive' ? 'is-adaptive-mascot-row' : ''}`}
+                    >
                       <img
                         src={logoUrl}
                         alt=""
                         aria-hidden="true"
                         className="welcome-mascot-img"
                       />
-                      <div
-                        className="hero-community-stats is-mascot"
-                        data-nosnippet
-                      >
-                        {communityStats && (
-                          <div className="community-speech-bubble">
-                            <span
-                              className="bubble-pointer"
-                              aria-hidden="true"
-                            />
-                            <p className="bubble-line">
-                              <span className="community-stat-item">
+                      {(statsLayout === 'mascot-bubble' ||
+                        statsLayout === 'adaptive') && (
+                        <div
+                          className={`hero-community-stats ${statsLayout === 'adaptive' ? 'is-adaptive-mascot' : 'is-mascot-bubble'}`}
+                          data-nosnippet
+                        >
+                          {communityStats && (
+                            <div className="community-speech-bubble">
+                              <span
+                                className="bubble-pointer"
+                                aria-hidden="true"
+                              />
+                              <p className="bubble-line">
+                                ¡
                                 <strong className="community-stat-number">
                                   {communityStats.reviews.toLocaleString()}
                                 </strong>{' '}
-                                card reviews practiced
+                                card reviews practiced!
+                              </p>
+                              <p className="bubble-subline">
+                                across{' '}
+                                <span className="community-stat-item">
+                                  <strong className="community-stat-number">
+                                    {communityStats.cards.toLocaleString()}
+                                  </strong>{' '}
+                                  cards
+                                </span>{' '}
+                                by{' '}
+                                <span className="community-stat-item">
+                                  <strong className="community-stat-number">
+                                    {communityStats.learners.toLocaleString()}
+                                  </strong>{' '}
+                                  {communityStats.learners === 1
+                                    ? 'learner'
+                                    : 'learners'}
+                                </span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {statsLayout === 'mascot-pill' && (
+                        <div
+                          className="hero-community-stats is-mascot-pill"
+                          data-nosnippet
+                        >
+                          {communityStats && (
+                            <div className="community-mascot-pill">
+                              <span
+                                className="community-whisper-icon"
+                                aria-hidden="true"
+                              >
+                                🌱
                               </span>
-                            </p>
-                            <p className="bubble-subline">
-                              by{' '}
-                              <span className="community-stat-item">
-                                <strong className="community-stat-number">
-                                  {communityStats.learners.toLocaleString()}
-                                </strong>{' '}
-                                {communityStats.learners === 1
-                                  ? 'learner'
-                                  : 'learners'}
-                              </span>{' '}
-                              across{' '}
-                              <span className="community-stat-item">
-                                <strong className="community-stat-number">
-                                  {communityStats.cards.toLocaleString()}
-                                </strong>{' '}
-                                cards
+                              <span className="community-whisper-text">
+                                <span className="community-stat-item">
+                                  <strong className="community-stat-number">
+                                    {communityStats.reviews.toLocaleString()}
+                                  </strong>{' '}
+                                  reviews&nbsp;·
+                                </span>{' '}
+                                <span className="community-stat-item">
+                                  <strong className="community-stat-number">
+                                    {communityStats.learners.toLocaleString()}
+                                  </strong>{' '}
+                                  {communityStats.learners === 1
+                                    ? 'learner'
+                                    : 'learners'}
+                                  &nbsp;·
+                                </span>{' '}
+                                <span className="community-stat-item">
+                                  <strong className="community-stat-number">
+                                    {communityStats.cards.toLocaleString()}
+                                  </strong>{' '}
+                                  cards
+                                </span>
                               </span>
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <img
@@ -2653,87 +2703,6 @@ function LoadedApp({
                       aria-hidden="true"
                       className="welcome-mascot-img"
                     />
-                  )}
-                  {statsLayout === 'editorial' && (
-                    <p
-                      className="hero-community-stats is-editorial"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <span className="community-editorial-eyebrow">
-                          <span className="community-stat-item">
-                            <strong className="community-stat-number">
-                              {communityStats.learners.toLocaleString()}
-                            </strong>{' '}
-                            {communityStats.learners === 1
-                              ? 'learner'
-                              : 'learners'}
-                            &nbsp;·
-                          </span>{' '}
-                          <span className="community-stat-item">
-                            <strong className="community-stat-number">
-                              {communityStats.cards.toLocaleString()}
-                            </strong>{' '}
-                            {communityStats.cards === 1 ? 'card' : 'cards'}
-                            &nbsp;·
-                          </span>{' '}
-                          <span className="community-stat-item">
-                            <strong className="community-stat-number">
-                              {communityStats.reviews.toLocaleString()}
-                            </strong>{' '}
-                            card{' '}
-                            {communityStats.reviews === 1
-                              ? 'review'
-                              : 'reviews'}{' '}
-                            practiced
-                          </span>
-                        </span>
-                      )}
-                    </p>
-                  )}
-                  {statsLayout === 'whisper' && (
-                    <div
-                      className="hero-community-stats is-whisper"
-                      data-nosnippet
-                    >
-                      {communityStats && (
-                        <div className="community-whisper-pill">
-                          <span
-                            className="community-whisper-icon"
-                            aria-hidden="true"
-                          >
-                            🌱
-                          </span>
-                          <span className="community-whisper-text">
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.learners.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.learners === 1
-                                ? 'learner'
-                                : 'learners'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.cards.toLocaleString()}
-                              </strong>{' '}
-                              {communityStats.cards === 1 ? 'card' : 'cards'}
-                              &nbsp;·
-                            </span>{' '}
-                            <span className="community-stat-item">
-                              <strong className="community-stat-number">
-                                {communityStats.reviews.toLocaleString()}
-                              </strong>{' '}
-                              card{' '}
-                              {communityStats.reviews === 1
-                                ? 'review'
-                                : 'reviews'}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
                   )}
                   <h1>
                     Make the words <br />
@@ -2828,10 +2797,39 @@ function LoadedApp({
                   </button>
                 </div>
               </div>
+              {statsLayout === 'footer-ribbon' && (
+                <div className="hero-community-stats is-ribbon" data-nosnippet>
+                  {communityStats && (
+                    <p className="community-ambient-ribbon">
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.learners.toLocaleString()}
+                        </strong>{' '}
+                        {communityStats.learners === 1 ? 'learner' : 'learners'}
+                        &nbsp;·
+                      </span>{' '}
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.cards.toLocaleString()}
+                        </strong>{' '}
+                        {communityStats.cards === 1 ? 'card' : 'cards'}&nbsp;·
+                      </span>{' '}
+                      <span className="community-stat-item">
+                        <strong className="community-stat-number">
+                          {communityStats.reviews.toLocaleString()}
+                        </strong>{' '}
+                        card{' '}
+                        {communityStats.reviews === 1 ? 'review' : 'reviews'}{' '}
+                        practiced
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="welcome-hero-footer">
-                {statsLayout === 'footer' ? (
+                {statsLayout === 'adaptive' ? (
                   <div
-                    className="hero-community-stats is-footer"
+                    className="hero-community-stats is-adaptive-footer"
                     data-nosnippet
                   >
                     {communityStats && (
@@ -2980,35 +2978,35 @@ function LoadedApp({
             >
               <button
                 type="button"
-                className={`switcher-btn ${statsLayout === 'editorial' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('editorial')}
-                aria-pressed={statsLayout === 'editorial'}
+                className={`switcher-btn ${statsLayout === 'mascot-bubble' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('mascot-bubble')}
+                aria-pressed={statsLayout === 'mascot-bubble'}
               >
-                1. Editorial
+                3A. Mascot Bubble
               </button>
               <button
                 type="button"
-                className={`switcher-btn ${statsLayout === 'whisper' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('whisper')}
-                aria-pressed={statsLayout === 'whisper'}
+                className={`switcher-btn ${statsLayout === 'mascot-pill' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('mascot-pill')}
+                aria-pressed={statsLayout === 'mascot-pill'}
               >
-                2. Whisper Pill
+                3B. Mascot Pill
               </button>
               <button
                 type="button"
-                className={`switcher-btn ${statsLayout === 'mascot' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('mascot')}
-                aria-pressed={statsLayout === 'mascot'}
+                className={`switcher-btn ${statsLayout === 'footer-ribbon' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('footer-ribbon')}
+                aria-pressed={statsLayout === 'footer-ribbon'}
               >
-                3. Mascot Lockup
+                4A. Ambient Ribbon
               </button>
               <button
                 type="button"
-                className={`switcher-btn ${statsLayout === 'footer' ? 'is-active' : ''}`}
-                onClick={() => selectStatsLayout('footer')}
-                aria-pressed={statsLayout === 'footer'}
+                className={`switcher-btn ${statsLayout === 'adaptive' ? 'is-active' : ''}`}
+                onClick={() => selectStatsLayout('adaptive')}
+                aria-pressed={statsLayout === 'adaptive'}
               >
-                4. Hero Footer
+                4B. Adaptive
               </button>
             </div>
           </aside>

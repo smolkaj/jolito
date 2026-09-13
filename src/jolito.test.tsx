@@ -504,32 +504,32 @@ describe('Jolito', () => {
 
     await waitFor(() => {
       expect(
-        container.querySelector('.hero-community-stats.is-editorial'),
+        container.querySelector('.hero-community-stats.is-mascot-bubble'),
       ).toBeInTheDocument()
     })
 
-    // Click 2. Whisper Pill
-    fireEvent.click(screen.getByRole('button', { name: '2. Whisper Pill' }))
+    // Click 3B. Mascot Pill
+    fireEvent.click(screen.getByRole('button', { name: '3B. Mascot Pill' }))
     expect(
-      container.querySelector('.hero-community-stats.is-whisper'),
+      container.querySelector('.hero-community-stats.is-mascot-pill'),
     ).toBeInTheDocument()
 
-    // Click 3. Mascot Lockup
-    fireEvent.click(screen.getByRole('button', { name: '3. Mascot Lockup' }))
+    // Click 4A. Ambient Ribbon
+    fireEvent.click(screen.getByRole('button', { name: '4A. Ambient Ribbon' }))
     expect(
-      container.querySelector('.hero-community-stats.is-mascot'),
+      container.querySelector('.hero-community-stats.is-ribbon'),
     ).toBeInTheDocument()
 
-    // Click 4. Hero Footer
-    fireEvent.click(screen.getByRole('button', { name: '4. Hero Footer' }))
+    // Click 4B. Adaptive
+    fireEvent.click(screen.getByRole('button', { name: '4B. Adaptive' }))
     expect(
-      container.querySelector('.hero-community-stats.is-footer'),
+      container.querySelector('.hero-community-stats.is-adaptive-footer'),
     ).toBeInTheDocument()
 
-    // Click back to 1. Editorial
-    fireEvent.click(screen.getByRole('button', { name: '1. Editorial' }))
+    // Click back to 3A. Mascot Bubble
+    fireEvent.click(screen.getByRole('button', { name: '3A. Mascot Bubble' }))
     expect(
-      container.querySelector('.hero-community-stats.is-editorial'),
+      container.querySelector('.hero-community-stats.is-mascot-bubble'),
     ).toBeInTheDocument()
   })
 

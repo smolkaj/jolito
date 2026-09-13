@@ -875,71 +875,7 @@ summary:focus-visible,
   color: var(--ink);
 }
 
-/* Direction 1: Editorial (quiet tracked typography above headline) */
-.hero-community-stats.is-editorial {
-  min-height: 24px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--ink-soft);
-  letter-spacing: 0.02em;
-}
-
-.community-editorial-eyebrow {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.hero-community-stats.is-editorial .community-stat-number {
-  color: var(--ink-soft);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Direction 2: Whisper Pill (ultra-soft capsule above headline) */
-.hero-community-stats.is-whisper {
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.community-whisper-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 12px;
-  background: var(--paper-deep);
-  border: 1px solid var(--line-subtle);
-  border-radius: 9999px;
-  font-size: 0.8125rem;
-  line-height: 1.3;
-  color: var(--ink-soft);
-}
-
-.community-whisper-icon {
-  font-size: 0.875rem;
-  line-height: 1;
-}
-
-.community-whisper-text {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.community-whisper-text .community-stat-number {
-  color: var(--ink);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Direction 3: Mascot Lockup (speech bubble locked to Jolito) */
+/* Direction 3A & 4B: Mascot Speech Bubble */
 .hero-mascot-row {
   display: flex;
   align-items: center;
@@ -951,7 +887,8 @@ summary:focus-visible,
   margin-bottom: 0;
 }
 
-.hero-community-stats.is-mascot {
+.hero-community-stats.is-mascot-bubble,
+.hero-community-stats.is-adaptive-mascot {
   min-height: 60px;
   display: flex;
   align-items: center;
@@ -999,8 +936,62 @@ summary:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
-/* Direction 4: Hero Footer Slot */
-.hero-community-stats.is-footer {
+/* Direction 3B: Mascot Compact Pill */
+.hero-community-stats.is-mascot-pill {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.community-mascot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  background: var(--paper-deep);
+  border: 1px solid var(--line-subtle);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+.community-mascot-pill .community-stat-number {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Direction 4A: Dedicated Ambient Ribbon */
+.hero-community-stats.is-ribbon {
+  width: 100%;
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.community-ambient-ribbon {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+.community-ambient-ribbon .community-stat-number {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Direction 4B: Adaptive Footer Slot */
+.hero-community-stats.is-adaptive-footer {
   grid-column: 1;
   justify-self: start;
   font-size: 0.75rem;
@@ -1016,10 +1007,22 @@ summary:focus-visible,
   gap: 4px;
 }
 
-.hero-community-stats.is-footer .community-stat-number {
+.hero-community-stats.is-adaptive-footer .community-stat-number {
   font-weight: 600;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 769px) {
+  .hero-community-stats.is-adaptive-mascot {
+    display: none !important;
+  }
+  .is-adaptive-mascot-row .welcome-mascot-img {
+    margin-bottom: 16px;
+  }
+  .hero-community-stats.is-adaptive-footer {
+    display: flex !important;
+  }
 }
 
 /* Preview Switcher Toolbar */
@@ -3162,13 +3165,6 @@ kbd {
     width: 100%;
   }
 
-  .hero-community-stats.is-editorial,
-  .hero-community-stats.is-whisper {
-    margin-inline: auto;
-    justify-content: center;
-    text-align: center;
-  }
-
   .hero-mascot-row {
     flex-direction: column;
     align-items: center;
@@ -3185,11 +3181,17 @@ kbd {
     border-top: 1.5px solid var(--line);
   }
 
-  .hero-community-stats.is-footer {
-    grid-column: 1 / -1;
-    justify-self: center;
+  .community-mascot-pill {
+    justify-content: center;
     text-align: center;
-    margin-bottom: 8px;
+  }
+
+  .hero-community-stats.is-adaptive-mascot {
+    display: flex !important;
+  }
+
+  .hero-community-stats.is-adaptive-footer {
+    display: none !important;
   }
 
   .stats-preview-switcher {
