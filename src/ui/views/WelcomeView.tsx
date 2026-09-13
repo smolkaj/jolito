@@ -239,13 +239,14 @@ export function WelcomeView({
                       {communityStats.learners.toLocaleString()}
                     </strong>{' '}
                     {communityStats.learners === 1 ? 'user' : 'users'}
-                    &nbsp;·
+                    <span aria-hidden="true">&nbsp;·</span>
                   </span>{' '}
                   <span className="community-stat-item">
                     <strong className="community-stat-number">
                       {communityStats.cards.toLocaleString()}
                     </strong>{' '}
-                    {communityStats.cards === 1 ? 'card' : 'cards'}&nbsp;·
+                    {communityStats.cards === 1 ? 'card' : 'cards'}
+                    <span aria-hidden="true">&nbsp;·</span>
                   </span>{' '}
                   <span className="community-stat-item">
                     <strong className="community-stat-number">

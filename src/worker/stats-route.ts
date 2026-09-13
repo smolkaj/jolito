@@ -73,10 +73,9 @@ export async function handleCommunityStatsRequest(
     )
   }
 
-  const cacheKey = new Request(
-    new URL('/api/stats', request.url).toString(),
-    request,
-  )
+  const cacheKey = new Request(new URL('/api/stats', request.url).toString(), {
+    method: 'GET',
+  })
   let cache: Cache | undefined
   if (typeof caches !== 'undefined' && 'default' in caches) {
     try {

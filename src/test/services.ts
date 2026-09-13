@@ -342,7 +342,10 @@ export class MockFeedbackService implements FeedbackService {
 export class MockCommunityStatsService implements CommunityStatsService {
   constructor(public stats: CommunityStats | null = null) {}
 
-  getCommunityStats(): Promise<CommunityStats | null> {
+  getCommunityStats(signal?: AbortSignal): Promise<CommunityStats | null> {
+    if (signal?.aborted) {
+      return Promise.reject(new DOMException('Aborted', 'AbortError'))
+    }
     return Promise.resolve(this.stats)
   }
 }

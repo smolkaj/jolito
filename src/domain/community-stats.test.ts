@@ -15,17 +15,13 @@ describe('communityStatsSchema', () => {
     })
   })
 
-  it('normalizes users key to learners', () => {
-    const parsed = communityStatsSchema.parse({
-      users: 12,
-      cards: 500,
-      reviews: 1200,
-    })
-    expect(parsed).toEqual({
-      learners: 12,
-      cards: 500,
-      reviews: 1200,
-    })
+  it('rejects payload missing learners property', () => {
+    expect(() =>
+      communityStatsSchema.parse({
+        cards: 500,
+        reviews: 1200,
+      }),
+    ).toThrow()
   })
 
   it('handles string reviews from postgres bigint', () => {

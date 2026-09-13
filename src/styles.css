@@ -846,21 +846,6 @@ summary:focus-visible,
   }
 }
 
-.community-stat-item {
-  white-space: nowrap;
-}
-
-.community-stat-delimiter {
-  color: var(--ink-faint);
-  user-select: none;
-}
-
-.community-stat-number {
-  font-weight: 600;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
 .hero-visual {
   position: relative;
   min-height: 460px;
