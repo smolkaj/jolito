@@ -26,6 +26,10 @@ void test('capture-native-screenshots.sh incorporates test-level and runner-leve
   assert.match(content, /simctl shutdown/)
   assert.match(content, /simctl bootstatus.*-b/)
 
+  // Must suppress continuous motion to prevent XCTest animation stalls
+  assert.match(content, /ReducedMotionEnabled/)
+  assert.match(content, /-default-test-execution-time-allowance 600/)
+
   // Must attempt twice before exiting with failure
   assert.match(content, /for attempt in 1 2; do/)
   assert.match(content, /exit 1/)

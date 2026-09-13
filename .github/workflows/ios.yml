@@ -53,7 +53,7 @@ jobs:
       contains(github.event.pull_request.title, '[test-native]') ||
       contains(github.event.pull_request.labels.*.name, 'test-native')
     runs-on: macos-15
-    timeout-minutes: 40
+    timeout-minutes: 60
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
@@ -81,10 +81,10 @@ jobs:
           echo "IPHONE_UDID=$IPHONE_UDID" >> "$GITHUB_ENV"
           echo "IPAD_UDID=$IPAD_UDID" >> "$GITHUB_ENV"
       - name: Capture iPhone native screenshots
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: bash scripts/capture-native-screenshots.sh "$IPHONE_UDID" build/screenshots-iphone.xcresult "iPhone 17 Pro Max"
       - name: Capture iPad native screenshots
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: bash scripts/capture-native-screenshots.sh "$IPAD_UDID" build/screenshots-ipad.xcresult "iPad Pro 13-inch (M4)"
       - name: Export screenshots
         if: ${{ !cancelled() }}

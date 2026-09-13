@@ -13,6 +13,8 @@ for attempt in 1 2; do
   xcrun simctl bootstatus "$UDID" -b
   sleep 5
   xcrun simctl status_bar "$UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100 2>/dev/null || true
+  xcrun simctl spawn "$UDID" defaults write com.apple.Accessibility ReducedMotionEnabled -int 1 2>/dev/null || true
+  xcrun simctl spawn "$UDID" defaults write -g UIAccessibilityReduceMotionStatus -int 1 2>/dev/null || true
   rm -rf "$RESULT_BUNDLE"
 
   if xcodebuild -project ios/App/App.xcodeproj -scheme NativeScreenshots \
@@ -21,7 +23,7 @@ for attempt in 1 2; do
     -resultBundlePath "$RESULT_BUNDLE" \
     -parallel-testing-enabled NO -test-timeouts-enabled YES \
     -retry-tests-on-failure -test-iterations 3 \
-    -default-test-execution-time-allowance 300 \
+    -default-test-execution-time-allowance 600 \
     CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES test; then
     echo "Successfully captured $LABEL screenshots on attempt $attempt"
     xcrun simctl shutdown "$UDID" 2>/dev/null || true

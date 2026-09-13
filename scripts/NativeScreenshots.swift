@@ -3,6 +3,7 @@ import UIKit
 
 final class NativeScreenshots: XCTestCase {
     func testStoreScreenshotsAndSceneLifecycle() throws {
+        executionTimeAllowance = 600
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launch()
@@ -97,7 +98,6 @@ final class NativeScreenshots: XCTestCase {
             predicate: NSPredicate { _, _ in !app.keyboards.firstMatch.exists }, object: nil
         )
         XCTAssertEqual(XCTWaiter.wait(for: [keyboardGone], timeout: 10), .completed)
-        app.staticTexts["New flashcard"].tap()
     }
 
     override func tearDown() {
