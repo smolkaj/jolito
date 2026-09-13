@@ -1,7 +1,8 @@
 import { handleTtsRequest } from './tts-route'
 import { handleFeedbackRequest, type FeedbackWorkerEnv } from './feedback-route'
+import { handleCommunityStatsRequest, type StatsWorkerEnv } from './stats-route'
 
-export interface WorkerEnv extends FeedbackWorkerEnv {
+export interface WorkerEnv extends FeedbackWorkerEnv, StatsWorkerEnv {
   ASSETS?: {
     fetch: (request: Request) => Promise<Response>
   }
@@ -16,6 +17,9 @@ export default {
     }
     if (pathname === '/api/feedback') {
       return handleFeedbackRequest(request, env)
+    }
+    if (pathname === '/api/stats') {
+      return handleCommunityStatsRequest(request, env)
     }
 
     if (env?.ASSETS) {

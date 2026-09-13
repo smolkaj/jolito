@@ -4,6 +4,7 @@ import logoUrl from '../../../assets/jolito-welcome.webp'
 import sampleAguacateUrl from '../../../assets/sample-aguacate.webp'
 import type { AuthUser } from '../../application/ports'
 import { starterHeroSampleCards } from '../../application/starter-cards'
+import type { CommunityStats } from '../../domain/community-stats'
 import type { SyncStatus } from '../../domain/sync'
 import { isWhyJolitoHash } from '../../navigation'
 import { AppFooter } from '../AppFooter'
@@ -14,6 +15,7 @@ import { PracticeMenu } from '../PracticeMenu'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
 
 export interface WelcomeViewProps {
+  communityStats?: CommunityStats | null | undefined
   authUser: AuthUser | null
   syncStatus: SyncStatus
   isOnline: boolean
@@ -38,6 +40,7 @@ export interface WelcomeViewProps {
 }
 
 export function WelcomeView({
+  communityStats,
   authUser,
   syncStatus,
   isOnline,
@@ -228,7 +231,34 @@ export function WelcomeView({
             </div>
           </div>
           <div className="welcome-hero-footer">
-            <div className="welcome-hero-footer-spacer" aria-hidden="true" />
+            {communityStats && communityStats.learners > 0 ? (
+              <div className="hero-community-stats" data-nosnippet>
+                <span className="community-footer-stats">
+                  <span className="community-stat-item">
+                    <strong className="community-stat-number">
+                      {communityStats.learners.toLocaleString()}
+                    </strong>{' '}
+                    {communityStats.learners === 1 ? 'user' : 'users'}
+                    <span aria-hidden="true">&nbsp;·</span>
+                  </span>{' '}
+                  <span className="community-stat-item">
+                    <strong className="community-stat-number">
+                      {communityStats.cards.toLocaleString()}
+                    </strong>{' '}
+                    {communityStats.cards === 1 ? 'card' : 'cards'}
+                    <span aria-hidden="true">&nbsp;·</span>
+                  </span>{' '}
+                  <span className="community-stat-item">
+                    <strong className="community-stat-number">
+                      {communityStats.reviews.toLocaleString()}
+                    </strong>{' '}
+                    {communityStats.reviews === 1 ? 'rep' : 'reps'}
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <div className="welcome-hero-footer-spacer" aria-hidden="true" />
+            )}
             <a
               href="#why-jolito"
               className="hero-scroll-cue"

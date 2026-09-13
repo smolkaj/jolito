@@ -807,6 +807,45 @@ summary:focus-visible,
   outline-offset: -3px;
 }
 
+/* Community stats in welcome hero footer */
+.welcome-hero-footer .hero-community-stats {
+  grid-column: 1;
+  justify-self: start;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--ink-muted);
+  min-width: 0;
+  margin-bottom: 0;
+  display: flex;
+  align-items: baseline;
+}
+
+.welcome-hero-footer .community-footer-stats {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.welcome-hero-footer .community-stat-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.welcome-hero-footer .community-stat-number {
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 768px) {
+  .welcome-hero-footer .hero-community-stats {
+    display: none !important;
+  }
+}
+
 .hero-visual {
   position: relative;
   min-height: 460px;

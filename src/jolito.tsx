@@ -7,6 +7,7 @@ import type {
   AppServices,
   CardRepository,
   AuthUser,
+  CommunityStats,
   PrefetchItem,
   SyncResult,
 } from './application/ports'
@@ -407,6 +408,23 @@ function LoadedApp({
     [cards],
   )
   const [view, setView] = useState<View>(initialResolved.view)
+  const [communityStats, setCommunityStats] = useState<CommunityStats | null>(
+    null,
+  )
+
+  useEffect(() => {
+    if (view !== 'welcome' || !services.communityStats) return
+    const controller = new AbortController()
+    services.communityStats
+      .getCommunityStats(controller.signal)
+      .then((stats) => {
+        if (!controller.signal.aborted && stats && stats.learners > 0) {
+          setCommunityStats(stats)
+        }
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [view, services.communityStats])
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -1185,6 +1203,7 @@ function LoadedApp({
     return (
       <>
         <WelcomeView
+          communityStats={communityStats}
           authUser={authUser}
           syncStatus={syncStatus}
           isOnline={isOnline}

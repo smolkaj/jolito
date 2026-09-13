@@ -1549,3 +1549,43 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   const results = await auditAccessibility(page)
   expect(results.violations).toEqual([])
 })
+
+test('renders community stats quietly in welcome hero footer on desktop and hides completely on mobile', async ({
+  page,
+}) => {
+  await page.route('**/api/stats', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        learners: 1420,
+        cards: 24500,
+        reviews: 89102,
+      }),
+    })
+  })
+
+  // 1. Desktop viewport: community stats visible in footer with 0 WCAG violations
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/')
+  const footerStats = page.locator('.welcome-hero-footer .hero-community-stats')
+  await expect(footerStats).toBeVisible()
+  await expect(footerStats).toContainText('1,420 users')
+  await expect(footerStats).toContainText('24,500 cards')
+  await expect(footerStats).toContainText('89,102 reps')
+
+  const desktopResults = await auditAccessibility(page)
+  expect(desktopResults.violations).toEqual([])
+
+  // 2. Mobile 360px viewport: community stats completely hidden to preserve clean mobile screen
+  await page.setViewportSize({ width: 360, height: 740 })
+  await expect(footerStats).toBeHidden()
+  await expect(page.locator('.hero-copy .hero-community-stats')).toHaveCount(0)
+
+  const mobileResults = await auditAccessibility(page)
+  expect(mobileResults.violations).toEqual([])
+
+  // 3. Ultra-narrow 320px viewport
+  await page.setViewportSize({ width: 320, height: 600 })
+  await expect(footerStats).toBeHidden()
+})

@@ -441,6 +441,80 @@ describe('Jolito', () => {
     expect(footerInner).toHaveAttribute('data-nosnippet')
   })
 
+  it('renders community stats in the welcome hero footer when stats are available', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 3,
+        cards: 284,
+        reviews: 310,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    const statsBadge = await waitFor(() => {
+      const el = container.querySelector(
+        '.welcome-hero-footer .hero-community-stats',
+      )
+      expect(el).toBeInTheDocument()
+      return el!
+    })
+    expect(statsBadge).toBeInTheDocument()
+    expect(statsBadge).toHaveAttribute('data-nosnippet')
+    expect(statsBadge).toHaveTextContent('3 users')
+    expect(statsBadge).toHaveTextContent('284 cards')
+    expect(statsBadge).toHaveTextContent('310 reps')
+  })
+
+  it('omits community stats content when community stats are unavailable or have 0 learners', () => {
+    const services = createTestServices({
+      communityStats: null,
+    })
+    const { container } = render(<App services={services} />)
+
+    expect(
+      container.querySelector('.community-stat-item'),
+    ).not.toBeInTheDocument()
+    expect(container.querySelector('.hero-community-stats')).toBeNull()
+
+    const zeroServices = createTestServices({
+      communityStats: {
+        learners: 0,
+        cards: 0,
+        reviews: 0,
+      },
+    })
+    const { container: zeroContainer } = render(<App services={zeroServices} />)
+    expect(
+      zeroContainer.querySelector('.community-stat-item'),
+    ).not.toBeInTheDocument()
+    expect(zeroContainer.querySelector('.hero-community-stats')).toBeNull()
+  })
+
+  it('formats singular stats accurately for 1 user, 1 card, and 1 rep', async () => {
+    const services = createTestServices({
+      communityStats: {
+        learners: 1,
+        cards: 1,
+        reviews: 1,
+      },
+    })
+    const { container } = render(<App services={services} />)
+
+    await waitFor(() => {
+      const el = container.querySelector(
+        '.welcome-hero-footer .hero-community-stats',
+      )
+      expect(el).toBeInTheDocument()
+    })
+
+    const el = container.querySelector(
+      '.welcome-hero-footer .hero-community-stats',
+    )!
+    expect(el).toHaveTextContent('1 user')
+    expect(el).toHaveTextContent('1 card')
+    expect(el).toHaveTextContent('1 rep')
+  })
+
   it('renders complete screen without blank page on direct load of #/study with 0 cards due', () => {
     const services = createTestServices({
       cards: [
