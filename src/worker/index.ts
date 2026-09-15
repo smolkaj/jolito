@@ -22,10 +22,6 @@ export default {
       return handleCommunityStatsRequest(request, env)
     }
 
-    if (url.pathname === '/privacy/' || url.pathname === '/acknowledgements/') {
-      return Response.redirect(`${url.origin}${pathname}`, 301)
-    }
-
     if (env?.ASSETS) {
       return env.ASSETS.fetch(request)
     }

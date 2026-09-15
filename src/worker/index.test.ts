@@ -49,20 +49,6 @@ describe('worker fetch handler', () => {
     expect(res.status).toBe(204)
   })
 
-  it('redirects /privacy/ with trailing slash to canonical /privacy', async () => {
-    const req = new Request('https://joli.to/privacy/')
-    const res = await worker.fetch(req)
-    expect(res.status).toBe(301)
-    expect(res.headers.get('Location')).toBe('https://joli.to/privacy')
-  })
-
-  it('redirects /acknowledgements/ with trailing slash to canonical /acknowledgements', async () => {
-    const req = new Request('https://joli.to/acknowledgements/')
-    const res = await worker.fetch(req)
-    expect(res.status).toBe(301)
-    expect(res.headers.get('Location')).toBe('https://joli.to/acknowledgements')
-  })
-
   it('delegates asset requests to env.ASSETS when present', async () => {
     let capturedAssetRequest: Request | null = null
     const mockEnv = {

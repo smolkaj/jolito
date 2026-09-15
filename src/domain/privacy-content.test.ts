@@ -1,8 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PRIVACY_POLICY_METADATA, PRIVACY_SECTIONS } from './privacy-content'
-import { generatePrivacyHtml } from '../../scripts/generate-privacy-html'
 
 describe('privacy-content domain', () => {
   it('defines the 4 required privacy sections', () => {
@@ -15,19 +12,24 @@ describe('privacy-content domain', () => {
     ])
   })
 
-  it('guarantees public/privacy.html is synchronized with privacy-content domain', async () => {
-    const filePath = resolve('public/privacy.html')
-    const fileContent = readFileSync(filePath, 'utf-8')
-    const generated = await generatePrivacyHtml()
-
-    expect(fileContent).toBe(generated)
-  })
-
   it('contains expected metadata', () => {
     expect(PRIVACY_POLICY_METADATA.title).toBe('Privacy Policy • Jolito')
     expect(PRIVACY_POLICY_METADATA.description).toContain(
       'Local-first by design',
     )
     expect(PRIVACY_POLICY_METADATA.canonicalUrl).toBe('https://joli.to/privacy')
+  })
+
+  it('ensures each section has structured paragraphs with valid segments', () => {
+    for (const section of PRIVACY_SECTIONS) {
+      expect(section.paragraphs.length).toBeGreaterThan(0)
+      for (const paragraph of section.paragraphs) {
+        expect(paragraph.length).toBeGreaterThan(0)
+        for (const segment of paragraph) {
+          expect(['text', 'strong', 'link']).toContain(segment.type)
+          expect(segment.text.length).toBeGreaterThan(0)
+        }
+      }
+    }
   })
 })

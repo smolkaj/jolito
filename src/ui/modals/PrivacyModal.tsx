@@ -68,9 +68,9 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
                         <a
                           key={sIdx}
                           href={segment.href}
-                          target={segment.external ? '_blank' : undefined}
+                          target={segment.newTab ? '_blank' : undefined}
                           rel={
-                            segment.external ? 'noopener noreferrer' : undefined
+                            segment.newTab ? 'noopener noreferrer' : undefined
                           }
                           className="privacy-contact-link"
                         >

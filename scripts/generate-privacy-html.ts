@@ -12,7 +12,7 @@ function renderSegment(segment: PrivacySegment): string {
   if (segment.type === 'text') return segment.text
   if (segment.type === 'strong') return `<strong>${segment.text}</strong>`
   if (segment.type === 'link') {
-    const target = segment.external
+    const target = segment.newTab
       ? ' target="_blank" rel="noopener noreferrer"'
       : ''
     return `<a href="${segment.href}"${target}>${segment.text}</a>`
@@ -202,7 +202,10 @@ ${sectionsHtml}
   })
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
   const outputPath = resolve('public/privacy.html')
   const formattedHtml = await generatePrivacyHtml()
   writeFileSync(outputPath, formattedHtml, 'utf-8')

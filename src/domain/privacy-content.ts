@@ -1,7 +1,7 @@
 export type PrivacySegment =
   | { type: 'text'; text: string }
   | { type: 'strong'; text: string }
-  | { type: 'link'; text: string; href: string; external?: boolean }
+  | { type: 'link'; text: string; href: string; newTab?: boolean }
 
 export interface PrivacySection {
   number: number
@@ -95,21 +95,21 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
           type: 'link',
           text: 'open-source',
           href: 'https://github.com/smolkaj/jolito',
-          external: true,
+          newTab: true,
         },
         { type: 'text', text: ' (Apache-2.0), created by ' },
         {
           type: 'link',
           text: 'Steffen Smolka',
           href: 'https://smolka.st',
-          external: true,
+          newTab: true,
         },
         { type: 'text', text: '. You can reach me at ' },
         {
           type: 'link',
           text: 'a@joli.to',
           href: 'mailto:a@joli.to',
-          external: false,
+          newTab: false,
         },
         { type: 'text', text: '.' },
       ],
@@ -119,7 +119,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
           type: 'link',
           text: 'acknowledgements',
           href: '/acknowledgements',
-          external: true,
+          newTab: true,
         },
         {
           type: 'text',
