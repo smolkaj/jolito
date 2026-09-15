@@ -208,6 +208,7 @@ export function PracticeCard({
               }}
               placeholder={placeholder}
               autoComplete="off"
+              autoCorrect="off"
               autoCapitalize="none"
               spellCheck={false}
               lang={answerLang}
