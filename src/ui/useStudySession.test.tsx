@@ -170,6 +170,66 @@ describe('useStudySession', () => {
     })
   })
 
+  it('resets answer and revealed state when active card is filtered out', () => {
+    const { result } = renderHook(() =>
+      useStudySession(createStudySession(['c1', 'c2'])),
+    )
+
+    act(() => {
+      result.current.setAnswer('diff against this')
+      result.current.reveal()
+    })
+    expect(result.current.answer).toBe('diff against this')
+    expect(result.current.revealed).toBe(true)
+
+    act(() => {
+      result.current.filterCards(new Set(['c2']))
+    })
+
+    expect(result.current.queue).toEqual(['c2'])
+    expect(result.current.currentCardId).toBe('c2')
+    expect(result.current.answer).toBe('')
+    expect(result.current.revealed).toBe(false)
+  })
+
+  it('preserves in-progress answer when non-active card is filtered out', () => {
+    const { result } = renderHook(() =>
+      useStudySession(createStudySession(['c1', 'c2', 'c3'])),
+    )
+
+    act(() => {
+      result.current.setAnswer('working on c1')
+    })
+
+    act(() => {
+      result.current.filterCards(new Set(['c1', 'c3']))
+    })
+
+    expect(result.current.queue).toEqual(['c1', 'c3'])
+    expect(result.current.currentCardId).toBe('c1')
+    expect(result.current.answer).toBe('working on c1')
+    expect(result.current.revealed).toBe(false)
+  })
+
+  it('resets answer and revealed state when all remaining cards in queue are filtered out', () => {
+    const { result } = renderHook(() =>
+      useStudySession(createStudySession(['c1'])),
+    )
+
+    act(() => {
+      result.current.setAnswer('lone card answer')
+      result.current.reveal()
+    })
+
+    act(() => {
+      result.current.filterCards(new Set())
+    })
+
+    expect(result.current.queue).toEqual([])
+    expect(result.current.answer).toBe('')
+    expect(result.current.revealed).toBe(false)
+  })
+
   it('sets becameEmpty to true when all remaining cards in queue are filtered out', () => {
     const { result } = renderHook(() =>
       useStudySession(createStudySession(['c1', 'c2'])),
