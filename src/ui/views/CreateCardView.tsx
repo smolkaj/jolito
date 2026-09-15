@@ -8,17 +8,19 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { AuthUser } from '../../application/ports'
+import type { AiAssistant, AuthUser } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { findDuplicateNoteCards } from '../../domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from '../../domain/lexicon'
 import type { SyncStatus } from '../../domain/sync'
+import { AiContextActions } from '../AiContextActions'
 import { AppFooter } from '../AppFooter'
 import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
 import { EnglishBadge, MexicoFlag } from '../icons'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
+import { appendOrReplaceContext, useAiSuggestions } from '../useAiSuggestions'
 import { handleFocusSelect } from '../utils'
 
 export interface CreateCardParams {
@@ -65,6 +67,7 @@ export interface CreateCardViewProps {
       limit?: number,
     ): AutocompleteSuggestion[]
   }
+  aiAssistant?: AiAssistant | undefined
 }
 
 export function CreateCardView({
@@ -92,6 +95,7 @@ export function CreateCardView({
   onSaveCard,
   onPlayAudio,
   assistant,
+  aiAssistant,
 }: CreateCardViewProps) {
   const [spanishInput, setSpanishInput] = useState(pendingCard?.spanish ?? '')
   const [englishInput, setEnglishInput] = useState(pendingCard?.english ?? '')
@@ -116,6 +120,36 @@ export function CreateCardView({
   >('spanish')
   const [createPlaying, setCreatePlaying] = useState(false)
   const [createSubmitAttempt, setCreateSubmitAttempt] = useState(0)
+
+  const contextTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  const {
+    aiAvailable,
+    loading: aiLoading,
+    error: aiError,
+    statusMessage: aiStatusMessage,
+    generateExample,
+    generateMnemonic,
+    abortActiveRequest,
+  } = useAiSuggestions({
+    aiAssistant,
+    isOnline,
+    spanish: spanishInput,
+    english: englishInput,
+    onAppendContext: (text) => {
+      setContextInput((prev) => appendOrReplaceContext(prev, text))
+    },
+  })
+
+  useEffect(() => {
+    if (contextTextareaRef.current) {
+      contextTextareaRef.current.style.height = 'auto'
+      contextTextareaRef.current.style.height = `${Math.min(
+        180,
+        Math.max(48, contextTextareaRef.current.scrollHeight),
+      )}px`
+    }
+  }, [contextInput])
 
   const [prevPendingCard, setPrevPendingCard] = useState(pendingCard)
   if (pendingCard !== prevPendingCard) {
@@ -294,20 +328,25 @@ export function CreateCardView({
     }
   }, [dismissSuggestions, suggestionTarget, suggestions.length])
 
-  const applySuggestion = useCallback((entry: LexiconEntry) => {
-    if (suggestionsBlurTimerRef.current !== null) {
-      window.clearTimeout(suggestionsBlurTimerRef.current)
-      suggestionsBlurTimerRef.current = null
-    }
-    setSpanishInput(entry.spanish)
-    setEnglishInput(entry.english)
-    setSuggestions([])
-    setSuggestionTarget(null)
-    setActiveSuggestionIndex(-1)
-  }, [])
+  const applySuggestion = useCallback(
+    (entry: LexiconEntry) => {
+      if (suggestionsBlurTimerRef.current !== null) {
+        window.clearTimeout(suggestionsBlurTimerRef.current)
+        suggestionsBlurTimerRef.current = null
+      }
+      abortActiveRequest()
+      setSpanishInput(entry.spanish)
+      setEnglishInput(entry.english)
+      setSuggestions([])
+      setSuggestionTarget(null)
+      setActiveSuggestionIndex(-1)
+    },
+    [abortActiveRequest],
+  )
 
   const onSpanishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
+      abortActiveRequest()
       if (suggestionsBlurTimerRef.current !== null) {
         window.clearTimeout(suggestionsBlurTimerRef.current)
         suggestionsBlurTimerRef.current = null
@@ -324,11 +363,12 @@ export function CreateCardView({
       }
       setActiveSuggestionIndex(-1)
     },
-    [assistant],
+    [assistant, abortActiveRequest],
   )
 
   const onEnglishChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
+      abortActiveRequest()
       if (suggestionsBlurTimerRef.current !== null) {
         window.clearTimeout(suggestionsBlurTimerRef.current)
         suggestionsBlurTimerRef.current = null
@@ -345,7 +385,7 @@ export function CreateCardView({
       }
       setActiveSuggestionIndex(-1)
     },
-    [assistant, spanishInput],
+    [assistant, spanishInput, abortActiveRequest],
   )
 
   const onInputBlur = useCallback(
@@ -468,6 +508,7 @@ export function CreateCardView({
 
     const success = onSaveCard(cardParams)
     if (success) {
+      abortActiveRequest()
       setSpanishInput('')
       setEnglishInput('')
       setContextInput('')
@@ -802,8 +843,11 @@ export function CreateCardView({
             </div>
           )}
           <div className="field-group">
-            <label htmlFor="context">Additional Context</label>
+            <div className="field-label-row">
+              <label htmlFor="context">Additional Context</label>
+            </div>
             <textarea
+              ref={contextTextareaRef}
               id="context"
               name="context"
               rows={2}
@@ -813,6 +857,22 @@ export function CreateCardView({
               onChange={(e) => setContextInput(e.target.value)}
               onFocus={handleFocusSelect}
               placeholder="Optional context, regional nuance, or memory hook"
+            />
+            <AiContextActions
+              aiAvailable={aiAvailable}
+              loading={aiLoading}
+              error={aiError}
+              statusMessage={aiStatusMessage}
+              canGenerateExample={Boolean(spanishInput.trim())}
+              canGenerateMnemonic={Boolean(
+                spanishInput.trim() && englishInput.trim(),
+              )}
+              onGenerateExample={() => {
+                void generateExample()
+              }}
+              onGenerateMnemonic={() => {
+                void generateMnemonic()
+              }}
             />
           </div>
           <label className="toggle-row">

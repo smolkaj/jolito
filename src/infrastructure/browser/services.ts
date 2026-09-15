@@ -7,6 +7,7 @@ import type {
   Speaker,
 } from '../../application/ports'
 import { OfflineCardAssistant } from '../../application/card-assistant'
+import { BrowserAiAssistant } from '../ai/browser-ai-assistant'
 import {
   SessionStorageError,
   SessionOwnershipError,
@@ -137,5 +138,6 @@ export function createBrowserServices(): AppServices {
     sync,
     feedback,
     communityStats,
+    aiAssistant: new BrowserAiAssistant(),
   }
 }

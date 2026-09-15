@@ -36,6 +36,7 @@ describe('createBrowserServices', () => {
     expect(services.auth).toBeDefined()
     expect(services.sync).toBeDefined()
     expect(services.feedback).toBeDefined()
+    expect(services.aiAssistant).toBeDefined()
 
     speakerSpy.mockRestore()
     assistantSpy.mockRestore()
