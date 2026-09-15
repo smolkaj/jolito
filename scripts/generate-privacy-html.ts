@@ -1,4 +1,37 @@
-<!doctype html>
+import { writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import prettier from 'prettier'
+import {
+  PRIVACY_POLICY_METADATA,
+  PRIVACY_SECTIONS,
+  type PrivacySegment,
+} from '../src/domain/privacy-content.ts'
+
+function renderSegment(segment: PrivacySegment): string {
+  if (segment.type === 'text') return segment.text
+  if (segment.type === 'strong') return `<strong>${segment.text}</strong>`
+  if (segment.type === 'link') {
+    const target = segment.newTab
+      ? ' target="_blank" rel="noopener noreferrer"'
+      : ''
+    return `<a href="${segment.href}"${target}>${segment.text}</a>`
+  }
+  return ''
+}
+
+export async function generatePrivacyHtml(): Promise<string> {
+  const sectionsHtml = PRIVACY_SECTIONS.map((section) => {
+    const paragraphsHtml = section.paragraphs
+      .map(
+        (p) =>
+          `        <p>\n          ${p.map(renderSegment).join('')}\n        </p>`,
+      )
+      .join('\n')
+    return `      <section>\n        <h2>${section.number}. ${section.title}</h2>\n${paragraphsHtml}\n      </section>`
+  }).join('\n\n')
+
+  const rawHtml = `<!doctype html>
 <html lang="en" style="background-color: #fdf5f8; color-scheme: light">
   <head>
     <meta charset="UTF-8" />
@@ -8,12 +41,12 @@
     />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#fdf5f8" />
-    <title>Privacy Policy • Jolito</title>
+    <title>${PRIVACY_POLICY_METADATA.title}</title>
     <meta
       name="description"
-      content="Jolito Privacy Policy: Local-first by design, no ads, and full user data control."
+      content="${PRIVACY_POLICY_METADATA.description}"
     />
-    <link rel="canonical" href="https://joli.to/privacy" />
+    <link rel="canonical" href="${PRIVACY_POLICY_METADATA.canonicalUrl}" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -151,74 +184,30 @@
           <a href="/" class="brand-title">Jolito</a>
         </div>
         <h1>Privacy Policy</h1>
-        <span class="effective-date">Effective date: September 7, 2026</span>
+        <span class="effective-date">Effective date: ${PRIVACY_POLICY_METADATA.effectiveDate}</span>
       </header>
 
-      <section>
-        <h2>1. The Demo vs. Your Account</h2>
-        <p>
-          You can try the starter demo deck without an account. To create cards,
-          import decks, and save progress, you sign in with your email. Once
-          signed in, Jolito works offline on your device and syncs changes to
-          the cloud when connected.
-        </p>
-      </section>
-
-      <section>
-        <h2>2. What We Collect</h2>
-        <p>
-          <strong>Email:</strong> Used for passwordless sign-in and to notify
-          Jolito’s maintainer when you join. Never sold or used for marketing.
-        </p>
-        <p>
-          <strong>Your Decks & Progress:</strong> Synced to your private cloud
-          database so your cards and reviews are backed up across devices.
-        </p>
-        <p>
-          <strong>Optional Feedback:</strong> If you send in-app feedback, we
-          receive your message and email to follow up.
-        </p>
-      </section>
-
-      <section>
-        <h2>3. Data Export & Account Deletion</h2>
-        <p>
-          You can export your complete deck to a JSON file anytime under
-          <strong>Manage deck → Backup & export</strong>.
-        </p>
-        <p>
-          To permanently delete your cloud data, tap
-          <strong>Cloud sync → Delete cloud account & data</strong> in the app.
-          We immediately and permanently delete your user record, cloud decks,
-          feedback, and signup notification records from our servers. Emails
-          already delivered to the maintainer’s inbox are not removed
-          automatically.
-        </p>
-      </section>
-
-      <section>
-        <h2>4. Open Source & Contact</h2>
-        <p>
-          Jolito is
-          <a
-            href="https://github.com/smolkaj/jolito"
-            target="_blank"
-            rel="noopener noreferrer"
-            >open-source</a
-          >
-          (Apache-2.0), created by
-          <a href="https://smolka.st" target="_blank" rel="noopener noreferrer"
-            >Steffen Smolka</a
-          >. You can reach me at <a href="mailto:a@joli.to">a@joli.to</a>.
-        </p>
-        <p>
-          See our
-          <a href="/acknowledgements">acknowledgements</a>
-          for the open-source projects and creators that power Jolito.
-        </p>
-      </section>
+${sectionsHtml}
 
       <a href="/" class="return-link">← Return to Jolito</a>
     </main>
   </body>
 </html>
+`
+
+  const options = await prettier.resolveConfig('public/privacy.html')
+  return prettier.format(rawHtml, {
+    ...options,
+    filepath: 'public/privacy.html',
+  })
+}
+
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  const outputPath = resolve('public/privacy.html')
+  const formattedHtml = await generatePrivacyHtml()
+  writeFileSync(outputPath, formattedHtml, 'utf-8')
+  console.log(`Generated ${outputPath}`)
+}
