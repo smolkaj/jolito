@@ -106,6 +106,10 @@ export function useStudySession(initialSession: StudySession) {
       if (removedCount > 0) {
         sessionRef.current = nextSession
         setSession(nextSession)
+        if (nextSession.queue[0] !== current.queue[0]) {
+          setAnswer('')
+          setRevealed(false)
+        }
       }
       return { nextSession, removedCount, becameEmpty }
     },

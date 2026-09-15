@@ -3384,6 +3384,181 @@ describe('Jolito', () => {
     ).toHaveAttribute('aria-valuetext', '1 card remaining')
   })
 
+  it('resets prompt input and diff state when deleting card on diff screen', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await practiceCards(user)
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+
+    // Type an answer with a typo and reveal diff
+    const answerInput = screen.getByLabelText('Your answer')
+    await user.type(answerInput, 'avacado')
+    await user.keyboard('{Enter}')
+
+    // Diff screen is displayed with 'You wrote'
+    expect(screen.getByText('You wrote')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /delete card: aguacate/i }),
+    ).toBeInTheDocument()
+
+    // Delete the card from the diff screen
+    await user.click(
+      screen.getByRole('button', { name: /delete card: aguacate/i }),
+    )
+    expect(
+      screen.getByRole('heading', { name: /delete flashcard\?/i }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+    // Advance to next card ('qué padre'):
+    // 1. Must NOT show diff screen or 'You wrote'
+    expect(screen.queryByText('You wrote')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'qué padre' }),
+    ).toBeInTheDocument()
+
+    // 2. Answer input must be empty and ready for fresh input
+    const nextInput = screen.getByLabelText('Your answer')
+    expect(nextInput).toBeInTheDocument()
+    expect(nextInput).toHaveValue('')
+
+    // 3. Prompt audio for next card must have been triggered
+    expect(services.mockSpeaker.spoken).toContainEqual({
+      text: 'qué padre',
+      locale: 'es-MX',
+    })
+  })
+
+  it('clears in-progress answer text when deleting an unrevealed card', async () => {
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    await practiceCards(user)
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+
+    // Type partial input without revealing
+    const answerInput = screen.getByLabelText('Your answer')
+    await user.type(answerInput, 'partial in-progress answer')
+
+    // Delete card
+    await user.click(
+      screen.getByRole('button', { name: /delete card: aguacate/i }),
+    )
+    await user.click(screen.getByRole('button', { name: /^delete card$/i }))
+
+    // Next card must have an empty input
+    expect(
+      screen.getByRole('heading', { name: 'qué padre' }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Your answer')).toHaveValue('')
+  })
+
+  it('resets diff screen when active card is deleted via background sync during study', async () => {
+    const user = userEvent.setup({ delay: null })
+    const now = 1771632000000
+    const cardA: StudyCard = {
+      id: 'card-sync-del-1:es-en',
+      noteId: 'note-sync-del-1',
+      prompt: 'perro',
+      answer: 'dog',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
+      createdAt: now,
+    }
+    const cardB: StudyCard = {
+      id: 'card-sync-del-2:es-en',
+      noteId: 'note-sync-del-2',
+      prompt: 'gato',
+      answer: 'cat',
+      direction: 'es-en',
+      context: '',
+      scene: 'conversation',
+      schedule: {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      },
+      contentRevision: 0,
+      resetRevision: { generation: 0, at: 0 },
+      createdAt: now,
+    }
+
+    let resolvePendingSync: (() => void) | null = null
+    const services = createTestServices({
+      cards: [cardA, cardB],
+      clockTime: now,
+      user: { id: 'usr-1', email: 'learner@example.com' },
+    })
+
+    const originalSyncDeck = services.sync.syncDeck.bind(services.sync)
+    let syncPromise: ReturnType<typeof originalSyncDeck> | null = null
+    let syncCallCount = 0
+    services.sync.syncDeck = (localCards, user, localDeletedIds) => {
+      syncCallCount++
+      if (syncCallCount === 2) {
+        syncPromise = new Promise((resolve) => {
+          resolvePendingSync = () => {
+            resolve({
+              success: true,
+              cards: [cardB],
+              deletedCardIds: ['card-sync-del-1:es-en'],
+              syncedAt: Date.now(),
+            })
+          }
+        })
+        return syncPromise
+      }
+      return originalSyncDeck(localCards, user, localDeletedIds)
+    }
+
+    render(<App services={services} />)
+
+    await practiceCards(user)
+    expect(screen.getByRole('heading', { name: 'perro' })).toBeInTheDocument()
+
+    // Type answer and reveal diff for cardA
+    const answerInput = screen.getByLabelText('Your answer')
+    await user.type(answerInput, 'doggie')
+    await user.keyboard('{Enter}')
+    expect(screen.getByText('You wrote')).toBeInTheDocument()
+
+    // Trigger background sync
+    window.dispatchEvent(new Event('focus'))
+
+    // Resolve sync where cardA was deleted remotely
+    await act(async () => {
+      resolvePendingSync?.()
+      await syncPromise
+      await Promise.resolve()
+    })
+
+    // Jolito must transition to cardB unrevealed with empty answer, NOT diffing against 'doggie'
+    expect(screen.queryByText('You wrote')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'gato' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Your answer')).toHaveValue('')
+  })
+
   it('opens edit modal via Ctrl+E when input is active and "e" when revealed during study session', async () => {
     const user = userEvent.setup()
     const services = createTestServices()
