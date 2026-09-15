@@ -1,6 +1,7 @@
 import { NativeDeletionLock } from '../infrastructure/browser/deletion-lock'
 import type {
   AccountDeletion,
+  AiAssistant,
   AppServices,
   AuthService,
   AuthUser,
@@ -350,6 +351,29 @@ export class MockCommunityStatsService implements CommunityStatsService {
   }
 }
 
+export class MockAiAssistant implements AiAssistant {
+  available = true
+  exampleResult: string | null =
+    '¿Vienes o qué? — O sea, sí. (Are you coming or what? — I mean, yes.)'
+  mnemonicResult: string | null = '💡 Mnemonic: Voice alter'
+
+  isAvailable(): Promise<boolean> {
+    return Promise.resolve(this.available)
+  }
+
+  isAvailableSync(): boolean {
+    return this.available
+  }
+
+  generateExample(): Promise<string | null> {
+    return Promise.resolve(this.exampleResult)
+  }
+
+  generateMnemonic(): Promise<string | null> {
+    return Promise.resolve(this.mnemonicResult)
+  }
+}
+
 export const TEST_LEXICON: LexiconEntry[] = SEED_LEXICON
 
 export function createTestServices(options?: {
@@ -360,6 +384,7 @@ export function createTestServices(options?: {
   clockTime?: number
   speakerSupported?: boolean
   assistant?: CardAssistant
+  aiAssistant?: AiAssistant
   user?: AuthUser | null
   communityStats?: CommunityStats | null
 }): AppServices & {
@@ -374,6 +399,7 @@ export function createTestServices(options?: {
   mockSync: MockSyncService
   mockFeedback: MockFeedbackService
   mockCommunityStats: MockCommunityStatsService
+  mockAiAssistant: MockAiAssistant
 } {
   const memoryCards = new MemoryCardRepository(
     options?.cards ?? null,
@@ -404,6 +430,8 @@ export function createTestServices(options?: {
   const mockCommunityStats = new MockCommunityStatsService(
     options?.communityStats ?? null,
   )
+  const mockAiAssistant = new MockAiAssistant()
+  const aiAssistant = options?.aiAssistant ?? mockAiAssistant
 
   return {
     deletionLock: new NativeDeletionLock(),
@@ -418,6 +446,7 @@ export function createTestServices(options?: {
     sync: mockSync,
     feedback: mockFeedback,
     communityStats: mockCommunityStats,
+    aiAssistant,
     memoryCards,
     mockSpeaker,
     mockSounds,
@@ -428,5 +457,6 @@ export function createTestServices(options?: {
     mockSync,
     mockFeedback,
     mockCommunityStats,
+    mockAiAssistant,
   }
 }

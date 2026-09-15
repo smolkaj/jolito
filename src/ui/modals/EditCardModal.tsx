@@ -1,8 +1,11 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import type { AiAssistant } from '../../application/ports'
 import type { StudyCard, UpdateCardParams } from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
 import { MexicoFlag, EnglishBadge } from '../icons'
 import { AudioButton } from '../AudioButton'
+import { AiContextActions } from '../AiContextActions'
+import { appendOrReplaceContext, useAiSuggestions } from '../useAiSuggestions'
 import { handleFocusSelect } from '../utils'
 
 function EditCardModalInner({
@@ -12,6 +15,8 @@ function EditCardModalInner({
   onSave,
   saveError,
   onPlayAudio,
+  aiAssistant,
+  isOnline,
 }: {
   card: StudyCard
   cards: StudyCard[]
@@ -19,12 +24,52 @@ function EditCardModalInner({
   onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
   saveError?: string | null | undefined
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
+  aiAssistant?: AiAssistant | undefined
+  isOnline?: boolean | undefined
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
   const [answer, setAnswer] = useState(card.answer)
   const [context, setContext] = useState(card.context ?? '')
   const [resetProgress, setResetProgress] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const contextTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  const isEsToEn = card.direction === 'es-en'
+  const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
+  const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
+
+  const spanishTerm = isEsToEn ? prompt : answer
+  const englishTerm = isEsToEn ? answer : prompt
+
+  const {
+    aiAvailable,
+    loading: aiLoading,
+    error: aiError,
+    statusMessage: aiStatusMessage,
+    generateExample,
+    generateMnemonic,
+    abortActiveRequest,
+  } = useAiSuggestions({
+    aiAssistant,
+    isOnline,
+    spanish: spanishTerm,
+    english: englishTerm,
+    onAppendContext: (text) => {
+      setContext((prev) => appendOrReplaceContext(prev, text))
+    },
+  })
+
+  useEffect(() => {
+    if (contextTextareaRef.current) {
+      contextTextareaRef.current.style.height = 'auto'
+      contextTextareaRef.current.style.height = `${Math.min(
+        180,
+        Math.max(46, contextTextareaRef.current.scrollHeight),
+      )}px`
+    }
+  }, [context])
+
   const visibleError =
     error === 'save-failed'
       ? (saveError ??
@@ -41,10 +86,6 @@ function EditCardModalInner({
   useEffect(() => {
     promptInputRef.current?.focus()
   }, [])
-
-  const isEsToEn = card.direction === 'es-en'
-  const promptLocale = isEsToEn ? 'es-MX' : 'en-US'
-  const answerLocale = isEsToEn ? 'en-US' : 'es-MX'
 
   const currentCard = cards.find((current) => current.id === card.id)
   const isAlreadyNew =
@@ -81,7 +122,11 @@ function EditCardModalInner({
         : {}),
       resetProgress: isAlreadyNew ? false : resetProgress,
     })
-    if (saved === false) setError('save-failed')
+    if (saved === false) {
+      setError('save-failed')
+    } else {
+      abortActiveRequest()
+    }
   }
 
   return (
@@ -142,7 +187,10 @@ function EditCardModalInner({
               ref={promptInputRef}
               autoCapitalize="none"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={(e) => {
+                abortActiveRequest()
+                setPrompt(e.target.value)
+              }}
               onFocus={handleFocusSelect}
               placeholder="Prompt text"
             />
@@ -169,7 +217,10 @@ function EditCardModalInner({
               required
               autoCapitalize="none"
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={(e) => {
+                abortActiveRequest()
+                setAnswer(e.target.value)
+              }}
               onFocus={handleFocusSelect}
               placeholder="Answer text"
             />
@@ -180,6 +231,7 @@ function EditCardModalInner({
               <label htmlFor="edit-context">Additional Context</label>
             </div>
             <textarea
+              ref={contextTextareaRef}
               id="edit-context"
               rows={2}
               autoCapitalize="none"
@@ -187,6 +239,22 @@ function EditCardModalInner({
               onChange={(e) => setContext(e.target.value)}
               onFocus={handleFocusSelect}
               placeholder="Optional mnemonic, example sentence, or memory hook"
+            />
+            <AiContextActions
+              aiAvailable={aiAvailable}
+              loading={aiLoading}
+              error={aiError}
+              statusMessage={aiStatusMessage}
+              canGenerateExample={Boolean(spanishTerm.trim())}
+              canGenerateMnemonic={Boolean(
+                spanishTerm.trim() && englishTerm.trim(),
+              )}
+              onGenerateExample={() => {
+                void generateExample()
+              }}
+              onGenerateMnemonic={() => {
+                void generateMnemonic()
+              }}
             />
           </div>
 
@@ -250,6 +318,8 @@ export function EditCardModal({
   onSave,
   saveError,
   onPlayAudio,
+  aiAssistant,
+  isOnline,
 }: {
   isOpen: boolean
   card: StudyCard | null
@@ -258,6 +328,8 @@ export function EditCardModal({
   onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
   saveError?: string | null | undefined
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
+  aiAssistant?: AiAssistant | undefined
+  isOnline?: boolean | undefined
 }) {
   useEffect(() => {
     if (!isOpen) return
@@ -282,6 +354,8 @@ export function EditCardModal({
       onSave={onSave}
       saveError={saveError}
       onPlayAudio={onPlayAudio}
+      aiAssistant={aiAssistant}
+      isOnline={isOnline}
     />
   )
 }

@@ -90,6 +90,17 @@ export type CardAssistant = {
   loadDictionary?(): Promise<boolean> | boolean | Promise<void> | void
 }
 
+export type AiAssistant = {
+  isAvailable(): Promise<boolean>
+  isAvailableSync?(): boolean
+  generateExample(spanish: string, signal?: AbortSignal): Promise<string | null>
+  generateMnemonic(
+    spanish: string,
+    english: string,
+    signal?: AbortSignal,
+  ): Promise<string | null>
+}
+
 export type AuthUser = {
   id: string
   email: string
@@ -174,4 +185,5 @@ export type AppServices = {
   sync: SyncService
   feedback: FeedbackService
   communityStats?: CommunityStatsService
+  aiAssistant?: AiAssistant | undefined
 }
