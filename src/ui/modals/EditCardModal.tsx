@@ -186,7 +186,7 @@ function EditCardModalInner({
               value={context}
               onChange={(e) => setContext(e.target.value)}
               onFocus={handleFocusSelect}
-              placeholder="Optional context, usage notes, or nuance"
+              placeholder="Optional mnemonic, example sentence, or memory hook"
             />
           </div>
 

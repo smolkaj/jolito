@@ -67,16 +67,28 @@ describe('starterPacks', () => {
     expect(new Set(allVerbs).size).toBe(200)
   })
 
-  it('creates cards with valid schedules and non-empty contexts', () => {
+  it('retains slang and spoken etiquette contexts in street phrases while omitting boilerplate context from common verb packs', () => {
     const street = findStarterPack('mexican-street-phrases')!
-    const cards = street.createCards(5000)
+    const streetCards = street.createCards(5000)
 
-    for (const card of cards) {
+    for (const card of streetCards) {
       expect(card.prompt.trim()).not.toBe('')
       expect(card.answer.trim()).not.toBe('')
       expect(card.context.trim()).not.toBe('')
       expect(card.schedule.state).toBe('new')
       expect(card.schedule.intervalDays).toBe(0)
+    }
+
+    const verbPacks = [
+      findStarterPack('common-verbs-1')!,
+      findStarterPack('common-verbs-2')!,
+      findStarterPack('common-verbs-3')!,
+      findStarterPack('common-verbs-4')!,
+    ]
+
+    for (const pack of verbPacks) {
+      const cards = pack.createCards(0)
+      expect(cards.every((c) => c.context === '')).toBe(true)
     }
   })
 
