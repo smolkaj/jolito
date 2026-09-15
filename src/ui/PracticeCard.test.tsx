@@ -89,6 +89,17 @@ describe('shared practice interaction lifecycle', () => {
     expect(initial.onGrade).toHaveBeenCalledWith('easy')
     expect(initial.onPlayAnswer).not.toHaveBeenCalled()
   })
+
+  it('suppresses mobile suggestions, autocorrect, autocapitalize, and spellcheck on the answer input', () => {
+    const initial = props()
+    render(<PracticeCard {...initial} revealed={false} />)
+    const input = screen.getByRole('textbox')
+    expect(input).toHaveAttribute('autocomplete', 'off')
+    expect(input).toHaveAttribute('autocorrect', 'off')
+    expect(input).toHaveAttribute('autocapitalize', 'none')
+    expect(input).toHaveAttribute('spellcheck', 'false')
+    expect(input).toHaveAttribute('lang', 'es-MX')
+  })
 })
 
 const vocabulary = createStudyCards(
