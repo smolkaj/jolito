@@ -812,7 +812,7 @@ export function CreateCardView({
               value={contextInput}
               onChange={(e) => setContextInput(e.target.value)}
               onFocus={handleFocusSelect}
-              placeholder="Optional context, regional nuance, or memory hook"
+              placeholder="Optional mnemonic, example sentence, or memory hook"
             />
           </div>
           <label className="toggle-row">

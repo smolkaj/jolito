@@ -24,8 +24,7 @@ export const starterCards: StudyCard[] = [
     {
       spanish: 'aguacate',
       english: 'avocado',
-      context:
-        'Essential ingredient across Mexican cuisine, from guacamole to tacos.',
+      context: '',
       bidirectional: true,
     },
     'starter-aguacate',

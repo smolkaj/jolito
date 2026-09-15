@@ -67,4 +67,19 @@ describe('starterCards', () => {
     expect(filtered).toHaveLength(1)
     expect(filtered.some(isStarterCard)).toBe(false)
   })
+
+  it('keeps starter aguacate clean without filler context while retaining slang context on qué padre', () => {
+    const aguacateCards = starterCards.filter(
+      (c) => c.noteId === 'starter-aguacate',
+    )
+    const quePadreCards = starterCards.filter(
+      (c) => c.noteId === 'starter-que-padre',
+    )
+
+    expect(aguacateCards).toHaveLength(2)
+    expect(aguacateCards.every((c) => c.context === '')).toBe(true)
+
+    expect(quePadreCards).toHaveLength(2)
+    expect(quePadreCards.every((c) => c.context.trim().length > 0)).toBe(true)
+  })
 })
