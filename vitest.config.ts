@@ -20,9 +20,9 @@ export default defineConfig({
     fileParallelism: !isIntegration,
     include: isIntegration
       ? ['tests/integration/**/*.test.ts']
-      : ['src/**/*.test.{ts,tsx}'],
+      : ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
     exclude: isIntegration
-      ? ['src/**', '**/node_modules/**', '**/.git/**']
+      ? ['src/**', 'scripts/**', '**/node_modules/**', '**/.git/**']
       : ['tests/**', '**/node_modules/**', '**/.git/**'],
     setupFiles: ['./src/test/setup.ts'],
     coverage: {

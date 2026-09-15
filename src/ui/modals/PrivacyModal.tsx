@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { Fragment, useEffect } from 'react'
 import { ShieldIcon } from '../icons'
 import { PRIVACY_SECTIONS } from '../../domain/privacy-content'
 
@@ -59,7 +59,9 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
               {section.paragraphs.map((p, pIdx) => (
                 <p key={pIdx}>
                   {p.map((segment, sIdx) => {
-                    if (segment.type === 'text') return segment.text
+                    if (segment.type === 'text') {
+                      return <Fragment key={sIdx}>{segment.text}</Fragment>
+                    }
                     if (segment.type === 'strong') {
                       return <strong key={sIdx}>{segment.text}</strong>
                     }
