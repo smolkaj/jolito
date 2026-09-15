@@ -3031,6 +3031,9 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText('Modify prompt, answer, or additional context.'),
+    ).toBeInTheDocument()
     const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
     const answerInput = screen.getByLabelText(/english \(answer\)/i)
     const contextInput = screen.getByLabelText(/additional context/i)
