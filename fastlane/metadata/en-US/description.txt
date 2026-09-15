@@ -11,4 +11,4 @@ Jolito helps you learn Mexican Spanish with spoken flashcards, active recall, an
 
 Try the starter demo without an account. Creating a personal deck, importing cards, and saving progress require free email sign-in and an initial internet connection. Subsequent study works offline; offline speech requires installed device voices.
 
-Pay once. No subscription, in-app purchases, advertising, or tracking.
+Pay once. No subscriptions, in-app purchases, or ads.
