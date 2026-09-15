@@ -1180,6 +1180,8 @@ function LoadedApp({
         onClose={() => setEditingCard(null)}
         onSave={handleSaveEdit}
         onPlayAudio={playAudio}
+        aiAssistant={services.aiAssistant}
+        isOnline={isOnline}
       />
       <DeleteCardsModal
         saveError={saveError}
@@ -1255,6 +1257,7 @@ function LoadedApp({
           onSaveCard={handleSaveCard}
           onPlayAudio={playAudio}
           assistant={services.assistant}
+          aiAssistant={services.aiAssistant}
         />
         {renderAppModals()}
       </>
