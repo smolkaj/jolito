@@ -40,7 +40,7 @@ platform :ios do
         File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
         File.chmod(0600, certificate, profile_file)
         xml, status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
-        FastlaneCore::UI.user_error!('Cannot decode provisioning profile') unless status.success?
+        UI.user_error!('Cannot decode provisioning profile') unless status.success?
         profile = Plist.parse_xml(xml)
         uuid = ReleaseConfig.profile!(profile)
         profile_path = install_provisioning_profile(path: profile_file)
@@ -52,7 +52,7 @@ platform :ios do
         _, partition_status = Open3.capture2(
           'security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', password, keychain
         )
-        FastlaneCore::UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
+        UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
         update_code_signing_settings(
           use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
           targets: ['App'], build_configurations: ['Release'],

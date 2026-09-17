@@ -7,6 +7,8 @@ void test('Xcode project release configuration specifies Apple Distribution iden
     new URL('../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url),
     'utf8',
   )
+  // 504EC3151FED79650016851F is the project-level Release build configuration
+  // from which the native App target inherits its code signing identity.
   assert.match(
     pbxproj,
     /504EC3151FED79650016851F \/\* Release \*\/ = \{[^}]*buildSettings = \{[^}]*CODE_SIGN_IDENTITY = "Apple Distribution";/,

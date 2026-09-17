@@ -107,6 +107,7 @@ class ReleaseTest < Minitest::Test
 
   # Execute the actual lane orchestration while replacing Apple's side effects.
   class LaneHarness
+    UI = FastlaneCore::UI
     attr_reader :calls
     def initialize
       @lanes = {}
@@ -118,7 +119,6 @@ class ReleaseTest < Minitest::Test
     def desc(*) = nil
     def lane(name, &block) = @lanes[name] = block
     alias private_lane lane
-    def UI = FastlaneCore::UI
     def execute(name, options = {}) = @lanes.fetch(name).call(options)
     def connect = @calls << [:connect, {}]
     def upload_to_app_store(options)
