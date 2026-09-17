@@ -186,6 +186,34 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
+  def test_beta_lane_configures_default_keychain_and_explicit_apple_distribution_identity
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    profile_xml = Plist::Emit.dump({
+      'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    status = Struct.new(:success?).new(true)
+    harness = SigningHarness.new
+    Open3.stub(:capture2, [profile_xml, status]) do
+      harness.execute(:beta)
+    end
+    keychain_call = harness.calls.find { |name, _| name == :create_keychain }
+    assert keychain_call, 'Expected create_keychain call'
+    assert_equal true, keychain_call[1][:default_keychain], 'create_keychain must set default_keychain: true for xcodebuild'
+
+    build_call = harness.calls.find { |name, _| name == :build_app }
+    assert build_call, 'Expected build_app call'
+    xcargs = build_call[1][:xcargs]
+    assert_includes xcargs, 'CODE_SIGN_IDENTITY="Apple Distribution"'
+    assert_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER=profile-id'
+  ensure
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
   def test_submission_selects_exact_build_and_never_builds_or_uploads_binary
     Fastlane::Actions.load_default_actions
     harness = LaneHarness.new

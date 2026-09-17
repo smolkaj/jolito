@@ -19,3 +19,32 @@ void test('native scenes leave window creation to the scene delegate', () => {
   assert.ok(!keys.includes('UISceneStoryboardFile'))
   assert.ok(keys.includes('UILaunchStoryboardName'))
 })
+
+void test('release build configuration mandates Apple Distribution signing identity', () => {
+  const pbxproj = readFileSync(
+    new URL('../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url),
+    'utf8',
+  )
+  assert.match(
+    pbxproj,
+    /504EC3151FED79650016851F \/\* Release \*\/ = \{[\s\S]*?CODE_SIGN_IDENTITY = "Apple Distribution";/,
+    'Project Release configuration must specify Apple Distribution',
+  )
+
+  const fastfile = readFileSync(
+    new URL('../../fastlane/Fastfile', import.meta.url),
+    'utf8',
+  )
+  assert.ok(
+    fastfile.includes('default_keychain: true'),
+    'Fastlane must set default_keychain: true for ephemeral signing keychain',
+  )
+  assert.ok(
+    fastfile.includes('CODE_SIGN_IDENTITY=\\"Apple Distribution\\"'),
+    'Fastlane build_app xcargs must explicitly override CODE_SIGN_IDENTITY',
+  )
+  assert.ok(
+    fastfile.includes("set-key-partition-list"),
+    'Fastlane must configure keychain partition list for headless codesign',
+  )
+})
