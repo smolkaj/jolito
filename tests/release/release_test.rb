@@ -186,7 +186,7 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
-  def test_beta_lane_configures_default_keychain_and_explicit_apple_distribution_identity
+  def test_beta_lane_configures_default_keychain_partition_and_explicit_apple_distribution_identity
     Fastlane::Actions.load_default_actions
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
@@ -197,19 +197,60 @@ class ReleaseTest < Minitest::Test
       'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
     })
     status = Struct.new(:success?).new(true)
+    captured_commands = []
+    capture_proc = lambda do |*args|
+      captured_commands << args
+      [profile_xml, status]
+    end
     harness = SigningHarness.new
-    Open3.stub(:capture2, [profile_xml, status]) do
+    Open3.stub(:capture2, capture_proc) do
       harness.execute(:beta)
     end
     keychain_call = harness.calls.find { |name, _| name == :create_keychain }
     assert keychain_call, 'Expected create_keychain call'
     assert_equal true, keychain_call[1][:default_keychain], 'create_keychain must set default_keychain: true for xcodebuild'
 
+    partition_call = captured_commands.find { |args| args[0] == 'security' && args[1] == 'set-key-partition-list' }
+    assert partition_call, 'Expected security set-key-partition-list to be invoked'
+    assert_equal ['security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k'], partition_call[0..5]
+    assert_equal harness.keychain_path, partition_call[7]
+
     build_call = harness.calls.find { |name, _| name == :build_app }
     assert build_call, 'Expected build_app call'
     xcargs = build_call[1][:xcargs]
     assert_includes xcargs, 'CODE_SIGN_IDENTITY="Apple Distribution"'
     assert_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER=profile-id'
+  ensure
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_partition_list_failure_raises_error_and_cleans_up_keychain
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    profile_xml = Plist::Emit.dump({
+      'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    success = Struct.new(:success?).new(true)
+    failure = Struct.new(:success?).new(false)
+    capture_proc = lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', failure]
+      else
+        [profile_xml, success]
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2, capture_proc) do
+      error = assert_raises(StandardError) { harness.execute(:beta) }
+      assert_includes error.message, 'Cannot set keychain partition list'
+    end
+    refute File.exist?(harness.keychain_path)
+    refute File.exist?(harness.installed_profile)
+    assert_equal :delete_keychain, harness.calls.last.first
   ensure
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
