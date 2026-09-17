@@ -118,6 +118,7 @@ class ReleaseTest < Minitest::Test
     def desc(*) = nil
     def lane(name, &block) = @lanes[name] = block
     alias private_lane lane
+    def UI = FastlaneCore::UI
     def execute(name, options = {}) = @lanes.fetch(name).call(options)
     def connect = @calls << [:connect, {}]
     def upload_to_app_store(options)
@@ -221,6 +222,7 @@ class ReleaseTest < Minitest::Test
     assert_includes xcargs, 'CODE_SIGN_IDENTITY="Apple Distribution"'
     assert_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER=profile-id'
   ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 

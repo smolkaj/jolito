@@ -40,7 +40,7 @@ platform :ios do
         File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
         File.chmod(0600, certificate, profile_file)
         xml, status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
-        UI.user_error!('Cannot decode provisioning profile') unless status.success?
+        FastlaneCore::UI.user_error!('Cannot decode provisioning profile') unless status.success?
         profile = Plist.parse_xml(xml)
         uuid = ReleaseConfig.profile!(profile)
         profile_path = install_provisioning_profile(path: profile_file)
@@ -52,7 +52,7 @@ platform :ios do
         _, partition_status = Open3.capture2(
           'security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', password, keychain
         )
-        UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
+        FastlaneCore::UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
         update_code_signing_settings(
           use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
           targets: ['App'], build_configurations: ['Release'],
@@ -74,7 +74,9 @@ platform :ios do
           changelog: "#{ENV.fetch('RELEASE_NOTES', 'Initial paid release')}\nSource: #{ENV.fetch('GITHUB_SHA', 'local')}",
           skip_waiting_for_build_processing: false
         )
-        File.write(File.join(ReleaseConfig::ROOT, 'build/release.json'), JSON.pretty_generate({
+        build_dir = File.join(ReleaseConfig::ROOT, 'build')
+        FileUtils.mkdir_p(build_dir)
+        File.write(File.join(build_dir, 'release.json'), JSON.pretty_generate({
           bundleId: bundle_id, version: version, buildNumber: number,
           commit: ENV.fetch('GITHUB_SHA', 'local')
         }))
