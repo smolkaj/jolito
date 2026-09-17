@@ -5,6 +5,7 @@ import { CreateCardView } from './views/CreateCardView'
 import { EditCardModal } from './modals/EditCardModal'
 import { createStudyCards } from '../domain/card'
 import type { AiAssistant } from '../application/ports'
+import { appendOrReplaceContext } from './useAiSuggestions'
 
 describe('AI Card Suggestions', () => {
   beforeEach(() => {
@@ -470,5 +471,53 @@ describe('AI Card Suggestions', () => {
     // Click again to regenerate: replaces the mnemonic hook instead of appending another
     await user.click(mnemonicBtn)
     expect(contextInput).toHaveValue('💡 Mnemonic: Hook variant 2')
+  })
+
+  describe('appendOrReplaceContext', () => {
+    it('returns newText when previous text is empty or whitespace', () => {
+      expect(appendOrReplaceContext('', '💡 Mnemonic: Hook')).toBe(
+        '💡 Mnemonic: Hook',
+      )
+      expect(appendOrReplaceContext('   ', 'Example sentence.')).toBe(
+        'Example sentence.',
+      )
+    })
+
+    it('replaces existing mnemonic separated by double newlines', () => {
+      const prev = 'Example sentence.\n\n💡 Mnemonic: Old hook'
+      const next = appendOrReplaceContext(prev, '💡 Mnemonic: New hook')
+      expect(next).toBe('Example sentence.\n\n💡 Mnemonic: New hook')
+    })
+
+    it('replaces existing mnemonic separated by a single newline', () => {
+      const prev = 'Example sentence.\n💡 Mnemonic: Old hook'
+      const next = appendOrReplaceContext(prev, '💡 Mnemonic: New hook')
+      expect(next).toBe('Example sentence.\n💡 Mnemonic: New hook')
+    })
+
+    it('replaces mnemonic without emoji prefix', () => {
+      const prev = 'Example sentence.\n\nMnemonic: Old hook'
+      const next = appendOrReplaceContext(prev, '💡 Mnemonic: New hook')
+      expect(next).toBe('Example sentence.\n\n💡 Mnemonic: New hook')
+    })
+
+    it('replaces lowercase mnemonic prefix case-insensitively', () => {
+      const prev = 'mnemonic: old hook'
+      const next = appendOrReplaceContext(prev, '💡 Mnemonic: New hook')
+      expect(next).toBe('💡 Mnemonic: New hook')
+    })
+
+    it('appends mnemonic when no existing mnemonic is present', () => {
+      const prev = 'Example sentence.'
+      const next = appendOrReplaceContext(prev, '💡 Mnemonic: New hook')
+      expect(next).toBe('Example sentence.\n\n💡 Mnemonic: New hook')
+    })
+
+    it('does not duplicate identical text', () => {
+      const prev = 'Example sentence.'
+      expect(appendOrReplaceContext(prev, 'Example sentence.')).toBe(
+        'Example sentence.',
+      )
+    })
   })
 })
