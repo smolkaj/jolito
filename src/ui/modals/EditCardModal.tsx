@@ -97,7 +97,7 @@ function EditCardModalInner({
           <div className="modal-header-copy">
             <h2 id="edit-card-modal-title">Edit flashcard</h2>
             <p className="modal-subtitle">
-              Modify prompt, answer, or memory notes.
+              Modify prompt, answer, or additional context.
             </p>
           </div>
           <button
