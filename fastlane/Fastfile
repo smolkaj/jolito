@@ -44,11 +44,15 @@ platform :ios do
         profile = Plist.parse_xml(xml)
         uuid = ReleaseConfig.profile!(profile)
         profile_path = install_provisioning_profile(path: profile_file)
-        create_keychain(path: keychain, password: password, default_keychain: false,
+        create_keychain(path: keychain, password: password, default_keychain: true,
                         unlock: true, timeout: 3600, add_to_search_list: true)
         import_certificate(certificate_path: certificate,
                            certificate_password: ENV.fetch('APPLE_CERTIFICATE_PASS'),
                            keychain_path: keychain, keychain_password: password)
+        _, partition_status = Open3.capture2(
+          'security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', password, keychain
+        )
+        UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
         update_code_signing_settings(
           use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
           targets: ['App'], build_configurations: ['Release'],
@@ -59,7 +63,7 @@ platform :ios do
           project: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'), scheme: 'App', configuration: 'Release',
           export_method: 'app-store', output_directory: File.join(ReleaseConfig::ROOT, 'build'), output_name: 'Jolito.ipa',
           clean: true,
-          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number}",
+          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number} CODE_SIGN_IDENTITY=\"Apple Distribution\" PROVISIONING_PROFILE_SPECIFIER=#{uuid}",
           export_options: {
             signingStyle: 'manual', teamID: ENV.fetch('APPLE_TEAM_ID'),
             provisioningProfiles: { bundle_id => uuid }, manageAppVersionAndBuildNumber: false
