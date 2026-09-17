@@ -5,12 +5,16 @@ export function appendOrReplaceContext(prev: string, newText: string): string {
   const trimmedPrev = prev.trim()
   if (!trimmedPrev) return newText
 
-  if (newText.startsWith('💡 Mnemonic:')) {
-    const lines = trimmedPrev.split('\n\n')
-    const mnemonicIdx = lines.findIndex((l) => l.startsWith('💡 Mnemonic:'))
+  const isMnemonic = /^(?:💡\s*)?mnemonic:/i.test(newText.trim())
+
+  if (isMnemonic) {
+    const lines = trimmedPrev.split(/\r?\n/)
+    const mnemonicIdx = lines.findIndex((l) =>
+      /^(?:💡\s*)?mnemonic:/i.test(l.trim()),
+    )
     if (mnemonicIdx !== -1) {
       lines[mnemonicIdx] = newText
-      return lines.join('\n\n')
+      return lines.join('\n')
     }
   }
 
