@@ -5955,3 +5955,402 @@ kbd {
   border-left: 3px solid var(--tezontle);
   padding: 0.75rem 1rem;
 }
+
+/* ==========================================================================
+   iOS Native Polish & Gestural Experience
+   ========================================================================== */
+
+/* Milestone 1: Gestural Practice Canvas */
+.study-card {
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  will-change: transform;
+}
+
+.study-card.is-dragging {
+  cursor: grabbing;
+}
+
+.study-card.zone-again {
+  border-color: var(--rosa) !important;
+  box-shadow:
+    0 0 24px var(--rosa-glow),
+    var(--shadow-card);
+}
+
+.study-card.zone-good {
+  border-color: var(--turquesa-dark) !important;
+  box-shadow:
+    0 0 24px var(--turquesa-glow),
+    var(--shadow-card);
+}
+
+.study-card.zone-easy {
+  border-color: var(--verde) !important;
+  box-shadow:
+    0 0 24px var(--verde-glow),
+    var(--shadow-card);
+}
+
+.study-card.zone-hard {
+  border-color: var(--cempasuchil-dark) !important;
+  box-shadow:
+    0 0 24px var(--cempasuchil-glow),
+    var(--shadow-card);
+}
+
+.card-gesture-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.gesture-zone-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border: 2px solid currentColor;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: transform 140ms var(--ease-spring);
+}
+
+.gesture-zone-badge .badge-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: currentColor;
+  color: #fff;
+  font-size: 11px;
+}
+
+.gesture-zone-badge.zone-again {
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-6deg);
+  color: var(--rosa);
+  border-color: var(--rosa);
+}
+.gesture-zone-badge.zone-again.is-active {
+  transform: translateY(-50%) rotate(-6deg) scale(1.12);
+  background: var(--rosa);
+  color: #ffffff;
+}
+.gesture-zone-badge.zone-again.is-active .badge-key {
+  background: #ffffff;
+  color: var(--rosa);
+}
+
+.gesture-zone-badge.zone-good {
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%) rotate(6deg);
+  color: var(--turquesa-dark);
+  border-color: var(--turquesa-dark);
+}
+.gesture-zone-badge.zone-good.is-active {
+  transform: translateY(-50%) rotate(6deg) scale(1.12);
+  background: var(--turquesa-dark);
+  color: #ffffff;
+}
+.gesture-zone-badge.zone-good.is-active .badge-key {
+  background: #ffffff;
+  color: var(--turquesa-dark);
+}
+
+.gesture-zone-badge.zone-easy {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--verde);
+  border-color: var(--verde);
+}
+.gesture-zone-badge.zone-easy.is-active {
+  transform: translateX(-50%) scale(1.12);
+  background: var(--verde);
+  color: #ffffff;
+}
+.gesture-zone-badge.zone-easy.is-active .badge-key {
+  background: #ffffff;
+  color: var(--verde);
+}
+
+.gesture-zone-badge.zone-hard {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--cempasuchil-dark);
+  border-color: var(--cempasuchil-dark);
+}
+.gesture-zone-badge.zone-hard.is-active {
+  transform: translateX(-50%) scale(1.12);
+  background: var(--cempasuchil);
+  color: #121815;
+}
+.gesture-zone-badge.zone-hard.is-active .badge-key {
+  background: #121815;
+  color: var(--cempasuchil);
+}
+
+.card-unrevealed-cue {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse), (max-width: 680px) {
+  .card-unrevealed-cue {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+  .card-unrevealed-cue .touch-cue-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: var(--paper-subtle);
+    border: 1px dashed var(--line-subtle);
+    border-radius: 999px;
+  }
+  .keyboard-hint {
+    display: none !important;
+  }
+  .reveal-button kbd {
+    display: none !important;
+  }
+  .answer-accents button kbd {
+    display: none !important;
+  }
+}
+
+/* Milestone 2: Mobile Navigation Tab Bar */
+.mobile-tab-bar {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .mobile-tab-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(253, 245, 248, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1.5px solid var(--line-subtle);
+    box-shadow: 0 -2px 10px rgba(18, 24, 21, 0.04);
+  }
+
+  .mobile-tab-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--ink-muted);
+    padding: 6px 0;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    transition:
+      color 120ms ease,
+      transform 100ms var(--ease-spring);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-tab-btn:active {
+    transform: scale(0.92);
+  }
+
+  .mobile-tab-btn.is-active {
+    color: var(--rosa);
+    font-weight: 700;
+  }
+
+  .tab-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+  }
+
+  .tab-badge {
+    position: absolute;
+    top: -3px;
+    right: -7px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--rosa);
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(228, 0, 124, 0.3);
+  }
+
+  .tab-online-dot {
+    position: absolute;
+    bottom: 2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--verde);
+    border: 1.5px solid var(--paper);
+  }
+
+  /* Adjust page shells to account for bottom tab bar reachability */
+  .app-shell {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* Milestone 2: Draggable Bottom Sheets for Modals */
+.sheet-grabber-zone {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-content.modal-sheet {
+    width: 100% !important;
+    max-height: 88vh !important;
+    max-height: 88dvh !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: none !important;
+    box-shadow: 0 -4px 24px rgba(18, 24, 21, 0.15) !important;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+    animation: sheet-slide-up 240ms var(--ease-spring) !important;
+    touch-action: pan-y;
+  }
+
+  .modal-content.modal-sheet.is-dragging-sheet {
+    transition: none !important;
+    cursor: grabbing;
+  }
+
+  .sheet-grabber-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 6px 0 10px;
+    margin-top: -6px;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .sheet-grabber-bar {
+    width: 38px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--line-subtle);
+  }
+
+  @keyframes sheet-slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Milestone 3: Touch Feedback, Rubber-Banding & Haptic Polish */
+
+/* Instantaneous :active press transforms */
+button:active,
+.primary-button:active,
+.secondary-button:active,
+.text-button:active,
+.action-button:active,
+.grade-btn:active,
+.audio-button:active,
+.audio-btn:active,
+.study-quick-btn:active,
+.starter-pack-card:active,
+.demo-deck-chip:active {
+  transform: scale(0.96);
+  transition: transform 60ms cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+/* Pull-to-refresh on Deck Manager */
+.pull-to-refresh-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  overflow: hidden;
+  transition:
+    height 240ms var(--ease-spring),
+    opacity 180ms ease;
+  pointer-events: none;
+}
+
+.pull-to-refresh-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rosa);
+  transition: transform 120ms ease;
+}
+
+.pull-to-refresh-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  letter-spacing: 0.2px;
+}
+
+/* Native iOS inertial momentum scrolling */
+.modal-content,
+.deck-manager-table-wrap,
+.deck-cards-list,
+.study-card {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Safe area support for topbars */
+.topbar {
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+}

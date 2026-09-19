@@ -77,6 +77,7 @@ import {
   type CreateCardParams,
 } from './ui/views/CreateCardView'
 import { DeckManagerView } from './ui/views/DeckManagerView'
+import { MobileTabBar } from './ui/MobileTabBar'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -1201,6 +1202,21 @@ function LoadedApp({
     </>
   )
 
+  const renderMobileTabBar = () => (
+    <MobileTabBar
+      currentView={view}
+      isSyncOpen={isSyncOpen}
+      syncStatus={syncStatus}
+      authUser={authUser}
+      dueCount={dueCount}
+      onPractice={handlePractice}
+      onNavigateToDeck={() => navigateTo('deck')}
+      onNavigateToCreate={() => navigateTo('create')}
+      onOpenSync={openSyncModal}
+      haptics={services.haptics}
+    />
+  )
+
   if (view === 'welcome') {
     return (
       <>
@@ -1224,6 +1240,7 @@ function LoadedApp({
           onPlayAudio={playAudio}
           welcomeRef={welcomeRef}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1259,6 +1276,7 @@ function LoadedApp({
           assistant={services.assistant}
           aiAssistant={services.aiAssistant}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1295,7 +1313,10 @@ function LoadedApp({
           onAddStarterPack={handleAddStarterPack}
           onAddStarterNote={handleAddStarterNote}
           clock={services.clock}
+          onRefreshSync={requestSync}
+          haptics={services.haptics}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1426,6 +1447,7 @@ function LoadedApp({
         ) : (
           currentCard && (
             <PracticeCard
+              haptics={services.haptics}
               error={
                 saveError === STORAGE_SAVE_ERROR
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
@@ -1492,6 +1514,7 @@ function LoadedApp({
           />
         )}
       </main>
+      {renderMobileTabBar()}
       {renderAppModals()}
     </>
   )
