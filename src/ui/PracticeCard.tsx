@@ -234,7 +234,10 @@ export function PracticeCard({
   }, [])
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    if (event.pointerType !== 'touch') return
+    const isTouchOrMobile =
+      event.pointerType === 'touch' ||
+      (typeof window !== 'undefined' && window.innerWidth <= 680)
+    if (!isTouchOrMobile) return
     if (paused || isAnimatingExit || pointerStartRef.current !== null) return
     if (event.button !== 0) return
     const target = event.target as HTMLElement | null

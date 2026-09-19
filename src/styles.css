@@ -6307,6 +6307,10 @@ kbd {
     background: var(--line-subtle);
   }
 
+  .demo-deck-modal .modal-close {
+    display: none;
+  }
+
   @keyframes sheet-slide-up {
     from {
       transform: translateY(100%);
