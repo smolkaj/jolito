@@ -1085,22 +1085,25 @@ test('scales hero cards fluidly without clipping and preserves 2-line headline l
     }
 
     // 3. Card dimensions must scale down as width decreases from 1024 to 681
+    let currentCardWidth = Math.max(...info.cards.map((c) => c.width))
     if (width < 1024) {
       await expect
         .poll(
-          async () =>
-            page.evaluate(() =>
+          async () => {
+            currentCardWidth = await page.evaluate(() =>
               Math.max(
                 ...Array.from(document.querySelectorAll('.sample-card')).map(
                   (c) => c.getBoundingClientRect().width,
                 ),
               ),
-            ),
+            )
+            return currentCardWidth
+          },
           { timeout: 3000 },
         )
         .toBeLessThanOrEqual(prevCardWidth + 0.5)
     }
-    prevCardWidth = Math.max(...info.cards.map((c) => c.width))
+    prevCardWidth = currentCardWidth
 
     // 4. Headline must stay cleanly structured as 2 lines (never breaking into 3 lines)
     expect(info.lines).toBe(2)
