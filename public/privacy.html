@@ -168,46 +168,47 @@
       <section>
         <h2>2. What We Collect & Store</h2>
         <p>
-          <strong>Email:</strong> Used for passwordless sign-in and to notify
-          Jolito’s maintainer when new accounts join.
+          <strong>Email:</strong> Used for passwordless sign-in and
+          administrative join notifications.
         </p>
         <p>
-          <strong>Your Decks & Progress:</strong> Stored on your device
-          (IndexedDB) and synced to your cloud database so your cards and
-          reviews are backed up across devices.
+          <strong>Decks & Study Progress:</strong> Stored locally on your device
+          (IndexedDB) and, when signed in, synced to your cloud database so your
+          cards and reviews are backed up across devices.
         </p>
         <p>
-          <strong>Optional Feedback:</strong> If you send in-app feedback, we
-          receive your message and email address to follow up.
+          <strong>Feedback & Communications:</strong> If you send in-app
+          feedback, we receive your message and email address to follow up.
         </p>
       </section>
 
       <section>
         <h2>3. Third-Party Services & AI Processing</h2>
         <p>
-          To provide audio pronunciations, AI card assistance, and cloud sync,
-          Jolito uses the following service providers:
+          To provide audio pronunciations, AI study assistance, and cloud
+          synchronization, Jolito relies on the following service providers:
         </p>
         <p>
-          <strong>Microsoft Speech Services:</strong> When you play card audio
-          or prefetch pronunciations, card text is sent to Microsoft’s
-          text-to-speech service to generate audio.
+          <strong>Speech Synthesis (Microsoft):</strong> Card words and study
+          phrases are transmitted to Microsoft’s text-to-speech services to
+          synthesize pronunciation audio and enable responsive playback.
         </p>
         <p>
-          <strong>Cloudflare (Workers AI & Hosting):</strong> When you request
-          AI suggestions (such as example sentences or mnemonics) in the card
-          creator, your card text is processed using Meta Llama models on
-          Cloudflare Workers AI. Cloudflare also hosts Jolito’s web application,
-          caches synthesized audio, and routes API requests.
+          <strong>AI Assistance & Hosting (Cloudflare):</strong> When using
+          AI-assisted study features (such as generating example sentences,
+          mnemonics, or translations), card text and prompts are processed using
+          cloud language models via Cloudflare Workers AI. Cloudflare also hosts
+          Jolito’s web infrastructure, edge caches audio assets, and routes
+          application requests.
         </p>
         <p>
-          <strong>Supabase:</strong> Provides authentication and cloud database
-          hosting (on AWS infrastructure) for syncing user accounts, decks, and
-          study logs.
+          <strong>Account & Cloud Sync (Supabase):</strong> Manages user
+          authentication and cloud database hosting for synchronizing accounts,
+          decks, and study progress.
         </p>
         <p>
-          <strong>Resend:</strong> Delivers in-app feedback messages and
-          administrative notification emails.
+          <strong>Email Delivery (Resend):</strong> Delivers in-app feedback
+          messages and administrative notifications.
         </p>
       </section>
 

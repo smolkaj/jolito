@@ -38,18 +38,18 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
         { type: 'strong', text: 'Email:' },
         {
           type: 'text',
-          text: ' Used for passwordless sign-in and to notify Jolito’s maintainer when new accounts join.',
+          text: ' Used for passwordless sign-in and administrative join notifications.',
         },
       ],
       [
-        { type: 'strong', text: 'Your Decks & Progress:' },
+        { type: 'strong', text: 'Decks & Study Progress:' },
         {
           type: 'text',
-          text: ' Stored on your device (IndexedDB) and synced to your cloud database so your cards and reviews are backed up across devices.',
+          text: ' Stored locally on your device (IndexedDB) and, when signed in, synced to your cloud database so your cards and reviews are backed up across devices.',
         },
       ],
       [
-        { type: 'strong', text: 'Optional Feedback:' },
+        { type: 'strong', text: 'Feedback & Communications:' },
         {
           type: 'text',
           text: ' If you send in-app feedback, we receive your message and email address to follow up.',
@@ -64,35 +64,35 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
       [
         {
           type: 'text',
-          text: 'To provide audio pronunciations, AI card assistance, and cloud sync, Jolito uses the following service providers:',
+          text: 'To provide audio pronunciations, AI study assistance, and cloud synchronization, Jolito relies on the following service providers:',
         },
       ],
       [
-        { type: 'strong', text: 'Microsoft Speech Services:' },
+        { type: 'strong', text: 'Speech Synthesis (Microsoft):' },
         {
           type: 'text',
-          text: ' When you play card audio or prefetch pronunciations, card text is sent to Microsoft’s text-to-speech service to generate audio.',
+          text: ' Card words and study phrases are transmitted to Microsoft’s text-to-speech services to synthesize pronunciation audio and enable responsive playback.',
         },
       ],
       [
-        { type: 'strong', text: 'Cloudflare (Workers AI & Hosting):' },
+        { type: 'strong', text: 'AI Assistance & Hosting (Cloudflare):' },
         {
           type: 'text',
-          text: ' When you request AI suggestions (such as example sentences or mnemonics) in the card creator, your card text is processed using Meta Llama models on Cloudflare Workers AI. Cloudflare also hosts Jolito’s web application, caches synthesized audio, and routes API requests.',
+          text: ' When using AI-assisted study features (such as generating example sentences, mnemonics, or translations), card text and prompts are processed using cloud language models via Cloudflare Workers AI. Cloudflare also hosts Jolito’s web infrastructure, edge caches audio assets, and routes application requests.',
         },
       ],
       [
-        { type: 'strong', text: 'Supabase:' },
+        { type: 'strong', text: 'Account & Cloud Sync (Supabase):' },
         {
           type: 'text',
-          text: ' Provides authentication and cloud database hosting (on AWS infrastructure) for syncing user accounts, decks, and study logs.',
+          text: ' Manages user authentication and cloud database hosting for synchronizing accounts, decks, and study progress.',
         },
       ],
       [
-        { type: 'strong', text: 'Resend:' },
+        { type: 'strong', text: 'Email Delivery (Resend):' },
         {
           type: 'text',
-          text: ' Delivers in-app feedback messages and administrative notification emails.',
+          text: ' Delivers in-app feedback messages and administrative notifications.',
         },
       ],
     ],
