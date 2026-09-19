@@ -1335,7 +1335,6 @@ function LoadedApp({
           onAddStarterPack={handleAddStarterPack}
           onAddStarterNote={handleAddStarterNote}
           clock={services.clock}
-          onRefreshSync={requestSync}
           haptics={services.haptics}
         />
         {renderMobileTabBar()}
