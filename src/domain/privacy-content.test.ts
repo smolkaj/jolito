@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { PRIVACY_POLICY_METADATA, PRIVACY_SECTIONS } from './privacy-content'
 
 describe('privacy-content domain', () => {
-  it('defines the 4 required privacy sections', () => {
-    expect(PRIVACY_SECTIONS).toHaveLength(4)
+  it('defines the 5 required privacy sections', () => {
+    expect(PRIVACY_SECTIONS).toHaveLength(5)
     expect(PRIVACY_SECTIONS.map((s) => s.title)).toEqual([
       'The Demo vs. Your Account',
-      'What We Collect',
+      'What We Collect & Store',
+      'Third-Party Services & AI Processing',
       'Data Export & Account Deletion',
       'Open Source & Contact',
     ])
