@@ -113,6 +113,7 @@ export function useAiSuggestions({
 
   const generateExample = useCallback(async () => {
     const term = spanish.trim()
+    const def = (english ?? '').trim()
     if (!term || !aiAssistant || loading !== null) return
 
     aiAbortControllerRef.current?.abort()
@@ -124,10 +125,17 @@ export function useAiSuggestions({
     setStatusMessage('Generating example sentence…')
 
     try {
-      const result = await aiAssistant.generateExample(term, controller.signal)
+      const result = await aiAssistant.generateExample(
+        term,
+        def || undefined,
+        controller.signal,
+      )
       if (controller.signal.aborted) return
 
-      if (currentTermsRef.current.spanish.trim() !== term) {
+      if (
+        currentTermsRef.current.spanish.trim() !== term ||
+        (currentTermsRef.current.english ?? '').trim() !== def
+      ) {
         setStatusMessage(null)
         return
       }
@@ -151,7 +159,7 @@ export function useAiSuggestions({
         setLoading(null)
       }
     }
-  }, [spanish, aiAssistant, loading, getErrorMessage])
+  }, [spanish, english, aiAssistant, loading, getErrorMessage])
 
   const generateMnemonic = useCallback(async () => {
     const es = spanish.trim()

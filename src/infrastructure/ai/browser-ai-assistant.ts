@@ -111,13 +111,23 @@ export class BrowserAiAssistant implements AiAssistant {
 
   async generateExample(
     spanish: string,
+    englishOrSignal?: string | AbortSignal,
     signal?: AbortSignal,
   ): Promise<string | null> {
-    const prompt = buildExamplePrompt(spanish)
+    const english =
+      typeof englishOrSignal === 'string' ? englishOrSignal : undefined
+    const effectiveSignal =
+      englishOrSignal instanceof AbortSignal ? englishOrSignal : signal
+
+    const prompt = buildExamplePrompt(spanish, english)
     const raw = await this.executePrompt(
       prompt,
-      { type: 'example', spanish },
-      signal,
+      {
+        type: 'example',
+        spanish,
+        ...(english?.trim() ? { english: english.trim() } : {}),
+      },
+      effectiveSignal,
     )
     if (!raw) return null
     return cleanAiOutput(raw)

@@ -1,5 +1,10 @@
-export function buildExamplePrompt(spanish: string): string {
-  return `Give me an authentic, characteristic, but simple and short Mexican Spanish example sentence using "${spanish}" with an English translation in parentheses. Keep all other words in the sentence strictly to very basic, common everyday vocabulary (A1–A2 level) so it is easy for a beginner learner to understand. Output ONLY the Spanish sentence and English translation in parentheses on a single line without any preamble or conversational filler.`
+export function buildExamplePrompt(spanish: string, english?: string): string {
+  const trimmedSpanish = spanish.trim()
+  const trimmedEnglish = english?.trim()
+  const meaningClause = trimmedEnglish
+    ? ` with the intended meaning "${trimmedEnglish}"`
+    : ''
+  return `Give me an authentic, characteristic, but simple and short Mexican Spanish example sentence using "${trimmedSpanish}"${meaningClause} with an English translation in parentheses. If "${trimmedSpanish}" is a phrasal verb, idiomatic expression, or includes a preposition (such as "dar a", "tratar de", etc.), keep the preposition or its grammatical contraction (e.g. "al") intact in the sentence to preserve this exact meaning rather than reverting to the base verb. Keep all other words in the sentence strictly to very basic, common everyday vocabulary (A1–A2 level) so it is easy for a beginner learner to understand. Output ONLY the Spanish sentence and English translation in parentheses on a single line without any preamble or conversational filler.`
 }
 
 export function buildMnemonicPrompt(spanish: string, english: string): string {

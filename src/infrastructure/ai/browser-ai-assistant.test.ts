@@ -93,6 +93,41 @@ describe('BrowserAiAssistant', () => {
     )
   })
 
+  it('passes english translation in edge /api/ai payload when provided', async () => {
+    const mockFetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            text: 'La ventana da a la calle. (The window faces the street.)',
+          }),
+      } as unknown as Response),
+    )
+    globalThis.fetch = mockFetch
+
+    const assistant = new BrowserAiAssistant({
+      localAi: null,
+      apiEndpoint: '/api/ai',
+    })
+
+    const result = await assistant.generateExample('dar a', 'to face')
+    expect(result).toBe(
+      'La ventana da a la calle. (The window faces the street.)',
+    )
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/ai',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'example',
+          spanish: 'dar a',
+          english: 'to face',
+        }),
+      }),
+    )
+  })
+
   it('formats mnemonic when returned from edge /api/ai', async () => {
     const mockFetch = vi.fn().mockImplementation(() =>
       Promise.resolve({

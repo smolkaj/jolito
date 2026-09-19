@@ -7,11 +7,31 @@ import {
 } from './prompts'
 
 describe('AI prompts and cleaners', () => {
-  it('builds authentic Mexican Spanish example sentence prompt', () => {
+  it('builds authentic Mexican Spanish example sentence prompt without English meaning', () => {
     const prompt = buildExamplePrompt('o sea')
     expect(prompt).toContain('o sea')
     expect(prompt).toContain('Mexican Spanish')
     expect(prompt).toContain('ONLY')
+    expect(prompt).not.toContain('intended meaning')
+    expect(prompt).toContain('phrasal verb')
+  })
+
+  it('builds example sentence prompt anchored to specific English meaning and preserving prepositions', () => {
+    const prompt = buildExamplePrompt('dar a', 'to face')
+    expect(prompt).toContain('"dar a"')
+    expect(prompt).toContain('with the intended meaning "to face"')
+    expect(prompt).toContain(
+      'phrasal verb, idiomatic expression, or includes a preposition',
+    )
+    expect(prompt).toContain(
+      'keep the preposition or its grammatical contraction (e.g. "al") intact',
+    )
+  })
+
+  it('builds example sentence prompt for verbs with prepositions and polysemous terms', () => {
+    const prompt = buildExamplePrompt('contar con', 'to count on')
+    expect(prompt).toContain('"contar con"')
+    expect(prompt).toContain('with the intended meaning "to count on"')
   })
 
   it('builds quirky mnemonic prompt targeting Mexican Spanish', () => {
