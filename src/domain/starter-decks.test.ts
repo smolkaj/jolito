@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { findStarterPack, starterPacks } from './starter-decks'
 
 describe('starterPacks', () => {
-  it('defines 5 distinct curated starter packs', () => {
-    expect(starterPacks).toHaveLength(5)
+  it('defines 6 distinct curated starter packs', () => {
+    expect(starterPacks).toHaveLength(6)
     const ids = starterPacks.map((p) => p.id)
     expect(ids).toEqual([
       'mexican-street-phrases',
+      'founder-condesa-notebook',
       'common-verbs-1',
       'common-verbs-2',
       'common-verbs-3',
@@ -29,6 +30,25 @@ describe('starterPacks', () => {
         c.noteId.startsWith('curated-mexican-street-phrases-'),
       ),
     ).toBe(true)
+  })
+
+  it("contains exactly 35 notes for founder's condesa notebook (70 reciprocal cards)", () => {
+    const founder = findStarterPack('founder-condesa-notebook')
+    expect(founder).toBeDefined()
+    expect(founder?.noteCount).toBe(35)
+    expect(founder?.cardCount).toBe(70)
+    expect(founder?.badge).toBe('🥑 Founder')
+    expect(founder?.themeColor).toBe('cempasuchil')
+
+    const cards = founder!.createCards(12345)
+    expect(cards).toHaveLength(70)
+    expect(cards.every((c) => !c.noteId.startsWith('starter-'))).toBe(true)
+    expect(
+      cards.every((c) =>
+        c.noteId.startsWith('curated-founder-condesa-notebook-'),
+      ),
+    ).toBe(true)
+    expect(cards.every((c) => c.context.trim().length > 0)).toBe(true)
   })
 
   it('contains 50 notes (100 reciprocal cards) in each of the 4 verb packs, totaling 200 verbs', () => {

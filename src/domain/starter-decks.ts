@@ -297,6 +297,248 @@ export const starterPackSeeds: StarterPackSeed[] = [
     ],
   },
   {
+    id: 'founder-condesa-notebook',
+    title: "Founder's CDMX Notebook",
+    subtitle: "Steffen's Condesa & IH Survival Notes",
+    description:
+      "Authentic street phrases, classroom talk, and navigation notes curated from Steffen's journey at International House and living in Mexico City.",
+    badge: '🥑 Founder',
+    themeColor: 'cempasuchil',
+    notes: [
+      {
+        spanish: 'tianguis',
+        english: 'street market',
+        context:
+          'Open-air street market ubiquitous across Mexico City neighborhoods.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'agente inmobiliario',
+        english: 'real estate agent',
+        context:
+          'Essential when searching for an apartment in Condesa or Roma.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'niñera',
+        english: 'babysitter',
+        context: 'Crucial vocabulary for parents navigating childcare in CDMX.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'crudo',
+        english: 'hungover / raw',
+        context:
+          'Mexican slang for being hungover after a late night out ("estoy crudo"). Literally means raw.',
+        bidirectional: true,
+      },
+      {
+        spanish: '¡Qué fresa!',
+        english: 'How fancy! / How posh!',
+        context: 'Classic Mexican slang for posh, preppy, or upscale.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'wey',
+        english: 'dude',
+        context:
+          'Universal Mexican colloquial address between friends (also spelled güey).',
+        bidirectional: true,
+      },
+      {
+        spanish: 'parada de autobús',
+        english: 'bus stop',
+        context:
+          'Everyday public transit vocabulary for navigating city streets.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'derecho',
+        english: 'straight',
+        context: 'Straight ahead. Easy to confuse with "derecha" (right).',
+        bidirectional: true,
+      },
+      {
+        spanish: 'derecha',
+        english: 'right',
+        context:
+          'Right (direction). Mnemonic: you use your right arm (derecha) to point straight ahead (derecho).',
+        bidirectional: true,
+      },
+      {
+        spanish: 'izquierda',
+        english: 'left',
+        context:
+          'Left (direction). Mnemonic: indigenous cultures are to the left of Europe on the map, and izquierda is of Basque origin.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'enfrente de',
+        english: 'across from',
+        context:
+          'Essential spatial preposition for directions and designating meeting points.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'al lado de',
+        english: 'next to',
+        context:
+          'Spatial preposition for describing nearby storefronts and landmarks.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'delante de',
+        english: 'in front of',
+        context:
+          'Spatial preposition indicating physical position directly in front.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'detrás',
+        english: 'behind',
+        context: 'Spatial preposition for behind or at the back.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'debajo',
+        english: 'below / underneath',
+        context: 'Spatial preposition for beneath or under.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'encima',
+        english: 'on top of',
+        context: 'Spatial preposition for on top or above.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'por supuesto',
+        english: 'of course',
+        context: 'Natural affirmative response in conversation.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'valer la pena',
+        english: 'to be worth it',
+        context: 'High-frequency conversational idiom ("vale la pena").',
+        bidirectional: true,
+      },
+      {
+        spanish: 'sin embargo',
+        english: 'however',
+        context: 'Standard conversational transition to introduce contrast.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'o sea',
+        english: 'I mean',
+        context:
+          'Ubiquitous Mexican conversational filler and clarification bridge ("in other words").',
+        bidirectional: true,
+      },
+      {
+        spanish: 'concuerdo contigo',
+        english: 'I agree / I agree with you',
+        context:
+          'Polite, natural phrase for expressing agreement in discussions.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'darse cuenta',
+        english: 'to notice / to realize',
+        context:
+          'Essential reflexive verb for becoming aware of something ("me di cuenta").',
+        bidirectional: true,
+      },
+      {
+        spanish: 'me cuesta …',
+        english: 'I struggle with …',
+        context:
+          'Honest learner phrase for expressing difficulty ("me cuesta hablar rápido").',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tener sentido',
+        english: 'to make sense',
+        context:
+          'Conversational check ("¿tiene sentido?" - does that make sense?).',
+        bidirectional: true,
+      },
+      {
+        spanish: 'Estoy por tu casa.',
+        english: 'I’m near your house.',
+        context:
+          'Quintessential message when you are arriving to meet friends or pick someone up.',
+        bidirectional: true,
+      },
+      {
+        spanish: '¿Puedo decir...?',
+        english: 'can I say...?',
+        context:
+          'Indispensable question for the language classroom and language exchanges.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'en voz alta',
+        english: 'out loud',
+        context:
+          'Practicing pronunciation and reading passages out loud in class.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'pizarrón',
+        english: 'blackboard / whiteboard',
+        context: 'Classroom board where teachers diagram grammar rules.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'una verdadera lástima',
+        english: 'a true shame',
+        context: 'Empathetic expression when something disappointing happens.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'puñito',
+        english: 'fist bump',
+        context: 'Casual friendly greeting in modern Mexico City.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'al parecer',
+        english: 'seemingly / apparently',
+        context: 'Conversational hedge when sharing second-hand observations.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'llevarse',
+        english: 'to get along',
+        context:
+          'Social phrase for personal compatibility ("nos llevamos muy bien").',
+        bidirectional: true,
+      },
+      {
+        spanish: 'dato curioso',
+        english: 'fun fact',
+        context: 'Playful conversation starter.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'justo a tiempo',
+        english: 'just in time',
+        context:
+          'Everyday expression for punctuality or catching the Metrobús.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'dejar de hacer algo',
+        english: 'to quit doing something',
+        context:
+          'Practical verbal structure for breaking habits or stopping actions.',
+        bidirectional: true,
+      },
+    ],
+  },
+  {
     id: 'common-verbs-1',
     title: 'Top Verbs: 1–50',
     subtitle: 'Core Foundations',
