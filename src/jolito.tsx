@@ -1209,10 +1209,25 @@ function LoadedApp({
       syncStatus={syncStatus}
       authUser={authUser}
       dueCount={dueCount}
-      onPractice={handlePractice}
-      onNavigateToDeck={() => navigateTo('deck')}
-      onNavigateToCreate={() => navigateTo('create')}
-      onOpenSync={openSyncModal}
+      onPractice={() => {
+        if (isSyncOpen) closeSyncModal()
+        handlePractice()
+      }}
+      onNavigateToDeck={() => {
+        if (isSyncOpen) closeSyncModal()
+        navigateTo('deck')
+      }}
+      onNavigateToCreate={() => {
+        if (isSyncOpen) closeSyncModal()
+        navigateTo('create')
+      }}
+      onOpenSync={() => {
+        if (isSyncOpen) {
+          closeSyncModal()
+        } else {
+          openSyncModal()
+        }
+      }}
       haptics={services.haptics}
     />
   )

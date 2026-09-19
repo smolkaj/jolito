@@ -314,4 +314,154 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       container.querySelector('.gesture-zone-badge.zone-hard'),
     ).toBeInTheDocument()
   })
+
+  it('does not reveal on horizontal swipe when unrevealed', () => {
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+
+    // Horizontal swipe (dx = 120px, dy = 0)
+    fireEvent.pointerDown(studyCard, { clientX: 100, clientY: 200, button: 0 })
+    fireEvent.pointerMove(studyCard, { clientX: 220, clientY: 200 })
+    fireEvent.pointerUp(studyCard, { clientX: 220, clientY: 200 })
+
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+  })
+
+  it('does not reveal on swipe up if drag started on the answer input', () => {
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const input = screen.getByRole('textbox')
+
+    // Swipe up starting on input
+    fireEvent.pointerDown(input, { clientX: 200, clientY: 300, button: 0 })
+    fireEvent.pointerMove(input, { clientX: 200, clientY: 200 })
+    fireEvent.pointerUp(input, { clientX: 200, clientY: 200 })
+
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+  })
+
+  it('ignores secondary button (right click) for card drag gestures', () => {
+    const card = mockCards[0]!
+    const onGrade = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+
+    // Right click (button = 2)
+    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 2 })
+    fireEvent.pointerMove(studyCard, { clientX: 100, clientY: 200 })
+    fireEvent.pointerUp(studyCard, { clientX: 100, clientY: 200, button: 2 })
+
+    expect(onGrade).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+  })
+
+  it('recovers from exit animation if the same card repeats in queue', () => {
+    vi.useFakeTimers()
+    const card = mockCards[0]!
+    const onGrade = vi.fn()
+    const onReveal = vi.fn()
+
+    const { container, rerender } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+
+    // Grade again (swipe left)
+    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
+    fireEvent.pointerMove(studyCard, { clientX: 100, clientY: 200 })
+    fireEvent.pointerUp(studyCard, { clientX: 100, clientY: 200 })
+
+    expect(onGrade).toHaveBeenCalledWith('again')
+
+    // Same card remains, flipped back to unrevealed
+    rerender(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    // Tap to reveal should now work immediately
+    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
+    fireEvent.pointerUp(studyCard, { clientX: 201, clientY: 201 })
+
+    expect(onReveal).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
 })

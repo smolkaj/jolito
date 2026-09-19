@@ -122,4 +122,99 @@ describe('DeckManagerView Pull-to-Refresh (Milestone 3)', () => {
 
     expect(onRefreshSync).not.toHaveBeenCalled()
   })
+
+  it('ignores secondary button (right click) on pull-to-refresh', () => {
+    const onRefreshSync = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <DeckManagerView
+        cards={mockCards}
+        vocabularyCards={mockCards}
+        referenceTime={1000}
+        saveError={null}
+        deletedCardIds={[]}
+        queue={[]}
+        dueCount={0}
+        authUser={{ id: 'u1', email: 'test@example.com' }}
+        syncStatus="idle"
+        isOnline={true}
+        accountNotice={null}
+        redirectAuthBanner={null}
+        onDismissAccountNotice={vi.fn()}
+        onDismissRedirectBanner={vi.fn()}
+        onGoHome={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+        onPractice={vi.fn()}
+        onOpenSync={vi.fn()}
+        onOpenFeedback={vi.fn()}
+        onOpenPrivacy={vi.fn()}
+        onEditCard={vi.fn()}
+        onDeleteCards={vi.fn()}
+        onUpdateCards={vi.fn()}
+        onAddStarterPack={vi.fn()}
+        onAddStarterNote={vi.fn()}
+        clock={{ now: () => 1000 }}
+        onRefreshSync={onRefreshSync}
+        haptics={haptics}
+      />,
+    )
+
+    const mainElement = container.querySelector('main.deck-page')!
+
+    fireEvent.pointerDown(mainElement, { clientY: 100, button: 2 })
+    fireEvent.pointerMove(mainElement, { clientY: 250 })
+    fireEvent.pointerUp(mainElement)
+
+    expect(onRefreshSync).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+  })
+
+  it('resets pull distance on pointer cancel without triggering sync', () => {
+    const onRefreshSync = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <DeckManagerView
+        cards={mockCards}
+        vocabularyCards={mockCards}
+        referenceTime={1000}
+        saveError={null}
+        deletedCardIds={[]}
+        queue={[]}
+        dueCount={0}
+        authUser={{ id: 'u1', email: 'test@example.com' }}
+        syncStatus="idle"
+        isOnline={true}
+        accountNotice={null}
+        redirectAuthBanner={null}
+        onDismissAccountNotice={vi.fn()}
+        onDismissRedirectBanner={vi.fn()}
+        onGoHome={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+        onPractice={vi.fn()}
+        onOpenSync={vi.fn()}
+        onOpenFeedback={vi.fn()}
+        onOpenPrivacy={vi.fn()}
+        onEditCard={vi.fn()}
+        onDeleteCards={vi.fn()}
+        onUpdateCards={vi.fn()}
+        onAddStarterPack={vi.fn()}
+        onAddStarterNote={vi.fn()}
+        clock={{ now: () => 1000 }}
+        onRefreshSync={onRefreshSync}
+        haptics={haptics}
+      />,
+    )
+
+    const mainElement = container.querySelector('main.deck-page')!
+
+    fireEvent.pointerDown(mainElement, { clientY: 100, button: 0 })
+    fireEvent.pointerMove(mainElement, { clientY: 250 })
+    expect(trigger).toHaveBeenCalledWith('selection')
+
+    fireEvent.pointerCancel(mainElement)
+
+    expect(onRefreshSync).not.toHaveBeenCalled()
+  })
 })

@@ -110,4 +110,45 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Inside Button' }))
     expect(onClose).not.toHaveBeenCalled()
   })
+
+  it('ignores secondary button (right click) on grabber handle', () => {
+    const onClose = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    render(
+      <ModalSheet isOpen={true} onClose={onClose} haptics={haptics}>
+        <p>Modal content</p>
+      </ModalSheet>,
+    )
+
+    const grabber = screen.getByRole('presentation', {
+      name: 'Drag down to dismiss',
+    })
+
+    fireEvent.pointerDown(grabber, { clientY: 100, button: 2 })
+    fireEvent.pointerMove(grabber, { clientY: 250 })
+    fireEvent.pointerUp(grabber, { clientY: 250, button: 2 })
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+  })
+
+  it('safely handles drag and dismiss without explicit haptics prop', () => {
+    const onClose = vi.fn()
+    render(
+      <ModalSheet isOpen={true} onClose={onClose}>
+        <p>Modal content</p>
+      </ModalSheet>,
+    )
+
+    const grabber = screen.getByRole('presentation', {
+      name: 'Drag down to dismiss',
+    })
+
+    fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
+    fireEvent.pointerMove(grabber, { clientY: 200 })
+    fireEvent.pointerUp(grabber, { clientY: 200 })
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
 })
