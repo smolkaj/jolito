@@ -436,21 +436,20 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'tanto',
         english: 'so much',
-        context: "Example: No te preocupes tanto. (Don't worry so much.)",
+        context: 'Example: "No te preocupes tanto." ("Don\'t worry so much.")',
         bidirectional: true,
       },
       {
         spanish: 'aunque',
         english: 'even though / though',
         context:
-          "Example: Me gusta la playa aunque hace calor. (I like the beach even though it's hot.)",
+          'Example: "Me gusta la playa aunque hace calor." ("I like the beach even though it\'s hot.")',
         bidirectional: true,
       },
       {
-        spanish: 'recordar',
-        english: 'to remember',
-        context:
-          "Example: No recuerdo dónde dejé las llaves. (I don't remember where I left the keys.)",
+        spanish: 'concuerdo contigo',
+        english: 'I agree / I agree with you',
+        context: '',
         bidirectional: true,
       },
       {
@@ -460,9 +459,9 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'volver',
-        english: 'to return',
-        context: 'Mnemonic: Revolve → return.',
+        spanish: 'tener sentido',
+        english: 'to make sense',
+        context: '',
         bidirectional: true,
       },
       {

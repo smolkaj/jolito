@@ -53,7 +53,9 @@ describe('starterPacks', () => {
     expect(cardsWithContext.length).toBeGreaterThan(0)
     expect(
       cardsWithContext.every((c) =>
-        /^(Example:|Mnemonic:|Literally:|Literal:|Note:)/.test(c.context.trim()),
+        /^(Example:|Mnemonic:|Literally:|Literal:|Note:)/.test(
+          c.context.trim(),
+        ),
       ),
     ).toBe(true)
   })
@@ -142,5 +144,24 @@ describe('starterPacks', () => {
 
   it('returns undefined for non-existent pack id', () => {
     expect(findStarterPack('non-existent-pack')).toBeUndefined()
+  })
+
+  it('ensures founder deck has zero vocabulary overlap with other starter packs', () => {
+    const founderPack = findStarterPack('founder-condesa-notebook')!
+    const founderSpanish = new Set(
+      founderPack
+        .createCards(0)
+        .map((c) => (c.direction === 'es-en' ? c.prompt : c.answer)),
+    )
+    for (const pack of starterPacks) {
+      if (pack.id === 'founder-condesa-notebook') continue
+      const otherSpanish = new Set(
+        pack
+          .createCards(0)
+          .map((c) => (c.direction === 'es-en' ? c.prompt : c.answer)),
+      )
+      const overlap = [...founderSpanish].filter((w) => otherSpanish.has(w))
+      expect(overlap).toEqual([])
+    }
   })
 })
