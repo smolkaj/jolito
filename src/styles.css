@@ -3239,16 +3239,19 @@ kbd {
   }
 
   .hero-actions {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: center;
     gap: 16px;
     margin-bottom: clamp(36px, 5.5vh, 68px);
+    max-width: 380px;
+    width: 100%;
   }
 
   .hero-actions button {
+    width: 100%;
     min-height: 52px;
-    padding: 12px 32px;
+    padding: 12px 20px;
     font-size: 16px;
   }
 
@@ -3258,7 +3261,7 @@ kbd {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: clamp(24px, 3.5vw, 44px);
+    gap: clamp(20px, 3.2vw, 40px);
     position: static;
     transform: none;
     width: 100%;
@@ -3271,9 +3274,9 @@ kbd {
     position: relative;
     top: auto;
     left: auto;
-    width: clamp(240px, 28vw, 310px);
-    height: clamp(270px, 28vh, 360px);
-    padding: 24px;
+    width: clamp(180px, calc(30px + 23vw), 290px);
+    height: clamp(260px, 28vh, 360px);
+    padding: clamp(18px, 2.2vh, 24px);
     box-sizing: border-box;
   }
 
