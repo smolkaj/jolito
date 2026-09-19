@@ -53,7 +53,7 @@ describe('starterPacks', () => {
     expect(cardsWithContext.length).toBeGreaterThan(0)
     expect(
       cardsWithContext.every((c) =>
-        /^(Example:|Mnemonic:|Literal:|Note:)/.test(c.context.trim()),
+        /^(Example:|Mnemonic:|Literally:|Literal:|Note:)/.test(c.context.trim()),
       ),
     ).toBe(true)
   })
