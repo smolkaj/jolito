@@ -4375,11 +4375,11 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
   })
 
-  it('requeues failed card 5 cards ahead rather than at the end of the sprint session', async () => {
+  it('requeues failed card 6 cards ahead rather than at the end of the sprint session', async () => {
     const user = userEvent.setup({ delay: null })
     const now = 1771632000000
-    // Create 8 single-direction due cards so siblings do not interfere
-    const cards: StudyCard[] = Array.from({ length: 8 }, (_, i) => {
+    // Create 9 single-direction due cards so siblings do not interfere
+    const cards: StudyCard[] = Array.from({ length: 9 }, (_, i) => {
       const idx = String(i + 1).padStart(2, '0')
       return {
         id: `card-${idx}`,
@@ -4414,12 +4414,12 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: 'palabra-01' }),
     ).toBeInTheDocument()
 
-    // 1. Fail card 1 with Again (1) -> should be requeued 5 cards ahead (after cards 02, 03, 04, 05, 06)
+    // 1. Fail card 1 with Again (1) -> should be requeued 6 cards ahead (after cards 02, 03, 04, 05, 06, 07)
     await user.keyboard('{Enter}')
     await user.keyboard('1')
 
-    // 2. Intervening cards 02 through 06
-    for (let i = 2; i <= 6; i++) {
+    // 2. Intervening cards 02 through 07
+    for (let i = 2; i <= 7; i++) {
       const idx = String(i).padStart(2, '0')
       expect(
         screen.getByRole('heading', { name: `palabra-${idx}` }),
@@ -4428,22 +4428,22 @@ describe('Jolito', () => {
       await user.keyboard('4')
     }
 
-    // 3. Spaced re-test: palabra-01 reappears right after the 5 intervening cards!
+    // 3. Spaced re-test: palabra-01 reappears right after the 6 intervening cards!
     expect(
       screen.getByRole('heading', { name: 'palabra-01' }),
     ).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
-    // 4. Remaining cards 07 and 08
+    // 4. Remaining cards 08 and 09
     expect(
-      screen.getByRole('heading', { name: 'palabra-07' }),
+      screen.getByRole('heading', { name: 'palabra-08' }),
     ).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
     expect(
-      screen.getByRole('heading', { name: 'palabra-08' }),
+      screen.getByRole('heading', { name: 'palabra-09' }),
     ).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')

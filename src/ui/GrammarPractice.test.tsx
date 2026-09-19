@@ -351,12 +351,12 @@ describe('grammar practice in Jolito', () => {
     const app = render(<App services={services} />)
     const user = await begin()
     await user.keyboard('{Enter}1')
-    for (let index = 0; index < 5; index++) await user.keyboard('{Enter}4')
+    for (let index = 0; index < 6; index++) await user.keyboard('{Enter}4')
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Después de cenar, yo',
     )
     await user.keyboard('{Enter}4')
-    for (let index = 0; index < 2; index++) await user.keyboard('{Enter}4')
+    for (let index = 0; index < 1; index++) await user.keyboard('{Enter}4')
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeVisible()
     expect(screen.getByText(/8 forms practiced/)).toBeVisible()
     expect(services.mockSounds.played.slice(-1)[0]).toBe('complete')
