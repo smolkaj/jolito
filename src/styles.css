@@ -2870,7 +2870,7 @@ kbd {
 
   .welcome-hero {
     padding-top: 14px;
-    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   .welcome-hero-main {

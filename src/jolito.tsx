@@ -1263,7 +1263,6 @@ function LoadedApp({
           onPlayAudio={playAudio}
           welcomeRef={welcomeRef}
         />
-        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
