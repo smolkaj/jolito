@@ -3092,7 +3092,7 @@ kbd {
   }
 
   .welcome-hero {
-    padding-top: 2px;
+    padding-top: 4px;
     padding-bottom: max(6px, env(safe-area-inset-bottom));
   }
 
@@ -3110,17 +3110,17 @@ kbd {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-rows: auto auto auto;
-    column-gap: clamp(20px, 3vw, 36px);
+    column-gap: clamp(18px, 2.8vw, 32px);
     align-items: center;
     text-align: left;
-    max-width: 500px;
+    max-width: 480px;
   }
 
   .welcome-mascot-img {
     grid-row: 1 / -1;
     grid-column: 1;
-    width: clamp(96px, 14vw, 125px);
-    height: clamp(96px, 14vw, 125px);
+    width: clamp(80px, 11vw, 105px);
+    height: clamp(80px, 11vw, 105px);
     margin: 0;
     align-self: center;
     transform: scaleX(-1);
@@ -3128,17 +3128,17 @@ kbd {
 
   .hero-copy h1 {
     grid-column: 2;
-    font-size: clamp(26px, 4vw, 36px);
+    font-size: clamp(24px, 3.6vw, 32px);
     line-height: 1.05;
-    letter-spacing: -1.3px;
+    letter-spacing: -1.2px;
     margin: 0;
   }
 
   .lede {
     grid-column: 2;
-    font-size: clamp(12.5px, 1.8vw, 14.5px);
+    font-size: clamp(12px, 1.6vw, 14px);
     line-height: 1.35;
-    margin: 6px 0 14px;
+    margin: 4px 0 12px;
     max-width: 100%;
   }
 
@@ -3163,11 +3163,11 @@ kbd {
     align-items: center;
     justify-content: center;
     width: 100%;
-    --hero-card-scale: clamp(0.52, calc(0.1 + (100vh / 800px)), 0.62);
-    --sample-card-offset: 16px;
-    --sample-card-y-offset: 10px;
-    min-height: 230px;
-    height: 240px;
+    --hero-card-scale: clamp(0.48, calc(0.1 + (100vh / 900px)), 0.55);
+    --sample-card-offset: 14px;
+    --sample-card-y-offset: 8px;
+    min-height: 205px;
+    height: 215px;
   }
 
   .welcome-hero-footer {
@@ -3219,23 +3219,23 @@ kbd {
 
   .welcome-mascot-img {
     position: static;
-    width: clamp(100px, 12vh, 135px);
-    height: clamp(100px, 12vh, 135px);
-    margin: 0 auto 12px;
+    width: clamp(88px, 10vh, 115px);
+    height: clamp(88px, 10vh, 115px);
+    margin: 0 auto 10px;
   }
 
   .hero-copy h1 {
-    font-size: clamp(38px, 5.2vw, 54px);
+    font-size: clamp(34px, 4.6vw, 48px);
     line-height: 1.05;
-    letter-spacing: -1.8px;
+    letter-spacing: -1.6px;
     margin: 0;
   }
 
   .lede {
-    font-size: clamp(15px, 1.8vw, 18px);
+    font-size: clamp(14.5px, 1.7vw, 17px);
     line-height: 1.4;
-    margin: 10px auto 18px;
-    max-width: 480px;
+    margin: 8px auto 16px;
+    max-width: 460px;
   }
 
   .hero-actions {
@@ -3243,7 +3243,7 @@ kbd {
     flex-direction: row;
     justify-content: center;
     gap: 14px;
-    margin-bottom: clamp(20px, 2.8vh, 32px);
+    margin-bottom: clamp(16px, 2.2vh, 24px);
   }
 
   .hero-actions button {
@@ -3258,32 +3258,32 @@ kbd {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: clamp(20px, 3.2vw, 36px);
+    gap: clamp(18px, 2.8vw, 32px);
     position: static;
     transform: none;
     width: 100%;
     height: auto;
     min-height: auto;
-    margin: 0 auto clamp(16px, 2vh, 26px);
+    margin: 0 auto clamp(12px, 1.6vh, 20px);
   }
 
   .hero-visual .sample-card {
     position: relative;
     top: auto;
     left: auto;
-    width: clamp(220px, 26vw, 275px);
-    height: clamp(250px, 27vh, 305px);
-    padding: 20px;
+    width: clamp(205px, 24vw, 255px);
+    height: clamp(230px, 24vh, 275px);
+    padding: 18px;
     box-sizing: border-box;
   }
 
   .hero-visual .sample-card .sample-phrase {
-    font-size: clamp(24px, 3.2vw, 32px);
+    font-size: clamp(22px, 2.8vw, 28px);
   }
 
   .hero-visual .sample-card .sample-illustration {
-    width: clamp(64px, 8vh, 88px);
-    height: clamp(64px, 8vh, 88px);
+    width: clamp(56px, 7vh, 76px);
+    height: clamp(56px, 7vh, 76px);
   }
 
   /* Reset base translation offsets to 0 so hover/active elevate in-place without jumping */
