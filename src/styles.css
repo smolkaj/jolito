@@ -2870,7 +2870,7 @@ kbd {
 
   .welcome-hero {
     padding-top: 14px;
-    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   }
 
   .welcome-hero-main {
@@ -6248,7 +6248,7 @@ kbd {
   }
 
   /* Reachability for pages and scrollable deck contents under fixed mobile tab bar */
-  .app-shell:not(.welcome-page),
+  .app-shell,
   .deck-cards-list,
   .deck-manager-table-wrap {
     padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
@@ -6257,12 +6257,6 @@ kbd {
   /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */
   .topbar-nav-btn {
     display: none !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .app-shell:not(.welcome-page) {
-    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 }
 
