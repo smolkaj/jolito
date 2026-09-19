@@ -77,6 +77,7 @@ import {
   type CreateCardParams,
 } from './ui/views/CreateCardView'
 import { DeckManagerView } from './ui/views/DeckManagerView'
+import { MobileTabBar } from './ui/MobileTabBar'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -1201,6 +1202,36 @@ function LoadedApp({
     </>
   )
 
+  const renderMobileTabBar = () => (
+    <MobileTabBar
+      currentView={view}
+      isSyncOpen={isSyncOpen}
+      syncStatus={syncStatus}
+      authUser={authUser}
+      dueCount={dueCount}
+      onPractice={() => {
+        if (isSyncOpen) closeSyncModal()
+        handlePractice()
+      }}
+      onNavigateToDeck={() => {
+        if (isSyncOpen) closeSyncModal()
+        navigateTo('deck')
+      }}
+      onNavigateToCreate={() => {
+        if (isSyncOpen) closeSyncModal()
+        navigateTo('create')
+      }}
+      onOpenSync={() => {
+        if (isSyncOpen) {
+          closeSyncModal()
+        } else {
+          openSyncModal()
+        }
+      }}
+      haptics={services.haptics}
+    />
+  )
+
   if (view === 'welcome') {
     return (
       <>
@@ -1259,6 +1290,7 @@ function LoadedApp({
           assistant={services.assistant}
           aiAssistant={services.aiAssistant}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1295,7 +1327,10 @@ function LoadedApp({
           onAddStarterPack={handleAddStarterPack}
           onAddStarterNote={handleAddStarterNote}
           clock={services.clock}
+          onRefreshSync={requestSync}
+          haptics={services.haptics}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1330,13 +1365,13 @@ function LoadedApp({
             ) : (
               <>
                 <button
-                  className="text-button"
+                  className="text-button topbar-nav-btn"
                   onClick={() => navigateTo('deck')}
                 >
                   Manage deck
                 </button>
                 <button
-                  className="text-button"
+                  className="text-button topbar-nav-btn"
                   onClick={() => navigateTo('create')}
                 >
                   + New card
@@ -1426,6 +1461,7 @@ function LoadedApp({
         ) : (
           currentCard && (
             <PracticeCard
+              haptics={services.haptics}
               error={
                 saveError === STORAGE_SAVE_ERROR
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
@@ -1492,6 +1528,7 @@ function LoadedApp({
           />
         )}
       </main>
+      {renderMobileTabBar()}
       {renderAppModals()}
     </>
   )

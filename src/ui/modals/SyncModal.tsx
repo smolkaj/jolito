@@ -16,6 +16,7 @@ import {
   ShieldIcon,
   SyncSpinnerIcon,
 } from '../icons'
+import { ModalSheet } from './ModalSheet'
 
 export interface SyncModalProps {
   user: AuthUser | null
@@ -309,409 +310,403 @@ export function SyncModal({
     user && isConfirmingDelete && statusMsg?.type === 'error'
 
   return (
-    <div className="modal-backdrop" onClick={handleClose} role="presentation">
-      <div
-        className="modal-content sync-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sync-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="sync-modal-title">
-              {pendingCardPrompt
-                ? 'Save your card & start your deck'
-                : 'Cloud sync'}
-            </h2>
-            <p className="modal-subtitle">
-              {pendingCardPrompt
-                ? `Save “${pendingCardPrompt}” to your personal deck and sync your cards across devices.`
-                : 'Sync your deck across all your devices.'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={handleClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
+    <ModalSheet
+      onClose={handleClose}
+      className="sync-modal"
+      ariaLabelledBy="sync-modal-title"
+    >
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="sync-modal-title">
+            {pendingCardPrompt
+              ? 'Save your card & start your deck'
+              : 'Cloud sync'}
+          </h2>
+          <p className="modal-subtitle">
+            {pendingCardPrompt
+              ? `Save “${pendingCardPrompt}” to your personal deck and sync your cards across devices.`
+              : 'Sync your deck across all your devices.'}
+          </p>
         </div>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={handleClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
 
-        {!showDeletionError && statusBanner}
+      {!showDeletionError && statusBanner}
 
-        {!isBackendConfigured && !user ? (
-          <div className="sync-notice-card">
-            <span className="notice-icon" aria-hidden="true">
-              <ShieldIcon size={22} />
-            </span>
-            <h4>Cloud sync is disabled in this preview</h4>
-            <p>Flashcards and progress remain safely stored on this device.</p>
-            {onSaveLocally && (
-              <button
-                type="button"
-                className="primary-button"
-                onClick={onSaveLocally}
-              >
-                Save card to this device →
-              </button>
-            )}
+      {!isBackendConfigured && !user ? (
+        <div className="sync-notice-card">
+          <span className="notice-icon" aria-hidden="true">
+            <ShieldIcon size={22} />
+          </span>
+          <h4>Cloud sync is disabled in this preview</h4>
+          <p>Flashcards and progress remain safely stored on this device.</p>
+          {onSaveLocally && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={onSaveLocally}
+            >
+              Save card to this device →
+            </button>
+          )}
+        </div>
+      ) : user ? (
+        <div className="sync-account-pane">
+          <div className="sync-account-hero">
+            <div className="sync-cloud-sticker-wrap" aria-hidden="true">
+              <CloudCheckSticker size={58} />
+            </div>
+            <div className="sync-account-details">
+              <span className="account-badge">Signed in</span>
+              <p className="account-email">{user.email}</p>
+            </div>
           </div>
-        ) : user ? (
-          <div className="sync-account-pane">
-            <div className="sync-account-hero">
-              <div className="sync-cloud-sticker-wrap" aria-hidden="true">
-                <CloudCheckSticker size={58} />
-              </div>
-              <div className="sync-account-details">
-                <span className="account-badge">Signed in</span>
-                <p className="account-email">{user.email}</p>
-              </div>
-            </div>
 
-            <div className="sync-actions-row">
-              <button
-                type="button"
-                className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
-                onClick={() => {
-                  void handleSyncNow()
-                }}
-                disabled={loading}
-              >
-                {isSynced ? (
-                  <span className="sync-button-synced">
-                    <span className="sync-button-check" aria-hidden="true">
-                      ✓
-                    </span>
-                    <span className="sync-button-text">Synced!</span>
+          <div className="sync-actions-row">
+            <button
+              type="button"
+              className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
+              onClick={() => {
+                void handleSyncNow()
+              }}
+              disabled={loading}
+            >
+              {isSynced ? (
+                <span className="sync-button-synced">
+                  <span className="sync-button-check" aria-hidden="true">
+                    ✓
                   </span>
-                ) : (
-                  <>
-                    <SyncSpinnerIcon
-                      size={15}
-                      className={loadingAction === 'sync' ? 'is-spinning' : ''}
-                    />
-                    <span>
-                      {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
-                    </span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                className="secondary-button sign-out-button"
-                onClick={() => {
-                  void handleSignOut()
-                }}
-                disabled={loading}
-              >
-                {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
-              </button>
-            </div>
-
-            {isConfirmingDelete ? (
-              <form
-                className="sync-delete-confirm-box"
-                role="group"
-                aria-label="Confirm cloud account deletion"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (deleteConfirmText.trim() === 'DELETE' && !loading) {
-                    void handleDeleteAccount()
-                  }
-                }}
-              >
-                <p className="delete-confirm-text">
-                  Permanently deletes your account and backups from Jolito
-                  servers. Other connected devices will stop syncing.
-                </p>
-
-                <label className="delete-backup-option">
-                  <input
-                    type="checkbox"
-                    checked={backupBeforeDelete}
-                    onChange={(e) => setBackupBeforeDelete(e.target.checked)}
+                  <span className="sync-button-text">Synced!</span>
+                </span>
+              ) : (
+                <>
+                  <SyncSpinnerIcon
+                    size={15}
+                    className={loadingAction === 'sync' ? 'is-spinning' : ''}
                   />
                   <span>
-                    Download an offline backup to this device before deleting
+                    {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
                   </span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="secondary-button sign-out-button"
+              onClick={() => {
+                void handleSignOut()
+              }}
+              disabled={loading}
+            >
+              {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
+            </button>
+          </div>
+
+          {isConfirmingDelete ? (
+            <form
+              className="sync-delete-confirm-box"
+              role="group"
+              aria-label="Confirm cloud account deletion"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (deleteConfirmText.trim() === 'DELETE' && !loading) {
+                  void handleDeleteAccount()
+                }
+              }}
+            >
+              <p className="delete-confirm-text">
+                Permanently deletes your account and backups from Jolito
+                servers. Other connected devices will stop syncing.
+              </p>
+
+              <label className="delete-backup-option">
+                <input
+                  type="checkbox"
+                  checked={backupBeforeDelete}
+                  onChange={(e) => setBackupBeforeDelete(e.target.checked)}
+                />
+                <span>
+                  Download an offline backup to this device before deleting
+                </span>
+              </label>
+
+              <div className="delete-confirm-input-wrap">
+                <label
+                  htmlFor="delete-confirm-input"
+                  className="delete-input-label"
+                >
+                  Type <strong>DELETE</strong> to confirm:
                 </label>
+                <input
+                  ref={deleteInputRef}
+                  id="delete-confirm-input"
+                  type="text"
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  placeholder="DELETE"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  className="delete-input"
+                />
+              </div>
 
-                <div className="delete-confirm-input-wrap">
-                  <label
-                    htmlFor="delete-confirm-input"
-                    className="delete-input-label"
-                  >
-                    Type <strong>DELETE</strong> to confirm:
-                  </label>
-                  <input
-                    ref={deleteInputRef}
-                    id="delete-confirm-input"
-                    type="text"
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    spellCheck={false}
-                    placeholder="DELETE"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    className="delete-input"
-                  />
-                </div>
-
-                {showDeletionError && statusBanner}
-                <div className="delete-confirm-actions">
-                  <button
-                    type="button"
-                    className="secondary-button cancel-delete-btn"
-                    onClick={handleCancelDeleteConfirm}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="danger-button confirm-delete-btn"
-                    disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
-                  >
-                    {loadingAction === 'delete'
-                      ? 'Deleting…'
-                      : 'Yes, delete cloud data'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="sync-account-footer">
+              {showDeletionError && statusBanner}
+              <div className="delete-confirm-actions">
                 <button
-                  ref={deleteTriggerRef}
                   type="button"
-                  className="modal-link-btn delete-account-link"
-                  onClick={handleOpenDeleteConfirm}
+                  className="secondary-button cancel-delete-btn"
+                  onClick={handleCancelDeleteConfirm}
                   disabled={loading}
                 >
-                  Delete cloud account & data
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="danger-button confirm-delete-btn"
+                  disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
+                >
+                  {loadingAction === 'delete'
+                    ? 'Deleting…'
+                    : 'Yes, delete cloud data'}
                 </button>
               </div>
-            )}
+            </form>
+          ) : (
+            <div className="sync-account-footer">
+              <button
+                ref={deleteTriggerRef}
+                type="button"
+                className="modal-link-btn delete-account-link"
+                onClick={handleOpenDeleteConfirm}
+                disabled={loading}
+              >
+                Delete cloud account & data
+              </button>
+            </div>
+          )}
+        </div>
+      ) : !isOtpSent ? (
+        <form
+          onSubmit={(e) => {
+            void handleSendLink(false, e)
+          }}
+          className="sync-auth-form"
+        >
+          <div className="field-group">
+            <label htmlFor="sync-email">Email address</label>
+            <input
+              id="sync-email"
+              type="email"
+              required
+              autoFocus
+              placeholder="learner@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-        ) : !isOtpSent ? (
-          <form
-            onSubmit={(e) => {
-              void handleSendLink(false, e)
-            }}
-            className="sync-auth-form"
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={loading || !email.trim()}
           >
-            <div className="field-group">
-              <label htmlFor="sync-email">Email address</label>
+            {loadingAction === 'send'
+              ? 'Sending link…'
+              : pendingCardPrompt
+                ? 'Save card & send link →'
+                : 'Send sign-in link →'}
+          </button>
+        </form>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            void handleVerifyOtp(e)
+          }}
+          className="sync-auth-form sync-sent-pane"
+        >
+          {isStandalone() && isIOS() ? (
+            <p className="sync-explanation">
+              Tap the link in your email, then tap{' '}
+              <strong>Copy sign-in link</strong> in Jolito’s top banner, or
+              enter the 6-digit code below:
+            </p>
+          ) : pendingCardPrompt ? (
+            <p className="sync-explanation">
+              Click the sign-in link sent to <strong>{email.trim()}</strong>, or
+              enter the 6-digit code below. Your card “{pendingCardPrompt}” will
+              be saved to your deck automatically:
+            </p>
+          ) : (
+            <p className="sync-explanation">
+              Click the sign-in link sent to <strong>{email.trim()}</strong>, or
+              enter the 6-digit code below:
+            </p>
+          )}
+          <div className="field-group">
+            <label htmlFor="sync-otp">6-digit code or sign-in link</label>
+            <div className="link-input-wrap">
               <input
-                id="sync-email"
-                type="email"
+                ref={pasteInputRef}
+                id="sync-otp"
+                name="one-time-code"
+                type="text"
                 required
                 autoFocus
-                placeholder="learner@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. 123456 or paste link"
+                autoComplete="one-time-code"
+                inputMode={
+                  token.trim().length === 0 || /^[\d\s-]+$/.test(token.trim())
+                    ? 'numeric'
+                    : 'text'
+                }
+                value={token}
+                onChange={(e) => setToken(unwrapDomainBoundOtp(e.target.value))}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData?.getData('text')
+                  if (pasted) {
+                    const unwrapped = unwrapDomainBoundOtp(pasted)
+                    if (unwrapped !== pasted) {
+                      e.preventDefault()
+                      setToken(unwrapped)
+                    }
+                  }
+                }}
+                className={`link-input ${/^[\d\s-]+$/.test(token.trim()) && /\d/.test(token.trim()) ? 'otp-code-input' : ''}`}
               />
+              {typeof navigator !== 'undefined' &&
+                typeof navigator.clipboard?.readText === 'function' && (
+                  <button
+                    type="button"
+                    className={`paste-input-btn ${isPasted ? 'is-pasted' : ''}`}
+                    onClick={() => {
+                      void handlePasteClipboard()
+                    }}
+                    title="Paste from clipboard"
+                    aria-label="Paste from clipboard"
+                  >
+                    {isPasted ? (
+                      <>
+                        <span aria-hidden="true">✓</span>
+                        <span>Pasted</span>
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardIcon size={12} />
+                        <span>Paste</span>
+                      </>
+                    )}
+                  </button>
+                )}
             </div>
+          </div>
+          <div className="sync-sent-actions">
             <button
               type="submit"
               className="primary-button"
-              disabled={loading || !email.trim()}
+              disabled={loading || !token.trim()}
             >
-              {loadingAction === 'send'
-                ? 'Sending link…'
+              {loadingAction === 'verify'
+                ? 'Signing in…'
                 : pendingCardPrompt
-                  ? 'Save card & send link →'
-                  : 'Send sign-in link →'}
+                  ? 'Sign in & save card →'
+                  : 'Sign in & sync →'}
             </button>
-          </form>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              void handleVerifyOtp(e)
-            }}
-            className="sync-auth-form sync-sent-pane"
-          >
-            {isStandalone() && isIOS() ? (
-              <p className="sync-explanation">
-                Tap the link in your email, then tap{' '}
-                <strong>Copy sign-in link</strong> in Jolito’s top banner, or
-                enter the 6-digit code below:
-              </p>
-            ) : pendingCardPrompt ? (
-              <p className="sync-explanation">
-                Click the sign-in link sent to <strong>{email.trim()}</strong>,
-                or enter the 6-digit code below. Your card “{pendingCardPrompt}”
-                will be saved to your deck automatically:
-              </p>
-            ) : (
-              <p className="sync-explanation">
-                Click the sign-in link sent to <strong>{email.trim()}</strong>,
-                or enter the 6-digit code below:
-              </p>
-            )}
-            <div className="field-group">
-              <label htmlFor="sync-otp">6-digit code or sign-in link</label>
-              <div className="link-input-wrap">
-                <input
-                  ref={pasteInputRef}
-                  id="sync-otp"
-                  name="one-time-code"
-                  type="text"
-                  required
-                  autoFocus
-                  placeholder="e.g. 123456 or paste link"
-                  autoComplete="one-time-code"
-                  inputMode={
-                    token.trim().length === 0 || /^[\d\s-]+$/.test(token.trim())
-                      ? 'numeric'
-                      : 'text'
-                  }
-                  value={token}
-                  onChange={(e) =>
-                    setToken(unwrapDomainBoundOtp(e.target.value))
-                  }
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData?.getData('text')
-                    if (pasted) {
-                      const unwrapped = unwrapDomainBoundOtp(pasted)
-                      if (unwrapped !== pasted) {
-                        e.preventDefault()
-                        setToken(unwrapped)
-                      }
-                    }
-                  }}
-                  className={`link-input ${/^[\d\s-]+$/.test(token.trim()) && /\d/.test(token.trim()) ? 'otp-code-input' : ''}`}
-                />
-                {typeof navigator !== 'undefined' &&
-                  typeof navigator.clipboard?.readText === 'function' && (
-                    <button
-                      type="button"
-                      className={`paste-input-btn ${isPasted ? 'is-pasted' : ''}`}
-                      onClick={() => {
-                        void handlePasteClipboard()
-                      }}
-                      title="Paste from clipboard"
-                      aria-label="Paste from clipboard"
-                    >
-                      {isPasted ? (
-                        <>
-                          <span aria-hidden="true">✓</span>
-                          <span>Pasted</span>
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardIcon size={12} />
-                          <span>Paste</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-              </div>
-            </div>
-            <div className="sync-sent-actions">
+            <div className="sync-sent-sub-actions">
               <button
-                type="submit"
-                className="primary-button"
-                disabled={loading || !token.trim()}
+                type="button"
+                className={`modal-link-btn resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
+                disabled={loading}
+                onClick={() => {
+                  void handleSendLink(true)
+                }}
               >
-                {loadingAction === 'verify'
-                  ? 'Signing in…'
-                  : pendingCardPrompt
-                    ? 'Sign in & save card →'
-                    : 'Sign in & sync →'}
+                {isLinkResent ? (
+                  <span className="resend-button-sent">
+                    <span className="resend-button-check" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span className="resend-button-text">Link sent!</span>
+                  </span>
+                ) : (
+                  <span>
+                    {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
+                  </span>
+                )}
               </button>
-              <div className="sync-sent-sub-actions">
-                <button
-                  type="button"
-                  className={`modal-link-btn resend-text-button ${isLinkResent ? 'is-sent' : ''}`}
-                  disabled={loading}
-                  onClick={() => {
-                    void handleSendLink(true)
-                  }}
-                >
-                  {isLinkResent ? (
-                    <span className="resend-button-sent">
-                      <span className="resend-button-check" aria-hidden="true">
-                        ✓
-                      </span>
-                      <span className="resend-button-text">Link sent!</span>
-                    </span>
-                  ) : (
-                    <span>
-                      {loadingAction === 'send' ? 'Resending…' : 'Resend link'}
-                    </span>
-                  )}
-                </button>
-                <span className="sync-sub-action-dot" aria-hidden="true">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setIsOtpSent(false)
-                    setToken('')
-                    setStatusMsg(null)
-                  }}
-                >
-                  Change email
-                </button>
-              </div>
+              <span className="sync-sub-action-dot" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                className="modal-link-btn"
+                onClick={() => {
+                  setIsOtpSent(false)
+                  setToken('')
+                  setStatusMsg(null)
+                }}
+              >
+                Change email
+              </button>
             </div>
-          </form>
-        )}
-        <div className="sr-only" role="status" aria-live="polite">
-          {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
-          {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
-          {isPasted ? 'Pasted link from clipboard.' : ''}
-        </div>
-        <div className="sync-modal-legal">
-          <button
-            type="button"
-            className="sync-privacy-link"
-            onClick={() => {
-              handleClose()
-              if (onOpenPrivacy) {
-                onOpenPrivacy()
-              } else {
-                window.location.hash = '#/privacy'
-              }
-            }}
-          >
-            Privacy
-          </button>
-          <span className="sync-modal-legal-separator" aria-hidden="true">
-            ·
-          </span>
-          <button
-            type="button"
-            className="sync-privacy-link"
-            onClick={() => {
-              handleClose()
-              if (onOpenFeedback) {
-                onOpenFeedback()
-              } else {
-                window.location.hash = '#/feedback'
-              }
-            }}
-          >
-            Feedback
-          </button>
-          <span className="sync-modal-legal-separator" aria-hidden="true">
-            ·
-          </span>
-          <a
-            href="/acknowledgements"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="sync-privacy-link"
-          >
-            Acknowledgements
-          </a>
-        </div>
+          </div>
+        </form>
+      )}
+      <div className="sr-only" role="status" aria-live="polite">
+        {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
+        {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
+        {isPasted ? 'Pasted link from clipboard.' : ''}
       </div>
-    </div>
+      <div className="sync-modal-legal">
+        <button
+          type="button"
+          className="sync-privacy-link"
+          onClick={() => {
+            handleClose()
+            if (onOpenPrivacy) {
+              onOpenPrivacy()
+            } else {
+              window.location.hash = '#/privacy'
+            }
+          }}
+        >
+          Privacy
+        </button>
+        <span className="sync-modal-legal-separator" aria-hidden="true">
+          ·
+        </span>
+        <button
+          type="button"
+          className="sync-privacy-link"
+          onClick={() => {
+            handleClose()
+            if (onOpenFeedback) {
+              onOpenFeedback()
+            } else {
+              window.location.hash = '#/feedback'
+            }
+          }}
+        >
+          Feedback
+        </button>
+        <span className="sync-modal-legal-separator" aria-hidden="true">
+          ·
+        </span>
+        <a
+          href="/acknowledgements"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sync-privacy-link"
+        >
+          Acknowledgements
+        </a>
+      </div>
+    </ModalSheet>
   )
 }
