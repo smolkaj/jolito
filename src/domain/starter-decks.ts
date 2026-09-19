@@ -370,8 +370,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'izquierda',
         english: 'left',
-        context:
-          'Mnemonic: Unique Spanish word of pre-Roman Basque origin (from "ezkerra").',
+        context: '',
         bidirectional: true,
       },
       {
