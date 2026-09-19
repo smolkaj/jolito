@@ -197,13 +197,15 @@ export function DeckManagerView({
   }
 
   const [pullDistance, setPullDistance] = useState(0)
+  const pullDistanceRef = useRef(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const pullStartYRef = useRef<number | null>(null)
   const thresholdPassedRef = useRef(false)
   const deckManagerRef = useRef<HTMLElement>(null)
+  const hasPointerCaptureRef = useRef(false)
 
   const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
-    if (isRefreshing || e.button !== 0) return
+    if (isRefreshing || pullStartYRef.current !== null || e.button !== 0) return
     const target = e.target as HTMLElement | null
     if (
       target?.closest('button, input, textarea, a, select, [role="button"]')
@@ -212,10 +214,13 @@ export function DeckManagerView({
     }
     const scrollTop =
       deckManagerRef.current?.scrollTop ??
-      (typeof window !== 'undefined' ? window.scrollY : 0)
+      (typeof window !== 'undefined'
+        ? window.scrollY || document.documentElement.scrollTop
+        : 0)
     if (scrollTop <= 2) {
       pullStartYRef.current = e.clientY
       thresholdPassedRef.current = false
+      hasPointerCaptureRef.current = false
     }
   }
 
@@ -223,10 +228,22 @@ export function DeckManagerView({
     if (pullStartYRef.current === null || isRefreshing) return
     const deltaY = e.clientY - pullStartYRef.current
     if (deltaY <= 0) {
+      pullDistanceRef.current = 0
       setPullDistance(0)
       return
     }
+
+    if (deltaY > 10 && !hasPointerCaptureRef.current) {
+      hasPointerCaptureRef.current = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // Ignore if pointer capture unsupported
+      }
+    }
+
     const distance = Math.min(85, deltaY * 0.45)
+    pullDistanceRef.current = distance
     setPullDistance(distance)
 
     if (distance >= 55 && !thresholdPassedRef.current) {
@@ -237,19 +254,32 @@ export function DeckManagerView({
     }
   }
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e?: React.PointerEvent<HTMLElement>) => {
     if (pullStartYRef.current === null) return
+    const finalDistance = pullDistanceRef.current
     pullStartYRef.current = null
+    pullDistanceRef.current = 0
 
-    if (pullDistance >= 55 && onRefreshSync) {
+    if (e && hasPointerCaptureRef.current) {
+      hasPointerCaptureRef.current = false
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {
+        // Ignore
+      }
+    }
+
+    if (finalDistance >= 55 && onRefreshSync) {
       setIsRefreshing(true)
       setPullDistance(52)
+      pullDistanceRef.current = 52
       haptics?.trigger('selection')
       Promise.resolve(onRefreshSync())
         .catch(() => {})
         .finally(() => {
           haptics?.trigger('selection')
           setIsRefreshing(false)
+          pullDistanceRef.current = 0
           setPullDistance(0)
         })
     } else {
@@ -257,8 +287,17 @@ export function DeckManagerView({
     }
   }
 
-  const handlePointerCancel = () => {
+  const handlePointerCancel = (e?: React.PointerEvent<HTMLElement>) => {
     pullStartYRef.current = null
+    pullDistanceRef.current = 0
+    if (e && hasPointerCaptureRef.current) {
+      hasPointerCaptureRef.current = false
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {
+        // Ignore
+      }
+    }
     if (!isRefreshing) {
       setPullDistance(0)
     }

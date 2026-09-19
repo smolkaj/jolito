@@ -3,10 +3,12 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   forwardRef,
+  useEffect,
   useRef,
   useState,
 } from 'react'
 import type { HapticsPlayer } from '../../application/ports'
+import { BrowserHapticsPlayer } from '../../infrastructure/browser/haptics'
 
 export interface ModalSheetProps {
   isOpen?: boolean
@@ -23,6 +25,14 @@ export interface ModalSheetProps {
 }
 
 const DISMISS_THRESHOLD_PX = 85
+
+let defaultHapticsInstance: HapticsPlayer | null = null
+function getDefaultHaptics(): HapticsPlayer {
+  if (!defaultHapticsInstance) {
+    defaultHapticsInstance = new BrowserHapticsPlayer()
+  }
+  return defaultHapticsInstance
+}
 
 export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
   function ModalSheet(
@@ -47,11 +57,22 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     const startYRef = useRef<number | null>(null)
     const currentYRef = useRef<number | null>(null)
     const thresholdPassedRef = useRef(false)
+    const resolvedHaptics = haptics ?? getDefaultHaptics()
+
+    useEffect(() => {
+      if (!isOpen) {
+        setDragOffset(0)
+        setIsDragging(false)
+        startYRef.current = null
+        currentYRef.current = null
+        thresholdPassedRef.current = false
+      }
+    }, [isOpen])
 
     if (!isOpen) return null
 
     const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (e.button !== 0) return
+      if (startYRef.current !== null || e.button !== 0) return
       startYRef.current = e.clientY
       currentYRef.current = e.clientY
       thresholdPassedRef.current = false
@@ -76,7 +97,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
         offset = rawDelta
         if (offset > DISMISS_THRESHOLD_PX && !thresholdPassedRef.current) {
           thresholdPassedRef.current = true
-          haptics?.trigger('selection')
+          resolvedHaptics.trigger('selection')
         } else if (
           offset <= DISMISS_THRESHOLD_PX &&
           thresholdPassedRef.current
@@ -101,7 +122,8 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       }
 
       if (finalDelta > DISMISS_THRESHOLD_PX) {
-        haptics?.trigger('selection')
+        setDragOffset(0)
+        resolvedHaptics.trigger('selection')
         onClose()
       } else {
         setDragOffset(0)

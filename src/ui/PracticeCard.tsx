@@ -187,21 +187,41 @@ export function PracticeCard({
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const activeZoneRef = useRef<Grade | null>(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
+  const [prevRevealed, setPrevRevealed] = useState(revealed)
 
-  if (prevCardId !== card.id) {
+  if (prevCardId !== card.id || prevRevealed !== revealed) {
     setPrevCardId(card.id)
+    setPrevRevealed(revealed)
     setDragOffset({ x: 0, y: 0 })
     setIsDragging(false)
     setIsAnimatingExit(false)
     setActiveZone(null)
   }
 
+  useEffect(() => {
+    dragOffsetRef.current = { x: 0, y: 0 }
+    activeZoneRef.current = null
+  }, [card.id, revealed])
+
+  useEffect(() => {
+    if (!isAnimatingExit) return undefined
+    const timer = window.setTimeout(() => {
+      setIsAnimatingExit(false)
+      setDragOffset({ x: 0, y: 0 })
+      dragOffsetRef.current = { x: 0, y: 0 }
+      setActiveZone(null)
+      activeZoneRef.current = null
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [isAnimatingExit])
+
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
-    if (paused || isAnimatingExit) return
+    if (paused || isAnimatingExit || pointerStartRef.current !== null) return
+    if (event.button !== 0) return
     const target = event.target as HTMLElement | null
     const isInteractive = Boolean(
       target?.closest(
-        'input, textarea, select, button, a, summary, [role="button"], .answer-accents, .study-card-quick-actions',
+        'input, textarea, select, button, a, summary, [role="button"], .answer-accents, .study-card-quick-actions, .grade-buttons, .grade-btn',
       ),
     )
 
@@ -271,8 +291,9 @@ export function PracticeCard({
   const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
     if (!pointerStartRef.current || paused || isAnimatingExit) return
     const start = pointerStartRef.current
-    const dx = dragOffsetRef.current.x
-    const dy = dragOffsetRef.current.y
+    const actualDx = event.clientX - start.x
+    const actualDy = event.clientY - start.y
+    const actualDistance = Math.hypot(actualDx, actualDy)
     const elapsed = Date.now() - start.time
     const currentActiveZone = activeZoneRef.current
 
@@ -289,9 +310,12 @@ export function PracticeCard({
     if (!revealed) {
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
-      const swipedUp = dy < -35 || event.clientY - start.y < -35
+      const swipedUp =
+        !start.isInteractive &&
+        actualDy < -35 &&
+        Math.abs(actualDy) > Math.abs(actualDx)
       const tapped =
-        !start.isInteractive && Math.hypot(dx, dy) < 10 && elapsed < 350
+        !start.isInteractive && actualDistance < 10 && elapsed < 350
       if (swipedUp || tapped) {
         haptics?.trigger('selection')
         onReveal()
@@ -301,6 +325,19 @@ export function PracticeCard({
 
     if (currentActiveZone) {
       setIsAnimatingExit(true)
+      const exitX =
+        currentActiveZone === 'again'
+          ? -360
+          : currentActiveZone === 'good'
+            ? 360
+            : dragOffsetRef.current.x
+      const exitY =
+        currentActiveZone === 'easy'
+          ? -360
+          : currentActiveZone === 'hard'
+            ? 360
+            : dragOffsetRef.current.y
+      setDragOffset({ x: exitX, y: exitY })
       onGrade(currentActiveZone)
     } else {
       setDragOffset({ x: 0, y: 0 })

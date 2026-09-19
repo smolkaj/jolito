@@ -5962,10 +5962,16 @@ kbd {
 
 /* Milestone 1: Gestural Practice Canvas */
 .study-card {
-  touch-action: pan-y;
+  touch-action: none;
   -webkit-user-select: none;
   user-select: none;
   will-change: transform;
+}
+
+.study-card input,
+.study-card textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .study-card.is-dragging {
@@ -6127,13 +6133,11 @@ kbd {
     border: 1px dashed var(--line-subtle);
     border-radius: 999px;
   }
-  .keyboard-hint {
-    display: none !important;
-  }
-  .reveal-button kbd {
-    display: none !important;
-  }
-  .answer-accents button kbd {
+  .keyboard-hint,
+  .reveal-button kbd,
+  .answer-accents button kbd,
+  .grade-buttons kbd,
+  .grade-btn kbd {
     display: none !important;
   }
 }
@@ -6269,7 +6273,8 @@ kbd {
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 6px 0 10px;
+    min-height: 38px;
+    padding: 10px 0 12px;
     margin-top: -6px;
     cursor: grab;
     touch-action: none;
