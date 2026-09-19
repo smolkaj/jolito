@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { findStarterPack, starterPacks } from './starter-decks'
 
 describe('starterPacks', () => {
-  it('defines 5 distinct curated starter packs', () => {
-    expect(starterPacks).toHaveLength(5)
+  it('defines 6 distinct curated starter packs', () => {
+    expect(starterPacks).toHaveLength(6)
     const ids = starterPacks.map((p) => p.id)
     expect(ids).toEqual([
       'mexican-street-phrases',
+      'founder-condesa-notebook',
       'common-verbs-1',
       'common-verbs-2',
       'common-verbs-3',
@@ -27,6 +28,34 @@ describe('starterPacks', () => {
     expect(
       cards.every((c) =>
         c.noteId.startsWith('curated-mexican-street-phrases-'),
+      ),
+    ).toBe(true)
+  })
+
+  it("contains exactly 35 notes for founder's condesa notebook (70 reciprocal cards)", () => {
+    const founder = findStarterPack('founder-condesa-notebook')
+    expect(founder).toBeDefined()
+    expect(founder?.noteCount).toBe(35)
+    expect(founder?.cardCount).toBe(70)
+    expect(founder?.badge).toBe('🥑 Founder')
+    expect(founder?.themeColor).toBe('cempasuchil')
+
+    const cards = founder!.createCards(12345)
+    expect(cards).toHaveLength(70)
+    expect(cards.every((c) => !c.noteId.startsWith('starter-'))).toBe(true)
+    expect(
+      cards.every((c) =>
+        c.noteId.startsWith('curated-founder-condesa-notebook-'),
+      ),
+    ).toBe(true)
+    // Verify authentic context qualification: all non-empty contexts start with 'Example:', 'Mnemonic:', or 'Note:'
+    const cardsWithContext = cards.filter((c) => c.context.trim().length > 0)
+    expect(cardsWithContext.length).toBeGreaterThan(0)
+    expect(
+      cardsWithContext.every((c) =>
+        /^(Example:|Mnemonic:|Literally:|Literal:|Note:)/.test(
+          c.context.trim(),
+        ),
       ),
     ).toBe(true)
   })
@@ -115,5 +144,24 @@ describe('starterPacks', () => {
 
   it('returns undefined for non-existent pack id', () => {
     expect(findStarterPack('non-existent-pack')).toBeUndefined()
+  })
+
+  it('ensures founder deck has zero vocabulary overlap with other starter packs', () => {
+    const founderPack = findStarterPack('founder-condesa-notebook')!
+    const founderSpanish = new Set(
+      founderPack
+        .createCards(0)
+        .map((c) => (c.direction === 'es-en' ? c.prompt : c.answer)),
+    )
+    for (const pack of starterPacks) {
+      if (pack.id === 'founder-condesa-notebook') continue
+      const otherSpanish = new Set(
+        pack
+          .createCards(0)
+          .map((c) => (c.direction === 'es-en' ? c.prompt : c.answer)),
+      )
+      const overlap = [...founderSpanish].filter((w) => otherSpanish.has(w))
+      expect(overlap).toEqual([])
+    }
   })
 })
