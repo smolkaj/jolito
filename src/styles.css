@@ -603,7 +603,7 @@ summary:focus-visible,
 }
 
 .welcome-hero {
-  --hero-card-scale: clamp(0.58, calc(0.08 + (100vw / 1350px)), 1);
+  --hero-card-scale: clamp(0.72, calc(0.12 + (100vw / 1150px)), 1.05);
   --sample-card-offset: clamp(24px, 3.5vw, 48px);
   --sample-card-y-offset: clamp(20px, 3vw, 40px);
   width: min(1080px, 100%);
@@ -623,7 +623,7 @@ summary:focus-visible,
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: end;
   gap: clamp(32px, 5vw, 64px);
-  margin-top: clamp(8px, 2vh, 28px);
+  margin-block: auto;
 }
 
 .welcome-hero-footer {
@@ -1363,7 +1363,7 @@ summary:focus-visible,
   gap: clamp(24px, 5vw, 48px);
   align-items: start;
   width: min(1080px, 100%);
-  margin: clamp(16px, 3vh, 32px) auto 40px;
+  margin: auto auto;
 }
 
 .create-sidebar {
@@ -2936,18 +2936,26 @@ kbd {
 
   .welcome-mascot-img {
     position: static;
-    width: 88px;
-    height: 88px;
-    margin-bottom: 14px;
+    width: clamp(135px, 38vw, 172px);
+    height: clamp(135px, 38vw, 172px);
+    margin: 0 auto 20px;
+  }
+
+  .hero-copy {
+    text-align: center;
   }
 
   .hero-copy h1 {
-    font-size: clamp(38px, 10.5vw, 54px);
-    letter-spacing: -1.8px;
+    font-size: clamp(46px, 13.2vw, 62px);
+    line-height: 1.02;
+    letter-spacing: -2.4px;
   }
 
   .lede {
-    font-size: 16px;
+    font-size: clamp(17px, 4.8vw, 21px);
+    line-height: 1.44;
+    margin: 18px auto 32px;
+    max-width: 380px;
   }
 
   .complete-actions {
@@ -2964,9 +2972,13 @@ kbd {
     display: none;
   }
 
+  .welcome-hero-main {
+    margin-block: auto;
+  }
+
   .create-layout {
     grid-template-columns: minmax(0, 1fr);
-    margin-top: 24px;
+    margin-block: auto;
   }
 
   .create-layout h1 {
@@ -3070,6 +3082,218 @@ kbd {
 @media (max-width: 360px) {
   .nav-actions .text-button + .text-button {
     display: none;
+  }
+}
+
+/* Shallow Landscape Viewports (e.g. phones in landscape mode) */
+@media (max-height: 540px) and (orientation: landscape) {
+  .welcome-intro {
+    padding-top: max(6px, env(safe-area-inset-top));
+  }
+
+  .welcome-hero {
+    padding-top: 2px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+
+  .welcome-hero-main {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: clamp(24px, 4vw, 48px);
+    margin-block: auto;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .hero-copy {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: clamp(20px, 3vw, 36px);
+    align-items: center;
+    text-align: left;
+    max-width: 500px;
+  }
+
+  .welcome-mascot-img {
+    grid-row: 1 / -1;
+    grid-column: 1;
+    width: clamp(100px, 14vw, 130px);
+    height: clamp(100px, 14vw, 130px);
+    margin: 0;
+    align-self: center;
+    transform: scaleX(-1);
+  }
+
+  .hero-copy h1 {
+    grid-column: 2;
+    font-size: clamp(26px, 4vw, 36px);
+    line-height: 1.05;
+    letter-spacing: -1.3px;
+    margin: 0;
+  }
+
+  .lede {
+    grid-column: 2;
+    font-size: clamp(12.5px, 1.8vw, 14.5px);
+    line-height: 1.35;
+    margin: 6px 0 16px;
+    max-width: 100%;
+  }
+
+  .hero-actions {
+    grid-column: 2;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-actions button {
+    width: auto;
+    min-height: 40px;
+    padding: 8px 20px;
+    font-size: 13.5px;
+  }
+
+  .hero-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    --hero-card-scale: clamp(0.52, calc(0.1 + (100vh / 800px)), 0.62);
+    --sample-card-offset: 16px;
+    --sample-card-y-offset: 10px;
+    min-height: 230px;
+    height: 240px;
+  }
+
+  .welcome-hero-footer {
+    padding-top: 4px;
+    margin-top: auto;
+  }
+
+  .welcome-hero-footer .hero-scroll-cue {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .create-layout {
+    margin-top: clamp(16px, 3vh, 26px);
+  }
+
+  .create-sidebar header {
+    margin-bottom: 22px;
+  }
+}
+
+/* Tablet Portrait Viewports (e.g. iPad in portrait mode) */
+@media (min-width: 681px) and (orientation: portrait) {
+  .welcome-hero {
+    justify-content: space-between;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .welcome-hero-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0;
+    margin-block: auto;
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .welcome-mascot-img {
+    position: static;
+    width: clamp(140px, 16vw, 175px);
+    height: clamp(140px, 16vw, 175px);
+    margin-bottom: 14px;
+    transform: scaleX(-1);
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(48px, 5.8vw, 68px);
+    line-height: 1.04;
+    letter-spacing: -2px;
+    margin: 0;
+  }
+
+  .lede {
+    font-size: clamp(17px, 2vw, 20px);
+    line-height: 1.42;
+    margin: 12px auto 24px;
+    max-width: 520px;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: clamp(48px, 5.5vh, 68px);
+  }
+
+  .hero-actions button {
+    min-height: 50px;
+    padding: 13px 32px;
+    font-size: 16px;
+  }
+
+  /* Display the two sample cards side-by-side: Spanish on left, English on right */
+  .hero-visual {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(24px, 3.5vw, 40px);
+    position: static;
+    transform: none;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    margin: 0 auto 36px;
+  }
+
+  .hero-visual .sample-card {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: clamp(280px, 32vw, 320px);
+    height: 360px;
+    box-sizing: border-box;
+  }
+
+  .hero-visual .sample-card-es {
+    order: 1;
+    transform: rotate(-2deg);
+    box-shadow: 6px 6px 0 var(--card-shadow-color);
+  }
+
+  .hero-visual .sample-card-en {
+    order: 2;
+    transform: rotate(2.5deg);
+    box-shadow: 6px 6px 0 var(--card-shadow-color);
+  }
+
+  .welcome-hero-footer {
+    margin-top: 0;
+    padding-top: 4px;
+  }
+
+  .create-layout {
+    margin: clamp(20px, 3vh, 36px) auto auto;
   }
 }
 
