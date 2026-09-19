@@ -30,6 +30,8 @@ Compare the working draft against the greenfield design, auditing for explorator
 
 ### Recommendation
 
-1. **Rebuild cleanly:** (Expected for non-trivial work). The draft exhibits exploratory accretion, journey sediment, or structural divergence. Outline the greenfield plan in dialogue, recommend rebuilding cleanly, and yield the turn. Upon user confirmation, keep the newly written tests (the safety ratchet), revert the draft implementation files (`git restore <files>`), and implement the clean greenfield design in one direct pass.
-2. **Drop it:** In hindsight, the change introduces more complexity than the problem warrants, or the premise was flawed. Recommend dropping the PR or direction entirely, and yield the turn.
-3. **Proceed:** (High bar). Choose this only if the draft already matches the greenfield design with zero compensatory layering or journey sediment. Open the PR, post your recommendation, launch the review loop in parallel, and yield the turn.
+Post the evaluation and recommendation in dialogue, then yield the turn:
+
+1. **Rebuild cleanly:** (Expected for non-trivial work). The draft exhibits exploratory accretion, journey sediment, or structural divergence. Outline the greenfield plan in dialogue and recommend rebuilding cleanly. Upon user confirmation, keep the newly written tests (the safety ratchet), revert the draft implementation files (`git restore <files>`), and implement the clean greenfield design in one direct pass.
+2. **Drop it:** In hindsight, the change introduces more complexity than the problem warrants, or the premise was flawed. Recommend dropping the PR or direction entirely.
+3. **Proceed:** (High bar). Choose this only if the draft already matches the greenfield design with zero compensatory layering or journey sediment. Open the PR, post your recommendation, and launch the review loop in parallel.
