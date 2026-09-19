@@ -332,7 +332,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: '¡Qué fresa!',
         english: 'How fancy! / How posh!',
-        context: 'Note: Mexican slang for posh or upscale.',
+        context: '',
         bidirectional: true,
       },
       {
@@ -350,8 +350,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'en el trayecto',
         english: 'during the commute',
-        context:
-          'Mnemonic: Cognate with trajectory → on the path / during the commute.',
+        context: 'Mnemonic: Cognate with "trajectory".',
         bidirectional: true,
       },
       {
@@ -481,7 +480,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'en voz alta',
         english: 'out loud',
-        context: 'Mnemonic: Literally "in high voice" → out loud.',
+        context: '',
         bidirectional: true,
       },
       {
