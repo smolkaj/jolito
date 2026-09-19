@@ -1,6 +1,7 @@
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import {
@@ -9,7 +10,7 @@ import {
   filterDeckCards,
   getDeckStats,
 } from '../../application/deck-management'
-import type { AuthUser } from '../../application/ports'
+import type { AuthUser, HapticsPlayer } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { getDuplicateGroups } from '../../domain/duplicate'
 import type { StarterPack } from '../../domain/starter-decks'
@@ -18,7 +19,7 @@ import { AppFooter } from '../AppFooter'
 import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
-import { EnglishBadge, MexicoFlag } from '../icons'
+import { EnglishBadge, MexicoFlag, SyncSpinnerIcon } from '../icons'
 import { DeckBackupModal } from '../modals/DeckBackupModal'
 import { DemoDeckModal } from '../modals/DemoDeckModal'
 import { StarterPacksModal } from '../modals/StarterPacksModal'
@@ -57,6 +58,8 @@ export interface DeckManagerViewProps {
   onAddStarterPack: (pack: StarterPack) => boolean | void
   onAddStarterNote: (pack: StarterPack, noteIndex: number) => boolean | void
   clock: { now(): number }
+  onRefreshSync?: () => Promise<unknown> | void
+  haptics?: HapticsPlayer
 }
 
 export function DeckManagerView({
@@ -87,6 +90,8 @@ export function DeckManagerView({
   onAddStarterPack,
   onAddStarterNote,
   clock,
+  onRefreshSync,
+  haptics,
 }: DeckManagerViewProps) {
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(
     () => new Set(),
@@ -191,9 +196,113 @@ export function DeckManagerView({
     }
   }
 
+  const [pullDistance, setPullDistance] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const pullStartYRef = useRef<number | null>(null)
+  const thresholdPassedRef = useRef(false)
+  const deckManagerRef = useRef<HTMLElement>(null)
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
+    if (isRefreshing || e.button !== 0) return
+    const target = e.target as HTMLElement | null
+    if (
+      target?.closest('button, input, textarea, a, select, [role="button"]')
+    ) {
+      return
+    }
+    const scrollTop =
+      deckManagerRef.current?.scrollTop ??
+      (typeof window !== 'undefined' ? window.scrollY : 0)
+    if (scrollTop <= 2) {
+      pullStartYRef.current = e.clientY
+      thresholdPassedRef.current = false
+    }
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (pullStartYRef.current === null || isRefreshing) return
+    const deltaY = e.clientY - pullStartYRef.current
+    if (deltaY <= 0) {
+      setPullDistance(0)
+      return
+    }
+    const distance = Math.min(85, deltaY * 0.45)
+    setPullDistance(distance)
+
+    if (distance >= 55 && !thresholdPassedRef.current) {
+      thresholdPassedRef.current = true
+      haptics?.trigger('selection')
+    } else if (distance < 55 && thresholdPassedRef.current) {
+      thresholdPassedRef.current = false
+    }
+  }
+
+  const handlePointerUp = () => {
+    if (pullStartYRef.current === null) return
+    pullStartYRef.current = null
+
+    if (pullDistance >= 55 && onRefreshSync) {
+      setIsRefreshing(true)
+      setPullDistance(52)
+      haptics?.trigger('selection')
+      Promise.resolve(onRefreshSync())
+        .catch(() => {})
+        .finally(() => {
+          haptics?.trigger('selection')
+          setIsRefreshing(false)
+          setPullDistance(0)
+        })
+    } else {
+      setPullDistance(0)
+    }
+  }
+
+  const handlePointerCancel = () => {
+    pullStartYRef.current = null
+    if (!isRefreshing) {
+      setPullDistance(0)
+    }
+  }
+
   return (
     <>
-      <main className="app-shell deck-page">
+      <main
+        ref={deckManagerRef}
+        className="app-shell deck-page"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+      >
+        <div
+          className={`pull-to-refresh-bar ${isRefreshing ? 'is-refreshing' : ''} ${pullDistance > 0 ? 'is-pulling' : ''}`.trim()}
+          style={{
+            height: isRefreshing ? 52 : pullDistance,
+            opacity: pullDistance > 6 || isRefreshing ? 1 : 0,
+          }}
+          aria-hidden="true"
+        >
+          <div
+            className="pull-to-refresh-icon"
+            style={{
+              transform: isRefreshing
+                ? undefined
+                : `rotate(${pullDistance * 5}deg) scale(${Math.min(1, Math.max(0.6, pullDistance / 45))})`,
+            }}
+          >
+            <SyncSpinnerIcon
+              size={22}
+              className={isRefreshing ? 'spinning-icon' : ''}
+            />
+          </div>
+          <span className="pull-to-refresh-label">
+            {isRefreshing
+              ? 'Syncing deck…'
+              : pullDistance >= 55
+                ? 'Release to sync'
+                : 'Pull down to sync'}
+          </span>
+        </div>
         <nav className="topbar" aria-label="Deck navigation">
           <Brand onClick={onGoHome} />
           <div className="nav-actions" data-nosnippet>

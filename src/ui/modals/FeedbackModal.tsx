@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import type { AuthUser, FeedbackService } from '../../application/ports'
 import type { View } from '../../navigation'
+import { ModalSheet } from './ModalSheet'
 
 function FeedbackModalInner({
   onClose,
@@ -82,113 +83,106 @@ function FeedbackModalInner({
   }
 
   return (
-    <div
-      className="modal-backdrop feedback-modal-backdrop"
-      onClick={onClose}
-      role="presentation"
+    <ModalSheet
+      onClose={onClose}
+      backdropClassName="feedback-modal-backdrop"
+      className="feedback-modal"
+      ariaLabelledBy="feedback-modal-title"
     >
-      <div
-        className="modal-content feedback-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="feedback-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="feedback-modal-title">
-              {isSuccess ? '¡Muchas gracias!' : 'Share feedback'}
-            </h2>
-            <p className="modal-subtitle">
-              {isSuccess
-                ? 'Your note has been received.'
-                : user
-                  ? `Sending as ${user.email}`
-                  : 'Your note helps us improve Jolito.'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close feedback dialog"
-          >
-            ✕
-          </button>
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="feedback-modal-title">
+            {isSuccess ? '¡Muchas gracias!' : 'Share feedback'}
+          </h2>
+          <p className="modal-subtitle">
+            {isSuccess
+              ? 'Your note has been received.'
+              : user
+                ? `Sending as ${user.email}`
+                : 'Your note helps us improve Jolito.'}
+          </p>
         </div>
-
-        {isSuccess ? (
-          <div className="feedback-success-state">
-            <p className="feedback-success-message">
-              Thank you for helping make Jolito better! We read every note.
-            </p>
-            <div className="feedback-modal-actions">
-              <button
-                type="button"
-                className="primary-button"
-                onClick={onClose}
-                autoFocus
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        ) : (
-          <form
-            className="feedback-form"
-            onSubmit={(e) => {
-              void handleSubmit(e)
-            }}
-          >
-            <p className="feedback-encouragement">
-              Have an idea or spotted a bug? We’d love to hear from you!
-            </p>
-
-            <div className="feedback-field-group">
-              <label htmlFor="feedback-message-input" className="sr-only">
-                Your feedback
-              </label>
-              <textarea
-                ref={textareaRef}
-                id="feedback-message-input"
-                className="feedback-textarea"
-                rows={5}
-                value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value)
-                  setError(null)
-                }}
-                placeholder="What’s on your mind?"
-              />
-            </div>
-
-            {error && (
-              <div className="feedback-error-banner" role="alert">
-                {error}
-              </div>
-            )}
-
-            <div className="feedback-modal-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="primary-button"
-                disabled={!message.trim() || isSubmitting}
-              >
-                {isSubmitting ? 'Sending…' : 'Send feedback'}
-              </button>
-            </div>
-          </form>
-        )}
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close feedback dialog"
+        >
+          ✕
+        </button>
       </div>
-    </div>
+
+      {isSuccess ? (
+        <div className="feedback-success-state">
+          <p className="feedback-success-message">
+            Thank you for helping make Jolito better! We read every note.
+          </p>
+          <div className="feedback-modal-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={onClose}
+              autoFocus
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form
+          className="feedback-form"
+          onSubmit={(e) => {
+            void handleSubmit(e)
+          }}
+        >
+          <p className="feedback-encouragement">
+            Have an idea or spotted a bug? We’d love to hear from you!
+          </p>
+
+          <div className="feedback-field-group">
+            <label htmlFor="feedback-message-input" className="sr-only">
+              Your feedback
+            </label>
+            <textarea
+              ref={textareaRef}
+              id="feedback-message-input"
+              className="feedback-textarea"
+              rows={5}
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value)
+                setError(null)
+              }}
+              placeholder="What’s on your mind?"
+            />
+          </div>
+
+          {error && (
+            <div className="feedback-error-banner" role="alert">
+              {error}
+            </div>
+          )}
+
+          <div className="feedback-modal-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={!message.trim() || isSubmitting}
+            >
+              {isSubmitting ? 'Sending…' : 'Send feedback'}
+            </button>
+          </div>
+        </form>
+      )}
+    </ModalSheet>
   )
 }
 
