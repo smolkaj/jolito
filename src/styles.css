@@ -2509,6 +2509,7 @@ kbd {
 
 .grade-buttons button {
   min-width: 0;
+  min-height: 44px;
   padding: 10px 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3058,6 +3059,10 @@ kbd {
 
   .grade-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grade-buttons button {
+    min-height: 44px;
   }
 
   .keyboard-hint {
@@ -6175,7 +6180,7 @@ kbd {
     height: 100%;
     border: none;
     background: transparent;
-    color: var(--ink-muted);
+    color: var(--ink-soft);
     padding: 6px 0;
     font-family: var(--font-sans);
     font-size: 11px;
@@ -6193,7 +6198,7 @@ kbd {
   }
 
   .mobile-tab-btn.is-active {
-    color: var(--rosa);
+    color: var(--rosa-dark);
     font-weight: 700;
   }
 
@@ -6214,13 +6219,13 @@ kbd {
     height: 16px;
     padding: 0 4px;
     border-radius: 999px;
-    background: var(--rosa);
+    background: var(--rosa-dark);
     color: #ffffff;
     font-size: 9px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 16px;
     text-align: center;
-    box-shadow: 0 1px 3px rgba(228, 0, 124, 0.3);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   }
 
   .tab-online-dot {
@@ -6234,9 +6239,15 @@ kbd {
     border: 1.5px solid var(--paper);
   }
 
-  /* Adjust page shells to account for bottom tab bar reachability */
-  .app-shell {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  /* Reachability for long scrollable deck contents under fixed mobile tab bar */
+  .deck-cards-list,
+  .deck-manager-table-wrap {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */
+  .topbar-nav-btn {
+    display: none !important;
   }
 }
 
@@ -6358,4 +6369,37 @@ button:active,
 /* Safe area support for topbars */
 .topbar {
   padding-top: max(12px, env(safe-area-inset-top, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-content.modal-sheet {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  button:active,
+  .primary-button:active,
+  .secondary-button:active,
+  .text-button:active,
+  .action-button:active,
+  .grade-btn:active,
+  .audio-button:active,
+  .audio-btn:active,
+  .study-quick-btn:active,
+  .starter-pack-card:active,
+  .demo-deck-chip:active,
+  .mobile-tab-btn:active,
+  .gesture-zone-badge {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .pull-to-refresh-bar,
+  .pull-to-refresh-icon {
+    transition: none !important;
+  }
+
+  .study-card {
+    transition: none !important;
+  }
 }

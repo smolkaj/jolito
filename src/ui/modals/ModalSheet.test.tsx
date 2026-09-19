@@ -13,7 +13,7 @@ function createMockHaptics() {
 
 describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
   it('renders children with grabber handle and dialog role', () => {
-    render(
+    const { container } = render(
       <ModalSheet isOpen={true} onClose={vi.fn()} ariaLabel="Test Sheet">
         <p>Sheet body content</p>
       </ModalSheet>,
@@ -23,16 +23,16 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
       screen.getByRole('dialog', { name: 'Test Sheet' }),
     ).toBeInTheDocument()
     expect(screen.getByText('Sheet body content')).toBeInTheDocument()
-    expect(
-      screen.getByRole('presentation', { name: 'Drag down to dismiss' }),
-    ).toBeInTheDocument()
+    const grabber = container.querySelector('.sheet-grabber-zone')
+    expect(grabber).toBeInTheDocument()
+    expect(grabber).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('dismisses modal and triggers haptics when dragged down past threshold', () => {
     const onClose = vi.fn()
     const { trigger, haptics } = createMockHaptics()
 
-    render(
+    const { container } = render(
       <ModalSheet
         isOpen={true}
         onClose={onClose}
@@ -43,9 +43,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
       </ModalSheet>,
     )
 
-    const grabber = screen.getByRole('presentation', {
-      name: 'Drag down to dismiss',
-    })
+    const grabber = container.querySelector('.sheet-grabber-zone')!
 
     // Drag down 100px (past 85px threshold)
     fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
@@ -62,7 +60,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     const onClose = vi.fn()
     const haptics = createMockHaptics()
 
-    render(
+    const { container } = render(
       <ModalSheet
         isOpen={true}
         onClose={onClose}
@@ -73,9 +71,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
       </ModalSheet>,
     )
 
-    const grabber = screen.getByRole('presentation', {
-      name: 'Drag down to dismiss',
-    })
+    const grabber = container.querySelector('.sheet-grabber-zone')!
 
     // Drag down only 30px (below 85px threshold)
     fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
@@ -115,15 +111,13 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     const onClose = vi.fn()
     const { trigger, haptics } = createMockHaptics()
 
-    render(
+    const { container } = render(
       <ModalSheet isOpen={true} onClose={onClose} haptics={haptics}>
         <p>Modal content</p>
       </ModalSheet>,
     )
 
-    const grabber = screen.getByRole('presentation', {
-      name: 'Drag down to dismiss',
-    })
+    const grabber = container.querySelector('.sheet-grabber-zone')!
 
     fireEvent.pointerDown(grabber, { clientY: 100, button: 2 })
     fireEvent.pointerMove(grabber, { clientY: 250 })
@@ -135,15 +129,13 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
 
   it('safely handles drag and dismiss without explicit haptics prop', () => {
     const onClose = vi.fn()
-    render(
+    const { container } = render(
       <ModalSheet isOpen={true} onClose={onClose}>
         <p>Modal content</p>
       </ModalSheet>,
     )
 
-    const grabber = screen.getByRole('presentation', {
-      name: 'Drag down to dismiss',
-    })
+    const grabber = container.querySelector('.sheet-grabber-zone')!
 
     fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
     fireEvent.pointerMove(grabber, { clientY: 200 })

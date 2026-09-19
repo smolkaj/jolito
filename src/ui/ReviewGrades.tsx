@@ -30,8 +30,9 @@ export function ReviewGrades({
             data-grade={index + 1}
             onClick={() => onGrade(grade)}
             key={grade}
+            aria-label={`${index + 1} ${labels[grade]} ${intervalLabel(card, grade)}`}
           >
-            <kbd>{index + 1}</kbd>
+            <kbd aria-hidden="true">{index + 1}</kbd>
             <strong>{labels[grade]}</strong>
             <small>{intervalLabel(card, grade)}</small>
           </button>
