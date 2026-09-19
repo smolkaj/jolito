@@ -186,29 +186,31 @@
         <h2>3. Third-Party Services & AI Processing</h2>
         <p>
           To provide audio pronunciations, AI study assistance, and cloud
-          synchronization, Jolito relies on the following service providers:
+          synchronization, Jolito relies on third-party service providers in the
+          following categories:
         </p>
         <p>
-          <strong>Speech Synthesis (Microsoft):</strong> Card words and study
-          phrases are transmitted to Microsoft’s text-to-speech services to
-          synthesize pronunciation audio and enable responsive playback.
+          <strong>Speech Synthesis Providers:</strong> To generate pronunciation
+          audio and enable responsive playback, card words and study phrases are
+          processed by cloud text-to-speech providers (such as Microsoft Speech
+          Services).
         </p>
         <p>
-          <strong>AI Assistance & Hosting (Cloudflare):</strong> When using
-          AI-assisted study features (such as generating example sentences,
-          mnemonics, or translations), card text and prompts are processed using
-          cloud language models via Cloudflare Workers AI. Cloudflare also hosts
-          Jolito’s web infrastructure, edge caches audio assets, and routes
-          application requests.
+          <strong>AI & Language Model Providers:</strong> When using AI-assisted
+          study features (such as generating example sentences, mnemonics, or
+          translations), card text and prompts are processed by cloud AI
+          inference providers (such as Cloudflare Workers AI).
         </p>
         <p>
-          <strong>Account & Cloud Sync (Supabase):</strong> Manages user
-          authentication and cloud database hosting for synchronizing accounts,
-          decks, and study progress.
+          <strong>Cloud Hosting & Database Infrastructure:</strong> When you
+          sign in, your account and study progress are stored and synchronized
+          using managed cloud database and hosting providers (such as Supabase
+          and Cloudflare).
         </p>
         <p>
-          <strong>Email Delivery (Resend):</strong> Delivers in-app feedback
-          messages and administrative notifications.
+          <strong>Email Delivery Services:</strong> In-app feedback messages and
+          administrative notifications are routed through transactional email
+          delivery services (such as Resend).
         </p>
       </section>
 
