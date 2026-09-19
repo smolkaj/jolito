@@ -660,9 +660,6 @@ export function CreateCardView({
         <div className="create-sidebar">
           <header>
             <h1>New flashcard</h1>
-            <p className="lede">
-              Build spoken bilingual cards with Mexican Spanish nuances.
-            </p>
           </header>
           <div className="create-visual">
             {/* English Preview Card */}

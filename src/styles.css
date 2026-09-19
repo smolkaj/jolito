@@ -603,7 +603,7 @@ summary:focus-visible,
 }
 
 .welcome-hero {
-  --hero-card-scale: clamp(0.58, calc(0.08 + (100vw / 1350px)), 1);
+  --hero-card-scale: clamp(0.72, calc(0.12 + (100vw / 1150px)), 1.05);
   --sample-card-offset: clamp(24px, 3.5vw, 48px);
   --sample-card-y-offset: clamp(20px, 3vw, 40px);
   width: min(1080px, 100%);
@@ -623,7 +623,7 @@ summary:focus-visible,
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: end;
   gap: clamp(32px, 5vw, 64px);
-  margin-top: clamp(8px, 2vh, 28px);
+  margin-block: auto;
 }
 
 .welcome-hero-footer {
@@ -927,40 +927,40 @@ summary:focus-visible,
 
 /* Foreground Card */
 .sample-card.is-foreground {
-  transform: translate(
-      calc(-50% - var(--sample-card-offset, 48px)),
-      calc(-50% + var(--sample-card-y-offset, 40px))
-    )
-    rotate(-3deg);
+  --card-base-tx: calc(-50% - var(--sample-card-offset, 48px));
+  --card-base-ty: calc(-50% + var(--sample-card-y-offset, 40px));
+  --card-base-rot: -3deg;
+  transform: translate(var(--card-base-tx), var(--card-base-ty))
+    rotate(var(--card-base-rot));
   box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 2;
 }
 
 .sample-card.is-foreground:hover {
   transform: translate(
-      calc(-50% - var(--sample-card-offset, 48px) - 3px),
-      calc(-50% + var(--sample-card-y-offset, 40px) - 4px)
+      calc(var(--card-base-tx) - 3px),
+      calc(var(--card-base-ty) - 4px)
     )
-    rotate(-3deg);
+    rotate(var(--card-base-rot));
   box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-foreground:active {
   transform: translate(
-      calc(-50% - var(--sample-card-offset, 48px) + 2px),
-      calc(-50% + var(--sample-card-y-offset, 40px) + 2px)
+      calc(var(--card-base-tx) + 2px),
+      calc(var(--card-base-ty) + 2px)
     )
-    rotate(-3deg);
+    rotate(var(--card-base-rot));
   box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
 /* Background Card */
 .sample-card.is-background {
-  transform: translate(
-      calc(-50% + var(--sample-card-offset, 48px)),
-      calc(-50% - var(--sample-card-y-offset, 40px))
-    )
-    rotate(5deg);
+  --card-base-tx: calc(-50% + var(--sample-card-offset, 48px));
+  --card-base-ty: calc(-50% - var(--sample-card-y-offset, 40px));
+  --card-base-rot: 5deg;
+  transform: translate(var(--card-base-tx), var(--card-base-ty))
+    rotate(var(--card-base-rot));
   box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 1;
   opacity: 0.98;
@@ -968,20 +968,20 @@ summary:focus-visible,
 
 .sample-card.is-background:hover {
   transform: translate(
-      calc(-50% + var(--sample-card-offset, 48px) - 3px),
-      calc(-50% - var(--sample-card-y-offset, 40px) - 4px)
+      calc(var(--card-base-tx) - 3px),
+      calc(var(--card-base-ty) - 4px)
     )
-    rotate(5deg);
+    rotate(var(--card-base-rot));
   opacity: 1;
   box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-background:active {
   transform: translate(
-      calc(-50% + var(--sample-card-offset, 48px) + 2px),
-      calc(-50% - var(--sample-card-y-offset, 40px) + 2px)
+      calc(var(--card-base-tx) + 2px),
+      calc(var(--card-base-ty) + 2px)
     )
-    rotate(5deg);
+    rotate(var(--card-base-rot));
   box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
@@ -1363,7 +1363,7 @@ summary:focus-visible,
   gap: clamp(24px, 5vw, 48px);
   align-items: start;
   width: min(1080px, 100%);
-  margin: clamp(16px, 3vh, 32px) auto 40px;
+  margin: auto auto;
 }
 
 .create-sidebar {
@@ -2771,7 +2771,7 @@ kbd {
 }
 
 /* Responsive Breakpoints */
-@media (max-width: 860px) {
+@media (max-width: 860px), (max-height: 540px) {
   .welcome-hero-main {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: clamp(24px, 4vw, 36px);
@@ -2936,18 +2936,26 @@ kbd {
 
   .welcome-mascot-img {
     position: static;
-    width: 88px;
-    height: 88px;
-    margin-bottom: 14px;
+    width: clamp(100px, 14vh, 145px);
+    height: clamp(100px, 14vh, 145px);
+    margin: 0 auto 14px;
+  }
+
+  .hero-copy {
+    text-align: center;
   }
 
   .hero-copy h1 {
     font-size: clamp(38px, 10.5vw, 54px);
+    line-height: 1.04;
     letter-spacing: -1.8px;
   }
 
   .lede {
-    font-size: 16px;
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.4;
+    margin: 12px auto 24px;
+    max-width: 380px;
   }
 
   .complete-actions {
@@ -2964,9 +2972,13 @@ kbd {
     display: none;
   }
 
+  .welcome-hero-main {
+    margin-block: auto;
+  }
+
   .create-layout {
     grid-template-columns: minmax(0, 1fr);
-    margin-top: 24px;
+    margin-block: auto;
   }
 
   .create-layout h1 {
@@ -3070,6 +3082,233 @@ kbd {
 @media (max-width: 360px) {
   .nav-actions .text-button + .text-button {
     display: none;
+  }
+}
+
+/* Shallow Landscape Viewports (e.g. phones in landscape mode) */
+@media (max-height: 540px) and (orientation: landscape) {
+  .welcome-intro {
+    padding-top: max(6px, env(safe-area-inset-top));
+  }
+
+  .welcome-hero {
+    padding-top: 4px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+
+  .welcome-hero-main {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: clamp(24px, 4vw, 48px);
+    margin-block: auto;
+    width: 100%;
+    max-width: 960px;
+  }
+
+  .hero-copy {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    column-gap: clamp(18px, 2.8vw, 32px);
+    align-items: center;
+    text-align: left;
+    max-width: 480px;
+  }
+
+  .welcome-mascot-img {
+    grid-row: 1 / -1;
+    grid-column: 1;
+    width: clamp(90px, 13vw, 118px);
+    height: clamp(90px, 13vw, 118px);
+    margin: 0;
+    align-self: center;
+    transform: scaleX(-1);
+  }
+
+  .hero-copy h1 {
+    grid-column: 2;
+    font-size: clamp(25px, 3.8vw, 34px);
+    line-height: 1.05;
+    letter-spacing: -1.2px;
+    margin: 0;
+  }
+
+  .lede {
+    grid-column: 2;
+    font-size: clamp(12.5px, 1.7vw, 14.5px);
+    line-height: 1.35;
+    margin: 6px 0 14px;
+    max-width: 100%;
+  }
+
+  .hero-actions {
+    grid-column: 2;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Apple HIG: All interactive touch targets must be at least 44x44pt */
+  .hero-actions button {
+    width: auto;
+    min-height: 44px;
+    padding: 10px 20px;
+    font-size: 13.5px;
+  }
+
+  .hero-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    --hero-card-scale: clamp(0.52, calc(0.1 + (100vh / 800px)), 0.6);
+    --sample-card-offset: 15px;
+    --sample-card-y-offset: 9px;
+    min-height: 220px;
+    height: 230px;
+  }
+
+  .welcome-hero-footer {
+    padding-top: 4px;
+    margin-top: auto;
+  }
+
+  /* Apple HIG: Scroll cue touch target >= 44x44pt */
+  .welcome-hero-footer .hero-scroll-cue {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 12.5px;
+  }
+
+  .create-sidebar header {
+    margin-bottom: 22px;
+  }
+}
+
+/* Tablet Portrait Viewports (e.g. iPad in portrait mode) */
+@media (min-width: 681px) and (orientation: portrait) {
+  .welcome-hero {
+    justify-content: space-between;
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .welcome-hero-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0;
+    margin-block: auto;
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .welcome-mascot-img {
+    position: static;
+    width: clamp(110px, 12vh, 155px);
+    height: clamp(110px, 12vh, 155px);
+    margin: 0 auto clamp(14px, 2.2vh, 30px);
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(38px, 5vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -1.8px;
+    margin: 0;
+  }
+
+  .lede {
+    font-size: clamp(15.5px, 1.8vw, 19px);
+    line-height: 1.45;
+    margin: clamp(12px, 1.8vh, 22px) auto clamp(28px, 4vh, 48px);
+    max-width: 520px;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: clamp(36px, 5.5vh, 68px);
+    max-width: 380px;
+    width: 100%;
+  }
+
+  .hero-actions button {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 20px;
+    font-size: 16px;
+  }
+
+  /* Side-by-side sample cards: Spanish on left, English on right */
+  .hero-visual {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(20px, 3.2vw, 40px);
+    position: static;
+    transform: none;
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    margin: 0 auto clamp(24px, 3.5vh, 48px);
+  }
+
+  .hero-visual .sample-card {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: clamp(180px, calc(30px + 23vw), 290px);
+    height: clamp(260px, 28vh, 360px);
+    padding: clamp(18px, 2.2vh, 24px);
+    box-sizing: border-box;
+  }
+
+  .hero-visual .sample-card .sample-phrase {
+    font-size: clamp(24px, 3vw, 32px);
+  }
+
+  .hero-visual .sample-card .sample-illustration {
+    width: clamp(70px, 9vh, 100px);
+    height: clamp(70px, 9vh, 100px);
+  }
+
+  /* Reset base translation offsets to 0 so hover/active elevate in-place without jumping */
+  .hero-visual .sample-card-es {
+    order: 1;
+    --card-base-tx: 0px;
+    --card-base-ty: 0px;
+    --card-base-rot: -2deg;
+    box-shadow: 6px 6px 0 var(--card-shadow-color);
+  }
+
+  .hero-visual .sample-card-en {
+    order: 2;
+    --card-base-tx: 0px;
+    --card-base-ty: 0px;
+    --card-base-rot: 2.5deg;
+    box-shadow: 6px 6px 0 var(--card-shadow-color);
+  }
+
+  .welcome-hero-footer {
+    margin-top: 0;
+    padding-top: 2px;
   }
 }
 
