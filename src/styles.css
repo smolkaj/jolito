@@ -3119,8 +3119,8 @@ kbd {
   .welcome-mascot-img {
     grid-row: 1 / -1;
     grid-column: 1;
-    width: clamp(80px, 11vw, 105px);
-    height: clamp(80px, 11vw, 105px);
+    width: clamp(90px, 13vw, 118px);
+    height: clamp(90px, 13vw, 118px);
     margin: 0;
     align-self: center;
     transform: scaleX(-1);
@@ -3128,7 +3128,7 @@ kbd {
 
   .hero-copy h1 {
     grid-column: 2;
-    font-size: clamp(24px, 3.6vw, 32px);
+    font-size: clamp(25px, 3.8vw, 34px);
     line-height: 1.05;
     letter-spacing: -1.2px;
     margin: 0;
@@ -3136,9 +3136,9 @@ kbd {
 
   .lede {
     grid-column: 2;
-    font-size: clamp(12px, 1.6vw, 14px);
+    font-size: clamp(12.5px, 1.7vw, 14.5px);
     line-height: 1.35;
-    margin: 4px 0 12px;
+    margin: 6px 0 14px;
     max-width: 100%;
   }
 
@@ -3163,11 +3163,11 @@ kbd {
     align-items: center;
     justify-content: center;
     width: 100%;
-    --hero-card-scale: clamp(0.48, calc(0.1 + (100vh / 900px)), 0.55);
-    --sample-card-offset: 14px;
-    --sample-card-y-offset: 8px;
-    min-height: 205px;
-    height: 215px;
+    --hero-card-scale: clamp(0.52, calc(0.1 + (100vh / 800px)), 0.60);
+    --sample-card-offset: 15px;
+    --sample-card-y-offset: 9px;
+    min-height: 220px;
+    height: 230px;
   }
 
   .welcome-hero-footer {
@@ -3195,8 +3195,8 @@ kbd {
 @media (min-width: 681px) and (orientation: portrait) {
   .welcome-hero {
     justify-content: space-between;
-    padding-top: max(14px, env(safe-area-inset-top));
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
 
   .welcome-hero-main {
@@ -3219,37 +3219,37 @@ kbd {
 
   .welcome-mascot-img {
     position: static;
-    width: clamp(88px, 10vh, 115px);
-    height: clamp(88px, 10vh, 115px);
-    margin: 0 auto 10px;
+    width: clamp(110px, 12vh, 155px);
+    height: clamp(110px, 12vh, 155px);
+    margin: 0 auto clamp(14px, 2.2vh, 30px);
   }
 
   .hero-copy h1 {
-    font-size: clamp(34px, 4.6vw, 48px);
+    font-size: clamp(38px, 5vw, 54px);
     line-height: 1.05;
-    letter-spacing: -1.6px;
+    letter-spacing: -1.8px;
     margin: 0;
   }
 
   .lede {
-    font-size: clamp(14.5px, 1.7vw, 17px);
-    line-height: 1.4;
-    margin: 8px auto 16px;
-    max-width: 460px;
+    font-size: clamp(15.5px, 1.8vw, 19px);
+    line-height: 1.45;
+    margin: clamp(12px, 1.8vh, 22px) auto clamp(28px, 4vh, 48px);
+    max-width: 520px;
   }
 
   .hero-actions {
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: 14px;
-    margin-bottom: clamp(16px, 2.2vh, 24px);
+    gap: 16px;
+    margin-bottom: clamp(36px, 5.5vh, 68px);
   }
 
   .hero-actions button {
-    min-height: 48px;
-    padding: 10px 28px;
-    font-size: 15px;
+    min-height: 52px;
+    padding: 12px 32px;
+    font-size: 16px;
   }
 
   /* Side-by-side sample cards: Spanish on left, English on right */
@@ -3258,32 +3258,32 @@ kbd {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: clamp(18px, 2.8vw, 32px);
+    gap: clamp(24px, 3.5vw, 44px);
     position: static;
     transform: none;
     width: 100%;
     height: auto;
     min-height: auto;
-    margin: 0 auto clamp(12px, 1.6vh, 20px);
+    margin: 0 auto clamp(24px, 3.5vh, 48px);
   }
 
   .hero-visual .sample-card {
     position: relative;
     top: auto;
     left: auto;
-    width: clamp(205px, 24vw, 255px);
-    height: clamp(230px, 24vh, 275px);
-    padding: 18px;
+    width: clamp(240px, 28vw, 310px);
+    height: clamp(270px, 28vh, 360px);
+    padding: 24px;
     box-sizing: border-box;
   }
 
   .hero-visual .sample-card .sample-phrase {
-    font-size: clamp(22px, 2.8vw, 28px);
+    font-size: clamp(24px, 3vw, 32px);
   }
 
   .hero-visual .sample-card .sample-illustration {
-    width: clamp(56px, 7vh, 76px);
-    height: clamp(56px, 7vh, 76px);
+    width: clamp(70px, 9vh, 100px);
+    height: clamp(70px, 9vh, 100px);
   }
 
   /* Reset base translation offsets to 0 so hover/active elevate in-place without jumping */
