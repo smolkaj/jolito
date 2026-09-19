@@ -413,4 +413,115 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       ).toBeLessThanOrEqual(16)
     }
   })
+
+  test('enforces Apple HIG touch targets, layout integrity, and single-column create on shallow landscape viewports', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 852, height: 393 }, // iPhone 15/16 landscape
+      { width: 932, height: 430 }, // iPhone Pro Max landscape
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto('/')
+
+      // 1. Welcome screen touch targets >= 44x44pt
+      const createBtn = page.getByRole('button', { name: /^create a card/i })
+      const cueBtn = page.getByRole('link', {
+        name: /^scroll down to explore why jolito/i,
+      })
+      await expect(createBtn).toBeVisible()
+      await expect(cueBtn).toBeVisible()
+
+      const [createBox, cueBox, heroFooter, viewportSize] = await Promise.all([
+        createBtn.boundingBox(),
+        cueBtn.boundingBox(),
+        page.locator('.welcome-hero-footer').boundingBox(),
+        page.evaluate(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })),
+      ])
+
+      expect(createBox).not.toBeNull()
+      expect(cueBox).not.toBeNull()
+      expect(heroFooter).not.toBeNull()
+
+      expect(createBox!.height).toBeGreaterThanOrEqual(44)
+      expect(createBox!.width).toBeGreaterThanOrEqual(44)
+      expect(cueBox!.height).toBeGreaterThanOrEqual(44)
+      expect(cueBox!.width).toBeGreaterThanOrEqual(44)
+
+      // Hero footer fits inside viewport
+      expect(heroFooter!.y + heroFooter!.height).toBeLessThanOrEqual(
+        viewportSize.height,
+      )
+
+      // 2. Create card view: single column and .create-visual hidden
+      await page.goto('/#create')
+      await page.waitForSelector('.create-form')
+      const visualHidden = await page
+        .locator('.create-visual')
+        .evaluate((el) => window.getComputedStyle(el).display === 'none')
+      expect(visualHidden).toBe(true)
+    }
+  })
+
+  test('enforces Apple HIG touch targets, in-place card elevation, and 100dvh fit on tablet portrait viewports', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 768, height: 1024 }, // iPad Mini portrait
+      { width: 810, height: 1080 }, // iPad 10.2" portrait
+      { width: 820, height: 1180 }, // iPad Air portrait
+    ]) {
+      await page.setViewportSize(viewport)
+      await page.goto('/')
+
+      // 1. All controls >= 44x44pt
+      const createBtn = page.getByRole('button', { name: /^create a card/i })
+      const cueBtn = page.getByRole('link', {
+        name: /^scroll down to explore why jolito/i,
+      })
+      await expect(createBtn).toBeVisible()
+      await expect(cueBtn).toBeVisible()
+
+      const [createBox, cueBox, heroFooter, viewportSize] = await Promise.all([
+        createBtn.boundingBox(),
+        cueBtn.boundingBox(),
+        page.locator('.welcome-hero-footer').boundingBox(),
+        page.evaluate(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })),
+      ])
+
+      expect(createBox!.height).toBeGreaterThanOrEqual(44)
+      expect(cueBox!.height).toBeGreaterThanOrEqual(44)
+
+      // Entire hero panel fits inside viewport without vertical overflow
+      expect(heroFooter!.y + heroFooter!.height).toBeLessThanOrEqual(
+        viewportSize.height,
+      )
+
+      // 2. In-place card elevation on hover/active (no coordinate jump)
+      const esCard = page.locator('.sample-card-es')
+      const enCard = page.locator('.sample-card-en')
+      await expect(esCard).toBeVisible()
+      await expect(enCard).toBeVisible()
+
+      const initialEsBox = await esCard.boundingBox()
+      expect(initialEsBox).not.toBeNull()
+
+      await esCard.hover()
+      await page.waitForTimeout(100)
+      const hoveredEsBox = await esCard.boundingBox()
+      expect(hoveredEsBox).not.toBeNull()
+
+      // Card must not leap across the screen (-50% translation bug would shift by >100px)
+      const deltaX = Math.abs(hoveredEsBox!.x - initialEsBox!.x)
+      const deltaY = Math.abs(hoveredEsBox!.y - initialEsBox!.y)
+      expect(deltaX).toBeLessThanOrEqual(10)
+      expect(deltaY).toBeLessThanOrEqual(10)
+    }
+  })
 })

@@ -927,40 +927,40 @@ summary:focus-visible,
 
 /* Foreground Card */
 .sample-card.is-foreground {
-  transform: translate(
-      calc(-50% - var(--sample-card-offset, 48px)),
-      calc(-50% + var(--sample-card-y-offset, 40px))
-    )
-    rotate(-3deg);
+  --card-base-tx: calc(-50% - var(--sample-card-offset, 48px));
+  --card-base-ty: calc(-50% + var(--sample-card-y-offset, 40px));
+  --card-base-rot: -3deg;
+  transform: translate(var(--card-base-tx), var(--card-base-ty))
+    rotate(var(--card-base-rot));
   box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 2;
 }
 
 .sample-card.is-foreground:hover {
   transform: translate(
-      calc(-50% - var(--sample-card-offset, 48px) - 3px),
-      calc(-50% + var(--sample-card-y-offset, 40px) - 4px)
+      calc(var(--card-base-tx) - 3px),
+      calc(var(--card-base-ty) - 4px)
     )
-    rotate(-3deg);
+    rotate(var(--card-base-rot));
   box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-foreground:active {
   transform: translate(
-      calc(-50% - var(--sample-card-offset, 48px) + 2px),
-      calc(-50% + var(--sample-card-y-offset, 40px) + 2px)
+      calc(var(--card-base-tx) + 2px),
+      calc(var(--card-base-ty) + 2px)
     )
-    rotate(-3deg);
+    rotate(var(--card-base-rot));
   box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
 /* Background Card */
 .sample-card.is-background {
-  transform: translate(
-      calc(-50% + var(--sample-card-offset, 48px)),
-      calc(-50% - var(--sample-card-y-offset, 40px))
-    )
-    rotate(5deg);
+  --card-base-tx: calc(-50% + var(--sample-card-offset, 48px));
+  --card-base-ty: calc(-50% - var(--sample-card-y-offset, 40px));
+  --card-base-rot: 5deg;
+  transform: translate(var(--card-base-tx), var(--card-base-ty))
+    rotate(var(--card-base-rot));
   box-shadow: 6px 6px 0 var(--card-shadow-color);
   z-index: 1;
   opacity: 0.98;
@@ -968,20 +968,20 @@ summary:focus-visible,
 
 .sample-card.is-background:hover {
   transform: translate(
-      calc(-50% + var(--sample-card-offset, 48px) - 3px),
-      calc(-50% - var(--sample-card-y-offset, 40px) - 4px)
+      calc(var(--card-base-tx) - 3px),
+      calc(var(--card-base-ty) - 4px)
     )
-    rotate(5deg);
+    rotate(var(--card-base-rot));
   opacity: 1;
   box-shadow: 8px 8px 0 var(--card-shadow-hover);
 }
 
 .sample-card.is-background:active {
   transform: translate(
-      calc(-50% + var(--sample-card-offset, 48px) + 2px),
-      calc(-50% - var(--sample-card-y-offset, 40px) + 2px)
+      calc(var(--card-base-tx) + 2px),
+      calc(var(--card-base-ty) + 2px)
     )
-    rotate(5deg);
+    rotate(var(--card-base-rot));
   box-shadow: 2px 2px 0 var(--card-shadow-hover);
 }
 
@@ -2771,7 +2771,7 @@ kbd {
 }
 
 /* Responsive Breakpoints */
-@media (max-width: 860px) {
+@media (max-width: 860px), (max-height: 540px) {
   .welcome-hero-main {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: clamp(24px, 4vw, 36px);
@@ -2936,9 +2936,9 @@ kbd {
 
   .welcome-mascot-img {
     position: static;
-    width: clamp(135px, 38vw, 172px);
-    height: clamp(135px, 38vw, 172px);
-    margin: 0 auto 20px;
+    width: clamp(100px, 14vh, 145px);
+    height: clamp(100px, 14vh, 145px);
+    margin: 0 auto 14px;
   }
 
   .hero-copy {
@@ -2946,15 +2946,15 @@ kbd {
   }
 
   .hero-copy h1 {
-    font-size: clamp(46px, 13.2vw, 62px);
-    line-height: 1.02;
-    letter-spacing: -2.4px;
+    font-size: clamp(38px, 10.5vw, 54px);
+    line-height: 1.04;
+    letter-spacing: -1.8px;
   }
 
   .lede {
-    font-size: clamp(17px, 4.8vw, 21px);
-    line-height: 1.44;
-    margin: 18px auto 32px;
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.4;
+    margin: 12px auto 24px;
     max-width: 380px;
   }
 
@@ -3119,8 +3119,8 @@ kbd {
   .welcome-mascot-img {
     grid-row: 1 / -1;
     grid-column: 1;
-    width: clamp(100px, 14vw, 130px);
-    height: clamp(100px, 14vw, 130px);
+    width: clamp(96px, 14vw, 125px);
+    height: clamp(96px, 14vw, 125px);
     margin: 0;
     align-self: center;
     transform: scaleX(-1);
@@ -3138,7 +3138,7 @@ kbd {
     grid-column: 2;
     font-size: clamp(12.5px, 1.8vw, 14.5px);
     line-height: 1.35;
-    margin: 6px 0 16px;
+    margin: 6px 0 14px;
     max-width: 100%;
   }
 
@@ -3150,10 +3150,11 @@ kbd {
     gap: 12px;
   }
 
+  /* Apple HIG: All interactive touch targets must be at least 44x44pt */
   .hero-actions button {
     width: auto;
-    min-height: 40px;
-    padding: 8px 20px;
+    min-height: 44px;
+    padding: 10px 20px;
     font-size: 13.5px;
   }
 
@@ -3174,14 +3175,15 @@ kbd {
     margin-top: auto;
   }
 
+  /* Apple HIG: Scroll cue touch target >= 44x44pt */
   .welcome-hero-footer .hero-scroll-cue {
-    min-height: 36px;
-    padding: 6px 12px;
-    font-size: 12px;
-  }
-
-  .create-layout {
-    margin-top: clamp(16px, 3vh, 26px);
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 12.5px;
   }
 
   .create-sidebar header {
@@ -3193,8 +3195,8 @@ kbd {
 @media (min-width: 681px) and (orientation: portrait) {
   .welcome-hero {
     justify-content: space-between;
-    padding-top: max(16px, env(safe-area-inset-top));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 
   .welcome-hero-main {
@@ -3217,83 +3219,93 @@ kbd {
 
   .welcome-mascot-img {
     position: static;
-    width: clamp(140px, 16vw, 175px);
-    height: clamp(140px, 16vw, 175px);
-    margin-bottom: 14px;
-    transform: scaleX(-1);
+    width: clamp(100px, 12vh, 135px);
+    height: clamp(100px, 12vh, 135px);
+    margin: 0 auto 12px;
   }
 
   .hero-copy h1 {
-    font-size: clamp(48px, 5.8vw, 68px);
-    line-height: 1.04;
-    letter-spacing: -2px;
+    font-size: clamp(38px, 5.2vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -1.8px;
     margin: 0;
   }
 
   .lede {
-    font-size: clamp(17px, 2vw, 20px);
-    line-height: 1.42;
-    margin: 12px auto 24px;
-    max-width: 520px;
+    font-size: clamp(15px, 1.8vw, 18px);
+    line-height: 1.4;
+    margin: 10px auto 18px;
+    max-width: 480px;
   }
 
   .hero-actions {
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: 16px;
-    margin-bottom: clamp(48px, 5.5vh, 68px);
+    gap: 14px;
+    margin-bottom: clamp(20px, 2.8vh, 32px);
   }
 
   .hero-actions button {
-    min-height: 50px;
-    padding: 13px 32px;
-    font-size: 16px;
+    min-height: 48px;
+    padding: 10px 28px;
+    font-size: 15px;
   }
 
-  /* Display the two sample cards side-by-side: Spanish on left, English on right */
+  /* Side-by-side sample cards: Spanish on left, English on right */
   .hero-visual {
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: clamp(24px, 3.5vw, 40px);
+    gap: clamp(20px, 3.2vw, 36px);
     position: static;
     transform: none;
     width: 100%;
     height: auto;
     min-height: auto;
-    margin: 0 auto 36px;
+    margin: 0 auto clamp(16px, 2vh, 26px);
   }
 
   .hero-visual .sample-card {
     position: relative;
     top: auto;
     left: auto;
-    width: clamp(280px, 32vw, 320px);
-    height: 360px;
+    width: clamp(220px, 26vw, 275px);
+    height: clamp(250px, 27vh, 305px);
+    padding: 20px;
     box-sizing: border-box;
   }
 
+  .hero-visual .sample-card .sample-phrase {
+    font-size: clamp(24px, 3.2vw, 32px);
+  }
+
+  .hero-visual .sample-card .sample-illustration {
+    width: clamp(64px, 8vh, 88px);
+    height: clamp(64px, 8vh, 88px);
+  }
+
+  /* Reset base translation offsets to 0 so hover/active elevate in-place without jumping */
   .hero-visual .sample-card-es {
     order: 1;
-    transform: rotate(-2deg);
+    --card-base-tx: 0px;
+    --card-base-ty: 0px;
+    --card-base-rot: -2deg;
     box-shadow: 6px 6px 0 var(--card-shadow-color);
   }
 
   .hero-visual .sample-card-en {
     order: 2;
-    transform: rotate(2.5deg);
+    --card-base-tx: 0px;
+    --card-base-ty: 0px;
+    --card-base-rot: 2.5deg;
     box-shadow: 6px 6px 0 var(--card-shadow-color);
   }
 
   .welcome-hero-footer {
     margin-top: 0;
-    padding-top: 4px;
-  }
-
-  .create-layout {
-    margin: clamp(20px, 3vh, 36px) auto auto;
+    padding-top: 2px;
   }
 }
 
