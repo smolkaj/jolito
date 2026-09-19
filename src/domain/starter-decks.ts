@@ -350,7 +350,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'en el trayecto',
         english: 'during the commute',
-        context: 'Mnemonic: Cognate with "trajectory".',
+        context: 'Mnemonic: Think "trajectory".',
         bidirectional: true,
       },
       {
