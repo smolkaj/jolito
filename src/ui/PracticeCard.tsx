@@ -107,10 +107,22 @@ export function PracticeCard({
     }
   }, [error, paused])
 
+  const isAnimatingExitRef = useRef(false)
+  const exitTimerRef = useRef<number | null>(null)
+
+  const handleGrade = (grade: Grade) => {
+    if (isAnimatingExitRef.current) return
+    if (exitTimerRef.current !== null) {
+      window.clearTimeout(exitTimerRef.current)
+      exitTimerRef.current = null
+    }
+    onGrade(grade)
+  }
+
   const actions = useRef({
     paused,
     revealed,
-    onGrade,
+    onGrade: handleGrade,
     onPlayAnswer,
     onPlayPrompt,
     onEdit,
@@ -119,7 +131,7 @@ export function PracticeCard({
     actions.current = {
       paused,
       revealed,
-      onGrade,
+      onGrade: handleGrade,
       onPlayAnswer,
       onPlayPrompt,
       onEdit,
@@ -176,6 +188,10 @@ export function PracticeCard({
   const [isAnimatingExit, setIsAnimatingExit] = useState(false)
   const [activeZone, setActiveZone] = useState<Grade | null>(null)
 
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
   const cardRef = useRef<HTMLElement>(null)
   const pointerStartRef = useRef<{
     x: number
@@ -186,7 +202,6 @@ export function PracticeCard({
   } | null>(null)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const activeZoneRef = useRef<Grade | null>(null)
-  const exitTimerRef = useRef<number | null>(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
   const [prevRevealed, setPrevRevealed] = useState(revealed)
 
@@ -202,27 +217,21 @@ export function PracticeCard({
   useEffect(() => {
     dragOffsetRef.current = { x: 0, y: 0 }
     activeZoneRef.current = null
+    isAnimatingExitRef.current = false
+    if (exitTimerRef.current !== null) {
+      window.clearTimeout(exitTimerRef.current)
+      exitTimerRef.current = null
+    }
   }, [card.id, revealed])
 
   useEffect(() => {
     return () => {
       if (exitTimerRef.current !== null) {
         window.clearTimeout(exitTimerRef.current)
+        exitTimerRef.current = null
       }
     }
   }, [])
-
-  useEffect(() => {
-    if (!isAnimatingExit) return undefined
-    const timer = window.setTimeout(() => {
-      setIsAnimatingExit(false)
-      setDragOffset({ x: 0, y: 0 })
-      dragOffsetRef.current = { x: 0, y: 0 }
-      setActiveZone(null)
-      activeZoneRef.current = null
-    }, 300)
-    return () => window.clearTimeout(timer)
-  }, [isAnimatingExit])
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
     if (event.pointerType !== 'touch') return
@@ -312,13 +321,9 @@ export function PracticeCard({
     if (!revealed) {
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
-      const swipedUp =
-        !start.isInteractive &&
-        actualDy < -35 &&
-        Math.abs(actualDy) > Math.abs(actualDx)
       const tapped =
         !start.isInteractive && actualDistance < 10 && elapsed < 350
-      if (swipedUp || tapped) {
+      if (tapped) {
         haptics?.trigger('selection')
         onReveal()
       }
@@ -327,12 +332,21 @@ export function PracticeCard({
 
     if (currentActiveZone) {
       setIsAnimatingExit(true)
+      isAnimatingExitRef.current = true
       const exitX = currentActiveZone === 'again' ? -360 : 360
       setDragOffset({ x: exitX, y: 0 })
       const gradeToSubmit = currentActiveZone
+      const exitDelay = prefersReducedMotion ? 0 : 200
       exitTimerRef.current = window.setTimeout(() => {
+        exitTimerRef.current = null
+        setIsAnimatingExit(false)
+        isAnimatingExitRef.current = false
+        setDragOffset({ x: 0, y: 0 })
+        dragOffsetRef.current = { x: 0, y: 0 }
+        setActiveZone(null)
+        activeZoneRef.current = null
         onGrade(gradeToSubmit)
-      }, 200)
+      }, exitDelay)
     } else {
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
@@ -349,10 +363,6 @@ export function PracticeCard({
     setActiveZone(null)
     activeZoneRef.current = null
   }
-
-  const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   const rotation =
     revealed && !prefersReducedMotion
@@ -514,7 +524,7 @@ export function PracticeCard({
               {children}
             </div>
           </div>
-          <ReviewGrades card={card} onGrade={onGrade} />
+          <ReviewGrades card={card} onGrade={handleGrade} />
         </div>
       )}
       {(onEdit || onDelete) && (

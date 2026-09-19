@@ -652,4 +652,271 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(onReveal).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
+
+  it('does not reveal on vertical swipe up or down when unrevealed, preserving native vertical scrolling', () => {
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+
+    // Vertical swipe up (dy = -100)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 300,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+
+    // Vertical swipe down (dy = +100)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 100,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+  })
+
+  it('ignores grade button clicks and keyboard shortcuts during exit animation, preventing double grading', () => {
+    vi.useFakeTimers()
+    const card = mockCards[0]!
+    const onGrade = vi.fn()
+
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+
+    // Swipe left (again) past threshold
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    // During the 200ms exit animation: attempt to click grade button "Good"
+    const goodButton = screen.getByRole('button', { name: /good/i })
+    fireEvent.click(goodButton)
+
+    // Attempt to press keyboard shortcut '1' during exit animation
+    fireEvent.keyDown(window, { key: '1' })
+
+    // No premature or duplicate grading has occurred yet
+    expect(onGrade).not.toHaveBeenCalled()
+
+    // Complete the exit animation
+    vi.advanceTimersByTime(200)
+
+    // Exactly one grade for 'again' (from the initial swipe) is submitted
+    expect(onGrade).toHaveBeenCalledTimes(1)
+    expect(onGrade).toHaveBeenCalledWith('again')
+    vi.useRealTimers()
+  })
+
+  it('immediately resets drag offset and animation state when advancing to a new card in the deck', () => {
+    vi.useFakeTimers()
+    const card1 = mockCards[0]!
+    const card2 = createStudyCards(
+      {
+        spanish: 'gracias',
+        english: 'thank you',
+        context: '',
+        bidirectional: false,
+      },
+      'batch-2',
+      1000,
+    )[0]!
+    const onGrade = vi.fn()
+
+    const { container, rerender } = render(
+      <PracticeCard
+        card={card1}
+        prompt={<h1>{card1.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+
+    // Swipe right (good)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 220,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 220,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    // Advance 200ms to finish exit fling
+    vi.advanceTimersByTime(200)
+    expect(onGrade).toHaveBeenCalledWith('good')
+
+    // Parent immediately passes the next card
+    rerender(
+      <PracticeCard
+        card={card2}
+        prompt={<h1>{card2.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    // New card should have no residual transform offset
+    expect(studyCard).not.toHaveClass('is-dragging')
+    expect(studyCard).toHaveStyle({ transform: 'none' })
+    vi.useRealTimers()
+  })
+
+  it('grades immediately without exit animation delay when prefers-reduced-motion is active', () => {
+    vi.useFakeTimers()
+    const hadMatchMedia = 'matchMedia' in window
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string): MediaQueryList => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    try {
+      const card = mockCards[0]!
+      const onGrade = vi.fn()
+
+      const { container } = render(
+        <PracticeCard
+          card={card}
+          prompt={<h1>{card.prompt}</h1>}
+          answer=""
+          revealed={true}
+          onAnswerChange={vi.fn()}
+          onReveal={vi.fn()}
+          onGrade={onGrade}
+          onPlayAnswer={vi.fn()}
+          paused={false}
+          audioUnavailable={false}
+        />,
+      )
+
+      const studyCard = container.querySelector('.study-card')!
+
+      fireEvent.pointerDown(studyCard, {
+        clientX: 200,
+        clientY: 200,
+        button: 0,
+        pointerType: 'touch',
+      })
+      fireEvent.pointerMove(studyCard, {
+        clientX: 100,
+        clientY: 200,
+        pointerType: 'touch',
+      })
+      fireEvent.pointerUp(studyCard, {
+        clientX: 100,
+        clientY: 200,
+        pointerType: 'touch',
+      })
+
+      vi.advanceTimersByTime(0)
+      expect(onGrade).toHaveBeenCalledWith('again')
+    } finally {
+      if (!hadMatchMedia) {
+        delete (window as { matchMedia?: unknown }).matchMedia
+      }
+      vi.useRealTimers()
+    }
+  })
 })

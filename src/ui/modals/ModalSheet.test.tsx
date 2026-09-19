@@ -158,4 +158,49 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
+
+  it('dismisses immediately without delay when prefers-reduced-motion is active', () => {
+    vi.useFakeTimers()
+    const hadMatchMedia = 'matchMedia' in window
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string): MediaQueryList => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    try {
+      const onClose = vi.fn()
+      const { container } = render(
+        <ModalSheet
+          isOpen={true}
+          onClose={onClose}
+          ariaLabel="Accessible Sheet"
+        >
+          <p>Modal content</p>
+        </ModalSheet>,
+      )
+
+      const grabber = container.querySelector('.sheet-grabber-zone')!
+      fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
+      fireEvent.pointerMove(grabber, { clientY: 200 })
+      fireEvent.pointerUp(grabber, { clientY: 200 })
+
+      vi.advanceTimersByTime(0)
+      expect(onClose).toHaveBeenCalledTimes(1)
+    } finally {
+      if (!hadMatchMedia) {
+        delete (window as { matchMedia?: unknown }).matchMedia
+      }
+      vi.useRealTimers()
+    }
+  })
 })

@@ -140,9 +140,10 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
         )
         setDragOffset(exitOffset)
         haptics?.trigger('selection')
+        const exitDelay = prefersReducedMotion ? 0 : 240
         closeTimerRef.current = setTimeout(() => {
           onClose()
-        }, 240)
+        }, exitDelay)
       } else {
         setDragOffset(0)
       }
@@ -162,7 +163,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
             transition:
               isDragging || prefersReducedMotion
                 ? 'none'
-                : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
+                : 'transform 240ms cubic-bezier(0.16, 1, 0.3, 1)',
           }
         : undefined
 
