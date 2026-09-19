@@ -48,7 +48,14 @@ describe('starterPacks', () => {
         c.noteId.startsWith('curated-founder-condesa-notebook-'),
       ),
     ).toBe(true)
-    expect(cards.every((c) => c.context.trim().length > 0)).toBe(true)
+    // Verify authentic context qualification: all non-empty contexts start with 'Example:', 'Mnemonic:', or 'Note:'
+    const cardsWithContext = cards.filter((c) => c.context.trim().length > 0)
+    expect(cardsWithContext.length).toBeGreaterThan(0)
+    expect(
+      cardsWithContext.every((c) =>
+        /^(Example:|Mnemonic:|Note:)/.test(c.context.trim()),
+      ),
+    ).toBe(true)
   })
 
   it('contains 50 notes (100 reciprocal cards) in each of the 4 verb packs, totaling 200 verbs', () => {

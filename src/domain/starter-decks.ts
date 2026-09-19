@@ -308,232 +308,217 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'tianguis',
         english: 'street market',
-        context:
-          'Open-air street market ubiquitous across Mexico City neighborhoods.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'agente inmobiliario',
         english: 'real estate agent',
-        context:
-          'Essential when searching for an apartment in Condesa or Roma.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'niñera',
         english: 'babysitter',
-        context: 'Crucial vocabulary for parents navigating childcare in CDMX.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'crudo',
         english: 'hungover / raw',
-        context:
-          'Mexican slang for being hungover after a late night out ("estoy crudo"). Literally means raw.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: '¡Qué fresa!',
         english: 'How fancy! / How posh!',
-        context: 'Classic Mexican slang for posh, preppy, or upscale.',
+        context: 'Note: Mexican slang for posh or upscale.',
         bidirectional: true,
       },
       {
         spanish: 'wey',
         english: 'dude',
-        context:
-          'Universal Mexican colloquial address between friends (also spelled güey).',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'parada de autobús',
         english: 'bus stop',
+        context: '',
+        bidirectional: true,
+      },
+      {
+        spanish: 'en el trayecto',
+        english: 'during the commute',
         context:
-          'Everyday public transit vocabulary for navigating city streets.',
+          'Mnemonic: Cognate with trajectory → on the path / during the commute.',
         bidirectional: true,
       },
       {
         spanish: 'derecho',
         english: 'straight',
-        context: 'Straight ahead. Easy to confuse with "derecha" (right).',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'derecha',
         english: 'right',
         context:
-          'Right (direction). Remember: "a la derecha" is to the right, whereas "todo derecho" is straight ahead.',
+          'Mnemonic: Use your derecha (right) arm to point derecho (straight ahead).',
         bidirectional: true,
       },
       {
         spanish: 'izquierda',
         english: 'left',
         context:
-          'Left (direction). Unique Spanish word of pre-Roman Basque origin (from "ezkerra").',
-        bidirectional: true,
-      },
-      {
-        spanish: 'enfrente de',
-        english: 'across from',
-        context:
-          'Essential spatial preposition for directions and designating meeting points.',
-        bidirectional: true,
-      },
-      {
-        spanish: 'al lado de',
-        english: 'next to',
-        context:
-          'Spatial preposition for describing nearby storefronts and landmarks.',
+          'Mnemonic: Unique Spanish word of pre-Roman Basque origin (from "ezkerra").',
         bidirectional: true,
       },
       {
         spanish: 'delante de',
         english: 'in front of',
-        context:
-          'Spatial preposition indicating physical position directly in front.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'detrás',
         english: 'behind',
-        context: 'Spatial preposition for behind or at the back.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'debajo',
         english: 'below / underneath',
-        context: 'Spatial preposition for beneath or under.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'encima',
         english: 'on top of',
-        context: 'Spatial preposition for on top or above.',
+        context: '',
+        bidirectional: true,
+      },
+      {
+        spanish: 'al lado de',
+        english: 'next to',
+        context: '',
+        bidirectional: true,
+      },
+      {
+        spanish: 'enfrente de',
+        english: 'across from',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'por supuesto',
         english: 'of course',
-        context: 'Natural affirmative response in conversation.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'valer la pena',
         english: 'to be worth it',
-        context: 'High-frequency conversational idiom ("vale la pena").',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'sin embargo',
         english: 'however',
-        context: 'Standard conversational transition to introduce contrast.',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'o sea',
         english: 'I mean',
         context:
-          'Ubiquitous Mexican conversational filler and clarification bridge ("in other words").',
+          'Example: "No quiero ir; o sea, estoy cansadísimo." ("I don\'t want to go; I mean, I\'m exhausted.")',
         bidirectional: true,
       },
       {
-        spanish: 'concuerdo contigo',
-        english: 'I agree / I agree with you',
-        context:
-          'Polite, natural phrase for expressing agreement in discussions.',
+        spanish: 'tanto',
+        english: 'so much',
+        context: "Example: No te preocupes tanto. (Don't worry so much.)",
         bidirectional: true,
       },
       {
-        spanish: 'darse cuenta',
-        english: 'to notice / to realize',
+        spanish: 'aunque',
+        english: 'even though / though',
         context:
-          'Essential reflexive verb for becoming aware of something ("me di cuenta").',
+          "Example: Me gusta la playa aunque hace calor. (I like the beach even though it's hot.)",
         bidirectional: true,
       },
       {
-        spanish: 'me cuesta',
-        english: 'I struggle with',
+        spanish: 'recordar',
+        english: 'to remember',
         context:
-          'Honest learner phrase for expressing difficulty ("me cuesta hablar rápido").',
+          "Example: No recuerdo dónde dejé las llaves. (I don't remember where I left the keys.)",
         bidirectional: true,
       },
       {
-        spanish: 'tener sentido',
-        english: 'to make sense',
-        context:
-          'Conversational check ("¿tiene sentido?" - does that make sense?).',
+        spanish: 'sonreír',
+        english: 'to smile',
+        context: 'Mnemonic: The son of the king (son + rey) smiles.',
         bidirectional: true,
       },
       {
-        spanish: 'Estoy por tu casa',
-        english: "I'm near your house",
-        context:
-          'Quintessential message when you are arriving to meet friends or pick someone up.',
+        spanish: 'volver',
+        english: 'to return',
+        context: 'Mnemonic: Revolve → return.',
         bidirectional: true,
       },
       {
-        spanish: '¿Puedo decir?',
-        english: 'Can I say?',
-        context:
-          'Indispensable question for the language classroom and language exchanges.',
+        spanish: 'casar',
+        english: 'to marry',
+        context: 'Mnemonic: From casa (house) → to make a home together.',
+        bidirectional: true,
+      },
+      {
+        spanish: 'cuadro',
+        english: 'picture / rectangle',
+        context: 'Mnemonic: Cuatro (four) corners → cuadro.',
         bidirectional: true,
       },
       {
         spanish: 'en voz alta',
         english: 'out loud',
-        context:
-          'Practicing pronunciation and reading passages out loud in class.',
+        context: 'Mnemonic: Literally "in high voice" → out loud.',
         bidirectional: true,
       },
       {
         spanish: 'pizarrón',
         english: 'blackboard / whiteboard',
-        context: 'Classroom board where teachers diagram grammar rules.',
+        context: '',
         bidirectional: true,
       },
       {
-        spanish: 'una verdadera lástima',
-        english: 'a true shame',
-        context: 'Empathetic expression when something disappointing happens.',
+        spanish: 'Estoy por tu casa',
+        english: "I'm near your house",
+        context: '',
+        bidirectional: true,
+      },
+      {
+        spanish: '¿Puedo decir?',
+        english: 'Can I say?',
+        context: '',
+        bidirectional: true,
+      },
+      {
+        spanish: 'darse cuenta',
+        english: 'to notice / to realize',
+        context: '',
+        bidirectional: true,
+      },
+      {
+        spanish: 'me cuesta',
+        english: 'I struggle with',
+        context: '',
         bidirectional: true,
       },
       {
         spanish: 'puñito',
         english: 'fist bump',
-        context: 'Casual friendly greeting in modern Mexico City.',
-        bidirectional: true,
-      },
-      {
-        spanish: 'al parecer',
-        english: 'seemingly / apparently',
-        context: 'Conversational hedge when sharing second-hand observations.',
-        bidirectional: true,
-      },
-      {
-        spanish: 'llevarse',
-        english: 'to get along',
-        context:
-          'Social phrase for personal compatibility ("nos llevamos muy bien").',
-        bidirectional: true,
-      },
-      {
-        spanish: 'dato curioso',
-        english: 'fun fact',
-        context: 'Playful conversation starter.',
-        bidirectional: true,
-      },
-      {
-        spanish: 'justo a tiempo',
-        english: 'just in time',
-        context:
-          'Everyday expression for punctuality or catching the Metrobús.',
-        bidirectional: true,
-      },
-      {
-        spanish: 'dejar de hacer algo',
-        english: 'to quit doing something',
-        context:
-          'Practical verbal structure for breaking habits or stopping actions.',
+        context: '',
         bidirectional: true,
       },
     ],
