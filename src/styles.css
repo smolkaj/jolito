@@ -6215,17 +6215,18 @@ kbd {
     position: absolute;
     top: -3px;
     right: -7px;
-    min-width: 16px;
-    height: 16px;
+    min-width: 15px;
+    height: 15px;
     padding: 0 4px;
     border-radius: 999px;
-    background: var(--rosa-dark);
-    color: #ffffff;
-    font-size: 9px;
-    font-weight: 700;
-    line-height: 16px;
+    background: var(--paper-warm, #fdfaf7);
+    color: var(--rosa-dark);
+    border: 1px solid var(--rosa-dark);
+    font-size: 9.5px;
+    font-weight: 600;
+    line-height: 13px;
     text-align: center;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    box-shadow: none;
   }
 
   .tab-online-dot {
