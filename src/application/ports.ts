@@ -93,7 +93,11 @@ export type CardAssistant = {
 export type AiAssistant = {
   isAvailable(): Promise<boolean>
   isAvailableSync?(): boolean
-  generateExample(spanish: string, signal?: AbortSignal): Promise<string | null>
+  generateExample(
+    spanish: string,
+    english?: string,
+    signal?: AbortSignal,
+  ): Promise<string | null>
   generateMnemonic(
     spanish: string,
     english: string,

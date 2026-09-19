@@ -73,6 +73,8 @@ describe('handleAiRequest', () => {
     expect(json.text).toBe(
       '¿Vienes o qué? — O sea, sí. (Are you coming or what? — I mean, yes.)',
     )
+    const prompt =
+      'Give me an authentic, characteristic, but simple and short Mexican Spanish example sentence using "o sea" with an English translation in parentheses. If "o sea" is a phrasal verb, idiomatic expression, or includes a preposition (such as "dar a", "tratar de", etc.), keep the preposition or its grammatical contraction (e.g. "al") intact in the sentence to preserve this exact meaning rather than reverting to the base verb. Keep all other words in the sentence strictly to very basic, common everyday vocabulary (A1–A2 level) so it is easy for a beginner learner to understand. Output ONLY the Spanish sentence and English translation in parentheses on a single line without any preamble or conversational filler.'
     expect(mockAiRun).toHaveBeenCalledWith(
       '@cf/meta/llama-3.1-8b-instruct-fast',
       {
@@ -84,8 +86,53 @@ describe('handleAiRequest', () => {
           },
           {
             role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: 150,
+      },
+    )
+  })
+
+  it('generates example sentence anchored to english meaning and phrasal prepositions', async () => {
+    const mockAiRun = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        response:
+          'La ventana de mi cuarto da a la calle. (My room’s window faces the street.)',
+      }),
+    )
+    const env: AiWorkerEnv = {
+      AI: { run: mockAiRun },
+    }
+    const request = new Request('https://joli.to/api/ai', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'example',
+        spanish: 'dar a',
+        english: 'to face',
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const response = await handleAiRequest(request, env)
+    expect(response.status).toBe(200)
+    const json = (await response.json()) as { text: string }
+    expect(json.text).toBe(
+      'La ventana de mi cuarto da a la calle. (My room’s window faces the street.)',
+    )
+    const expectedPrompt =
+      'Give me an authentic, characteristic, but simple and short Mexican Spanish example sentence using "dar a" with the intended meaning "to face" with an English translation in parentheses. If "dar a" is a phrasal verb, idiomatic expression, or includes a preposition (such as "dar a", "tratar de", etc.), keep the preposition or its grammatical contraction (e.g. "al") intact in the sentence to preserve this exact meaning rather than reverting to the base verb. Keep all other words in the sentence strictly to very basic, common everyday vocabulary (A1–A2 level) so it is easy for a beginner learner to understand. Output ONLY the Spanish sentence and English translation in parentheses on a single line without any preamble or conversational filler.'
+    expect(mockAiRun).toHaveBeenCalledWith(
+      '@cf/meta/llama-3.1-8b-instruct-fast',
+      {
+        messages: [
+          {
+            role: 'system',
             content:
-              'Give me an authentic, characteristic, but simple and short Mexican Spanish example sentence using "o sea" with an English translation in parentheses. Keep all other words in the sentence strictly to very basic, common everyday vocabulary (A1–A2 level) so it is easy for a beginner learner to understand. Output ONLY the Spanish sentence and English translation in parentheses on a single line without any preamble or conversational filler.',
+              'You are an expert Mexican Spanish linguistic tutor. Respond concisely with exactly what was requested on a single line without preamble or extra notes.',
+          },
+          {
+            role: 'user',
+            content: expectedPrompt,
           },
         ],
         max_tokens: 150,

@@ -113,6 +113,19 @@ describe('AI Card Suggestions', () => {
     expect(exampleBtn).toHaveAttribute('aria-disabled', 'false')
     expect(mnemonicBtn).toHaveAttribute('aria-disabled', 'true')
 
+    // Click example button before English is typed
+    await user.click(exampleBtn)
+    expect(generateExampleSpy).toHaveBeenCalledWith(
+      'o sea',
+      undefined,
+      expect.any(AbortSignal),
+    )
+
+    const contextInput = screen.getByLabelText(/additional context/i)
+    expect(contextInput).toHaveValue(
+      '¿Vienes o qué? — O sea, sí. (Are you coming or what? — I mean, yes.)',
+    )
+
     // Type English translation
     const englishInput = screen.getByLabelText(/English/i)
     await user.type(englishInput, 'I mean')
@@ -121,14 +134,14 @@ describe('AI Card Suggestions', () => {
     expect(exampleBtn).toHaveAttribute('aria-disabled', 'false')
     expect(mnemonicBtn).toHaveAttribute('aria-disabled', 'false')
 
-    // Click example button
+    // Clear context and click example button again with English translation provided
+    await user.clear(contextInput)
     await user.click(exampleBtn)
     expect(generateExampleSpy).toHaveBeenCalledWith(
       'o sea',
+      'I mean',
       expect.any(AbortSignal),
     )
-
-    const contextInput = screen.getByLabelText(/additional context/i)
     expect(contextInput).toHaveValue(
       '¿Vienes o qué? — O sea, sí. (Are you coming or what? — I mean, yes.)',
     )
@@ -198,6 +211,7 @@ describe('AI Card Suggestions', () => {
     await user.click(exampleBtn)
     expect(generateExampleSpy).toHaveBeenCalledWith(
       'en voz alta',
+      'out loud',
       expect.any(AbortSignal),
     )
 
@@ -292,6 +306,7 @@ describe('AI Card Suggestions', () => {
 
     expect(generateExampleSpy).toHaveBeenCalledWith(
       'en voz alta',
+      'out loud',
       expect.any(AbortSignal),
     )
     const contextInput = screen.getByLabelText(/additional context/i)
@@ -362,6 +377,85 @@ describe('AI Card Suggestions', () => {
     const contextInput = screen.getByLabelText(/additional context/i)
     // Context should NOT have been updated with the old term's example
     expect(contextInput).toHaveValue('')
+  })
+
+  it('handles race conditions: ignores late example response if English definition was modified while in flight', async () => {
+    const user = userEvent.setup()
+    let resolveExample: (val: string) => void = () => {}
+    const deferredPromise = new Promise<string>((resolve) => {
+      resolveExample = resolve
+    })
+
+    const mockAi: AiAssistant = {
+      isAvailable: () => Promise.resolve(true),
+      isAvailableSync: () => true,
+      generateExample: vi.fn().mockImplementation(() => deferredPromise),
+      generateMnemonic: vi.fn(),
+    }
+
+    renderCreateCardView(mockAi)
+
+    const spanishInput = screen.getByLabelText(/Mexican Spanish/i)
+    const englishInput = screen.getByLabelText(/English/i)
+    await user.type(spanishInput, 'dar a')
+    await user.type(englishInput, 'to face')
+
+    const exampleBtn = screen.getByRole('button', {
+      name: /example: generate/i,
+    })
+    await user.click(exampleBtn)
+
+    // While in flight, user modifies english input
+    await user.clear(englishInput)
+    await user.type(englishInput, 'to overlook')
+
+    // AI resolves old result
+    resolveExample('La ventana da a la calle. (The window faces the street.)')
+    await waitFor(() => {
+      expect(exampleBtn).toHaveAttribute('aria-busy', 'false')
+    })
+
+    const contextInput = screen.getByLabelText(/additional context/i)
+    expect(contextInput).toHaveValue('')
+  })
+
+  it('generates example sentence for phrasal verb with preposition like "dar a" (to face)', async () => {
+    const user = userEvent.setup()
+    const generateExampleSpy = vi
+      .fn()
+      .mockResolvedValue(
+        'El balcón da al parque. (The balcony faces the park.)',
+      )
+
+    const mockAi: AiAssistant = {
+      isAvailable: () => Promise.resolve(true),
+      isAvailableSync: () => true,
+      generateExample: generateExampleSpy,
+      generateMnemonic: vi.fn(),
+    }
+
+    renderCreateCardView(mockAi)
+
+    const spanishInput = screen.getByLabelText(/Mexican Spanish/i)
+    const englishInput = screen.getByLabelText(/English/i)
+    await user.type(spanishInput, 'dar a')
+    await user.type(englishInput, 'to face')
+
+    const exampleBtn = screen.getByRole('button', {
+      name: /example: generate/i,
+    })
+    await user.click(exampleBtn)
+
+    expect(generateExampleSpy).toHaveBeenCalledWith(
+      'dar a',
+      'to face',
+      expect.any(AbortSignal),
+    )
+
+    const contextInput = screen.getByLabelText(/additional context/i)
+    expect(contextInput).toHaveValue(
+      'El balcón da al parque. (The balcony faces the park.)',
+    )
   })
 
   it('displays calm inline error and live region when generation fails', async () => {
