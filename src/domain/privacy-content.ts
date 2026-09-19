@@ -64,7 +64,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
       [
         {
           type: 'text',
-          text: 'To provide audio pronunciations, AI study assistance, and cloud synchronization, Jolito relies on third-party service providers in the following categories:',
+          text: 'To provide audio pronunciations, AI card suggestions, and cloud synchronization, Jolito relies on third-party service providers in the following categories:',
         },
       ],
       [
@@ -75,10 +75,10 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
         },
       ],
       [
-        { type: 'strong', text: 'AI & Language Model Providers:' },
+        { type: 'strong', text: 'AI Language Models (Card Suggestions):' },
         {
           type: 'text',
-          text: ' When using AI-assisted study features (such as generating example sentences, mnemonics, or translations), card text and prompts are processed by cloud AI inference providers (such as Cloudflare Workers AI).',
+          text: ' When requesting AI suggestions while creating cards (such as example sentences or memory aids), card text is processed by cloud AI inference providers (such as Cloudflare Workers AI). Your flashcard practice and spaced repetition reviews run privately on your device without AI.',
         },
       ],
       [

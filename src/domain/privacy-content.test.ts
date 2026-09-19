@@ -33,4 +33,14 @@ describe('privacy-content domain', () => {
       }
     }
   })
+
+  it('ensures public/privacy.html is synchronized with privacy-content without drift', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    const { generatePrivacyHtml } =
+      await import('../../scripts/generate-privacy-html.ts')
+    const expectedHtml = await generatePrivacyHtml()
+    const actualHtml = readFileSync(resolve('public/privacy.html'), 'utf-8')
+    expect(actualHtml).toBe(expectedHtml)
+  })
 })
