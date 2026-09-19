@@ -3163,7 +3163,7 @@ kbd {
     align-items: center;
     justify-content: center;
     width: 100%;
-    --hero-card-scale: clamp(0.52, calc(0.1 + (100vh / 800px)), 0.60);
+    --hero-card-scale: clamp(0.52, calc(0.1 + (100vh / 800px)), 0.6);
     --sample-card-offset: 15px;
     --sample-card-y-offset: 9px;
     min-height: 220px;
