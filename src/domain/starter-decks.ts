@@ -480,7 +480,7 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'en voz alta',
         english: 'out loud',
-        context: '',
+        context: 'Literal: In high voice.',
         bidirectional: true,
       },
       {
