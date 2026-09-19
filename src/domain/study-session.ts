@@ -53,7 +53,7 @@ export interface SessionGradeResult {
   isComplete: boolean
 }
 
-export const DEFAULT_REQUEUE_OFFSET = 5
+export const DEFAULT_REQUEUE_OFFSET = 6
 
 export function advanceSessionOnGrade(
   session: StudySession,

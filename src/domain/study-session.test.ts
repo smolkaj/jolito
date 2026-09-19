@@ -105,8 +105,8 @@ describe('studySession', () => {
       expect(sessionProgressPercentage(result.nextSession)).toBe(33)
     })
 
-    it('requeues card 5 cards ahead when remaining queue has more than 5 cards', () => {
-      expect(DEFAULT_REQUEUE_OFFSET).toBe(5)
+    it('requeues card 6 cards ahead when remaining queue has more than 6 cards', () => {
+      expect(DEFAULT_REQUEUE_OFFSET).toBe(6)
       const initial = createStudySession([
         'c0',
         'c1',
@@ -116,29 +116,31 @@ describe('studySession', () => {
         'c5',
         'c6',
         'c7',
+        'c8',
       ])
       const result = advanceSessionOnGrade(initial, 'c0', learningSchedule, [])
 
       expect(result.requeued).toBe(true)
       expect(result.isComplete).toBe(false)
-      // c0 is placed after 5 cards: c1, c2, c3, c4, c5, then c0, then c6, c7
+      // c0 is placed after 6 cards: c1, c2, c3, c4, c5, c6, then c0, then c7, c8
       expect(result.nextSession.queue).toEqual([
         'c1',
         'c2',
         'c3',
         'c4',
         'c5',
-        'c0',
         'c6',
+        'c0',
         'c7',
+        'c8',
       ])
-      expect(result.nextSession.sessionTotal).toBe(8)
+      expect(result.nextSession.sessionTotal).toBe(9)
       expect(result.nextSession.reviewedCount).toBe(1)
       expect(sessionCompletedCount(result.nextSession)).toBe(0)
       expect(sessionProgressPercentage(result.nextSession)).toBe(0)
     })
 
-    it('requeues card at end of queue when remaining queue has fewer than 5 cards', () => {
+    it('requeues card at end of queue when remaining queue has fewer than 6 cards', () => {
       const initial = createStudySession(['c1', 'c2', 'c3'])
       const result = advanceSessionOnGrade(initial, 'c1', learningSchedule, [])
 

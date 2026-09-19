@@ -120,10 +120,20 @@ describe('useStudySession', () => {
     expect(result.current.progressPercentage).toBe(0)
   })
 
-  it('requeues card 5 cards ahead when remaining queue has more than 5 cards', () => {
+  it('requeues card 6 cards ahead when remaining queue has more than 6 cards', () => {
     const { result } = renderHook(() =>
       useStudySession(
-        createStudySession(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']),
+        createStudySession([
+          'c0',
+          'c1',
+          'c2',
+          'c3',
+          'c4',
+          'c5',
+          'c6',
+          'c7',
+          'c8',
+        ]),
       ),
     )
 
@@ -140,9 +150,10 @@ describe('useStudySession', () => {
       'c3',
       'c4',
       'c5',
-      'c0',
       'c6',
+      'c0',
       'c7',
+      'c8',
     ])
   })
 
