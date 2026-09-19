@@ -115,7 +115,11 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       }
 
       if (finalDelta > DISMISS_THRESHOLD_PX) {
-        setDragOffset(finalDelta)
+        const exitOffset = Math.max(
+          finalDelta,
+          innerSheetRef.current?.getBoundingClientRect().height ?? 400,
+        )
+        setDragOffset(exitOffset)
         haptics?.trigger('selection')
         onClose()
       } else {

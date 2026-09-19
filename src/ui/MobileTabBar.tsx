@@ -103,15 +103,10 @@ export function MobileTabBar({
   }
 
   return (
-    <nav
-      className="mobile-tab-bar"
-      role="tablist"
-      aria-label="Mobile navigation"
-    >
+    <nav className="mobile-tab-bar" aria-label="Mobile navigation">
       <button
         type="button"
-        role="tab"
-        aria-selected={isPracticeActive}
+        aria-current={isPracticeActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isPracticeActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onPractice)}
         aria-label="Practice"
@@ -129,8 +124,7 @@ export function MobileTabBar({
 
       <button
         type="button"
-        role="tab"
-        aria-selected={isDeckActive}
+        aria-current={isDeckActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isDeckActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onNavigateToDeck)}
         aria-label="Deck"
@@ -143,8 +137,7 @@ export function MobileTabBar({
 
       <button
         type="button"
-        role="tab"
-        aria-selected={isCreateActive}
+        aria-current={isCreateActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isCreateActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onNavigateToCreate)}
         aria-label="Create"
@@ -157,8 +150,7 @@ export function MobileTabBar({
 
       <button
         type="button"
-        role="tab"
-        aria-selected={isSyncActive}
+        aria-current={isSyncActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isSyncActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onOpenSync)}
         aria-label={authUser ? 'Sync' : 'Account'}

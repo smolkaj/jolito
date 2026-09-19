@@ -28,12 +28,12 @@ describe('MobileTabBar (Milestone 2)', () => {
     )
 
     expect(
-      screen.getByRole('tablist', { name: 'Mobile navigation' }),
+      screen.getByRole('navigation', { name: 'Mobile navigation' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Practice' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Deck' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Create' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Account' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Deck' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
   })
 
   it('highlights Practice tab when in review, welcome, grammar, or complete view', () => {
@@ -49,13 +49,12 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Practice' })).toHaveAttribute(
-      'aria-selected',
-      'true',
+    expect(screen.getByRole('button', { name: 'Practice' })).toHaveAttribute(
+      'aria-current',
+      'page',
     )
-    expect(screen.getByRole('tab', { name: 'Deck' })).toHaveAttribute(
-      'aria-selected',
-      'false',
+    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
+      'aria-current',
     )
 
     rerender(
@@ -70,9 +69,9 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Practice' })).toHaveAttribute(
-      'aria-selected',
-      'true',
+    expect(screen.getByRole('button', { name: 'Practice' })).toHaveAttribute(
+      'aria-current',
+      'page',
     )
 
     rerender(
@@ -87,14 +86,13 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Deck' })).toHaveAttribute(
-      'aria-selected',
-      'true',
+    expect(screen.getByRole('button', { name: 'Deck' })).toHaveAttribute(
+      'aria-current',
+      'page',
     )
-    expect(screen.getByRole('tab', { name: 'Practice' })).toHaveAttribute(
-      'aria-selected',
-      'false',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Practice' }),
+    ).not.toHaveAttribute('aria-current')
 
     rerender(
       <MobileTabBar
@@ -108,9 +106,9 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Create' })).toHaveAttribute(
-      'aria-selected',
-      'true',
+    expect(screen.getByRole('button', { name: 'Create' })).toHaveAttribute(
+      'aria-current',
+      'page',
     )
 
     rerender(
@@ -125,13 +123,12 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Account' })).toHaveAttribute(
-      'aria-selected',
-      'true',
+    expect(screen.getByRole('button', { name: 'Account' })).toHaveAttribute(
+      'aria-current',
+      'page',
     )
-    expect(screen.getByRole('tab', { name: 'Deck' })).toHaveAttribute(
-      'aria-selected',
-      'false',
+    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
+      'aria-current',
     )
   })
 
@@ -156,18 +153,18 @@ describe('MobileTabBar (Milestone 2)', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Deck' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Deck' }))
     expect(onDeck).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Create' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     expect(onCreate).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
     expect(onSync).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Practice' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Practice' }))
     expect(onPractice).toHaveBeenCalledTimes(1)
   })
 
