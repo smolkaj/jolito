@@ -419,6 +419,44 @@ describe('AI Card Suggestions', () => {
     expect(contextInput).toHaveValue('')
   })
 
+  it('handles race conditions: ignores unanchored example response if English definition was added while in flight', async () => {
+    const user = userEvent.setup()
+    let resolveExample: (val: string) => void = () => {}
+    const deferredPromise = new Promise<string>((resolve) => {
+      resolveExample = resolve
+    })
+
+    const mockAi: AiAssistant = {
+      isAvailable: () => Promise.resolve(true),
+      isAvailableSync: () => true,
+      generateExample: vi.fn().mockImplementation(() => deferredPromise),
+      generateMnemonic: vi.fn(),
+    }
+
+    renderCreateCardView(mockAi)
+
+    const spanishInput = screen.getByLabelText(/Mexican Spanish/i)
+    const englishInput = screen.getByLabelText(/English/i)
+    await user.type(spanishInput, 'dar a')
+
+    const exampleBtn = screen.getByRole('button', {
+      name: /example: generate/i,
+    })
+    await user.click(exampleBtn)
+
+    // While in flight, user enters definition
+    await user.type(englishInput, 'to face')
+
+    // AI resolves old unanchored result
+    resolveExample('Doy un regalo. (I give a gift.)')
+    await waitFor(() => {
+      expect(exampleBtn).toHaveAttribute('aria-busy', 'false')
+    })
+
+    const contextInput = screen.getByLabelText(/additional context/i)
+    expect(contextInput).toHaveValue('')
+  })
+
   it('generates example sentence for phrasal verb with preposition like "dar a" (to face)', async () => {
     const user = userEvent.setup()
     const generateExampleSpy = vi

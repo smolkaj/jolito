@@ -134,7 +134,7 @@ export function useAiSuggestions({
 
       if (
         currentTermsRef.current.spanish.trim() !== term ||
-        (def && (currentTermsRef.current.english ?? '').trim() !== def)
+        (currentTermsRef.current.english ?? '').trim() !== def
       ) {
         setStatusMessage(null)
         return
