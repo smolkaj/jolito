@@ -346,12 +346,18 @@ export function DeckManagerView({
           <Brand onClick={onGoHome} />
           <div className="nav-actions" data-nosnippet>
             {vocabularyCards.length > 0 && (
-              <button className="text-button" onClick={onNavigateToCreate}>
+              <button
+                className="text-button topbar-nav-btn"
+                onClick={onNavigateToCreate}
+              >
                 + New card
               </button>
             )}
             {(queue.length > 0 || dueCount > 0) && (
-              <button className="text-button" onClick={onPractice}>
+              <button
+                className="text-button topbar-nav-btn"
+                onClick={onPractice}
+              >
                 Practice
               </button>
             )}

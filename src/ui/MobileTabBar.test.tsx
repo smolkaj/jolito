@@ -12,7 +12,7 @@ function createMockHaptics() {
 }
 
 describe('MobileTabBar (Milestone 2)', () => {
-  it('renders all four navigation tabs with correct accessible labels and roles', () => {
+  it('renders all four navigation items with correct accessible labels and roles', () => {
     render(
       <MobileTabBar
         currentView="review"
@@ -31,11 +31,9 @@ describe('MobileTabBar (Milestone 2)', () => {
       screen.getByRole('tablist', { name: 'Mobile navigation' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Practice' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Manage deck' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Create card' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('tab', { name: 'Sign in or sync' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Deck' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Create' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Account' })).toBeInTheDocument()
   })
 
   it('highlights Practice tab when in review, welcome, grammar, or complete view', () => {
@@ -55,7 +53,7 @@ describe('MobileTabBar (Milestone 2)', () => {
       'aria-selected',
       'true',
     )
-    expect(screen.getByRole('tab', { name: 'Manage deck' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Deck' })).toHaveAttribute(
       'aria-selected',
       'false',
     )
@@ -89,7 +87,7 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Manage deck' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Deck' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -110,7 +108,7 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('tab', { name: 'Create card' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Create' })).toHaveAttribute(
       'aria-selected',
       'true',
     )
@@ -127,10 +125,11 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(
-      screen.getByRole('tab', { name: 'Sign in or sync' }),
-    ).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('tab', { name: 'Manage deck' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Account' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('tab', { name: 'Deck' })).toHaveAttribute(
       'aria-selected',
       'false',
     )
@@ -157,15 +156,15 @@ describe('MobileTabBar (Milestone 2)', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Manage deck' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Deck' }))
     expect(onDeck).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Create card' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Create' }))
     expect(onCreate).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Sign in or sync' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Account' }))
     expect(onSync).toHaveBeenCalledTimes(1)
 
     fireEvent.click(screen.getByRole('tab', { name: 'Practice' }))

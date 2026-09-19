@@ -133,7 +133,7 @@ export function MobileTabBar({
         aria-selected={isDeckActive}
         className={`mobile-tab-btn ${isDeckActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onNavigateToDeck)}
-        aria-label="Manage deck"
+        aria-label="Deck"
       >
         <div className="tab-icon-wrapper">
           <DeckTabIcon />
@@ -147,7 +147,7 @@ export function MobileTabBar({
         aria-selected={isCreateActive}
         className={`mobile-tab-btn ${isCreateActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onNavigateToCreate)}
-        aria-label="Create card"
+        aria-label="Create"
       >
         <div className="tab-icon-wrapper">
           <CreateTabIcon />
@@ -161,7 +161,7 @@ export function MobileTabBar({
         aria-selected={isSyncActive}
         className={`mobile-tab-btn ${isSyncActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onOpenSync)}
-        aria-label={authUser ? 'Cloud sync' : 'Sign in or sync'}
+        aria-label={authUser ? 'Sync' : 'Account'}
       >
         <div className="tab-icon-wrapper">
           {syncStatus === 'syncing' ? (

@@ -356,21 +356,29 @@ export function PracticeCard({
     activeZoneRef.current = null
   }
 
-  const rotation = revealed
-    ? Math.max(-16, Math.min(16, dragOffset.x * 0.08))
-    : 0
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+  const rotation =
+    revealed && !prefersReducedMotion
+      ? Math.max(-16, Math.min(16, dragOffset.x * 0.08))
+      : 0
   const transformStyle =
     isDragging || isAnimatingExit
       ? {
           transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) rotate(${rotation}deg)`,
-          transition: isDragging
-            ? 'none'
-            : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
+          transition:
+            isDragging || prefersReducedMotion
+              ? 'none'
+              : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
         }
       : dragOffset.x !== 0 || dragOffset.y !== 0
         ? {
             transform: 'translate3d(0, 0, 0) rotate(0deg)',
-            transition: 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
+            transition: prefersReducedMotion
+              ? 'none'
+              : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
           }
         : undefined
 

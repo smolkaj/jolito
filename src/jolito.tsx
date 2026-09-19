@@ -1255,7 +1255,6 @@ function LoadedApp({
           onPlayAudio={playAudio}
           welcomeRef={welcomeRef}
         />
-        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1366,13 +1365,13 @@ function LoadedApp({
             ) : (
               <>
                 <button
-                  className="text-button"
+                  className="text-button topbar-nav-btn"
                   onClick={() => navigateTo('deck')}
                 >
                   Manage deck
                 </button>
                 <button
-                  className="text-button"
+                  className="text-button topbar-nav-btn"
                   onClick={() => navigateTo('create')}
                 >
                   + New card
