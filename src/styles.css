@@ -1500,13 +1500,6 @@ summary:focus-visible,
   line-height: 1.4;
 }
 
-.field-group textarea#context {
-  min-height: 64px;
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.5;
-}
-
 .field-group input {
   min-height: 48px;
   margin-top: 8px;
@@ -5212,11 +5205,14 @@ kbd {
 
 .edit-card-form .field-group textarea#edit-context,
 .field-group textarea#context {
-  min-height: 48px;
+  min-height: 64px;
   max-height: 180px;
   field-sizing: content;
   overflow-y: auto;
+  font-family: var(--font-sans);
   font-size: 13.5px;
+  line-height: 1.45;
+  padding: 10px 14px;
 }
 
 .field-label-row {
