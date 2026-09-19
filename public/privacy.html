@@ -11,7 +11,7 @@
     <title>Privacy Policy • Jolito</title>
     <meta
       name="description"
-      content="Jolito Privacy Policy: Local-first by design, no ads, and full user data control."
+      content="Jolito Privacy Policy: Local-first by design, service disclosures, and full user data control."
     />
     <link rel="canonical" href="https://joli.to/privacy" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -151,37 +151,68 @@
           <a href="/" class="brand-title">Jolito</a>
         </div>
         <h1>Privacy Policy</h1>
-        <span class="effective-date">Effective date: September 7, 2026</span>
+        <span class="effective-date">Effective date: September 19, 2026</span>
       </header>
 
       <section>
         <h2>1. The Demo vs. Your Account</h2>
         <p>
-          You can try the starter demo deck without an account. To create cards,
-          import decks, and save progress, you sign in with your email. Once
-          signed in, Jolito works offline on your device and syncs changes to
-          the cloud when connected.
+          You can try the starter demo deck without an account; your cards and
+          study progress remain stored on your device in your browser. To create
+          cards, import decks, and save progress across devices, you sign in
+          with your email. Once signed in, Jolito works offline on your device
+          and syncs changes to the cloud when connected.
         </p>
       </section>
 
       <section>
-        <h2>2. What We Collect</h2>
+        <h2>2. What We Collect & Store</h2>
         <p>
           <strong>Email:</strong> Used for passwordless sign-in and to notify
-          Jolito’s maintainer when you join. Never sold or used for marketing.
+          Jolito’s maintainer when new accounts join.
         </p>
         <p>
-          <strong>Your Decks & Progress:</strong> Synced to your private cloud
-          database so your cards and reviews are backed up across devices.
+          <strong>Your Decks & Progress:</strong> Stored on your device
+          (IndexedDB) and synced to your cloud database so your cards and
+          reviews are backed up across devices.
         </p>
         <p>
           <strong>Optional Feedback:</strong> If you send in-app feedback, we
-          receive your message and email to follow up.
+          receive your message and email address to follow up.
         </p>
       </section>
 
       <section>
-        <h2>3. Data Export & Account Deletion</h2>
+        <h2>3. Third-Party Services & AI Processing</h2>
+        <p>
+          To provide audio pronunciations, AI card assistance, and cloud sync,
+          Jolito uses the following service providers:
+        </p>
+        <p>
+          <strong>Microsoft Speech Services:</strong> When you play card audio
+          or prefetch pronunciations, card text is sent to Microsoft’s
+          text-to-speech service to generate audio.
+        </p>
+        <p>
+          <strong>Cloudflare (Workers AI & Hosting):</strong> When you request
+          AI suggestions (such as example sentences or mnemonics) in the card
+          creator, your card text is processed using Meta Llama models on
+          Cloudflare Workers AI. Cloudflare also hosts Jolito’s web application,
+          caches synthesized audio, and routes API requests.
+        </p>
+        <p>
+          <strong>Supabase:</strong> Provides authentication and cloud database
+          hosting (on AWS infrastructure) for syncing user accounts, decks, and
+          study logs.
+        </p>
+        <p>
+          <strong>Resend:</strong> Delivers in-app feedback messages and
+          administrative notification emails.
+        </p>
+      </section>
+
+      <section>
+        <h2>4. Data Export & Account Deletion</h2>
         <p>
           You can export your complete deck to a JSON file anytime under
           <strong>Manage deck → Backup & export</strong>.
@@ -197,7 +228,7 @@
       </section>
 
       <section>
-        <h2>4. Open Source & Contact</h2>
+        <h2>5. Open Source & Contact</h2>
         <p>
           Jolito is
           <a

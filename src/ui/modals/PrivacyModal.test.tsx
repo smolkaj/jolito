@@ -18,7 +18,12 @@ describe('PrivacyModal', () => {
       screen.getByRole('heading', { name: /the demo vs\. your account/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: /what we collect/i }),
+      screen.getByRole('heading', { name: /what we collect & store/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: /third-party services & ai processing/i,
+      }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
