@@ -5,11 +5,11 @@ description: Evaluate a working implementation against a clean-slate design to e
 
 # Hindsight reflection
 
-The first working implementation is often an exploratory draft (a spike) shaped by the journey of debugging: compensatory layering, patch-on-patch overrides, and structural compromises made to get tests to pass.
+The first working implementation is often an exploratory draft shaped by the journey of debugging: compensatory layering, patch-on-patch overrides, and structural compromises made to get tests to pass.
 
 Once tests are passing, you possess full knowledge of the problem that was missing at the start. Do not fall into the sunk-cost trap: passing tests are your **safety ratchet**, not a reason to preserve an accreted draft. Because the tests already capture the discovered requirements and edge cases, discarding draft implementation files carries zero risk of regression.
 
-At the completion of an implementation, execute this protocol, post the evaluation in dialogue, and yield the turn.
+At the completion of an implementation, ensure the upstream PR is active, launch the review loop in parallel, execute this protocol, post the evaluation in dialogue, and yield the turn.
 
 ## 1. Discoveries & Learnings
 
@@ -17,7 +17,7 @@ Name what was learned during implementation that was not obvious at the outset (
 
 ## 2. Greenfield Design (The Clean Slate)
 
-With the benefit of hindsight and everything learned, sketch the simplest, most direct architecture you would build from a blank slate. What is the unified model or representation that makes special-casing and compensatory glue unnecessary?
+With the benefit of hindsight and everything learned, sketch the simplest, most direct architecture you would build from a blank slate. What is the unified model or representation that makes special-casing and compensatory glue unnecessary? Apply the restraint check: simpler and more direct, not more clever.
 
 ## 3. Delta Check & Recommended Decision
 
@@ -30,8 +30,10 @@ Compare the working draft against the greenfield design, auditing for explorator
 
 ### Recommendation
 
-Post the evaluation and recommendation in dialogue, then yield the turn:
+In all cases, ensure the upstream PR is active, launch the review loop in parallel, post the evaluation and recommendation in dialogue, and yield the turn:
 
-1. **Rebuild cleanly:** (Expected for non-trivial work). The draft exhibits exploratory accretion, journey sediment, or structural divergence. Outline the greenfield plan in dialogue and recommend rebuilding cleanly. Upon user confirmation, keep the newly written tests (the safety ratchet), revert the draft implementation files (`git restore <files>`), and implement the clean greenfield design in one direct pass.
-2. **Drop it:** In hindsight, the change introduces more complexity than the problem warrants, or the premise was flawed. Recommend dropping the PR or direction entirely.
-3. **Proceed:** (High bar). Choose this only if the draft already matches the greenfield design with zero compensatory layering or journey sediment. Open the PR, post your recommendation, and launch the review loop in parallel.
+1. **Drop it:** Evaluate this first. Does the change truly pull its weight? If even the clean greenfield design introduces ongoing cognitive burden or complexity disproportionate to the value delivered, recommend dropping the direction. Abandoning a spike after proving its cost is a high-value engineering win that protects Jolito's simplicity ("When in doubt, leave it out"), not wasted effort.
+   - _Triggers:_ Disproportionate complexity for marginal value, existing native/browser primitives are sufficient, or the cognitive burden on future agents outweighs the benefit.
+   - _Guardrail:_ Root-cause fixes for regressions or broken core invariants must be solved, not dropped.
+2. **Rebuild cleanly:** (Expected for non-trivial work, at most once). The value justifies the change, but the draft exhibits exploratory accretion, journey sediment, or structural divergence. Outline the greenfield plan in dialogue and recommend rebuilding cleanly. Upon user confirmation, keep the newly written tests (the safety ratchet), discard the draft implementation files (`git restore --source origin/main <files>` and clean untracked draft files), and implement the clean greenfield design in one direct pass.
+3. **Proceed:** (High bar). Choose this only if the change is justified and the draft already matches the greenfield design with zero compensatory layering or journey sediment.
