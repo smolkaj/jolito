@@ -7,21 +7,12 @@ base territory, and territory exclusions. No StoreKit purchases are needed.
 
 ## Status and external dependencies
 
-**Not submitted.** An unsigned native build, browser screenshots, or passing
-unit tests do not establish App Store readiness. Before publication we need:
+**In TestFlight internal testing.** Apple Developer enrollment, App Store Connect app record (`to.joli.app`, Adam ID `6812974166`), distribution certificate, provisioning profile, and GitHub release credentials are fully configured. Build 1 (`1.0 (1)`) is built, signed, and uploaded to TestFlight for internal testing. Before publication we need:
 
-- Individual Apple Developer enrollment and identity verification, completed
-  by Steffen. Apple's membership costs US$99/year; this distribution expense
-  is accepted for this launch. Hosting, sync, and speech remain free.
-- An active Paid Apps Agreement, bank/tax information, and applicable regional
-  declarations, completed by the account holder in Apple's portal. For EU
-  availability, complete Apple's trader-status assessment and verification.
-  Do not infer personal legal declarations from the repository.
-- An App Store Connect record for `to.joli.app`, SKU `to-joli-app`, primary
-  language English (US), iOS platform. Reserve the listed name from
-  `fastlane/metadata/en-US/name.txt`; report any name conflict before changing it.
-- Signing credentials, a processed TestFlight candidate, physical iPhone/iPad
-  validation, completed listing declarations, and App Review approval.
+- Physical iPhone/iPad validation of the TestFlight build (sign-in, card operations, offline mode, audio interruption).
+- Active Paid Apps Agreement, bank/tax information, and applicable regional declarations (including EU trader status) confirmed in Apple's portal.
+- Upload native screenshots (`fastlane/metadata/`) and complete App Privacy and Age Rating questionnaires in App Store Connect.
+- App Review approval and release.
 
 Apple account enrollment and legal attestations are account-holder actions.
 Technical configuration remains versioned and repeatable. If a territory is
@@ -45,14 +36,22 @@ Use an App Manager API key with access to Jolito. Create the explicit App ID,
 Apple Distribution certificate, and App Store profile under the enrolled team.
 A Mac is optional for initial signing setup: create the private key and CSR
 with OpenSSL, submit the CSR in Apple's Certificates portal, download the
-signed `.cer`, and export a modern PKCS#12 bundle. Run these in a private
-credential directory **outside the repository**:
+signed `.cer`, and export a PKCS#12 bundle compatible with both macOS Keychain
+and Ruby 3.3. Run these in a private credential directory **outside the repository**:
 
 ```sh
 openssl req -new -newkey rsa:2048 -nodes -keyout distribution.key -out distribution.csr
 # Upload distribution.csr to Apple and download distribution.cer.
 openssl x509 -inform DER -in distribution.cer -out distribution.pem
-openssl pkcs12 -export -inkey distribution.key -in distribution.pem -out distribution.p12
+# Use legacy 3DES/SHA1 cipher suite: OpenSSL 3's default AES-256 PBKDF2 fails macOS Keychain import,
+# while -legacy (RC2-40-CBC) fails modern Ruby 3.3 OpenSSL runtime checks.
+openssl pkcs12 -export \
+  -certpbe PBE-SHA1-3DES \
+  -keypbe PBE-SHA1-3DES \
+  -macalg sha1 \
+  -inkey distribution.key \
+  -in distribution.pem \
+  -out distribution.p12
 ```
 
 OpenSSL prompts for the certificate identity and export password; do not put
@@ -150,7 +149,7 @@ mailbox, privileged account, or hidden authentication bypass.
 1. Complete repository gates and independent general/design review on the
    exact PR base/head. Get explicit user approval before merging. Share the PR
    and branch preview; do not push directly to main.
-2. Dispatch **App Store Production Deployment → configure**. It resolves
+2. Dispatch **App Store Production Deployment → configure** (via GitHub Actions web UI or `gh workflow run appstore.yml -f operation=configure`). It resolves
    Apple's current US$2.99 price point, sets only the US base price (Apple
    manages equivalents), configures territories from `release.json`, and reads
    the settings back. Locally, the equivalents are:
@@ -165,7 +164,7 @@ mailbox, privileged account, or hidden authentication bypass.
    Live API validation is still required after enrollment; mocked tests cannot
    prove that Apple's account agreements or storefront eligibility are ready.
 
-3. Dispatch **TestFlight Beta Deployment** on the approved main commit. It
+3. Dispatch **TestFlight Beta Deployment** on the approved main commit (via GitHub Actions web UI or `gh workflow run testflight.yml && gh run watch`). It
    builds once, assigns the next build number for version 1.0, uploads, and
    waits for processing. Download `ios-release-<commit>`: it contains the IPA
    and `release.json` with version, build number, and commit. Add Steffen as an
@@ -184,7 +183,7 @@ mailbox, privileged account, or hidden authentication bypass.
    age/export/regional declarations and private review information. Run the
    read-only price check and verify it shows the expected configuration.
 6. Dispatch **App Store Production Deployment → submit**, specifying the exact
-   tested build number from the artifact. The lane cannot rebuild or fall back
+   tested build number from the artifact (via GitHub Actions web UI or `gh workflow run appstore.yml -f operation=submit -f build_number=<tested_build_number>`). The lane cannot rebuild or fall back
    to “latest.” It submits that version/build and requests automatic release
    after Apple approval. Any build change requires new device validation.
 7. Address review findings, then verify the public listing, US$2.99 purchase
