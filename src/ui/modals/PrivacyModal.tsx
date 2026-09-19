@@ -1,4 +1,5 @@
 import { Fragment, useEffect } from 'react'
+import type { HapticsPlayer } from '../../application/ports'
 import { ShieldIcon } from '../icons'
 import { PRIVACY_SECTIONS } from '../../domain/privacy-content'
 import { ModalSheet } from './ModalSheet'
@@ -6,9 +7,10 @@ import { ModalSheet } from './ModalSheet'
 export interface PrivacyModalProps {
   isOpen: boolean
   onClose: () => void
+  haptics?: HapticsPlayer | undefined
 }
 
-export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
+export function PrivacyModal({ isOpen, onClose, haptics }: PrivacyModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -29,6 +31,7 @@ export function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
       onClose={onClose}
       className="privacy-modal"
       ariaLabelledBy="privacy-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { HapticsPlayer } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { ModalSheet } from './ModalSheet'
 
@@ -8,6 +9,7 @@ export interface DeleteCardsModalProps {
   onClose: () => void
   onConfirm: (cards: StudyCard[]) => void
   saveError: string | null
+  haptics?: HapticsPlayer | undefined
 }
 
 export function DeleteCardsModal({
@@ -16,6 +18,7 @@ export function DeleteCardsModal({
   onClose,
   onConfirm,
   saveError,
+  haptics,
 }: DeleteCardsModalProps) {
   const [submitAttempt, setSubmitAttempt] = useState(0)
   const errorRef = useRef<HTMLParagraphElement>(null)
@@ -47,6 +50,7 @@ export function DeleteCardsModal({
       onClose={onClose}
       className="delete-card-modal"
       ariaLabelledBy="delete-card-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">

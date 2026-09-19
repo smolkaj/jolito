@@ -6003,5 +6003,31 @@ describe('Jolito', () => {
       ).toBeInTheDocument()
       expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
     })
+
+    it('wires haptics to modal sheets and triggers haptic feedback on drag threshold', () => {
+      const services = createTestServices()
+      const triggerSpy = vi.spyOn(services.haptics, 'trigger')
+
+      const { container } = render(<App services={services} />)
+
+      // Open sync modal via ConnectionPill in welcome view
+      const signInBtn = screen.getByRole('button', { name: /sign in/i })
+      fireEvent.click(signInBtn)
+
+      expect(
+        screen.getByRole('dialog', { name: /Cloud sync|Save your card/i }),
+      ).toBeInTheDocument()
+
+      const grabber = container.querySelector(
+        '.sync-modal .sheet-grabber-zone',
+      )!
+      expect(grabber).toBeInTheDocument()
+
+      // Drag grabber past threshold
+      fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
+      fireEvent.pointerMove(grabber, { clientY: 200 })
+
+      expect(triggerSpy).toHaveBeenCalledWith('selection')
+    })
   })
 })

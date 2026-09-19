@@ -62,7 +62,7 @@ export function PracticeCard({
   children?: ReactNode
   correctionRule?: string
   error?: string | null
-  haptics?: HapticsPlayer
+  haptics?: HapticsPlayer | undefined
 }) {
   const answerLang = localeForAnswer(card)
   const answerId = useId()
@@ -186,6 +186,7 @@ export function PracticeCard({
   } | null>(null)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const activeZoneRef = useRef<Grade | null>(null)
+  const exitTimerRef = useRef<number | null>(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
   const [prevRevealed, setPrevRevealed] = useState(revealed)
 
@@ -204,6 +205,14 @@ export function PracticeCard({
   }, [card.id, revealed])
 
   useEffect(() => {
+    return () => {
+      if (exitTimerRef.current !== null) {
+        window.clearTimeout(exitTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isAnimatingExit) return undefined
     const timer = window.setTimeout(() => {
       setIsAnimatingExit(false)
@@ -216,6 +225,7 @@ export function PracticeCard({
   }, [isAnimatingExit])
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.pointerType !== 'touch') return
     if (paused || isAnimatingExit || pointerStartRef.current !== null) return
     if (event.button !== 0) return
     const target = event.target as HTMLElement | null
@@ -244,7 +254,7 @@ export function PracticeCard({
     const dy = event.clientY - start.y
 
     if (!isDragging) {
-      if (Math.hypot(dx, dy) > 8) {
+      if (revealed && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) {
         setIsDragging(true)
         if (cardRef.current && event.pointerId !== undefined) {
           try {
@@ -259,17 +269,15 @@ export function PracticeCard({
     }
 
     if (revealed) {
-      dragOffsetRef.current = { x: dx, y: dy }
-      setDragOffset({ x: dx, y: dy })
+      dragOffsetRef.current = { x: dx, y: 0 }
+      setDragOffset({ x: dx, y: 0 })
 
       const THRESHOLD = 75
       let nextZone: Grade | null = null
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx < -THRESHOLD) nextZone = 'again'
-        else if (dx > THRESHOLD) nextZone = 'good'
-      } else {
-        if (dy < -THRESHOLD) nextZone = 'easy'
-        else if (dy > THRESHOLD) nextZone = 'hard'
+      if (dx < -THRESHOLD) {
+        nextZone = 'again'
+      } else if (dx > THRESHOLD) {
+        nextZone = 'good'
       }
 
       if (nextZone !== activeZoneRef.current) {
@@ -278,12 +286,6 @@ export function PracticeCard({
         if (nextZone !== null) {
           haptics?.trigger('selection')
         }
-      }
-    } else {
-      if (dy < 0) {
-        const cappedDy = Math.max(-50, dy * 0.4)
-        dragOffsetRef.current = { x: 0, y: cappedDy }
-        setDragOffset({ x: 0, y: cappedDy })
       }
     }
   }
@@ -325,20 +327,12 @@ export function PracticeCard({
 
     if (currentActiveZone) {
       setIsAnimatingExit(true)
-      const exitX =
-        currentActiveZone === 'again'
-          ? -360
-          : currentActiveZone === 'good'
-            ? 360
-            : dragOffsetRef.current.x
-      const exitY =
-        currentActiveZone === 'easy'
-          ? -360
-          : currentActiveZone === 'hard'
-            ? 360
-            : dragOffsetRef.current.y
-      setDragOffset({ x: exitX, y: exitY })
-      onGrade(currentActiveZone)
+      const exitX = currentActiveZone === 'again' ? -360 : 360
+      setDragOffset({ x: exitX, y: 0 })
+      const gradeToSubmit = currentActiveZone
+      exitTimerRef.current = window.setTimeout(() => {
+        onGrade(gradeToSubmit)
+      }, 200)
     } else {
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
@@ -422,39 +416,6 @@ export function PracticeCard({
             <span className="badge-key">3</span>
             <span className="badge-label">GOOD</span>
           </div>
-          <div
-            className={`gesture-zone-badge zone-easy ${activeZone === 'easy' ? 'is-active' : ''}`}
-            style={{
-              opacity:
-                activeZone === 'easy'
-                  ? 1
-                  : dragOffset.y < -15
-                    ? Math.min(0.85, Math.abs(dragOffset.y) / 75)
-                    : 0,
-            }}
-          >
-            <span className="badge-key">4</span>
-            <span className="badge-label">EASY</span>
-          </div>
-          <div
-            className={`gesture-zone-badge zone-hard ${activeZone === 'hard' ? 'is-active' : ''}`}
-            style={{
-              opacity:
-                activeZone === 'hard'
-                  ? 1
-                  : dragOffset.y > 15
-                    ? Math.min(0.85, Math.abs(dragOffset.y) / 75)
-                    : 0,
-            }}
-          >
-            <span className="badge-key">2</span>
-            <span className="badge-label">HARD</span>
-          </div>
-        </div>
-      )}
-      {!revealed && (
-        <div className="card-unrevealed-cue" aria-hidden="true">
-          <span className="touch-cue-text">Tap or swipe up to reveal</span>
         </div>
       )}
       {prompt}

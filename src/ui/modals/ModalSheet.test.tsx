@@ -28,7 +28,8 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     expect(grabber).toHaveAttribute('aria-hidden', 'true')
   })
 
-  it('dismisses modal and triggers haptics when dragged down past threshold', () => {
+  it('animates downward and calls onClose after 240ms exit animation when dragged down past threshold', () => {
+    vi.useFakeTimers()
     const onClose = vi.fn()
     const { trigger, haptics } = createMockHaptics()
 
@@ -44,6 +45,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     )
 
     const grabber = container.querySelector('.sheet-grabber-zone')!
+    const sheet = container.querySelector('.modal-sheet')!
 
     // Drag down 100px (past 85px threshold)
     fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
@@ -53,7 +55,14 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
 
     fireEvent.pointerUp(grabber, { clientY: 200 })
 
+    // Immediately after release: is-closing-sheet class applied, animate downward, onClose not yet called
+    expect(sheet).toHaveClass('is-closing-sheet')
+    expect(onClose).not.toHaveBeenCalled()
+
+    // Advance through exit animation (240ms)
+    vi.advanceTimersByTime(240)
     expect(onClose).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 
   it('springs back to position and does not dismiss when dragged below threshold', () => {
@@ -72,6 +81,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     )
 
     const grabber = container.querySelector('.sheet-grabber-zone')!
+    const sheet = container.querySelector('.modal-sheet')!
 
     // Drag down only 30px (below 85px threshold)
     fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
@@ -79,6 +89,8 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     fireEvent.pointerUp(grabber, { clientY: 130 })
 
     expect(onClose).not.toHaveBeenCalled()
+    // Snapback animates back to 0 with transition active
+    expect(sheet).toHaveStyle({ transform: 'translateY(0px)' })
   })
 
   it('calls onClose when clicking backdrop', () => {
@@ -128,6 +140,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
   })
 
   it('safely handles drag and dismiss without explicit haptics prop', () => {
+    vi.useFakeTimers()
     const onClose = vi.fn()
     const { container } = render(
       <ModalSheet isOpen={true} onClose={onClose}>
@@ -141,6 +154,8 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     fireEvent.pointerMove(grabber, { clientY: 200 })
     fireEvent.pointerUp(grabber, { clientY: 200 })
 
+    vi.advanceTimersByTime(240)
     expect(onClose).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 })

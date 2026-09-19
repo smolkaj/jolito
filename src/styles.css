@@ -5967,10 +5967,15 @@ kbd {
 
 /* Milestone 1: Gestural Practice Canvas */
 .study-card {
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
+  touch-action: pan-y;
   will-change: transform;
+}
+
+.study-prompt,
+.reveal-main,
+.reveal-context-block {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .study-card input,
@@ -5981,6 +5986,8 @@ kbd {
 
 .study-card.is-dragging {
   cursor: grabbing;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .study-card.zone-again {
@@ -6240,7 +6247,8 @@ kbd {
     border: 1.5px solid var(--paper);
   }
 
-  /* Reachability for long scrollable deck contents under fixed mobile tab bar */
+  /* Reachability for pages and scrollable deck contents under fixed mobile tab bar */
+  .app-shell:not(.welcome-page),
   .deck-cards-list,
   .deck-manager-table-wrap {
     padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
@@ -6249,6 +6257,12 @@ kbd {
   /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */
   .topbar-nav-btn {
     display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell:not(.welcome-page) {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 }
 

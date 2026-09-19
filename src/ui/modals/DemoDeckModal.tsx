@@ -1,16 +1,19 @@
 import { useEffect } from 'react'
+import type { HapticsPlayer } from '../../application/ports'
 import { ModalSheet } from './ModalSheet'
 
 export interface DemoDeckModalProps {
   isOpen: boolean
   onClose: () => void
   onSignIn: () => void
+  haptics?: HapticsPlayer | undefined
 }
 
 export function DemoDeckModal({
   isOpen,
   onClose,
   onSignIn,
+  haptics,
 }: DemoDeckModalProps) {
   useEffect(() => {
     if (!isOpen) return
@@ -33,6 +36,7 @@ export function DemoDeckModal({
       backdropClassName="demo-deck-modal-backdrop"
       className="demo-deck-modal"
       ariaLabelledBy="demo-deck-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">

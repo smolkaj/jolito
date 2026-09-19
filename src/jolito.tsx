@@ -1172,6 +1172,7 @@ function LoadedApp({
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
         onOpenPrivacy={openPrivacyModal}
         onOpenFeedback={openFeedbackModal}
+        haptics={services.haptics}
       />
       <EditCardModal
         saveError={saveError}
@@ -1183,6 +1184,7 @@ function LoadedApp({
         onPlayAudio={playAudio}
         aiAssistant={services.aiAssistant}
         isOnline={isOnline}
+        haptics={services.haptics}
       />
       <DeleteCardsModal
         saveError={saveError}
@@ -1190,6 +1192,7 @@ function LoadedApp({
         cards={deletingCards}
         onClose={() => setDeletingCards(null)}
         onConfirm={handleConfirmDelete}
+        haptics={services.haptics}
       />
       <FeedbackModal
         isOpen={isFeedbackOpen}
@@ -1197,8 +1200,13 @@ function LoadedApp({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
+        haptics={services.haptics}
       />
-      <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={closePrivacyModal}
+        haptics={services.haptics}
+      />
     </>
   )
 

@@ -1,5 +1,9 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
-import type { AuthUser, FeedbackService } from '../../application/ports'
+import type {
+  AuthUser,
+  FeedbackService,
+  HapticsPlayer,
+} from '../../application/ports'
 import type { View } from '../../navigation'
 import { ModalSheet } from './ModalSheet'
 
@@ -8,11 +12,13 @@ function FeedbackModalInner({
   user,
   feedbackService,
   currentView,
+  haptics,
 }: {
   onClose: () => void
   user: AuthUser | null
   feedbackService: FeedbackService
   currentView: View
+  haptics?: HapticsPlayer | undefined
 }) {
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -88,6 +94,7 @@ function FeedbackModalInner({
       backdropClassName="feedback-modal-backdrop"
       className="feedback-modal"
       ariaLabelledBy="feedback-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">
@@ -186,19 +193,23 @@ function FeedbackModalInner({
   )
 }
 
+export interface FeedbackModalProps {
+  isOpen: boolean
+  onClose: () => void
+  user: AuthUser | null
+  feedbackService: FeedbackService
+  currentView: View
+  haptics?: HapticsPlayer | undefined
+}
+
 export function FeedbackModal({
   isOpen,
   onClose,
   user,
   feedbackService,
   currentView,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  user: AuthUser | null
-  feedbackService: FeedbackService
-  currentView: View
-}) {
+  haptics,
+}: FeedbackModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -219,6 +230,7 @@ export function FeedbackModal({
       user={user}
       feedbackService={feedbackService}
       currentView={currentView}
+      haptics={haptics}
     />
   )
 }

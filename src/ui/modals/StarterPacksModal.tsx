@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { HapticsPlayer } from '../../application/ports'
 import { filterOutStarterCards } from '../../application/starter-cards'
 import type { StudyCard } from '../../domain/card'
 import { normalizeCardKey } from '../../domain/duplicate'
 import { starterPacks, type StarterPack } from '../../domain/starter-decks'
 import { ModalSheet } from './ModalSheet'
 
-interface StarterPacksModalProps {
+export interface StarterPacksModalProps {
   isOpen: boolean
   onClose: () => void
   saveErrorMessage?: string | null
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => boolean | void
   onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
+  haptics?: HapticsPlayer | undefined
 }
 
 function StarterPacksModalInner({
@@ -20,12 +22,14 @@ function StarterPacksModalInner({
   cards,
   onAddPack,
   onAddNote,
+  haptics,
 }: {
   onClose: () => void
   saveErrorMessage?: string | null
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => boolean | void
   onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
+  haptics?: HapticsPlayer | undefined
 }) {
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -177,6 +181,7 @@ function StarterPacksModalInner({
       backdropClassName="starter-packs-modal-backdrop"
       className={`starter-packs-modal ${inspectingPack ? 'is-inspecting' : ''}`.trim()}
       ariaLabelledBy="starter-packs-modal-title"
+      haptics={haptics}
     >
       {saveError > 0 && (
         <p ref={saveErrorRef} role="alert" tabIndex={-1}>

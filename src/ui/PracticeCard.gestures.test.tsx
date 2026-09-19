@@ -24,7 +24,8 @@ const mockCards = createStudyCards(
 )
 
 describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
-  it('swipes left to grade "again" and triggers haptic threshold feedback', () => {
+  it('swipes left to grade "again" with deferred exit animation and haptics', () => {
+    vi.useFakeTimers()
     const card = mockCards[0]!
     const onGrade = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -47,21 +48,41 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const studyCard = container.querySelector('.study-card')!
 
-    // Start drag
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
-    // Move left past threshold (80px left: dx = -100)
-    fireEvent.pointerMove(studyCard, { clientX: 100, clientY: 200 })
+    // Start touch drag
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    // Move left past threshold (dx = -100)
+    fireEvent.pointerMove(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
     // Haptic should be triggered when passing decision threshold
     expect(trigger).toHaveBeenCalledWith('selection')
 
     // Release pointer
-    fireEvent.pointerUp(studyCard, { clientX: 100, clientY: 200 })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
+    // onGrade is deferred while the exit fling animation completes
+    expect(onGrade).not.toHaveBeenCalled()
+
+    // Advance through exit animation (200ms)
+    vi.advanceTimersByTime(200)
     expect(onGrade).toHaveBeenCalledWith('again')
+    vi.useRealTimers()
   })
 
-  it('swipes right to grade "good" and triggers haptic threshold feedback', () => {
+  it('swipes right to grade "good" with deferred exit animation and haptics', () => {
+    vi.useFakeTimers()
     const card = mockCards[0]!
     const onGrade = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -84,16 +105,34 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const studyCard = container.querySelector('.study-card')!
 
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
     // Move right past threshold (dx = +100)
-    fireEvent.pointerMove(studyCard, { clientX: 300, clientY: 200 })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 300,
+      clientY: 200,
+      pointerType: 'touch',
+    })
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.pointerUp(studyCard, { clientX: 300, clientY: 200 })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 300,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    expect(onGrade).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(200)
     expect(onGrade).toHaveBeenCalledWith('good')
+    vi.useRealTimers()
   })
 
-  it('swipes up to grade "easy" and triggers haptic threshold feedback', () => {
+  it('does not trigger grades on vertical touch drags, preserving natural vertical scrolling', () => {
+    vi.useFakeTimers()
     const card = mockCards[0]!
     const onGrade = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -116,28 +155,67 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const studyCard = container.querySelector('.study-card')!
 
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
-    // Move up past threshold (dy = -100)
-    fireEvent.pointerMove(studyCard, { clientX: 200, clientY: 100 })
-    expect(trigger).toHaveBeenCalledWith('selection')
+    // Swipe up (dy = -100)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 100,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 100,
+      pointerType: 'touch',
+    })
 
-    fireEvent.pointerUp(studyCard, { clientX: 200, clientY: 100 })
-    expect(onGrade).toHaveBeenCalledWith('easy')
+    vi.advanceTimersByTime(300)
+    expect(onGrade).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+
+    // Swipe down (dy = +100)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 300,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 300,
+      pointerType: 'touch',
+    })
+
+    vi.advanceTimersByTime(300)
+    expect(onGrade).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 
-  it('swipes down to grade "hard" and triggers haptic threshold feedback', () => {
+  it('ignores mouse/desktop pointer gestures to restore natural text selection and clicks', () => {
+    vi.useFakeTimers()
     const card = mockCards[0]!
     const onGrade = vi.fn()
+    const onReveal = vi.fn()
     const { trigger, haptics } = createMockHaptics()
 
-    const { container } = render(
+    const { container, rerender } = render(
       <PracticeCard
         card={card}
         prompt={<h1>{card.prompt}</h1>}
         answer=""
         revealed={true}
         onAnswerChange={vi.fn()}
-        onReveal={vi.fn()}
+        onReveal={onReveal}
         onGrade={onGrade}
         onPlayAnswer={vi.fn()}
         paused={false}
@@ -148,13 +226,60 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const studyCard = container.querySelector('.study-card')!
 
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
-    // Move down past threshold (dy = +100)
-    fireEvent.pointerMove(studyCard, { clientX: 200, clientY: 300 })
-    expect(trigger).toHaveBeenCalledWith('selection')
+    // Mouse drag past threshold (pointerType: 'mouse')
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'mouse',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'mouse',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'mouse',
+    })
 
-    fireEvent.pointerUp(studyCard, { clientX: 200, clientY: 300 })
-    expect(onGrade).toHaveBeenCalledWith('hard')
+    vi.advanceTimersByTime(300)
+    expect(onGrade).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
+
+    // Unrevealed mouse click / selection should not tap-to-reveal
+    rerender(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const promptHeader = screen.getByRole('heading', { name: card.prompt })
+    fireEvent.pointerDown(promptHeader, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'mouse',
+    })
+    fireEvent.pointerUp(promptHeader, {
+      clientX: 201,
+      clientY: 201,
+      pointerType: 'mouse',
+    })
+
+    expect(onReveal).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 
   it('springs back and does not grade when drag is below decision threshold', () => {
@@ -180,10 +305,23 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const studyCard = container.querySelector('.study-card')!
 
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
     // Move slightly (only 30px, below 75px threshold)
-    fireEvent.pointerMove(studyCard, { clientX: 230, clientY: 200 })
-    fireEvent.pointerUp(studyCard, { clientX: 230, clientY: 200 })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 230,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 230,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
     expect(onGrade).not.toHaveBeenCalled()
   })
@@ -209,45 +347,19 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    // Tap on prompt area
+    // Tap on prompt area with touch
     const promptHeader = screen.getByRole('heading', { name: card.prompt })
     fireEvent.pointerDown(promptHeader, {
       clientX: 200,
       clientY: 200,
       button: 0,
+      pointerType: 'touch',
     })
-    fireEvent.pointerUp(promptHeader, { clientX: 202, clientY: 201 })
-
-    expect(onReveal).toHaveBeenCalledTimes(1)
-    expect(trigger).toHaveBeenCalledWith('selection')
-  })
-
-  it('reveals answer on swipe up when unrevealed', () => {
-    const card = mockCards[0]!
-    const onReveal = vi.fn()
-    const { trigger, haptics } = createMockHaptics()
-
-    const { container } = render(
-      <PracticeCard
-        card={card}
-        prompt={<h1>{card.prompt}</h1>}
-        answer=""
-        revealed={false}
-        onAnswerChange={vi.fn()}
-        onReveal={onReveal}
-        onGrade={vi.fn()}
-        onPlayAnswer={vi.fn()}
-        paused={false}
-        audioUnavailable={false}
-        haptics={haptics}
-      />,
-    )
-
-    const studyCard = container.querySelector('.study-card')!
-
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 300, button: 0 })
-    fireEvent.pointerMove(studyCard, { clientX: 200, clientY: 220 })
-    fireEvent.pointerUp(studyCard, { clientX: 200, clientY: 220 })
+    fireEvent.pointerUp(promptHeader, {
+      clientX: 202,
+      clientY: 201,
+      pointerType: 'touch',
+    })
 
     expect(onReveal).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
@@ -276,14 +388,27 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const input = screen.getByRole('textbox')
 
-    fireEvent.pointerDown(input, { clientX: 200, clientY: 200, button: 0 })
-    fireEvent.pointerMove(input, { clientX: 100, clientY: 200 })
-    fireEvent.pointerUp(input, { clientX: 100, clientY: 200 })
+    fireEvent.pointerDown(input, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(input, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(input, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
     expect(onReveal).not.toHaveBeenCalled()
   })
 
-  it('renders all four dynamic gesture overlay badges in revealed state', () => {
+  it('renders horizontal dynamic gesture overlay badges (again and good) in revealed state', () => {
     const card = mockCards[0]!
 
     const { container } = render(
@@ -309,10 +434,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     ).toBeInTheDocument()
     expect(
       container.querySelector('.gesture-zone-badge.zone-easy'),
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
     expect(
       container.querySelector('.gesture-zone-badge.zone-hard'),
-    ).toBeInTheDocument()
+    ).not.toBeInTheDocument()
   })
 
   it('does not reveal on horizontal swipe when unrevealed', () => {
@@ -339,9 +464,22 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     const studyCard = container.querySelector('.study-card')!
 
     // Horizontal swipe (dx = 120px, dy = 0)
-    fireEvent.pointerDown(studyCard, { clientX: 100, clientY: 200, button: 0 })
-    fireEvent.pointerMove(studyCard, { clientX: 220, clientY: 200 })
-    fireEvent.pointerUp(studyCard, { clientX: 220, clientY: 200 })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 220,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 220,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
     expect(onReveal).not.toHaveBeenCalled()
     expect(trigger).not.toHaveBeenCalled()
@@ -371,9 +509,22 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     const input = screen.getByRole('textbox')
 
     // Swipe up starting on input
-    fireEvent.pointerDown(input, { clientX: 200, clientY: 300, button: 0 })
-    fireEvent.pointerMove(input, { clientX: 200, clientY: 200 })
-    fireEvent.pointerUp(input, { clientX: 200, clientY: 200 })
+    fireEvent.pointerDown(input, {
+      clientX: 200,
+      clientY: 300,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(input, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(input, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
     expect(onReveal).not.toHaveBeenCalled()
     expect(trigger).not.toHaveBeenCalled()
@@ -403,9 +554,23 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     const studyCard = container.querySelector('.study-card')!
 
     // Right click (button = 2)
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 2 })
-    fireEvent.pointerMove(studyCard, { clientX: 100, clientY: 200 })
-    fireEvent.pointerUp(studyCard, { clientX: 100, clientY: 200, button: 2 })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 2,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      button: 2,
+      pointerType: 'touch',
+    })
 
     expect(onGrade).not.toHaveBeenCalled()
     expect(trigger).not.toHaveBeenCalled()
@@ -435,10 +600,24 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     const studyCard = container.querySelector('.study-card')!
 
     // Grade again (swipe left)
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
-    fireEvent.pointerMove(studyCard, { clientX: 100, clientY: 200 })
-    fireEvent.pointerUp(studyCard, { clientX: 100, clientY: 200 })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 100,
+      clientY: 200,
+      pointerType: 'touch',
+    })
 
+    vi.advanceTimersByTime(200)
     expect(onGrade).toHaveBeenCalledWith('again')
 
     // Same card remains, flipped back to unrevealed
@@ -458,8 +637,17 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     )
 
     // Tap to reveal should now work immediately
-    fireEvent.pointerDown(studyCard, { clientX: 200, clientY: 200, button: 0 })
-    fireEvent.pointerUp(studyCard, { clientX: 201, clientY: 201 })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 201,
+      clientY: 201,
+      pointerType: 'touch',
+    })
 
     expect(onReveal).toHaveBeenCalledTimes(1)
     vi.useRealTimers()

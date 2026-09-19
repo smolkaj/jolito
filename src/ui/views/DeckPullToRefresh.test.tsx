@@ -64,8 +64,12 @@ describe('DeckManagerView Pull-to-Refresh (Milestone 3)', () => {
     const mainElement = container.querySelector('main.deck-page')!
 
     // Initiate pull-down at top (deltaY = 150px -> pull distance > 55px)
-    fireEvent.pointerDown(mainElement, { clientY: 100, button: 0 })
-    fireEvent.pointerMove(mainElement, { clientY: 250 })
+    fireEvent.pointerDown(mainElement, {
+      clientY: 100,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(mainElement, { clientY: 250, pointerType: 'touch' })
 
     expect(trigger).toHaveBeenCalledWith('selection')
 
@@ -74,6 +78,58 @@ describe('DeckManagerView Pull-to-Refresh (Milestone 3)', () => {
     await waitFor(() => {
       expect(onRefreshSync).toHaveBeenCalledTimes(1)
     })
+  })
+
+  it('ignores mouse pointers for pull-to-refresh', () => {
+    const onRefreshSync = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <DeckManagerView
+        cards={mockCards}
+        vocabularyCards={mockCards}
+        referenceTime={1000}
+        saveError={null}
+        deletedCardIds={[]}
+        queue={[]}
+        dueCount={0}
+        authUser={{ id: 'u1', email: 'test@example.com' }}
+        syncStatus="idle"
+        isOnline={true}
+        accountNotice={null}
+        redirectAuthBanner={null}
+        onDismissAccountNotice={vi.fn()}
+        onDismissRedirectBanner={vi.fn()}
+        onGoHome={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+        onPractice={vi.fn()}
+        onOpenSync={vi.fn()}
+        onOpenFeedback={vi.fn()}
+        onOpenPrivacy={vi.fn()}
+        onEditCard={vi.fn()}
+        onDeleteCards={vi.fn()}
+        onUpdateCards={vi.fn()}
+        onAddStarterPack={vi.fn()}
+        onAddStarterNote={vi.fn()}
+        clock={{ now: () => 1000 }}
+        onRefreshSync={onRefreshSync}
+        haptics={haptics}
+      />,
+    )
+
+    const mainElement = container.querySelector('main.deck-page')!
+
+    // Mouse drag down (pointerType: 'mouse')
+    fireEvent.pointerDown(mainElement, {
+      clientY: 100,
+      button: 0,
+      pointerType: 'mouse',
+    })
+    fireEvent.pointerMove(mainElement, { clientY: 250, pointerType: 'mouse' })
+    fireEvent.pointerUp(mainElement, { pointerType: 'mouse' })
+
+    expect(onRefreshSync).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
   })
 
   it('does not trigger onRefreshSync when pull is below threshold', () => {
@@ -116,8 +172,12 @@ describe('DeckManagerView Pull-to-Refresh (Milestone 3)', () => {
     const mainElement = container.querySelector('main.deck-page')!
 
     // Pull down only slightly (deltaY = 30px)
-    fireEvent.pointerDown(mainElement, { clientY: 100, button: 0 })
-    fireEvent.pointerMove(mainElement, { clientY: 130 })
+    fireEvent.pointerDown(mainElement, {
+      clientY: 100,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(mainElement, { clientY: 130, pointerType: 'touch' })
     fireEvent.pointerUp(mainElement)
 
     expect(onRefreshSync).not.toHaveBeenCalled()
@@ -162,8 +222,12 @@ describe('DeckManagerView Pull-to-Refresh (Milestone 3)', () => {
 
     const mainElement = container.querySelector('main.deck-page')!
 
-    fireEvent.pointerDown(mainElement, { clientY: 100, button: 2 })
-    fireEvent.pointerMove(mainElement, { clientY: 250 })
+    fireEvent.pointerDown(mainElement, {
+      clientY: 100,
+      button: 2,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(mainElement, { clientY: 250, pointerType: 'touch' })
     fireEvent.pointerUp(mainElement)
 
     expect(onRefreshSync).not.toHaveBeenCalled()
@@ -209,8 +273,12 @@ describe('DeckManagerView Pull-to-Refresh (Milestone 3)', () => {
 
     const mainElement = container.querySelector('main.deck-page')!
 
-    fireEvent.pointerDown(mainElement, { clientY: 100, button: 0 })
-    fireEvent.pointerMove(mainElement, { clientY: 250 })
+    fireEvent.pointerDown(mainElement, {
+      clientY: 100,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(mainElement, { clientY: 250, pointerType: 'touch' })
     expect(trigger).toHaveBeenCalledWith('selection')
 
     fireEvent.pointerCancel(mainElement)

@@ -7,6 +7,7 @@ import { downloadJsonFile } from '../../infrastructure/browser/download'
 import { applyAnkiImport } from '../../application/anki-import'
 import { parseAnkiDeck, type ParseAnkiResult } from '../../domain/anki-import'
 import type { StudyCard } from '../../domain/card'
+import type { HapticsPlayer } from '../../application/ports'
 import { ModalSheet } from './ModalSheet'
 
 export interface DeckBackupModalProps {
@@ -21,6 +22,7 @@ export interface DeckBackupModalProps {
     newDeletedCardIds?: string[],
   ) => boolean | void
   clock: { now(): number }
+  haptics?: HapticsPlayer | undefined
 }
 
 function DeckBackupModalInner({
@@ -30,6 +32,7 @@ function DeckBackupModalInner({
   deletedCardIds,
   onUpdateCards,
   clock,
+  haptics,
 }: Omit<DeckBackupModalProps, 'isOpen'>) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -194,6 +197,7 @@ function DeckBackupModalInner({
       onClose={onClose}
       className="backup-modal"
       ariaLabelledBy="backup-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">

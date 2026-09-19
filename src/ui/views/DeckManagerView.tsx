@@ -59,7 +59,7 @@ export interface DeckManagerViewProps {
   onAddStarterNote: (pack: StarterPack, noteIndex: number) => boolean | void
   clock: { now(): number }
   onRefreshSync?: () => Promise<unknown> | void
-  haptics?: HapticsPlayer
+  haptics?: HapticsPlayer | undefined
 }
 
 export function DeckManagerView({
@@ -205,7 +205,14 @@ export function DeckManagerView({
   const hasPointerCaptureRef = useRef(false)
 
   const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
-    if (isRefreshing || pullStartYRef.current !== null || e.button !== 0) return
+    if (
+      e.pointerType !== 'touch' ||
+      isRefreshing ||
+      pullStartYRef.current !== null ||
+      e.button !== 0
+    ) {
+      return
+    }
     const target = e.target as HTMLElement | null
     if (
       target?.closest('button, input, textarea, a, select, [role="button"]')
@@ -754,6 +761,7 @@ export function DeckManagerView({
         cards={cards}
         onAddPack={onAddStarterPack}
         onAddNote={onAddStarterNote}
+        haptics={haptics}
       />
 
       <DeckBackupModal
@@ -764,12 +772,14 @@ export function DeckManagerView({
         deletedCardIds={deletedCardIds}
         onUpdateCards={onUpdateCards}
         clock={clock}
+        haptics={haptics}
       />
 
       <DemoDeckModal
         isOpen={!authUser && !isDemoDeckDismissed}
         onClose={() => setIsDemoDeckDismissed(true)}
         onSignIn={onOpenSync}
+        haptics={haptics}
       />
     </>
   )

@@ -13,7 +13,7 @@ export interface MobileTabBarProps {
   onNavigateToDeck: () => void
   onNavigateToCreate: () => void
   onOpenSync: () => void
-  haptics?: HapticsPlayer
+  haptics?: HapticsPlayer | undefined
 }
 
 function PracticeTabIcon({ size = 22 }: { size?: number }) {
@@ -109,12 +109,14 @@ export function MobileTabBar({
         aria-current={isPracticeActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isPracticeActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onPractice)}
-        aria-label="Practice"
+        aria-label={
+          dueCount > 0 ? `Practice (${dueCount} cards due)` : 'Practice'
+        }
       >
         <div className="tab-icon-wrapper">
           <PracticeTabIcon />
           {dueCount > 0 && !isPracticeActive && (
-            <span className="tab-badge" aria-label={`${dueCount} cards due`}>
+            <span className="tab-badge" aria-hidden="true">
               {dueCount > 99 ? '99+' : dueCount}
             </span>
           )}

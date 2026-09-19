@@ -13,7 +13,7 @@ function createMockHaptics() {
 
 describe('MobileTabBar (Milestone 2)', () => {
   it('renders all four navigation items with correct accessible labels and roles', () => {
-    render(
+    const { rerender } = render(
       <MobileTabBar
         currentView="review"
         isSyncOpen={false}
@@ -30,10 +30,27 @@ describe('MobileTabBar (Milestone 2)', () => {
     expect(
       screen.getByRole('navigation', { name: 'Mobile navigation' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Practice (5 cards due)' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Deck' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
+
+    rerender(
+      <MobileTabBar
+        currentView="review"
+        isSyncOpen={false}
+        syncStatus="idle"
+        authUser={null}
+        dueCount={0}
+        onPractice={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+        onOpenSync={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
   })
 
   it('highlights Practice tab when in review, welcome, grammar, or complete view', () => {
@@ -184,6 +201,8 @@ describe('MobileTabBar (Milestone 2)', () => {
     )
 
     expect(screen.getByText('12')).toBeInTheDocument()
-    expect(screen.getByLabelText('12 cards due')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Practice (12 cards due)' }),
+    ).toBeInTheDocument()
   })
 })

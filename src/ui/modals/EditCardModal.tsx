@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import type { AiAssistant } from '../../application/ports'
+import type { AiAssistant, HapticsPlayer } from '../../application/ports'
 import type { StudyCard, UpdateCardParams } from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
 import { MexicoFlag, EnglishBadge } from '../icons'
@@ -18,6 +18,7 @@ function EditCardModalInner({
   onPlayAudio,
   aiAssistant,
   isOnline,
+  haptics,
 }: {
   card: StudyCard
   cards: StudyCard[]
@@ -27,6 +28,7 @@ function EditCardModalInner({
   onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
   aiAssistant?: AiAssistant | undefined
   isOnline?: boolean | undefined
+  haptics?: HapticsPlayer | undefined
 }) {
   const [prompt, setPrompt] = useState(card.prompt)
   const [answer, setAnswer] = useState(card.answer)
@@ -135,6 +137,7 @@ function EditCardModalInner({
       onClose={onClose}
       className="edit-card-modal"
       ariaLabelledBy="edit-card-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">
@@ -303,6 +306,19 @@ function EditCardModalInner({
   )
 }
 
+export interface EditCardModalProps {
+  isOpen: boolean
+  card: StudyCard | null
+  cards: StudyCard[]
+  onClose: () => void
+  onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
+  saveError?: string | null | undefined
+  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
+  aiAssistant?: AiAssistant | undefined
+  isOnline?: boolean | undefined
+  haptics?: HapticsPlayer | undefined
+}
+
 export function EditCardModal({
   isOpen,
   card,
@@ -313,17 +329,8 @@ export function EditCardModal({
   onPlayAudio,
   aiAssistant,
   isOnline,
-}: {
-  isOpen: boolean
-  card: StudyCard | null
-  cards: StudyCard[]
-  onClose: () => void
-  onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
-  saveError?: string | null | undefined
-  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
-  aiAssistant?: AiAssistant | undefined
-  isOnline?: boolean | undefined
-}) {
+  haptics,
+}: EditCardModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -349,6 +356,7 @@ export function EditCardModal({
       onPlayAudio={onPlayAudio}
       aiAssistant={aiAssistant}
       isOnline={isOnline}
+      haptics={haptics}
     />
   )
 }

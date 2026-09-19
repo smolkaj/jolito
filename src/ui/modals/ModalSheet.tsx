@@ -20,7 +20,7 @@ export interface ModalSheetProps {
   ariaLabelledBy?: string
   ariaLabel?: string
   ariaDescribedBy?: string
-  haptics?: HapticsPlayer
+  haptics?: HapticsPlayer | undefined
 }
 
 const DISMISS_THRESHOLD_PX = 85
@@ -45,9 +45,12 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     const innerSheetRef = useRef<HTMLDivElement | null>(null)
     const [dragOffset, setDragOffset] = useState(0)
     const [isDragging, setIsDragging] = useState(false)
+    const [isClosing, setIsClosing] = useState(false)
+    const [hasDragged, setHasDragged] = useState(false)
     const startYRef = useRef<number | null>(null)
     const currentYRef = useRef<number | null>(null)
     const thresholdPassedRef = useRef(false)
+    const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -56,20 +59,35 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       if (!isOpen) {
         setDragOffset(0)
         setIsDragging(false)
+        setIsClosing(false)
+        setHasDragged(false)
         startYRef.current = null
         currentYRef.current = null
         thresholdPassedRef.current = false
+        if (closeTimerRef.current) {
+          clearTimeout(closeTimerRef.current)
+          closeTimerRef.current = null
+        }
       }
     }, [isOpen])
+
+    useEffect(() => {
+      return () => {
+        if (closeTimerRef.current) {
+          clearTimeout(closeTimerRef.current)
+        }
+      }
+    }, [])
 
     if (!isOpen) return null
 
     const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (startYRef.current !== null || e.button !== 0) return
+      if (isClosing || startYRef.current !== null || e.button !== 0) return
       startYRef.current = e.clientY
       currentYRef.current = e.clientY
       thresholdPassedRef.current = false
       setIsDragging(true)
+      setHasDragged(true)
       try {
         e.currentTarget.setPointerCapture(e.pointerId)
       } catch {
@@ -78,7 +96,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     }
 
     const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (startYRef.current === null) return
+      if (isClosing || startYRef.current === null) return
       currentYRef.current = e.clientY
       const rawDelta = e.clientY - startYRef.current
 
@@ -102,7 +120,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     }
 
     const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (startYRef.current === null) return
+      if (isClosing || startYRef.current === null) return
       const finalDelta = (currentYRef.current ?? e.clientY) - startYRef.current
       startYRef.current = null
       currentYRef.current = null
@@ -115,13 +133,16 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       }
 
       if (finalDelta > DISMISS_THRESHOLD_PX) {
+        setIsClosing(true)
         const exitOffset = Math.max(
           finalDelta,
           innerSheetRef.current?.getBoundingClientRect().height ?? 400,
         )
         setDragOffset(exitOffset)
         haptics?.trigger('selection')
-        onClose()
+        closeTimerRef.current = setTimeout(() => {
+          onClose()
+        }, 240)
       } else {
         setDragOffset(0)
       }
@@ -135,7 +156,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     }
 
     const sheetStyle =
-      dragOffset !== 0 || isDragging
+      hasDragged || isDragging || isClosing || dragOffset !== 0
         ? {
             transform: `translateY(${Math.max(-20, dragOffset)}px)`,
             transition:
@@ -157,12 +178,14 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     return (
       <div
         className={`modal-backdrop ${backdropClassName}`.trim()}
-        onClick={onClose}
+        onClick={() => {
+          if (!isClosing) onClose()
+        }}
         role="presentation"
       >
         <div
           ref={setMergedRef}
-          className={`modal-content modal-sheet ${className} ${isDragging ? 'is-dragging-sheet' : ''}`.trim()}
+          className={`modal-content modal-sheet ${className} ${isDragging ? 'is-dragging-sheet' : ''} ${isClosing ? 'is-closing-sheet' : ''}`.trim()}
           role={role}
           aria-modal={ariaModal}
           aria-labelledby={ariaLabelledBy}

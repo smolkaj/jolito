@@ -4,6 +4,7 @@ import type {
   AuthService,
   AuthUser,
   Clock,
+  HapticsPlayer,
   SyncResult,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
@@ -35,6 +36,7 @@ export interface SyncModalProps {
   pendingCardPrompt?: string | undefined
   onOpenPrivacy?: (() => void) | undefined
   onOpenFeedback?: (() => void) | undefined
+  haptics?: HapticsPlayer | undefined
 }
 
 export function SyncModal({
@@ -51,6 +53,7 @@ export function SyncModal({
   pendingCardPrompt,
   onOpenPrivacy,
   onOpenFeedback,
+  haptics,
 }: SyncModalProps) {
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
@@ -314,6 +317,7 @@ export function SyncModal({
       onClose={handleClose}
       className="sync-modal"
       ariaLabelledBy="sync-modal-title"
+      haptics={haptics}
     >
       <div className="modal-header">
         <div className="modal-header-copy">
