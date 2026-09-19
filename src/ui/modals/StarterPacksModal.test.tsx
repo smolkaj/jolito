@@ -17,7 +17,7 @@ describe('StarterPacksModal', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('renders all 5 curated starter packs when isOpen is true', () => {
+  it('renders all 6 curated starter packs when isOpen is true', () => {
     render(
       <StarterPacksModal
         isOpen={true}
@@ -29,6 +29,7 @@ describe('StarterPacksModal', () => {
 
     expect(screen.getByText('Curated starter packs')).toBeInTheDocument()
     expect(screen.getByText('Mexican Street Phrases')).toBeInTheDocument()
+    expect(screen.getByText("Founder's CDMX Notebook")).toBeInTheDocument()
     expect(screen.getByText('Top Verbs: 1–50')).toBeInTheDocument()
     expect(screen.getByText('Top Verbs: 51–100')).toBeInTheDocument()
     expect(screen.getByText('Top Verbs: 101–150')).toBeInTheDocument()

@@ -362,14 +362,14 @@ export const starterPackSeeds: StarterPackSeed[] = [
         spanish: 'derecha',
         english: 'right',
         context:
-          'Right (direction). Mnemonic: you use your right arm (derecha) to point straight ahead (derecho).',
+          'Right (direction). Remember: "a la derecha" is to the right, whereas "todo derecho" is straight ahead.',
         bidirectional: true,
       },
       {
         spanish: 'izquierda',
         english: 'left',
         context:
-          'Left (direction). Mnemonic: indigenous cultures are to the left of Europe on the map, and izquierda is of Basque origin.',
+          'Left (direction). Unique Spanish word of pre-Roman Basque origin (from "ezkerra").',
         bidirectional: true,
       },
       {
@@ -451,8 +451,8 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'me cuesta …',
-        english: 'I struggle with …',
+        spanish: 'me cuesta',
+        english: 'I struggle with',
         context:
           'Honest learner phrase for expressing difficulty ("me cuesta hablar rápido").',
         bidirectional: true,
@@ -465,15 +465,15 @@ export const starterPackSeeds: StarterPackSeed[] = [
         bidirectional: true,
       },
       {
-        spanish: 'Estoy por tu casa.',
-        english: 'I’m near your house.',
+        spanish: 'Estoy por tu casa',
+        english: "I'm near your house",
         context:
           'Quintessential message when you are arriving to meet friends or pick someone up.',
         bidirectional: true,
       },
       {
-        spanish: '¿Puedo decir...?',
-        english: 'can I say...?',
+        spanish: '¿Puedo decir?',
+        english: 'Can I say?',
         context:
           'Indispensable question for the language classroom and language exchanges.',
         bidirectional: true,
