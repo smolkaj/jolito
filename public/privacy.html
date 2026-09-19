@@ -186,33 +186,38 @@
         <h2>3. Third-Party Services & AI Processing</h2>
         <p>
           To provide audio pronunciations, AI card suggestions, and cloud
-          synchronization, Jolito relies on third-party service providers in the
-          following categories:
+          synchronization, Jolito relies on third-party service providers:
         </p>
         <p>
-          <strong>Speech Synthesis Providers:</strong> To generate pronunciation
-          audio and enable responsive playback, card words and study phrases are
-          processed by cloud text-to-speech providers (such as Microsoft Speech
-          Services).
+          <strong>Speech Synthesis:</strong> To generate pronunciation audio and
+          enable responsive playback, card words and study phrases are processed
+          by cloud text-to-speech services.
         </p>
         <p>
           <strong>AI Language Models (Card Suggestions):</strong> When
           requesting AI suggestions while creating cards (such as example
           sentences or memory aids), card text is processed by cloud AI
-          inference providers (such as Cloudflare Workers AI). Your flashcard
-          practice and spaced repetition reviews run privately on your device
-          without AI.
+          inference providers. Your flashcard practice and spaced repetition
+          reviews run privately on your device without AI.
         </p>
         <p>
-          <strong>Cloud Hosting & Database Infrastructure:</strong> When you
-          sign in, your account and study progress are stored and synchronized
-          using managed cloud database and hosting providers (such as Supabase
-          and Cloudflare).
+          <strong>Cloud Hosting & Database:</strong> When you sign in, your
+          account and study progress are stored and synchronized using managed
+          cloud database and hosting providers.
         </p>
         <p>
-          <strong>Email Delivery Services:</strong> In-app feedback messages and
+          <strong>Email Delivery:</strong> In-app feedback messages and
           administrative notifications are routed through transactional email
-          delivery services (such as Resend).
+          delivery services.
+        </p>
+        <p>
+          <strong
+            >Current Providers (subject to change as our infrastructure
+            evolves):</strong
+          >
+          Microsoft Speech Services (pronunciation audio), Cloudflare (AI
+          suggestions & edge hosting), Supabase (cloud database & auth), and
+          Resend (transactional email).
         </p>
       </section>
 

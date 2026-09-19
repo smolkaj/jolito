@@ -64,35 +64,45 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
       [
         {
           type: 'text',
-          text: 'To provide audio pronunciations, AI card suggestions, and cloud synchronization, Jolito relies on third-party service providers in the following categories:',
+          text: 'To provide audio pronunciations, AI card suggestions, and cloud synchronization, Jolito relies on third-party service providers:',
         },
       ],
       [
-        { type: 'strong', text: 'Speech Synthesis Providers:' },
+        { type: 'strong', text: 'Speech Synthesis:' },
         {
           type: 'text',
-          text: ' To generate pronunciation audio and enable responsive playback, card words and study phrases are processed by cloud text-to-speech providers (such as Microsoft Speech Services).',
+          text: ' To generate pronunciation audio and enable responsive playback, card words and study phrases are processed by cloud text-to-speech services.',
         },
       ],
       [
         { type: 'strong', text: 'AI Language Models (Card Suggestions):' },
         {
           type: 'text',
-          text: ' When requesting AI suggestions while creating cards (such as example sentences or memory aids), card text is processed by cloud AI inference providers (such as Cloudflare Workers AI). Your flashcard practice and spaced repetition reviews run privately on your device without AI.',
+          text: ' When requesting AI suggestions while creating cards (such as example sentences or memory aids), card text is processed by cloud AI inference providers. Your flashcard practice and spaced repetition reviews run privately on your device without AI.',
         },
       ],
       [
-        { type: 'strong', text: 'Cloud Hosting & Database Infrastructure:' },
+        { type: 'strong', text: 'Cloud Hosting & Database:' },
         {
           type: 'text',
-          text: ' When you sign in, your account and study progress are stored and synchronized using managed cloud database and hosting providers (such as Supabase and Cloudflare).',
+          text: ' When you sign in, your account and study progress are stored and synchronized using managed cloud database and hosting providers.',
         },
       ],
       [
-        { type: 'strong', text: 'Email Delivery Services:' },
+        { type: 'strong', text: 'Email Delivery:' },
         {
           type: 'text',
-          text: ' In-app feedback messages and administrative notifications are routed through transactional email delivery services (such as Resend).',
+          text: ' In-app feedback messages and administrative notifications are routed through transactional email delivery services.',
+        },
+      ],
+      [
+        {
+          type: 'strong',
+          text: 'Current Providers (subject to change as our infrastructure evolves):',
+        },
+        {
+          type: 'text',
+          text: ' Microsoft Speech Services (pronunciation audio), Cloudflare (AI suggestions & edge hosting), Supabase (cloud database & auth), and Resend (transactional email).',
         },
       ],
     ],
