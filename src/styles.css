@@ -6023,7 +6023,77 @@ kbd {
   inset: 0;
   pointer-events: none;
   z-index: 25;
-  overflow: visible;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.gesture-card-flood {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 24px;
+  pointer-events: none;
+  z-index: 30;
+  transform: none !important;
+  right: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+.gesture-card-flood.zone-again {
+  background: var(--rosa) !important;
+  color: #ffffff !important;
+}
+
+.gesture-card-flood.zone-good {
+  background: var(--turquesa-dark) !important;
+  color: #ffffff !important;
+}
+
+.gesture-card-flood .flood-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  transform: scale(0.92);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gesture-card-flood.is-active .flood-content {
+  transform: scale(1.08);
+}
+
+.gesture-card-flood .flood-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(52px, 14vw, 84px);
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff !important;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
+}
+
+.gesture-card-flood .flood-label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: clamp(32px, 9vw, 54px);
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-align: center;
+  color: #ffffff !important;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
 }
 
 .gesture-zone-badge {
@@ -6058,54 +6128,6 @@ kbd {
   font-size: clamp(20px, 4.8vw, 26px);
   font-weight: 900;
   line-height: 1;
-}
-
-/* Swiping left: card moves left, AGAIN badge is anchored on top-right of card */
-.gesture-zone-badge.zone-again {
-  right: 20px;
-  top: 20px;
-  transform: rotate(12deg);
-  color: var(--rosa);
-  border-color: var(--rosa);
-}
-
-.gesture-zone-badge.zone-again.is-active {
-  transform: rotate(12deg) scale(1.18);
-  background: var(--rosa);
-  color: #ffffff;
-  border-color: #ffffff;
-  box-shadow:
-    0 14px 36px rgba(228, 0, 124, 0.55),
-    0 0 0 3px var(--rosa);
-}
-
-.gesture-zone-badge.zone-again.is-active .badge-icon,
-.gesture-zone-badge.zone-again.is-active .badge-key {
-  color: #ffffff;
-}
-
-/* Swiping right: card moves right, GOOD badge is anchored on top-left of card */
-.gesture-zone-badge.zone-good {
-  left: 20px;
-  top: 20px;
-  transform: rotate(-12deg);
-  color: var(--turquesa-dark);
-  border-color: var(--turquesa-dark);
-}
-
-.gesture-zone-badge.zone-good.is-active {
-  transform: rotate(-12deg) scale(1.18);
-  background: var(--turquesa-dark);
-  color: #ffffff;
-  border-color: #ffffff;
-  box-shadow:
-    0 14px 36px rgba(13, 122, 104, 0.55),
-    0 0 0 3px var(--turquesa-dark);
-}
-
-.gesture-zone-badge.zone-good.is-active .badge-icon,
-.gesture-zone-badge.zone-good.is-active .badge-key {
-  color: #ffffff;
 }
 
 /* Ambient screen edge glow while swiping */

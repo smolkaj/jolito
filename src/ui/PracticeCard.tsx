@@ -198,7 +198,8 @@ export function PracticeCard({
     y: number
     time: number
     target: HTMLElement | null
-    isInteractive: boolean
+    isUnrevealedInteractive: boolean
+    isRevealedDragBlocked: boolean
   } | null>(null)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const activeZoneRef = useRef<Grade | null>(null)
@@ -241,10 +242,13 @@ export function PracticeCard({
     if (paused || isAnimatingExit || pointerStartRef.current !== null) return
     if (event.button !== 0) return
     const target = event.target as HTMLElement | null
-    const isInteractive = Boolean(
+    const isUnrevealedInteractive = Boolean(
       target?.closest(
-        'input, textarea, select, button, a, summary, [role="button"], .answer-accents, .study-card-quick-actions, .grade-buttons, .grade-btn',
+        'input, textarea, select, a, button.audio-button, .answer-accents',
       ),
+    )
+    const isRevealedDragBlocked = Boolean(
+      target?.closest('button.audio-button, a'),
     )
 
     pointerStartRef.current = {
@@ -252,7 +256,8 @@ export function PracticeCard({
       y: event.clientY,
       time: Date.now(),
       target,
-      isInteractive,
+      isUnrevealedInteractive,
+      isRevealedDragBlocked,
     }
     dragOffsetRef.current = { x: 0, y: 0 }
   }
@@ -260,7 +265,8 @@ export function PracticeCard({
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
     if (!pointerStartRef.current || paused || isAnimatingExit) return
     const start = pointerStartRef.current
-    if (start.isInteractive) return
+    if (revealed ? start.isRevealedDragBlocked : start.isUnrevealedInteractive)
+      return
 
     const dx = event.clientX - start.x
     const dy = event.clientY - start.y
@@ -325,7 +331,7 @@ export function PracticeCard({
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
       const tapped =
-        !start.isInteractive && actualDistance < 10 && elapsed < 350
+        !start.isUnrevealedInteractive && actualDistance < 10 && elapsed < 350
       if (tapped) {
         haptics?.trigger('selection')
         onReveal()
@@ -423,42 +429,46 @@ export function PracticeCard({
           />
           <div className="card-gesture-overlays" aria-hidden="true">
             <div
-              className={`gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
+              className={`gesture-card-flood gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
               style={{
                 opacity:
                   activeZone === 'again'
                     ? 1
-                    : dragOffset.x < -12
-                      ? Math.min(
-                          0.92,
-                          Math.pow(Math.abs(dragOffset.x) / 75, 1.1),
-                        )
+                    : dragOffset.x < -6
+                      ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
                       : 0,
               }}
             >
-              <span className="badge-key badge-icon" aria-hidden="true">
-                ↺
-              </span>
-              <span className="badge-label">AGAIN</span>
+              <div className="flood-content">
+                <span
+                  className="badge-key badge-icon flood-icon"
+                  aria-hidden="true"
+                >
+                  ↺
+                </span>
+                <span className="badge-label flood-label">AGAIN</span>
+              </div>
             </div>
             <div
-              className={`gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
+              className={`gesture-card-flood gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
               style={{
                 opacity:
                   activeZone === 'good'
                     ? 1
-                    : dragOffset.x > 12
-                      ? Math.min(
-                          0.92,
-                          Math.pow(Math.abs(dragOffset.x) / 75, 1.1),
-                        )
+                    : dragOffset.x > 6
+                      ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
                       : 0,
               }}
             >
-              <span className="badge-key badge-icon" aria-hidden="true">
-                ✓
-              </span>
-              <span className="badge-label">GOOD</span>
+              <div className="flood-content">
+                <span
+                  className="badge-key badge-icon flood-icon"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span className="badge-label flood-label">GOOD</span>
+              </div>
             </div>
           </div>
         </>
