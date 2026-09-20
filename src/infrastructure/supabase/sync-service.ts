@@ -19,6 +19,7 @@ export class SupabaseSyncService implements SyncService {
   private readonly deviceId: string
   private readonly supabaseUrl: string
   private readonly alertEndpoint: string | null
+  private readonly reportedAnomalies = new Set<string>()
 
   constructor(
     private readonly authService: AuthService,
@@ -155,6 +156,12 @@ export class SupabaseSyncService implements SyncService {
         if (typeof rawRev === 'number') revision = rawRev
       }
 
+      const dedupeKey = `${userId}:${revision ?? 'null'}`
+      if (this.reportedAnomalies.has(dedupeKey)) {
+        return
+      }
+      this.reportedAnomalies.add(dedupeKey)
+
       const sanitizedIssues = issues.slice(0, 20).map((issue) => ({
         path: issue.path,
         code: issue.code,
@@ -182,9 +189,21 @@ export class SupabaseSyncService implements SyncService {
         targetUrl = new URL(targetUrl, baseOrigin).toString()
       }
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      try {
+        const token = await this.authService.getAccessToken?.()
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      } catch {
+        // Token retrieval failure should not block alert delivery
+      }
+
       await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           userId,
           revision,

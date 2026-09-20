@@ -624,6 +624,7 @@ describe('sync anomaly alert reporting', () => {
     expect(alertCall?.[1].method).toBe('POST')
     expect(alertCall?.[1].headers).toEqual({
       'Content-Type': 'application/json',
+      Authorization: 'Bearer token',
     })
 
     const alertBody = JSON.parse(
@@ -645,6 +646,39 @@ describe('sync anomaly alert reporting', () => {
     )
     // Invariant: alert payload must never leak cards array or flashcard content
     expect(JSON.stringify(alertBody)).not.toContain('cards')
+  })
+
+  it('deduplicates alert dispatches within the same session for the same user and revision', async () => {
+    const corruptedRow = {
+      ...row,
+      data: {
+        ...payload,
+        updatedAt: 1789844855022,
+      },
+    }
+
+    let alertCount = 0
+    const fetchSpy = vi.fn().mockImplementation((input: unknown) => {
+      const url = String(input)
+      if (url.includes('/rpc/read_deck_snapshot')) {
+        return Promise.resolve(Response.json([corruptedRow]))
+      }
+      if (url.includes('/api/alerts/sync-anomaly')) {
+        alertCount++
+        return Promise.resolve(Response.json({ success: true }))
+      }
+      return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const client = service({}, '/api/alerts/sync-anomaly')
+    // First pullDeck triggers alert
+    await client.pullDeck(user)
+    expect(alertCount).toBe(1)
+
+    // Second pullDeck in same session suppresses duplicate alert
+    await client.pullDeck(user)
+    expect(alertCount).toBe(1)
   })
 
   it('handles non-fatal network failure on alert endpoint gracefully', async () => {
@@ -669,12 +703,14 @@ describe('sync anomaly alert reporting', () => {
     expect(result.error).toBe(
       'Remote deck data did not match the Jolito sync schema. The maintainer has been automatically notified.',
     )
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        '[SyncService] Non-fatal sync anomaly alert dispatch error:',
-      ),
-      expect.any(Error),
-    )
+    await vi.waitFor(() => {
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '[SyncService] Non-fatal sync anomaly alert dispatch error:',
+        ),
+        expect.any(Error),
+      )
+    })
   })
 
   it('resolves relative alert endpoint to capacitor base origin in native environment', async () => {

@@ -113,6 +113,35 @@ describe('sync-alert-route', () => {
       expect(callArgs?.subject).toContain('6ab42be4')
     })
 
+    it('prefers dedicated SYNC_ALERT_NOTIFICATION_EMAIL and SYNC_ALERT_SENDER_EMAIL when set', async () => {
+      const sendMock = vi
+        .fn<
+          (msg: {
+            from: string
+            to: string
+            subject: string
+            text: string
+            html?: string
+          }) => Promise<void>
+        >()
+        .mockResolvedValue(undefined)
+      const mockBinding: SendEmailBinding = { send: sendMock }
+      const env: SyncAlertWorkerEnv = {
+        SEND_EMAIL: mockBinding,
+        SYNC_ALERT_NOTIFICATION_EMAIL: 'ops@example.com',
+        SYNC_ALERT_SENDER_EMAIL: 'ops-notify@example.com',
+        FEEDBACK_NOTIFICATION_EMAIL: 'feedback@example.com',
+        FEEDBACK_SENDER_EMAIL: 'feedback-sender@example.com',
+      }
+
+      await sendSyncAnomalyEmail(sampleAlert, env)
+
+      expect(sendMock).toHaveBeenCalledTimes(1)
+      const callArgs = sendMock.mock.calls[0]?.[0]
+      expect(callArgs?.to).toBe('ops@example.com')
+      expect(callArgs?.from).toBe('ops-notify@example.com')
+    })
+
     it('dispatches via Resend API when RESEND_API_KEY is present and SEND_EMAIL is absent', async () => {
       const fetchSpy = vi.fn().mockResolvedValue(
         new Response(JSON.stringify({ id: 'resend-123' }), {
@@ -219,6 +248,46 @@ describe('sync-alert-route', () => {
       expect(res.status).toBe(400)
       const data = (await res.json()) as { error: string }
       expect(data.error).toBe('Validation failed')
+    })
+
+    it('returns 400 when userId is not a valid UUID', async () => {
+      const req = new Request('https://joli.to/api/alerts/sync-anomaly', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...sampleAlert,
+          userId: 'invalid-user-id-not-a-uuid',
+        }),
+      })
+      const res = await handleSyncAlertRequest(req)
+      expect(res.status).toBe(400)
+      const data = (await res.json()) as { error: string; details: unknown[] }
+      expect(data.error).toBe('Validation failed')
+    })
+
+    it('returns 429 when global rate limit of 30 alerts per minute is exceeded', async () => {
+      clearAlertDedupeCacheForTests()
+      const makeReq = (idx: number) =>
+        new Request('https://joli.to/api/alerts/sync-anomaly', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...sampleAlert,
+            revision: idx, // Different revisions to avoid deduplication
+          }),
+        })
+
+      // Send 30 requests
+      for (let i = 0; i < 30; i++) {
+        const res = await handleSyncAlertRequest(makeReq(i), {})
+        expect(res.status).toBe(200)
+      }
+
+      // 31st request triggers rate limiter
+      const blockedRes = await handleSyncAlertRequest(makeReq(30), {})
+      expect(blockedRes.status).toBe(429)
+      const data = (await blockedRes.json()) as { error: string }
+      expect(data.error).toBe('Too Many Requests')
     })
 
     it('successfully processes valid alert and returns 200', async () => {

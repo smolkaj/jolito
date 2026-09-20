@@ -2,22 +2,22 @@ import { z } from 'zod'
 import type { SendEmailBinding } from './email-binding'
 
 export const syncAnomalyIssueSchema = z.object({
-  path: z.array(z.union([z.string(), z.number()])),
-  code: z.string(),
-  message: z.string(),
-  expected: z.string().optional(),
-  received: z.string().optional(),
+  path: z.array(z.union([z.string().max(100), z.number().int()])).max(20),
+  code: z.string().max(100),
+  message: z.string().max(500),
+  expected: z.string().max(100).optional(),
+  received: z.string().max(100).optional(),
 })
 
 export const syncAnomalyAlertSchema = z.object({
-  userId: z.string().trim().min(1, 'User ID is required'),
+  userId: z.string().uuid('User ID must be a valid UUID'),
   revision: z.number().int().nonnegative().nullable().optional(),
-  clientVersion: z.number().int().optional(),
+  clientVersion: z.number().int().positive().optional(),
   deviceId: z.string().trim().max(100).optional(),
   issues: z
     .array(syncAnomalyIssueSchema)
     .min(1, 'At least one schema issue is required')
-    .max(50),
+    .max(20),
 })
 
 export type SyncAnomalyIssue = z.infer<typeof syncAnomalyIssueSchema>
@@ -25,6 +25,8 @@ export type SyncAnomalyAlert = z.infer<typeof syncAnomalyAlertSchema>
 
 export interface SyncAlertWorkerEnv {
   SEND_EMAIL?: SendEmailBinding | undefined
+  SYNC_ALERT_NOTIFICATION_EMAIL?: string | undefined
+  SYNC_ALERT_SENDER_EMAIL?: string | undefined
   FEEDBACK_NOTIFICATION_EMAIL?: string | undefined
   FEEDBACK_SENDER_EMAIL?: string | undefined
   RESEND_API_KEY?: string | undefined
@@ -41,8 +43,15 @@ export const corsHeaders: Record<string, string> = {
 const alertDedupeCache = new Map<string, number>()
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000
 
+// Burst rate limit per worker instance: at most 30 alerts per 60 seconds
+let rateLimitWindowStart = Date.now()
+let alertCountInWindow = 0
+const MAX_ALERTS_PER_MINUTE = 30
+
 export function clearAlertDedupeCacheForTests(): void {
   alertDedupeCache.clear()
+  rateLimitWindowStart = Date.now()
+  alertCountInWindow = 0
 }
 
 export function escapeHtml(str: string): string {
@@ -196,8 +205,14 @@ export async function sendSyncAnomalyEmail(
   payload: SyncAnomalyAlert,
   env?: SyncAlertWorkerEnv,
 ): Promise<{ dispatched: boolean; provider: string }> {
-  const recipient = env?.FEEDBACK_NOTIFICATION_EMAIL || 'a@joli.to'
-  const sender = env?.FEEDBACK_SENDER_EMAIL || 'a@joli.to'
+  const recipient =
+    env?.SYNC_ALERT_NOTIFICATION_EMAIL ||
+    env?.FEEDBACK_NOTIFICATION_EMAIL ||
+    'a@joli.to'
+  const sender =
+    env?.SYNC_ALERT_SENDER_EMAIL ||
+    env?.FEEDBACK_SENDER_EMAIL ||
+    'alerts@joli.to'
   const shortId = payload.userId.slice(0, 8)
   const subject = `[Jolito Alert] Cloud Sync Schema Failure (User ${shortId}...)`
   const text = formatPlainTextAlert(payload)
@@ -266,6 +281,30 @@ export async function handleSyncAlertRequest(
     })
   }
 
+  const now = Date.now()
+  if (now - rateLimitWindowStart > 60_000) {
+    rateLimitWindowStart = now
+    alertCountInWindow = 0
+  }
+  if (alertCountInWindow >= MAX_ALERTS_PER_MINUTE) {
+    return new Response(
+      JSON.stringify({
+        error: 'Too Many Requests',
+        message:
+          'Sync anomaly alert rate limit exceeded. Please try again later.',
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Retry-After': '60',
+        },
+      },
+    )
+  }
+  alertCountInWindow++
+
   let body: unknown
   try {
     body = await request.json()
@@ -301,7 +340,6 @@ export async function handleSyncAlertRequest(
 
   const payload = parsed.data
   const dedupeKey = `${payload.userId}:${payload.revision ?? 'none'}`
-  const now = Date.now()
 
   // Clean old cache entries if Map gets large
   if (alertDedupeCache.size > 500) {

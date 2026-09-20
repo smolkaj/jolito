@@ -30,10 +30,7 @@ export default {
     if (pathname === '/api/ai') {
       return handleAiRequest(request, env)
     }
-    if (
-      pathname === '/api/alerts/sync-anomaly' ||
-      pathname === '/api/sync-alert'
-    ) {
+    if (pathname === '/api/alerts/sync-anomaly') {
       return handleSyncAlertRequest(request, env)
     }
 
