@@ -63,7 +63,7 @@ for (const width of [320, 1280]) {
     )
     await page.locator('.connection-pill').click()
     await page.getByRole('button', { name: /sync now/i }).click()
-    const help = page.getByRole('link', { name: /update help/i })
+    const help = page.getByRole('link', { name: 'How to update' })
     await expect(help).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({

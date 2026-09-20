@@ -300,7 +300,7 @@ export function SyncModal({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Update help (opens a new tab)
+          How to update
         </a>
       )}
     </div>
