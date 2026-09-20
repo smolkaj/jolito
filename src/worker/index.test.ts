@@ -66,6 +66,23 @@ describe('worker fetch handler', () => {
     expect(res.status).toBe(204)
   })
 
+  it('routes /api/alerts/sync-anomaly to sync alert handler', async () => {
+    const req = new Request('https://joli.to/api/alerts/sync-anomaly', {
+      method: 'OPTIONS',
+    })
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(204)
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST')
+  })
+
+  it('routes /api/sync-alert alias to sync alert handler', async () => {
+    const req = new Request('https://joli.to/api/sync-alert', {
+      method: 'OPTIONS',
+    })
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(204)
+  })
+
   it('delegates asset requests to env.ASSETS when present', async () => {
     let capturedAssetRequest: Request | null = null
     const mockEnv = {

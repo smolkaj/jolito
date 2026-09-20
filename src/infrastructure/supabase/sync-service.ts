@@ -18,6 +18,7 @@ const MAX_SYNC_ATTEMPTS = 3
 export class SupabaseSyncService implements SyncService {
   private readonly deviceId: string
   private readonly supabaseUrl: string
+  private readonly alertEndpoint: string | null
 
   constructor(
     private readonly authService: AuthService,
@@ -25,9 +26,11 @@ export class SupabaseSyncService implements SyncService {
     private readonly supabaseAnonKey: string = import.meta.env
       .VITE_SUPABASE_ANON_KEY ?? '',
     deviceId?: string,
+    alertEndpoint: string | null = '/api/alerts/sync-anomaly',
   ) {
     this.supabaseUrl = supabaseUrl.replace(/\/+$/, '')
     this.deviceId = deviceId ?? getOrCreateDeviceId()
+    this.alertEndpoint = alertEndpoint
   }
 
   private async request(
@@ -106,11 +109,14 @@ export class SupabaseSyncService implements SyncService {
         )
         .max(1)
         .safeParse(response)
-      if (!rows.success)
+      if (!rows.success) {
+        void this.reportSyncAnomaly(user.id, response, rows.error.issues)
         return {
           success: false,
-          error: 'Remote deck data did not match the Jolito sync schema.',
+          error:
+            'Remote deck data did not match the Jolito sync schema. The maintainer has been automatically notified.',
         }
+      }
       const row = rows.data[0]
       if (!row)
         return { success: true, cards: [], deletedCardIds: [], revision: 0 }
@@ -129,6 +135,70 @@ export class SupabaseSyncService implements SyncService {
             ? error.message
             : 'Network error pulling cloud deck.',
       }
+    }
+  }
+
+  private async reportSyncAnomaly(
+    userId: string,
+    rawResponse: unknown,
+    issues: z.ZodIssue[],
+  ): Promise<void> {
+    if (!this.alertEndpoint) return
+    try {
+      let revision: number | null = null
+      if (
+        Array.isArray(rawResponse) &&
+        rawResponse[0] &&
+        typeof rawResponse[0] === 'object'
+      ) {
+        const rawRev = (rawResponse[0] as Record<string, unknown>).revision
+        if (typeof rawRev === 'number') revision = rawRev
+      }
+
+      const sanitizedIssues = issues.slice(0, 20).map((issue) => ({
+        path: issue.path,
+        code: issue.code,
+        message: issue.message,
+        expected:
+          'expected' in issue && typeof issue.expected === 'string'
+            ? issue.expected
+            : undefined,
+        received:
+          'received' in issue && typeof issue.received === 'string'
+            ? issue.received
+            : undefined,
+      }))
+
+      let targetUrl = this.alertEndpoint
+      if (
+        !targetUrl.startsWith('http://') &&
+        !targetUrl.startsWith('https://') &&
+        typeof window !== 'undefined'
+      ) {
+        const isCapacitor = window.location?.protocol === 'capacitor:'
+        const baseOrigin = isCapacitor
+          ? 'https://joli.to'
+          : window.location?.origin || 'https://joli.to'
+        targetUrl = new URL(targetUrl, baseOrigin).toString()
+      }
+
+      await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          revision,
+          clientVersion: collectionVersion,
+          deviceId: this.deviceId,
+          issues: sanitizedIssues,
+        }),
+        keepalive: true,
+      })
+    } catch (err) {
+      console.warn(
+        '[SyncService] Non-fatal sync anomaly alert dispatch error:',
+        err,
+      )
     }
   }
 
