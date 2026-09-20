@@ -6022,72 +6022,126 @@ kbd {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 15;
+  z-index: 25;
+  overflow: visible;
 }
 
 .gesture-zone-badge {
   position: absolute;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
+  gap: 10px;
+  padding: 10px 24px;
+  border-radius: 14px;
   font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
+  font-size: clamp(20px, 5.2vw, 28px);
+  font-weight: 900;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  border: 2px solid currentColor;
+  border: 3.5px solid currentColor;
   background: var(--card);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
   pointer-events: none;
-  transition: transform 140ms var(--ease-spring);
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+  z-index: 30;
 }
 
+.gesture-zone-badge .badge-icon,
 .gesture-zone-badge .badge-key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: currentColor;
-  color: #fff;
-  font-size: 11px;
+  font-size: clamp(20px, 4.8vw, 26px);
+  font-weight: 900;
+  line-height: 1;
 }
 
+/* Swiping left: card moves left, AGAIN badge is anchored on top-right of card */
 .gesture-zone-badge.zone-again {
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%) rotate(-6deg);
+  right: 20px;
+  top: 20px;
+  transform: rotate(12deg);
   color: var(--rosa);
   border-color: var(--rosa);
 }
+
 .gesture-zone-badge.zone-again.is-active {
-  transform: translateY(-50%) rotate(-6deg) scale(1.12);
+  transform: rotate(12deg) scale(1.18);
   background: var(--rosa);
   color: #ffffff;
-}
-.gesture-zone-badge.zone-again.is-active .badge-key {
-  background: #ffffff;
-  color: var(--rosa);
+  border-color: #ffffff;
+  box-shadow:
+    0 14px 36px rgba(228, 0, 124, 0.55),
+    0 0 0 3px var(--rosa);
 }
 
+.gesture-zone-badge.zone-again.is-active .badge-icon,
+.gesture-zone-badge.zone-again.is-active .badge-key {
+  color: #ffffff;
+}
+
+/* Swiping right: card moves right, GOOD badge is anchored on top-left of card */
 .gesture-zone-badge.zone-good {
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%) rotate(6deg);
+  left: 20px;
+  top: 20px;
+  transform: rotate(-12deg);
   color: var(--turquesa-dark);
   border-color: var(--turquesa-dark);
 }
+
 .gesture-zone-badge.zone-good.is-active {
-  transform: translateY(-50%) rotate(6deg) scale(1.12);
+  transform: rotate(-12deg) scale(1.18);
   background: var(--turquesa-dark);
   color: #ffffff;
+  border-color: #ffffff;
+  box-shadow:
+    0 14px 36px rgba(13, 122, 104, 0.55),
+    0 0 0 3px var(--turquesa-dark);
 }
+
+.gesture-zone-badge.zone-good.is-active .badge-icon,
 .gesture-zone-badge.zone-good.is-active .badge-key {
-  background: #ffffff;
-  color: var(--turquesa-dark);
+  color: #ffffff;
+}
+
+/* Ambient screen edge glow while swiping */
+.gesture-edge-glow {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 100;
+  transition: opacity 120ms ease;
+}
+
+.edge-glow-again {
+  left: 0;
+  background: linear-gradient(to right, rgba(228, 0, 124, 0.75), transparent);
+  box-shadow: 0 0 32px rgba(228, 0, 124, 0.6);
+}
+
+.edge-glow-good {
+  right: 0;
+  background: linear-gradient(to left, rgba(13, 122, 104, 0.75), transparent);
+  box-shadow: 0 0 32px rgba(13, 122, 104, 0.6);
+}
+
+/* Synchronize bottom grade button active feedback */
+.study-card.zone-again .grade-buttons .grade-again {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px var(--rosa-glow);
+  border-color: var(--rosa);
+}
+
+.study-card.zone-good .grade-buttons .grade-good {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px var(--turquesa-glow);
+  border-color: var(--turquesa-dark);
 }
 
 .gesture-zone-badge.zone-easy {
@@ -6160,6 +6214,20 @@ kbd {
 }
 
 @media (max-width: 680px) {
+  .review-page {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 120px);
+  }
+
+  .review-page .study-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 160px);
+    cursor: pointer;
+  }
+
   .mobile-tab-bar {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

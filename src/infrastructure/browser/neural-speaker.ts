@@ -138,7 +138,6 @@ export class NeuralVoiceEngine {
   ) {
     this.audioCache = new LruAudioCache(maxMemoryBuffers)
     this.idleDelayMs = idleDelayMs
-    this.initContext()
     void this.getCache()
     this.installUnlockListeners()
     this.installLifecycleListeners()
@@ -149,6 +148,9 @@ export class NeuralVoiceEngine {
     if (this.cleanupGestureListeners) return
     const unlock = () => {
       configureAudioSessionCategory('ambient')
+      if (!this.audioContext) {
+        this.initContext()
+      }
       if (
         this.audioContext &&
         (this.audioContext.state as string) !== 'running' &&

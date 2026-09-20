@@ -400,36 +400,68 @@ export function PracticeCard({
       onPointerCancel={handlePointerCancel}
     >
       {revealed && (
-        <div className="card-gesture-overlays" aria-hidden="true">
+        <>
           <div
-            className={`gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
+            className={`gesture-edge-glow edge-glow-again ${activeZone === 'again' ? 'is-active' : ''}`}
             style={{
               opacity:
-                activeZone === 'again'
-                  ? 1
-                  : dragOffset.x < -15
-                    ? Math.min(0.85, Math.abs(dragOffset.x) / 75)
-                    : 0,
+                dragOffset.x < -10
+                  ? Math.min(1, Math.abs(dragOffset.x) / 75)
+                  : 0,
             }}
-          >
-            <span className="badge-key">1</span>
-            <span className="badge-label">AGAIN</span>
-          </div>
+            aria-hidden="true"
+          />
           <div
-            className={`gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
+            className={`gesture-edge-glow edge-glow-good ${activeZone === 'good' ? 'is-active' : ''}`}
             style={{
               opacity:
-                activeZone === 'good'
-                  ? 1
-                  : dragOffset.x > 15
-                    ? Math.min(0.85, Math.abs(dragOffset.x) / 75)
-                    : 0,
+                dragOffset.x > 10
+                  ? Math.min(1, Math.abs(dragOffset.x) / 75)
+                  : 0,
             }}
-          >
-            <span className="badge-key">3</span>
-            <span className="badge-label">GOOD</span>
+            aria-hidden="true"
+          />
+          <div className="card-gesture-overlays" aria-hidden="true">
+            <div
+              className={`gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
+              style={{
+                opacity:
+                  activeZone === 'again'
+                    ? 1
+                    : dragOffset.x < -12
+                      ? Math.min(
+                          0.92,
+                          Math.pow(Math.abs(dragOffset.x) / 75, 1.1),
+                        )
+                      : 0,
+              }}
+            >
+              <span className="badge-key badge-icon" aria-hidden="true">
+                ↺
+              </span>
+              <span className="badge-label">AGAIN</span>
+            </div>
+            <div
+              className={`gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
+              style={{
+                opacity:
+                  activeZone === 'good'
+                    ? 1
+                    : dragOffset.x > 12
+                      ? Math.min(
+                          0.92,
+                          Math.pow(Math.abs(dragOffset.x) / 75, 1.1),
+                        )
+                      : 0,
+              }}
+            >
+              <span className="badge-key badge-icon" aria-hidden="true">
+                ✓
+              </span>
+              <span className="badge-label">GOOD</span>
+            </div>
           </div>
-        </div>
+        </>
       )}
       {prompt}
       {audioUnavailable && (
@@ -439,6 +471,9 @@ export function PracticeCard({
       )}
       {!revealed ? (
         <>
+          <div className="card-unrevealed-cue" aria-hidden="true">
+            <span className="touch-cue-text">👆 Tap card to reveal</span>
+          </div>
           <form
             className="answer-form"
             onSubmit={(event) => {

@@ -46,14 +46,6 @@ export function DemoDeckModal({
             edit, and sync your personal deck.
           </p>
         </div>
-        <button
-          type="button"
-          className="modal-close"
-          onClick={onClose}
-          aria-label="Close dialog"
-        >
-          ✕
-        </button>
       </div>
       <div className="demo-deck-modal-actions">
         <button
