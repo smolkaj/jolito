@@ -93,6 +93,38 @@ describe('deckSyncPayloadSchema', () => {
     const parsed = deckSyncPayloadSchema.safeParse(invalid)
     expect(parsed.success).toBe(false)
   })
+
+  it('strictly rejects payloads with numeric timestamps instead of ISO strings', () => {
+    const numericTimestampPayload = {
+      version: 4,
+      app: 'jolito',
+      updatedAt: 1789844855022,
+      deviceId: 'device-123',
+      cards: [cardA],
+      deletedCardIds: [],
+    }
+
+    const parsed = deckSyncPayloadSchema.safeParse(numericTimestampPayload)
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues[0]?.path).toEqual(['updatedAt'])
+      expect(parsed.error.issues[0]?.code).toBe('invalid_type')
+    }
+  })
+
+  it('strictly rejects payloads with unsupported collection versions', () => {
+    const invalidVersionPayload = {
+      version: 5,
+      app: 'jolito',
+      updatedAt: '2026-08-23T12:00:00.000Z',
+      deviceId: 'device-123',
+      cards: [cardA],
+      deletedCardIds: [],
+    }
+
+    const parsed = deckSyncPayloadSchema.safeParse(invalidVersionPayload)
+    expect(parsed.success).toBe(false)
+  })
 })
 
 describe('reconcileStudyCards', () => {

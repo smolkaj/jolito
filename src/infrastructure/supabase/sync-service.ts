@@ -153,19 +153,20 @@ export class SupabaseSyncService implements SyncService {
           remote.deletedCardIds ?? [],
         )
         const now = new Date().toISOString()
+        const payload = deckSyncPayloadSchema.parse({
+          version: collectionVersion,
+          app: 'jolito',
+          updatedAt: now,
+          deviceId: this.deviceId,
+          ...pending,
+        })
         const response = await this.request(
           user,
           'rpc/compare_and_set_deck',
           {
             p_user_id: user.id,
             p_expected_revision: remote.revision,
-            p_data: {
-              version: collectionVersion,
-              app: 'jolito',
-              updatedAt: now,
-              deviceId: this.deviceId,
-              ...pending,
-            },
+            p_data: payload,
           },
           signal,
         )
