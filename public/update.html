@@ -61,6 +61,7 @@
         --line: #121815;
         --rosa: #e4007c;
         --rosa-dark: #b30060;
+        --maya-dark: #0369a1;
         --shadow: 4px 4px 0 var(--line);
         --font-serif:
           'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
@@ -173,13 +174,18 @@
       a:hover {
         color: var(--rosa);
       }
+      a:focus-visible {
+        outline: 2.5px solid var(--maya-dark);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
       .platform-label {
         font-weight: 700;
         color: var(--ink);
         margin-top: 12px;
         margin-bottom: 6px;
       }
-      .platform-label:first-child {
+      h2 + .platform-label {
         margin-top: 0;
       }
       .return-link {
@@ -196,11 +202,19 @@
         color: var(--ink);
         text-decoration: none;
         box-shadow: 2px 2px 0 var(--line);
-        transition: transform 120ms ease;
+        transition:
+          transform 120ms ease,
+          box-shadow 120ms ease;
       }
       .return-link:hover {
         transform: translate(-1px, -1px);
         box-shadow: 3px 3px 0 var(--line);
+        color: var(--ink);
+      }
+      .return-link:focus-visible {
+        outline: 2.5px solid var(--maya-dark);
+        outline-offset: 2px;
+        border-radius: 9999px;
       }
     </style>
   </head>
