@@ -49,6 +49,15 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     if (this.isDestroyed || typeof window === 'undefined') return
     if (this.cleanupGestureListeners) return
     const unlock = () => {
+      const nav = typeof navigator !== 'undefined' ? navigator : undefined
+      if (
+        nav &&
+        'userActivation' in nav &&
+        nav.userActivation &&
+        !nav.userActivation.hasBeenActive
+      ) {
+        return
+      }
       configureAudioSessionCategory('ambient')
       const ctx = this.getContext()
       if (ctx && ctx.state !== 'running') {
@@ -73,10 +82,16 @@ export class WebAudioSoundPlayer implements SoundPlayer {
       passive: true,
       once: true,
     })
+    window.addEventListener('pointerup', unlock, { passive: true })
+    window.addEventListener('touchend', unlock, { passive: true })
+    window.addEventListener('click', unlock, { passive: true })
     window.addEventListener('keydown', unlock, { passive: true, once: true })
     this.cleanupGestureListeners = () => {
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('touchstart', unlock)
+      window.removeEventListener('pointerup', unlock)
+      window.removeEventListener('touchend', unlock)
+      window.removeEventListener('click', unlock)
       window.removeEventListener('keydown', unlock)
       this.cleanupGestureListeners = null
     }
