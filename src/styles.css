@@ -6072,11 +6072,28 @@ kbd {
   transform: scale(1.08);
 }
 
+.gesture-card-flood .flood-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  line-height: 1;
+}
+
+.gesture-card-flood .flood-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(48px, 12vw, 76px);
+  line-height: 1;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
+}
+
 .gesture-card-flood .flood-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(52px, 14vw, 84px);
+  font-size: clamp(48px, 12vw, 76px);
   font-weight: 900;
   line-height: 1;
   color: #ffffff !important;

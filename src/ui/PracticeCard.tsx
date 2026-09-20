@@ -440,12 +440,10 @@ export function PracticeCard({
               }}
             >
               <div className="flood-content">
-                <span
-                  className="badge-key badge-icon flood-icon"
-                  aria-hidden="true"
-                >
-                  ↺
-                </span>
+                <div className="flood-icons" aria-hidden="true">
+                  <span className="flood-thumb">👎</span>
+                  <span className="badge-key badge-icon flood-icon">↺</span>
+                </div>
                 <span className="badge-label flood-label">AGAIN</span>
               </div>
             </div>
@@ -461,12 +459,10 @@ export function PracticeCard({
               }}
             >
               <div className="flood-content">
-                <span
-                  className="badge-key badge-icon flood-icon"
-                  aria-hidden="true"
-                >
-                  ✓
-                </span>
+                <div className="flood-icons" aria-hidden="true">
+                  <span className="flood-thumb">👍</span>
+                  <span className="badge-key badge-icon flood-icon">✓</span>
+                </div>
                 <span className="badge-label flood-label">GOOD</span>
               </div>
             </div>
