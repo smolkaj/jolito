@@ -862,8 +862,7 @@ summary:focus-visible,
   transform: scale(0.94);
 }
 
-.mascot-speech-speak-btn::after,
-.mascot-speech-close-btn::after {
+.mascot-speech-speak-btn::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -875,41 +874,6 @@ summary:focus-visible,
 
 .mascot-speech-speak-btn svg {
   display: block;
-}
-
-.mascot-speech-close-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--pill-radius);
-  color: var(--ink-soft);
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  cursor: pointer;
-  flex-shrink: 0;
-  font-size: 13px;
-  line-height: 1;
-  position: relative;
-  transition:
-    color 120ms ease,
-    transform 120ms ease;
-}
-
-.mascot-speech-close-btn:hover {
-  color: var(--ink);
-  transform: scale(1.1);
-}
-
-.mascot-speech-close-btn:active {
-  transform: scale(0.95);
-}
-
-.mascot-speech-close-btn:focus-visible {
-  outline: 2px solid var(--rosa);
-  outline-offset: 2px;
 }
 
 @keyframes speech-bubble-pop {

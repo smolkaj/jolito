@@ -112,12 +112,6 @@ test('hero mascot is interactive, greets learner with speech bubble, and passes 
   })
   await expect(speakBtn).toBeVisible()
 
-  // Speech bubble close button
-  const closeBtn = page.getByRole('button', {
-    name: /close greeting/i,
-  })
-  await expect(closeBtn).toBeVisible()
-
   // Accessibility audit with speech bubble open
   const auditResults = await auditAccessibility(page)
   expect(auditResults.violations).toEqual([])
@@ -159,11 +153,10 @@ test('hero mascot is interactive, greets learner with speech bubble, and passes 
     animations: 'disabled',
   })
 
-  // Close via dedicated close button
-  await closeBtn.click()
+  // Close via mascot toggle click
+  await mascotBtn.click()
   await expect(bubble).not.toBeVisible()
   await expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
-  await expect(mascotBtn).toBeFocused()
 })
 
 test('apple-touch-icon and PWA app icons provide fully opaque brand paper background for iOS and mobile home screens', async ({

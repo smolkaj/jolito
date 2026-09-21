@@ -278,17 +278,6 @@ export function WelcomeView({
                         <path d="M18.8 6a8.2 8.2 0 0 1 0 12" />
                       </svg>
                     </button>
-                    <button
-                      type="button"
-                      className="mascot-speech-close-btn"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        closeGreeting(true)
-                      }}
-                      aria-label="Close greeting"
-                    >
-                      <span aria-hidden="true">✕</span>
-                    </button>
                   </div>
                 )}
               </div>
