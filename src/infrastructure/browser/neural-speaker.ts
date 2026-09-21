@@ -126,6 +126,7 @@ export class LruAudioCache {
 
 export class NeuralVoiceEngine {
   private audioContext: AudioContext | null = null
+  private offlineContext: OfflineAudioContext | null = null
   private audioCache: LruAudioCache
   private audioBlobs = new Map<string, string>()
   private isDestroyed = false
@@ -140,7 +141,6 @@ export class NeuralVoiceEngine {
   ) {
     this.audioCache = new LruAudioCache(maxMemoryBuffers)
     this.idleDelayMs = idleDelayMs
-    this.initContext()
     void this.getCache()
     this.installUnlockListeners()
     this.installLifecycleListeners()
@@ -160,15 +160,13 @@ export class NeuralVoiceEngine {
         return
       }
       configureAudioSessionCategory('ambient')
-      if (!this.audioContext) {
-        this.initContext()
-      }
+      const ctx = this.initContext()
       if (
-        this.audioContext &&
-        (this.audioContext.state as string) !== 'running' &&
-        typeof this.audioContext.resume === 'function'
+        ctx &&
+        (ctx.state as string) !== 'running' &&
+        typeof ctx.resume === 'function'
       ) {
-        void this.audioContext
+        void ctx
           .resume()
           .then(() => {
             if (
@@ -292,19 +290,48 @@ export class NeuralVoiceEngine {
     }
   }
 
-  private initContext(): void {
-    if (typeof window === 'undefined') return
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext
-    if (AudioCtx) {
-      try {
-        this.audioContext = new AudioCtx()
-      } catch {
-        this.audioContext = null
+  private initContext(): AudioContext | null {
+    if (typeof window === 'undefined') return null
+    if (!this.audioContext) {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext
+      if (AudioCtx) {
+        try {
+          this.audioContext = new AudioCtx()
+        } catch {
+          this.audioContext = null
+        }
       }
     }
+    return this.audioContext
+  }
+
+  private getDecodeContext(): BaseAudioContext | null {
+    if (this.audioContext) return this.audioContext
+    if (typeof window === 'undefined') return null
+
+    const OfflineCtx =
+      window.OfflineAudioContext ||
+      (
+        window as unknown as {
+          webkitOfflineAudioContext?: typeof OfflineAudioContext
+        }
+      ).webkitOfflineAudioContext
+
+    if (OfflineCtx) {
+      try {
+        if (!this.offlineContext) {
+          this.offlineContext = new OfflineCtx(1, 1, 44100)
+        }
+        return this.offlineContext
+      } catch {
+        // Fallback
+      }
+    }
+
+    return null
   }
 
   supported(): boolean {
@@ -737,16 +764,14 @@ export class NeuralVoiceEngine {
   private async decodeAudio(
     arrayBuffer: ArrayBuffer,
   ): Promise<AudioBuffer | null> {
-    if (
-      !this.audioContext ||
-      typeof this.audioContext.decodeAudioData !== 'function'
-    ) {
+    const ctx = this.getDecodeContext()
+    if (!ctx || typeof ctx.decodeAudioData !== 'function') {
       return null
     }
     try {
       const bufferCopy = arrayBuffer.slice(0)
       return await new Promise<AudioBuffer>((resolve, reject) => {
-        const res: unknown = this.audioContext!.decodeAudioData(
+        const res: unknown = ctx.decodeAudioData(
           bufferCopy,
           (buf) => resolve(buf),
           (err) => reject(err),
@@ -899,12 +924,10 @@ export class NeuralVoiceEngine {
           return true
         }
 
+        const decodeCtx = this.getDecodeContext()
         const requireDecode =
           Boolean(options?.requireDecode) &&
-          Boolean(
-            this.audioContext &&
-            typeof this.audioContext.decodeAudioData === 'function',
-          )
+          Boolean(decodeCtx && typeof decodeCtx.decodeAudioData === 'function')
         const arrayBuffer = await response.arrayBuffer()
         return this.registerDecodedBufferOrBlob(
           cleanText,
@@ -1116,6 +1139,7 @@ export class NeuralVoiceEngine {
     this.removeUnlockListeners()
     this.cleanupLifecycleListeners?.()
     void this.suspend()
+    this.offlineContext = null
   }
 }
 

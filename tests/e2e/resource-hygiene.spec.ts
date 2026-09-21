@@ -86,6 +86,17 @@ test.describe('Resource & Energy Hygiene', () => {
   test('idle dwell on welcome screen has zero intervals, zero animation loops, and near-zero CPU tasks', async ({
     page,
   }) => {
+    const autoplayWarnings: string[] = []
+    page.on('console', (msg) => {
+      const text = msg.text()
+      if (
+        text.includes('AudioContext was not allowed to start') ||
+        text.includes('developer.chrome.com/blog/autoplay/#web_audio')
+      ) {
+        autoplayWarnings.push(text)
+      }
+    })
+
     await page.goto('/')
     await expect(
       page.getByRole('button', { name: /^practice$/i }),
@@ -101,7 +112,8 @@ test.describe('Resource & Energy Hygiene', () => {
     )
     expect(activeIntervals).toEqual([])
 
-    // 2. Verify all audio contexts (e.g. from prewarm/predecode) remain strictly suspended before user gesture
+    // 2. Verify ZERO AudioContext instances are instantiated prior to genuine user interaction
+    // to strictly prevent Chrome autoplay console warnings ("The AudioContext was not allowed to start")
     const states = await page.evaluate(() =>
       (
         window as unknown as {
@@ -109,10 +121,8 @@ test.describe('Resource & Energy Hygiene', () => {
         }
       ).__hygiene.getAudioContextStates(),
     )
-    expect(states.length).toBeGreaterThanOrEqual(1)
-    for (const state of states) {
-      expect(state).toBe('suspended')
-    }
+    expect(states).toEqual([])
+    expect(autoplayWarnings).toEqual([])
 
     // 3. Measure CPU task and rAF execution during a 1.5s quiet dwell period using CDP
     const client = await page.context().newCDPSession(page)
