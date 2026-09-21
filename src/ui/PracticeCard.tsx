@@ -203,6 +203,9 @@ export function PracticeCard({
   } | null>(null)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const activeZoneRef = useRef<Grade | null>(null)
+  const [isPeelingUp, setIsPeelingUp] = useState(false)
+  const isPeelingUpRef = useRef(false)
+  const peelTimerRef = useRef<number | null>(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
   const [prevRevealed, setPrevRevealed] = useState(revealed)
 
@@ -212,6 +215,7 @@ export function PracticeCard({
     setDragOffset({ x: 0, y: 0 })
     setIsDragging(false)
     setIsAnimatingExit(false)
+    setIsPeelingUp(false)
     setActiveZone(null)
   }
 
@@ -219,9 +223,14 @@ export function PracticeCard({
     dragOffsetRef.current = { x: 0, y: 0 }
     activeZoneRef.current = null
     isAnimatingExitRef.current = false
+    isPeelingUpRef.current = false
     if (exitTimerRef.current !== null) {
       window.clearTimeout(exitTimerRef.current)
       exitTimerRef.current = null
+    }
+    if (peelTimerRef.current !== null) {
+      window.clearTimeout(peelTimerRef.current)
+      peelTimerRef.current = null
     }
   }, [card.id, revealed])
 
@@ -231,15 +240,48 @@ export function PracticeCard({
         window.clearTimeout(exitTimerRef.current)
         exitTimerRef.current = null
       }
+      if (peelTimerRef.current !== null) {
+        window.clearTimeout(peelTimerRef.current)
+        peelTimerRef.current = null
+      }
     }
   }, [])
+
+  const triggerSwipeUpReveal = () => {
+    if (isPeelingUpRef.current || isAnimatingExitRef.current) return
+    isPeelingUpRef.current = true
+    setIsPeelingUp(true)
+    setIsDragging(false)
+    pointerStartRef.current = null
+    haptics?.trigger('selection')
+
+    const targetLift = -110
+    setDragOffset({ x: 0, y: targetLift })
+    dragOffsetRef.current = { x: 0, y: targetLift }
+
+    const revealDelay = prefersReducedMotion ? 0 : 200
+    peelTimerRef.current = window.setTimeout(() => {
+      peelTimerRef.current = null
+      setIsPeelingUp(false)
+      isPeelingUpRef.current = false
+      setDragOffset({ x: 0, y: 0 })
+      dragOffsetRef.current = { x: 0, y: 0 }
+      onReveal()
+    }, revealDelay)
+  }
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
     const isTouchOrMobile =
       event.pointerType === 'touch' ||
       (typeof window !== 'undefined' && window.innerWidth <= 680)
     if (!isTouchOrMobile) return
-    if (paused || isAnimatingExit || pointerStartRef.current !== null) return
+    if (
+      paused ||
+      isAnimatingExit ||
+      isPeelingUp ||
+      pointerStartRef.current !== null
+    )
+      return
     if (event.button !== 0) return
     const target = event.target as HTMLElement | null
     const isUnrevealedInteractive = Boolean(
@@ -297,15 +339,11 @@ export function PracticeCard({
 
     if (!revealed) {
       if (dy < 0) {
-        const liftY = Math.max(-80, dy * 0.45)
+        const liftY = Math.max(-130, dy * 0.72)
         dragOffsetRef.current = { x: 0, y: liftY }
         setDragOffset({ x: 0, y: liftY })
 
-        if (dy <= -40) {
-          setIsDragging(false)
-          setDragOffset({ x: 0, y: 0 })
-          dragOffsetRef.current = { x: 0, y: 0 }
-          pointerStartRef.current = null
+        if (dy <= -75) {
           if (cardRef.current && event.pointerId !== undefined) {
             try {
               cardRef.current.releasePointerCapture(event.pointerId)
@@ -313,8 +351,7 @@ export function PracticeCard({
               // Ignore
             }
           }
-          haptics?.trigger('selection')
-          onReveal()
+          triggerSwipeUpReveal()
         }
       }
       return
@@ -324,7 +361,7 @@ export function PracticeCard({
       dragOffsetRef.current = { x: dx, y: 0 }
       setDragOffset({ x: dx, y: 0 })
 
-      const THRESHOLD = 75
+      const THRESHOLD = 95
       let nextZone: Grade | null = null
       if (dx < -THRESHOLD) {
         nextZone = 'again'
@@ -361,15 +398,15 @@ export function PracticeCard({
 
     if (!revealed) {
       const upwardDistance = -actualDy
-      setDragOffset({ x: 0, y: 0 })
-      dragOffsetRef.current = { x: 0, y: 0 }
       if (
         !start.isUnrevealedInteractive &&
-        upwardDistance >= 35 &&
+        upwardDistance >= 40 &&
         Math.abs(actualDy) > Math.abs(actualDx)
       ) {
-        haptics?.trigger('selection')
-        onReveal()
+        triggerSwipeUpReveal()
+      } else {
+        setDragOffset({ x: 0, y: 0 })
+        dragOffsetRef.current = { x: 0, y: 0 }
       }
       return
     }
@@ -377,7 +414,7 @@ export function PracticeCard({
     if (currentActiveZone) {
       setIsAnimatingExit(true)
       isAnimatingExitRef.current = true
-      const exitX = currentActiveZone === 'again' ? -360 : 360
+      const exitX = currentActiveZone === 'again' ? -380 : 380
       setDragOffset({ x: exitX, y: 0 })
       const gradeToSubmit = currentActiveZone
       const exitDelay = prefersReducedMotion ? 0 : 200
@@ -402,33 +439,68 @@ export function PracticeCard({
   const handlePointerCancel = () => {
     pointerStartRef.current = null
     setIsDragging(false)
-    setDragOffset({ x: 0, y: 0 })
-    dragOffsetRef.current = { x: 0, y: 0 }
+    if (!isPeelingUpRef.current) {
+      setDragOffset({ x: 0, y: 0 })
+      dragOffsetRef.current = { x: 0, y: 0 }
+    }
     setActiveZone(null)
     activeZoneRef.current = null
   }
 
   const rotation =
     revealed && !prefersReducedMotion
-      ? Math.max(-16, Math.min(16, dragOffset.x * 0.08))
+      ? Math.max(-14, Math.min(14, dragOffset.x * 0.065))
       : 0
-  const transformStyle =
-    isDragging || isAnimatingExit
+
+  const isTransitioning = isDragging || isAnimatingExit || isPeelingUp
+  const transformStyle = isTransitioning
+    ? {
+        transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) rotate(${rotation}deg)${isPeelingUp ? ' scale(0.97)' : ''}`,
+        opacity: isPeelingUp ? 0.75 : 1,
+        transition:
+          isDragging || prefersReducedMotion
+            ? 'none'
+            : 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease-out',
+      }
+    : dragOffset.x !== 0 || dragOffset.y !== 0
       ? {
-          transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) rotate(${rotation}deg)`,
-          transition:
-            isDragging || prefersReducedMotion
-              ? 'none'
-              : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
+          transform: 'translate3d(0, 0, 0) rotate(0deg)',
+          opacity: 1,
+          transition: prefersReducedMotion
+            ? 'none'
+            : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
         }
-      : dragOffset.x !== 0 || dragOffset.y !== 0
-        ? {
-            transform: 'translate3d(0, 0, 0) rotate(0deg)',
-            transition: prefersReducedMotion
-              ? 'none'
-              : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
-          }
-        : undefined
+      : undefined
+
+  const DEADZONE = 18
+  const THRESHOLD = 95
+
+  const progressAgain =
+    activeZone === 'again'
+      ? 1
+      : dragOffset.x < -DEADZONE
+        ? Math.min(
+            1,
+            Math.max(
+              0,
+              (Math.abs(dragOffset.x) - DEADZONE) / (THRESHOLD - DEADZONE),
+            ),
+          )
+        : 0
+  const opacityAgain =
+    activeZone === 'again' ? 0.95 : Math.pow(progressAgain, 1.8) * 0.95
+
+  const progressGood =
+    activeZone === 'good'
+      ? 1
+      : dragOffset.x > DEADZONE
+        ? Math.min(
+            1,
+            Math.max(0, (dragOffset.x - DEADZONE) / (THRESHOLD - DEADZONE)),
+          )
+        : 0
+  const opacityGood =
+    activeZone === 'good' ? 0.95 : Math.pow(progressGood, 1.8) * 0.95
 
   return (
     <>
@@ -436,16 +508,14 @@ export function PracticeCard({
         <div className="card-gesture-overlays fixed-hud" aria-hidden="true">
           <div
             className={`gesture-card-flood gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
-            style={{
-              opacity:
-                activeZone === 'again'
-                  ? 1
-                  : dragOffset.x < -6
-                    ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
-                    : 0,
-            }}
+            style={{ opacity: opacityAgain }}
           >
-            <div className="flood-content">
+            <div
+              className="flood-content"
+              style={{
+                transform: `scale(${0.86 + progressAgain * 0.2})`,
+              }}
+            >
               <div className="flood-icons" aria-hidden="true">
                 <span className="flood-thumb">👎</span>
                 <span className="badge-key badge-icon flood-icon">↺</span>
@@ -455,16 +525,14 @@ export function PracticeCard({
           </div>
           <div
             className={`gesture-card-flood gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
-            style={{
-              opacity:
-                activeZone === 'good'
-                  ? 1
-                  : dragOffset.x > 6
-                    ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
-                    : 0,
-            }}
+            style={{ opacity: opacityGood }}
           >
-            <div className="flood-content">
+            <div
+              className="flood-content"
+              style={{
+                transform: `scale(${0.86 + progressGood * 0.2})`,
+              }}
+            >
               <div className="flood-icons" aria-hidden="true">
                 <span className="flood-thumb">👍</span>
                 <span className="badge-key badge-icon flood-icon">✓</span>
@@ -515,9 +583,6 @@ export function PracticeCard({
         )}
         {!revealed ? (
           <>
-            <div className="card-unrevealed-cue" aria-hidden="true">
-              <span className="touch-cue-text">👆 Swipe up to reveal</span>
-            </div>
             <form
               className="answer-form"
               onSubmit={(event) => {
@@ -674,6 +739,29 @@ export function PracticeCard({
           )}
         </p>
       </section>
+      <div
+        className={`card-gesture-cue-bar ${isDragging ? 'is-dragging' : ''}`}
+        aria-hidden="true"
+      >
+        {!revealed ? (
+          <div className="gesture-cue-pill">
+            <span className="gesture-cue-arrow arrow-up">↑</span>
+            <span className="gesture-cue-text">Swipe up to reveal</span>
+          </div>
+        ) : (
+          <div className="gesture-cue-pill">
+            <span className="gesture-cue-action">
+              <span className="gesture-cue-arrow arrow-left">←</span>
+              <span>Again</span>
+            </span>
+            <span className="gesture-cue-sep">·</span>
+            <span className="gesture-cue-action">
+              <span>Good</span>
+              <span className="gesture-cue-arrow arrow-right">→</span>
+            </span>
+          </div>
+        )}
+      </div>
     </>
   )
 }

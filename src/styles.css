@@ -6237,33 +6237,81 @@ kbd {
   color: var(--cempasuchil);
 }
 
-.card-unrevealed-cue {
+/* Gestural discoverability bar beneath study card */
+.card-gesture-cue-bar {
   display: none;
 }
 
 @media (hover: none) and (pointer: coarse), (max-width: 680px) {
-  .card-unrevealed-cue {
-    display: block;
-    margin-bottom: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--ink-muted);
+  .card-gesture-cue-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(560px, 100%);
+    margin: 14px auto 0;
+    padding: 0 16px;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 180ms ease;
   }
-  .card-unrevealed-cue .touch-cue-text {
+
+  .card-gesture-cue-bar.is-dragging {
+    opacity: 0.18;
+  }
+
+  .gesture-cue-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    background: var(--paper-subtle);
+    border: 1px solid var(--line-subtle);
+    border-radius: 999px;
+    color: var(--ink-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .gesture-cue-arrow {
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .gesture-cue-arrow.arrow-up {
+    display: inline-block;
+    animation: subtle-float-up 2.2s ease-in-out infinite;
+  }
+
+  .gesture-cue-action {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 10px;
-    background: var(--paper-subtle);
-    border: 1px dashed var(--line-subtle);
-    border-radius: 999px;
   }
+
+  .gesture-cue-sep {
+    opacity: 0.45;
+    font-weight: 400;
+  }
+
   .keyboard-hint,
   .reveal-button kbd,
   .answer-accents button kbd,
   .grade-buttons kbd,
   .grade-btn kbd {
     display: none !important;
+  }
+}
+
+@keyframes subtle-float-up {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
   }
 }
 

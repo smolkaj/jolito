@@ -327,6 +327,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
   })
 
   it('reveals answer on swipe up when unrevealed and triggers haptic feedback', () => {
+    vi.useFakeTimers()
     const card = mockCards[0]!
     const onReveal = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -366,8 +367,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(onReveal).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
+    vi.advanceTimersByTime(200)
+    expect(onReveal).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 
   it('does not reveal answer on single tap when unrevealed, preventing accidental reveals', () => {
@@ -482,6 +485,51 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(
       container.querySelector('.gesture-zone-badge.zone-hard'),
     ).not.toBeInTheDocument()
+  })
+
+  it('renders subtle gestural discoverability cue bar underneath the card in both unrevealed and revealed states', () => {
+    const card = mockCards[0]!
+
+    // Unrevealed state
+    const { container, rerender } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const cueBarUnrevealed = container.querySelector('.card-gesture-cue-bar')
+    expect(cueBarUnrevealed).toBeInTheDocument()
+    expect(cueBarUnrevealed).toHaveTextContent('Swipe up to reveal')
+
+    // Revealed state
+    rerender(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const cueBarRevealed = container.querySelector('.card-gesture-cue-bar')
+    expect(cueBarRevealed).toBeInTheDocument()
+    expect(cueBarRevealed).toHaveTextContent('Again')
+    expect(cueBarRevealed).toHaveTextContent('Good')
   })
 
   it('does not reveal on horizontal swipe when unrevealed', () => {
@@ -698,11 +746,13 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
+    vi.advanceTimersByTime(200)
     expect(onReveal).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
 
   it('reveals on vertical swipe up when unrevealed, but does not reveal on vertical swipe down', () => {
+    vi.useFakeTimers()
     const card = mockCards[0]!
     const onReveal = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -764,8 +814,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(onReveal).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
+    vi.advanceTimersByTime(200)
+    expect(onReveal).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 
   it('ignores grade button clicks and keyboard shortcuts during exit animation, preventing double grading', () => {
