@@ -7,6 +7,8 @@ import { downloadJsonFile } from '../../infrastructure/browser/download'
 import { applyAnkiImport } from '../../application/anki-import'
 import { parseAnkiDeck, type ParseAnkiResult } from '../../domain/anki-import'
 import type { StudyCard } from '../../domain/card'
+import type { HapticsPlayer } from '../../application/ports'
+import { ModalSheet } from './ModalSheet'
 
 export interface DeckBackupModalProps {
   isOpen: boolean
@@ -20,6 +22,7 @@ export interface DeckBackupModalProps {
     newDeletedCardIds?: string[],
   ) => boolean | void
   clock: { now(): number }
+  haptics?: HapticsPlayer | undefined
 }
 
 function DeckBackupModalInner({
@@ -29,6 +32,7 @@ function DeckBackupModalInner({
   deletedCardIds,
   onUpdateCards,
   clock,
+  haptics,
 }: Omit<DeckBackupModalProps, 'isOpen'>) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -189,173 +193,170 @@ function DeckBackupModalInner({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="modal-content backup-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="backup-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="backup-modal-title">Deck import & offline backup</h2>
-            <p className="modal-subtitle">
-              Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
-              offline JSON backups.
+    <ModalSheet
+      onClose={onClose}
+      className="backup-modal"
+      ariaLabelledBy="backup-modal-title"
+      haptics={haptics}
+    >
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="backup-modal-title">Deck import & offline backup</h2>
+          <p className="modal-subtitle">
+            Import your Anki decks (*.apkg, *.txt, *.csv, *.tsv) or export
+            offline JSON backups.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+
+      {backupStatus && (
+        <div
+          ref={backupStatusRef}
+          className={`status-banner status-${backupStatus.type}`}
+          role={backupStatus.type === 'error' ? 'alert' : 'status'}
+        >
+          <p>
+            {backupStatus.saveFailed
+              ? (saveError ?? backupStatus.message)
+              : backupStatus.message}
+          </p>
+          {backupStatus.details && (
+            <ul className="status-details">
+              {backupStatus.details.map((detail, idx) => (
+                <li key={idx}>{detail}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div className="backup-sections">
+        <div className="backup-section export-section">
+          <div className="backup-section-header">
+            <h3>Export deck</h3>
+            <p>
+              Save all cards, schedules, notes, and study history to a JSON
+              file.
             </p>
           </div>
           <button
             type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
+            className={`primary-button export-button ${isExported ? 'is-exported' : ''}`}
+            onClick={handleExport}
           >
-            ✕
+            {isExported ? (
+              <span className="export-button-exported">
+                <span className="export-button-check" aria-hidden="true">
+                  ✓
+                </span>
+                <span className="export-button-text">Exported backup</span>
+              </span>
+            ) : (
+              <>
+                Export backup (JSON) <span aria-hidden="true">↓</span>
+              </>
+            )}
           </button>
+          <div className="sr-only" role="status" aria-live="polite">
+            {isExported ? `Deck exported: ${cards.length} cards saved.` : ''}
+          </div>
         </div>
 
-        {backupStatus && (
-          <div
-            ref={backupStatusRef}
-            className={`status-banner status-${backupStatus.type}`}
-            role={backupStatus.type === 'error' ? 'alert' : 'status'}
-          >
+        <div className="backup-section import-section">
+          <div className="backup-section-header">
+            <h3>Import Anki deck or backup</h3>
             <p>
-              {backupStatus.saveFailed
-                ? (saveError ?? backupStatus.message)
-                : backupStatus.message}
+              Load cards from an Anki package (.apkg), text export (.txt, .tsv,
+              .csv), or Jolito backup (.json).
             </p>
-            {backupStatus.details && (
-              <ul className="status-details">
-                {backupStatus.details.map((detail, idx) => (
-                  <li key={idx}>{detail}</li>
-                ))}
-              </ul>
-            )}
           </div>
-        )}
 
-        <div className="backup-sections">
-          <div className="backup-section export-section">
-            <div className="backup-section-header">
-              <h3>Export deck</h3>
-              <p>
-                Save all cards, schedules, notes, and study history to a JSON
-                file.
-              </p>
-            </div>
+          <div
+            className="import-mode-selector"
+            role="radiogroup"
+            aria-label="Import mode"
+          >
+            <label
+              className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
+            >
+              <input
+                type="radio"
+                name="deckRestoreMode"
+                value="replace"
+                checked={mode === 'replace'}
+                onChange={() => setMode('replace')}
+              />
+              <span className="mode-label">
+                <strong>Restore</strong>
+                <small>Replace current deck</small>
+              </span>
+            </label>
+            <label
+              className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
+            >
+              <input
+                type="radio"
+                name="deckRestoreMode"
+                value="merge"
+                checked={mode === 'merge'}
+                onChange={() => setMode('merge')}
+              />
+              <span className="mode-label">
+                <strong>Merge</strong>
+                <small>Combine with current</small>
+              </span>
+            </label>
+          </div>
+
+          <div className="file-input-wrapper">
+            <label
+              htmlFor="deck-backup-file-input"
+              className="file-input-label"
+            >
+              Choose Anki deck or backup file
+            </label>
+            <input
+              id="deck-backup-file-input"
+              ref={fileInputRef}
+              type="file"
+              accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
+              className="backup-file-input"
+              onChange={(e) => {
+                void handleFileChange(e)
+              }}
+              aria-label="Choose Anki deck or backup file"
+            />
+          </div>
+
+          {selectedImportData && (
             <button
               type="button"
-              className={`primary-button export-button ${isExported ? 'is-exported' : ''}`}
-              onClick={handleExport}
+              className="secondary-button restore-confirm-button"
+              disabled={isParsingImport}
+              onClick={() => {
+                void handleRestore()
+              }}
             >
-              {isExported ? (
-                <span className="export-button-exported">
-                  <span className="export-button-check" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span className="export-button-text">Exported backup</span>
-                </span>
-              ) : (
-                <>
-                  Export backup (JSON) <span aria-hidden="true">↓</span>
-                </>
-              )}
+              {mode === 'replace'
+                ? selectedImportData.deckName
+                  ? `Import "${selectedImportData.deckName}" (Replace)`
+                  : 'Import deck (Replace current)'
+                : selectedImportData.deckName
+                  ? `Merge "${selectedImportData.deckName}" with library`
+                  : 'Merge deck with library'}
             </button>
-            <div className="sr-only" role="status" aria-live="polite">
-              {isExported ? `Deck exported: ${cards.length} cards saved.` : ''}
-            </div>
-          </div>
-
-          <div className="backup-section import-section">
-            <div className="backup-section-header">
-              <h3>Import Anki deck or backup</h3>
-              <p>
-                Load cards from an Anki package (.apkg), text export (.txt,
-                .tsv, .csv), or Jolito backup (.json).
-              </p>
-            </div>
-
-            <div
-              className="import-mode-selector"
-              role="radiogroup"
-              aria-label="Import mode"
-            >
-              <label
-                className={`mode-option ${mode === 'replace' ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="deckRestoreMode"
-                  value="replace"
-                  checked={mode === 'replace'}
-                  onChange={() => setMode('replace')}
-                />
-                <span className="mode-label">
-                  <strong>Restore</strong>
-                  <small>Replace current deck</small>
-                </span>
-              </label>
-              <label
-                className={`mode-option ${mode === 'merge' ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="deckRestoreMode"
-                  value="merge"
-                  checked={mode === 'merge'}
-                  onChange={() => setMode('merge')}
-                />
-                <span className="mode-label">
-                  <strong>Merge</strong>
-                  <small>Combine with current</small>
-                </span>
-              </label>
-            </div>
-
-            <div className="file-input-wrapper">
-              <label
-                htmlFor="deck-backup-file-input"
-                className="file-input-label"
-              >
-                Choose Anki deck or backup file
-              </label>
-              <input
-                id="deck-backup-file-input"
-                ref={fileInputRef}
-                type="file"
-                accept=".apkg,.colpkg,.txt,.tsv,.csv,.json,application/json"
-                className="backup-file-input"
-                onChange={(e) => {
-                  void handleFileChange(e)
-                }}
-                aria-label="Choose Anki deck or backup file"
-              />
-            </div>
-
-            {selectedImportData && (
-              <button
-                type="button"
-                className="secondary-button restore-confirm-button"
-                disabled={isParsingImport}
-                onClick={() => {
-                  void handleRestore()
-                }}
-              >
-                {mode === 'replace'
-                  ? selectedImportData.deckName
-                    ? `Import "${selectedImportData.deckName}" (Replace)`
-                    : 'Import deck (Replace current)'
-                  : selectedImportData.deckName
-                    ? `Merge "${selectedImportData.deckName}" with library`
-                    : 'Merge deck with library'}
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </ModalSheet>
   )
 }
 

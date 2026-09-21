@@ -188,6 +188,7 @@ export function GrammarPractice({
   const [before, after] = context.sentence.split('___')
   return (
     <PracticeCard
+      haptics={services.haptics}
       card={current}
       prompt={
         <>

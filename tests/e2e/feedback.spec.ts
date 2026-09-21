@@ -168,8 +168,19 @@ test.describe('Feedback modal & submission', () => {
     // 2. Verify mobile alignment parity across views
     await page.setViewportSize({ width: 390, height: 844 })
 
-    const mobileViews = [
-      { name: 'home', path: '/' },
+    // Home view has no mobile tab bar, resting at the viewport baseline
+    await page.goto('/')
+    const homeFeedbackBtn = page
+      .locator('.app-footer')
+      .getByRole('button', { name: /^feedback$/i })
+    await expect(homeFeedbackBtn).toBeVisible()
+    const homeBox = await homeFeedbackBtn.boundingBox()
+    expect(homeBox).not.toBeNull()
+    const homeBottomOffset = 844 - (homeBox!.y + homeBox!.height)
+    expect(homeBottomOffset).toBe(28)
+
+    // Mobile app views display the mobile tab bar and maintain a consistent elevated baseline
+    const mobileAppViews = [
       { name: 'deck', path: '/#/deck' },
       { name: 'complete', path: '/#/complete' },
       { name: 'grammar', path: '/#/grammar' },
@@ -181,7 +192,7 @@ test.describe('Feedback modal & submission', () => {
       rightOffset: number
     }> = []
 
-    for (const view of mobileViews) {
+    for (const view of mobileAppViews) {
       await page.goto(view.path)
       const feedbackBtn = page
         .locator('.app-footer')
@@ -205,12 +216,12 @@ test.describe('Feedback modal & submission', () => {
     for (const m of mobileMeasurements.slice(1)) {
       expect(
         Math.abs(m.bottomOffset - firstMobile.bottomOffset),
-        `Mobile bottom offset mismatch between home (${firstMobile.bottomOffset}px) and ${m.name} (${m.bottomOffset}px)`,
+        `Mobile bottom offset mismatch between deck (${firstMobile.bottomOffset}px) and ${m.name} (${m.bottomOffset}px)`,
       ).toBeLessThanOrEqual(1)
 
       expect(
         Math.abs(m.rightOffset - firstMobile.rightOffset),
-        `Mobile right offset mismatch between home (${firstMobile.rightOffset}px) and ${m.name} (${m.rightOffset}px)`,
+        `Mobile right offset mismatch between deck (${firstMobile.rightOffset}px) and ${m.name} (${m.rightOffset}px)`,
       ).toBeLessThanOrEqual(1)
     }
   })

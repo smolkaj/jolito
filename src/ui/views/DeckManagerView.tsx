@@ -9,7 +9,7 @@ import {
   filterDeckCards,
   getDeckStats,
 } from '../../application/deck-management'
-import type { AuthUser } from '../../application/ports'
+import type { AuthUser, HapticsPlayer } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { getDuplicateGroups } from '../../domain/duplicate'
 import type { StarterPack } from '../../domain/starter-decks'
@@ -57,6 +57,7 @@ export interface DeckManagerViewProps {
   onAddStarterPack: (pack: StarterPack) => boolean | void
   onAddStarterNote: (pack: StarterPack, noteIndex: number) => boolean | void
   clock: { now(): number }
+  haptics?: HapticsPlayer | undefined
 }
 
 export function DeckManagerView({
@@ -87,6 +88,7 @@ export function DeckManagerView({
   onAddStarterPack,
   onAddStarterNote,
   clock,
+  haptics,
 }: DeckManagerViewProps) {
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(
     () => new Set(),
@@ -198,12 +200,18 @@ export function DeckManagerView({
           <Brand onClick={onGoHome} />
           <div className="nav-actions" data-nosnippet>
             {vocabularyCards.length > 0 && (
-              <button className="text-button" onClick={onNavigateToCreate}>
+              <button
+                className="text-button topbar-nav-btn"
+                onClick={onNavigateToCreate}
+              >
                 + New card
               </button>
             )}
             {(queue.length > 0 || dueCount > 0) && (
-              <button className="text-button" onClick={onPractice}>
+              <button
+                className="text-button topbar-nav-btn"
+                onClick={onPractice}
+              >
                 Practice
               </button>
             )}
@@ -600,6 +608,7 @@ export function DeckManagerView({
         cards={cards}
         onAddPack={onAddStarterPack}
         onAddNote={onAddStarterNote}
+        haptics={haptics}
       />
 
       <DeckBackupModal
@@ -610,12 +619,14 @@ export function DeckManagerView({
         deletedCardIds={deletedCardIds}
         onUpdateCards={onUpdateCards}
         clock={clock}
+        haptics={haptics}
       />
 
       <DemoDeckModal
         isOpen={!authUser && !isDemoDeckDismissed}
         onClose={() => setIsDemoDeckDismissed(true)}
         onSignIn={onOpenSync}
+        haptics={haptics}
       />
     </>
   )

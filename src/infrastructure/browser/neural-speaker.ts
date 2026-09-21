@@ -150,7 +150,19 @@ export class NeuralVoiceEngine {
     if (this.isDestroyed || typeof window === 'undefined') return
     if (this.cleanupGestureListeners) return
     const unlock = () => {
+      const nav = typeof navigator !== 'undefined' ? navigator : undefined
+      if (
+        nav &&
+        'userActivation' in nav &&
+        nav.userActivation &&
+        !nav.userActivation.hasBeenActive
+      ) {
+        return
+      }
       configureAudioSessionCategory('ambient')
+      if (!this.audioContext) {
+        this.initContext()
+      }
       if (
         this.audioContext &&
         (this.audioContext.state as string) !== 'running' &&
@@ -183,10 +195,16 @@ export class NeuralVoiceEngine {
       passive: true,
       once: true,
     })
+    window.addEventListener('pointerup', unlock, { passive: true })
+    window.addEventListener('touchend', unlock, { passive: true })
+    window.addEventListener('click', unlock, { passive: true })
     window.addEventListener('keydown', unlock, { passive: true, once: true })
     this.cleanupGestureListeners = () => {
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('touchstart', unlock)
+      window.removeEventListener('pointerup', unlock)
+      window.removeEventListener('touchend', unlock)
+      window.removeEventListener('click', unlock)
       window.removeEventListener('keydown', unlock)
       this.cleanupGestureListeners = null
     }

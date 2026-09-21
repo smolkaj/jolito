@@ -645,11 +645,14 @@ export function CreateCardView({
       <nav className="topbar" aria-label="Card creation navigation">
         <Brand onClick={onGoHome} />
         <div className="nav-actions" data-nosnippet>
-          <button className="text-button" onClick={onNavigateToDeck}>
+          <button
+            className="text-button topbar-nav-btn"
+            onClick={onNavigateToDeck}
+          >
             Manage deck
           </button>
           {canPractice && (
-            <button className="text-button" onClick={onPractice}>
+            <button className="text-button topbar-nav-btn" onClick={onPractice}>
               Practice
             </button>
           )}

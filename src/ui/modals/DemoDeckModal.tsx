@@ -1,15 +1,19 @@
 import { useEffect } from 'react'
+import type { HapticsPlayer } from '../../application/ports'
+import { ModalSheet } from './ModalSheet'
 
 export interface DemoDeckModalProps {
   isOpen: boolean
   onClose: () => void
   onSignIn: () => void
+  haptics?: HapticsPlayer | undefined
 }
 
 export function DemoDeckModal({
   isOpen,
   onClose,
   onSignIn,
+  haptics,
 }: DemoDeckModalProps) {
   useEffect(() => {
     if (!isOpen) return
@@ -26,51 +30,38 @@ export function DemoDeckModal({
   if (!isOpen) return null
 
   return (
-    <div
-      className="modal-backdrop demo-deck-modal-backdrop"
-      onClick={onClose}
-      role="presentation"
+    <ModalSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      backdropClassName="demo-deck-modal-backdrop"
+      className="demo-deck-modal"
+      ariaLabelledBy="demo-deck-modal-title"
+      haptics={haptics}
     >
-      <div
-        className="modal-content demo-deck-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="demo-deck-modal-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <div className="modal-header-copy">
-            <h2 id="demo-deck-modal-title">Demo deck</h2>
-            <p className="modal-subtitle">
-              You’re exploring 4 example flashcards. Sign in anytime to build,
-              edit, and sync your personal deck.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close dialog"
-          >
-            ✕
-          </button>
-        </div>
-        <div className="demo-deck-modal-actions">
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => {
-              onClose()
-              onSignIn()
-            }}
-          >
-            Sign in to build your deck <span aria-hidden="true">→</span>
-          </button>
-          <button type="button" className="secondary-button" onClick={onClose}>
-            Explore demo deck
-          </button>
+      <div className="modal-header">
+        <div className="modal-header-copy">
+          <h2 id="demo-deck-modal-title">Demo deck</h2>
+          <p className="modal-subtitle">
+            You’re exploring 4 example flashcards. Sign in anytime to build,
+            edit, and sync your personal deck.
+          </p>
         </div>
       </div>
-    </div>
+      <div className="demo-deck-modal-actions">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => {
+            onClose()
+            onSignIn()
+          }}
+        >
+          Sign in to build your deck <span aria-hidden="true">→</span>
+        </button>
+        <button type="button" className="secondary-button" onClick={onClose}>
+          Explore demo deck
+        </button>
+      </div>
+    </ModalSheet>
   )
 }

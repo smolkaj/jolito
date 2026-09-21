@@ -77,6 +77,7 @@ import {
   type CreateCardParams,
 } from './ui/views/CreateCardView'
 import { DeckManagerView } from './ui/views/DeckManagerView'
+import { MobileTabBar } from './ui/MobileTabBar'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -1171,6 +1172,7 @@ function LoadedApp({
         pendingCardPrompt={pendingCard ? pendingCard.spanish.trim() : undefined}
         onOpenPrivacy={openPrivacyModal}
         onOpenFeedback={openFeedbackModal}
+        haptics={services.haptics}
       />
       <EditCardModal
         saveError={saveError}
@@ -1182,6 +1184,7 @@ function LoadedApp({
         onPlayAudio={playAudio}
         aiAssistant={services.aiAssistant}
         isOnline={isOnline}
+        haptics={services.haptics}
       />
       <DeleteCardsModal
         saveError={saveError}
@@ -1189,6 +1192,7 @@ function LoadedApp({
         cards={deletingCards}
         onClose={() => setDeletingCards(null)}
         onConfirm={handleConfirmDelete}
+        haptics={services.haptics}
       />
       <FeedbackModal
         isOpen={isFeedbackOpen}
@@ -1196,9 +1200,44 @@ function LoadedApp({
         user={authUser}
         feedbackService={services.feedback}
         currentView={view}
+        haptics={services.haptics}
       />
-      <PrivacyModal isOpen={isPrivacyOpen} onClose={closePrivacyModal} />
+      <PrivacyModal
+        isOpen={isPrivacyOpen}
+        onClose={closePrivacyModal}
+        haptics={services.haptics}
+      />
     </>
+  )
+
+  const renderMobileTabBar = () => (
+    <MobileTabBar
+      currentView={view}
+      isSyncOpen={isSyncOpen}
+      syncStatus={syncStatus}
+      authUser={authUser}
+      dueCount={dueCount}
+      onPractice={() => {
+        if (isSyncOpen) closeSyncModal()
+        handlePractice()
+      }}
+      onNavigateToDeck={() => {
+        if (isSyncOpen) closeSyncModal()
+        navigateTo('deck')
+      }}
+      onNavigateToCreate={() => {
+        if (isSyncOpen) closeSyncModal()
+        navigateTo('create')
+      }}
+      onOpenSync={() => {
+        if (isSyncOpen) {
+          closeSyncModal()
+        } else {
+          openSyncModal()
+        }
+      }}
+      haptics={services.haptics}
+    />
   )
 
   if (view === 'welcome') {
@@ -1259,6 +1298,7 @@ function LoadedApp({
           assistant={services.assistant}
           aiAssistant={services.aiAssistant}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1295,7 +1335,9 @@ function LoadedApp({
           onAddStarterPack={handleAddStarterPack}
           onAddStarterNote={handleAddStarterNote}
           clock={services.clock}
+          haptics={services.haptics}
         />
+        {renderMobileTabBar()}
         {renderAppModals()}
       </>
     )
@@ -1330,13 +1372,13 @@ function LoadedApp({
             ) : (
               <>
                 <button
-                  className="text-button"
+                  className="text-button topbar-nav-btn"
                   onClick={() => navigateTo('deck')}
                 >
                   Manage deck
                 </button>
                 <button
-                  className="text-button"
+                  className="text-button topbar-nav-btn"
                   onClick={() => navigateTo('create')}
                 >
                   + New card
@@ -1426,6 +1468,7 @@ function LoadedApp({
         ) : (
           currentCard && (
             <PracticeCard
+              haptics={services.haptics}
               error={
                 saveError === STORAGE_SAVE_ERROR
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
@@ -1492,6 +1535,7 @@ function LoadedApp({
           />
         )}
       </main>
+      {renderMobileTabBar()}
       {renderAppModals()}
     </>
   )

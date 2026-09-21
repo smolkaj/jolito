@@ -2681,6 +2681,7 @@ kbd {
 
 .grade-buttons button {
   min-width: 0;
+  min-height: 44px;
   padding: 10px 12px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3287,6 +3288,10 @@ kbd {
 
   .grade-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grade-buttons button {
+    min-height: 44px;
   }
 
   .keyboard-hint {
@@ -6237,4 +6242,661 @@ kbd {
   background: var(--tezontle-soft);
   border-left: 3px solid var(--tezontle);
   padding: 0.75rem 1rem;
+}
+
+/* ==========================================================================
+   iOS Native Polish & Gestural Experience
+   ========================================================================== */
+
+/* Milestone 1: Gestural Practice Canvas */
+.study-card {
+  touch-action: pan-y;
+  will-change: transform;
+}
+
+.study-card:not(.is-revealed) {
+  touch-action: none;
+}
+
+.study-prompt,
+.reveal-main,
+.reveal-context-block {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.study-card input,
+.study-card textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.study-card.is-dragging {
+  cursor: grabbing;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.study-card.zone-again {
+  border-color: var(--rosa) !important;
+  box-shadow:
+    0 0 24px var(--rosa-glow),
+    var(--shadow-card);
+}
+
+.study-card.zone-good {
+  border-color: var(--turquesa-dark) !important;
+  box-shadow:
+    0 0 24px var(--turquesa-glow),
+    var(--shadow-card);
+}
+
+.study-card.zone-easy {
+  border-color: var(--verde) !important;
+  box-shadow:
+    0 0 24px var(--verde-glow),
+    var(--shadow-card);
+}
+
+.study-card.zone-hard {
+  border-color: var(--cempasuchil-dark) !important;
+  box-shadow:
+    0 0 24px var(--cempasuchil-glow),
+    var(--shadow-card);
+}
+
+.card-gesture-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 25;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.card-gesture-overlays.fixed-hud {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 95;
+  border-radius: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.gesture-card-flood {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 24px;
+  pointer-events: none;
+  z-index: 30;
+  transform: none !important;
+  right: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  box-sizing: border-box;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 80ms ease-out;
+}
+
+.gesture-card-flood.zone-again {
+  background: var(--rosa) !important;
+  color: #ffffff !important;
+}
+
+.gesture-card-flood.zone-good {
+  background: var(--turquesa-dark) !important;
+  color: #ffffff !important;
+}
+
+.gesture-card-flood .flood-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  transform: scale(0.92);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gesture-card-flood.is-active .flood-content {
+  transform: scale(1.08);
+}
+
+.gesture-card-flood .flood-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  line-height: 1;
+}
+
+.gesture-card-flood .flood-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(48px, 12vw, 76px);
+  line-height: 1;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
+}
+
+.gesture-card-flood .flood-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(48px, 12vw, 76px);
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff !important;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
+}
+
+.gesture-card-flood .flood-label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: clamp(32px, 9vw, 54px);
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-align: center;
+  color: #ffffff !important;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
+}
+
+.gesture-zone-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  border-radius: 14px;
+  font-family: var(--font-sans);
+  font-size: clamp(20px, 5.2vw, 28px);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 3.5px solid currentColor;
+  background: var(--card);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  transition:
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+  z-index: 30;
+}
+
+.gesture-zone-badge .badge-icon,
+.gesture-zone-badge .badge-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 4.8vw, 26px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* Ambient screen edge glow while swiping */
+.gesture-edge-glow {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 100;
+  transition: opacity 120ms ease;
+}
+
+.edge-glow-again {
+  left: 0;
+  background: linear-gradient(to right, rgba(228, 0, 124, 0.75), transparent);
+  box-shadow: 0 0 32px rgba(228, 0, 124, 0.6);
+}
+
+.edge-glow-good {
+  right: 0;
+  background: linear-gradient(to left, rgba(13, 122, 104, 0.75), transparent);
+  box-shadow: 0 0 32px rgba(13, 122, 104, 0.6);
+}
+
+/* Synchronize bottom grade button active feedback */
+.study-card.zone-again .grade-buttons .grade-again {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px var(--rosa-glow);
+  border-color: var(--rosa);
+}
+
+.study-card.zone-good .grade-buttons .grade-good {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px var(--turquesa-glow);
+  border-color: var(--turquesa-dark);
+}
+
+.gesture-zone-badge.zone-easy {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--verde);
+  border-color: var(--verde);
+}
+.gesture-zone-badge.zone-easy.is-active {
+  transform: translateX(-50%) scale(1.12);
+  background: var(--verde);
+  color: #ffffff;
+}
+.gesture-zone-badge.zone-easy.is-active .badge-key {
+  background: #ffffff;
+  color: var(--verde);
+}
+
+.gesture-zone-badge.zone-hard {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--cempasuchil-dark);
+  border-color: var(--cempasuchil-dark);
+}
+.gesture-zone-badge.zone-hard.is-active {
+  transform: translateX(-50%) scale(1.12);
+  background: var(--cempasuchil);
+  color: #121815;
+}
+.gesture-zone-badge.zone-hard.is-active .badge-key {
+  background: #121815;
+  color: var(--cempasuchil);
+}
+
+/* Gestural discoverability bar beneath study card */
+.card-gesture-cue-bar {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse), (max-width: 680px) {
+  .card-gesture-cue-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(560px, 100%);
+    margin: 18px auto 0;
+    padding: 0 16px;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 180ms ease;
+  }
+
+  .card-gesture-cue-bar.is-dragging {
+    opacity: 0.12;
+  }
+
+  .gesture-cue-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 22px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(18, 24, 21, 0.08);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    box-shadow: 0 2px 8px rgba(18, 24, 21, 0.04);
+    transition:
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .gesture-cue-pill.is-ready {
+    background: var(--card);
+    border-color: var(--turquesa-dark);
+    color: var(--ink);
+    font-weight: 700;
+    transform: scale(1.06);
+    box-shadow: 0 4px 16px var(--turquesa-glow);
+  }
+
+  .gesture-cue-pill.is-ready .gesture-cue-icon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 18px;
+    line-height: 1;
+    animation: eye-pulse 800ms ease-in-out infinite alternate;
+  }
+
+  @keyframes eye-pulse {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.2);
+    }
+  }
+
+  .gesture-cue-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gesture-cue-arrow.arrow-up {
+    font-size: 24px;
+    display: inline-block;
+    color: var(--ink-muted);
+    animation: subtle-float-up 2.2s ease-in-out infinite;
+  }
+
+  .gesture-cue-arrow.arrow-left {
+    color: rgba(228, 0, 124, 0.7);
+  }
+
+  .gesture-cue-arrow.arrow-right {
+    color: rgba(13, 122, 104, 0.7);
+  }
+
+  .gesture-cue-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gesture-cue-sep {
+    color: var(--line);
+    font-size: 18px;
+    opacity: 0.5;
+    font-weight: 400;
+  }
+
+  .keyboard-hint,
+  .reveal-button kbd,
+  .answer-accents button kbd,
+  .grade-buttons kbd,
+  .grade-btn kbd {
+    display: none !important;
+  }
+}
+
+@keyframes subtle-float-up {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Milestone 2: Mobile Navigation Tab Bar */
+.mobile-tab-bar {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .app-shell.review-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .review-page .topbar,
+  .review-page .review-progress-track {
+    margin-left: max(16px, env(safe-area-inset-left));
+    margin-right: max(16px, env(safe-area-inset-right));
+    width: calc(
+      100% - max(16px, env(safe-area-inset-left)) -
+        max(16px, env(safe-area-inset-right))
+    );
+    box-sizing: border-box;
+  }
+
+  .review-page .study-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: clamp(16px, 3vh, 28px) max(16px, env(safe-area-inset-right)) 20px
+      max(16px, env(safe-area-inset-left));
+    box-sizing: border-box;
+    cursor: pointer;
+  }
+
+  .mobile-tab-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    height: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: rgba(253, 245, 248, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1.5px solid var(--line-subtle);
+    box-shadow: 0 -2px 10px rgba(18, 24, 21, 0.04);
+  }
+
+  .mobile-tab-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 6px 0;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    transition:
+      color 120ms ease,
+      transform 100ms var(--ease-spring);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-tab-btn:active {
+    transform: scale(0.92);
+  }
+
+  .mobile-tab-btn.is-active {
+    color: var(--rosa-dark);
+    font-weight: 700;
+  }
+
+  .tab-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+  }
+
+  .tab-badge {
+    position: absolute;
+    top: -3px;
+    right: -7px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--paper-warm, #fdfaf7);
+    color: var(--rosa-dark);
+    border: 1px solid var(--rosa-dark);
+    font-size: 9.5px;
+    font-weight: 600;
+    line-height: 13px;
+    text-align: center;
+    box-shadow: none;
+  }
+
+  .tab-online-dot {
+    position: absolute;
+    bottom: 2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--verde);
+    border: 1.5px solid var(--paper);
+  }
+
+  /* Reachability for pages under fixed mobile tab bar */
+  .app-shell {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */
+  .topbar-nav-btn {
+    display: none !important;
+  }
+}
+
+/* Milestone 2: Draggable Bottom Sheets for Modals */
+.sheet-grabber-zone {
+  display: none;
+}
+
+@media (max-width: 680px) {
+  .modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-content.modal-sheet {
+    width: 100% !important;
+    max-height: 88vh !important;
+    max-height: 88dvh !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: none !important;
+    box-shadow: 0 -4px 24px rgba(18, 24, 21, 0.15) !important;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+    animation: sheet-slide-up 240ms var(--ease-spring) !important;
+    touch-action: pan-y;
+  }
+
+  .modal-content.modal-sheet.is-dragging-sheet {
+    transition: none !important;
+    cursor: grabbing;
+  }
+
+  .sheet-grabber-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 38px;
+    padding: 10px 0 12px;
+    margin-top: -6px;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .sheet-grabber-bar {
+    width: 38px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--line-subtle);
+  }
+
+  .demo-deck-modal .modal-close {
+    display: none;
+  }
+
+  @keyframes sheet-slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Milestone 3: Touch Feedback, Rubber-Banding & Haptic Polish */
+
+/* Instantaneous :active press transforms */
+button:active,
+.primary-button:active,
+.secondary-button:active,
+.text-button:active,
+.action-button:active,
+.grade-btn:active,
+.audio-button:active,
+.audio-btn:active,
+.study-quick-btn:active,
+.starter-pack-card:active,
+.demo-deck-chip:active {
+  transform: scale(0.96);
+  transition: transform 60ms cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+/* Native iOS inertial momentum scrolling */
+.modal-content,
+.deck-manager-table-wrap,
+.deck-cards-list,
+.study-card {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-content.modal-sheet {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  button:active,
+  .primary-button:active,
+  .secondary-button:active,
+  .text-button:active,
+  .action-button:active,
+  .grade-btn:active,
+  .audio-button:active,
+  .audio-btn:active,
+  .study-quick-btn:active,
+  .starter-pack-card:active,
+  .demo-deck-chip:active,
+  .mobile-tab-btn:active,
+  .gesture-zone-badge {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .study-card {
+    transition: none !important;
+  }
 }

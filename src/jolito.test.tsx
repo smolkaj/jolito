@@ -2431,8 +2431,11 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await user.click(screen.getByRole('button', { name: 'Create a card' }))
+    const nav = screen.getByRole('navigation', {
+      name: 'Card creation navigation',
+    })
     expect(
-      screen.queryByRole('button', { name: /^practice$/i }),
+      within(nav).queryByRole('button', { name: /^practice$/i }),
     ).not.toBeInTheDocument()
 
     // 1. Create first card
@@ -2445,7 +2448,6 @@ describe('Jolito', () => {
     await user.type(contextInput, 'Mexican slang')
     await user.click(screen.getByRole('button', { name: /save card/i }))
 
-    // Stays in create view with animated save button confirmation
     expect(
       screen.getByRole('heading', { name: 'New flashcard' }),
     ).toBeInTheDocument()
@@ -2462,7 +2464,7 @@ describe('Jolito', () => {
     expect(spanishInput).toHaveFocus()
     // Practice button appears now that due cards exist
     expect(
-      screen.getByRole('button', { name: /^practice$/i }),
+      within(nav).getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 2. Create second card in batch without needing to re-navigate or re-focus
@@ -2481,7 +2483,7 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
     expect(
-      screen.getByRole('button', { name: /^practice$/i }),
+      within(nav).getByRole('button', { name: /^practice$/i }),
     ).toBeInTheDocument()
 
     // 3. Navigate to review and practice all due cards
@@ -2808,7 +2810,7 @@ describe('Jolito', () => {
 
     // 7. Review button reflects only the 2 user cards
     expect(
-      screen.getByRole('button', { name: /^practice$/i }),
+      screen.getAllByRole('button', { name: /^practice$/i })[0],
     ).toBeInTheDocument()
   })
 
@@ -4327,13 +4329,14 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // Topbar in deck should have Practice button
-    const practiceButton = screen.getByRole('button', {
+    const [practiceButton] = screen.getAllByRole('button', {
       name: /^practice$/i,
     })
-    expect(practiceButton).toBeInTheDocument()
+    expect(practiceButton).toBeDefined()
+    expect(practiceButton!).toBeInTheDocument()
 
     // Resume review session via Practice button
-    await user.click(practiceButton)
+    await user.click(practiceButton!)
     expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
 
     // Progress bar still reflects completed card in session
@@ -6066,6 +6069,32 @@ describe('Jolito', () => {
         screen.getByRole('heading', { name: '¡Hecho!' }),
       ).toBeInTheDocument()
       expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
+    })
+
+    it('wires haptics to modal sheets and triggers haptic feedback on drag threshold', () => {
+      const services = createTestServices()
+      const triggerSpy = vi.spyOn(services.haptics, 'trigger')
+
+      const { container } = render(<App services={services} />)
+
+      // Open sync modal via ConnectionPill in welcome view
+      const signInBtn = screen.getByRole('button', { name: /sign in/i })
+      fireEvent.click(signInBtn)
+
+      expect(
+        screen.getByRole('dialog', { name: /Cloud sync|Save your card/i }),
+      ).toBeInTheDocument()
+
+      const grabber = container.querySelector(
+        '.sync-modal .sheet-grabber-zone',
+      )!
+      expect(grabber).toBeInTheDocument()
+
+      // Drag grabber past threshold
+      fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
+      fireEvent.pointerMove(grabber, { clientY: 200 })
+
+      expect(triggerSpy).toHaveBeenCalledWith('selection')
     })
   })
 })
