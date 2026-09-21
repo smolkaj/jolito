@@ -689,6 +689,7 @@ describe('sync update recovery', () => {
         .mockResolvedValueOnce({
           success: false,
           error: 'Update Jolito to sync.',
+          syncHelp: true,
         })
         .mockResolvedValueOnce({ success: true })
       render(
@@ -721,4 +722,30 @@ describe('sync update recovery', () => {
       expect(close).not.toHaveBeenCalled()
     },
   )
+
+  it('omits update guidance link on generic or transient sync errors', async () => {
+    const auth = new MockAuthService()
+    auth.user = { id: 'network-user', email: 'user@example.com' }
+    const sync = vi.fn().mockResolvedValue({
+      success: false,
+      error: 'Network connection timed out. Please try again.',
+    })
+    render(
+      <SyncModal
+        user={auth.user}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={sync}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Network connection timed out. Please try again.',
+    )
+    expect(screen.queryByRole('link', { name: 'How to update' })).toBeNull()
+  })
 })

@@ -78,6 +78,7 @@ it.each([
     expect(await sync.syncDeck(cards, user)).toEqual({
       success: false,
       error: 'Update Jolito to sync.',
+      syncHelp: true,
     })
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   },
@@ -615,6 +616,7 @@ describe('sync anomaly alert reporting', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toBe('Update Jolito to sync.')
+    expect(result.syncHelp).toBe(true)
 
     const alertCall = fetchSpy.mock.calls.find((call) =>
       String(call[0]).includes('/api/alerts/sync-anomaly'),
@@ -702,6 +704,7 @@ describe('sync anomaly alert reporting', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toBe('Update Jolito to sync.')
+    expect(result.syncHelp).toBe(true)
     await vi.waitFor(() => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining(

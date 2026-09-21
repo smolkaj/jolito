@@ -144,6 +144,7 @@ export type SyncResult = {
   error?: string | undefined
   syncedAt?: number | undefined
   revision?: number | undefined
+  syncHelp?: boolean | undefined
 }
 
 export type SyncService = {
