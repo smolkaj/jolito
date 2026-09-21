@@ -1073,4 +1073,98 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       vi.useRealTimers()
     }
   })
+
+  it('provides interactive release feedback in cue pill and flood overlay when crossing horizontal swipe thresholds', () => {
+    const card = mockCards[0]!
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+    const cuePill = container.querySelector('.gesture-cue-pill')!
+    expect(cuePill).toHaveTextContent('Again')
+    expect(cuePill).toHaveTextContent('Good')
+    expect(cuePill).not.toHaveClass('is-ready-again')
+    expect(cuePill).not.toHaveClass('is-ready-good')
+    expect(container.querySelector('.flood-release-tag')).toBeNull()
+
+    // 1. Drag right past threshold (dx = +110)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 310,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(cuePill).toHaveClass('is-ready-good')
+    expect(cuePill).toHaveTextContent('Release for Good')
+    expect(cuePill).toHaveTextContent('✓')
+    expect(
+      container.querySelector('.zone-good .flood-release-tag'),
+    ).toHaveTextContent('Release to rate')
+    expect(trigger).toHaveBeenCalledWith('selection')
+
+    // Drag back below threshold (dx = +40)
+    fireEvent.pointerMove(studyCard, {
+      clientX: 240,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(cuePill).not.toHaveClass('is-ready-good')
+    expect(cuePill).toHaveTextContent('Again')
+    expect(cuePill).toHaveTextContent('Good')
+    expect(container.querySelector('.flood-release-tag')).toBeNull()
+
+    // 2. Drag left past threshold (dx = -110)
+    fireEvent.pointerMove(studyCard, {
+      clientX: 90,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(cuePill).toHaveClass('is-ready-again')
+    expect(cuePill).toHaveTextContent('Release for Again')
+    expect(cuePill).toHaveTextContent('↺')
+    expect(
+      container.querySelector('.zone-again .flood-release-tag'),
+    ).toHaveTextContent('Release to rate')
+
+    // Drag back to neutral center (dx = 0)
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(cuePill).not.toHaveClass('is-ready-again')
+    expect(cuePill).toHaveTextContent('Again')
+    expect(cuePill).toHaveTextContent('Good')
+    expect(container.querySelector('.flood-release-tag')).toBeNull()
+
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+  })
 })

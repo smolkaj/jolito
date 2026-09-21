@@ -531,6 +531,9 @@ export function PracticeCard({
                 <span className="badge-key badge-icon flood-icon">↺</span>
               </div>
               <span className="badge-label flood-label">AGAIN</span>
+              {activeZone === 'again' && (
+                <span className="flood-release-tag">Release to rate</span>
+              )}
             </div>
           </div>
           <div
@@ -548,6 +551,9 @@ export function PracticeCard({
                 <span className="badge-key badge-icon flood-icon">✓</span>
               </div>
               <span className="badge-label flood-label">GOOD</span>
+              {activeZone === 'good' && (
+                <span className="flood-release-tag">Release to rate</span>
+              )}
             </div>
           </div>
         </div>
@@ -749,7 +755,7 @@ export function PracticeCard({
           )}
         </p>
         <div
-          className={`card-gesture-cue-bar ${isDragging && revealed ? 'is-dragging' : ''}`}
+          className={`card-gesture-cue-bar ${isDragging && revealed ? 'is-dragging' : ''} ${activeZone ? 'has-active-zone' : ''}`.trim()}
           aria-hidden="true"
         >
           {!revealed ? (
@@ -779,16 +785,58 @@ export function PracticeCard({
               )}
             </div>
           ) : (
-            <div className="gesture-cue-pill">
-              <span className="gesture-cue-action">
-                <span className="gesture-cue-arrow arrow-left">←</span>
-                <span className="gesture-cue-text">Again</span>
-              </span>
-              <span className="gesture-cue-sep">·</span>
-              <span className="gesture-cue-action">
-                <span className="gesture-cue-text">Good</span>
-                <span className="gesture-cue-arrow arrow-right">→</span>
-              </span>
+            <div
+              className={`gesture-cue-pill ${
+                activeZone === 'again'
+                  ? 'is-ready-again'
+                  : activeZone === 'good'
+                    ? 'is-ready-good'
+                    : ''
+              }`}
+            >
+              {activeZone === 'again' ? (
+                <>
+                  <span className="gesture-cue-arrow arrow-left">↺</span>
+                  <span className="gesture-cue-text">Release for Again</span>
+                </>
+              ) : activeZone === 'good' ? (
+                <>
+                  <span className="gesture-cue-text">Release for Good</span>
+                  <span className="gesture-cue-arrow arrow-right">✓</span>
+                </>
+              ) : (
+                <>
+                  <span className="gesture-cue-action">
+                    <span
+                      className="gesture-cue-arrow arrow-left"
+                      style={{
+                        transform:
+                          isDragging && dragOffset.x < 0
+                            ? `translateX(${Math.max(-8, dragOffset.x * 0.08)}px)`
+                            : undefined,
+                      }}
+                    >
+                      ←
+                    </span>
+                    <span className="gesture-cue-text">Again</span>
+                  </span>
+                  <span className="gesture-cue-sep">·</span>
+                  <span className="gesture-cue-action">
+                    <span className="gesture-cue-text">Good</span>
+                    <span
+                      className="gesture-cue-arrow arrow-right"
+                      style={{
+                        transform:
+                          isDragging && dragOffset.x > 0
+                            ? `translateX(${Math.min(8, dragOffset.x * 0.08)}px)`
+                            : undefined,
+                      }}
+                    >
+                      →
+                    </span>
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
