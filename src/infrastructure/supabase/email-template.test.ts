@@ -22,14 +22,11 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toMatch(
       /Your\s+Jolito\s+verification\s+code\s+is\s+\{\{\s*\.Token\s*\}\}/i,
     )
-    expect(content).toMatch(
-      /Your\s+1-click\s+sign-in\s+link\s+and\s+6-digit\s+code\s+for\s+Jolito/i,
-    )
   })
 
   it('includes explicit verification code phrasing and domain-bound OTP for OS AutoFill heuristics', () => {
     const content = readFileSync(templatePath, 'utf-8')
-    expect(content).toMatch(/Your\s+verification\s+code\s+is:/i)
+    expect(content).toMatch(/Your\s+verification\s+code/i)
     expect(content).toContain('@joli.to #{{ .Token }}')
     expect(content).toMatch(/class="domain-bound-otp"[^>]*color:\s*#5f6e66/i)
   })
@@ -40,10 +37,9 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toMatch(/safely\s+ignore/i)
   })
 
-  it('includes Jolito brand identity, Mexican Spanish context, and support contact', () => {
+  it('includes Jolito brand identity, web link, and visual badge', () => {
     const content = readFileSync(templatePath, 'utf-8')
     expect(content).toContain('Jolito')
-    expect(content).toMatch(/Spoken Mexican Spanish/i)
     expect(content).toContain('joli.to')
     // Official geometric brand logo with protective badge container and presentation role
     expect(content).toContain('https://joli.to/favicon-96x96.png')
@@ -53,10 +49,11 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toContain('#e4007c')
   })
 
-  it('includes human, jargon-free copy for cross-device and mobile app sign-in', () => {
+  it('maintains lean, focused copy without marketing boilerplate or redundant narration', () => {
     const content = readFileSync(templatePath, 'utf-8')
-    expect(content).toMatch(/mobile app/i)
-    expect(content).not.toMatch(/standalone PWA/i)
+    expect(content).not.toMatch(/Spoken Mexican Spanish/i)
+    expect(content).not.toMatch(/Signing in on another device/i)
+    expect(content).not.toMatch(/Click below to sign in instantly/i)
   })
 
   it('includes responsive and dark mode style rules with explicit contrast protection', () => {
@@ -74,19 +71,18 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toMatch(/\.code-display\s*\{[^}]*color:\s*#f272ad/i)
     expect(content).toMatch(/\.domain-bound-otp\s*\{[^}]*color:\s*#8d9c94/i)
 
-    // Verify dark mode preserves footer and disclaimer contrast (WCAG AA)
-    expect(content).toMatch(/\.email-disclaimer\s*\{[^}]*color:\s*#8d9c94/i)
+    // Verify dark mode preserves footer and expiry contrast (WCAG AA)
+    expect(content).toMatch(/\.expiry-text\s*\{[^}]*color:\s*#8d9c94/i)
     expect(content).toMatch(/\.footer-text\s*\{[^}]*color:\s*#8d9c94/i)
 
     // Verify mobile optical centering for OTP code
     expect(content).toMatch(/\.code-display\s*\{[^}]*padding-left:\s*0\.22em/i)
   })
 
-  it('preserves WCAG AA contrast on light mode disclaimer, footer, and divider badge', () => {
+  it('preserves WCAG AA contrast on light mode text and footer', () => {
     const content = readFileSync(templatePath, 'utf-8')
-    // Uses #5f6e66 (5.34:1 on #ffffff, 4.98:1 on #fdf5f8) instead of low-contrast #8d9c94
-    expect(content).toMatch(/class="divider-badge"[^>]*color:\s*#5f6e66/i)
-    expect(content).toMatch(/class="email-disclaimer"[^>]*color:\s*#5f6e66/i)
+    // Uses #5f6e66 (5.34:1 on #ffffff, 4.98:1 on #fdf5f8)
+    expect(content).toMatch(/class="expiry-text"[^>]*color:\s*#5f6e66/i)
     expect(content).toMatch(/class="footer-text"[^>]*color:\s*#5f6e66/i)
   })
 
