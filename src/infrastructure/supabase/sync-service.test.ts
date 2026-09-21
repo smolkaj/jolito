@@ -728,16 +728,25 @@ describe('sync anomaly alert reporting', () => {
       return Promise.reject(new Error(`Unexpected fetch to ${url}`))
     })
     vi.stubGlobal('fetch', fetchSpy)
-    vi.stubGlobal('window', {
-      location: {
-        protocol: 'capacitor:',
-        origin: 'capacitor://localhost',
-      },
-    })
+    const originalLocation = window.location
+    try {
+      Object.defineProperty(window, 'location', {
+        value: {
+          protocol: 'capacitor:',
+          origin: 'capacitor://localhost',
+        },
+        writable: true,
+      })
 
-    const client = service({}, '/api/alerts/sync-anomaly')
-    await client.pullDeck(user)
+      const client = service({}, '/api/alerts/sync-anomaly')
+      await client.pullDeck(user)
 
-    expect(dispatchedUrl).toBe('https://joli.to/api/alerts/sync-anomaly')
+      expect(dispatchedUrl).toBe('https://joli.to/api/alerts/sync-anomaly')
+    } finally {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      })
+    }
   })
 })
