@@ -568,3 +568,15 @@ it.each(['read', 'write'] as const)(
     })
   },
 )
+
+it('rejects malformed local cards at client egress without calling write RPC', async () => {
+  const fetchSpy = vi.fn().mockResolvedValueOnce(Response.json([row]))
+  vi.stubGlobal('fetch', fetchSpy)
+  const client = service()
+  const malformedCards = [{ ...cards[0]!, id: '' }] as unknown as typeof cards
+  const result = await client.syncDeck(malformedCards, user)
+  expect(result.success).toBe(false)
+  // Only the pullDeck read RPC occurred; compare_and_set_deck was never called
+  expect(fetchSpy).toHaveBeenCalledTimes(1)
+  expect(fetchSpy.mock.calls[0]?.[0]).toContain('/rpc/read_deck_snapshot')
+})

@@ -49,7 +49,7 @@ set local "request.jwt.claim.sub" = '11111111-1111-1111-1111-111111111111';
 set local "request.jwt.claims" = '{"role": "authenticated", "sub": "11111111-1111-1111-1111-111111111111"}';
 
 select lives_ok(
-  $$ select public.compare_and_set_deck('11111111-1111-1111-1111-111111111111', 0, '{"app":"jolito","version":4,"deviceId":"dev-a","cards":[],"deletedCardIds":[]}'::jsonb) $$,
+  $$ select public.compare_and_set_deck('11111111-1111-1111-1111-111111111111', 0, '{"app":"jolito","version":4,"deviceId":"dev-a","updatedAt":"2026-09-10T00:00:00.000Z","cards":[],"deletedCardIds":[]}'::jsonb) $$,
   'User A can create own deck through the revision protocol'
 );
 
