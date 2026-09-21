@@ -15,6 +15,12 @@ import { withRequestDeadline } from '../request-lifetime'
 const revisionSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 const MAX_SYNC_ATTEMPTS = 3
 
+function isUpdateHelpMessage(message: string): boolean {
+  return (
+    message.includes('/update') || message.includes('Update Jolito to sync')
+  )
+}
+
 export class SupabaseSyncService implements SyncService {
   private readonly deviceId: string
   private readonly supabaseUrl: string
@@ -115,6 +121,7 @@ export class SupabaseSyncService implements SyncService {
         return {
           success: false,
           error: 'Update Jolito to sync.',
+          syncHelp: true,
         }
       }
       const row = rows.data[0]
@@ -128,12 +135,14 @@ export class SupabaseSyncService implements SyncService {
         syncedAt: new Date(row.updated_at).getTime(),
       }
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Network error pulling cloud deck.'
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Network error pulling cloud deck.',
+        error: message,
+        ...(isUpdateHelpMessage(message) ? { syncHelp: true } : {}),
       }
     }
   }
@@ -231,7 +240,7 @@ export class SupabaseSyncService implements SyncService {
       for (let attempt = 0; attempt < MAX_SYNC_ATTEMPTS; attempt++) {
         if (signal?.aborted) throw new Error('Cloud sync was interrupted.')
         const remote = await this.pullDeck(user, signal)
-        if (!remote.success) throw new Error(remote.error)
+        if (!remote.success) return remote
         if (remote.revision === undefined)
           throw new Error('Cloud snapshot revision is missing.')
         pending = reconcileStudyCards(
@@ -275,12 +284,12 @@ export class SupabaseSyncService implements SyncService {
         'Your deck changed on another device. Your local changes are saved; please sync again.',
       )
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Network error syncing deck.'
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Network error syncing deck.',
+        error: message,
+        ...(isUpdateHelpMessage(message) ? { syncHelp: true } : {}),
       }
     }
   }

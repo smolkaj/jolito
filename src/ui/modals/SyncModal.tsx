@@ -218,7 +218,7 @@ export function SyncModal({
       setStatusMsg({
         type: 'error',
         message: res.error || 'Failed to sync with cloud.',
-        syncHelp: true,
+        syncHelp: Boolean(res.syncHelp),
       })
     }
   }

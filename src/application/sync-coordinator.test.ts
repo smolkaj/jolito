@@ -164,3 +164,19 @@ it('rejects incomplete successful responses without discarding local data', asyn
   expect((await done).success).toBe(false)
   expect(h.save).not.toHaveBeenCalled()
 })
+
+it('preserves failure metadata such as syncHelp when sync fails', async () => {
+  const h = harness()
+  const done = h.coordinator.request()
+  h.release(0, {
+    success: false,
+    error: 'Update Jolito to sync.',
+    syncHelp: true,
+  })
+  expect(await done).toEqual({
+    success: false,
+    error: 'Update Jolito to sync.',
+    syncHelp: true,
+  })
+  expect(h.status).toHaveBeenLastCalledWith('error')
+})
