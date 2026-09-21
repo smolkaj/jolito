@@ -68,7 +68,7 @@ You can run the full local Supabase Postgres and PostgREST stack via Docker for 
 
 ```sh
 # 1. Start local Supabase containers (applies all migrations automatically)
-npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,postgres-meta
 
 # 2. Run pgTAP database tests (verifies tables and PostgreSQL RLS policies; 20 assertions)
 npm run test:db

@@ -50,7 +50,7 @@ jobs:
       - run: npm ci --no-audit
 
       - name: Start local Supabase and apply migrations
-        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,mailpit,postgres-meta
+        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,postgres-meta
 
       - name: Lint local database schema
         run: npm run lint:db

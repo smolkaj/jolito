@@ -93,7 +93,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit
       - name: Start local Supabase
-        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,mailpit,postgres-meta
+        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,postgres-meta
       - name: Run pgTAP migration and RLS tests
         run: npm run test:db
       - name: Lint local database schema
