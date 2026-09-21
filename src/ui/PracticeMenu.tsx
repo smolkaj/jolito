@@ -31,7 +31,7 @@ export function PracticeMenu({
 
   return (
     <div
-      className="practice-menu"
+      className={`practice-menu ${open ? 'is-open' : ''}`}
       ref={root}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)

@@ -964,13 +964,16 @@ summary:focus-visible,
 .practice-menu {
   position: relative;
 }
+.practice-menu.is-open {
+  z-index: 40;
+}
 .practice-menu-trigger {
   width: 100%;
   gap: 8px;
 }
 .practice-menu-options {
   position: absolute;
-  z-index: 30;
+  z-index: 40;
   top: calc(100% + 10px);
   right: 0;
   width: max(100%, 180px);
@@ -1038,6 +1041,8 @@ summary:focus-visible,
 
 .hero-visual {
   position: relative;
+  z-index: 1;
+  isolation: isolate;
   min-height: calc(460px * var(--hero-card-scale, 1));
   display: flex;
   align-items: center;
@@ -3535,7 +3540,9 @@ kbd {
     justify-content: center;
     align-items: center;
     gap: clamp(20px, 3.2vw, 40px);
-    position: static;
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
     transform: none;
     width: 100%;
     height: auto;
