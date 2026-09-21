@@ -56,10 +56,11 @@ export class DeckSyncCoordinator {
           this.controller.signal,
         )
         if (this.controller.signal.aborted) return this.cancelled()
-        if (!result.success)
-          throw new Error(
-            result.error || 'Cloud sync failed. Please try again.',
-          )
+        if (!result.success) {
+          this.pending = false
+          this.status('error')
+          return result
+        }
         if (!result.cards || !result.deletedCardIds)
           throw new Error('Cloud sync returned an incomplete snapshot.')
         const latest = this.read()

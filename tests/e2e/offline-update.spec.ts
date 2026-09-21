@@ -115,7 +115,8 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
           documents.locator('meta[name="jolito-build"]'),
         ).toHaveCount(0)
         await documents
-          .getByRole('link', { name: 'Jolito', exact: true })
+          .getByRole('link', { name: /jolito/i })
+          .first()
           .click()
         await expect(
           documents.getByRole('heading', {

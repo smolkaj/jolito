@@ -43,6 +43,8 @@ export const STARTER_PHRASES: Array<{
   { text: 'the bill, please', locale: 'en-US' },
   { text: 'para llevar', locale: 'es-MX' },
   { text: 'to go', locale: 'en-US' },
+  { text: 'ajolote', locale: 'es-MX' },
+  { text: 'axolotl', locale: 'en-US' },
 ]
 
 export function getAudioUrl(

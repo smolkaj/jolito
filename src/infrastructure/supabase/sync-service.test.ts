@@ -24,7 +24,10 @@ const row = {
   updated_at: payload.updatedAt,
   data: payload,
 }
-function service(auth: Partial<SupabaseAuthService> = {}) {
+function service(
+  auth: Partial<SupabaseAuthService> = {},
+  alertEndpoint: string | null = null,
+) {
   return new SupabaseSyncService(
     {
       getCurrentUser: () => user,
@@ -35,6 +38,7 @@ function service(auth: Partial<SupabaseAuthService> = {}) {
     'https://example.supabase.co',
     'anon',
     'device',
+    alertEndpoint,
   )
 }
 afterEach(() => vi.unstubAllGlobals())
@@ -71,7 +75,11 @@ it.each([
     const fetchSpy = vi.fn().mockResolvedValue(Response.json(rows))
     vi.stubGlobal('fetch', fetchSpy)
     const sync = service()
-    expect(await sync.syncDeck(cards, user)).toMatchObject({ success: false })
+    expect(await sync.syncDeck(cards, user)).toEqual({
+      success: false,
+      error: 'Update Jolito to sync.',
+      syncHelp: true,
+    })
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   },
 )
@@ -568,3 +576,179 @@ it.each(['read', 'write'] as const)(
     })
   },
 )
+
+it('rejects malformed local cards at client egress without calling write RPC', async () => {
+  const fetchSpy = vi.fn().mockResolvedValueOnce(Response.json([row]))
+  vi.stubGlobal('fetch', fetchSpy)
+  const client = service()
+  const malformedCards = [{ ...cards[0]!, id: '' }] as unknown as typeof cards
+  const result = await client.syncDeck(malformedCards, user)
+  expect(result.success).toBe(false)
+  // Only the pullDeck read RPC occurred; compare_and_set_deck was never called
+  expect(fetchSpy).toHaveBeenCalledTimes(1)
+  expect(fetchSpy.mock.calls[0]?.[0]).toContain('/rpc/read_deck_snapshot')
+})
+
+describe('sync anomaly alert reporting', () => {
+  it('reports sync anomaly to alert endpoint when remote snapshot schema validation fails', async () => {
+    const corruptedRow = {
+      ...row,
+      data: {
+        ...payload,
+        updatedAt: 1789844855022, // Numeric timestamp that broke Steffen's account
+      },
+    }
+
+    const fetchSpy = vi.fn().mockImplementation((input: unknown) => {
+      const url = String(input)
+      if (url.includes('/rpc/read_deck_snapshot')) {
+        return Promise.resolve(Response.json([corruptedRow]))
+      }
+      if (url.includes('/api/alerts/sync-anomaly')) {
+        return Promise.resolve(Response.json({ success: true }))
+      }
+      return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const client = service({}, '/api/alerts/sync-anomaly')
+    const result = await client.pullDeck(user)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Update Jolito to sync.')
+    expect(result.syncHelp).toBe(true)
+
+    const alertCall = fetchSpy.mock.calls.find((call) =>
+      String(call[0]).includes('/api/alerts/sync-anomaly'),
+    ) as [string, RequestInit] | undefined
+
+    expect(alertCall).toBeDefined()
+    expect(alertCall?.[0]).toContain('/api/alerts/sync-anomaly')
+    expect(alertCall?.[1].method).toBe('POST')
+    expect(alertCall?.[1].headers).toEqual({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer token',
+    })
+
+    const alertBody = JSON.parse(
+      (alertCall?.[1].body as string) ?? '{}',
+    ) as Record<string, unknown>
+    expect(alertBody).toMatchObject({
+      userId: user.id,
+      revision: 1,
+      clientVersion: 4,
+      deviceId: 'device',
+    })
+    expect(alertBody['issues']).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: [0, 'data', 'updatedAt'],
+          code: 'invalid_type',
+        }),
+      ]),
+    )
+    // Invariant: alert payload must never leak cards array or flashcard content
+    expect(JSON.stringify(alertBody)).not.toContain('cards')
+  })
+
+  it('deduplicates alert dispatches within the same session for the same user and revision', async () => {
+    const corruptedRow = {
+      ...row,
+      data: {
+        ...payload,
+        updatedAt: 1789844855022,
+      },
+    }
+
+    let alertCount = 0
+    const fetchSpy = vi.fn().mockImplementation((input: unknown) => {
+      const url = String(input)
+      if (url.includes('/rpc/read_deck_snapshot')) {
+        return Promise.resolve(Response.json([corruptedRow]))
+      }
+      if (url.includes('/api/alerts/sync-anomaly')) {
+        alertCount++
+        return Promise.resolve(Response.json({ success: true }))
+      }
+      return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const client = service({}, '/api/alerts/sync-anomaly')
+    // First pullDeck triggers alert
+    await client.pullDeck(user)
+    expect(alertCount).toBe(1)
+
+    // Second pullDeck in same session suppresses duplicate alert
+    await client.pullDeck(user)
+    expect(alertCount).toBe(1)
+  })
+
+  it('handles non-fatal network failure on alert endpoint gracefully', async () => {
+    const corruptedRow = { ...row, data: { ...payload, version: 99 } }
+    const fetchSpy = vi.fn().mockImplementation((input) => {
+      const url = String(input)
+      if (url.includes('/rpc/read_deck_snapshot')) {
+        return Promise.resolve(Response.json([corruptedRow]))
+      }
+      if (url.includes('/api/alerts/sync-anomaly')) {
+        return Promise.reject(new Error('Network offline'))
+      }
+      return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const client = service({}, '/api/alerts/sync-anomaly')
+    const result = await client.pullDeck(user)
+
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Update Jolito to sync.')
+    expect(result.syncHelp).toBe(true)
+    await vi.waitFor(() => {
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '[SyncService] Non-fatal sync anomaly alert dispatch error:',
+        ),
+        expect.any(Error),
+      )
+    })
+  })
+
+  it('resolves relative alert endpoint to capacitor base origin in native environment', async () => {
+    const corruptedRow = { ...row, data: { ...payload, version: 99 } }
+    let dispatchedUrl: string | null = null
+    const fetchSpy = vi.fn().mockImplementation((input) => {
+      const url = String(input)
+      if (url.includes('/rpc/read_deck_snapshot')) {
+        return Promise.resolve(Response.json([corruptedRow]))
+      }
+      if (url.includes('api/alerts/sync-anomaly')) {
+        dispatchedUrl = url
+        return Promise.resolve(Response.json({ success: true }))
+      }
+      return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+    const originalLocation = window.location
+    try {
+      Object.defineProperty(window, 'location', {
+        value: {
+          protocol: 'capacitor:',
+          origin: 'capacitor://localhost',
+        },
+        writable: true,
+      })
+
+      const client = service({}, '/api/alerts/sync-anomaly')
+      await client.pullDeck(user)
+
+      expect(dispatchedUrl).toBe('https://joli.to/api/alerts/sync-anomaly')
+    } finally {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      })
+    }
+  })
+})

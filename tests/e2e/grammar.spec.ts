@@ -194,7 +194,7 @@ for (const viewport of [
     })
     const grammarRatings = await ratingGeometry(page)
     await page.keyboard.press('1')
-    for (let index = 0; index < 5; index++) {
+    for (let index = 0; index < 6; index++) {
       await page.getByRole('textbox').press('Enter')
       await page.keyboard.press('4')
     }
@@ -222,7 +222,7 @@ for (const viewport of [
       fullPage: true,
     })
     await page.keyboard.press('4')
-    for (let index = 0; index < 2; index++) {
+    for (let index = 0; index < 1; index++) {
       await page.getByRole('textbox').press('Enter')
       await page.keyboard.press('4')
     }
@@ -555,7 +555,7 @@ for (const topic of ['preterite', 'perfect', 'gerund'] as const) {
     await expect(page.getByRole('status')).toBeVisible()
     await expect.poll(cachedGrammar).toBe(64)
     await page.keyboard.press('1')
-    for (let turn = 0; turn < 5; turn++) {
+    for (let turn = 0; turn < 6; turn++) {
       await page.getByRole('button', { name: 'Play prompt audio' }).click()
       const before = await plays()
       await page.getByRole('textbox').press('Enter')

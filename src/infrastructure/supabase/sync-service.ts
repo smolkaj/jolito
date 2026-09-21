@@ -15,9 +15,17 @@ import { withRequestDeadline } from '../request-lifetime'
 const revisionSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
 const MAX_SYNC_ATTEMPTS = 3
 
+function isUpdateHelpMessage(message: string): boolean {
+  return (
+    message.includes('/update') || message.includes('Update Jolito to sync')
+  )
+}
+
 export class SupabaseSyncService implements SyncService {
   private readonly deviceId: string
   private readonly supabaseUrl: string
+  private readonly alertEndpoint: string | null
+  private readonly reportedAnomalies = new Set<string>()
 
   constructor(
     private readonly authService: AuthService,
@@ -25,9 +33,11 @@ export class SupabaseSyncService implements SyncService {
     private readonly supabaseAnonKey: string = import.meta.env
       .VITE_SUPABASE_ANON_KEY ?? '',
     deviceId?: string,
+    alertEndpoint: string | null = '/api/alerts/sync-anomaly',
   ) {
     this.supabaseUrl = supabaseUrl.replace(/\/+$/, '')
     this.deviceId = deviceId ?? getOrCreateDeviceId()
+    this.alertEndpoint = alertEndpoint
   }
 
   private async request(
@@ -106,11 +116,14 @@ export class SupabaseSyncService implements SyncService {
         )
         .max(1)
         .safeParse(response)
-      if (!rows.success)
+      if (!rows.success) {
+        void this.reportSyncAnomaly(user.id, response, rows.error.issues)
         return {
           success: false,
-          error: 'Remote deck data did not match the Jolito sync schema.',
+          error: 'Update Jolito to sync.',
+          syncHelp: true,
         }
+      }
       const row = rows.data[0]
       if (!row)
         return { success: true, cards: [], deletedCardIds: [], revision: 0 }
@@ -122,13 +135,97 @@ export class SupabaseSyncService implements SyncService {
         syncedAt: new Date(row.updated_at).getTime(),
       }
     } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Network error pulling cloud deck.'
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Network error pulling cloud deck.',
+        error: message,
+        ...(isUpdateHelpMessage(message) ? { syncHelp: true } : {}),
       }
+    }
+  }
+
+  private async reportSyncAnomaly(
+    userId: string,
+    rawResponse: unknown,
+    issues: z.ZodIssue[],
+  ): Promise<void> {
+    if (!this.alertEndpoint) return
+    try {
+      let revision: number | null = null
+      if (
+        Array.isArray(rawResponse) &&
+        rawResponse[0] &&
+        typeof rawResponse[0] === 'object'
+      ) {
+        const rawRev = (rawResponse[0] as Record<string, unknown>).revision
+        if (typeof rawRev === 'number') revision = rawRev
+      }
+
+      const dedupeKey = `${userId}:${revision ?? 'null'}`
+      if (this.reportedAnomalies.has(dedupeKey)) {
+        return
+      }
+      this.reportedAnomalies.add(dedupeKey)
+
+      const sanitizedIssues = issues.slice(0, 20).map((issue) => ({
+        path: issue.path,
+        code: issue.code,
+        message: issue.message,
+        expected:
+          'expected' in issue && typeof issue.expected === 'string'
+            ? issue.expected
+            : undefined,
+        received:
+          'received' in issue && typeof issue.received === 'string'
+            ? issue.received
+            : undefined,
+      }))
+
+      let targetUrl = this.alertEndpoint
+      if (
+        !targetUrl.startsWith('http://') &&
+        !targetUrl.startsWith('https://') &&
+        typeof window !== 'undefined'
+      ) {
+        const isCapacitor = window.location?.protocol === 'capacitor:'
+        const baseOrigin = isCapacitor
+          ? 'https://joli.to'
+          : window.location?.origin || 'https://joli.to'
+        targetUrl = new URL(targetUrl, baseOrigin).toString()
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      try {
+        const token = await this.authService.getAccessToken?.()
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      } catch {
+        // Token retrieval failure should not block alert delivery
+      }
+
+      await fetch(targetUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId,
+          revision,
+          clientVersion: collectionVersion,
+          deviceId: this.deviceId,
+          issues: sanitizedIssues,
+        }),
+        keepalive: true,
+      })
+    } catch (err) {
+      console.warn(
+        '[SyncService] Non-fatal sync anomaly alert dispatch error:',
+        err,
+      )
     }
   }
 
@@ -143,7 +240,7 @@ export class SupabaseSyncService implements SyncService {
       for (let attempt = 0; attempt < MAX_SYNC_ATTEMPTS; attempt++) {
         if (signal?.aborted) throw new Error('Cloud sync was interrupted.')
         const remote = await this.pullDeck(user, signal)
-        if (!remote.success) throw new Error(remote.error)
+        if (!remote.success) return remote
         if (remote.revision === undefined)
           throw new Error('Cloud snapshot revision is missing.')
         pending = reconcileStudyCards(
@@ -153,19 +250,20 @@ export class SupabaseSyncService implements SyncService {
           remote.deletedCardIds ?? [],
         )
         const now = new Date().toISOString()
+        const payload = deckSyncPayloadSchema.parse({
+          version: collectionVersion,
+          app: 'jolito',
+          updatedAt: now,
+          deviceId: this.deviceId,
+          ...pending,
+        })
         const response = await this.request(
           user,
           'rpc/compare_and_set_deck',
           {
             p_user_id: user.id,
             p_expected_revision: remote.revision,
-            p_data: {
-              version: collectionVersion,
-              app: 'jolito',
-              updatedAt: now,
-              deviceId: this.deviceId,
-              ...pending,
-            },
+            p_data: payload,
           },
           signal,
         )
@@ -186,12 +284,12 @@ export class SupabaseSyncService implements SyncService {
         'Your deck changed on another device. Your local changes are saved; please sync again.',
       )
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Network error syncing deck.'
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Network error syncing deck.',
+        error: message,
+        ...(isUpdateHelpMessage(message) ? { syncHelp: true } : {}),
       }
     }
   }

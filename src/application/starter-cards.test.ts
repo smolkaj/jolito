@@ -27,8 +27,8 @@ describe('starterCards', () => {
       starterHeroSampleCards.english,
     ])
   })
-  it('provides 4 starter cards with starter noteId prefixes', () => {
-    expect(starterCards).toHaveLength(4)
+  it('provides 6 starter cards with starter noteId prefixes', () => {
+    expect(starterCards).toHaveLength(6)
     expect(starterCards.every(isStarterCard)).toBe(true)
   })
 
@@ -68,12 +68,15 @@ describe('starterCards', () => {
     expect(filtered.some(isStarterCard)).toBe(false)
   })
 
-  it('keeps starter aguacate clean without filler context while retaining slang context on qué padre', () => {
+  it('keeps starter aguacate clean without filler context while retaining context on qué padre and ajolote', () => {
     const aguacateCards = starterCards.filter(
       (c) => c.noteId === 'starter-aguacate',
     )
     const quePadreCards = starterCards.filter(
       (c) => c.noteId === 'starter-que-padre',
+    )
+    const ajoloteCards = starterCards.filter(
+      (c) => c.noteId === 'starter-x-ajolote',
     )
 
     expect(aguacateCards).toHaveLength(2)
@@ -81,5 +84,14 @@ describe('starterCards', () => {
 
     expect(quePadreCards).toHaveLength(2)
     expect(quePadreCards.every((c) => c.context.trim().length > 0)).toBe(true)
+
+    expect(ajoloteCards).toHaveLength(2)
+    expect(
+      ajoloteCards.every(
+        (c) =>
+          c.context.includes('namesake of Jolito') &&
+          c.context.includes('salamander'),
+      ),
+    ).toBe(true)
   })
 })

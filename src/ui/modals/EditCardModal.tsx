@@ -64,12 +64,25 @@ function EditCardModalInner({
   })
 
   useEffect(() => {
-    if (contextTextareaRef.current) {
-      contextTextareaRef.current.style.height = 'auto'
-      contextTextareaRef.current.style.height = `${Math.min(
+    const textarea = contextTextareaRef.current
+    if (!textarea) return
+    if (
+      typeof CSS !== 'undefined' &&
+      CSS.supports?.('field-sizing', 'content')
+    ) {
+      return
+    }
+    const updateHeight = () => {
+      textarea.style.height = 'auto'
+      textarea.style.height = `${Math.min(
         180,
-        Math.max(48, contextTextareaRef.current.scrollHeight),
+        Math.max(64, textarea.scrollHeight),
       )}px`
+    }
+    updateHeight()
+    window.addEventListener('resize', updateHeight)
+    return () => {
+      window.removeEventListener('resize', updateHeight)
     }
   }, [context])
 

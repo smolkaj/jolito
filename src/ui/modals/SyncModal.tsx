@@ -222,7 +222,7 @@ export function SyncModal({
       setStatusMsg({
         type: 'error',
         message: res.error || 'Failed to sync with cloud.',
-        syncHelp: true,
+        syncHelp: Boolean(res.syncHelp),
       })
     }
   }
@@ -304,7 +304,7 @@ export function SyncModal({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Update help (opens a new tab)
+          How to update
         </a>
       )}
     </div>

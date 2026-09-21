@@ -10,6 +10,7 @@ export const aiRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('example'),
     spanish: z.string().trim().min(1).max(200),
+    english: z.string().trim().max(200).optional(),
   }),
   z.object({
     type: z.literal('mnemonic'),
@@ -109,7 +110,7 @@ export async function handleAiRequest(
   const payload = parsed.data
   const prompt =
     payload.type === 'example'
-      ? buildExamplePrompt(payload.spanish)
+      ? buildExamplePrompt(payload.spanish, payload.english)
       : buildMnemonicPrompt(payload.spanish, payload.english)
 
   const messages = [
