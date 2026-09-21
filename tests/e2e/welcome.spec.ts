@@ -1123,6 +1123,9 @@ test('scales hero cards fluidly without clipping and preserves 2-line headline l
       )
       .toBe(true)
 
+    // Wait for sample cards' 320ms CSS spring transform transition to settle
+    await page.waitForTimeout(350)
+
     const info = await page.evaluate(() => {
       const h1 = document.querySelector('.hero-copy h1')
       const visual = document.querySelector('.hero-visual')
