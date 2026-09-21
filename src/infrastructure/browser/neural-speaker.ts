@@ -140,6 +140,7 @@ export class NeuralVoiceEngine {
   ) {
     this.audioCache = new LruAudioCache(maxMemoryBuffers)
     this.idleDelayMs = idleDelayMs
+    this.initContext()
     void this.getCache()
     this.installUnlockListeners()
     this.installLifecycleListeners()

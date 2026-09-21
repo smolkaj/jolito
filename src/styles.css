@@ -6774,10 +6774,8 @@ kbd {
     border: 1.5px solid var(--paper);
   }
 
-  /* Reachability for pages and scrollable deck contents under fixed mobile tab bar */
-  .app-shell,
-  .deck-cards-list,
-  .deck-manager-table-wrap {
+  /* Reachability for pages under fixed mobile tab bar */
+  .app-shell {
     padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -6873,11 +6871,6 @@ button:active,
 .study-card {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-}
-
-/* Safe area support for topbars */
-.topbar {
-  padding-top: max(12px, env(safe-area-inset-top, 0px));
 }
 
 @media (prefers-reduced-motion: reduce) {
