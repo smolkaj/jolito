@@ -67,13 +67,83 @@ export function WelcomeView({
   const [samplePlaying, setSamplePlaying] = useState(false)
   const sampleTimerRef = useRef<number | null>(null)
 
+  const [mascotGreetingOpen, setMascotGreetingOpen] = useState(false)
+  const [mascotWiggling, setMascotWiggling] = useState(false)
+  const mascotTimerRef = useRef<number | null>(null)
+  const mascotWiggleTimerRef = useRef<number | null>(null)
+  const mascotContainerRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     return () => {
       if (sampleTimerRef.current !== null) {
         window.clearTimeout(sampleTimerRef.current)
       }
+      if (mascotTimerRef.current !== null) {
+        window.clearTimeout(mascotTimerRef.current)
+      }
+      if (mascotWiggleTimerRef.current !== null) {
+        window.clearTimeout(mascotWiggleTimerRef.current)
+      }
     }
   }, [])
+
+  useEffect(() => {
+    if (!mascotGreetingOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        mascotContainerRef.current &&
+        !mascotContainerRef.current.contains(event.target as Node)
+      ) {
+        setMascotGreetingOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMascotGreetingOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [mascotGreetingOpen])
+
+  const onMascotClick = useCallback(() => {
+    if (mascotGreetingOpen) {
+      setMascotGreetingOpen(false)
+      if (mascotTimerRef.current !== null) {
+        window.clearTimeout(mascotTimerRef.current)
+        mascotTimerRef.current = null
+      }
+      return
+    }
+
+    if (mascotWiggleTimerRef.current !== null) {
+      window.clearTimeout(mascotWiggleTimerRef.current)
+    }
+    if (mascotTimerRef.current !== null) {
+      window.clearTimeout(mascotTimerRef.current)
+    }
+
+    setMascotWiggling(true)
+    setMascotGreetingOpen(true)
+    onPlayAudio('ajolote', 'es-MX')
+
+    mascotWiggleTimerRef.current = window.setTimeout(() => {
+      setMascotWiggling(false)
+      mascotWiggleTimerRef.current = null
+    }, 600)
+
+    mascotTimerRef.current = window.setTimeout(() => {
+      setMascotGreetingOpen(false)
+      mascotTimerRef.current = null
+    }, 6000)
+  }, [mascotGreetingOpen, onPlayAudio])
 
   const playSampleAudio = useCallback(
     (side: 'spanish' | 'english') => {
@@ -134,12 +204,51 @@ export function WelcomeView({
         <section className="welcome-hero">
           <div className="welcome-hero-main">
             <div className="hero-copy">
-              <img
-                src={logoUrl}
-                alt=""
-                aria-hidden="true"
-                className="welcome-mascot-img"
-              />
+              <div ref={mascotContainerRef} className="welcome-mascot-anchor">
+                <button
+                  type="button"
+                  className={`welcome-mascot-btn ${mascotWiggling ? 'is-wiggling' : ''}`}
+                  onClick={onMascotClick}
+                  aria-label="Meet Jolito the ajolote (axolotl)"
+                  aria-expanded={mascotGreetingOpen}
+                >
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="welcome-mascot-img"
+                  />
+                </button>
+                {mascotGreetingOpen && (
+                  <div
+                    className="mascot-speech-bubble"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <span className="mascot-speech-text">
+                      ¡Hola! I’m Jolito, an <em>ajolote</em> (axolotl).
+                    </span>
+                    <button
+                      type="button"
+                      className="mascot-speech-speak-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onPlayAudio('ajolote', 'es-MX')
+                      }}
+                      aria-label="Play pronunciation for ajolote"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="14"
+                        height="14"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
               <h1>
                 <span className="hero-headline-lead">Make the words</span>{' '}
                 <br />

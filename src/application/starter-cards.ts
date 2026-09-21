@@ -40,6 +40,16 @@ export const starterCards: StudyCard[] = [
     'starter-que-padre',
     0,
   ),
+  ...createStudyCards(
+    {
+      spanish: 'ajolote',
+      english: 'axolotl',
+      context: "Mexico City's iconic salamander and the namesake of Jolito!",
+      bidirectional: true,
+    },
+    'starter-x-ajolote',
+    0,
+  ),
 ]
 
 export function isStarterCard(card: StudyCard): boolean {
