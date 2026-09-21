@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Speaker } from '../../application/ports'
 import {
   isShortPhraseForDualVoice,
@@ -7,6 +7,35 @@ import {
   NeuralVoiceEngine,
   STARTER_PHRASES,
 } from './neural-speaker'
+
+const origWindowAddEventListener = window.addEventListener.bind(window)
+const windowListeners: Array<
+  [string, EventListenerOrEventListenerObject, unknown]
+> = []
+window.addEventListener = function (
+  type: string,
+  listener: EventListenerOrEventListenerObject,
+  options?: unknown,
+) {
+  windowListeners.push([type, listener, options])
+  return origWindowAddEventListener.call(
+    window,
+    type,
+    listener,
+    options as boolean | AddEventListenerOptions,
+  )
+} as typeof window.addEventListener
+
+afterEach(() => {
+  while (windowListeners.length > 0) {
+    const [type, listener, options] = windowListeners.pop()!
+    window.removeEventListener(
+      type,
+      listener,
+      options as boolean | EventListenerOptions,
+    )
+  }
+})
 
 describe('LayeredNeuralSpeaker', () => {
   const anyVoice = expect.any(String) as unknown as string
@@ -21,6 +50,10 @@ describe('LayeredNeuralSpeaker', () => {
       speak: fallbackSpeakSpy,
     }
     neuralEngine = new NeuralVoiceEngine()
+  })
+
+  afterEach(() => {
+    neuralEngine.destroy()
   })
 
   it('delegates to fallback speaker when neural cache does not have phrase', () => {
@@ -2130,5 +2163,191 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
     vi.advanceTimersByTime(5000)
     expect(mockCtxObj.suspend).not.toHaveBeenCalled()
     vi.useRealTimers()
+  })
+
+  it('strictly defers AudioContext instantiation until first user gesture', () => {
+    const origAudioContext = window.AudioContext
+    const mockResume = vi.fn().mockResolvedValue(undefined)
+    const mockSuspend = vi.fn().mockResolvedValue(undefined)
+    const audioContextConstructorSpy = vi.fn()
+    class MockAudioContextClass {
+      state = 'running' as AudioContextState
+      resume = mockResume
+      suspend = mockSuspend
+      destination = {}
+      constructor() {
+        audioContextConstructorSpy()
+      }
+    }
+    window.AudioContext =
+      MockAudioContextClass as unknown as typeof AudioContext
+
+    try {
+      // 1. Initial construction must NOT touch window.AudioContext
+      const engine = new NeuralVoiceEngine()
+      expect(audioContextConstructorSpy).not.toHaveBeenCalled()
+      expect(
+        (engine as unknown as { audioContext: AudioContext | null })
+          .audioContext,
+      ).toBeNull()
+
+      // 2. First gesture (e.g. pointerdown) lazily creates and resumes AudioContext
+      window.dispatchEvent(new Event('pointerdown'))
+      expect(audioContextConstructorSpy).toHaveBeenCalledTimes(1)
+      expect(
+        (engine as unknown as { audioContext: AudioContext | null })
+          .audioContext,
+      ).not.toBeNull()
+      expect(mockResume).not.toHaveBeenCalled() // already running
+
+      engine.destroy()
+    } finally {
+      window.AudioContext = origAudioContext
+    }
+  })
+
+  it('uses OfflineAudioContext to pre-decode audio without touching live AudioContext', async () => {
+    const origAudioContext = window.AudioContext
+    const origOfflineAudioContext = window.OfflineAudioContext
+
+    const liveAudioContextSpy = vi.fn()
+    window.AudioContext = liveAudioContextSpy
+
+    const mockDecodedBuffer = { duration: 1.5 } as unknown as AudioBuffer
+    const offlineAudioContextSpy = vi.fn()
+    class MockOfflineAudioContext {
+      constructor(channels: number, length: number, sampleRate: number) {
+        offlineAudioContextSpy(channels, length, sampleRate)
+      }
+      decodeAudioData(
+        _data: ArrayBuffer,
+        success?: (b: AudioBuffer) => void,
+      ): Promise<AudioBuffer> {
+        success?.(mockDecodedBuffer)
+        return Promise.resolve(mockDecodedBuffer)
+      }
+    }
+    window.OfflineAudioContext =
+      MockOfflineAudioContext as unknown as typeof OfflineAudioContext
+
+    try {
+      const engine = new NeuralVoiceEngine()
+
+      // Decode audio before any user gesture
+      const arrayBuffer = new ArrayBuffer(8)
+      const decoded = await (
+        engine as unknown as {
+          decodeAudio: (b: ArrayBuffer) => Promise<AudioBuffer | null>
+        }
+      ).decodeAudio(arrayBuffer)
+
+      expect(decoded).toBe(mockDecodedBuffer)
+      expect(offlineAudioContextSpy).toHaveBeenCalledTimes(1)
+      expect(liveAudioContextSpy).not.toHaveBeenCalled()
+      expect(
+        (engine as unknown as { audioContext: AudioContext | null })
+          .audioContext,
+      ).toBeNull()
+
+      engine.destroy()
+    } finally {
+      window.AudioContext = origAudioContext
+      window.OfflineAudioContext = origOfflineAudioContext
+    }
+  })
+
+  it('survives full round-trip lifecycle from dormant to active to suspended to wake and teardown', async () => {
+    vi.useFakeTimers()
+    const origAudioContext = window.AudioContext
+
+    let ctxState: AudioContextState = 'running'
+    const mockResume = vi.fn().mockImplementation(() => {
+      ctxState = 'running'
+      return Promise.resolve()
+    })
+    const mockSuspend = vi.fn().mockImplementation(() => {
+      ctxState = 'suspended'
+      return Promise.resolve()
+    })
+    const audioContextSpy = vi.fn()
+    class MockAudioContextClass {
+      get state() {
+        return ctxState
+      }
+      resume = mockResume
+      suspend = mockSuspend
+      destination = {}
+      constructor() {
+        audioContextSpy()
+      }
+    }
+    window.AudioContext =
+      MockAudioContextClass as unknown as typeof AudioContext
+
+    const origVisibilityState = document.visibilityState
+
+    try {
+      // 1. Initial state: dormant, 0 contexts
+      const engine = new NeuralVoiceEngine(200, 2000)
+      expect(audioContextSpy).not.toHaveBeenCalled()
+
+      // 2. First user interaction: unlocks and transitions to running
+      window.dispatchEvent(new Event('pointerdown'))
+      expect(audioContextSpy).toHaveBeenCalledTimes(1)
+
+      // 3. Idle timeout: suspends context to conserve energy
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(mockSuspend).toHaveBeenCalledTimes(1)
+      expect(ctxState).toBe('suspended')
+
+      // 4. Second user interaction: wakes context back to running
+      mockResume.mockClear()
+      window.dispatchEvent(new Event('keydown'))
+      expect(mockResume).toHaveBeenCalledTimes(1)
+      expect(ctxState).toBe('running')
+
+      // 5. Visibility change to hidden: immediately suspends
+      mockSuspend.mockClear()
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockSuspend).toHaveBeenCalledTimes(1)
+      expect(ctxState).toBe('suspended')
+
+      // 6. Visibility change to visible: cancels idle timer and re-arms listeners
+      mockResume.mockClear()
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'visible',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+      expect(mockResume).not.toHaveBeenCalled() // remains suspended until gesture
+
+      // 7. Gesture after becoming visible resumes context
+      window.dispatchEvent(new Event('touchstart'))
+      expect(mockResume).toHaveBeenCalledTimes(1)
+      expect(ctxState).toBe('running')
+
+      // 8. Teardown immobility: destroy permanently halts everything
+      engine.destroy()
+      mockResume.mockClear()
+      mockSuspend.mockClear()
+      audioContextSpy.mockClear()
+
+      window.dispatchEvent(new Event('pointerdown'))
+      window.dispatchEvent(new Event('touchstart'))
+      window.dispatchEvent(new Event('keydown'))
+      expect(mockResume).not.toHaveBeenCalled()
+      expect(audioContextSpy).not.toHaveBeenCalled()
+    } finally {
+      Object.defineProperty(document, 'visibilityState', {
+        value: origVisibilityState,
+        configurable: true,
+      })
+      window.AudioContext = origAudioContext
+      vi.useRealTimers()
+    }
   })
 })

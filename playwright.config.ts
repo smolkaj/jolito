@@ -16,7 +16,15 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          ignoreDefaultArgs: ['--autoplay-policy=no-user-gesture-required'],
+        },
+      },
+    },
     {
       name: 'webkit',
       testMatch: 'welcome-scroll.spec.ts',
