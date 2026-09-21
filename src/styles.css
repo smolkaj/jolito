@@ -6416,37 +6416,6 @@ kbd {
   filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.25));
 }
 
-.flood-release-tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 18px;
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255, 255, 255, 0.7);
-  border-radius: 999px;
-  color: #ffffff !important;
-  font-family: var(--font-sans);
-  font-size: clamp(12px, 3.2vw, 15px);
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  animation: release-pill-pop 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
-}
-
-@keyframes release-pill-pop {
-  0% {
-    transform: scale(0.85);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
 .gesture-zone-badge {
   position: absolute;
   display: inline-flex;
@@ -6613,17 +6582,17 @@ kbd {
 
   .gesture-cue-pill.is-ready-again {
     background: var(--card);
-    border-color: var(--rosa);
-    color: var(--rosa);
+    border-color: var(--rosa-dark);
+    color: var(--rosa-dark);
     font-weight: 700;
     transform: scale(1.08);
     box-shadow:
       0 4px 20px var(--rosa-glow),
-      0 0 0 1.5px var(--rosa);
+      0 0 0 1.5px var(--rosa-dark);
   }
 
   .gesture-cue-pill.is-ready-again .gesture-cue-arrow {
-    color: var(--rosa);
+    color: var(--rosa-dark);
   }
 
   .gesture-cue-pill.is-ready-good {
@@ -6956,16 +6925,16 @@ button:active,
   .starter-pack-card:active,
   .demo-deck-chip:active,
   .mobile-tab-btn:active,
-  .gesture-zone-badge {
+  .gesture-zone-badge,
+  .gesture-cue-pill,
+  .gesture-cue-arrow,
+  .gesture-cue-icon {
     transform: none !important;
     transition: none !important;
+    animation: none !important;
   }
 
   .study-card {
     transition: none !important;
-  }
-
-  .flood-release-tag {
-    animation: none !important;
   }
 }

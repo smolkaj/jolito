@@ -1074,7 +1074,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     }
   })
 
-  it('provides interactive release feedback in cue pill and flood overlay when crossing horizontal swipe thresholds', () => {
+  it('provides interactive release feedback in cue pill when crossing horizontal swipe thresholds', () => {
     const card = mockCards[0]!
     const { trigger, haptics } = createMockHaptics()
 
@@ -1095,12 +1095,13 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     )
 
     const studyCard = container.querySelector('.study-card')!
+    const cueBar = container.querySelector('.card-gesture-cue-bar')!
     const cuePill = container.querySelector('.gesture-cue-pill')!
     expect(cuePill).toHaveTextContent('Again')
     expect(cuePill).toHaveTextContent('Good')
     expect(cuePill).not.toHaveClass('is-ready-again')
     expect(cuePill).not.toHaveClass('is-ready-good')
-    expect(container.querySelector('.flood-release-tag')).toBeNull()
+    expect(cueBar).not.toHaveClass('has-active-zone')
 
     // 1. Drag right past threshold (dx = +110)
     fireEvent.pointerDown(studyCard, {
@@ -1118,9 +1119,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(cuePill).toHaveClass('is-ready-good')
     expect(cuePill).toHaveTextContent('Release for Good')
     expect(cuePill).toHaveTextContent('✓')
-    expect(
-      container.querySelector('.zone-good .flood-release-tag'),
-    ).toHaveTextContent('Release to rate')
+    expect(cueBar).toHaveClass('has-active-zone')
     expect(trigger).toHaveBeenCalledWith('selection')
 
     // Drag back below threshold (dx = +40)
@@ -1133,7 +1132,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(cuePill).not.toHaveClass('is-ready-good')
     expect(cuePill).toHaveTextContent('Again')
     expect(cuePill).toHaveTextContent('Good')
-    expect(container.querySelector('.flood-release-tag')).toBeNull()
+    expect(cueBar).not.toHaveClass('has-active-zone')
 
     // 2. Drag left past threshold (dx = -110)
     fireEvent.pointerMove(studyCard, {
@@ -1145,9 +1144,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(cuePill).toHaveClass('is-ready-again')
     expect(cuePill).toHaveTextContent('Release for Again')
     expect(cuePill).toHaveTextContent('↺')
-    expect(
-      container.querySelector('.zone-again .flood-release-tag'),
-    ).toHaveTextContent('Release to rate')
+    expect(cueBar).toHaveClass('has-active-zone')
 
     // Drag back to neutral center (dx = 0)
     fireEvent.pointerMove(studyCard, {
@@ -1159,12 +1156,93 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(cuePill).not.toHaveClass('is-ready-again')
     expect(cuePill).toHaveTextContent('Again')
     expect(cuePill).toHaveTextContent('Good')
-    expect(container.querySelector('.flood-release-tag')).toBeNull()
+    expect(cueBar).not.toHaveClass('has-active-zone')
 
     fireEvent.pointerUp(studyCard, {
       clientX: 200,
       clientY: 200,
       pointerType: 'touch',
     })
+  })
+
+  it('respects prefers-reduced-motion by suppressing inline arrow translations and transforms', () => {
+    const card = mockCards[0]!
+    const hadMatchMedia = 'matchMedia' in window
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string): MediaQueryList => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    try {
+      const { container } = render(
+        <PracticeCard
+          card={card}
+          prompt={<h1>{card.prompt}</h1>}
+          answer=""
+          revealed={true}
+          onAnswerChange={vi.fn()}
+          onReveal={vi.fn()}
+          onGrade={vi.fn()}
+          onPlayAnswer={vi.fn()}
+          paused={false}
+          audioUnavailable={false}
+        />,
+      )
+
+      const studyCard = container.querySelector('.study-card')!
+      const leftArrow = container.querySelector(
+        '.gesture-cue-arrow.arrow-left',
+      ) as HTMLElement
+      const rightArrow = container.querySelector(
+        '.gesture-cue-arrow.arrow-right',
+      ) as HTMLElement
+
+      // Drag left sub-threshold
+      fireEvent.pointerDown(studyCard, {
+        clientX: 200,
+        clientY: 200,
+        button: 0,
+        pointerType: 'touch',
+      })
+      fireEvent.pointerMove(studyCard, {
+        clientX: 150,
+        clientY: 200,
+        pointerType: 'touch',
+      })
+
+      // Arrow inline styles should NOT have translateX transform
+      expect(leftArrow.style.transform).toBe('')
+      expect(rightArrow.style.transform).toBe('')
+
+      // Drag right sub-threshold
+      fireEvent.pointerMove(studyCard, {
+        clientX: 250,
+        clientY: 200,
+        pointerType: 'touch',
+      })
+
+      expect(leftArrow.style.transform).toBe('')
+      expect(rightArrow.style.transform).toBe('')
+
+      fireEvent.pointerUp(studyCard, {
+        clientX: 250,
+        clientY: 200,
+        pointerType: 'touch',
+      })
+    } finally {
+      if (!hadMatchMedia) {
+        delete (window as { matchMedia?: unknown }).matchMedia
+      }
+    }
   })
 })

@@ -531,9 +531,6 @@ export function PracticeCard({
                 <span className="badge-key badge-icon flood-icon">↺</span>
               </div>
               <span className="badge-label flood-label">AGAIN</span>
-              {activeZone === 'again' && (
-                <span className="flood-release-tag">Release to rate</span>
-              )}
             </div>
           </div>
           <div
@@ -551,9 +548,6 @@ export function PracticeCard({
                 <span className="badge-key badge-icon flood-icon">✓</span>
               </div>
               <span className="badge-label flood-label">GOOD</span>
-              {activeZone === 'good' && (
-                <span className="flood-release-tag">Release to rate</span>
-              )}
             </div>
           </div>
         </div>
@@ -811,7 +805,9 @@ export function PracticeCard({
                       className="gesture-cue-arrow arrow-left"
                       style={{
                         transform:
-                          isDragging && dragOffset.x < 0
+                          !prefersReducedMotion &&
+                          isDragging &&
+                          dragOffset.x < 0
                             ? `translateX(${Math.max(-8, dragOffset.x * 0.08)}px)`
                             : undefined,
                       }}
@@ -827,7 +823,9 @@ export function PracticeCard({
                       className="gesture-cue-arrow arrow-right"
                       style={{
                         transform:
-                          isDragging && dragOffset.x > 0
+                          !prefersReducedMotion &&
+                          isDragging &&
+                          dragOffset.x > 0
                             ? `translateX(${Math.min(8, dragOffset.x * 0.08)}px)`
                             : undefined,
                       }}
