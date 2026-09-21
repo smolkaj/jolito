@@ -258,9 +258,7 @@ describe('Jolito', () => {
     await user.keyboard('4')
 
     // Advances to Card 3 (ajolote): pass with Easy
-    expect(
-      screen.getByRole('heading', { name: 'ajolote' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'ajolote' })).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
@@ -2520,16 +2518,12 @@ describe('Jolito', () => {
       name: /meet jolito the ajolote/i,
     })
     expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
-    expect(
-      screen.queryByText(/¡hola! i’m jolito, an/i),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/¡hola! i’m jolito, an/i)).not.toBeInTheDocument()
 
     // 1. Click mascot: triggers Mexican Spanish audio and reveals speech bubble
     await user.click(mascotBtn)
     expect(mascotBtn).toHaveAttribute('aria-expanded', 'true')
-    expect(
-      screen.getByText(/¡hola! i’m jolito, an/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/¡hola! i’m jolito, an/i)).toBeInTheDocument()
     expect(
       services.mockSpeaker.spokenCalls.some(
         (entry) => entry.text === 'ajolote' && entry.locale === 'es-MX',
@@ -2551,20 +2545,14 @@ describe('Jolito', () => {
 
     // 3. Dismiss via Escape key
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(
-      screen.queryByText(/¡hola! i’m jolito, an/i),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/¡hola! i’m jolito, an/i)).not.toBeInTheDocument()
     expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
 
     // 4. Re-open and dismiss by clicking mascot again (toggle)
     await user.click(mascotBtn)
-    expect(
-      screen.getByText(/¡hola! i’m jolito, an/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/¡hola! i’m jolito, an/i)).toBeInTheDocument()
     await user.click(mascotBtn)
-    expect(
-      screen.queryByText(/¡hola! i’m jolito, an/i),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/¡hola! i’m jolito, an/i)).not.toBeInTheDocument()
   })
 
   it('allows guest to explore create card screen and prompts sign in when clicking save card', async () => {

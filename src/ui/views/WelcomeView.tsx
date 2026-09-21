@@ -87,6 +87,19 @@ export function WelcomeView({
     }
   }, [])
 
+  const mascotBtnRef = useRef<HTMLButtonElement>(null)
+
+  const closeGreeting = useCallback((restoreFocus = false) => {
+    setMascotGreetingOpen(false)
+    if (mascotTimerRef.current !== null) {
+      window.clearTimeout(mascotTimerRef.current)
+      mascotTimerRef.current = null
+    }
+    if (restoreFocus) {
+      mascotBtnRef.current?.focus()
+    }
+  }, [])
+
   useEffect(() => {
     if (!mascotGreetingOpen) return
 
@@ -95,13 +108,13 @@ export function WelcomeView({
         mascotContainerRef.current &&
         !mascotContainerRef.current.contains(event.target as Node)
       ) {
-        setMascotGreetingOpen(false)
+        closeGreeting(false)
       }
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setMascotGreetingOpen(false)
+        closeGreeting(true)
       }
     }
 
@@ -111,15 +124,11 @@ export function WelcomeView({
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [mascotGreetingOpen])
+  }, [closeGreeting, mascotGreetingOpen])
 
   const onMascotClick = useCallback(() => {
     if (mascotGreetingOpen) {
-      setMascotGreetingOpen(false)
-      if (mascotTimerRef.current !== null) {
-        window.clearTimeout(mascotTimerRef.current)
-        mascotTimerRef.current = null
-      }
+      closeGreeting(false)
       return
     }
 
@@ -140,10 +149,9 @@ export function WelcomeView({
     }, 600)
 
     mascotTimerRef.current = window.setTimeout(() => {
-      setMascotGreetingOpen(false)
-      mascotTimerRef.current = null
-    }, 6000)
-  }, [mascotGreetingOpen, onPlayAudio])
+      closeGreeting(false)
+    }, 8000)
+  }, [closeGreeting, mascotGreetingOpen, onPlayAudio])
 
   const playSampleAudio = useCallback(
     (side: 'spanish' | 'english') => {
@@ -206,6 +214,7 @@ export function WelcomeView({
             <div className="hero-copy">
               <div ref={mascotContainerRef} className="welcome-mascot-anchor">
                 <button
+                  ref={mascotBtnRef}
                   type="button"
                   className={`welcome-mascot-btn ${mascotWiggling ? 'is-wiggling' : ''}`}
                   onClick={onMascotClick}
@@ -224,6 +233,18 @@ export function WelcomeView({
                     className="mascot-speech-bubble"
                     role="status"
                     aria-live="polite"
+                    onMouseEnter={() => {
+                      if (mascotTimerRef.current !== null) {
+                        window.clearTimeout(mascotTimerRef.current)
+                        mascotTimerRef.current = null
+                      }
+                    }}
+                    onFocus={() => {
+                      if (mascotTimerRef.current !== null) {
+                        window.clearTimeout(mascotTimerRef.current)
+                        mascotTimerRef.current = null
+                      }
+                    }}
                   >
                     <span className="mascot-speech-text">
                       ¡Hola! I’m Jolito, an <em>ajolote</em> (axolotl).
@@ -239,12 +260,34 @@ export function WelcomeView({
                     >
                       <svg
                         viewBox="0 0 24 24"
-                        width="14"
-                        height="14"
+                        width="16"
+                        height="16"
                         aria-hidden="true"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
-                        <path d="M5 9v6h4l5 4V5L9 9H5Zm11.5-.5a5 5 0 0 1 0 7M18.8 6a8.2 8.2 0 0 1 0 12" />
+                        <path
+                          d="M5 9v6h4l5 4V5L9 9H5Z"
+                          fill="currentColor"
+                          stroke="none"
+                        />
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                        <path d="M18.8 6a8.2 8.2 0 0 1 0 12" />
                       </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="mascot-speech-close-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        closeGreeting(true)
+                      }}
+                      aria-label="Close greeting"
+                    >
+                      <span aria-hidden="true">✕</span>
                     </button>
                   </div>
                 )}

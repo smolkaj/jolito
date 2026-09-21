@@ -112,20 +112,58 @@ test('hero mascot is interactive, greets learner with speech bubble, and passes 
   })
   await expect(speakBtn).toBeVisible()
 
+  // Speech bubble close button
+  const closeBtn = page.getByRole('button', {
+    name: /close greeting/i,
+  })
+  await expect(closeBtn).toBeVisible()
+
   // Accessibility audit with speech bubble open
   const auditResults = await auditAccessibility(page)
   expect(auditResults.violations).toEqual([])
 
-  // Capture visual verification screenshot of the greeting speech bubble
+  // Capture visual verification screenshot of desktop greeting speech bubble
   await page.screenshot({
     path: '/tmp/mascot-greeting-speech-bubble.png',
     animations: 'disabled',
   })
 
-  // Escape key closes speech bubble
+  // Escape key closes speech bubble and restores focus to mascot button
   await page.keyboard.press('Escape')
   await expect(bubble).not.toBeVisible()
   await expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
+  await expect(mascotBtn).toBeFocused()
+
+  // Test mobile viewport: verify speech bubble does not overlap primary headline
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mascotBtn.click()
+  await expect(bubble).toBeVisible()
+
+  const bubbleBox = await bubble.boundingBox()
+  const headingBox = await page
+    .getByRole('heading', { name: /make the words you meet stick/i })
+    .boundingBox()
+
+  expect(bubbleBox).not.toBeNull()
+  expect(headingBox).not.toBeNull()
+  // Speech bubble must sit above headline (bubble bottom <= heading top)
+  expect(bubbleBox!.y + bubbleBox!.height).toBeLessThanOrEqual(headingBox!.y)
+
+  // Mobile accessibility audit
+  const mobileAudit = await auditAccessibility(page)
+  expect(mobileAudit.violations).toEqual([])
+
+  // Capture mobile visual verification screenshot
+  await page.screenshot({
+    path: '/tmp/mascot-greeting-speech-bubble-mobile.png',
+    animations: 'disabled',
+  })
+
+  // Close via dedicated close button
+  await closeBtn.click()
+  await expect(bubble).not.toBeVisible()
+  await expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
+  await expect(mascotBtn).toBeFocused()
 })
 
 test('apple-touch-icon and PWA app icons provide fully opaque brand paper background for iOS and mobile home screens', async ({
@@ -1077,6 +1115,7 @@ test('scales hero cards fluidly without clipping and preserves 2-line headline l
       .poll(
         async () =>
           page.evaluate((targetWidth) => {
+            if (window.innerWidth !== targetWidth) return false
             const visual = document.querySelector('.hero-visual')
             if (!visual || window.getComputedStyle(visual).display === 'none') {
               return false

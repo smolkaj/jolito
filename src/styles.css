@@ -730,8 +730,8 @@ summary:focus-visible,
 }
 
 .welcome-mascot-btn:focus-visible {
-  outline: 2px solid var(--turquesa, #0d9488);
-  outline-offset: 4px;
+  outline: 2.5px solid var(--rosa);
+  outline-offset: 3px;
 }
 
 .welcome-mascot-btn:hover {
@@ -757,12 +757,24 @@ summary:focus-visible,
 }
 
 @keyframes mascot-wiggle {
-  0% { transform: rotate(0deg); }
-  20% { transform: rotate(-7deg) scale(1.05); }
-  40% { transform: rotate(6deg) scale(1.05); }
-  60% { transform: rotate(-3deg) scale(1.02); }
-  80% { transform: rotate(1.5deg) scale(1.01); }
-  100% { transform: rotate(0deg) scale(1); }
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-7deg) scale(1.05);
+  }
+  40% {
+    transform: rotate(6deg) scale(1.05);
+  }
+  60% {
+    transform: rotate(-3deg) scale(1.02);
+  }
+  80% {
+    transform: rotate(1.5deg) scale(1.01);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
 }
 
 .mascot-speech-bubble {
@@ -835,7 +847,10 @@ summary:focus-visible,
   padding: 0;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 120ms ease, background-color 120ms ease;
+  position: relative;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease;
 }
 
 .mascot-speech-speak-btn:hover {
@@ -847,8 +862,54 @@ summary:focus-visible,
   transform: scale(0.94);
 }
 
+.mascot-speech-speak-btn::after,
+.mascot-speech-close-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .mascot-speech-speak-btn svg {
-  fill: currentColor;
+  display: block;
+}
+
+.mascot-speech-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--pill-radius);
+  color: var(--ink-soft);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1;
+  position: relative;
+  transition:
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.mascot-speech-close-btn:hover {
+  color: var(--ink);
+  transform: scale(1.1);
+}
+
+.mascot-speech-close-btn:active {
+  transform: scale(0.95);
+}
+
+.mascot-speech-close-btn:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
 }
 
 @keyframes speech-bubble-pop {
@@ -3077,7 +3138,7 @@ kbd {
   }
 
   .welcome-mascot-anchor {
-    margin: 0 auto 14px;
+    margin: 20px auto 14px;
     display: inline-flex;
     justify-content: center;
   }
@@ -3091,7 +3152,8 @@ kbd {
 
   .mascot-speech-bubble {
     left: 50%;
-    top: calc(100% + 12px);
+    bottom: calc(100% + 12px);
+    top: auto;
     transform: translateX(-50%);
     white-space: normal;
     text-align: center;
@@ -3104,23 +3166,28 @@ kbd {
   .mascot-speech-bubble::before {
     right: auto;
     left: 50%;
-    bottom: 100%;
-    top: auto;
+    top: 100%;
+    bottom: auto;
     transform: translateX(-50%);
-    border-width: 0 7px 8px 7px;
-    border-color: transparent transparent var(--line) transparent;
+    border-width: 8px 7px 0 7px;
+    border-style: solid;
+    border-color: var(--line) transparent transparent transparent;
   }
 
   .mascot-speech-bubble::after {
+    content: '';
+    position: absolute;
     right: auto;
     left: 50%;
-    bottom: 100%;
-    top: auto;
+    top: 100%;
+    bottom: auto;
     transform: translateX(-50%);
-    border-width: 0 5px 6px 5px;
-    border-color: transparent transparent var(--card) transparent;
+    border-width: 6px 5px 0 5px;
+    border-style: solid;
+    border-color: var(--card) transparent transparent transparent;
     margin-right: 0;
-    margin-bottom: -2px;
+    margin-top: -2px;
+    margin-bottom: 0;
   }
 
   @keyframes speech-bubble-pop-mobile {
@@ -3321,6 +3388,47 @@ kbd {
     height: clamp(90px, 13vw, 118px);
     margin: 0;
     transform: scaleX(-1);
+  }
+
+  .mascot-speech-bubble {
+    left: 50%;
+    bottom: calc(100% + 8px);
+    top: auto;
+    transform: translateX(-50%);
+    white-space: normal;
+    text-align: center;
+    width: max-content;
+    max-width: min(240px, 40vw);
+    padding: 6px 10px;
+    font-size: 12px;
+    animation-name: speech-bubble-pop-mobile;
+  }
+
+  .mascot-speech-bubble::before {
+    right: auto;
+    left: 50%;
+    top: 100%;
+    bottom: auto;
+    transform: translateX(-50%);
+    border-width: 7px 6px 0 6px;
+    border-style: solid;
+    border-color: var(--line) transparent transparent transparent;
+  }
+
+  .mascot-speech-bubble::after {
+    content: '';
+    position: absolute;
+    right: auto;
+    left: 50%;
+    top: 100%;
+    bottom: auto;
+    transform: translateX(-50%);
+    border-width: 5px 4px 0 4px;
+    border-style: solid;
+    border-color: var(--card) transparent transparent transparent;
+    margin-right: 0;
+    margin-top: -2px;
+    margin-bottom: 0;
   }
 
   .hero-copy h1 {

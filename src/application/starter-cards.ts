@@ -40,6 +40,9 @@ export const starterCards: StudyCard[] = [
     'starter-que-padre',
     0,
   ),
+  // Note ID uses starter-x-ajolote so orderCardsForReview's alphabetical tiebreaker
+  // (noteIdA.localeCompare(noteIdB)) deterministically places ajolote as the 3rd card
+  // after starter-aguacate (card 1) and starter-que-padre (card 2).
   ...createStudyCards(
     {
       spanish: 'ajolote',
