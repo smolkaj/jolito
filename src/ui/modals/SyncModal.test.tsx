@@ -703,7 +703,8 @@ describe('sync update recovery', () => {
         />,
       )
       fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
-      const help = await screen.findByRole('link', { name: /update help/i })
+      const help = await screen.findByRole('link', { name: 'How to update' })
+      expect(help).toHaveTextContent(/^How to update$/)
       expect(help).toHaveAttribute(
         'href',
         protocol === 'capacitor:' ? 'https://joli.to/update' : '/update',
@@ -713,7 +714,9 @@ describe('sync update recovery', () => {
       expect(close).not.toHaveBeenCalled()
       fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
       await waitFor(() =>
-        expect(screen.queryByRole('link', { name: /update help/i })).toBeNull(),
+        expect(
+          screen.queryByRole('link', { name: 'How to update' }),
+        ).toBeNull(),
       )
       expect(close).not.toHaveBeenCalled()
     },

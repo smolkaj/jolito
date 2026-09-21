@@ -114,8 +114,7 @@ export class SupabaseSyncService implements SyncService {
         void this.reportSyncAnomaly(user.id, response, rows.error.issues)
         return {
           success: false,
-          error:
-            'Remote deck data did not match the Jolito sync schema. The maintainer has been automatically notified.',
+          error: 'Update Jolito to sync.',
         }
       }
       const row = rows.data[0]

@@ -75,7 +75,10 @@ it.each([
     const fetchSpy = vi.fn().mockResolvedValue(Response.json(rows))
     vi.stubGlobal('fetch', fetchSpy)
     const sync = service()
-    expect(await sync.syncDeck(cards, user)).toMatchObject({ success: false })
+    expect(await sync.syncDeck(cards, user)).toEqual({
+      success: false,
+      error: 'Update Jolito to sync.',
+    })
     expect(fetchSpy).toHaveBeenCalledTimes(1)
   },
 )
@@ -611,9 +614,7 @@ describe('sync anomaly alert reporting', () => {
     const result = await client.pullDeck(user)
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe(
-      'Remote deck data did not match the Jolito sync schema. The maintainer has been automatically notified.',
-    )
+    expect(result.error).toBe('Update Jolito to sync.')
 
     const alertCall = fetchSpy.mock.calls.find((call) =>
       String(call[0]).includes('/api/alerts/sync-anomaly'),
@@ -700,9 +701,7 @@ describe('sync anomaly alert reporting', () => {
     const result = await client.pullDeck(user)
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe(
-      'Remote deck data did not match the Jolito sync schema. The maintainer has been automatically notified.',
-    )
+    expect(result.error).toBe('Update Jolito to sync.')
     await vi.waitFor(() => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining(
