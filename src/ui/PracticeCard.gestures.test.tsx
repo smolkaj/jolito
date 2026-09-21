@@ -532,6 +532,59 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(cueBarRevealed).toHaveTextContent('Good')
   })
 
+  it('transforms cue pill to "Release to reveal" with ready state when pulling up past threshold', () => {
+    const card = mockCards[0]!
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card')!
+    const cuePill = container.querySelector('.gesture-cue-pill')!
+    expect(cuePill).toHaveTextContent('Swipe up to reveal')
+    expect(cuePill).not.toHaveClass('is-ready')
+
+    // Drag upward past threshold (dy = -60)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 140,
+      pointerType: 'touch',
+    })
+
+    expect(cuePill).toHaveClass('is-ready')
+    expect(cuePill).toHaveTextContent('Release to reveal')
+    expect(trigger).toHaveBeenCalledWith('selection')
+
+    // Pull back down below threshold (dy = -10) -> reverts ready state
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 190,
+      pointerType: 'touch',
+    })
+
+    expect(cuePill).not.toHaveClass('is-ready')
+    expect(cuePill).toHaveTextContent('Swipe up to reveal')
+  })
+
   it('does not reveal on horizontal swipe when unrevealed', () => {
     const card = mockCards[0]!
     const onReveal = vi.fn()

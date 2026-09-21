@@ -205,6 +205,8 @@ export function PracticeCard({
   const activeZoneRef = useRef<Grade | null>(null)
   const [isPeelingUp, setIsPeelingUp] = useState(false)
   const isPeelingUpRef = useRef(false)
+  const [isReadyToReveal, setIsReadyToReveal] = useState(false)
+  const isReadyToRevealRef = useRef(false)
   const peelTimerRef = useRef<number | null>(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
   const [prevRevealed, setPrevRevealed] = useState(revealed)
@@ -216,6 +218,7 @@ export function PracticeCard({
     setIsDragging(false)
     setIsAnimatingExit(false)
     setIsPeelingUp(false)
+    setIsReadyToReveal(false)
     setActiveZone(null)
   }
 
@@ -224,6 +227,7 @@ export function PracticeCard({
     activeZoneRef.current = null
     isAnimatingExitRef.current = false
     isPeelingUpRef.current = false
+    isReadyToRevealRef.current = false
     if (exitTimerRef.current !== null) {
       window.clearTimeout(exitTimerRef.current)
       exitTimerRef.current = null
@@ -252,6 +256,8 @@ export function PracticeCard({
     isPeelingUpRef.current = true
     setIsPeelingUp(true)
     setIsDragging(false)
+    setIsReadyToReveal(false)
+    isReadyToRevealRef.current = false
     pointerStartRef.current = null
     haptics?.trigger('selection')
 
@@ -343,16 +349,17 @@ export function PracticeCard({
         dragOffsetRef.current = { x: 0, y: liftY }
         setDragOffset({ x: 0, y: liftY })
 
-        if (dy <= -75) {
-          if (cardRef.current && event.pointerId !== undefined) {
-            try {
-              cardRef.current.releasePointerCapture(event.pointerId)
-            } catch {
-              // Ignore
-            }
+        const isReady = -liftY >= 40 || dy <= -50
+        if (isReady !== isReadyToRevealRef.current) {
+          isReadyToRevealRef.current = isReady
+          setIsReadyToReveal(isReady)
+          if (isReady) {
+            haptics?.trigger('selection')
           }
-          triggerSwipeUpReveal()
         }
+      } else if (isReadyToRevealRef.current) {
+        isReadyToRevealRef.current = false
+        setIsReadyToReveal(false)
       }
       return
     }
@@ -398,11 +405,12 @@ export function PracticeCard({
 
     if (!revealed) {
       const upwardDistance = -actualDy
-      if (
-        !start.isUnrevealedInteractive &&
-        upwardDistance >= 40 &&
-        Math.abs(actualDy) > Math.abs(actualDx)
-      ) {
+      const wasReady =
+        isReadyToRevealRef.current ||
+        (upwardDistance >= 40 && Math.abs(actualDy) > Math.abs(actualDx))
+      isReadyToRevealRef.current = false
+      setIsReadyToReveal(false)
+      if (!start.isUnrevealedInteractive && wasReady) {
         triggerSwipeUpReveal()
       } else {
         setDragOffset({ x: 0, y: 0 })
@@ -439,6 +447,8 @@ export function PracticeCard({
   const handlePointerCancel = () => {
     pointerStartRef.current = null
     setIsDragging(false)
+    isReadyToRevealRef.current = false
+    setIsReadyToReveal(false)
     if (!isPeelingUpRef.current) {
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
@@ -740,13 +750,34 @@ export function PracticeCard({
         </p>
       </section>
       <div
-        className={`card-gesture-cue-bar ${isDragging ? 'is-dragging' : ''}`}
+        className={`card-gesture-cue-bar ${isDragging && revealed ? 'is-dragging' : ''}`}
         aria-hidden="true"
       >
         {!revealed ? (
-          <div className="gesture-cue-pill">
-            <span className="gesture-cue-arrow arrow-up">↑</span>
-            <span className="gesture-cue-text">Swipe up to reveal</span>
+          <div
+            className={`gesture-cue-pill ${isReadyToReveal ? 'is-ready' : ''}`}
+          >
+            {isReadyToReveal ? (
+              <>
+                <span className="gesture-cue-icon">👁️</span>
+                <span className="gesture-cue-text">Release to reveal</span>
+              </>
+            ) : (
+              <>
+                <span
+                  className="gesture-cue-arrow arrow-up"
+                  style={{
+                    transform:
+                      isDragging && dragOffset.y < 0
+                        ? `translateY(${Math.max(-8, dragOffset.y * 0.12)}px)`
+                        : undefined,
+                  }}
+                >
+                  ↑
+                </span>
+                <span className="gesture-cue-text">Swipe up to reveal</span>
+              </>
+            )}
           </div>
         ) : (
           <div className="gesture-cue-pill">

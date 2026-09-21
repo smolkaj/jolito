@@ -6263,9 +6263,9 @@ kbd {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 14px;
+    padding: 6px 16px;
     background: var(--paper-subtle);
-    border: 1px solid var(--line-subtle);
+    border: 1.5px solid var(--line-subtle);
     border-radius: 999px;
     color: var(--ink-muted);
     font-family: var(--font-sans);
@@ -6273,6 +6273,38 @@ kbd {
     font-weight: 500;
     letter-spacing: 0.2px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    transition:
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .gesture-cue-pill.is-ready {
+    background: var(--card);
+    border-color: var(--turquesa-dark);
+    color: var(--ink);
+    font-weight: 700;
+    transform: scale(1.06);
+    box-shadow: 0 4px 16px var(--turquesa-glow);
+  }
+
+  .gesture-cue-pill.is-ready .gesture-cue-icon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    line-height: 1;
+    animation: eye-pulse 800ms ease-in-out infinite alternate;
+  }
+
+  @keyframes eye-pulse {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.2);
+    }
   }
 
   .gesture-cue-arrow {
