@@ -257,6 +257,11 @@ describe('Jolito', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
+    // Advances to Card 3 (ajolote): pass with Easy
+    expect(screen.getByRole('heading', { name: 'ajolote' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+
     // Session is NOT complete yet — Card 1 was re-queued and appears now!
     expect(
       screen.queryByRole('heading', { name: '¡Hecho!' }),
@@ -270,7 +275,7 @@ describe('Jolito', () => {
     await user.keyboard('4')
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
-    expect(screen.getByText('2 cards practiced.')).toBeInTheDocument()
+    expect(screen.getByText('3 cards practiced.')).toBeInTheDocument()
   })
 
   it('displays soft accent highlights and sub-word typo diffs on reveal', async () => {
@@ -578,7 +583,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    ).toHaveAttribute('aria-valuetext', '3 cards remaining')
 
     // Navigate back to welcome
     act(() => {
@@ -599,7 +604,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    ).toHaveAttribute('aria-valuetext', '3 cards remaining')
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation without populating context on selection', async () => {
@@ -2322,12 +2327,12 @@ describe('Jolito', () => {
 
     await practiceCards(user)
 
-    // Initial state: 2 cards in queue, 0% progress
+    // Initial state: 3 cards in queue, 0% progress
     const progress = screen.getByRole('progressbar', {
       name: 'Session progress',
     })
     expect(progress).toHaveAttribute('aria-valuenow', '0')
-    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
     const bar = progress.querySelector('.review-progress-bar') as HTMLElement
     expect(bar).toHaveStyle({ width: '0%' })
 
@@ -2335,17 +2340,24 @@ describe('Jolito', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('1')
     expect(progress).toHaveAttribute('aria-valuenow', '0')
-    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(progress).toHaveAttribute('aria-valuetext', '3 cards remaining')
     expect(bar).toHaveStyle({ width: '0%' })
 
-    // Card 2: pass with Easy (4) -> graduates out of session, sibling is buried (1/2 completed = 50%)
+    // Card 2: pass with Easy (4) -> graduates out of session, sibling is buried (1/3 completed = 33%)
     await user.keyboard('{Enter}')
     await user.keyboard('4')
-    expect(progress).toHaveAttribute('aria-valuenow', '50')
-    expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
-    expect(bar).toHaveStyle({ width: '50%' })
+    expect(progress).toHaveAttribute('aria-valuenow', '33')
+    expect(progress).toHaveAttribute('aria-valuetext', '2 cards remaining')
+    expect(bar).toHaveStyle({ width: '33%' })
 
-    // Card 1 retry: pass with Good (3) -> graduates learning card (2/2 completed = 100%)
+    // Card 3: pass with Easy (4) -> graduates out of session (2/3 completed = 67%)
+    await user.keyboard('{Enter}')
+    await user.keyboard('4')
+    expect(progress).toHaveAttribute('aria-valuenow', '67')
+    expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
+    expect(bar).toHaveStyle({ width: '67%' })
+
+    // Card 1 retry: pass with Good (3) -> graduates learning card (3/3 completed = 100%)
     await user.keyboard('{Enter}')
     await user.keyboard('3')
 
@@ -2495,6 +2507,52 @@ describe('Jolito', () => {
     expect(mascotImg).toBeInTheDocument()
     expect(mascotImg).toHaveAttribute('src', expect.stringContaining('webp'))
     expect(mascotImg).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('greets learners, pronounces ajolote, and toggles speech bubble when clicking hero mascot', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    render(<App services={services} />)
+
+    const mascotBtn = screen.getByRole('button', {
+      name: /meet jolito the ajolote/i,
+    })
+    expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText(/¡hola! i’m jolito, an/i)).not.toBeInTheDocument()
+
+    // 1. Click mascot: triggers Mexican Spanish audio and reveals speech bubble
+    await user.click(mascotBtn)
+    expect(mascotBtn).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText(/¡hola! i’m jolito, an/i)).toBeInTheDocument()
+    expect(
+      services.mockSpeaker.spokenCalls.some(
+        (entry) => entry.text === 'ajolote' && entry.locale === 'es-MX',
+      ),
+    ).toBe(true)
+
+    // 2. Replay audio using the button inside the speech bubble
+    const replayBtn = screen.getByRole('button', {
+      name: /play pronunciation for ajolote/i,
+    })
+    const audioCountBefore = services.mockSpeaker.spokenCalls.filter(
+      (entry) => entry.text === 'ajolote',
+    ).length
+    await user.click(replayBtn)
+    const audioCountAfter = services.mockSpeaker.spokenCalls.filter(
+      (entry) => entry.text === 'ajolote',
+    ).length
+    expect(audioCountAfter).toBe(audioCountBefore + 1)
+
+    // 3. Dismiss via Escape key
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByText(/¡hola! i’m jolito, an/i)).not.toBeInTheDocument()
+    expect(mascotBtn).toHaveAttribute('aria-expanded', 'false')
+
+    // 4. Re-open and dismiss by clicking mascot again (toggle)
+    await user.click(mascotBtn)
+    expect(screen.getByText(/¡hola! i’m jolito, an/i)).toBeInTheDocument()
+    await user.click(mascotBtn)
+    expect(screen.queryByText(/¡hola! i’m jolito, an/i)).not.toBeInTheDocument()
   })
 
   it('allows guest to explore create card screen and prompts sign in when clicking save card', async () => {
@@ -2823,18 +2881,18 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /all \(4\)/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /all \(6\)/i })).toHaveAttribute(
       'title',
       'All cards in your deck',
     )
     expect(
-      screen.getByRole('button', { name: /due now \(4\)/i }),
+      screen.getByRole('button', { name: /due now \(6\)/i }),
     ).toHaveAttribute(
       'title',
       'Cards ready to practice right now (unstudied cards + due reviews)',
     )
     expect(
-      screen.getByRole('button', { name: /unstudied \(4\)/i }),
+      screen.getByRole('button', { name: /unstudied \(6\)/i }),
     ).toHaveAttribute('title', "Cards you haven't practiced yet")
     expect(
       screen.getByRole('button', { name: /learning \(0\)/i }),
@@ -2849,9 +2907,9 @@ describe('Jolito', () => {
       'Graduated cards scheduled for long-term memory retention (1+ days)',
     )
 
-    // 4 starter cards are shown
+    // 6 starter cards are shown
     const cardItems = screen.getAllByRole('row', { name: /card:/i })
-    expect(cardItems).toHaveLength(4)
+    expect(cardItems).toHaveLength(6)
 
     // Search for "aguacate" (matches 2 bidirectional cards: es-en prompt and en-es answer)
     const searchInput = screen.getByLabelText(/search cards in deck/i)
@@ -2862,7 +2920,7 @@ describe('Jolito', () => {
 
     // Clear search
     await user.clear(searchInput)
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(6)
 
     // Filter by state pill "Mastered" (0 cards in review/mastered state initially)
     await user.click(screen.getByRole('button', { name: /mastered \(0\)/i }))
@@ -2870,8 +2928,8 @@ describe('Jolito', () => {
     expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
 
     // Clear filter
-    await user.click(screen.getByRole('button', { name: /all \(4\)/i }))
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
+    await user.click(screen.getByRole('button', { name: /all \(6\)/i }))
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(6)
 
     // Checkbox selection & batch actions
     const selectAllCheckbox = screen.getByRole('checkbox', {
@@ -2879,7 +2937,7 @@ describe('Jolito', () => {
     })
     await user.click(selectAllCheckbox)
     expect(
-      screen.getByRole('button', { name: /delete selected \(4\)/i }),
+      screen.getByRole('button', { name: /delete selected \(6\)/i }),
     ).toBeInTheDocument()
 
     // Clear selection
@@ -3250,7 +3308,7 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /delete flashcard\?/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(6)
 
     // Delete again and confirm
     await user.click(
@@ -3262,11 +3320,11 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /delete flashcard\?/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(5)
     expect(
       screen.queryByRole('row', { name: /card: aguacate,/i }),
     ).not.toBeInTheDocument()
-    expect(services.memoryCards.saved).toHaveLength(3)
+    expect(services.memoryCards.saved).toHaveLength(5)
   })
 
   it('supports batch deletion of multiple selected cards in deck manager', async () => {
@@ -3301,8 +3359,8 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: /delete 2 flashcards\?/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
-    expect(services.memoryCards.saved).toHaveLength(2)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(4)
+    expect(services.memoryCards.saved).toHaveLength(4)
   })
 
   it('supports keyboard navigation, space to select, and enter to edit card row in deck manager', async () => {
@@ -3313,7 +3371,7 @@ describe('Jolito', () => {
     await user.click(screen.getByRole('button', { name: /manage deck/i }))
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
-    expect(rows).toHaveLength(4)
+    expect(rows).toHaveLength(6)
 
     // Focus first row and press Space to toggle selection
     rows[0]!.focus()
@@ -3384,7 +3442,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
-    ).toHaveAttribute('aria-valuetext', '1 card remaining')
+    ).toHaveAttribute('aria-valuetext', '2 cards remaining')
   })
 
   it('resets prompt input and diff state when deleting card on diff screen', async () => {
@@ -3665,15 +3723,15 @@ describe('Jolito', () => {
 
     await practiceCards(user)
 
-    // Finish 4 demo cards
-    for (let i = 0; i < 4; i++) {
+    // Finish 6 demo cards
+    for (let i = 0; i < 6; i++) {
       await user.keyboard('{Enter}')
       await user.keyboard('4')
     }
 
     // Complete screen for guest
     expect(screen.getByText('DEMO SESSION COMPLETE')).toBeInTheDocument()
-    expect(screen.getByText(/2 cards practiced\./i)).toBeInTheDocument()
+    expect(screen.getByText(/3 cards practiced\./i)).toBeInTheDocument()
     expect(
       screen.getByText(/to create and sync your personal deck\./i),
     ).toBeInTheDocument()
@@ -5994,11 +6052,20 @@ describe('Jolito', () => {
       await user.keyboard('{Enter}')
       await user.keyboard('4')
 
-      // 7. Cleanly advances and finishes session
+      // 7. Advances to card 3 ('ajolote') and completes session
+      expect(
+        screen.getByRole('heading', { name: 'ajolote' }),
+      ).toBeInTheDocument()
+      const answerInput3 = screen.getByLabelText('Your answer')
+      await user.type(answerInput3, 'axolotl')
+      await user.keyboard('{Enter}')
+      await user.keyboard('4')
+
+      // 8. Cleanly advances and finishes session
       expect(
         screen.getByRole('heading', { name: '¡Hecho!' }),
       ).toBeInTheDocument()
-      expect(screen.getByText(/2 cards practiced/i)).toBeInTheDocument()
+      expect(screen.getByText(/3 cards practiced/i)).toBeInTheDocument()
     })
   })
 })

@@ -331,14 +331,22 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       window.dispatchEvent(new Event('orientationchange'))
     })
 
-    // Answer and grade card 2
+    // Answer and grade card 2: 'qué padre'
     const landscapeInput = page.getByLabel(/your answer/i)
     await expect(landscapeInput).toBeVisible()
     await landscapeInput.fill('how cool')
     await landscapeInput.press('Enter')
     await page.getByRole('button', { name: /easy/i }).click()
 
-    // 7. Cleanly completes review session
+    // 7. Queue advances to card 3: 'ajolote'
+    await expect(page.getByRole('heading', { name: 'ajolote' })).toBeVisible()
+    const card3Input = page.getByLabel(/your answer/i)
+    await expect(card3Input).toBeVisible()
+    await card3Input.fill('axolotl')
+    await card3Input.press('Enter')
+    await page.getByRole('button', { name: /easy/i }).click()
+
+    // 8. Cleanly completes review session
     await expect(page.getByRole('heading', { name: /¡hecho!/i })).toBeVisible()
   })
 

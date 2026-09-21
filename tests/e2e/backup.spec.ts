@@ -256,15 +256,15 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
     page.getByRole('heading', { name: /manage deck/i }),
   ).toBeVisible()
 
-  // Verify list of cards
+  // Verify list of cards (3 bidirectional starter pairs = 6 cards)
   const cardsList = page.getByRole('table', { name: /deck cards/i })
-  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(6)
 
   // Search filter
   await page.getByLabel(/search cards in deck/i).fill('aguacate')
   await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(2)
   await page.getByLabel(/search cards in deck/i).fill('')
-  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(6)
 
   await page.screenshot({ path: 'test-results/deck-table-view.png' })
 
@@ -314,7 +314,7 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await expect(
     page.getByRole('heading', { name: /delete flashcard\?/i }),
   ).not.toBeVisible()
-  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(4)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(6)
 
   // Confirm deletion
   await deleteBtn.click()
@@ -323,7 +323,7 @@ test('modifies and deletes cards in the deck manager with zero accessibility vio
   await expect(
     page.getByRole('heading', { name: /delete flashcard\?/i }),
   ).not.toBeVisible()
-  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(3)
+  await expect(cardsList.getByRole('row', { name: /card:/i })).toHaveCount(5)
   await expect(page.getByText('el aguacate')).not.toBeVisible()
 })
 
