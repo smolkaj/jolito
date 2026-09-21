@@ -33,7 +33,16 @@ for (const width of [1280, 1024, 768, 393, 320]) {
     expect(box.x).toBeGreaterThanOrEqual(0)
     expect(box.x + box.width).toBeLessThanOrEqual(width)
     for (const item of await menu.getByRole('menuitem').all()) {
-      expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+      const itemBox = (await item.boundingBox())!
+      expect(itemBox.height).toBeGreaterThanOrEqual(44)
+      const isForeground = await page.evaluate(
+        ({ x, y }: { x: number; y: number }) => {
+          const el = document.elementFromPoint(x, y)
+          return el ? Boolean(el.closest('.flat-choice')) : false
+        },
+        { x: itemBox.x + itemBox.width / 2, y: itemBox.y + itemBox.height / 2 },
+      )
+      expect(isForeground).toBe(true)
     }
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
@@ -105,3 +114,83 @@ for (const width of [1280, 1024, 768, 393, 320]) {
     )
   })
 }
+
+test('practice menu stays fully in the foreground over hero sample cards on iPad viewports', async ({
+  page,
+}) => {
+  for (const viewport of [
+    { width: 768, height: 1024 }, // iPad Mini portrait
+    { width: 810, height: 1080 }, // iPad 10.2" portrait
+    { width: 820, height: 1180 }, // iPad Air portrait
+    { width: 834, height: 1194 }, // iPad Pro 11" portrait
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+    await settleAnimations(page)
+
+    const trigger = page.getByRole('button', { name: 'Practice', exact: true })
+    const esCard = page.locator('.sample-card-es')
+    const enCard = page.locator('.sample-card-en')
+    await expect(esCard).toBeVisible()
+    await expect(enCard).toBeVisible()
+
+    // Test with default Spanish card (aguacate) active, and with English card active
+    for (const activeSide of ['spanish', 'english'] as const) {
+      if (activeSide === 'english') {
+        await enCard.click()
+        await settleAnimations(page)
+      }
+
+      await trigger.tap()
+      const menu = page.getByRole('menu', { name: 'Practice' })
+      await expect(menu).toBeVisible()
+
+      // The menu options dropdown must be maximally in the foreground over cards
+      const menuBox = (await menu.boundingBox())!
+      const checkPoints = [
+        { x: menuBox.x + 10, y: menuBox.y + 10 },
+        { x: menuBox.x + menuBox.width - 10, y: menuBox.y + 10 },
+        { x: menuBox.x + 10, y: menuBox.y + menuBox.height - 10 },
+        {
+          x: menuBox.x + menuBox.width - 10,
+          y: menuBox.y + menuBox.height - 10,
+        },
+        {
+          x: menuBox.x + menuBox.width / 2,
+          y: menuBox.y + menuBox.height - 10,
+        },
+      ]
+
+      for (const pt of checkPoints) {
+        const isHit = await page.evaluate(
+          ({ x, y }: { x: number; y: number }) => {
+            const el = document.elementFromPoint(x, y)
+            return el ? Boolean(el.closest('.practice-menu-options')) : false
+          },
+          pt,
+        )
+        expect(isHit).toBe(true)
+      }
+
+      // Both menu choices are unobstructed and can be tapped directly
+      for (const item of await menu.getByRole('menuitem').all()) {
+        const itemBox = (await item.boundingBox())!
+        const isForeground = await page.evaluate(
+          ({ x, y }: { x: number; y: number }) => {
+            const el = document.elementFromPoint(x, y)
+            return el ? Boolean(el.closest('.flat-choice')) : false
+          },
+          {
+            x: itemBox.x + itemBox.width / 2,
+            y: itemBox.y + itemBox.height / 2,
+          },
+        )
+        expect(isForeground).toBe(true)
+      }
+
+      // Dismiss menu
+      await page.keyboard.press('Escape')
+      await expect(menu).toHaveCount(0)
+    }
+  }
+})
