@@ -5971,6 +5971,10 @@ kbd {
   will-change: transform;
 }
 
+.study-card:not(.is-revealed) {
+  touch-action: none;
+}
+
 .study-prompt,
 .reveal-main,
 .reveal-context-block {
@@ -6027,13 +6031,26 @@ kbd {
   overflow: hidden;
 }
 
+.card-gesture-overlays.fixed-hud {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 95;
+  border-radius: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .gesture-card-flood {
   position: absolute;
   inset: 0;
-  display: flex;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  border-radius: inherit;
+  border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
   padding: 24px;
@@ -6045,6 +6062,9 @@ kbd {
   top: 0 !important;
   bottom: 0 !important;
   box-sizing: border-box;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 80ms ease-out;
 }
 
 .gesture-card-flood.zone-again {

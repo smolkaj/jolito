@@ -326,7 +326,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     expect(onGrade).not.toHaveBeenCalled()
   })
 
-  it('reveals answer on tap when unrevealed and triggers haptic feedback', () => {
+  it('reveals answer on swipe up when unrevealed and triggers haptic feedback', () => {
     const card = mockCards[0]!
     const onReveal = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -347,7 +347,51 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    // Tap on prompt area with touch
+    // Swipe up on prompt area with touch (dy = -50)
+    const promptHeader = screen.getByRole('heading', { name: card.prompt })
+    fireEvent.pointerDown(promptHeader, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(promptHeader, {
+      clientX: 200,
+      clientY: 150,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(promptHeader, {
+      clientX: 200,
+      clientY: 150,
+      pointerType: 'touch',
+    })
+
+    expect(onReveal).toHaveBeenCalledTimes(1)
+    expect(trigger).toHaveBeenCalledWith('selection')
+  })
+
+  it('does not reveal answer on single tap when unrevealed, preventing accidental reveals', () => {
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+        haptics={haptics}
+      />,
+    )
+
+    // Tap on prompt area with touch (distance < 10)
     const promptHeader = screen.getByRole('heading', { name: card.prompt })
     fireEvent.pointerDown(promptHeader, {
       clientX: 200,
@@ -361,8 +405,8 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(onReveal).toHaveBeenCalledTimes(1)
-    expect(trigger).toHaveBeenCalledWith('selection')
+    expect(onReveal).not.toHaveBeenCalled()
+    expect(trigger).not.toHaveBeenCalled()
   })
 
   it('does not initiate drag or swipe when interacting with the answer input field', () => {
@@ -636,16 +680,21 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    // Tap to reveal should now work immediately
+    // Swipe up to reveal should now work immediately
     fireEvent.pointerDown(studyCard, {
       clientX: 200,
       clientY: 200,
       button: 0,
       pointerType: 'touch',
     })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 150,
+      pointerType: 'touch',
+    })
     fireEvent.pointerUp(studyCard, {
-      clientX: 201,
-      clientY: 201,
+      clientX: 200,
+      clientY: 150,
       pointerType: 'touch',
     })
 
@@ -653,7 +702,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     vi.useRealTimers()
   })
 
-  it('does not reveal on vertical swipe up or down when unrevealed, preserving native vertical scrolling', () => {
+  it('reveals on vertical swipe up when unrevealed, but does not reveal on vertical swipe down', () => {
     const card = mockCards[0]!
     const onReveal = vi.fn()
     const { trigger, haptics } = createMockHaptics()
@@ -676,28 +725,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     const studyCard = container.querySelector('.study-card')!
 
-    // Vertical swipe up (dy = -100)
-    fireEvent.pointerDown(studyCard, {
-      clientX: 200,
-      clientY: 300,
-      button: 0,
-      pointerType: 'touch',
-    })
-    fireEvent.pointerMove(studyCard, {
-      clientX: 200,
-      clientY: 200,
-      pointerType: 'touch',
-    })
-    fireEvent.pointerUp(studyCard, {
-      clientX: 200,
-      clientY: 200,
-      pointerType: 'touch',
-    })
-
-    expect(onReveal).not.toHaveBeenCalled()
-    expect(trigger).not.toHaveBeenCalled()
-
-    // Vertical swipe down (dy = +100)
+    // Vertical swipe down (dy = +100) -> should NOT reveal
     fireEvent.pointerDown(studyCard, {
       clientX: 200,
       clientY: 100,
@@ -717,6 +745,27 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
     expect(onReveal).not.toHaveBeenCalled()
     expect(trigger).not.toHaveBeenCalled()
+
+    // Vertical swipe up (dy = -60) -> SHOULD reveal
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 260,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(onReveal).toHaveBeenCalledTimes(1)
+    expect(trigger).toHaveBeenCalledWith('selection')
   })
 
   it('ignores grade button clicks and keyboard shortcuts during exit animation, preventing double grading', () => {

@@ -281,9 +281,43 @@ export function PracticeCard({
             // Ignore if pointer capture unsupported
           }
         }
+      } else if (!revealed && dy < -8 && Math.abs(dy) > Math.abs(dx)) {
+        setIsDragging(true)
+        if (cardRef.current && event.pointerId !== undefined) {
+          try {
+            cardRef.current.setPointerCapture(event.pointerId)
+          } catch {
+            // Ignore if pointer capture unsupported
+          }
+        }
       } else {
         return
       }
+    }
+
+    if (!revealed) {
+      if (dy < 0) {
+        const liftY = Math.max(-80, dy * 0.45)
+        dragOffsetRef.current = { x: 0, y: liftY }
+        setDragOffset({ x: 0, y: liftY })
+
+        if (dy <= -40) {
+          setIsDragging(false)
+          setDragOffset({ x: 0, y: 0 })
+          dragOffsetRef.current = { x: 0, y: 0 }
+          pointerStartRef.current = null
+          if (cardRef.current && event.pointerId !== undefined) {
+            try {
+              cardRef.current.releasePointerCapture(event.pointerId)
+            } catch {
+              // Ignore
+            }
+          }
+          haptics?.trigger('selection')
+          onReveal()
+        }
+      }
+      return
     }
 
     if (revealed) {
@@ -313,8 +347,6 @@ export function PracticeCard({
     const start = pointerStartRef.current
     const actualDx = event.clientX - start.x
     const actualDy = event.clientY - start.y
-    const actualDistance = Math.hypot(actualDx, actualDy)
-    const elapsed = Date.now() - start.time
     const currentActiveZone = activeZoneRef.current
 
     pointerStartRef.current = null
@@ -328,11 +360,14 @@ export function PracticeCard({
     }
 
     if (!revealed) {
+      const upwardDistance = -actualDy
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
-      const tapped =
-        !start.isUnrevealedInteractive && actualDistance < 10 && elapsed < 350
-      if (tapped) {
+      if (
+        !start.isUnrevealedInteractive &&
+        upwardDistance >= 35 &&
+        Math.abs(actualDy) > Math.abs(actualDx)
+      ) {
         haptics?.trigger('selection')
         onReveal()
       }
@@ -396,245 +431,249 @@ export function PracticeCard({
         : undefined
 
   return (
-    <section
-      ref={cardRef}
-      className={`study-card ${revealed ? 'is-revealed' : ''} ${isDragging ? 'is-dragging' : ''} ${activeZone ? `zone-${activeZone}` : ''}`.trim()}
-      style={transformStyle}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
-    >
+    <>
       {revealed && (
-        <>
+        <div className="card-gesture-overlays fixed-hud" aria-hidden="true">
           <div
-            className={`gesture-edge-glow edge-glow-again ${activeZone === 'again' ? 'is-active' : ''}`}
+            className={`gesture-card-flood gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
             style={{
               opacity:
-                dragOffset.x < -10
-                  ? Math.min(1, Math.abs(dragOffset.x) / 75)
-                  : 0,
-            }}
-            aria-hidden="true"
-          />
-          <div
-            className={`gesture-edge-glow edge-glow-good ${activeZone === 'good' ? 'is-active' : ''}`}
-            style={{
-              opacity:
-                dragOffset.x > 10
-                  ? Math.min(1, Math.abs(dragOffset.x) / 75)
-                  : 0,
-            }}
-            aria-hidden="true"
-          />
-          <div className="card-gesture-overlays" aria-hidden="true">
-            <div
-              className={`gesture-card-flood gesture-zone-badge zone-again ${activeZone === 'again' ? 'is-active' : ''}`}
-              style={{
-                opacity:
-                  activeZone === 'again'
-                    ? 1
-                    : dragOffset.x < -6
-                      ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
-                      : 0,
-              }}
-            >
-              <div className="flood-content">
-                <div className="flood-icons" aria-hidden="true">
-                  <span className="flood-thumb">👎</span>
-                  <span className="badge-key badge-icon flood-icon">↺</span>
-                </div>
-                <span className="badge-label flood-label">AGAIN</span>
-              </div>
-            </div>
-            <div
-              className={`gesture-card-flood gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
-              style={{
-                opacity:
-                  activeZone === 'good'
-                    ? 1
-                    : dragOffset.x > 6
-                      ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
-                      : 0,
-              }}
-            >
-              <div className="flood-content">
-                <div className="flood-icons" aria-hidden="true">
-                  <span className="flood-thumb">👍</span>
-                  <span className="badge-key badge-icon flood-icon">✓</span>
-                </div>
-                <span className="badge-label flood-label">GOOD</span>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-      {prompt}
-      {audioUnavailable && (
-        <p className="audio-unavailable" role="status">
-          Audio isn’t available in this browser. You can keep reviewing.
-        </p>
-      )}
-      {!revealed ? (
-        <>
-          <div className="card-unrevealed-cue" aria-hidden="true">
-            <span className="touch-cue-text">👆 Tap card to reveal</span>
-          </div>
-          <form
-            className="answer-form"
-            onSubmit={(event) => {
-              event.preventDefault()
-              onReveal()
+                activeZone === 'again'
+                  ? 1
+                  : dragOffset.x < -6
+                    ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
+                    : 0,
             }}
           >
-            <label className="sr-only" htmlFor={answerId}>
-              {answerLabel}
-            </label>
-            <input
-              ref={input}
-              id={answerId}
-              className="answer-input"
-              value={answer}
-              onChange={(event) => onAnswerChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (
-                  !accents ||
-                  paused ||
-                  event.ctrlKey ||
-                  event.metaKey ||
-                  event.altKey ||
-                  event.shiftKey ||
-                  event.nativeEvent.isComposing
-                )
-                  return
-                const letter = accentLetters[Number(event.key) - 1]
-                if (!letter) return
-                event.preventDefault()
-                if (!event.repeat) insertAccent(letter)
-              }}
-              placeholder={placeholder}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              lang={answerLang}
-            />
-            <button className="reveal-button" type="submit">
-              Reveal answer <kbd>Enter</kbd>
-            </button>
-          </form>
-          {accents && (
-            <div className="answer-accents" aria-label="Spanish accents">
-              {accentLetters.map((letter, index) => (
-                <button
-                  type="button"
-                  key={letter}
-                  aria-label={`Insert ${letter}`}
-                  aria-keyshortcuts={String(index + 1)}
-                  title={`Insert ${letter} (${index + 1} while typing)`}
-                  onPointerDown={(event) => {
-                    if (
-                      event.button === 0 &&
-                      document.activeElement === input.current
-                    )
-                      event.preventDefault()
-                  }}
-                  onClick={() => insertAccent(letter)}
-                >
-                  <kbd aria-hidden="true">{index + 1}</kbd> {letter}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="reveal-panel">
-          <div className="reveal-content">
-            <div className="reveal-main">
-              <div
-                ref={feedback}
-                tabIndex={-1}
-                role="status"
-                aria-label="Answer feedback"
-              >
-                <AnswerComparison
-                  typed={answer}
-                  correctionRule={correctionRule}
-                  expected={card.answer}
-                  lang={answerLang}
-                  onPlayAudio={showAnswerAudio ? onPlayAnswer : undefined}
-                />
+            <div className="flood-content">
+              <div className="flood-icons" aria-hidden="true">
+                <span className="flood-thumb">👎</span>
+                <span className="badge-key badge-icon flood-icon">↺</span>
               </div>
-              {children}
+              <span className="badge-label flood-label">AGAIN</span>
             </div>
           </div>
-          <ReviewGrades card={card} onGrade={handleGrade} />
+          <div
+            className={`gesture-card-flood gesture-zone-badge zone-good ${activeZone === 'good' ? 'is-active' : ''}`}
+            style={{
+              opacity:
+                activeZone === 'good'
+                  ? 1
+                  : dragOffset.x > 6
+                    ? Math.min(1, Math.pow(Math.abs(dragOffset.x) / 75, 1.1))
+                    : 0,
+            }}
+          >
+            <div className="flood-content">
+              <div className="flood-icons" aria-hidden="true">
+                <span className="flood-thumb">👍</span>
+                <span className="badge-key badge-icon flood-icon">✓</span>
+              </div>
+              <span className="badge-label flood-label">GOOD</span>
+            </div>
+          </div>
         </div>
       )}
-      {(onEdit || onDelete) && (
-        <div className="study-card-quick-actions">
-          {onEdit && (
-            <button
-              type="button"
-              className="study-quick-btn edit-btn"
-              aria-label={`Edit card: ${card.prompt}`}
-              onClick={onEdit}
-            >
-              ✏️ Edit card
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              className="study-quick-btn delete-btn"
-              aria-label={`Delete card: ${card.prompt}`}
-              onClick={onDelete}
-            >
-              🗑️ Delete card
-            </button>
-          )}
-        </div>
-      )}
-      {error && (
-        <p
-          ref={saveError}
-          tabIndex={-1}
-          role="alert"
-          className="practice-error"
-        >
-          {error}
-        </p>
-      )}
-      <p className="keyboard-hint">
-        {revealed ? (
+      <section
+        ref={cardRef}
+        className={`study-card ${revealed ? 'is-revealed' : ''} ${isDragging ? 'is-dragging' : ''} ${activeZone ? `zone-${activeZone}` : ''}`.trim()}
+        style={transformStyle}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+      >
+        {revealed && (
           <>
-            <kbd>1–4</kbd> rate
-            {onEdit && (
-              <>
-                {' '}
-                · <kbd>e</kbd> edit
-              </>
-            )}{' '}
-            · <kbd>Space</kbd> replay audio
-          </>
-        ) : (
-          <>
-            <kbd>Enter</kbd> reveal
-            {onEdit && (
-              <>
-                {' '}
-                · <kbd>⌃ E</kbd> edit
-              </>
-            )}
-            {onPlayPrompt && (
-              <>
-                {' '}
-                · <kbd>⌃ Space</kbd> replay audio
-              </>
-            )}
+            <div
+              className={`gesture-edge-glow edge-glow-again ${activeZone === 'again' ? 'is-active' : ''}`}
+              style={{
+                opacity:
+                  dragOffset.x < -10
+                    ? Math.min(1, Math.abs(dragOffset.x) / 75)
+                    : 0,
+              }}
+              aria-hidden="true"
+            />
+            <div
+              className={`gesture-edge-glow edge-glow-good ${activeZone === 'good' ? 'is-active' : ''}`}
+              style={{
+                opacity:
+                  dragOffset.x > 10
+                    ? Math.min(1, Math.abs(dragOffset.x) / 75)
+                    : 0,
+              }}
+              aria-hidden="true"
+            />
           </>
         )}
-      </p>
-    </section>
+        {prompt}
+        {audioUnavailable && (
+          <p className="audio-unavailable" role="status">
+            Audio isn’t available in this browser. You can keep reviewing.
+          </p>
+        )}
+        {!revealed ? (
+          <>
+            <div className="card-unrevealed-cue" aria-hidden="true">
+              <span className="touch-cue-text">👆 Swipe up to reveal</span>
+            </div>
+            <form
+              className="answer-form"
+              onSubmit={(event) => {
+                event.preventDefault()
+                onReveal()
+              }}
+            >
+              <label className="sr-only" htmlFor={answerId}>
+                {answerLabel}
+              </label>
+              <input
+                ref={input}
+                id={answerId}
+                className="answer-input"
+                value={answer}
+                onChange={(event) => onAnswerChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (
+                    !accents ||
+                    paused ||
+                    event.ctrlKey ||
+                    event.metaKey ||
+                    event.altKey ||
+                    event.shiftKey ||
+                    event.nativeEvent.isComposing
+                  )
+                    return
+                  const letter = accentLetters[Number(event.key) - 1]
+                  if (!letter) return
+                  event.preventDefault()
+                  if (!event.repeat) insertAccent(letter)
+                }}
+                placeholder={placeholder}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                lang={answerLang}
+              />
+              <button className="reveal-button" type="submit">
+                Reveal answer <kbd>Enter</kbd>
+              </button>
+            </form>
+            {accents && (
+              <div className="answer-accents" aria-label="Spanish accents">
+                {accentLetters.map((letter, index) => (
+                  <button
+                    type="button"
+                    key={letter}
+                    aria-label={`Insert ${letter}`}
+                    aria-keyshortcuts={String(index + 1)}
+                    title={`Insert ${letter} (${index + 1} while typing)`}
+                    onPointerDown={(event) => {
+                      if (
+                        event.button === 0 &&
+                        document.activeElement === input.current
+                      )
+                        event.preventDefault()
+                    }}
+                    onClick={() => insertAccent(letter)}
+                  >
+                    <kbd aria-hidden="true">{index + 1}</kbd> {letter}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="reveal-panel">
+            <div className="reveal-content">
+              <div className="reveal-main">
+                <div
+                  ref={feedback}
+                  tabIndex={-1}
+                  role="status"
+                  aria-label="Answer feedback"
+                >
+                  <AnswerComparison
+                    typed={answer}
+                    correctionRule={correctionRule}
+                    expected={card.answer}
+                    lang={answerLang}
+                    onPlayAudio={showAnswerAudio ? onPlayAnswer : undefined}
+                  />
+                </div>
+                {children}
+              </div>
+            </div>
+            <ReviewGrades card={card} onGrade={handleGrade} />
+          </div>
+        )}
+        {(onEdit || onDelete) && (
+          <div className="study-card-quick-actions">
+            {onEdit && (
+              <button
+                type="button"
+                className="study-quick-btn edit-btn"
+                aria-label={`Edit card: ${card.prompt}`}
+                onClick={onEdit}
+              >
+                ✏️ Edit card
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                className="study-quick-btn delete-btn"
+                aria-label={`Delete card: ${card.prompt}`}
+                onClick={onDelete}
+              >
+                🗑️ Delete card
+              </button>
+            )}
+          </div>
+        )}
+        {error && (
+          <p
+            ref={saveError}
+            tabIndex={-1}
+            role="alert"
+            className="practice-error"
+          >
+            {error}
+          </p>
+        )}
+        <p className="keyboard-hint">
+          {revealed ? (
+            <>
+              <kbd>1–4</kbd> rate
+              {onEdit && (
+                <>
+                  {' '}
+                  · <kbd>e</kbd> edit
+                </>
+              )}{' '}
+              · <kbd>Space</kbd> replay audio
+            </>
+          ) : (
+            <>
+              <kbd>Enter</kbd> reveal
+              {onEdit && (
+                <>
+                  {' '}
+                  · <kbd>⌃ E</kbd> edit
+                </>
+              )}
+              {onPlayPrompt && (
+                <>
+                  {' '}
+                  · <kbd>⌃ Space</kbd> replay audio
+                </>
+              )}
+            </>
+          )}
+        </p>
+      </section>
+    </>
   )
 }

@@ -14,3 +14,8 @@ if (
 if (typeof window !== 'undefined' && !window.HTMLElement.prototype.scrollTo) {
   window.HTMLElement.prototype.scrollTo = () => {}
 }
+
+if (typeof window !== 'undefined' && typeof window.URL !== 'undefined') {
+  window.URL.createObjectURL = () => 'blob:mock-url'
+  window.URL.revokeObjectURL = () => {}
+}
