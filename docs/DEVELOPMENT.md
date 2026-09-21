@@ -154,6 +154,14 @@ To configure or re-provision Cloudflare Email Routing (verifying destination add
 npm run setup:email
 ```
 
+#### Build Caching
+
+Cloudflare Workers Builds includes an opt-in **Build Caching** feature to cache `.npm` dependencies across builds (persisting up to 10 GB with a 7-day TTL). Because this is managed at the project level rather than in `wrangler.jsonc`:
+
+1. In the Cloudflare Dashboard, open **Workers & Pages** > **`jolito`** > **Settings** > **Builds**.
+2. Under **Build Caching**, ensure **Enable Build Caching** is toggled on.
+3. If package manager dependencies ever desynchronize, click **Purge Build Cache** to force a clean cold run.
+
 ### Passwordless Authentication & Sign-in Emails
 
 Jolito uses Supabase Auth for passwordless 1-click magic link and 6-digit OTP verification.

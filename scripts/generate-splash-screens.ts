@@ -195,7 +195,16 @@ async function generateSplashScreens() {
 
     await page.setContent(html)
     const outPath = join(splashDir, device.filename)
-    await page.screenshot({ path: outPath })
+    const rawBuffer = await page.screenshot()
+    try {
+      const { default: sharp } = await import('sharp')
+      const compressed = await sharp(rawBuffer)
+        .png({ quality: 80, compressionLevel: 9, palette: true })
+        .toBuffer()
+      writeFileSync(outPath, compressed)
+    } catch {
+      writeFileSync(outPath, rawBuffer)
+    }
     await context.close()
     console.log(
       `✔ [${device.name}] ${device.filename} (${device.width * device.pixelRatio}x${device.height * device.pixelRatio})`,
