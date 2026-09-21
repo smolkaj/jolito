@@ -6539,7 +6539,11 @@ kbd {
   }
 
   .card-gesture-cue-bar.is-dragging {
-    opacity: 0.12;
+    opacity: 0.75;
+  }
+
+  .card-gesture-cue-bar.has-active-zone {
+    opacity: 1;
   }
 
   .gesture-cue-pill {
@@ -6574,6 +6578,36 @@ kbd {
     font-weight: 700;
     transform: scale(1.06);
     box-shadow: 0 4px 16px var(--turquesa-glow);
+  }
+
+  .gesture-cue-pill.is-ready-again {
+    background: var(--card);
+    border-color: var(--rosa-dark);
+    color: var(--rosa-dark);
+    font-weight: 700;
+    transform: scale(1.08);
+    box-shadow:
+      0 4px 20px var(--rosa-glow),
+      0 0 0 1.5px var(--rosa-dark);
+  }
+
+  .gesture-cue-pill.is-ready-again .gesture-cue-arrow {
+    color: var(--rosa-dark);
+  }
+
+  .gesture-cue-pill.is-ready-good {
+    background: var(--card);
+    border-color: var(--turquesa-dark);
+    color: var(--turquesa-dark);
+    font-weight: 700;
+    transform: scale(1.08);
+    box-shadow:
+      0 4px 20px var(--turquesa-glow),
+      0 0 0 1.5px var(--turquesa-dark);
+  }
+
+  .gesture-cue-pill.is-ready-good .gesture-cue-arrow {
+    color: var(--turquesa-dark);
   }
 
   .gesture-cue-pill.is-ready .gesture-cue-icon {
@@ -6891,9 +6925,13 @@ button:active,
   .starter-pack-card:active,
   .demo-deck-chip:active,
   .mobile-tab-btn:active,
-  .gesture-zone-badge {
+  .gesture-zone-badge,
+  .gesture-cue-pill,
+  .gesture-cue-arrow,
+  .gesture-cue-icon {
     transform: none !important;
     transition: none !important;
+    animation: none !important;
   }
 
   .study-card {
