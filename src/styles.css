@@ -6248,7 +6248,7 @@ kbd {
     align-items: center;
     justify-content: center;
     width: min(560px, 100%);
-    margin: 14px auto 0;
+    margin: 18px auto 0;
     padding: 0 16px;
     pointer-events: none;
     user-select: none;
@@ -6256,23 +6256,26 @@ kbd {
   }
 
   .card-gesture-cue-bar.is-dragging {
-    opacity: 0.18;
+    opacity: 0.12;
   }
 
   .gesture-cue-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
-    background: var(--paper-subtle);
-    border: 1.5px solid var(--line-subtle);
+    gap: 12px;
+    padding: 8px 22px;
+    min-height: 44px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid rgba(18, 24, 21, 0.08);
     border-radius: 999px;
-    color: var(--ink-muted);
+    color: var(--ink-soft);
     font-family: var(--font-sans);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     letter-spacing: 0.2px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 2px 8px rgba(18, 24, 21, 0.04);
     transition:
       transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
       background-color 160ms ease,
@@ -6293,7 +6296,7 @@ kbd {
   .gesture-cue-pill.is-ready .gesture-cue-icon {
     display: inline-flex;
     align-items: center;
-    font-size: 14px;
+    font-size: 18px;
     line-height: 1;
     animation: eye-pulse 800ms ease-in-out infinite alternate;
   }
@@ -6308,23 +6311,39 @@ kbd {
   }
 
   .gesture-cue-arrow {
-    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 800;
     line-height: 1;
   }
 
   .gesture-cue-arrow.arrow-up {
+    font-size: 24px;
     display: inline-block;
+    color: var(--ink-muted);
     animation: subtle-float-up 2.2s ease-in-out infinite;
+  }
+
+  .gesture-cue-arrow.arrow-left {
+    color: rgba(228, 0, 124, 0.7);
+  }
+
+  .gesture-cue-arrow.arrow-right {
+    color: rgba(13, 122, 104, 0.7);
   }
 
   .gesture-cue-action {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
   }
 
   .gesture-cue-sep {
-    opacity: 0.45;
+    color: var(--line);
+    font-size: 18px;
+    opacity: 0.5;
     font-weight: 400;
   }
 
@@ -6363,7 +6382,7 @@ kbd {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: calc(100dvh - 160px);
+    min-height: min(440px, calc(100dvh - 200px));
     cursor: pointer;
   }
 

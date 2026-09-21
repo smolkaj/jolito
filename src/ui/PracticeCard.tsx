@@ -748,51 +748,51 @@ export function PracticeCard({
             </>
           )}
         </p>
+        <div
+          className={`card-gesture-cue-bar ${isDragging && revealed ? 'is-dragging' : ''}`}
+          aria-hidden="true"
+        >
+          {!revealed ? (
+            <div
+              className={`gesture-cue-pill ${isReadyToReveal ? 'is-ready' : ''}`}
+            >
+              {isReadyToReveal ? (
+                <>
+                  <span className="gesture-cue-icon">👁️</span>
+                  <span className="gesture-cue-text">Release to reveal</span>
+                </>
+              ) : (
+                <>
+                  <span
+                    className="gesture-cue-arrow arrow-up"
+                    style={{
+                      transform:
+                        isDragging && dragOffset.y < 0
+                          ? `translateY(${Math.max(-8, dragOffset.y * 0.12)}px)`
+                          : undefined,
+                    }}
+                  >
+                    ↑
+                  </span>
+                  <span className="gesture-cue-text">Swipe up to reveal</span>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="gesture-cue-pill">
+              <span className="gesture-cue-action">
+                <span className="gesture-cue-arrow arrow-left">←</span>
+                <span className="gesture-cue-text">Again</span>
+              </span>
+              <span className="gesture-cue-sep">·</span>
+              <span className="gesture-cue-action">
+                <span className="gesture-cue-text">Good</span>
+                <span className="gesture-cue-arrow arrow-right">→</span>
+              </span>
+            </div>
+          )}
+        </div>
       </section>
-      <div
-        className={`card-gesture-cue-bar ${isDragging && revealed ? 'is-dragging' : ''}`}
-        aria-hidden="true"
-      >
-        {!revealed ? (
-          <div
-            className={`gesture-cue-pill ${isReadyToReveal ? 'is-ready' : ''}`}
-          >
-            {isReadyToReveal ? (
-              <>
-                <span className="gesture-cue-icon">👁️</span>
-                <span className="gesture-cue-text">Release to reveal</span>
-              </>
-            ) : (
-              <>
-                <span
-                  className="gesture-cue-arrow arrow-up"
-                  style={{
-                    transform:
-                      isDragging && dragOffset.y < 0
-                        ? `translateY(${Math.max(-8, dragOffset.y * 0.12)}px)`
-                        : undefined,
-                  }}
-                >
-                  ↑
-                </span>
-                <span className="gesture-cue-text">Swipe up to reveal</span>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="gesture-cue-pill">
-            <span className="gesture-cue-action">
-              <span className="gesture-cue-arrow arrow-left">←</span>
-              <span>Again</span>
-            </span>
-            <span className="gesture-cue-sep">·</span>
-            <span className="gesture-cue-action">
-              <span>Good</span>
-              <span className="gesture-cue-arrow arrow-right">→</span>
-            </span>
-          </div>
-        )}
-      </div>
     </>
   )
 }
