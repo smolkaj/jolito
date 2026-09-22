@@ -35,7 +35,8 @@ async function run(): Promise<void> {
     'https://xwqjelkfdcfzyxxblvhp.supabase.co'
   ).replace(/\/+$/, '')
 
-  const supabaseAnonKey =
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY ||
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3cWplbGtmZGNmenl4eGJsdmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1Mzc2OTcsImV4cCI6MjEwMzExMzY5N30.cTfu8_OsfAuEBdwkpbfu1ftx9r0SJuUpqtoyMEmOTqw'
@@ -57,8 +58,8 @@ async function run(): Promise<void> {
       {
         method: 'POST',
         headers: {
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`,
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ p_days: days }),

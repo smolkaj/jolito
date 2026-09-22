@@ -25,10 +25,6 @@ export const corsHeaders: Record<string, string> = {
 }
 
 export function extractCountryFromRequest(request: Request): string {
-  const headerCountry = request.headers.get('cf-ipcountry')
-  if (headerCountry && headerCountry.trim().length === 2) {
-    return headerCountry.trim().toLowerCase()
-  }
   const cf = (request as unknown as { cf?: { country?: string } }).cf
   if (
     cf?.country &&
@@ -36,6 +32,11 @@ export function extractCountryFromRequest(request: Request): string {
     cf.country.trim().length === 2
   ) {
     return cf.country.trim().toLowerCase()
+  }
+  // Fallback for local dev and testing environments without Cloudflare runtime
+  const headerCountry = request.headers.get('cf-ipcountry')
+  if (headerCountry && headerCountry.trim().length === 2) {
+    return headerCountry.trim().toLowerCase()
   }
   return 'unknown'
 }

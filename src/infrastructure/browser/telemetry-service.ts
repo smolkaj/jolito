@@ -39,6 +39,7 @@ export class ClientTelemetryService implements TelemetryService {
   private windowObj: Window | null
   private deviceId: string
   private cleanupListeners?: (() => void) | undefined
+  private cachedState: StoredTelemetryState | null | undefined = undefined
 
   constructor(config: TelemetryServiceConfig = {}) {
     this.isNative = config.isNative ?? Capacitor.isNativePlatform()
@@ -79,6 +80,13 @@ export class ClientTelemetryService implements TelemetryService {
   init(): void {
     if (this.doNotTrack || !this.windowObj) return
 
+    const today = this.getTodayDateString()
+    const state = this.loadState()
+    if (state && state.date === today) {
+      // Already recorded for today; zero listeners needed
+      return
+    }
+
     const handleInteraction = () => {
       if (this.visibilityFn() === 'visible') {
         this.recordUserInteraction()
@@ -103,7 +111,8 @@ export class ClientTelemetryService implements TelemetryService {
     const state = this.loadState()
 
     if (state && state.date === today) {
-      // Already recorded for today
+      // Already recorded for today; detach listeners immediately
+      this.teardown()
       return
     }
 
@@ -113,6 +122,7 @@ export class ClientTelemetryService implements TelemetryService {
       reviews: 0,
     }
     this.saveState(newState)
+    this.teardown()
     this.sendPing('casual')
   }
 
@@ -120,14 +130,19 @@ export class ClientTelemetryService implements TelemetryService {
     if (this.doNotTrack) return
 
     const today = this.getTodayDateString()
-    let state = this.loadState()
+    const loaded = this.loadState()
+    const isNewDay = !loaded || loaded.date !== today
 
-    if (!state || state.date !== today) {
-      state = {
-        date: today,
-        tier: 'casual',
-        reviews: 0,
-      }
+    const state: StoredTelemetryState = isNewDay
+      ? {
+          date: today,
+          tier: 'casual',
+          reviews: 0,
+        }
+      : loaded
+
+    if (isNewDay) {
+      this.teardown()
     }
 
     state.reviews += 1
@@ -137,6 +152,9 @@ export class ClientTelemetryService implements TelemetryService {
       shouldUpgradeTo = 'deep'
     } else if (state.reviews >= 5 && state.tier === 'casual') {
       shouldUpgradeTo = 'active'
+    } else if (isNewDay) {
+      // First activity of today was a review; ensure user is recorded
+      shouldUpgradeTo = 'casual'
     }
 
     if (shouldUpgradeTo) {
@@ -198,25 +216,38 @@ export class ClientTelemetryService implements TelemetryService {
   }
 
   private loadState(): StoredTelemetryState | null {
-    if (!this.storage) return null
+    if (this.cachedState !== undefined) {
+      return this.cachedState
+    }
+    if (!this.storage) {
+      this.cachedState = null
+      return null
+    }
     try {
       const raw = this.storage.getItem(STORAGE_KEY)
-      if (!raw) return null
+      if (!raw) {
+        this.cachedState = null
+        return null
+      }
       const parsed = JSON.parse(raw) as StoredTelemetryState
       if (
         typeof parsed?.date === 'string' &&
         typeof parsed?.tier === 'string' &&
         typeof parsed?.reviews === 'number'
       ) {
+        this.cachedState = parsed
         return parsed
       }
+      this.cachedState = null
       return null
     } catch {
+      this.cachedState = null
       return null
     }
   }
 
   private saveState(state: StoredTelemetryState): void {
+    this.cachedState = state
     if (!this.storage) return
     try {
       this.storage.setItem(STORAGE_KEY, JSON.stringify(state))

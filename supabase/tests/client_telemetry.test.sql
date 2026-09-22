@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(11);
 
 -- 1. Test basic recording via record_client_activity
 select lives_ok(
@@ -51,9 +51,19 @@ select lives_ok(
   'Can record second client activity'
 );
 
+-- Anon role cannot access summary
+set local role anon;
+select throws_ok(
+  $$ select public.get_telemetry_summary(30) $$,
+  'permission denied for function get_telemetry_summary',
+  'Anon cannot execute get_telemetry_summary'
+);
+
+-- Authenticated and service_role can access summary
+set local role authenticated;
 select lives_ok(
   $$ select public.get_telemetry_summary(30) $$,
-  'Can execute get_telemetry_summary'
+  'Authenticated can execute get_telemetry_summary'
 );
 
 select is(
@@ -61,6 +71,7 @@ select is(
   2::bigint,
   'Summary returns correct unique user count'
 );
+reset role;
 
 select * from finish();
 rollback;

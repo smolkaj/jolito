@@ -994,8 +994,9 @@ function LoadedApp({
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
       }
+      services.telemetry?.teardown?.()
     }
-  }, [])
+  }, [services.telemetry])
 
   const grade = useCallback(
     (gradeValue: Grade) => {

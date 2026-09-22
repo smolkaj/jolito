@@ -6,19 +6,29 @@ import {
 } from './telemetry-route'
 
 describe('extractCountryFromRequest', () => {
-  it('extracts country from cf-ipcountry header', () => {
-    const req = new Request('https://joli.to/api/telemetry/heartbeat', {
-      headers: { 'cf-ipcountry': 'DE' },
-    })
-    expect(extractCountryFromRequest(req)).toBe('de')
-  })
-
-  it('extracts country from request.cf.country if header missing', () => {
+  it('extracts country from request.cf.country as trusted source', () => {
     const req = new Request('https://joli.to/api/telemetry/heartbeat')
     Object.defineProperty(req, 'cf', {
       value: { country: 'MX' },
     })
     expect(extractCountryFromRequest(req)).toBe('mx')
+  })
+
+  it('prioritizes request.cf.country over spoofed cf-ipcountry header', () => {
+    const req = new Request('https://joli.to/api/telemetry/heartbeat', {
+      headers: { 'cf-ipcountry': 'US' },
+    })
+    Object.defineProperty(req, 'cf', {
+      value: { country: 'DE' },
+    })
+    expect(extractCountryFromRequest(req)).toBe('de')
+  })
+
+  it('falls back to cf-ipcountry header in test/local environments when request.cf is missing', () => {
+    const req = new Request('https://joli.to/api/telemetry/heartbeat', {
+      headers: { 'cf-ipcountry': 'FR' },
+    })
+    expect(extractCountryFromRequest(req)).toBe('fr')
   })
 
   it('falls back to unknown if missing or invalid', () => {

@@ -183,4 +183,73 @@ describe('ClientTelemetryService', () => {
       expect.any(Function),
     )
   })
+
+  it('dispatches casual ping when study review begins directly without prior interaction', () => {
+    const service = new ClientTelemetryService({
+      storage,
+      fetchFn: mockFetch,
+      doNotTrack: false,
+      nowFn: () => mockDate,
+      visibilityFn: () => 'visible',
+    })
+
+    // First review of day directly without prior click/keydown
+    service.recordReview()
+    expect(capturedRequests).toHaveLength(1)
+    expect(capturedRequests[0]?.body.engagementTier).toBe('casual')
+  })
+
+  it('automatically unregisters window interaction listeners once first interaction occurs', () => {
+    const removeListenerSpy = vi.fn()
+    const mockWindow = {
+      addEventListener: vi.fn(),
+      removeEventListener: removeListenerSpy,
+    } as unknown as Window
+
+    const service = new ClientTelemetryService({
+      storage,
+      fetchFn: mockFetch,
+      windowObj: mockWindow,
+      doNotTrack: false,
+      nowFn: () => mockDate,
+      visibilityFn: () => 'visible',
+    })
+
+    service.init()
+    service.recordUserInteraction()
+
+    expect(removeListenerSpy).toHaveBeenCalledWith(
+      'pointerdown',
+      expect.any(Function),
+    )
+    expect(removeListenerSpy).toHaveBeenCalledWith(
+      'keydown',
+      expect.any(Function),
+    )
+  })
+
+  it('does not register window interaction listeners if today is already recorded', () => {
+    const addListenerSpy = vi.fn()
+    const mockWindow = {
+      addEventListener: addListenerSpy,
+      removeEventListener: vi.fn(),
+    } as unknown as Window
+
+    storage.setItem(
+      'jolito:telemetry:v1',
+      JSON.stringify({ date: '2026-09-22', tier: 'casual', reviews: 2 }),
+    )
+
+    const service = new ClientTelemetryService({
+      storage,
+      fetchFn: mockFetch,
+      windowObj: mockWindow,
+      doNotTrack: false,
+      nowFn: () => mockDate,
+      visibilityFn: () => 'visible',
+    })
+
+    service.init()
+    expect(addListenerSpy).not.toHaveBeenCalled()
+  })
 })

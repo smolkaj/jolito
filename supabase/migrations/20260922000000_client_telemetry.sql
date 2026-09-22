@@ -16,9 +16,6 @@ create table if not exists public.client_activity_daily (
   primary key (date, user_hash)
 );
 
-create index if not exists idx_client_activity_daily_date
-  on public.client_activity_daily (date);
-
 create index if not exists idx_client_activity_daily_country
   on public.client_activity_daily (country);
 
@@ -163,5 +160,5 @@ begin
 end;
 $$;
 
-revoke all on function public.get_telemetry_summary(integer) from public;
-grant execute on function public.get_telemetry_summary(integer) to anon, authenticated;
+revoke all on function public.get_telemetry_summary(integer) from public, anon;
+grant execute on function public.get_telemetry_summary(integer) to service_role, authenticated;
