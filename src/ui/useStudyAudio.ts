@@ -42,10 +42,23 @@ export function useStudyAudio({
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !speaker.supported(),
   )
+  const currentCardId = currentCard?.id
+  const currentPrompt = currentCard?.prompt
+  const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
+  const currentReviews = currentCard?.schedule.reviews ?? 0
+
+  const isAutoplayEligible =
+    view === 'review' &&
+    !paused &&
+    autoplayPrompt &&
+    Boolean(currentCardId) &&
+    Boolean(currentPrompt) &&
+    speaker.supported()
+
   const [activeTarget, setActiveTarget] = useState<'prompt' | 'answer' | null>(
-    null,
+    () => (isAutoplayEligible ? 'prompt' : null),
   )
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(() => isAutoplayEligible)
   const playGenerationRef = useRef(0)
   const revealAudioTimerRef = useRef<number | null>(null)
 
@@ -174,11 +187,6 @@ export function useStudyAudio({
   )
 
   // Autoplay prompt audio when entering/advancing in review view
-  const currentCardId = currentCard?.id
-  const currentPrompt = currentCard?.prompt
-  const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
-  const currentReviews = currentCard?.schedule.reviews ?? 0
-
   useEffect(() => {
     if (
       view !== 'review' ||
@@ -189,11 +197,31 @@ export function useStudyAudio({
     ) {
       return
     }
-    // Use primitive ID and review count to avoid re-triggering autoplay on object reference changes
-    speaker.speak(currentPrompt, currentPromptLocale, {
+    const currentPlayGen = ++playGenerationRef.current
+    const speakOptions: SpeakerOptions = {
       cardSeed: `${currentCardId}:turn${currentReviews}`,
       explicit: false,
-    })
+      onEnded: () => {
+        if (playGenerationRef.current === currentPlayGen) {
+          setActiveTarget(null)
+          setIsAudioPlaying(false)
+        }
+      },
+    }
+    const played = speaker.speak(
+      currentPrompt,
+      currentPromptLocale,
+      speakOptions,
+    )
+    if (!played) {
+      if (playGenerationRef.current === currentPlayGen) {
+        setActiveTarget(null)
+        setIsAudioPlaying(false)
+      }
+      setAudioUnavailable(true)
+    } else {
+      setAudioUnavailable(false)
+    }
   }, [
     paused,
     autoplayPrompt,
@@ -216,8 +244,8 @@ export function useStudyAudio({
   }
   if (currentCardId !== prevCardId) {
     setPrevCardId(currentCardId)
-    setActiveTarget(null)
-    setIsAudioPlaying(false)
+    setActiveTarget(isAutoplayEligible ? 'prompt' : null)
+    setIsAudioPlaying(isAutoplayEligible)
   }
 
   // A dialog interrupts playback; the next interaction can resume normally.

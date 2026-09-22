@@ -99,8 +99,14 @@ describe('useStudyAudio', () => {
     expect(result.current.audioUnavailable).toBe(true)
   })
 
-  it('autoplays prompt audio with turn seed when view is review', () => {
-    renderHook(() =>
+  it('autoplays prompt audio with turn seed when view is review and sets playing indicator', () => {
+    let capturedOnEnded: (() => void) | undefined
+    speakMock.mockImplementation((_t, _l, opts) => {
+      capturedOnEnded = opts?.onEnded
+      return true
+    })
+
+    const { result } = renderHook(() =>
       useStudyAudio({
         speaker: mockSpeaker,
         sounds: mockSounds,
@@ -113,7 +119,17 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn3',
       explicit: false,
+      onEnded: anyOnEnded,
     })
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
+
+    act(() => {
+      capturedOnEnded?.()
+    })
+
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
   })
 
   it('does not autoplay when view is not review or autoplayPrompt is false', () => {
@@ -171,6 +187,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenLastCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn4',
       explicit: false,
+      onEnded: anyOnEnded,
     })
   })
 
