@@ -19,6 +19,7 @@ import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { getOrCreateDeviceId } from './device-id'
 import { LocalStorageCardRepository } from './card-repository'
 import { BrowserCommunityStatsService } from './community-stats-service'
+import { ClientTelemetryService } from './telemetry-service'
 import { BrowserHapticsPlayer } from './haptics'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
@@ -122,6 +123,8 @@ export function createBrowserServices(): AppServices {
     '/api/feedback',
   )
   const communityStats = new BrowserCommunityStatsService()
+  const telemetry = new ClientTelemetryService({ storage })
+  telemetry.init()
 
   return {
     deletionLock: Capacitor.isNativePlatform()
@@ -139,5 +142,6 @@ export function createBrowserServices(): AppServices {
     feedback,
     communityStats,
     aiAssistant: new BrowserAiAssistant(),
+    telemetry,
   }
 }

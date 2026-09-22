@@ -994,8 +994,9 @@ function LoadedApp({
       if (savedToastTimerRef.current !== null) {
         window.clearTimeout(savedToastTimerRef.current)
       }
+      services.telemetry?.teardown?.()
     }
-  }, [])
+  }, [services.telemetry])
 
   const grade = useCallback(
     (gradeValue: Grade) => {
@@ -1018,6 +1019,8 @@ function LoadedApp({
         buriedCardIds,
       )
 
+      services.telemetry?.recordReview()
+
       playGradeSensory(gradeValue, isComplete)
 
       if (isComplete) {
@@ -1036,6 +1039,7 @@ function LoadedApp({
       playGradeSensory,
       scheduleDebouncedSync,
       services.clock,
+      services.telemetry,
     ],
   )
 
@@ -1121,6 +1125,7 @@ function LoadedApp({
     ]
     if (!onUpdateCards(next, false))
       throw new Error('Progress could not be saved')
+    services.telemetry?.recordReview()
     scheduleDebouncedSync()
   }
   const grammarPractice = useGrammarPractice({

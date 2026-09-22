@@ -23,6 +23,7 @@
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:release && npm run build && npm run build:signup-alerts",
     "build:signup-alerts": "wrangler deploy --config wrangler.signup-alerts.json --dry-run",
     "generate:privacy": "node scripts/generate-privacy-html.ts",
+    "query:telemetry": "node scripts/query-telemetry.ts",
     "build": "node scripts/generate-privacy-html.ts && vite build",
     "preview": "vite preview",
     "ingest:dict": "python3 scripts/ingest-wiktionary.py",
