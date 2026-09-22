@@ -6689,6 +6689,34 @@ kbd {
   }
 }
 
+/* On iOS/iPadOS without a physical keyboard, hide shortcuts even if a trackpad/mouse is connected */
+html[data-platform='ios']:not([data-keyboard='true']) .keyboard-hint,
+html[data-platform='ios']:not([data-keyboard='true']) .reveal-button kbd,
+html[data-platform='ios']:not([data-keyboard='true'])
+  .answer-accents
+  button
+  kbd,
+html[data-platform='ios']:not([data-keyboard='true']) .grade-buttons kbd,
+html[data-platform='ios']:not([data-keyboard='true']) .grade-btn kbd {
+  display: none !important;
+}
+
+/* When a physical keyboard is active, reveal the shortcuts */
+html[data-keyboard='true'] .keyboard-hint {
+  display: block !important;
+}
+
+html[data-keyboard='true'] .reveal-button kbd,
+html[data-keyboard='true'] .answer-accents button kbd,
+html[data-keyboard='true'] .grade-buttons kbd,
+html[data-keyboard='true'] .grade-btn kbd {
+  display: inline-flex !important;
+}
+
+html[data-keyboard='true'] .card-gesture-cue-bar {
+  display: none !important;
+}
+
 @keyframes subtle-float-up {
   0%,
   100% {
