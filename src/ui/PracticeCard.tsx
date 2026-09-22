@@ -17,6 +17,7 @@ import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
 
 const accentLetters = ['á', 'é', 'í', 'ó', 'ú']
+const MAX_SWIPE_LIFT_Y = -110
 
 /** Shared recall → feedback → grade interaction; learning modes supply content. */
 export function PracticeCard({
@@ -263,7 +264,7 @@ export function PracticeCard({
     pointerStartRef.current = null
     haptics?.trigger('selection')
 
-    const targetLift = -110
+    const targetLift = MAX_SWIPE_LIFT_Y
     setDragOffset({ x: 0, y: targetLift })
     dragOffsetRef.current = { x: 0, y: targetLift }
 
@@ -324,6 +325,7 @@ export function PracticeCard({
     if (!isDragging) {
       if (revealed && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) {
         setIsDragging(true)
+        window.getSelection()?.removeAllRanges()
         if (cardRef.current && event.pointerId !== undefined) {
           try {
             cardRef.current.setPointerCapture(event.pointerId)
@@ -333,6 +335,7 @@ export function PracticeCard({
         }
       } else if (!revealed && dy < -8 && Math.abs(dy) > Math.abs(dx)) {
         setIsDragging(true)
+        window.getSelection()?.removeAllRanges()
         if (cardRef.current && event.pointerId !== undefined) {
           try {
             cardRef.current.setPointerCapture(event.pointerId)
@@ -347,7 +350,7 @@ export function PracticeCard({
 
     if (!revealed) {
       if (dy < 0) {
-        const liftY = Math.max(-130, dy * 0.72)
+        const liftY = Math.max(MAX_SWIPE_LIFT_Y, dy * 0.72)
         dragOffsetRef.current = { x: 0, y: liftY }
         setDragOffset({ x: 0, y: liftY })
 

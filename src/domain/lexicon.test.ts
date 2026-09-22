@@ -354,6 +354,98 @@ describe('LexiconIndex', () => {
       expect(enFuzzy[0]?.matchType).toBe('fuzzy')
     })
 
+    it('finds fuzzy suggestions for incomplete typing with typos (prefix typos)', () => {
+      // Incomplete typing with transposition: "agauca" aiming for "aguacate"
+      const prefixTypo = index.suggest('agauca', 'es')
+      expect(prefixTypo.length).toBeGreaterThan(0)
+      expect(prefixTypo[0]?.spanish).toBe('aguacate')
+      expect(prefixTypo[0]?.matchType).toBe('fuzzy')
+
+      // Incomplete typing with missing character: "cuent" vs "cuetn"
+      const phrasePrefixTypo = index.suggest('cuetn', 'es')
+      expect(phrasePrefixTypo.length).toBeGreaterThan(0)
+      expect(phrasePrefixTypo[0]?.spanish).toBe('la cuenta, por favor')
+    })
+
+    it('finds fuzzy suggestions within multi-word phrases and word boundaries', () => {
+      // Typo in second word of phrase: "por favro" -> "la cuenta, por favor"
+      const phraseTypo = index.suggest('por favro', 'es')
+      expect(phraseTypo.length).toBeGreaterThan(0)
+      expect(phraseTypo[0]?.spanish).toBe('la cuenta, por favor')
+      expect(phraseTypo[0]?.matchType).toBe('fuzzy')
+
+      // Isolated word typo in compound phrase: "favro" -> "la cuenta, por favor"
+      const wordTypo = index.suggest('favro', 'es')
+      expect(wordTypo.length).toBeGreaterThan(0)
+      expect(wordTypo[0]?.spanish).toBe('la cuenta, por favor')
+    })
+
+    it('resolves inflected verb forms with typos to their base lemma', () => {
+      // Typo with b/v phonetic substitution: "tubimos" -> "tuvimos" -> "tener"
+      const lemmaTypo = index.suggest('tubimos', 'es')
+      expect(lemmaTypo.length).toBeGreaterThan(0)
+      expect(lemmaTypo[0]?.spanish).toBe('tener')
+      expect(lemmaTypo[0]?.matchType).toBe('lemma')
+      expect(lemmaTypo[0]?.matchedForm).toBe('tubimos')
+    })
+
+    it('finds fuzzy suggestions for English multi-word phrases and glosses with typos', () => {
+      const enPhraseTypo = index.suggest('in a minite', 'en')
+      expect(enPhraseTypo.length).toBeGreaterThan(0)
+      expect(enPhraseTypo[0]?.spanish).toBe('ahorita')
+      expect(enPhraseTypo[0]?.matchType).toBe('fuzzy')
+
+      const enWordTypo = index.suggest('minite', 'en')
+      expect(enWordTypo.length).toBeGreaterThan(0)
+      expect(enWordTypo[0]?.spanish).toBe('ahorita')
+
+      const enTakeaway = index.suggest('takeawy', 'en')
+      expect(enTakeaway.length).toBeGreaterThan(0)
+      expect(enTakeaway[0]?.spanish).toBe('para llevar')
+    })
+
+    it('does not crowd out or pollute prefix completions with false ancestor deletions', () => {
+      const precisionIndex = new LexiconIndex([
+        { spanish: 'desayuno', english: 'breakfast' },
+        { spanish: 'desayunar', english: 'to have breakfast' },
+        { spanish: 'desayunado', english: 'breakfasted' },
+        { spanish: 'desalojar', english: 'to evict' },
+        { spanish: 'desalojo', english: 'eviction' },
+        { spanish: 'desalmado', english: 'heartless' },
+      ])
+
+      const exactCompletions = precisionIndex.suggest('desay', 'es', 5)
+      expect(exactCompletions.map((c) => c.spanish)).toEqual([
+        'desayuno',
+        'desayunar',
+        'desayunado',
+      ])
+
+      // When a typo occurs in the prefix (desya), it should surface the breakfast words
+      const typoCompletions = precisionIndex.suggest('desya', 'es', 5)
+      expect(typoCompletions.map((c) => c.spanish)).toContain('desayuno')
+      expect(typoCompletions.map((c) => c.spanish)).toContain('desayunar')
+      expect(typoCompletions[0]?.spanish).toBe('desayuno')
+    })
+
+    it('resolves lemmas independently of whether setLemmaMap is called before or after addEntries', () => {
+      const indexA = new LexiconIndex()
+      indexA.setLemmaMap({ tuvimos: 'tener' })
+      indexA.addEntries([{ spanish: 'tener', english: 'to have' }])
+
+      const indexB = new LexiconIndex()
+      indexB.addEntries([{ spanish: 'tener', english: 'to have' }])
+      indexB.setLemmaMap({ tuvimos: 'tener' })
+
+      expect(indexA.suggest('tuvimos', 'es')).toEqual(
+        indexB.suggest('tuvimos', 'es'),
+      )
+      expect(indexA.suggest('tubimos', 'es')).toEqual(
+        indexB.suggest('tubimos', 'es'),
+      )
+      expect(indexA.suggest('tubimos', 'es')[0]?.spanish).toBe('tener')
+    })
+
     it('limits returned suggestions to requested limit', () => {
       const results = index.suggest('a', 'es', 1)
       expect(results.length).toBeLessThanOrEqual(1)

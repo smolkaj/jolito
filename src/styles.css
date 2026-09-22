@@ -2255,6 +2255,26 @@ summary:focus-visible,
   background: var(--paper);
 }
 
+.app-shell.review-page {
+  padding-top: 0;
+}
+
+/* Review Session Header Chrome */
+.review-header {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Sticky top chrome strictly during active review/practice sessions */
+.review-page .review-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
 /* Review Session Progress Hairline */
 .review-progress-track {
   width: min(1080px, 100%);
@@ -2279,6 +2299,7 @@ summary:focus-visible,
   margin: clamp(28px, 4.5vh, 48px) auto 0;
   text-align: center;
   position: relative;
+  z-index: 1;
 }
 
 /* Prompt Header Wrap & Audio Button Side-by-Side */
@@ -6346,7 +6367,9 @@ kbd {
   user-select: text;
 }
 
-.study-card.is-dragging {
+.study-card.is-dragging,
+.study-card.is-dragging .study-prompt,
+.study-card.is-dragging .prompt-meta {
   cursor: grabbing;
   -webkit-user-select: none;
   user-select: none;
@@ -6796,8 +6819,13 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
+    padding-top: 0;
     padding-left: 0;
     padding-right: 0;
+  }
+
+  .review-page .review-header {
+    padding-top: max(12px, env(safe-area-inset-top));
   }
 
   .review-page .topbar,
