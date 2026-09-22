@@ -519,7 +519,10 @@ describe('LexiconIndex', () => {
           .map((i) => i.replace(/^(to|the|a|an)\s+/, '').trim())
 
         const uniqueBare = new Set(bareForms)
-        expect(bareForms).toHaveLength(uniqueBare.size)
+        expect(
+          bareForms,
+          `Duplicate bare form in "${entry.spanish}": ${entry.english}`,
+        ).toHaveLength(uniqueBare.size)
       }
     })
   })

@@ -187,16 +187,22 @@ PRONOUN_PREPS = {
     'to her', 'for her', 'to them', 'for them',
 }
 
-def prune_redundant_items(items):
-    cleaned_items = []
-    for it in items:
-        m = re.match(r'^(?:a|an)\s+([a-z]+)$', it, re.I)
-        if m and m.group(1).lower() in [x.lower() for x in items]:
-            continue
-        cleaned_items.append(it)
+def score_variant(v):
+    vl = v.lower()
+    if vl.startswith('to ') and vl not in PRONOUN_PREPS:
+        return 10
+    if vl.startswith('the '):
+        head = v[4:].strip()
+        if head and head[0].isupper():
+            return 8
+        return 2
+    if vl.startswith('a ') or vl.startswith('an '):
+        return 1
+    return 5
 
+def prune_redundant_items(items):
     groups = {}
-    for it in cleaned_items:
+    for it in items:
         it_lower = it.lower().strip()
         if it_lower in PRONOUN_PREPS:
             groups[it_lower] = [it]
@@ -211,15 +217,6 @@ def prune_redundant_items(items):
         if len(variants) == 1:
             final_items.append(variants[0])
         else:
-            def score_variant(v):
-                vl = v.lower()
-                if vl.startswith('to ') and vl not in PRONOUN_PREPS:
-                    return 10
-                if vl.startswith('the ') and len(v) > 4 and v[4:].istitle():
-                    return 8
-                if vl.startswith('a ') or vl.startswith('an '):
-                    return 1
-                return 5
             best = max(variants, key=score_variant)
             final_items.append(best)
     return final_items
