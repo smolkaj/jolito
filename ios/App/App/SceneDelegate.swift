@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import GameController
+import WebKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -23,6 +24,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func setupKeyboardMonitoring() {
+        bridgeViewController?.loadViewIfNeeded()
+        let isConnected = GCKeyboard.coalesced != nil
+        notifyKeyboardState(connected: isConnected)
+
         keyboardConnectedObserver = NotificationCenter.default.addObserver(
             forName: .GCKeyboardDidConnect,
             object: nil,
@@ -42,12 +47,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
-        if GCKeyboard.coalesced != nil {
-            notifyKeyboardState(connected: true)
-        }
+        let isConnected = GCKeyboard.coalesced != nil
+        notifyKeyboardState(connected: isConnected)
     }
 
     private func notifyKeyboardState(connected: Bool) {
+        bridgeViewController?.webView?.configuration.userContentController.removeAllUserScripts()
+        if connected {
+            let script = WKUserScript(
+                source: "document.documentElement.dataset.keyboard = 'true';",
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+            bridgeViewController?.webView?.configuration.userContentController.addUserScript(script)
+        }
+
         let js = connected
             ? "document.documentElement.dataset.keyboard = 'true'; window.dispatchEvent(new CustomEvent('jolito:hardware-keyboard', { detail: { connected: true } }));"
             : "delete document.documentElement.dataset.keyboard; window.dispatchEvent(new CustomEvent('jolito:hardware-keyboard', { detail: { connected: false } }));"

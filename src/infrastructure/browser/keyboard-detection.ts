@@ -41,7 +41,13 @@ export function initKeyboardDetection(
 
   const root = doc.documentElement
   const isIosDevice = isIOS(nav)
-  const isTouchFirst = isIosDevice || (nav?.maxTouchPoints ?? 0) > 0
+  const isMobileDevice = Boolean(
+    nav?.userAgent &&
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      nav.userAgent,
+    ),
+  )
+  const isTouchFirst = isIosDevice || isMobileDevice
 
   if (isIosDevice) {
     root.dataset.platform = 'ios'

@@ -122,6 +122,55 @@ describe('keyboard-detection', () => {
     cleanup()
   })
 
+  it('defaults to keyboard present on desktop laptops even with touchscreen (maxTouchPoints > 0)', () => {
+    const { win, doc, storage, root } = createMockEnvironment({
+      isIos: false,
+      maxTouchPoints: 10,
+    })
+    const nav = {
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      platform: 'Win32',
+      maxTouchPoints: 10,
+    }
+
+    const cleanup = initKeyboardDetection({
+      window: win,
+      document: doc,
+      sessionStorage: storage,
+      navigator: nav,
+    })
+
+    expect(root.dataset.keyboard).toBe('true')
+    expect(root.dataset.platform).toBeUndefined()
+    expect(storage.getItem('jolito:has-keyboard')).toBe('true')
+
+    cleanup()
+  })
+
+  it('defaults to keyboard absent on Android mobile devices', () => {
+    const { win, doc, storage, root } = createMockEnvironment({
+      isIos: false,
+      maxTouchPoints: 5,
+    })
+    const nav = {
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
+      platform: 'Linux armv8l',
+      maxTouchPoints: 5,
+    }
+
+    const cleanup = initKeyboardDetection({
+      window: win,
+      document: doc,
+      sessionStorage: storage,
+      navigator: nav,
+    })
+
+    expect(root.dataset.keyboard).toBeUndefined()
+    expect(storage.getItem('jolito:has-keyboard')).toBeNull()
+
+    cleanup()
+  })
+
   it('defaults to keyboard absent on iOS/iPadOS even if trackpad is present', () => {
     const { win, doc, storage, nav, root } = createMockEnvironment({
       isIos: true,
