@@ -82,6 +82,13 @@
         .email-paragraph {
           color: #b7c4bd !important;
         }
+        .divider-line {
+          border-top-color: #2b3832 !important;
+        }
+        .divider-badge {
+          background-color: #161e1a !important;
+          color: #8d9c94 !important;
+        }
         .code-container {
           background-color: #20151b !important;
           border-color: #7a1a4c !important;
@@ -92,17 +99,7 @@
         .domain-bound-otp {
           color: #8d9c94 !important;
         }
-        .divider-line {
-          border-top-color: #2b3832 !important;
-        }
-        .divider-badge {
-          background-color: #161e1a !important;
-          color: #8d9c94 !important;
-        }
         .expiry-text {
-          color: #8d9c94 !important;
-        }
-        .email-disclaimer {
           color: #8d9c94 !important;
         }
         .footer-text {
@@ -152,7 +149,7 @@
       "
     >
       Your Jolito verification code is {{ .Token }}. Your 1-click sign-in link
-      and 6-digit code for Jolito. &#847; &zwnj; &nbsp; &#8199; &shy; &#847;
+      and code for Jolito. &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj;
       &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj;
       &nbsp; &#8199; &shy;
     </div>
@@ -269,7 +266,7 @@
           >
             <tr>
               <td>
-                <!-- Card Heading -->
+                <!-- Heading -->
                 <h1
                   class="email-title"
                   style="
@@ -284,8 +281,10 @@
                     text-align: center;
                   "
                 >
-                  Sign in to your account
+                  Sign in to Jolito
                 </h1>
+
+                <!-- Intro paragraph -->
                 <p
                   class="email-paragraph"
                   style="
@@ -294,13 +293,12 @@
                       -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                       Helvetica, Arial, sans-serif;
                     font-size: 15px;
-                    line-height: 1.55;
+                    line-height: 1.5;
                     color: #3b4740;
                     text-align: center;
                   "
                 >
-                  Click below to sign in instantly and sync your flashcards
-                  across devices:
+                  Click below to sign in instantly:
                 </p>
 
                 <!-- 1-Click Magic Link Button -->
@@ -366,16 +364,23 @@
                   style="margin: 20px 0"
                 >
                   <tr>
-                    <td
-                      style="border-top: 1px solid #e2ddd3"
-                      class="divider-line"
-                    ></td>
+                    <td style="vertical-align: middle">
+                      <div
+                        class="divider-line"
+                        style="
+                          border-top: 1px solid #e2ddd3;
+                          font-size: 0;
+                          line-height: 0;
+                        "
+                      ></div>
+                    </td>
                     <td
                       style="
                         width: 1%;
                         padding: 0 12px;
                         white-space: nowrap;
                         text-align: center;
+                        vertical-align: middle;
                       "
                     >
                       <span
@@ -393,34 +398,23 @@
                           padding: 0 4px;
                         "
                       >
-                        or enter verification code
+                        or enter code
                       </span>
                     </td>
-                    <td
-                      style="border-top: 1px solid #e2ddd3"
-                      class="divider-line"
-                    ></td>
+                    <td style="vertical-align: middle">
+                      <div
+                        class="divider-line"
+                        style="
+                          border-top: 1px solid #e2ddd3;
+                          font-size: 0;
+                          line-height: 0;
+                        "
+                      ></div>
+                    </td>
                   </tr>
                 </table>
 
-                <!-- 6-Digit OTP Block for Cross-Device / Mobile App -->
-                <p
-                  class="email-paragraph"
-                  style="
-                    margin: 0 0 10px 0;
-                    font-family:
-                      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-                      Helvetica, Arial, sans-serif;
-                    font-size: 14px;
-                    line-height: 1.5;
-                    color: #5f6e66;
-                    text-align: center;
-                  "
-                >
-                  Signing in on another device or the mobile app? Your
-                  verification code is:
-                </p>
-
+                <!-- 6-Digit OTP Container -->
                 <div
                   class="code-container"
                   style="
@@ -454,7 +448,7 @@
                 <p
                   class="domain-bound-otp"
                   style="
-                    margin: 0 0 16px 0;
+                    margin: 0;
                     font-family:
                       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
                       monospace;
@@ -468,41 +462,22 @@
                   @joli.to #{{ .Token }}
                 </p>
 
-                <!-- Expiry Notice -->
+                <!-- Expiry & Ignore Notice (WCAG AA Compliant) -->
                 <p
                   class="expiry-text"
                   style="
-                    margin: 0 0 16px 0;
-                    font-family:
-                      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-                      Helvetica, Arial, sans-serif;
-                    font-size: 13px;
-                    line-height: 1.5;
-                    color: #5f6e66;
-                    text-align: center;
-                  "
-                >
-                  This sign-in link and code expire in
-                  <strong>60 minutes</strong> and can only be used once.
-                </p>
-
-                <!-- Ignore Disclaimer (WCAG AA Compliant) -->
-                <p
-                  class="email-disclaimer"
-                  style="
-                    margin: 0;
+                    margin: 24px 0 0 0;
                     font-family:
                       -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                       Helvetica, Arial, sans-serif;
                     font-size: 12.5px;
-                    line-height: 1.5;
+                    line-height: 1.6;
                     color: #5f6e66;
                     text-align: center;
                   "
                 >
-                  If you did not request this sign-in email, you can safely
-                  ignore it. Your account and saved cards remain completely
-                  secure.
+                  This code and link expire in 60 minutes.<br />
+                  If you didn’t request this email, you can safely ignore it.
                 </p>
               </td>
             </tr>
@@ -519,22 +494,6 @@
           >
             <tr>
               <td align="center" style="padding: 0 16px">
-                <p
-                  class="footer-text"
-                  style="
-                    margin: 0 0 6px 0;
-                    font-family:
-                      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-                      Helvetica, Arial, sans-serif;
-                    font-size: 12px;
-                    line-height: 1.5;
-                    color: #5f6e66;
-                    text-align: center;
-                  "
-                >
-                  Sent by <strong>Jolito</strong> &bull; Spoken Mexican Spanish
-                  flashcards with native audio.
-                </p>
                 <p
                   class="footer-text"
                   style="
