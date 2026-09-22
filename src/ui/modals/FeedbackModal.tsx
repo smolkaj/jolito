@@ -188,7 +188,6 @@ function FeedbackModalInner({
               {isSubmitting ? 'Sending…' : 'Send feedback'}
             </button>
           </div>
-          <p className="feedback-modal-version">Jolito {APP_VERSION}</p>
         </form>
       )}
     </ModalSheet>

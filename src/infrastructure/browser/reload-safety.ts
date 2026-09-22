@@ -1,3 +1,5 @@
+import { viewFromHash } from '../../navigation'
+
 /**
  * Determines whether it is currently safe to reload the app without disrupting
  * active user input, study sessions, or modal dialogs.
@@ -37,10 +39,10 @@ export function isSafeToReload(): boolean {
     }
   }
 
-  // 4. In the middle of an active study/practice session (hash contains review or grammar)
+  // 4. In the middle of an active study/practice session (view is review or grammar)
   if (typeof window !== 'undefined') {
-    const hash = window.location.hash
-    if (hash.includes('review') || hash.includes('grammar')) {
+    const view = viewFromHash(window.location.hash)
+    if (view === 'review' || view === 'grammar') {
       return false
     }
   }

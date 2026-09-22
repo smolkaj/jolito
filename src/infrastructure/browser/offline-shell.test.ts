@@ -220,7 +220,7 @@ describe('triggerManualUpdate', () => {
     vi.unstubAllGlobals()
   })
 
-  it('posts SKIP_WAITING to waiting worker if available', async () => {
+  it('posts SKIP_WAITING to waiting worker if available and reloads', async () => {
     const reload = vi.fn()
     vi.stubGlobal('location', { ...window.location, reload })
     const waitingWorker = { postMessage: vi.fn() }
@@ -228,8 +228,11 @@ describe('triggerManualUpdate', () => {
       waiting: waitingWorker,
       update: vi.fn(),
     })
+    const addEventListener = vi.fn((event: string, cb: () => void) => {
+      if (event === 'controllerchange') cb()
+    })
     vi.stubGlobal('navigator', {
-      serviceWorker: { getRegistration },
+      serviceWorker: { getRegistration, addEventListener },
     })
 
     const { triggerManualUpdate } = await import('./offline-shell')
@@ -237,9 +240,10 @@ describe('triggerManualUpdate', () => {
     expect(waitingWorker.postMessage).toHaveBeenCalledWith({
       type: 'SKIP_WAITING',
     })
+    expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('calls update() on registration when waiting is not yet present', async () => {
+  it('calls update() on registration when waiting is not yet present and reloads', async () => {
     const reload = vi.fn()
     vi.stubGlobal('location', { ...window.location, reload })
     const update = vi.fn().mockResolvedValue(undefined)

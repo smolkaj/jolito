@@ -376,25 +376,34 @@ test('automatically activates update in standalone PWA on resume when idle', asy
     })
 
     // User switches away from app (backgrounding)
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
+      const controllerChanged = new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener(
+          'controllerchange',
+          () => resolve(),
+          { once: true },
+        )
+      })
       Object.defineProperty(document, 'visibilityState', {
         value: 'hidden',
         configurable: true,
       })
       document.dispatchEvent(new Event('visibilitychange'))
+      await controllerChanged
     })
 
-    // User switches back to app (resuming)
-    await page.evaluate(() => {
-      Object.defineProperty(document, 'visibilityState', {
-        value: 'visible',
-        configurable: true,
-      })
-      document.dispatchEvent(new Event('visibilitychange'))
-    })
+    // User switches back to app (resuming) -> standalone PWA automatically reloads into recovered deployment
+    await Promise.all([
+      page.waitForNavigation(),
+      page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', {
+          value: 'visible',
+          configurable: true,
+        })
+        document.dispatchEvent(new Event('visibilitychange'))
+      }),
+    ])
 
-    // Standalone PWA automatically reloaded into recovered deployment!
-    await page.waitForNavigation()
     await expect(page.locator('meta[name="test-deployment"]')).toHaveAttribute(
       'content',
       'recovered',

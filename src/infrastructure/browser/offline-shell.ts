@@ -16,14 +16,35 @@ export async function triggerManualUpdate(): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.getRegistration()
     if (reg) {
+      const waitForController = new Promise<void>((resolve) => {
+        const timeout = setTimeout(resolve, 2000)
+        if (typeof navigator.serviceWorker?.addEventListener === 'function') {
+          navigator.serviceWorker.addEventListener(
+            'controllerchange',
+            () => {
+              clearTimeout(timeout)
+              resolve()
+            },
+            { once: true },
+          )
+        } else {
+          clearTimeout(timeout)
+          resolve()
+        }
+      })
+
       if (reg.waiting) {
         reg.waiting.postMessage({ type: 'SKIP_WAITING' })
+        await waitForController
+        window.location.reload()
         return
       }
       await reg.update()
       const nextWaiting = reg.waiting as ServiceWorker | null
       if (nextWaiting) {
         nextWaiting.postMessage({ type: 'SKIP_WAITING' })
+        await waitForController
+        window.location.reload()
         return
       }
     }
@@ -57,8 +78,9 @@ export function startOfflineShell(): () => void {
     pendingWaitingWorker = waiting
     const isHidden =
       typeof document !== 'undefined' && document.visibilityState === 'hidden'
-    if (isStandalone() && isHidden) {
+    if (isStandalone() && isHidden && isSafeToReload()) {
       waiting.postMessage({ type: 'SKIP_WAITING' })
+      pendingWaitingWorker = null
     }
   }
 
@@ -85,8 +107,10 @@ export function startOfflineShell(): () => void {
   const handleVisibilityChange = () => {
     if (stopped) return
     if (document.visibilityState === 'hidden') {
-      if (isStandalone() && pendingWaitingWorker && isSafeToReload()) {
-        pendingWaitingWorker.postMessage({ type: 'SKIP_WAITING' })
+      const waiting = pendingWaitingWorker ?? currentRegistration?.waiting
+      if (isStandalone() && waiting && isSafeToReload()) {
+        waiting.postMessage({ type: 'SKIP_WAITING' })
+        pendingWaitingWorker = null
       }
     } else if (document.visibilityState === 'visible') {
       if (isStandalone()) {
@@ -106,9 +130,6 @@ export function startOfflineShell(): () => void {
   const handleHashChange = () => {
     if (stopped) return
     if (isStandalone()) {
-      if (pendingWaitingWorker && isSafeToReload()) {
-        pendingWaitingWorker.postMessage({ type: 'SKIP_WAITING' })
-      }
       reloadIfSafe()
     }
   }

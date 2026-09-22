@@ -69,6 +69,11 @@ describe('isSafeToReload', () => {
     expect(isSafeToReload()).toBe(false)
   })
 
+  it('returns false when in canonical study session hash (#/study)', () => {
+    window.location.hash = '#/study'
+    expect(isSafeToReload()).toBe(false)
+  })
+
   it('returns false when in grammar practice hash', () => {
     window.location.hash = '#/grammar'
     expect(isSafeToReload()).toBe(false)

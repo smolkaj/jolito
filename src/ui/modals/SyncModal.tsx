@@ -721,8 +721,11 @@ export function SyncModal({
         >
           Acknowledgements
         </a>
+        <span className="sync-modal-legal-separator" aria-hidden="true">
+          ·
+        </span>
+        <span className="sync-modal-version">v{APP_VERSION}</span>
       </div>
-      <p className="sync-modal-version">Jolito {APP_VERSION}</p>
     </ModalSheet>
   )
 }
