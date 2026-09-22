@@ -185,15 +185,212 @@ export function unpackLemmas(
   return result
 }
 
+type TrieEntryRef = {
+  entryIdx: number
+  isSubphrase?: boolean
+  isLemma?: boolean
+  lemmaForm?: string
+}
+
+class TrieNode {
+  children: Map<string, TrieNode> = new Map()
+  entries?: TrieEntryRef[]
+}
+
+type TrieSearchResult = {
+  distance: number
+  isPrefix: boolean
+  isSubphrase: boolean
+  isLemma: boolean
+  lemmaForm?: string | undefined
+}
+
+export class AutocompleteTrie {
+  root = new TrieNode()
+
+  insert(phrase: string, ref: TrieEntryRef): void {
+    let node = this.root
+    for (let i = 0; i < phrase.length; i++) {
+      const ch = phrase.charAt(i)
+      let next = node.children.get(ch)
+      if (!next) {
+        next = new TrieNode()
+        node.children.set(ch, next)
+      }
+      node = next
+    }
+    if (!node.entries) {
+      node.entries = []
+    }
+    node.entries.push(ref)
+  }
+
+  search(
+    query: string,
+    maxDistance: number,
+    lang: 'es' | 'en',
+  ): Map<number, TrieSearchResult> {
+    const m = query.length
+    const initialRow: number[] = new Array<number>(m + 1)
+    for (let j = 0; j <= m; j++) {
+      initialRow[j] = j
+    }
+
+    const matches = new Map<number, TrieSearchResult>()
+
+    const record = (
+      entryIdx: number,
+      distance: number,
+      isPrefix: boolean,
+      ref: TrieEntryRef,
+    ) => {
+      const existing = matches.get(entryIdx)
+      const isSub = !!ref.isSubphrase
+      const isLem = !!ref.isLemma
+      if (!existing || distance < existing.distance - 0.001) {
+        const item: TrieSearchResult = {
+          distance,
+          isPrefix,
+          isSubphrase: isSub,
+          isLemma: isLem,
+        }
+        if (ref.lemmaForm !== undefined) {
+          item.lemmaForm = ref.lemmaForm
+        }
+        matches.set(entryIdx, item)
+      } else if (
+        Math.abs(distance - existing.distance) <= 0.001 &&
+        !isSub &&
+        existing.isSubphrase
+      ) {
+        const item: TrieSearchResult = {
+          distance,
+          isPrefix,
+          isSubphrase: false,
+          isLemma: isLem,
+        }
+        if (ref.lemmaForm !== undefined) {
+          item.lemmaForm = ref.lemmaForm
+        }
+        matches.set(entryIdx, item)
+      }
+    }
+
+    const collectSubtree = (
+      node: TrieNode,
+      prefixDistance: number,
+      maxCollect = 20,
+    ) => {
+      let count = 0
+      const queue: TrieNode[] = [node]
+      while (queue.length > 0 && count < maxCollect) {
+        const cur = queue.shift()!
+        if (cur.entries) {
+          for (const e of cur.entries) {
+            record(e.entryIdx, prefixDistance, true, e)
+            count++
+            if (count >= maxCollect) break
+          }
+        }
+        for (const child of cur.children.values()) {
+          queue.push(child)
+        }
+      }
+    }
+
+    const dfs = (
+      node: TrieNode,
+      prevChar: string | null,
+      parentRow: number[],
+      grandParentRow: number[] | null,
+    ) => {
+      for (const [ch, child] of node.children.entries()) {
+        const curRow = new Array<number>(m + 1)
+        const delCost = lang === 'es' && ch === 'h' ? 0.4 : 1.0
+        curRow[0] = parentRow[0]! + delCost
+        let minRow = curRow[0]
+
+        for (let j = 1; j <= m; j++) {
+          const qChar = query.charAt(j - 1)
+          let subCost = 1.0
+          if (qChar === ch) {
+            subCost = 0.0
+          } else if (lang === 'es') {
+            if (
+              (qChar === 'b' && ch === 'v') ||
+              (qChar === 'v' && ch === 'b') ||
+              ((qChar === 'c' || qChar === 's' || qChar === 'z') &&
+                (ch === 'c' || ch === 's' || ch === 'z')) ||
+              (qChar === 'g' && ch === 'j') ||
+              (qChar === 'j' && ch === 'g')
+            ) {
+              subCost = 0.4
+            } else if (
+              (qChar === 'y' && ch === 'l') ||
+              (qChar === 'l' && ch === 'y')
+            ) {
+              subCost = 0.5
+            }
+          }
+
+          const insCost = lang === 'es' && qChar === 'h' ? 0.4 : 1.0
+
+          let cost = Math.min(
+            parentRow[j]! + delCost,
+            curRow[j - 1]! + insCost,
+            parentRow[j - 1]! + subCost,
+          )
+
+          if (
+            j > 1 &&
+            prevChar !== null &&
+            grandParentRow !== null &&
+            qChar === prevChar &&
+            query.charAt(j - 2) === ch
+          ) {
+            cost = Math.min(cost, grandParentRow[j - 2]! + 0.8)
+          }
+
+          curRow[j] = cost
+          if (cost < minRow) {
+            minRow = cost
+          }
+        }
+
+        if (minRow > maxDistance) {
+          continue
+        }
+
+        const terminalDist = curRow[m]
+        if (terminalDist === undefined) {
+          continue
+        }
+        if (child.entries && terminalDist <= maxDistance) {
+          for (const e of child.entries) {
+            record(e.entryIdx, terminalDist, false, e)
+          }
+        }
+
+        if (terminalDist <= maxDistance) {
+          collectSubtree(child, terminalDist)
+        }
+
+        dfs(child, ch, curRow, parentRow)
+      }
+    }
+
+    dfs(this.root, null, initialRow, null)
+    return matches
+  }
+}
+
 export class LexiconIndex {
   private entries: LexiconEntry[] = []
   private normalizedSpanishMap: Map<string, LexiconEntry> = new Map()
   private normalizedEnglishMap: Map<string, LexiconEntry> = new Map()
   private lemmaMap: Map<string, string[]> = new Map()
-  private esBigramIndex: Map<string, number[]> = new Map()
-  private enBigramIndex: Map<string, number[]> = new Map()
-  private esLengthBuckets: Map<number, number[]> = new Map()
-  private enLengthBuckets: Map<number, number[]> = new Map()
+  private esTrie: AutocompleteTrie = new AutocompleteTrie()
+  private enTrie: AutocompleteTrie = new AutocompleteTrie()
 
   constructor(
     entries: LexiconEntry[] = [],
@@ -238,6 +435,20 @@ export class LexiconIndex {
           : [...existing, ...normList.filter((t) => !existing.includes(t))]
         this.lemmaMap.set(normForm, merged)
       }
+
+      for (const targetLemma of normList) {
+        const entry = this.normalizedSpanishMap.get(targetLemma)
+        if (entry) {
+          const entryIdx = this.entries.indexOf(entry)
+          if (entryIdx >= 0) {
+            this.esTrie.insert(normForm, {
+              entryIdx,
+              isLemma: true,
+              lemmaForm: normForm,
+            })
+          }
+        }
+      }
     }
   }
 
@@ -249,55 +460,41 @@ export class LexiconIndex {
       }
       const entryIdx = this.entries.length
       this.entries.push(entry)
+
       if (normEs) {
         this.normalizedSpanishMap.set(normEs, entry)
-        const esLen = normEs.length
-        if (!this.esLengthBuckets.has(esLen)) {
-          this.esLengthBuckets.set(esLen, [])
-        }
-        this.esLengthBuckets.get(esLen)!.push(entryIdx)
-        const esBigrams = new Set<string>()
-        for (let i = 0; i < normEs.length - 1; i++) {
-          esBigrams.add(normEs.slice(i, i + 2))
-        }
-        for (const bg of esBigrams) {
-          if (!this.esBigramIndex.has(bg)) {
-            this.esBigramIndex.set(bg, [])
+        this.esTrie.insert(normEs, { entryIdx })
+        let spaceIdx = normEs.indexOf(' ')
+        while (spaceIdx !== -1) {
+          const sub = normEs.slice(spaceIdx + 1)
+          if (sub.length >= 2) {
+            this.esTrie.insert(sub, { entryIdx, isSubphrase: true })
           }
-          this.esBigramIndex.get(bg)!.push(entryIdx)
+          spaceIdx = normEs.indexOf(' ', spaceIdx + 1)
         }
       }
 
       const enTerms = extractGlossTerms(entry.english)
-      const enLengths = new Set<number>()
-      const enBigrams = new Set<string>()
+      const fullNormEn = normalizeForSearch(entry.english)
+      if (fullNormEn && !enTerms.includes(fullNormEn)) {
+        enTerms.push(fullNormEn)
+      }
+
       for (const term of enTerms) {
         const normEn = normalizeForSearch(term)
-        if (normEn && !this.normalizedEnglishMap.has(normEn)) {
+        if (!normEn) continue
+        if (!this.normalizedEnglishMap.has(normEn)) {
           this.normalizedEnglishMap.set(normEn, entry)
         }
-        if (normEn) {
-          enLengths.add(normEn.length)
-          for (let i = 0; i < normEn.length - 1; i++) {
-            enBigrams.add(normEn.slice(i, i + 2))
+        this.enTrie.insert(normEn, { entryIdx })
+        let spaceIdx = normEn.indexOf(' ')
+        while (spaceIdx !== -1) {
+          const sub = normEn.slice(spaceIdx + 1)
+          if (sub.length >= 2) {
+            this.enTrie.insert(sub, { entryIdx, isSubphrase: true })
           }
+          spaceIdx = normEn.indexOf(' ', spaceIdx + 1)
         }
-      }
-      for (const enLen of enLengths) {
-        if (!this.enLengthBuckets.has(enLen)) {
-          this.enLengthBuckets.set(enLen, [])
-        }
-        this.enLengthBuckets.get(enLen)!.push(entryIdx)
-      }
-      for (const bg of enBigrams) {
-        if (!this.enBigramIndex.has(bg)) {
-          this.enBigramIndex.set(bg, [])
-        }
-        this.enBigramIndex.get(bg)!.push(entryIdx)
-      }
-      const fullNormEn = normalizeForSearch(entry.english)
-      if (fullNormEn && !this.normalizedEnglishMap.has(fullNormEn)) {
-        this.normalizedEnglishMap.set(fullNormEn, entry)
       }
     }
   }
@@ -308,64 +505,6 @@ export class LexiconIndex {
 
   lemmaCount(): number {
     return this.lemmaMap.size
-  }
-
-  private getTerms(entry: LexiconEntry, lang: 'es' | 'en'): string[] {
-    if (lang === 'es') {
-      return [normalizeForSearch(entry.spanish)]
-    }
-    const terms = extractGlossTerms(entry.english).map(normalizeForSearch)
-    const full = normalizeForSearch(entry.english)
-    if (!terms.includes(full)) terms.push(full)
-    return terms.filter(Boolean)
-  }
-
-  private getFuzzyCandidates(query: string, lang: 'es' | 'en'): number[] {
-    const qLen = query.length
-    const lengthMap =
-      lang === 'es' ? this.esLengthBuckets : this.enLengthBuckets
-    const bigramMap = lang === 'es' ? this.esBigramIndex : this.enBigramIndex
-
-    const candidateIndices = new Set<number>()
-    if (qLen >= 4) {
-      const minBigrams = qLen >= 6 ? 2 : 1
-      const counts = new Map<number, number>()
-      const queryBigrams = new Set<string>()
-      for (let i = 0; i < qLen - 1; i++) {
-        queryBigrams.add(query.slice(i, i + 2))
-      }
-      for (const bg of queryBigrams) {
-        const list = bigramMap.get(bg)
-        if (list) {
-          for (const idx of list) {
-            const c = (counts.get(idx) ?? 0) + 1
-            counts.set(idx, c)
-            if (c === minBigrams) {
-              const entry = this.entries[idx]
-              if (entry) {
-                const terms = this.getTerms(entry, lang)
-                if (terms.some((t) => Math.abs(t.length - qLen) <= 3)) {
-                  candidateIndices.add(idx)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (candidateIndices.size === 0) {
-      for (let l = Math.max(1, qLen - 3); l <= qLen + 3; l++) {
-        const list = lengthMap.get(l)
-        if (list) {
-          for (const idx of list) {
-            candidateIndices.add(idx)
-          }
-        }
-      }
-    }
-
-    return Array.from(candidateIndices)
   }
 
   suggest(
@@ -393,17 +532,15 @@ export class LexiconIndex {
       results.push(item)
     }
 
-    // 1. Exact matches
-    for (const entry of this.entries) {
-      const terms = this.getTerms(entry, lang)
-      if (terms.some((t) => t === normalized)) {
-        addResult(entry, 'exact')
+    // 1. Exact term matches
+    if (lang === 'es') {
+      const exact = this.normalizedSpanishMap.get(normalized)
+      if (exact) {
+        addResult(exact, 'exact')
         if (results.length >= limit) return results
       }
-    }
 
-    // 2. Lemma resolution (Spanish only - inflections of the query resolve immediately to base lemmas)
-    if (lang === 'es' && results.length < limit) {
+      // 2. Lemma resolution (Spanish only)
       const lemmaTargets = this.lemmaMap.get(normalized)
       if (lemmaTargets) {
         for (const lemmaTarget of lemmaTargets) {
@@ -414,74 +551,89 @@ export class LexiconIndex {
           }
         }
       }
-    }
-
-    // 3. Prefix matches on headwords / terms
-    for (const entry of this.entries) {
-      if (seen.has(entry.spanish)) continue
-      const terms = this.getTerms(entry, lang)
-      if (terms.some((t) => t.startsWith(normalized))) {
-        addResult(entry, 'prefix')
+    } else {
+      const exact = this.normalizedEnglishMap.get(normalized)
+      if (exact) {
+        addResult(exact, 'exact')
         if (results.length >= limit) return results
       }
     }
 
-    // 4. Word-boundary matches (e.g. "padre" matching "qué padre", "minute" matching "in a minute")
-    if (results.length < limit) {
-      for (const entry of this.entries) {
-        if (seen.has(entry.spanish)) continue
-        const terms = this.getTerms(entry, lang)
-        const matchesWordBoundary = terms.some((t) => {
-          const words = t.split(/\s+/)
-          return words.some((w) => w.startsWith(normalized))
-        })
-        if (matchesWordBoundary) {
-          addResult(entry, 'prefix')
-          if (results.length >= limit) return results
+    // 3. Trie branch-and-bound approximate search
+    const trie = lang === 'es' ? this.esTrie : this.enTrie
+    const maxDist =
+      normalized.length <= 2 ? 0.0 : normalized.length <= 4 ? 1.0 : 2.0
+    const searchHits = trie.search(normalized, maxDist, lang)
+
+    const candidates = Array.from(searchHits.entries()).map(
+      ([entryIdx, meta]) => {
+        const entry = this.entries[entryIdx]!
+        const primaryText =
+          lang === 'es'
+            ? normalizeForSearch(entry.spanish)
+            : normalizeForSearch(entry.english)
+        return {
+          entry,
+          ...meta,
+          termLength: primaryText.length,
         }
+      },
+    )
+
+    const rankType = (c: (typeof candidates)[number]): number => {
+      if (c.distance === 0) {
+        if (!c.isPrefix && !c.isSubphrase && !c.isLemma) return 0
+        if (c.isLemma) return 1
+        if (!c.isSubphrase) return 2
+        return 3
       }
+      if (c.isLemma) return 4
+      if (!c.isSubphrase) return 5
+      return 6
     }
 
-    // 5. Fast Weighted Fuzzy matches (for queries with >= 3 characters)
-    if (results.length < limit && normalized.length >= 3) {
-      const maxDistance =
-        normalized.length <= 4 ? 1.0 : normalized.length <= 7 ? 1.8 : 2.2
-      const candidateIndices = this.getFuzzyCandidates(normalized, lang)
-      const fuzzyMatches: Array<{ entry: LexiconEntry; dist: number }> = []
+    candidates.sort((a, b) => {
+      if (Math.abs(a.distance - b.distance) > 0.001) {
+        return a.distance - b.distance
+      }
+      const rA = rankType(a)
+      const rB = rankType(b)
+      if (rA !== rB) return rA - rB
+      return a.termLength - b.termLength
+    })
 
-      for (const idx of candidateIndices) {
-        const entry = this.entries[idx]
-        if (!entry || seen.has(entry.spanish)) continue
-        const terms = this.getTerms(entry, lang)
-        let minCandidateDist = Infinity
+    for (const c of candidates) {
+      if (seen.has(c.entry.spanish)) continue
+      let matchType: 'exact' | 'prefix' | 'lemma' | 'fuzzy'
+      let matchedForm: string | undefined
 
-        for (const t of terms) {
-          if (Math.abs(t.length - normalized.length) <= 3) {
-            const dist = weightedSpanishDistance(normalized, t)
-            if (dist <= maxDistance && dist < minCandidateDist) {
-              minCandidateDist = dist
-            }
-          }
+      if (c.distance === 0) {
+        if (c.isLemma) {
+          matchType = 'lemma'
+          matchedForm = c.lemmaForm ?? query.trim()
+        } else if (c.isPrefix || c.isSubphrase) {
+          matchType = 'prefix'
+        } else {
+          matchType = 'exact'
         }
-
-        if (minCandidateDist <= maxDistance) {
-          fuzzyMatches.push({ entry, dist: minCandidateDist })
-        }
+      } else {
+        matchType = c.isLemma ? 'lemma' : 'fuzzy'
+        matchedForm = query.trim()
       }
 
-      fuzzyMatches.sort((a, b) => a.dist - b.dist)
-      for (const { entry } of fuzzyMatches) {
-        addResult(entry, 'fuzzy', query.trim())
-        if (results.length >= limit) return results
-      }
+      addResult(c.entry, matchType, matchedForm)
+      if (results.length >= limit) return results
     }
 
-    // 6. Substring matches (only for queries >= 3 characters, lowest priority)
+    // 4. Fallback substring matches
     if (results.length < limit && normalized.length >= 3) {
       for (const entry of this.entries) {
         if (seen.has(entry.spanish)) continue
-        const terms = this.getTerms(entry, lang)
-        if (terms.some((t) => t.includes(normalized))) {
+        const primary =
+          lang === 'es'
+            ? normalizeForSearch(entry.spanish)
+            : normalizeForSearch(entry.english)
+        if (primary.includes(normalized)) {
           addResult(entry, 'prefix')
           if (results.length >= limit) break
         }

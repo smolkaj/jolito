@@ -352,6 +352,56 @@ describe('LexiconIndex', () => {
       expect(enFuzzy[0]?.matchType).toBe('fuzzy')
     })
 
+    it('finds fuzzy suggestions for incomplete typing with typos (prefix typos)', () => {
+      // Incomplete typing with transposition: "agauca" aiming for "aguacate"
+      const prefixTypo = index.suggest('agauca', 'es')
+      expect(prefixTypo.length).toBeGreaterThan(0)
+      expect(prefixTypo[0]?.spanish).toBe('aguacate')
+      expect(prefixTypo[0]?.matchType).toBe('fuzzy')
+
+      // Incomplete typing with missing character: "cuent" vs "cuetn"
+      const phrasePrefixTypo = index.suggest('cuetn', 'es')
+      expect(phrasePrefixTypo.length).toBeGreaterThan(0)
+      expect(phrasePrefixTypo[0]?.spanish).toBe('la cuenta, por favor')
+    })
+
+    it('finds fuzzy suggestions within multi-word phrases and word boundaries', () => {
+      // Typo in second word of phrase: "por favro" -> "la cuenta, por favor"
+      const phraseTypo = index.suggest('por favro', 'es')
+      expect(phraseTypo.length).toBeGreaterThan(0)
+      expect(phraseTypo[0]?.spanish).toBe('la cuenta, por favor')
+      expect(phraseTypo[0]?.matchType).toBe('fuzzy')
+
+      // Isolated word typo in compound phrase: "favro" -> "la cuenta, por favor"
+      const wordTypo = index.suggest('favro', 'es')
+      expect(wordTypo.length).toBeGreaterThan(0)
+      expect(wordTypo[0]?.spanish).toBe('la cuenta, por favor')
+    })
+
+    it('resolves inflected verb forms with typos to their base lemma', () => {
+      // Typo with b/v phonetic substitution: "tubimos" -> "tuvimos" -> "tener"
+      const lemmaTypo = index.suggest('tubimos', 'es')
+      expect(lemmaTypo.length).toBeGreaterThan(0)
+      expect(lemmaTypo[0]?.spanish).toBe('tener')
+      expect(lemmaTypo[0]?.matchType).toBe('lemma')
+      expect(lemmaTypo[0]?.matchedForm).toBe('tubimos')
+    })
+
+    it('finds fuzzy suggestions for English multi-word phrases and glosses with typos', () => {
+      const enPhraseTypo = index.suggest('in a minite', 'en')
+      expect(enPhraseTypo.length).toBeGreaterThan(0)
+      expect(enPhraseTypo[0]?.spanish).toBe('ahorita')
+      expect(enPhraseTypo[0]?.matchType).toBe('fuzzy')
+
+      const enWordTypo = index.suggest('minite', 'en')
+      expect(enWordTypo.length).toBeGreaterThan(0)
+      expect(enWordTypo[0]?.spanish).toBe('ahorita')
+
+      const enTakeaway = index.suggest('takeawy', 'en')
+      expect(enTakeaway.length).toBeGreaterThan(0)
+      expect(enTakeaway[0]?.spanish).toBe('para llevar')
+    })
+
     it('limits returned suggestions to requested limit', () => {
       const results = index.suggest('a', 'es', 1)
       expect(results.length).toBeLessThanOrEqual(1)
