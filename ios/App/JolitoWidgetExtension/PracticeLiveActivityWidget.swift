@@ -16,14 +16,11 @@ public struct PracticeLiveActivityWidget: Widget {
             DynamicIsland {
                 // Expanded Presentation (when long-pressing the Dynamic Island)
                 DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "character.book.closed.fill")
-                            .foregroundColor(rosa)
-                            .imageScale(.medium)
+                    HStack(spacing: 6) {
+                        JolitoEmblem(size: 18)
                             .accessibilityHidden(true)
                         Text("Jolito")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(rosa)
                     }
                     .padding(.leading, 4)
                 }
@@ -59,10 +56,8 @@ public struct PracticeLiveActivityWidget: Widget {
                     .padding(.top, 4)
                 }
             } compactLeading: {
-                // Compact Leading: Jolito emblem flanking camera cutout
-                Image(systemName: "character.book.closed.fill")
-                    .foregroundColor(rosa)
-                    .imageScale(.small)
+                // Compact Leading: Official Jolito axolotl mark flanking camera cutout
+                JolitoEmblem(size: 20)
                     .accessibilityHidden(true)
             } compactTrailing: {
                 // Compact Trailing: Determinate circular progress ring
@@ -86,6 +81,60 @@ public struct PracticeLiveActivityWidget: Widget {
                 .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
             }
         }
+    }
+}
+
+public struct JolitoEmblem: View {
+    public var size: CGFloat
+    private let rosa = Color(red: 228.0 / 255.0, green: 0.0 / 255.0, blue: 124.0 / 255.0)
+    private let amber = Color(red: 245.0 / 255.0, green: 158.0 / 255.0, blue: 11.0 / 255.0)
+    private let coreDark = Color(red: 18.0 / 255.0, green: 24.0 / 255.0, blue: 21.0 / 255.0)
+
+    public init(size: CGFloat = 20) {
+        self.size = size
+    }
+
+    public var body: some View {
+        Canvas { context, canvasSize in
+            let scale = canvasSize.width / 32.0
+
+            func drawGill(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat, r: CGFloat, angle: Angle, origin: CGPoint) {
+                var gillContext = context
+                gillContext.translateBy(x: origin.x * scale, y: origin.y * scale)
+                gillContext.rotate(by: angle)
+                gillContext.translateBy(x: -origin.x * scale, y: -origin.y * scale)
+
+                let rect = CGRect(x: x * scale, y: y * scale, width: w * scale, height: h * scale)
+                let path = Path(roundedRect: rect, cornerRadius: r * scale)
+                gillContext.fill(path, with: .color(rosa))
+            }
+
+            // Left gills
+            drawGill(x: 3, y: 6.5, w: 11, h: 4.5, r: 2.25, angle: .degrees(-22), origin: CGPoint(x: 8.5, y: 8.75))
+            drawGill(x: 1, y: 13.75, w: 12, h: 4.5, r: 2.25, angle: .degrees(0), origin: CGPoint(x: 7, y: 16))
+            drawGill(x: 3, y: 21, w: 11, h: 4.5, r: 2.25, angle: .degrees(22), origin: CGPoint(x: 8.5, y: 23.25))
+
+            // Right gills
+            drawGill(x: 18, y: 6.5, w: 11, h: 4.5, r: 2.25, angle: .degrees(22), origin: CGPoint(x: 23.5, y: 8.75))
+            drawGill(x: 19, y: 13.75, w: 12, h: 4.5, r: 2.25, angle: .degrees(0), origin: CGPoint(x: 25, y: 16))
+            drawGill(x: 18, y: 21, w: 11, h: 4.5, r: 2.25, angle: .degrees(-22), origin: CGPoint(x: 23.5, y: 23.25))
+
+            // Center Core (Axolotl Eye)
+            let center = CGPoint(x: 16 * scale, y: 16 * scale)
+
+            var outerCircle = Path()
+            outerCircle.addArc(center: center, radius: 6 * scale, startAngle: .zero, endAngle: .degrees(360), clockwise: false)
+            context.fill(outerCircle, with: .color(coreDark))
+
+            var midCircle = Path()
+            midCircle.addArc(center: center, radius: 4.2 * scale, startAngle: .zero, endAngle: .degrees(360), clockwise: false)
+            context.fill(midCircle, with: .color(amber))
+
+            var innerCircle = Path()
+            innerCircle.addArc(center: center, radius: 2.2 * scale, startAngle: .zero, endAngle: .degrees(360), clockwise: false)
+            context.fill(innerCircle, with: .color(.white))
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -117,15 +166,13 @@ private struct LockScreenPracticeView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center) {
                 HStack(spacing: 6) {
-                    Image(systemName: "character.book.closed.fill")
-                        .foregroundColor(rosa)
-                        .imageScale(.medium)
+                    JolitoEmblem(size: 18)
                         .accessibilityHidden(true)
                     Text("Jolito Practice")
                         .font(.system(size: 14, weight: .bold))
                 }
                 Spacer()
-                Text("\(state.completedCount) of \(state.totalCount) cards")
+                Text("\(state.completedCount) of \(state.totalCount)")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
