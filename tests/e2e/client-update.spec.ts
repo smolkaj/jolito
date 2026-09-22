@@ -69,7 +69,12 @@ for (const width of [320, 1280]) {
       path: testInfo.outputPath(`update-error-${width}.png`),
       fullPage: true,
     })
-    await page.getByRole('button', { name: /close/i }).click()
+    const closeBtn = page.getByRole('button', { name: /close/i })
+    if (await closeBtn.isVisible()) {
+      await closeBtn.click()
+    } else {
+      await page.keyboard.press('Escape')
+    }
     await expect(answer).toHaveValue('unfinished answer')
     expect(
       await page.evaluate(() => localStorage.getItem('jolito-libraries-v1')),

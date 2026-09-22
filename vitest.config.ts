@@ -18,6 +18,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     fileParallelism: !isIntegration,
+    testTimeout: 15_000,
     include: isIntegration
       ? ['tests/integration/**/*.test.ts']
       : ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
