@@ -677,53 +677,77 @@ it('keeps sign-out storage failure actionable and reports success only after ret
 
 describe('sync update recovery', () => {
   afterEach(() => vi.unstubAllGlobals())
-  it.each(['http:', 'capacitor:'])(
-    'offers hosted help on %s without closing the active session, and clears it after a successful retry',
-    async (protocol) => {
-      vi.stubGlobal('location', { protocol })
-      const auth = new MockAuthService()
-      auth.user = { id: 'upgrade', email: 'upgrade@example.com' }
-      const close = vi.fn()
-      const sync = vi
-        .fn()
-        .mockResolvedValueOnce({
-          success: false,
-          error: 'Update Jolito to sync.',
-          syncHelp: true,
-        })
-        .mockResolvedValueOnce({ success: true })
-      render(
-        <SyncModal
-          user={auth.user}
-          onDeleteAccount={() => auth.deleteAccount()}
-          isOpen
-          onClose={close}
-          cards={[]}
-          auth={auth}
-          onSync={sync}
-        />,
-      )
-      fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
-      const help = await screen.findByRole('link', { name: 'How to update' })
-      expect(help).toHaveTextContent(/^How to update$/)
-      expect(help).toHaveAttribute(
-        'href',
-        protocol === 'capacitor:' ? 'https://joli.to/update' : '/update',
-      )
-      expect(help).toHaveAttribute('target', '_blank')
-      expect(help).toHaveAttribute('rel', 'noopener noreferrer')
-      expect(close).not.toHaveBeenCalled()
-      fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('link', { name: 'How to update' }),
-        ).toBeNull(),
-      )
-      expect(close).not.toHaveBeenCalled()
-    },
-  )
+  it('offers Update & Reload action on http without closing the active session, and clears it after a successful retry', async () => {
+    vi.stubGlobal('location', { protocol: 'http:' })
+    const auth = new MockAuthService()
+    auth.user = { id: 'upgrade', email: 'upgrade@example.com' }
+    const close = vi.fn()
+    const sync = vi
+      .fn()
+      .mockResolvedValueOnce({
+        success: false,
+        error: 'Update Jolito to sync.',
+        syncHelp: true,
+      })
+      .mockResolvedValueOnce({ success: true })
+    render(
+      <SyncModal
+        user={auth.user}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={close}
+        cards={[]}
+        auth={auth}
+        onSync={sync}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
+    const updateBtn = await screen.findByRole('button', {
+      name: 'Update & Reload',
+    })
+    expect(updateBtn).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'How to update' })).toBeNull()
+    expect(close).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Update & Reload' }),
+      ).toBeNull(),
+    )
+    expect(close).not.toHaveBeenCalled()
+  })
 
-  it('omits update guidance link on generic or transient sync errors', async () => {
+  it('renders How to update link and omits Update & Reload button on capacitor runtime', async () => {
+    vi.stubGlobal('location', { protocol: 'capacitor:' })
+    const auth = new MockAuthService()
+    auth.user = { id: 'upgrade', email: 'upgrade@example.com' }
+    const sync = vi.fn().mockResolvedValue({
+      success: false,
+      error: 'Update Jolito to sync.',
+      syncHelp: true,
+    })
+    render(
+      <SyncModal
+        user={auth.user}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={sync}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('button', { name: 'Update & Reload' })).toBeNull()
+    const helpLink = screen.getByRole('link', { name: 'How to update' })
+    expect(helpLink).toBeInTheDocument()
+    expect(helpLink).toHaveAttribute('href', 'https://joli.to/update')
+    expect(helpLink).toHaveAttribute('target', '_blank')
+    expect(helpLink).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
+  it('omits update action on generic or transient sync errors', async () => {
     const auth = new MockAuthService()
     auth.user = { id: 'network-user', email: 'user@example.com' }
     const sync = vi.fn().mockResolvedValue({
@@ -746,6 +770,6 @@ describe('sync update recovery', () => {
     expect(alert).toHaveTextContent(
       'Network connection timed out. Please try again.',
     )
-    expect(screen.queryByRole('link', { name: 'How to update' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Update & Reload' })).toBeNull()
   })
 })

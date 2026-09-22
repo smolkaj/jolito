@@ -298,4 +298,11 @@ describe('complete offline shell lifecycle', () => {
     expect(result.response).toBeUndefined()
     expect(env.fetch).not.toHaveBeenCalled()
   })
+
+  it('triggers self.skipWaiting() upon receiving SKIP_WAITING message', async () => {
+    const env = browser()
+    const worker = env.worker('new')
+    await worker.dispatch('message', { data: { type: 'SKIP_WAITING' } })
+    expect(worker.skipWaiting).toHaveBeenCalledTimes(1)
+  })
 })

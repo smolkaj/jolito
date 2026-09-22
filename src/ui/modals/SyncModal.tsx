@@ -18,6 +18,7 @@ import {
   SyncSpinnerIcon,
 } from '../icons'
 import { ModalSheet } from './ModalSheet'
+import { triggerManualUpdate } from '../../infrastructure/browser/offline-shell'
 
 export interface SyncModalProps {
   user: AuthUser | null
@@ -294,18 +295,26 @@ export function SyncModal({
       role={statusMsg.type === 'error' ? 'alert' : 'status'}
     >
       <p>{statusMsg.message}</p>
-      {statusMsg.syncHelp && (
-        <a
-          href={
-            location.protocol === 'capacitor:'
-              ? 'https://joli.to/update'
-              : '/update'
-          }
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          How to update
-        </a>
+      {statusMsg.syncHelp && typeof location !== 'undefined' && (
+        <div className="sync-update-actions">
+          {location.protocol !== 'capacitor:' ? (
+            <button
+              type="button"
+              className="sync-update-action-btn"
+              onClick={() => void triggerManualUpdate()}
+            >
+              Update &amp; Reload
+            </button>
+          ) : (
+            <a
+              href="https://joli.to/update"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              How to update
+            </a>
+          )}
+        </div>
       )}
     </div>
   )
