@@ -901,3 +901,179 @@ describe('SyncModal iOS Keyboard and Autofocus Avoidance', () => {
     vi.useRealTimers()
   })
 })
+
+describe('SyncModal Live Sync Status Contract', () => {
+  const user = { id: 'usr-1', email: 'learner@example.com' }
+  const createMockAuth = () => {
+    const auth = new MockAuthService()
+    auth.user = user
+    return auth
+  }
+
+  it('renders "Syncing…" status and active spinning cloud sticker when syncStatus is syncing', () => {
+    const auth = createMockAuth()
+    const { container } = render(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+        syncStatus="syncing"
+        isOnline
+      />,
+    )
+
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    const statusText = container.querySelector('.sync-status-text')
+    expect(statusText).toHaveTextContent('Syncing…')
+    expect(statusText).toHaveClass('is-syncing')
+
+    const sticker = container.querySelector('.cloud-check-sticker')
+    expect(sticker).toHaveClass('status-syncing')
+    expect(
+      container.querySelector('.sticker-spinner.is-spinning'),
+    ).not.toBeNull()
+    const syncBtn = screen.getByRole('button', { name: /syncing…/i })
+    expect(syncBtn).toBeDisabled()
+  })
+
+  it('renders "Synced" status and checkmark sticker when syncStatus is synced', () => {
+    const auth = createMockAuth()
+    const { container } = render(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+        syncStatus="synced"
+        isOnline
+      />,
+    )
+
+    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    const statusText = container.querySelector('.sync-status-text')
+    expect(statusText).toHaveTextContent('Synced')
+    expect(statusText).toHaveClass('is-synced')
+
+    const sticker = container.querySelector('.cloud-check-sticker')
+    expect(sticker).toHaveClass('status-synced')
+    expect(container.querySelector('.sticker-spinner')).toBeNull()
+  })
+
+  it('renders "Sync issue" status and error sticker when syncStatus is error', () => {
+    const auth = createMockAuth()
+    const { container } = render(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+        syncStatus="error"
+        isOnline
+      />,
+    )
+
+    const statusText = container.querySelector('.sync-status-text')
+    expect(statusText).toHaveTextContent('Sync issue')
+    expect(statusText).toHaveClass('is-error')
+
+    const sticker = container.querySelector('.cloud-check-sticker')
+    expect(sticker).toHaveClass('status-error')
+  })
+
+  it('renders "Offline" status and disables sync button when isOnline is false', () => {
+    const auth = createMockAuth()
+    const { container } = render(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+        syncStatus="idle"
+        isOnline={false}
+      />,
+    )
+
+    const statusText = container.querySelector('.sync-status-text')
+    expect(statusText).toHaveTextContent('Offline')
+    expect(statusText).toHaveClass('is-offline')
+
+    const sticker = container.querySelector('.cloud-check-sticker')
+    expect(sticker).toHaveClass('status-offline')
+
+    const syncBtn = screen.getByRole('button', { name: /sync now/i })
+    expect(syncBtn).toBeDisabled()
+  })
+
+  it('re-enables "Sync now" button when background sync finishes without showing transient feedback', () => {
+    const auth = createMockAuth()
+    const { rerender } = render(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+        syncStatus="syncing"
+        isOnline
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /syncing…/i })).toBeDisabled()
+
+    rerender(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+        syncStatus="synced"
+        isOnline
+      />,
+    )
+
+    expect(screen.queryByText('Synced!')).toBeNull()
+    const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
+    expect(syncNowBtn).toBeEnabled()
+  })
+
+  it('triggers transient "Synced!" only on explicit user click of Sync now', async () => {
+    const auth = createMockAuth()
+    const onSync = vi.fn().mockResolvedValue({ success: true })
+    render(
+      <SyncModal
+        user={user}
+        onDeleteAccount={vi.fn()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={onSync}
+        syncStatus="synced"
+        isOnline
+      />,
+    )
+
+    const syncBtn = screen.getByRole('button', { name: /sync now/i })
+    fireEvent.click(syncBtn)
+    await screen.findByText('Synced!')
+    expect(onSync).toHaveBeenCalledTimes(1)
+  })
+})

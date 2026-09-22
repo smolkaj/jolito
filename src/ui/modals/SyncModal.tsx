@@ -8,6 +8,7 @@ import type {
   SyncResult,
 } from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
+import type { SyncStatus } from '../../domain/sync'
 import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { downloadJsonFile } from '../../infrastructure/browser/download'
 import {
@@ -42,6 +43,8 @@ export interface SyncModalProps {
   onOpenPrivacy?: (() => void) | undefined
   onOpenFeedback?: (() => void) | undefined
   haptics?: HapticsPlayer | undefined
+  syncStatus?: SyncStatus | undefined
+  isOnline?: boolean | undefined
 }
 
 export function SyncModal({
@@ -59,6 +62,8 @@ export function SyncModal({
   onOpenPrivacy,
   onOpenFeedback,
   haptics,
+  syncStatus = 'idle',
+  isOnline = true,
 }: SyncModalProps) {
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
@@ -112,6 +117,7 @@ export function SyncModal({
   }
 
   const loading = loadingAction !== null
+  const isSyncing = syncStatus === 'syncing' || loadingAction === 'sync'
   const isBackendConfigured = auth.isConfigured ? auth.isConfigured() : true
   const isSynced = transientFeedback === 'synced'
   const isLinkResent = transientFeedback === 'resent'
@@ -143,10 +149,41 @@ export function SyncModal({
     return () => clearTransientFeedback()
   }, [])
 
+  const prevSyncStatusRef = useRef(syncStatus)
+  useEffect(() => {
+    if (
+      isOpen &&
+      prevSyncStatusRef.current === 'syncing' &&
+      syncStatus === 'synced' &&
+      loadingAction === null
+    ) {
+      triggerTransientFeedback('synced', 2500)
+    }
+    prevSyncStatusRef.current = syncStatus
+  }, [isOpen, syncStatus, loadingAction])
+
+  let effectiveStatus: 'synced' | 'syncing' | 'error' | 'offline'
+  let statusLabel: string
+
+  if (!isOnline) {
+    effectiveStatus = 'offline'
+    statusLabel = 'Offline'
+  } else if (isSyncing) {
+    effectiveStatus = 'syncing'
+    statusLabel = 'Syncing…'
+  } else if (syncStatus === 'error') {
+    effectiveStatus = 'error'
+    statusLabel = 'Sync issue'
+  } else {
+    effectiveStatus = 'synced'
+    statusLabel = 'Synced'
+  }
+
   const handleClose = useCallback(() => {
     setIsConfirmingDelete(false)
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
+    clearTransientFeedback()
     onClose()
   }, [onClose])
 
@@ -220,7 +257,7 @@ export function SyncModal({
   }
 
   const handleSyncNow = async () => {
-    if (!user) return
+    if (!user || loading || !isOnline) return
     setLoadingAction('sync')
     setStatusMsg(null)
     const res = await onSync()
@@ -382,10 +419,18 @@ export function SyncModal({
         <div className="sync-account-pane">
           <div className="sync-account-hero">
             <div className="sync-cloud-sticker-wrap" aria-hidden="true">
-              <CloudCheckSticker size={58} />
+              <CloudCheckSticker size={58} status={effectiveStatus} />
             </div>
             <div className="sync-account-details">
-              <span className="account-badge">Signed in</span>
+              <div className="sync-status-row">
+                <span className="account-badge">Signed in</span>
+                <span className="status-separator" aria-hidden="true">
+                  •
+                </span>
+                <span className={`sync-status-text is-${effectiveStatus}`}>
+                  {statusLabel}
+                </span>
+              </div>
               <p className="account-email">{user.email}</p>
             </div>
           </div>
@@ -397,7 +442,7 @@ export function SyncModal({
               onClick={() => {
                 void handleSyncNow()
               }}
-              disabled={loading}
+              disabled={loading || !isOnline}
             >
               {isSynced ? (
                 <span className="sync-button-synced">

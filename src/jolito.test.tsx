@@ -1974,13 +1974,65 @@ describe('Jolito', () => {
 
     const syncNowBtn = screen.getByRole('button', { name: /sync now/i })
     await user.click(syncNowBtn)
-
     expect(
       await screen.findByText(/deck successfully synchronized with cloud/i),
     ).toBeInTheDocument()
     expect(syncNowBtn).toHaveClass('is-synced')
     expect(screen.getByText('Synced!')).toBeInTheDocument()
     expect(services.mockSync.syncedCount).toBeGreaterThan(0)
+  })
+
+  it('synchronizes header and sync modal status consistently when modal is opened during in-flight sync', async () => {
+    let releaseSync!: (res: SyncResult) => void
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices({
+      user: { id: 'usr-1', email: 'sync-user@example.com' },
+    })
+    vi.spyOn(services.mockSync, 'syncDeck').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseSync = resolve
+        }),
+    )
+
+    const { container } = render(<App services={services} />)
+
+    // The header is actively syncing
+    const syncingPill = await screen.findByRole('button', {
+      name: /synchronizing deck with cloud/i,
+    })
+    expect(syncingPill).toHaveTextContent('Syncing…')
+
+    // Open sync modal while header says "Syncing…"
+    await user.click(syncingPill)
+
+    // Modal must also say "Syncing…" and show status-syncing on the sticker (no checkmark)
+    const statusText = container.querySelector('.sync-status-text')
+    expect(statusText).toHaveTextContent('Syncing…')
+    expect(statusText).toHaveClass('is-syncing')
+
+    const sticker = container.querySelector('.cloud-check-sticker')
+    expect(sticker).toHaveClass('status-syncing')
+    expect(
+      container.querySelector('.sticker-spinner.is-spinning'),
+    ).not.toBeNull()
+
+    // Now resolve sync
+    await act(async () => {
+      releaseSync({
+        success: true,
+        cards: [],
+        deletedCardIds: [],
+      })
+      await Promise.resolve()
+    })
+
+    // Both header and modal transition to "Synced"
+    await screen.findByRole('button', { name: /deck synced with cloud/i })
+    expect(statusText).toHaveTextContent('Synced')
+    expect(statusText).toHaveClass('is-synced')
+    expect(sticker).toHaveClass('status-synced')
+    expect(container.querySelector('.sticker-spinner')).toBeNull()
   })
 
   it('does not resurrect deleted cards when deleting and then syncing with cloud', async () => {
