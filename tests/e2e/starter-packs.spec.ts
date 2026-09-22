@@ -56,6 +56,31 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
     page.getByRole('button', { name: /back to all starter packs/i }),
   ).not.toBeVisible()
 
+  // Verify Top Connectors: 1–50 is rendered and inspect it
+  await expect(page.getByText('Top Connectors: 1–50')).toBeVisible()
+  await page
+    .getByRole('button', { name: /inspect top connectors: 1–50 cards/i })
+    .click()
+  await expect(
+    page.getByRole('button', { name: /back to all starter packs/i }),
+  ).toBeVisible()
+
+  // Capture visual screenshot of connectors pack inspection view
+  await page.screenshot({
+    path: '/tmp/jolito-starter-packs-connectors-inspect.png',
+    animations: 'disabled',
+  })
+
+  // Verify zero WCAG violations in connectors inspection view
+  const connectorsInspectAxe = await auditAccessibility(page)
+  expect(connectorsInspectAxe.violations).toEqual([])
+
+  // Return to all packs view
+  await page.getByRole('button', { name: /back to all starter packs/i }).click()
+  await expect(
+    page.getByRole('button', { name: /back to all starter packs/i }),
+  ).not.toBeVisible()
+
   // Verify zero WCAG 2.1 A/AA violations in the modal main view
   const axeResults = await auditAccessibility(page)
   expect(axeResults.violations).toEqual([])
