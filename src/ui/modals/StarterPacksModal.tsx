@@ -42,6 +42,21 @@ function StarterPacksModalInner({
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
   const [addingPackId, setAddingPackId] = useState<string | null>(null)
 
+  function isElementVisible(el: HTMLElement): boolean {
+    if (typeof el.checkVisibility === 'function') {
+      return el.checkVisibility()
+    }
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.getComputedStyle === 'function'
+    ) {
+      const style = window.getComputedStyle(el)
+      if (style.display === 'none' || style.visibility === 'hidden')
+        return false
+    }
+    return true
+  }
+
   useEffect(() => {
     return () => {
       if (addTimerRef.current) {
@@ -52,7 +67,19 @@ function StarterPacksModalInner({
 
   useEffect(() => {
     previousFocusRef.current = (document.activeElement as HTMLElement) || null
-    closeBtnRef.current?.focus()
+    if (closeBtnRef.current && isElementVisible(closeBtnRef.current)) {
+      closeBtnRef.current.focus()
+    } else {
+      const container = modalRef.current
+      if (container) {
+        const firstInteractive = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).find(isElementVisible)
+        firstInteractive?.focus()
+      }
+    }
 
     return () => {
       previousFocusRef.current?.focus()
@@ -89,9 +116,11 @@ function StarterPacksModalInner({
         const container = modalRef.current
         if (!container) return
 
-        const focusable = container.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        )
+        const focusable = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter(isElementVisible)
         if (focusable.length === 0) return
 
         const first = focusable[0]

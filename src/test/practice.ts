@@ -7,7 +7,7 @@ export async function practiceCards(user: ReturnType<typeof userEvent.setup>) {
   if (!entry) throw new Error('Practice button not found')
   await user.click(entry)
   if (entry.getAttribute('aria-haspopup') === 'menu') {
-    await user.click(screen.getByRole('menuitem', { name: 'Cards' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cards' }))
   }
 }
 
@@ -17,5 +17,5 @@ export async function practiceGrammar(
   const [entry] = screen.getAllByRole('button', { name: 'Practice' })
   if (!entry) throw new Error('Practice button not found')
   await user.click(entry)
-  await user.click(screen.getByRole('menuitem', { name: 'Grammar' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Grammar' }))
 }

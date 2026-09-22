@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ModalSheet } from './ModalSheet'
@@ -285,5 +287,35 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
 
     expect(document.activeElement).not.toBe(input)
+  })
+
+  it('enforces architectural invariant that modal-sheet suppresses close buttons on mobile viewports', () => {
+    const cssContent = readFileSync(
+      resolve(process.cwd(), 'src/styles.css'),
+      'utf-8',
+    )
+    const milestone2Marker =
+      '/* Milestone 2: Draggable Bottom Sheets for Modals */'
+    const milestone2Index = cssContent.indexOf(milestone2Marker)
+    expect(milestone2Index).toBeGreaterThan(-1)
+
+    const milestone2Section = cssContent.slice(milestone2Index)
+    const mediaStartIndex = milestone2Section.indexOf(
+      '@media (max-width: 680px)',
+    )
+    expect(mediaStartIndex).toBeGreaterThan(-1)
+
+    // Slice to next milestone or closing section
+    const milestone3Marker = '/* Milestone 3: Touch Feedback'
+    const mediaEndIndex = milestone2Section.indexOf(milestone3Marker)
+    const sheetMediaBlock = milestone2Section.slice(
+      mediaStartIndex,
+      mediaEndIndex,
+    )
+
+    // Verify .modal-sheet .modal-close is suppressed under max-width: 680px
+    expect(sheetMediaBlock).toMatch(
+      /\.modal-sheet\s+\.modal-close\s*\{[^}]*display:\s*none;/s,
+    )
   })
 })

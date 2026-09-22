@@ -532,4 +532,87 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       expect(deltaY).toBeLessThanOrEqual(10)
     }
   })
+
+  test('suppresses redundant close button on mobile modal sheets while preserving desktop close button', async ({
+    page,
+  }, testInfo) => {
+    // 1. Mobile viewport (iPhone): close button must be hidden, grabber must be visible
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+
+    // Open sign-in modal
+    await page.getByRole('button', { name: /sign in/i }).click()
+    const syncModal = page.locator('.sync-modal')
+    await expect(syncModal).toBeVisible()
+
+    const syncCloseBtn = page.locator('.sync-modal .modal-close')
+    const syncGrabber = page.locator('.sync-modal .sheet-grabber-zone')
+
+    // On mobile bottom sheet, close button is suppressed and grabber is active
+    await expect(syncCloseBtn).toBeHidden()
+    await expect(syncGrabber).toBeVisible()
+    const syncCloseDisplay = await syncCloseBtn.evaluate(
+      (el) => window.getComputedStyle(el).display,
+    )
+    expect(syncCloseDisplay).toBe('none')
+
+    await page.screenshot({
+      path: testInfo.outputPath('signin-modal-mobile.png'),
+    })
+
+    // Dismiss via Escape
+    await page.keyboard.press('Escape')
+    await expect(syncModal).not.toBeVisible()
+
+    // Open feedback modal on mobile
+    await page.getByRole('button', { name: /^feedback$/i }).click()
+    const feedbackModal = page.locator('.feedback-modal')
+    await expect(feedbackModal).toBeVisible()
+
+    const feedbackCloseBtn = page.locator('.feedback-modal .modal-close')
+    await expect(feedbackCloseBtn).toBeHidden()
+    const feedbackCloseDisplay = await feedbackCloseBtn.evaluate(
+      (el) => window.getComputedStyle(el).display,
+    )
+    expect(feedbackCloseDisplay).toBe('none')
+
+    await page.keyboard.press('Escape')
+    await expect(feedbackModal).not.toBeVisible()
+
+    // 2. Desktop viewport: close button must be visible, grabber must be hidden
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await page.goto('/')
+
+    // Open sign-in modal on desktop
+    await page.getByRole('button', { name: /sign in/i }).click()
+    await expect(syncModal).toBeVisible()
+
+    await expect(syncCloseBtn).toBeVisible()
+    await expect(syncGrabber).toBeHidden()
+    const desktopSyncDisplay = await syncCloseBtn.evaluate(
+      (el) => window.getComputedStyle(el).display,
+    )
+    expect(desktopSyncDisplay).toBe('flex')
+
+    await page.screenshot({
+      path: testInfo.outputPath('signin-modal-desktop.png'),
+    })
+
+    // Close via close button on desktop
+    await syncCloseBtn.click()
+    await expect(syncModal).not.toBeVisible()
+
+    // Open feedback modal on desktop
+    await page.getByRole('button', { name: /^feedback$/i }).click()
+    await expect(feedbackModal).toBeVisible()
+
+    await expect(feedbackCloseBtn).toBeVisible()
+    const desktopFeedbackDisplay = await feedbackCloseBtn.evaluate(
+      (el) => window.getComputedStyle(el).display,
+    )
+    expect(desktopFeedbackDisplay).toBe('flex')
+
+    await feedbackCloseBtn.click()
+    await expect(feedbackModal).not.toBeVisible()
+  })
 })
