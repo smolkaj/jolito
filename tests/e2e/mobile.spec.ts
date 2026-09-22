@@ -701,9 +701,17 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
 
     // 4. Release mouse to complete reveal
     await page.mouse.up()
-    await page.waitForTimeout(300)
-
-    // Answer should now be revealed
     await expect(page.locator('.reveal-panel')).toBeVisible()
+
+    // 5. Verify non-review pages (.grammar-page) do not have sticky header
+    await page.goto('/#/grammar')
+    await expect(
+      page.getByRole('radio', { name: /Irregular stems/ }),
+    ).toBeVisible()
+    const grammarHeaderPos = await page.evaluate(() => {
+      const header = document.querySelector('.review-header')
+      return header ? window.getComputedStyle(header).position : ''
+    })
+    expect(grammarHeaderPos).not.toBe('sticky')
   })
 })

@@ -17,6 +17,7 @@ import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
 
 const accentLetters = ['á', 'é', 'í', 'ó', 'ú']
+const MAX_SWIPE_LIFT_Y = -110
 
 /** Shared recall → feedback → grade interaction; learning modes supply content. */
 export function PracticeCard({
@@ -263,7 +264,7 @@ export function PracticeCard({
     pointerStartRef.current = null
     haptics?.trigger('selection')
 
-    const targetLift = -110
+    const targetLift = MAX_SWIPE_LIFT_Y
     setDragOffset({ x: 0, y: targetLift })
     dragOffsetRef.current = { x: 0, y: targetLift }
 
@@ -312,7 +313,9 @@ export function PracticeCard({
     dragOffsetRef.current = { x: 0, y: 0 }
   }
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+  const handlePointerMove = (
+    event: PointerEvent | React.PointerEvent<HTMLElement>,
+  ) => {
     if (!pointerStartRef.current || paused || isAnimatingExit) return
     const start = pointerStartRef.current
     if (revealed ? start.isRevealedDragBlocked : start.isUnrevealedInteractive)
@@ -347,7 +350,7 @@ export function PracticeCard({
 
     if (!revealed) {
       if (dy < 0) {
-        const liftY = Math.max(-110, dy * 0.72)
+        const liftY = Math.max(MAX_SWIPE_LIFT_Y, dy * 0.72)
         dragOffsetRef.current = { x: 0, y: liftY }
         setDragOffset({ x: 0, y: liftY })
 
@@ -388,7 +391,9 @@ export function PracticeCard({
     }
   }
 
-  const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
+  const handlePointerUp = (
+    event: PointerEvent | React.PointerEvent<HTMLElement>,
+  ) => {
     if (!pointerStartRef.current || paused || isAnimatingExit) return
     const start = pointerStartRef.current
     const actualDx = event.clientX - start.x
@@ -458,6 +463,26 @@ export function PracticeCard({
     setActiveZone(null)
     activeZoneRef.current = null
   }
+
+  useEffect(() => {
+    const onWindowPointerMove = (event: PointerEvent) => {
+      handlePointerMove(event)
+    }
+    const onWindowPointerUp = (event: PointerEvent) => {
+      handlePointerUp(event)
+    }
+    const onWindowPointerCancel = () => {
+      handlePointerCancel()
+    }
+    window.addEventListener('pointermove', onWindowPointerMove)
+    window.addEventListener('pointerup', onWindowPointerUp)
+    window.addEventListener('pointercancel', onWindowPointerCancel)
+    return () => {
+      window.removeEventListener('pointermove', onWindowPointerMove)
+      window.removeEventListener('pointerup', onWindowPointerUp)
+      window.removeEventListener('pointercancel', onWindowPointerCancel)
+    }
+  })
 
   const rotation =
     revealed && !prefersReducedMotion

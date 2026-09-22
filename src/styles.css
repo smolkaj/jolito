@@ -2259,18 +2259,19 @@ summary:focus-visible,
   padding-top: 0;
 }
 
-/* Review Session Sticky Header Chrome */
+/* Review Session Header Chrome */
 .review-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--paper);
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
+/* Sticky top chrome strictly during active review/practice sessions */
 .review-page .review-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
   padding-top: max(16px, env(safe-area-inset-top));
 }
 
@@ -6366,10 +6367,12 @@ kbd {
   user-select: text;
 }
 
-.study-card.is-dragging {
+.study-card.is-dragging,
+.study-card.is-dragging .study-prompt,
+.study-card.is-dragging .prompt-meta {
   cursor: grabbing;
-  -webkit-user-select: none;
-  user-select: none;
+  -webkit-user-select: none !important;
+  user-select: none !important;
 }
 
 .study-card.zone-again {
