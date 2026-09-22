@@ -181,6 +181,49 @@ def is_grammatical_comma(chunk):
         return True
     return False
 
+PRONOUN_PREPS = {
+    'to you', 'for you', 'to me', 'for me',
+    'to us', 'for us', 'to him', 'for him',
+    'to her', 'for her', 'to them', 'for them',
+}
+
+def prune_redundant_items(items):
+    cleaned_items = []
+    for it in items:
+        m = re.match(r'^(?:a|an)\s+([a-z]+)$', it, re.I)
+        if m and m.group(1).lower() in [x.lower() for x in items]:
+            continue
+        cleaned_items.append(it)
+
+    groups = {}
+    for it in cleaned_items:
+        it_lower = it.lower().strip()
+        if it_lower in PRONOUN_PREPS:
+            groups[it_lower] = [it]
+            continue
+        bare = re.sub(r'^(to|the|a|an)\s+', '', it_lower).strip()
+        if bare not in groups:
+            groups[bare] = []
+        groups[bare].append(it)
+
+    final_items = []
+    for bare, variants in groups.items():
+        if len(variants) == 1:
+            final_items.append(variants[0])
+        else:
+            def score_variant(v):
+                vl = v.lower()
+                if vl.startswith('to ') and vl not in PRONOUN_PREPS:
+                    return 10
+                if vl.startswith('the ') and len(v) > 4 and v[4:].istitle():
+                    return 8
+                if vl.startswith('a ') or vl.startswith('an '):
+                    return 1
+                return 5
+            best = max(variants, key=score_variant)
+            final_items.append(best)
+    return final_items
+
 def standardize_gloss(english):
     raw_senses = re.split(r'\s*[;/]\s*', english)
     items = []
@@ -205,9 +248,11 @@ def standardize_gloss(english):
             seen.add(key)
             deduped.append(cleaned_item)
 
+    pruned = prune_redundant_items(deduped)
+
     result_parts = []
     current_len = 0
-    for part in deduped:
+    for part in pruned:
         part_len = len(part) + (3 if result_parts else 0)
         if result_parts and (len(result_parts) >= 3 or current_len + part_len > 120):
             break
