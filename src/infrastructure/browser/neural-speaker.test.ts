@@ -290,6 +290,43 @@ describe('LayeredNeuralSpeaker', () => {
     })
   })
 
+  it('awaits in-flight prefetch for non-explicit autoplay with a 500ms grace window', async () => {
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('palabra rápida', 'es-MX', {
+      cardSeed: 'card-1',
+      explicit: false,
+    })
+    expect(played).toBe(true)
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'palabra rápida',
+      'es-MX',
+      expect.any(String),
+      500,
+    )
+
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'palabra rápida',
+      'es-MX',
+      expect.any(String),
+      expect.objectContaining({ explicit: false }),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
   it('awaits in-flight prefetch for explicit user clicks with a 1500ms grace window', async () => {
     const awaitAudioSpy = vi
       .spyOn(neuralEngine, 'awaitAudio')

@@ -5731,6 +5731,11 @@ describe('Jolito', () => {
         text: 'aguacate',
         locale: 'es-MX',
       })
+      expect(services.mockSpeaker.prefetched).toContainEqual({
+        text: 'palta',
+        locale: 'es-MX',
+        cardSeed: 'c1:es-en:turn0',
+      })
     })
 
     it('cancels pending reveal answer audio when navigating away before stagger expires', async () => {
