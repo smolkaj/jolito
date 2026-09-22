@@ -3,21 +3,43 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 
+import { computeAppVersion } from './version.ts'
+
 /** The worker and its complete asset list are versioned together on every build. */
 export function offlineShellPlugin(): Plugin {
   let buildId: string | undefined
   return {
     name: 'jolito-offline-shell',
-    apply: 'build',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url?.split('?')[0]
+        if (url === '/acknowledgements.html' || url === '/acknowledgements') {
+          const version = computeAppVersion()
+          const ackSource = readFileSync('public/acknowledgements.html', 'utf8')
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.end(ackSource.replace('__JOLITO_VERSION__', version))
+          return
+        }
+        next()
+      })
+    },
     transformIndexHtml() {
-      if (!buildId) throw new Error('Offline build identity was not generated')
-      return [
+      const version = computeAppVersion()
+      const tags = [
         {
           tag: 'meta',
-          attrs: { name: 'jolito-build', content: buildId },
-          injectTo: 'head',
+          attrs: { name: 'jolito-version', content: version },
+          injectTo: 'head' as const,
         },
       ]
+      if (buildId) {
+        tags.unshift({
+          tag: 'meta',
+          attrs: { name: 'jolito-build', content: buildId },
+          injectTo: 'head' as const,
+        })
+      }
+      return tags
     },
     generateBundle(_options, bundle) {
       const source = readFileSync('public/sw.js', 'utf8')
@@ -54,6 +76,13 @@ export function offlineShellPlugin(): Plugin {
         source: source
           .replace('__JOLITO_BUILD_ID__', buildId)
           .replace('/* __JOLITO_BUILD_ASSETS__ */ []', JSON.stringify(files)),
+      })
+      const version = computeAppVersion()
+      const ackSource = readFileSync('public/acknowledgements.html', 'utf8')
+      this.emitFile({
+        type: 'asset',
+        fileName: 'acknowledgements.html',
+        source: ackSource.replace('__JOLITO_VERSION__', version),
       })
     },
   }

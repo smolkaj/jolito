@@ -168,6 +168,54 @@ META_GLOSS_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+def is_grammatical_comma(chunk):
+    if re.search(r',\s*(please|thank\b)', chunk, re.I):
+        return True
+    if re.search(r'\b(especially|usually|meaning|which\b|that\b|literally|namely|such as|referring to|equivalent to|used for|in particular|consisting of|characterized by|denoted by|often|chiefly)\b', chunk, re.I):
+        return True
+    if re.search(r'^(a kind of|forms words|initialism of|acronym of|contraction of|abbreviation of|clipping of|ellipsis of)', chunk.strip(), re.I):
+        return True
+    if re.search(r'\b(in|of|near)\s+[^,]+,\s*[A-Z][a-z]+', chunk):
+        return True
+    if len(chunk) > 75:
+        return True
+    return False
+
+def standardize_gloss(english):
+    raw_senses = re.split(r'\s*[;/]\s*', english)
+    items = []
+    for s in raw_senses:
+        s = s.strip()
+        if not s:
+            continue
+        if ',' in s and not is_grammatical_comma(s):
+            parts = [p.strip() for p in s.split(',') if p.strip()]
+            items.extend(parts)
+        else:
+            items.append(s)
+
+    seen = set()
+    deduped = []
+    for item in items:
+        cleaned_item = item.strip(' .;')
+        if not cleaned_item:
+            continue
+        key = cleaned_item.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(cleaned_item)
+
+    result_parts = []
+    current_len = 0
+    for part in deduped:
+        part_len = len(part) + (3 if result_parts else 0)
+        if result_parts and (len(result_parts) >= 3 or current_len + part_len > 120):
+            break
+        result_parts.append(part)
+        current_len += part_len
+
+    return ' / '.join(result_parts) if result_parts else english
+
 def clean_gloss_text(gloss):
     # Strip meta header prefixes like "Senses relating to ...;"
     gloss = re.sub(r"^Senses relating to .*?[;:]\s*", "", gloss, flags=re.IGNORECASE)
@@ -188,9 +236,11 @@ def clean_gloss_text(gloss):
     # Filter meta strings
     if not cleaned or re.match(r"^(Forms ad hoc|See also|Alternative form of|Synonym of)", cleaned, re.I):
         return ""
-    parts = [p.strip() for p in cleaned.split(",") if p.strip()]
-    if len(parts) > 3:
-        cleaned = ", ".join(parts[:3])
+    if not is_grammatical_comma(cleaned) and "," in cleaned:
+        parts = [p.strip() for p in cleaned.split(",") if p.strip()]
+        if len(parts) > 3:
+            parts = parts[:3]
+        cleaned = " / ".join(parts)
     return cleaned
 
 def main():
@@ -339,9 +389,7 @@ def main():
         if not unique_glosses:
             continue
 
-        clean_english = "; ".join(unique_glosses[:2])
-        if len(clean_english) > 120:
-            clean_english = unique_glosses[0][:120]
+        clean_english = standardize_gloss(" / ".join(unique_glosses[:2]))
 
         is_slang = data["is_slang"]
         is_idiom = data["is_idiom"]

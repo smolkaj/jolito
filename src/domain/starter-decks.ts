@@ -2486,6 +2486,227 @@ export const starterPackSeeds: StarterPackSeed[] = [
       },
     ],
   },
+  {
+    id: 'common-idioms',
+    title: 'Top Idioms: 1–30',
+    subtitle: 'Essential Building Blocks',
+    description:
+      'High-frequency conversational chunks and idioms for natural everyday interactions.',
+    badge: 'Idioms',
+    themeColor: 'tezontle',
+    notes: [
+      {
+        spanish: 'ponerse de acuerdo',
+        english: 'to coordinate / to agree on plans',
+        context:
+          'Example: "Nos pusimos de acuerdo para cenar el viernes." ("We coordinated to have dinner on Friday.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'estar al tanto',
+        english: 'to stay in the loop / to be aware',
+        context:
+          'Example: "Mantenme al tanto de lo que decida el equipo." ("Keep me in the loop on what the team decides.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'hacer falta',
+        english: 'to be needed / to be missing',
+        context:
+          'Example: "Hace falta comprar más café para la oficina." ("We need to buy more coffee for the office.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tener ganas de',
+        english: 'to feel like / to look forward to',
+        context:
+          'Example: "Tengo muchas ganas de ir a Oaxaca en vacaciones." ("I really feel like going to Oaxaca on vacation.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'hacer caso',
+        english: 'to pay attention / to listen to advice',
+        context:
+          'Example: "Hazle caso a las indicaciones del doctor." ("Pay attention to the doctor\'s instructions.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'echar la mano',
+        english: 'to lend a hand / to help out',
+        context:
+          'Example: "¿Me puedes echar la mano con estas cajas pesadas?" ("Can you lend me a hand with these heavy boxes?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'dar igual',
+        english: 'to not matter / to make no difference',
+        context:
+          'Example: "Me da igual si comemos tacos o quesadillas." ("It makes no difference to me whether we eat tacos or quesadillas.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'estar pendiente',
+        english: 'to keep an eye out / to stay tuned',
+        context:
+          'Example: "Estoy pendiente del teléfono por si me llaman." ("I\'m keeping an eye on the phone in case they call me.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tener que ver con',
+        english: 'to have to do with',
+        context:
+          'Example: "Ese problema no tiene que ver con nosotros." ("That problem has nothing to do with us.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'estar de acuerdo',
+        english: 'to agree / to be in agreement',
+        context:
+          'Example: "¿Estás de acuerdo con el nuevo horario?" ("Do you agree with the new schedule?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'no pasa nada',
+        english: 'no worries / it is all good',
+        context:
+          'Example: "Se me olvidó la llave, pero no pasa nada." ("I forgot the key, but no worries.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tomar en cuenta',
+        english: 'to take into account / to keep in mind',
+        context:
+          'Example: "Hay que tomar en cuenta el tráfico de la hora pico." ("We have to take rush hour traffic into account.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'llevar a cabo',
+        english: 'to carry out / to execute',
+        context:
+          'Example: "Van a llevar a cabo la remodelación el próximo mes." ("They are going to carry out the remodel next month.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'echar ganas',
+        english: 'to put effort in / to try your best',
+        context:
+          'Example: "Hay que echarle ganas al proyecto para terminar a tiempo." ("We have to put effort into the project to finish on time.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'dar por hecho',
+        english: 'to take for granted / to assume',
+        context:
+          'Example: "No des por hecho que la tienda estará abierta hoy." ("Don\'t take for granted that the store will be open today.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'hacer el favor',
+        english: 'to do the favor',
+        context:
+          'Example: "¿Me haces el favor de cerrar la ventana?" ("Could you do me the favor of closing the window?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'quedar en',
+        english: 'to arrange to / to agree on',
+        context:
+          'Example: "Quedamos en vernos a las seis en la cafetería." ("We agreed to meet at six at the coffee shop.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'de vez en cuando',
+        english: 'from time to time / once in a while',
+        context:
+          'Example: "Voy a nadar al deportivo de vez en cuando." ("I go swimming at the sports club once in a while.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'estar al día',
+        english: 'to be up to date',
+        context:
+          'Example: "Me gusta leer las noticias para estar al día." ("I like reading the news to stay up to date.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'hacerse bolas',
+        english: 'to get confused / to get mixed up',
+        context:
+          'Example: "Me hice bolas con tantas explicaciones diferentes." ("I got confused with so many different explanations.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'echar un ojo',
+        english: 'to take a quick look / to keep an eye on',
+        context:
+          'Example: "¿Le puedes echar un ojo a mi mochila mientras regreso?" ("Can you keep an eye on my backpack while I get back?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'meter la pata',
+        english: "to mess up / to put one's foot in it",
+        context:
+          'Example: "Metí la pata al mandar el correo equivocado." ("I messed up by sending the wrong email.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tener la culpa',
+        english: 'to be to blame / to be at fault',
+        context:
+          'Example: "Nadie tiene la culpa de lo que pasó con la lluvia." ("No one is to blame for what happened with the rain.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'caer bien',
+        english: 'to make a good impression / to like someone',
+        context:
+          'Example: "Tus amigos del trabajo me cayeron muy bien." ("I really liked your coworkers.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'caer mal',
+        english: 'to make a bad impression / to dislike someone',
+        context:
+          'Example: "El nuevo vecino me cayó mal desde el primer día." ("The new neighbor made a bad impression on me from day one.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'dar una vuelta',
+        english: 'to take a walk / to take a stroll',
+        context:
+          'Example: "Vamos a dar una vuelta por el parque antes de cenar." ("Let\'s go take a walk around the park before dinner.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'pasar la voz',
+        english: 'to spread the word',
+        context:
+          'Example: "Pasa la voz sobre el concierto de este sábado." ("Spread the word about the concert this Saturday.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'perder de vista',
+        english: 'to lose sight of',
+        context:
+          'Example: "No hay que perder de vista nuestro objetivo principal." ("We must not lose sight of our main goal.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tener prisa',
+        english: 'to be in a hurry',
+        context:
+          'Example: "Tengo un poco de prisa porque mi cita es a las tres." ("I\'m in a bit of a hurry because my appointment is at three.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'a primera vista',
+        english: 'at first glance / at first sight',
+        context:
+          'Example: "A primera vista el examen parecía muy complicado." ("At first glance the exam seemed very complicated.")',
+        bidirectional: true,
+      },
+    ],
+  },
 ]
 
 export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {

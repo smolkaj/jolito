@@ -6153,6 +6153,65 @@ kbd {
   user-select: none;
 }
 
+.sync-update-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sync-update-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sync-update-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--line);
+  transition:
+    transform 120ms var(--ease-spring),
+    box-shadow 120ms var(--ease-spring);
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .sync-update-actions a,
+  .sync-update-action-btn {
+    min-height: 44px;
+  }
+}
+
+.sync-update-action-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--line);
+}
+
+.sync-update-action-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--line);
+}
+
+.sync-update-action-btn:focus-visible {
+  outline: 2px solid var(--maya-dark);
+  outline-offset: 2px;
+}
+
 /* Privacy Modal Specific Styles */
 .privacy-modal {
   max-width: 620px;

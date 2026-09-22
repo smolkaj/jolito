@@ -259,3 +259,160 @@ for (const failure of ['HTTP error', 'HTML fallback'] as const) {
     }
   })
 }
+
+test('automatically activates update in standalone PWA on resume when idle', async ({
+  context,
+}) => {
+  let deployment: 'original' | 'recovered' = 'original'
+  const types: Record<string, string> = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.webmanifest': 'application/manifest+json',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+    '.woff2': 'font/woff2',
+    '.wasm': 'application/wasm',
+  }
+  const server = createServer((request, response) => {
+    void (async () => {
+      const path = new URL(request.url!, 'http://localhost').pathname
+      if (path === '/index.html') {
+        response.writeHead(308, { Location: '/' }).end()
+        return
+      }
+      const documentPath =
+        path !== '/' && !extname(path)
+          ? `${path.replace(/\/$/, '')}.html`
+          : path
+      response.setHeader('Cache-Control', 'no-store')
+      response.setHeader(
+        'Content-Type',
+        types[extname(documentPath)] ??
+          (path === '/' ? 'text/html' : 'application/octet-stream'),
+      )
+      const file = resolve(
+        'dist',
+        path === '/' ? 'index.html' : `.${documentPath}`,
+      )
+      let contents = await readFile(file)
+      if (path === '/sw.js' && deployment !== 'original') {
+        contents = Buffer.from(
+          contents
+            .toString()
+            .replace(
+              /const BUILD_ID = '([a-f0-9]+)'/,
+              "const BUILD_ID = '$1-next'",
+            ),
+        )
+      }
+      if (path === '/' && deployment !== 'original') {
+        contents = Buffer.from(
+          contents
+            .toString()
+            .replace(
+              /name="jolito-build" content="([a-f0-9]+)"/,
+              'name="jolito-build" content="$1-next"',
+            ),
+        )
+      }
+      if (path === '/') {
+        contents = Buffer.from(
+          contents
+            .toString()
+            .replace(
+              '<head>',
+              `<head><meta name="test-deployment" content="${deployment}">`,
+            ),
+        )
+      }
+      response.end(contents)
+    })().catch(() => response.writeHead(404).end())
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  if (!address || typeof address === 'string')
+    throw new Error('Missing test server address')
+
+  const page = await context.newPage()
+  // Emulate standalone PWA mode
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'standalone', {
+      value: true,
+      configurable: true,
+    })
+  })
+
+  try {
+    await page.goto(`http://127.0.0.1:${address.port}/`)
+    await page.locator('html[data-offline-ready="true"]').waitFor()
+    await expect(page.locator('meta[name="test-deployment"]')).toHaveAttribute(
+      'content',
+      'original',
+    )
+
+    // Deploy updated version on server
+    deployment = 'recovered'
+
+    // Update is detected and installed
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready
+      await new Promise<void>((resolve) => {
+        registration.addEventListener(
+          'updatefound',
+          () => {
+            const worker = registration.installing!
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'installed') resolve()
+            })
+          },
+          { once: true },
+        )
+        void registration.update()
+      })
+    })
+
+    // User switches away from app (backgrounding)
+    await page.evaluate(async () => {
+      const controllerChanged = new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener(
+          'controllerchange',
+          () => resolve(),
+          { once: true },
+        )
+      })
+      Object.defineProperty(document, 'visibilityState', {
+        value: 'hidden',
+        configurable: true,
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+      await controllerChanged
+    })
+
+    // User switches back to app (resuming) -> standalone PWA automatically reloads into recovered deployment
+    await Promise.all([
+      page.waitForNavigation(),
+      page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', {
+          value: 'visible',
+          configurable: true,
+        })
+        document.dispatchEvent(new Event('visibilitychange'))
+      }),
+    ])
+
+    await expect(page.locator('meta[name="test-deployment"]')).toHaveAttribute(
+      'content',
+      'recovered',
+    )
+  } finally {
+    await page.close()
+    server.closeAllConnections()
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    )
+  }
+})
