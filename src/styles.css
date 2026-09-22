@@ -378,6 +378,7 @@ summary:focus-visible,
 .icon-sync-spinner.is-spinning,
 .sticker-spinner.is-spinning {
   animation: spin 1s linear infinite;
+  transform-box: view-box;
 }
 
 /* Offline (Network disconnected) - Warm Marigold / Cempasúchil tint */
@@ -4092,7 +4093,7 @@ kbd {
 }
 
 .sync-status-text.is-error {
-  color: var(--tezontle);
+  color: var(--tezontle-dark);
 }
 
 .sync-status-text.is-synced {

@@ -162,16 +162,16 @@ export function CloudCheckSticker({
 }) {
   const bodyFill =
     status === 'error'
-      ? '#c73e1d'
+      ? 'var(--tezontle, #d32f2f)'
       : status === 'offline'
-        ? '#687d74'
-        : '#2a7a63'
+        ? 'var(--cempasuchil-dark, #b45309)'
+        : 'var(--turquesa-deep, #2d5a43)'
   const highlightStroke =
     status === 'error'
-      ? '#e06b52'
+      ? 'var(--tezontle-glow, #ef4444)'
       : status === 'offline'
-        ? '#8fa49b'
-        : '#5ab69c'
+        ? 'var(--cempasuchil, #f59e0b)'
+        : 'var(--turquesa-border, #9ec2ad)'
 
   return (
     <svg

@@ -149,19 +149,6 @@ export function SyncModal({
     return () => clearTransientFeedback()
   }, [])
 
-  const prevSyncStatusRef = useRef(syncStatus)
-  useEffect(() => {
-    if (
-      isOpen &&
-      prevSyncStatusRef.current === 'syncing' &&
-      syncStatus === 'synced' &&
-      loadingAction === null
-    ) {
-      triggerTransientFeedback('synced', 2500)
-    }
-    prevSyncStatusRef.current = syncStatus
-  }, [isOpen, syncStatus, loadingAction])
-
   let effectiveStatus: 'synced' | 'syncing' | 'error' | 'offline'
   let statusLabel: string
 
@@ -257,7 +244,7 @@ export function SyncModal({
   }
 
   const handleSyncNow = async () => {
-    if (!user || loading || !isOnline) return
+    if (!user || loading || isSyncing || !isOnline) return
     setLoadingAction('sync')
     setStatusMsg(null)
     const res = await onSync()
@@ -442,7 +429,7 @@ export function SyncModal({
               onClick={() => {
                 void handleSyncNow()
               }}
-              disabled={loading || !isOnline}
+              disabled={loading || isSyncing || !isOnline}
             >
               {isSynced ? (
                 <span className="sync-button-synced">
@@ -455,11 +442,9 @@ export function SyncModal({
                 <>
                   <SyncSpinnerIcon
                     size={15}
-                    className={loadingAction === 'sync' ? 'is-spinning' : ''}
+                    className={isSyncing ? 'is-spinning' : ''}
                   />
-                  <span>
-                    {loadingAction === 'sync' ? 'Syncing…' : 'Sync now'}
-                  </span>
+                  <span>{isSyncing ? 'Syncing…' : 'Sync now'}</span>
                 </>
               )}
             </button>
