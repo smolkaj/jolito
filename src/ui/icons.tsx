@@ -168,7 +168,7 @@ export function CloudCheckSticker({
         : 'var(--turquesa-deep, #2d5a43)'
   const highlightStroke =
     status === 'error'
-      ? 'var(--tezontle-glow, #ef4444)'
+      ? '#f87171'
       : status === 'offline'
         ? 'var(--cempasuchil, #f59e0b)'
         : 'var(--turquesa-border, #9ec2ad)'
@@ -254,7 +254,7 @@ export function CloudCheckSticker({
         </g>
       ) : status === 'offline' ? (
         <path
-          d="M23 37L43 21"
+          d="M21 19L45 39"
           fill="none"
           stroke="#ffffff"
           strokeWidth="3.5"
