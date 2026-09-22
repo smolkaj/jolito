@@ -100,6 +100,8 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */,
+				D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -442,7 +444,7 @@
 				SKIP_INSTALL = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.widget";
 				SWIFT_VERSION = 5.0;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				GENERATE_INFOPLIST_FILE = NO;
 				CODE_SIGN_STYLE = Automatic;
@@ -460,7 +462,7 @@
 				SKIP_INSTALL = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.widget";
 				SWIFT_VERSION = 5.0;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				GENERATE_INFOPLIST_FILE = NO;
 				CODE_SIGN_STYLE = Automatic;

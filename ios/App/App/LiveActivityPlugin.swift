@@ -15,7 +15,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     private var currentActivity: Any? = nil
 
     @objc func startPractice(_ call: CAPPluginCall) {
-        guard #available(iOS 16.1, *) else {
+        guard #available(iOS 16.2, *) else {
             call.resolve(["supported": false, "started": false])
             return
         }
@@ -25,50 +25,50 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        // End any active leftover activities first for deterministic single-activity hygiene
-        for activity in Activity<PracticeActivityAttributes>.activities {
-            Task {
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
-        }
-        currentActivity = nil
-
         let total = call.getInt("total") ?? 0
         let prompt = call.getString("prompt") ?? ""
         let title = call.getString("title") ?? "Practice"
 
-        let attributes = PracticeActivityAttributes(sessionTitle: title)
-        let state = PracticeActivityAttributes.ContentState(
-            completedCount: 0,
-            remainingCount: total,
-            totalCount: total,
-            progressPercentage: 0,
-            currentPrompt: prompt
-        )
+        Task {
+            // End any active leftover activities first for deterministic single-activity hygiene
+            for activity in Activity<PracticeActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
+            self.currentActivity = nil
 
-        do {
-            let activity = try Activity<PracticeActivityAttributes>.request(
-                attributes: attributes,
-                content: .init(state: state, staleDate: nil)
+            let attributes = PracticeActivityAttributes(sessionTitle: title)
+            let state = PracticeActivityAttributes.ContentState(
+                completedCount: 0,
+                remainingCount: total,
+                totalCount: total,
+                progressPercentage: 0,
+                currentPrompt: prompt
             )
-            self.currentActivity = activity
-            call.resolve([
-                "supported": true,
-                "enabled": true,
-                "started": true,
-                "id": activity.id
-            ])
-        } catch {
-            call.resolve([
-                "supported": true,
-                "started": false,
-                "error": error.localizedDescription
-            ])
+
+            do {
+                let activity = try Activity<PracticeActivityAttributes>.request(
+                    attributes: attributes,
+                    content: .init(state: state, staleDate: nil)
+                )
+                self.currentActivity = activity
+                call.resolve([
+                    "supported": true,
+                    "enabled": true,
+                    "started": true,
+                    "id": activity.id
+                ])
+            } catch {
+                call.resolve([
+                    "supported": true,
+                    "started": false,
+                    "error": error.localizedDescription
+                ])
+            }
         }
     }
 
     @objc func updatePractice(_ call: CAPPluginCall) {
-        guard #available(iOS 16.1, *) else {
+        guard #available(iOS 16.2, *) else {
             call.resolve(["supported": false, "updated": false])
             return
         }
@@ -99,7 +99,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func endPractice(_ call: CAPPluginCall) {
-        guard #available(iOS 16.1, *) else {
+        guard #available(iOS 16.2, *) else {
             call.resolve(["supported": false, "ended": false])
             return
         }

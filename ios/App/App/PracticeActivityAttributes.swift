@@ -1,7 +1,7 @@
 import Foundation
 import ActivityKit
 
-@available(iOS 16.1, *)
+@available(iOS 16.2, *)
 public struct PracticeActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         public var completedCount: Int
