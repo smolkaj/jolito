@@ -17,7 +17,7 @@ describe('StarterPacksModal', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('renders all 6 curated starter packs when isOpen is true', () => {
+  it('renders all 7 curated starter packs when isOpen is true', () => {
     render(
       <StarterPacksModal
         isOpen={true}
@@ -34,6 +34,7 @@ describe('StarterPacksModal', () => {
     expect(screen.getByText('Top Verbs: 51–100')).toBeInTheDocument()
     expect(screen.getByText('Top Verbs: 101–150')).toBeInTheDocument()
     expect(screen.getByText('Top Verbs: 151–200')).toBeInTheDocument()
+    expect(screen.getByText('Top Connectors: 1–50')).toBeInTheDocument()
   })
 
   it('calls onAddPack when clicking Add Pack button', () => {
