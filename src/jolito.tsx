@@ -1457,71 +1457,75 @@ function LoadedApp({
       <main
         className={`app-shell ${complete ? 'complete-page' : practicing ? 'review-page' : 'grammar-page'}`}
       >
-        <nav
-          className="topbar"
-          aria-label={practicing ? 'Review navigation' : 'Session navigation'}
-        >
-          <Brand onClick={goHome} />
-          <div className="nav-actions" data-nosnippet>
-            {grammar ? (
-              grammarPractice.mode !== 'choose' && (
-                <button
-                  className="text-button"
-                  onClick={grammarPractice.choose}
-                >
-                  <span aria-hidden="true">←</span> Grammar
-                </button>
-              )
-            ) : (
-              <>
-                <button
-                  className="text-button topbar-nav-btn"
-                  onClick={() => navigateTo('deck')}
-                >
-                  Manage deck
-                </button>
-                <button
-                  className="text-button topbar-nav-btn"
-                  onClick={() => navigateTo('create')}
-                >
-                  + New card
-                </button>
-              </>
-            )}
-            <ConnectionPill
-              authUser={authUser}
-              syncStatus={syncStatus}
-              isOnline={isOnline}
-              onClick={() => openSyncModal()}
-            />
-          </div>
-        </nav>
-        {saveError && !(practicing && !grammar) && !grammarPractice.error && (
-          <p className="storage-save-error" role="alert">
-            {saveError}
-          </p>
-        )}
-        <RedirectAuthNotice
-          message={accountNotice ?? redirectAuthBanner}
-          onDismiss={() => {
-            onDismissAccountNotice()
-            setRedirectAuthBanner(null)
-          }}
-          onCopySessionLink={handleCopySessionLink}
-        />
-        {practicing && (
-          <SessionProgress
-            percentage={
-              grammar
-                ? grammarPractice.session.progressPercentage
-                : progressPercentage
-            }
-            remaining={
-              grammar ? grammarPractice.session.remainingCount : remainingCount
-            }
-            unit={grammar ? 'form' : 'card'}
+        <header className="review-header">
+          <nav
+            className="topbar"
+            aria-label={practicing ? 'Review navigation' : 'Session navigation'}
+          >
+            <Brand onClick={goHome} />
+            <div className="nav-actions" data-nosnippet>
+              {grammar ? (
+                grammarPractice.mode !== 'choose' && (
+                  <button
+                    className="text-button"
+                    onClick={grammarPractice.choose}
+                  >
+                    <span aria-hidden="true">←</span> Grammar
+                  </button>
+                )
+              ) : (
+                <>
+                  <button
+                    className="text-button topbar-nav-btn"
+                    onClick={() => navigateTo('deck')}
+                  >
+                    Manage deck
+                  </button>
+                  <button
+                    className="text-button topbar-nav-btn"
+                    onClick={() => navigateTo('create')}
+                  >
+                    + New card
+                  </button>
+                </>
+              )}
+              <ConnectionPill
+                authUser={authUser}
+                syncStatus={syncStatus}
+                isOnline={isOnline}
+                onClick={() => openSyncModal()}
+              />
+            </div>
+          </nav>
+          {saveError && !(practicing && !grammar) && !grammarPractice.error && (
+            <p className="storage-save-error" role="alert">
+              {saveError}
+            </p>
+          )}
+          <RedirectAuthNotice
+            message={accountNotice ?? redirectAuthBanner}
+            onDismiss={() => {
+              onDismissAccountNotice()
+              setRedirectAuthBanner(null)
+            }}
+            onCopySessionLink={handleCopySessionLink}
           />
-        )}
+          {practicing && (
+            <SessionProgress
+              percentage={
+                grammar
+                  ? grammarPractice.session.progressPercentage
+                  : progressPercentage
+              }
+              remaining={
+                grammar
+                  ? grammarPractice.session.remainingCount
+                  : remainingCount
+              }
+              unit={grammar ? 'form' : 'card'}
+            />
+          )}
+        </header>
         {grammar ? (
           <GrammarPractice
             saveError={saveError}
