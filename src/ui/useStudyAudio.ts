@@ -42,6 +42,7 @@ export function useStudyAudio({
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !speaker.supported(),
   )
+
   const [activeTarget, setActiveTarget] = useState<'prompt' | 'answer' | null>(
     null,
   )
@@ -173,12 +174,12 @@ export function useStudyAudio({
     [cancelPendingAudio, haptics, sounds, speaker],
   )
 
-  // Autoplay prompt audio when entering/advancing in review view
   const currentCardId = currentCard?.id
   const currentPrompt = currentCard?.prompt
   const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
   const currentReviews = currentCard?.schedule.reviews ?? 0
 
+  // Autoplay prompt audio when entering/advancing in review view
   useEffect(() => {
     if (
       view !== 'review' ||
@@ -189,11 +190,20 @@ export function useStudyAudio({
     ) {
       return
     }
-    // Use primitive ID and review count to avoid re-triggering autoplay on object reference changes
-    speaker.speak(currentPrompt, currentPromptLocale, {
-      cardSeed: `${currentCardId}:turn${currentReviews}`,
-      explicit: false,
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      playAudio(
+        currentPrompt,
+        currentPromptLocale,
+        `${currentCardId}:turn${currentReviews}`,
+        { explicit: false },
+        'prompt',
+      )
     })
+    return () => {
+      cancelled = true
+    }
   }, [
     paused,
     autoplayPrompt,
@@ -201,7 +211,7 @@ export function useStudyAudio({
     currentPrompt,
     currentPromptLocale,
     currentReviews,
-    speaker,
+    playAudio,
     view,
   ])
 
