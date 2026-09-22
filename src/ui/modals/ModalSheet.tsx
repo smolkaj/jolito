@@ -47,6 +47,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     const [isDragging, setIsDragging] = useState(false)
     const [isClosing, setIsClosing] = useState(false)
     const [hasDragged, setHasDragged] = useState(false)
+    const [keyboardInset, setKeyboardInset] = useState(0)
     const startYRef = useRef<number | null>(null)
     const currentYRef = useRef<number | null>(null)
     const thresholdPassedRef = useRef(false)
@@ -56,11 +57,36 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
     useEffect(() => {
+      if (!isOpen || typeof window === 'undefined' || !window.visualViewport)
+        return
+
+      const updateViewport = () => {
+        const vv = window.visualViewport
+        if (!vv) return
+        const inset = Math.max(
+          0,
+          window.innerHeight - (vv.offsetTop + vv.height),
+        )
+        setKeyboardInset(inset)
+      }
+
+      window.visualViewport.addEventListener('resize', updateViewport)
+      window.visualViewport.addEventListener('scroll', updateViewport)
+      updateViewport()
+
+      return () => {
+        window.visualViewport?.removeEventListener('resize', updateViewport)
+        window.visualViewport?.removeEventListener('scroll', updateViewport)
+      }
+    }, [isOpen])
+
+    useEffect(() => {
       if (!isOpen) {
         setDragOffset(0)
         setIsDragging(false)
         setIsClosing(false)
         setHasDragged(false)
+        setKeyboardInset(0)
         startYRef.current = null
         currentYRef.current = null
         thresholdPassedRef.current = false
@@ -83,6 +109,14 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
 
     const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
       if (isClosing || startYRef.current !== null || e.button !== 0) return
+      if (
+        typeof document !== 'undefined' &&
+        document.activeElement &&
+        document.activeElement instanceof HTMLElement &&
+        document.activeElement !== document.body
+      ) {
+        document.activeElement.blur()
+      }
       startYRef.current = e.clientY
       currentYRef.current = e.clientY
       thresholdPassedRef.current = false
@@ -183,6 +217,13 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
           if (!isClosing) onClose()
         }}
         role="presentation"
+        style={
+          keyboardInset > 0
+            ? ({
+                '--keyboard-inset': `${keyboardInset}px`,
+              } as React.CSSProperties)
+            : undefined
+        }
       >
         <div
           ref={setMergedRef}

@@ -68,3 +68,31 @@ export function isMacOS(
   const ua = nav.userAgent || ''
   return /Macintosh|MacIntel/i.test(ua) || nav.platform === 'MacIntel'
 }
+
+/**
+ * Detects whether autofocusing text inputs on modal mount is appropriate.
+ * On iOS and touch devices with coarse pointers, autofocus immediately summons the
+ * software keyboard from the bottom of the screen, occluding the modal sheet before the
+ * user can view its title, description, or actions.
+ */
+export function shouldAutoFocusOnMount(
+  customWindow?: {
+    matchMedia?: (query: string) => { matches: boolean }
+  } | null,
+  customNavigator?: {
+    userAgent?: string
+    maxTouchPoints?: number
+    platform?: string
+  } | null,
+): boolean {
+  if (isIOS(customNavigator)) return false
+  const win =
+    customWindow === undefined
+      ? typeof window !== 'undefined'
+        ? window
+        : null
+      : customWindow
+  if (!win) return true
+  if (win.matchMedia?.('(pointer: coarse)')?.matches) return false
+  return true
+}
