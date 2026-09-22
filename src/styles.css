@@ -6973,7 +6973,7 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     background: var(--line-subtle);
   }
 
-  .demo-deck-modal .modal-close {
+  .modal-sheet .modal-close {
     display: none;
   }
 
