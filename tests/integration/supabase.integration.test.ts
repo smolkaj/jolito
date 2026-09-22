@@ -31,7 +31,7 @@ async function ensureLocalSupabaseRunning(): Promise<void> {
       `Local Supabase is offline or unreachable at ${SUPABASE_URL}.\n` +
         `Live integration tests require a running local Supabase stack.\n` +
         `Start local Supabase with:\n` +
-        `  npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor\n` +
+        `  npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,postgres-meta\n` +
         `Caused by: ${err instanceof Error ? err.message : String(err)}`,
       { cause: err },
     )

@@ -41,8 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
+        shardIndex: [1, 2, 3, 4, 5, 6]
+        shardTotal: [6]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -93,7 +93,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit
       - name: Start local Supabase
-        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+        run: npx supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor,edge-runtime,postgres-meta
       - name: Run pgTAP migration and RLS tests
         run: npm run test:db
       - name: Lint local database schema
