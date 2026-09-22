@@ -63,6 +63,13 @@ export function offlineShellPlugin(): Plugin {
           .replace('__JOLITO_BUILD_ID__', buildId)
           .replace('/* __JOLITO_BUILD_ASSETS__ */ []', JSON.stringify(files)),
       })
+      const version = computeAppVersion()
+      const ackSource = readFileSync('public/acknowledgements.html', 'utf8')
+      this.emitFile({
+        type: 'asset',
+        fileName: 'acknowledgements.html',
+        source: ackSource.replace('__JOLITO_VERSION__', version),
+      })
     },
   }
 }

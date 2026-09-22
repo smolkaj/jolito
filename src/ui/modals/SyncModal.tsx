@@ -18,7 +18,6 @@ import {
   SyncSpinnerIcon,
 } from '../icons'
 import { ModalSheet } from './ModalSheet'
-import { APP_VERSION } from '../../version'
 import { triggerManualUpdate } from '../../infrastructure/browser/offline-shell'
 
 export interface SyncModalProps {
@@ -296,31 +295,19 @@ export function SyncModal({
       role={statusMsg.type === 'error' ? 'alert' : 'status'}
     >
       <p>{statusMsg.message}</p>
-      {statusMsg.syncHelp && (
-        <div className="sync-update-actions">
-          {typeof location !== 'undefined' &&
-            location.protocol !== 'capacitor:' && (
-              <button
-                type="button"
-                className="sync-update-action-btn"
-                onClick={() => void triggerManualUpdate()}
-              >
-                Update &amp; Reload
-              </button>
-            )}
-          <a
-            href={
-              location.protocol === 'capacitor:'
-                ? 'https://joli.to/update'
-                : '/update'
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            How to update
-          </a>
-        </div>
-      )}
+      {statusMsg.syncHelp &&
+        typeof location !== 'undefined' &&
+        location.protocol !== 'capacitor:' && (
+          <div className="sync-update-actions">
+            <button
+              type="button"
+              className="sync-update-action-btn"
+              onClick={() => void triggerManualUpdate()}
+            >
+              Update &amp; Reload
+            </button>
+          </div>
+        )}
     </div>
   )
   const showDeletionError =
@@ -724,12 +711,6 @@ export function SyncModal({
         >
           Acknowledgements
         </a>
-        <span className="sync-modal-version-group">
-          <span className="sync-modal-legal-separator" aria-hidden="true">
-            ·
-          </span>{' '}
-          <span className="sync-modal-version">v{APP_VERSION}</span>
-        </span>
       </div>
     </ModalSheet>
   )

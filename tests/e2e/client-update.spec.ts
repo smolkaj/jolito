@@ -5,7 +5,6 @@ import { auditAccessibility } from './accessibility'
 for (const width of [320, 1280]) {
   test(`update guidance preserves an unfinished practice answer at ${width}px`, async ({
     page,
-    context,
   }, testInfo) => {
     const viewport = { width, height: width === 320 ? 568 : 900 }
     await page.setViewportSize(viewport)
@@ -63,33 +62,13 @@ for (const width of [320, 1280]) {
     )
     await page.locator('.connection-pill').click()
     await page.getByRole('button', { name: /sync now/i }).click()
-    const help = page.getByRole('link', { name: 'How to update' })
-    await expect(help).toBeVisible()
+    const updateButton = page.getByRole('button', { name: 'Update & Reload' })
+    await expect(updateButton).toBeVisible()
     expect((await auditAccessibility(page)).violations).toEqual([])
     await page.screenshot({
       path: testInfo.outputPath(`update-error-${width}.png`),
       fullPage: true,
     })
-    const opened = context.waitForEvent('page')
-    await help.click()
-    const guide = await opened
-    await guide.waitForLoadState()
-    await guide.setViewportSize(viewport)
-    await expect(
-      guide.getByRole('heading', { name: 'Update Jolito safely' }),
-    ).toBeVisible()
-    await expect(guide.locator('meta[name="jolito-build"]')).toHaveCount(0)
-    expect((await auditAccessibility(guide)).violations).toEqual([])
-    expect(
-      await guide.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true)
-    await guide.screenshot({
-      path: testInfo.outputPath(`update-guide-${width}.png`),
-      fullPage: true,
-    })
-    await guide.close()
     await page.getByRole('button', { name: /close/i }).click()
     await expect(answer).toHaveValue('unfinished answer')
     expect(
