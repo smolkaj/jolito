@@ -160,5 +160,5 @@ begin
 end;
 $$;
 
-revoke all on function public.get_telemetry_summary(integer) from public, anon;
-grant execute on function public.get_telemetry_summary(integer) to service_role, authenticated;
+revoke all on function public.get_telemetry_summary(integer) from public, anon, authenticated;
+grant execute on function public.get_telemetry_summary(integer) to service_role;

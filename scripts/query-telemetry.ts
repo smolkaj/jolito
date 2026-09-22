@@ -35,11 +35,17 @@ async function run(): Promise<void> {
     'https://xwqjelkfdcfzyxxblvhp.supabase.co'
   ).replace(/\/+$/, '')
 
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3cWplbGtmZGNmenl4eGJsdmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1Mzc2OTcsImV4cCI6MjEwMzExMzY5N30.cTfu8_OsfAuEBdwkpbfu1ftx9r0SJuUpqtoyMEmOTqw'
+  const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+
+  if (!supabaseKey) {
+    console.error(
+      'Error: SUPABASE_SERVICE_ROLE_KEY is required to query telemetry aggregates.',
+    )
+    console.error(
+      'Please configure SUPABASE_SERVICE_ROLE_KEY in .env.local or your environment.',
+    )
+    process.exit(1)
+  }
 
   const args = process.argv.slice(2)
   let days = 30

@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import type { DeviceType, Platform } from '../../domain/telemetry.ts'
+import { isIOS, isMacOS } from './environment.ts'
 
 export function detectPlatform(
   isNative = Capacitor.isNativePlatform(),
@@ -14,31 +15,37 @@ export function detectPlatform(
 }
 
 export function detectOperatingSystem(
-  userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '',
-  maxTouchPoints = typeof navigator !== 'undefined'
-    ? navigator.maxTouchPoints
-    : 0,
-  platform = typeof navigator !== 'undefined' ? navigator.platform : '',
+  customNavigator?: {
+    userAgent?: string
+    maxTouchPoints?: number
+    platform?: string
+  } | null,
 ): string {
-  if (
-    /iPad|iPhone|iPod/.test(userAgent) ||
-    (platform === 'MacIntel' && maxTouchPoints > 1)
-  ) {
+  const nav =
+    customNavigator === undefined
+      ? typeof navigator !== 'undefined'
+        ? navigator
+        : null
+      : customNavigator
+  if (!nav) return 'Other'
+
+  if (isIOS(nav)) {
     return 'iOS'
   }
-  if (/Android/.test(userAgent)) {
+  const ua = nav.userAgent || ''
+  if (/Android/.test(ua)) {
     return 'Android'
   }
-  if (/Macintosh|Mac OS X/.test(userAgent)) {
+  if (isMacOS(nav)) {
     return 'macOS'
   }
-  if (/Windows NT/.test(userAgent)) {
+  if (/Windows NT/.test(ua)) {
     return 'Windows'
   }
-  if (/CrOS/.test(userAgent)) {
+  if (/CrOS/.test(ua)) {
     return 'ChromeOS'
   }
-  if (/Linux/.test(userAgent)) {
+  if (/Linux/.test(ua)) {
     return 'Linux'
   }
   return 'Other'
@@ -51,38 +58,46 @@ export function detectBrowser(
   if (isNative) {
     return 'Capacitor'
   }
-  if (/Edg\//.test(userAgent)) {
+  if (/Edg\/|EdgiOS\//.test(userAgent)) {
     return 'Edge'
   }
-  if (/Firefox\//.test(userAgent)) {
+  if (/Firefox\/|FxiOS\//.test(userAgent)) {
     return 'Firefox'
   }
-  if (/Chrome\//.test(userAgent) && !/Edg\//.test(userAgent)) {
+  if (/Chrome\/|CriOS\//.test(userAgent) && !/Edg\/|EdgiOS\//.test(userAgent)) {
     return 'Chrome'
   }
-  if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent)) {
+  if (/Safari\//.test(userAgent) && !/Chrome\/|CriOS\//.test(userAgent)) {
     return 'Safari'
   }
   return 'Other'
 }
 
 export function detectDeviceType(
-  userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '',
-  maxTouchPoints = typeof navigator !== 'undefined'
-    ? navigator.maxTouchPoints
-    : 0,
-  platform = typeof navigator !== 'undefined' ? navigator.platform : '',
+  customNavigator?: {
+    userAgent?: string
+    maxTouchPoints?: number
+    platform?: string
+  } | null,
 ): DeviceType {
-  if (
-    /iPad/.test(userAgent) ||
-    (platform === 'MacIntel' && maxTouchPoints > 1)
-  ) {
+  const nav =
+    customNavigator === undefined
+      ? typeof navigator !== 'undefined'
+        ? navigator
+        : null
+      : customNavigator
+  if (!nav) return 'unknown'
+
+  const ua = nav.userAgent || ''
+  const isTablet =
+    /iPad/.test(ua) ||
+    (nav.platform === 'MacIntel' && (nav.maxTouchPoints || 0) > 1) ||
+    (/Android/.test(ua) && !/Mobile/.test(ua))
+
+  if (isTablet) {
     return 'tablet'
   }
-  if (/Android/.test(userAgent) && !/Mobile/.test(userAgent)) {
-    return 'tablet'
-  }
-  if (/iPhone|iPod|Mobile/.test(userAgent) || /Android/.test(userAgent)) {
+  if (/iPhone|iPod|Mobile/.test(ua) || /Android/.test(ua)) {
     return 'mobile'
   }
   return 'desktop'

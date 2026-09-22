@@ -23,41 +23,62 @@ describe('client-detection', () => {
 
   describe('detectOperatingSystem', () => {
     it('detects iOS from iPhone user agent', () => {
-      const ua =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15'
-      expect(detectOperatingSystem(ua)).toBe('iOS')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15',
+      }
+      expect(detectOperatingSystem(nav)).toBe('iOS')
     })
 
     it('detects iOS from modern iPad with desktop UA', () => {
-      const ua =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15'
-      expect(detectOperatingSystem(ua, 5, 'MacIntel')).toBe('iOS')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+        maxTouchPoints: 5,
+        platform: 'MacIntel',
+      }
+      expect(detectOperatingSystem(nav)).toBe('iOS')
     })
 
     it('detects macOS for standard Mac', () => {
-      const ua =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      expect(detectOperatingSystem(ua, 0, 'MacIntel')).toBe('macOS')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        maxTouchPoints: 0,
+        platform: 'MacIntel',
+      }
+      expect(detectOperatingSystem(nav)).toBe('macOS')
     })
 
     it('detects Windows', () => {
-      const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      expect(detectOperatingSystem(ua)).toBe('Windows')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      }
+      expect(detectOperatingSystem(nav)).toBe('Windows')
     })
 
     it('detects Android', () => {
-      const ua = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36'
-      expect(detectOperatingSystem(ua)).toBe('Android')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
+      }
+      expect(detectOperatingSystem(nav)).toBe('Android')
     })
 
     it('detects Linux', () => {
-      const ua = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
-      expect(detectOperatingSystem(ua)).toBe('Linux')
+      const nav = {
+        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
+      }
+      expect(detectOperatingSystem(nav)).toBe('Linux')
     })
 
     it('detects ChromeOS', () => {
-      const ua = 'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36'
-      expect(detectOperatingSystem(ua)).toBe('ChromeOS')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36',
+      }
+      expect(detectOperatingSystem(nav)).toBe('ChromeOS')
     })
   })
 
@@ -78,9 +99,21 @@ describe('client-detection', () => {
       expect(detectBrowser(ua, false)).toBe('Chrome')
     })
 
+    it('detects Chrome on iOS (CriOS)', () => {
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1'
+      expect(detectBrowser(ua, false)).toBe('Chrome')
+    })
+
     it('detects Firefox', () => {
       const ua =
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0'
+      expect(detectBrowser(ua, false)).toBe('Firefox')
+    })
+
+    it('detects Firefox on iOS (FxiOS)', () => {
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 FxiOS/122.0 Mobile/15E148 Safari/605.1.15'
       expect(detectBrowser(ua, false)).toBe('Firefox')
     })
 
@@ -89,25 +122,41 @@ describe('client-detection', () => {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
       expect(detectBrowser(ua, false)).toBe('Edge')
     })
+
+    it('detects Edge on iOS (EdgiOS)', () => {
+      const ua =
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 EdgiOS/120.0.2210.126 Mobile/15E148 Safari/605.1.15'
+      expect(detectBrowser(ua, false)).toBe('Edge')
+    })
   })
 
   describe('detectDeviceType', () => {
     it('detects mobile from iPhone UA', () => {
-      const ua =
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15'
-      expect(detectDeviceType(ua)).toBe('mobile')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15',
+      }
+      expect(detectDeviceType(nav)).toBe('mobile')
     })
 
     it('detects tablet from iPad UA or MacIntel with touch', () => {
-      const ua =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15'
-      expect(detectDeviceType(ua, 5, 'MacIntel')).toBe('tablet')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+        maxTouchPoints: 5,
+        platform: 'MacIntel',
+      }
+      expect(detectDeviceType(nav)).toBe('tablet')
     })
 
     it('detects desktop from desktop Chrome', () => {
-      const ua =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      expect(detectDeviceType(ua, 0, 'MacIntel')).toBe('desktop')
+      const nav = {
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        maxTouchPoints: 0,
+        platform: 'MacIntel',
+      }
+      expect(detectDeviceType(nav)).toBe('desktop')
     })
   })
 })

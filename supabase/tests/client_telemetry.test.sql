@@ -1,5 +1,5 @@
 begin;
-select plan(11);
+select plan(12);
 
 -- 1. Test basic recording via record_client_activity
 select lives_ok(
@@ -59,11 +59,19 @@ select throws_ok(
   'Anon cannot execute get_telemetry_summary'
 );
 
--- Authenticated and service_role can access summary
+-- Authenticated role cannot access business summary
 set local role authenticated;
+select throws_ok(
+  $$ select public.get_telemetry_summary(30) $$,
+  'permission denied for function get_telemetry_summary',
+  'Authenticated cannot execute get_telemetry_summary'
+);
+
+-- service_role can access summary
+set local role service_role;
 select lives_ok(
   $$ select public.get_telemetry_summary(30) $$,
-  'Authenticated can execute get_telemetry_summary'
+  'service_role can execute get_telemetry_summary'
 );
 
 select is(
