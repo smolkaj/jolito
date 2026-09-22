@@ -36,3 +36,22 @@ void test('AppDelegate configures AVAudioSession with playback and mixWithOthers
     /applicationWillEnterForeground[\s\S]*?audioSession\.setCategory\(\.playback,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
   )
 })
+
+void test('SceneDelegate monitors GameController hardware keyboard connections and dispatches to web view', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(sceneDelegate, /import GameController/)
+  assert.match(
+    sceneDelegate,
+    /NotificationCenter\.default\.addObserver[\s\S]*?\.GCKeyboardDidConnect/,
+  )
+  assert.match(
+    sceneDelegate,
+    /NotificationCenter\.default\.addObserver[\s\S]*?\.GCKeyboardDidDisconnect/,
+  )
+  assert.match(sceneDelegate, /GCKeyboard\.coalesced/)
+  assert.match(sceneDelegate, /jolito:hardware-keyboard/)
+})
