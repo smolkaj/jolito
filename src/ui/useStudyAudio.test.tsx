@@ -99,7 +99,7 @@ describe('useStudyAudio', () => {
     expect(result.current.audioUnavailable).toBe(true)
   })
 
-  it('autoplays prompt audio with turn seed when view is review and sets playing indicator', () => {
+  it('autoplays prompt audio with turn seed when view is review and sets playing indicator', async () => {
     let capturedOnEnded: (() => void) | undefined
     speakMock.mockImplementation((_t, _l, opts) => {
       capturedOnEnded = opts?.onEnded
@@ -115,6 +115,8 @@ describe('useStudyAudio', () => {
         view: 'review',
       }),
     )
+
+    await act(async () => {})
 
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn3',
@@ -132,7 +134,7 @@ describe('useStudyAudio', () => {
     expect(result.current.isAudioPlaying).toBe(false)
   })
 
-  it('does not autoplay when view is not review or autoplayPrompt is false', () => {
+  it('does not autoplay when view is not review or autoplayPrompt is false', async () => {
     renderHook(() =>
       useStudyAudio({
         speaker: mockSpeaker,
@@ -142,6 +144,7 @@ describe('useStudyAudio', () => {
         view: 'home',
       }),
     )
+    await act(async () => {})
     expect(speakMock).not.toHaveBeenCalled()
 
     renderHook(() =>
@@ -154,10 +157,11 @@ describe('useStudyAudio', () => {
         autoplayPrompt: false,
       }),
     )
+    await act(async () => {})
     expect(speakMock).not.toHaveBeenCalled()
   })
 
-  it('does not re-autoplay when card object reference changes but content and turn seed remain identical', () => {
+  it('does not re-autoplay when card object reference changes but content and turn seed remain identical', async () => {
     const { rerender } = renderHook(
       ({ card }) =>
         useStudyAudio({
@@ -170,10 +174,12 @@ describe('useStudyAudio', () => {
       { initialProps: { card: mockCard } },
     )
 
+    await act(async () => {})
     expect(speakMock).toHaveBeenCalledTimes(1)
 
     // New object reference with identical primitive fields (e.g. background sync)
     rerender({ card: { ...mockCard } })
+    await act(async () => {})
     expect(speakMock).toHaveBeenCalledTimes(1)
 
     // Changed review count (turn seed change)
@@ -183,6 +189,7 @@ describe('useStudyAudio', () => {
         schedule: { ...mockCard.schedule, reviews: 4 },
       },
     })
+    await act(async () => {})
     expect(speakMock).toHaveBeenCalledTimes(2)
     expect(speakMock).toHaveBeenLastCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn4',
@@ -780,5 +787,99 @@ describe('useStudyAudio', () => {
     // Must be false on the new card
     expect(result.current.isPlayingPrompt).toBe(false)
     expect(result.current.isAudioPlaying).toBe(false)
+  })
+
+  it('autoplays and sets isPlayingPrompt when advancing from card 1 to card 2', async () => {
+    let card = mockCard
+    const { result, rerender } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: card,
+        view: 'review',
+        autoplayPrompt: true,
+      }),
+    )
+
+    await act(async () => {})
+    expect(speakMock).toHaveBeenCalledTimes(1)
+    expect(result.current.isPlayingPrompt).toBe(true)
+
+    // Advance to card 2
+    card = {
+      ...mockCard,
+      id: 'card-2',
+      prompt: 'perro',
+      answer: 'dog',
+      schedule: { ...mockCard.schedule, reviews: 0 },
+    }
+    rerender()
+    await act(async () => {})
+
+    // Card 2 must successfully autoplay and pulse its prompt button
+    expect(speakMock).toHaveBeenCalledTimes(2)
+    expect(speakMock).toHaveBeenLastCalledWith('perro', 'es-MX', {
+      cardSeed: 'card-2:turn0',
+      explicit: false,
+      onEnded: anyOnEnded,
+    })
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
+  })
+
+  it('autoplays and sets isPlayingPrompt when unpausing in review view', async () => {
+    let paused = true
+    const { result, rerender } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        paused,
+        autoplayPrompt: true,
+      }),
+    )
+
+    await act(async () => {})
+    expect(speakMock).not.toHaveBeenCalled()
+    expect(result.current.isPlayingPrompt).toBe(false)
+
+    // Unpause (e.g. user closes modal)
+    paused = false
+    rerender()
+    await act(async () => {})
+
+    expect(speakMock).toHaveBeenCalledTimes(1)
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
+  })
+
+  it('autoplays and sets isPlayingPrompt when navigating into review view', async () => {
+    let view = 'home'
+    const { result, rerender } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view,
+        autoplayPrompt: true,
+      }),
+    )
+
+    await act(async () => {})
+    expect(speakMock).not.toHaveBeenCalled()
+    expect(result.current.isPlayingPrompt).toBe(false)
+
+    // Navigate to review
+    view = 'review'
+    rerender()
+    await act(async () => {})
+
+    expect(speakMock).toHaveBeenCalledTimes(1)
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
   })
 })

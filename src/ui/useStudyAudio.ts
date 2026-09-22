@@ -42,23 +42,11 @@ export function useStudyAudio({
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !speaker.supported(),
   )
-  const currentCardId = currentCard?.id
-  const currentPrompt = currentCard?.prompt
-  const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
-  const currentReviews = currentCard?.schedule.reviews ?? 0
-
-  const isAutoplayEligible =
-    view === 'review' &&
-    !paused &&
-    autoplayPrompt &&
-    Boolean(currentCardId) &&
-    Boolean(currentPrompt) &&
-    speaker.supported()
 
   const [activeTarget, setActiveTarget] = useState<'prompt' | 'answer' | null>(
-    () => (isAutoplayEligible ? 'prompt' : null),
+    null,
   )
-  const [isAudioPlaying, setIsAudioPlaying] = useState(() => isAutoplayEligible)
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
   const playGenerationRef = useRef(0)
   const revealAudioTimerRef = useRef<number | null>(null)
 
@@ -186,6 +174,11 @@ export function useStudyAudio({
     [cancelPendingAudio, haptics, sounds, speaker],
   )
 
+  const currentCardId = currentCard?.id
+  const currentPrompt = currentCard?.prompt
+  const currentPromptLocale = currentCard ? localeForPrompt(currentCard) : ''
+  const currentReviews = currentCard?.schedule.reviews ?? 0
+
   // Autoplay prompt audio when entering/advancing in review view
   useEffect(() => {
     if (
@@ -197,30 +190,19 @@ export function useStudyAudio({
     ) {
       return
     }
-    const currentPlayGen = ++playGenerationRef.current
-    const speakOptions: SpeakerOptions = {
-      cardSeed: `${currentCardId}:turn${currentReviews}`,
-      explicit: false,
-      onEnded: () => {
-        if (playGenerationRef.current === currentPlayGen) {
-          setActiveTarget(null)
-          setIsAudioPlaying(false)
-        }
-      },
-    }
-    const played = speaker.speak(
-      currentPrompt,
-      currentPromptLocale,
-      speakOptions,
-    )
-    if (!played) {
-      if (playGenerationRef.current === currentPlayGen) {
-        setActiveTarget(null)
-        setIsAudioPlaying(false)
-      }
-      setAudioUnavailable(true)
-    } else {
-      setAudioUnavailable(false)
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) return
+      playAudio(
+        currentPrompt,
+        currentPromptLocale,
+        `${currentCardId}:turn${currentReviews}`,
+        { explicit: false },
+        'prompt',
+      )
+    })
+    return () => {
+      cancelled = true
     }
   }, [
     paused,
@@ -229,7 +211,7 @@ export function useStudyAudio({
     currentPrompt,
     currentPromptLocale,
     currentReviews,
-    speaker,
+    playAudio,
     view,
   ])
 
@@ -244,8 +226,8 @@ export function useStudyAudio({
   }
   if (currentCardId !== prevCardId) {
     setPrevCardId(currentCardId)
-    setActiveTarget(isAutoplayEligible ? 'prompt' : null)
-    setIsAudioPlaying(isAutoplayEligible)
+    setActiveTarget(null)
+    setIsAudioPlaying(false)
   }
 
   // A dialog interrupts playback; the next interaction can resume normally.
