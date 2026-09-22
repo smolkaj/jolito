@@ -148,3 +148,56 @@ test('gracefully falls back to speech synthesis when TTS network fails or offlin
   const calls = await page.evaluate(() => window.__speechSynthesisCalls ?? [])
   expect(calls[0]?.text).toBe('aguacate')
 })
+
+test('never falls back to robotic speech synthesis when editing a card mid-practice and resuming review', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__speechSynthesisCalls = []
+    if (window.speechSynthesis) {
+      const orig = window.speechSynthesis.speak.bind(window.speechSynthesis)
+      window.speechSynthesis.speak = function (
+        utterance: SpeechSynthesisUtterance,
+      ) {
+        window.__speechSynthesisCalls?.push({
+          text: utterance.text,
+          lang: utterance.lang,
+        })
+        return orig(utterance)
+      }
+    }
+  })
+
+  // Verify prefetch and autoplay without artificial route delay
+
+  await page.goto('/')
+
+  // Start review
+  const practiceBtn = page.getByRole('button', { name: /^practice$/i })
+  await expect(practiceBtn).toBeVisible()
+  await practiceCards(page)
+
+  // Wait for card to mount
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+  // Open in-study edit modal
+  const editBtn = page.getByRole('button', { name: /edit card/i })
+  await expect(editBtn).toBeVisible()
+  await editBtn.click()
+
+  // Modify prompt to a brand new phrase
+  const promptInput = page.getByLabel(/mexican spanish \(prompt\)/i)
+  await expect(promptInput).toBeVisible()
+  await promptInput.fill('el ajolote nuevo')
+
+  // Save changes
+  const saveBtn = page.getByRole('button', { name: /save changes/i })
+  await saveBtn.click()
+
+  // Wait for modal to dismiss and autoplay to fire for the edited prompt
+  await page.waitForTimeout(600)
+
+  // Verify speech synthesis was never called
+  const calls = await page.evaluate(() => window.__speechSynthesisCalls ?? [])
+  expect(calls).toEqual([])
+})
