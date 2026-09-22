@@ -773,3 +773,131 @@ describe('sync update recovery', () => {
     expect(screen.queryByRole('button', { name: 'Update & Reload' })).toBeNull()
   })
 })
+
+describe('SyncModal iOS Keyboard and Autofocus Avoidance', () => {
+  const originalNavigator = window.navigator
+
+  afterEach(() => {
+    Object.defineProperty(window, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
+  })
+
+  it('disables autofocus on iOS for email input to prevent software keyboard occlusion', () => {
+    Object.defineProperty(window, 'navigator', {
+      value: {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const auth = new MockAuthService()
+    render(
+      <SyncModal
+        user={null}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    // In React 19, boolean autoFocus false does not set autofocus attribute in DOM
+    expect(emailInput.getAttribute('autofocus')).toBeNull()
+    expect(document.activeElement).not.toBe(emailInput)
+  })
+
+  it('disables autofocus on iOS for OTP input after magic link is sent', async () => {
+    Object.defineProperty(window, 'navigator', {
+      value: {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const auth = new MockAuthService()
+    render(
+      <SyncModal
+        user={null}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    fireEvent.change(emailInput, { target: { value: 'learner@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const otpInput = await screen.findByLabelText(
+      /6-digit code or sign-in link/i,
+    )
+    expect(otpInput.getAttribute('autofocus')).toBeNull()
+    expect(document.activeElement).not.toBe(otpInput)
+  })
+
+  it('enables autofocus on desktop environments with fine pointer', () => {
+    const auth = new MockAuthService()
+    render(
+      <SyncModal
+        user={null}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    expect(document.activeElement).toBe(emailInput)
+  })
+
+  it('does not autofocus delete confirmation input on iOS', () => {
+    vi.useFakeTimers()
+    Object.defineProperty(window, 'navigator', {
+      value: {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      },
+      configurable: true,
+      writable: true,
+    })
+
+    const auth = new MockAuthService()
+    auth.user = { id: 'user-del-ios', email: 'delete-me@example.com' }
+    render(
+      <SyncModal
+        user={auth.user}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /delete cloud account & data/i }),
+    )
+
+    const deleteInput = screen.getByPlaceholderText('DELETE')
+    vi.advanceTimersByTime(50)
+    expect(document.activeElement).not.toBe(deleteInput)
+    vi.useRealTimers()
+  })
+})

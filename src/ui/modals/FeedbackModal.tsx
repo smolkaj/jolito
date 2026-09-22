@@ -5,6 +5,7 @@ import type {
   HapticsPlayer,
 } from '../../application/ports'
 import type { View } from '../../navigation'
+import { shouldAutoFocusOnMount } from '../../infrastructure/browser/environment'
 import { APP_VERSION } from '../../version'
 import { ModalSheet } from './ModalSheet'
 
@@ -29,7 +30,7 @@ function FeedbackModalInner({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (!isSuccess) {
+    if (!isSuccess && shouldAutoFocusOnMount()) {
       textareaRef.current?.focus()
     }
   }, [isSuccess])

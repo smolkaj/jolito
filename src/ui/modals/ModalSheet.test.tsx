@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ModalSheet } from './ModalSheet'
 import type { HapticsPlayer } from '../../application/ports'
@@ -202,5 +202,88 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
       }
       vi.useRealTimers()
     }
+  })
+
+  it('updates --keyboard-inset style on backdrop when visualViewport reports keyboard occlusion', () => {
+    type Listener = () => void
+    const listeners: Record<string, Listener[]> = {}
+    const mockVisualViewport = {
+      height: 500,
+      offsetTop: 0,
+      addEventListener: vi.fn((event: string, cb: Listener) => {
+        listeners[event] = listeners[event] || []
+        listeners[event].push(cb)
+      }),
+      removeEventListener: vi.fn((event: string, cb: Listener) => {
+        listeners[event] = (listeners[event] || []).filter((l) => l !== cb)
+      }),
+    }
+
+    const originalInnerHeight = window.innerHeight
+    const hadVisualViewport = 'visualViewport' in window
+    Object.defineProperty(window, 'innerHeight', {
+      writable: true,
+      configurable: true,
+      value: 844,
+    })
+    Object.defineProperty(window, 'visualViewport', {
+      writable: true,
+      configurable: true,
+      value: mockVisualViewport,
+    })
+
+    try {
+      const { container, rerender } = render(
+        <ModalSheet isOpen={true} onClose={vi.fn()}>
+          <p>Sheet with keyboard awareness</p>
+        </ModalSheet>,
+      )
+
+      const backdrop = container.querySelector('.modal-backdrop') as HTMLElement
+      // 844 - (0 + 500) = 344px keyboard inset
+      expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('344px')
+      expect(backdrop).toHaveClass('is-keyboard-open')
+
+      // Simulate keyboard closing: visualViewport.height becomes 844
+      mockVisualViewport.height = 844
+      act(() => {
+        listeners['resize']?.forEach((cb) => cb())
+      })
+      expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('')
+      expect(backdrop).not.toHaveClass('is-keyboard-open')
+
+      // Simulate modal close: inset resets
+      rerender(
+        <ModalSheet isOpen={false} onClose={vi.fn()}>
+          <p>Sheet closed</p>
+        </ModalSheet>,
+      )
+    } finally {
+      Object.defineProperty(window, 'innerHeight', {
+        writable: true,
+        configurable: true,
+        value: originalInnerHeight,
+      })
+      if (!hadVisualViewport) {
+        delete (window as { visualViewport?: unknown }).visualViewport
+      }
+    }
+  })
+
+  it('blurs active element to dismiss software keyboard when user touches the grabber bar', () => {
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={vi.fn()}>
+        <input data-testid="test-input" />
+      </ModalSheet>,
+    )
+
+    const input = screen.getByTestId('test-input')
+    input.focus()
+    expect(document.activeElement).toBe(input)
+
+    const grabber = container.querySelector('.sheet-grabber-zone')!
+    fireEvent.pointerDown(grabber, { clientY: 100, button: 0 })
+
+    expect(document.activeElement).not.toBe(input)
   })
 })
