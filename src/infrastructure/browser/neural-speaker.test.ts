@@ -2350,4 +2350,114 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
       vi.useRealTimers()
     }
   })
+
+  describe('synchronous pre-activation and audio session elevation contract', () => {
+    it('calls preactivateContext synchronously during explicit speak for uncached phrase', () => {
+      const localEngine = new NeuralVoiceEngine()
+      const localFallback: Speaker = {
+        supported: vi.fn().mockReturnValue(true),
+        speak: vi.fn().mockReturnValue(true),
+      }
+      const preactivateSpy = vi.spyOn(localEngine, 'preactivateContext')
+      vi.spyOn(localEngine, 'hasAudio').mockReturnValue(false)
+      vi.spyOn(localEngine, 'isAudioInFlight').mockReturnValue(false)
+      vi.spyOn(localEngine, 'fetchAndCacheAudio').mockResolvedValue(true)
+      vi.spyOn(localEngine, 'awaitAudio').mockResolvedValue(true)
+      vi.spyOn(localEngine, 'playAudio').mockReturnValue(true)
+
+      const speaker = new LayeredNeuralSpeaker({
+        neuralEngine: localEngine,
+        fallbackSpeaker: localFallback,
+      })
+
+      speaker.speak('palabra nueva', 'es-MX', { explicit: true })
+
+      // preactivateContext MUST be called synchronously within the user gesture handler
+      expect(preactivateSpy).toHaveBeenCalledWith(true)
+      localEngine.destroy()
+    })
+
+    it('preactivateContext elevates category to playback and resumes suspended context', () => {
+      const mockAudioSession = { type: 'ambient' }
+      Object.defineProperty(navigator, 'audioSession', {
+        value: mockAudioSession,
+        configurable: true,
+      })
+
+      const resumeSpy = vi.fn().mockResolvedValue(undefined)
+      const mockCtx = {
+        state: 'suspended',
+        resume: resumeSpy,
+        destination: {},
+        createBufferSource: vi.fn(),
+      }
+      const origAudioContext = window.AudioContext
+      window.AudioContext = vi.fn().mockImplementation(function () {
+        return mockCtx
+      }) as typeof AudioContext
+
+      try {
+        const engine = new NeuralVoiceEngine()
+        engine.preactivateContext(true)
+
+        expect(mockAudioSession.type).toBe('playback')
+        expect(resumeSpy).toHaveBeenCalled()
+        engine.destroy()
+      } finally {
+        window.AudioContext = origAudioContext
+      }
+    })
+
+    it('does not demote audio session or fire onEnded when async explicit speak is superseded', async () => {
+      const mockAudioSession = { type: 'ambient' }
+      Object.defineProperty(navigator, 'audioSession', {
+        value: mockAudioSession,
+        configurable: true,
+      })
+
+      const localEngine = new NeuralVoiceEngine()
+      const localFallback: Speaker = {
+        supported: vi.fn().mockReturnValue(true),
+        speak: vi.fn().mockReturnValue(true),
+      }
+
+      const awaitResolvers: Array<(ready: boolean) => void> = []
+      vi.spyOn(localEngine, 'hasAudio').mockReturnValue(false)
+      vi.spyOn(localEngine, 'isAudioInFlight').mockReturnValue(false)
+      vi.spyOn(localEngine, 'fetchAndCacheAudio').mockResolvedValue(true)
+      vi.spyOn(localEngine, 'awaitAudio').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            awaitResolvers.push(resolve)
+          }),
+      )
+
+      const speaker = new LayeredNeuralSpeaker({
+        neuralEngine: localEngine,
+        fallbackSpeaker: localFallback,
+      })
+
+      const onEndedFirst = vi.fn()
+      speaker.speak('phrase 1', 'es-MX', {
+        explicit: true,
+        onEnded: onEndedFirst,
+      })
+      expect(mockAudioSession.type).toBe('playback')
+      expect(awaitResolvers).toHaveLength(1)
+
+      // Phrase 2 arrives before Phrase 1 resolves, advancing speakGeneration with explicit=true
+      speaker.speak('phrase 2', 'es-MX', { explicit: true })
+      expect(mockAudioSession.type).toBe('playback')
+      expect(awaitResolvers).toHaveLength(2)
+
+      // Phrase 1 resolves late while Phrase 2 is still in-flight
+      awaitResolvers[0]!(true)
+      await Promise.resolve()
+
+      // Obsolete Phrase 1 must NOT invoke onEnded or clobber Phrase 2's playback category
+      expect(onEndedFirst).not.toHaveBeenCalled()
+      expect(mockAudioSession.type).toBe('playback')
+      localEngine.destroy()
+    })
+  })
 })

@@ -2,18 +2,21 @@ export function AudioButton({
   label,
   onClick,
   prompt = false,
+  playing = false,
 }: {
   label: string
   onClick: () => void
   prompt?: boolean
+  playing?: boolean
 }) {
   return (
     <button
-      className="audio-button"
+      className={`audio-button ${playing ? 'is-playing' : ''}`.trim()}
       type="button"
       aria-label={label}
       title={label}
       data-prompt-audio={prompt || undefined}
+      data-playing={playing || undefined}
       onClick={onClick}
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">

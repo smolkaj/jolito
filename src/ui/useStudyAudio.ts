@@ -42,14 +42,26 @@ export function useStudyAudio({
   const [audioUnavailable, setAudioUnavailable] = useState(
     () => !speaker.supported(),
   )
+  const [activeTarget, setActiveTarget] = useState<'prompt' | 'answer' | null>(
+    null,
+  )
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const playGenerationRef = useRef(0)
   const revealAudioTimerRef = useRef<number | null>(null)
 
-  const cancelPendingAudio = useCallback(() => {
+  const clearPendingTimer = useCallback(() => {
     if (revealAudioTimerRef.current !== null) {
       window.clearTimeout(revealAudioTimerRef.current)
       revealAudioTimerRef.current = null
     }
   }, [])
+
+  const cancelPendingAudio = useCallback(() => {
+    clearPendingTimer()
+    playGenerationRef.current++
+    setActiveTarget(null)
+    setIsAudioPlaying(false)
+  }, [clearPendingTimer])
 
   const playAudio = useCallback(
     (
@@ -57,18 +69,38 @@ export function useStudyAudio({
       locale: string,
       cardSeed?: string,
       options?: SpeakerOptions,
+      target: 'prompt' | 'answer' | null = null,
     ) => {
-      cancelPendingAudio()
+      clearPendingTimer()
+      const currentPlayGen = ++playGenerationRef.current
+      setActiveTarget(target)
+      setIsAudioPlaying(true)
+
       const speakOptions: SpeakerOptions = {
         explicit: true,
         ...options,
         ...(cardSeed ? { cardSeed } : {}),
+        onEnded: () => {
+          if (playGenerationRef.current === currentPlayGen) {
+            setActiveTarget(null)
+            setIsAudioPlaying(false)
+          }
+          options?.onEnded?.()
+        },
       }
       const played = speaker.speak(text, locale, speakOptions)
-      setAudioUnavailable(!played)
+      if (!played) {
+        if (playGenerationRef.current === currentPlayGen) {
+          setActiveTarget(null)
+          setIsAudioPlaying(false)
+        }
+        setAudioUnavailable(true)
+      } else {
+        setAudioUnavailable(false)
+      }
       return played
     },
-    [cancelPendingAudio, speaker],
+    [clearPendingTimer, speaker],
   )
 
   const playPromptAudio = useCallback(
@@ -80,6 +112,7 @@ export function useStudyAudio({
         localeForPrompt(targetCard),
         cardReviewSeed(targetCard),
         { explicit: true, ...options },
+        'prompt',
       )
     },
     [currentCard, playAudio],
@@ -94,6 +127,7 @@ export function useStudyAudio({
         localeForAnswer(targetCard),
         cardReviewSeed(targetCard),
         { explicit: true, ...options },
+        'answer',
       )
     },
     [currentCard, playAudio],
@@ -108,12 +142,7 @@ export function useStudyAudio({
       const targetCard = card ?? currentCard
       if (targetCard && typeof window !== 'undefined') {
         revealAudioTimerRef.current = window.setTimeout(() => {
-          playAudio(
-            targetCard.answer,
-            localeForAnswer(targetCard),
-            cardReviewSeed(targetCard),
-            { explicit: false },
-          )
+          playAnswerAudio(targetCard, { explicit: false })
           revealAudioTimerRef.current = null
         }, staggerMs)
       }
@@ -122,7 +151,7 @@ export function useStudyAudio({
       cancelPendingAudio,
       currentCard,
       haptics,
-      playAudio,
+      playAnswerAudio,
       sounds,
       speaker,
       staggerMs,
@@ -176,16 +205,31 @@ export function useStudyAudio({
     view,
   ])
 
+  const [prevPaused, setPrevPaused] = useState(paused)
+  const [prevCardId, setPrevCardId] = useState(currentCardId)
+  if (paused !== prevPaused) {
+    setPrevPaused(paused)
+    if (paused) {
+      setActiveTarget(null)
+      setIsAudioPlaying(false)
+    }
+  }
+  if (currentCardId !== prevCardId) {
+    setPrevCardId(currentCardId)
+    setActiveTarget(null)
+    setIsAudioPlaying(false)
+  }
+
   // A dialog interrupts playback; the next interaction can resume normally.
   useEffect(() => {
     if (!paused) return
-    cancelPendingAudio()
+    clearPendingTimer()
+    playGenerationRef.current++
     speaker.stop?.()
-  }, [paused, cancelPendingAudio, speaker])
+  }, [paused, clearPendingTimer, speaker])
 
   // One lifecycle for both learning modes and manual audio outside practice.
   useEffect(() => {
-    cancelPendingAudio()
     return () => {
       cancelPendingAudio()
       speaker.stop?.()
@@ -200,5 +244,8 @@ export function useStudyAudio({
     playAnswerAudio,
     playRevealSensory,
     playGradeSensory,
+    isPlayingPrompt: !paused && activeTarget === 'prompt',
+    isPlayingAnswer: !paused && activeTarget === 'answer',
+    isAudioPlaying: !paused && isAudioPlaying,
   }
 }

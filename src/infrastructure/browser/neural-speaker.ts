@@ -1084,6 +1084,20 @@ export class NeuralVoiceEngine {
     return this.inFlightPrewarm
   }
 
+  preactivateContext(explicit = false): void {
+    if (this.isDestroyed || typeof window === 'undefined') return
+    this.cancelIdleSuspend()
+    configureAudioSessionCategory(explicit ? 'playback' : 'ambient')
+    const ctx = this.initContext()
+    if (
+      ctx &&
+      (ctx.state as string) !== 'running' &&
+      typeof ctx.resume === 'function'
+    ) {
+      void ctx.resume().catch(() => {})
+    }
+  }
+
   private playBuffer(
     buffer: AudioBuffer,
     onEnded?: () => void,
@@ -1281,6 +1295,9 @@ export class LayeredNeuralSpeaker implements Speaker {
       (typeof navigator === 'undefined' || navigator.onLine !== false)
 
     if (isInFlight || isDiskCached || isExplicitOnline) {
+      if (options?.explicit) {
+        this.neuralEngine.preactivateContext(true)
+      }
       if (!isInFlight) {
         // Trigger hydration from disk/network into memory
         void this.neuralEngine
@@ -1298,7 +1315,9 @@ export class LayeredNeuralSpeaker implements Speaker {
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
         .then((ready) => {
-          if (this.speakGeneration !== currentGen) return
+          if (this.speakGeneration !== currentGen) {
+            return
+          }
           if (ready) {
             const played = this.neuralEngine.playAudio(
               cleanText,
@@ -1307,15 +1326,47 @@ export class LayeredNeuralSpeaker implements Speaker {
               options,
             )
             if (!played) {
-              this.speakFallback(cleanText, normLocale, fallbackOptions)
+              const fallbackPlayed = this.speakFallback(
+                cleanText,
+                normLocale,
+                fallbackOptions,
+              )
+              if (!fallbackPlayed) {
+                if (options?.explicit) {
+                  configureAudioSessionCategory('ambient')
+                }
+                options?.onEnded?.()
+              }
             }
           } else {
-            this.speakFallback(cleanText, normLocale, fallbackOptions)
+            const fallbackPlayed = this.speakFallback(
+              cleanText,
+              normLocale,
+              fallbackOptions,
+            )
+            if (!fallbackPlayed) {
+              if (options?.explicit) {
+                configureAudioSessionCategory('ambient')
+              }
+              options?.onEnded?.()
+            }
           }
         })
         .catch(() => {
-          if (this.speakGeneration !== currentGen) return
-          this.speakFallback(cleanText, normLocale, fallbackOptions)
+          if (this.speakGeneration !== currentGen) {
+            return
+          }
+          const fallbackPlayed = this.speakFallback(
+            cleanText,
+            normLocale,
+            fallbackOptions,
+          )
+          if (!fallbackPlayed) {
+            if (options?.explicit) {
+              configureAudioSessionCategory('ambient')
+            }
+            options?.onEnded?.()
+          }
         })
       return true
     }
@@ -1330,7 +1381,15 @@ export class LayeredNeuralSpeaker implements Speaker {
 
     this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
 
-    return this.speakFallback(cleanText, normLocale, fallbackOptions)
+    const fallbackPlayed = this.speakFallback(
+      cleanText,
+      normLocale,
+      fallbackOptions,
+    )
+    if (!fallbackPlayed) {
+      options?.onEnded?.()
+    }
+    return fallbackPlayed
   }
 
   private prehydrateAlternateVoice(
