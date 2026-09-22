@@ -295,10 +295,9 @@ export function SyncModal({
       role={statusMsg.type === 'error' ? 'alert' : 'status'}
     >
       <p>{statusMsg.message}</p>
-      {statusMsg.syncHelp &&
-        typeof location !== 'undefined' &&
-        location.protocol !== 'capacitor:' && (
-          <div className="sync-update-actions">
+      {statusMsg.syncHelp && typeof location !== 'undefined' && (
+        <div className="sync-update-actions">
+          {location.protocol !== 'capacitor:' ? (
             <button
               type="button"
               className="sync-update-action-btn"
@@ -306,8 +305,17 @@ export function SyncModal({
             >
               Update &amp; Reload
             </button>
-          </div>
-        )}
+          ) : (
+            <a
+              href="https://joli.to/update"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              How to update
+            </a>
+          )}
+        </div>
+      )}
     </div>
   )
   const showDeletionError =

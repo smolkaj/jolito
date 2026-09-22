@@ -10,22 +10,36 @@ export function offlineShellPlugin(): Plugin {
   let buildId: string | undefined
   return {
     name: 'jolito-offline-shell',
-    apply: 'build',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url?.split('?')[0]
+        if (url === '/acknowledgements.html' || url === '/acknowledgements') {
+          const version = computeAppVersion()
+          const ackSource = readFileSync('public/acknowledgements.html', 'utf8')
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.end(ackSource.replace('__JOLITO_VERSION__', version))
+          return
+        }
+        next()
+      })
+    },
     transformIndexHtml() {
-      if (!buildId) throw new Error('Offline build identity was not generated')
       const version = computeAppVersion()
-      return [
-        {
-          tag: 'meta',
-          attrs: { name: 'jolito-build', content: buildId },
-          injectTo: 'head',
-        },
+      const tags = [
         {
           tag: 'meta',
           attrs: { name: 'jolito-version', content: version },
-          injectTo: 'head',
+          injectTo: 'head' as const,
         },
       ]
+      if (buildId) {
+        tags.unshift({
+          tag: 'meta',
+          attrs: { name: 'jolito-build', content: buildId },
+          injectTo: 'head' as const,
+        })
+      }
+      return tags
     },
     generateBundle(_options, bundle) {
       const source = readFileSync('public/sw.js', 'utf8')

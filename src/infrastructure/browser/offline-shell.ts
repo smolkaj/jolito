@@ -16,27 +16,10 @@ export async function triggerManualUpdate(): Promise<void> {
   try {
     const reg = await navigator.serviceWorker.getRegistration()
     if (reg) {
-      const waitForController = new Promise<void>((resolve) => {
-        const timeout = setTimeout(resolve, 2000)
-        if (typeof navigator.serviceWorker?.addEventListener === 'function') {
-          navigator.serviceWorker.addEventListener(
-            'controllerchange',
-            () => {
-              clearTimeout(timeout)
-              resolve()
-            },
-            { once: true },
-          )
-        } else {
-          clearTimeout(timeout)
-          resolve()
-        }
-      })
-
       let waiting: ServiceWorker | null = reg.waiting
       if (!waiting) {
         waiting = await new Promise<ServiceWorker | null>((resolve) => {
-          const timeout = setTimeout(() => resolve(null), 3000)
+          const timeout = setTimeout(() => resolve(null), 8000)
           const onStateChange = (worker: ServiceWorker) => {
             if (worker.state === 'installed') {
               clearTimeout(timeout)
@@ -67,14 +50,45 @@ export async function triggerManualUpdate(): Promise<void> {
             )
           }
 
-          reg.update?.().catch(() => {
+          const onUpdateDone = () => {
+            setTimeout(() => {
+              if (!reg.installing && !reg.waiting) {
+                clearTimeout(timeout)
+                resolve(null)
+              }
+            }, 50)
+          }
+
+          if (reg.update) {
+            reg.update().then(onUpdateDone, () => {
+              clearTimeout(timeout)
+              resolve(null)
+            })
+          } else {
             clearTimeout(timeout)
             resolve(null)
-          })
+          }
         })
       }
 
       if (waiting) {
+        const waitForController = new Promise<void>((resolve) => {
+          const timeout = setTimeout(resolve, 4000)
+          if (typeof navigator.serviceWorker?.addEventListener === 'function') {
+            navigator.serviceWorker.addEventListener(
+              'controllerchange',
+              () => {
+                clearTimeout(timeout)
+                resolve()
+              },
+              { once: true },
+            )
+          } else {
+            clearTimeout(timeout)
+            resolve()
+          }
+        })
+
         waiting.postMessage({ type: 'SKIP_WAITING' })
         await waitForController
         window.location.reload()
@@ -165,13 +179,6 @@ export function startOfflineShell(): () => void {
     checkUpdate(currentRegistration)
   }
 
-  const handleHashChange = () => {
-    if (stopped) return
-    if (isStandalone()) {
-      reloadIfSafe()
-    }
-  }
-
   const prepare = () => {
     cancel?.()
     document.documentElement.dataset.offlineReady = 'false'
@@ -241,7 +248,9 @@ export function startOfflineShell(): () => void {
   const resume = (event: PageTransitionEvent) => {
     if (stopped) return
     if (event.persisted) prepare()
-    reloadIfSafe()
+    if (isStandalone()) {
+      reloadIfSafe()
+    }
     if (currentRegistration) checkUpdate(currentRegistration)
   }
 
@@ -252,7 +261,6 @@ export function startOfflineShell(): () => void {
   window.addEventListener('pageshow', resume)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   window.addEventListener('online', handleOnline)
-  window.addEventListener('hashchange', handleHashChange)
   navigator.serviceWorker?.addEventListener?.(
     'controllerchange',
     onControllerChange,
@@ -266,7 +274,6 @@ export function startOfflineShell(): () => void {
     window.removeEventListener('pageshow', resume)
     document.removeEventListener('visibilitychange', handleVisibilityChange)
     window.removeEventListener('online', handleOnline)
-    window.removeEventListener('hashchange', handleHashChange)
     navigator.serviceWorker?.removeEventListener?.(
       'controllerchange',
       onControllerChange,

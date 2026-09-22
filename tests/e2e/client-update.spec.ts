@@ -76,3 +76,70 @@ for (const width of [320, 1280]) {
     ).toBe(savedBefore)
   })
 }
+
+test('clicking Update & Reload triggers page reload and preserves stored decks', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ cards, version }) => {
+      if (localStorage.getItem('upgrade-seeded')) return
+      localStorage.setItem('upgrade-seeded', 'true')
+      localStorage.setItem(
+        'jolito-auth-session-v1',
+        JSON.stringify({
+          accessToken: 'token',
+          refreshToken: 'refresh',
+          expiresAt: Date.now() + 3600000,
+          user: { id: 'upgrade', email: 'upgrade@example.com' },
+        }),
+      )
+      localStorage.setItem(
+        'jolito-libraries-v1',
+        JSON.stringify({
+          version: 1,
+          accounts: {
+            'user:upgrade': { version, cards, deletedCardIds: [] },
+          },
+        }),
+      )
+    },
+    {
+      cards: createStudyCards(
+        {
+          spanish: 'manzana',
+          english: 'apple',
+          context: '',
+          bidirectional: false,
+        },
+        'upgrade',
+        0,
+      ),
+      version: collectionVersion,
+    },
+  )
+  await page.route('https://mock.supabase.co/**', (route) =>
+    route.fulfill({
+      status: 409,
+      json: {
+        message:
+          'Update Jolito to sync. Save unfinished edits and export a deck backup first. Keep this device’s app data. For safe update steps, open https://joli.to/update in your browser.',
+      },
+    }),
+  )
+  await page.goto('/#/review')
+  await expect(page.getByRole('textbox', { name: 'Your answer' })).toBeVisible()
+  await page.locator('.connection-pill').click()
+  await expect(page.getByRole('dialog', { name: 'Cloud sync' })).toBeVisible()
+  await page.getByRole('button', { name: /sync now/i }).click()
+  const updateButton = page.getByRole('button', { name: 'Update & Reload' })
+  await expect(updateButton).toBeVisible()
+
+  // Clicking Update & Reload reloads the page
+  await Promise.all([page.waitForEvent('framenavigated'), updateButton.click()])
+
+  // Verify stored data remains intact after reload
+  const stored = await page.evaluate(() =>
+    localStorage.getItem('jolito-libraries-v1'),
+  )
+  expect(stored).toContain('manzana')
+})

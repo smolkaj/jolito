@@ -706,6 +706,7 @@ describe('sync update recovery', () => {
       name: 'Update & Reload',
     })
     expect(updateBtn).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'How to update' })).toBeNull()
     expect(close).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
     await waitFor(() =>
@@ -716,7 +717,7 @@ describe('sync update recovery', () => {
     expect(close).not.toHaveBeenCalled()
   })
 
-  it('omits Update & Reload button on capacitor runtime', async () => {
+  it('renders How to update link and omits Update & Reload button on capacitor runtime', async () => {
     vi.stubGlobal('location', { protocol: 'capacitor:' })
     const auth = new MockAuthService()
     auth.user = { id: 'upgrade', email: 'upgrade@example.com' }
@@ -739,6 +740,11 @@ describe('sync update recovery', () => {
     fireEvent.click(screen.getByRole('button', { name: /sync now/i }))
     await screen.findByRole('alert')
     expect(screen.queryByRole('button', { name: 'Update & Reload' })).toBeNull()
+    const helpLink = screen.getByRole('link', { name: 'How to update' })
+    expect(helpLink).toBeInTheDocument()
+    expect(helpLink).toHaveAttribute('href', 'https://joli.to/update')
+    expect(helpLink).toHaveAttribute('target', '_blank')
+    expect(helpLink).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
   it('omits update action on generic or transient sync errors', async () => {

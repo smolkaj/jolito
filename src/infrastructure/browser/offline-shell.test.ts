@@ -207,9 +207,14 @@ describe('offline preparation page lifecycle', () => {
     swListeners.get('controllerchange')!()
     expect(reload).not.toHaveBeenCalled()
 
-    // User clears the draft / navigates
+    // User clears the draft
     input.value = ''
     window.dispatchEvent(new Event('hashchange'))
+    // Route/hash changes do not trigger hard reloads
+    expect(reload).not.toHaveBeenCalled()
+
+    // Resuming the app when clean safely reloads
+    document.dispatchEvent(new Event('visibilitychange'))
     expect(reload).toHaveBeenCalledOnce()
   })
 
@@ -303,6 +308,58 @@ describe('triggerManualUpdate', () => {
 
     const { triggerManualUpdate } = await import('./offline-shell')
     await triggerManualUpdate()
+    expect(installingWorker.postMessage).toHaveBeenCalledWith({
+      type: 'SKIP_WAITING',
+    })
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('does not register controllerchange listener before waiting worker is acquired', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload })
+    let controllerChangeRegistered = false
+    let resolveStateChange: (() => void) | undefined
+    const installingWorker = {
+      state: 'installing',
+      postMessage: vi.fn(),
+      addEventListener: vi.fn((event: string, cb: () => void) => {
+        if (event === 'statechange') {
+          resolveStateChange = () => {
+            installingWorker.state = 'installed'
+            cb()
+          }
+        }
+      }),
+    }
+    const update = vi.fn().mockResolvedValue(undefined)
+    const getRegistration = vi.fn().mockResolvedValue({
+      waiting: null,
+      installing: installingWorker,
+      update,
+    })
+    const addEventListener = vi.fn((event: string, cb: () => void) => {
+      if (event === 'controllerchange') {
+        controllerChangeRegistered = true
+        cb()
+      }
+    })
+    vi.stubGlobal('navigator', {
+      serviceWorker: { getRegistration, addEventListener },
+    })
+
+    const { triggerManualUpdate } = await import('./offline-shell')
+    const updatePromise = triggerManualUpdate()
+    await Promise.resolve()
+
+    // While installing, controllerchange must NOT be registered yet
+    expect(controllerChangeRegistered).toBe(false)
+    expect(installingWorker.postMessage).not.toHaveBeenCalled()
+
+    // Transition to installed
+    resolveStateChange?.()
+    await updatePromise
+
+    expect(controllerChangeRegistered).toBe(true)
     expect(installingWorker.postMessage).toHaveBeenCalledWith({
       type: 'SKIP_WAITING',
     })
