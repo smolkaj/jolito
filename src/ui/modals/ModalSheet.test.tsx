@@ -242,6 +242,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
       const backdrop = container.querySelector('.modal-backdrop') as HTMLElement
       // 844 - (0 + 500) = 344px keyboard inset
       expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('344px')
+      expect(backdrop).toHaveClass('is-keyboard-open')
 
       // Simulate keyboard closing: visualViewport.height becomes 844
       mockVisualViewport.height = 844
@@ -249,6 +250,7 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
         listeners['resize']?.forEach((cb) => cb())
       })
       expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('')
+      expect(backdrop).not.toHaveClass('is-keyboard-open')
 
       // Simulate modal close: inset resets
       rerender(

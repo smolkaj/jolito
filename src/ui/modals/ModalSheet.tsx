@@ -214,7 +214,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
 
     return (
       <div
-        className={`modal-backdrop ${backdropClassName}`.trim()}
+        className={`modal-backdrop ${backdropClassName} ${keyboardInset > 0 ? 'is-keyboard-open' : ''}`.trim()}
         onClick={() => {
           if (!isClosing) onClose()
         }}
