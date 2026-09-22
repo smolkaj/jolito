@@ -2125,6 +2125,367 @@ export const starterPackSeeds: StarterPackSeed[] = [
       },
     ],
   },
+  {
+    id: 'common-adjectives',
+    title: 'Top Adjectives: 1–50',
+    subtitle: 'Essential Descriptors',
+    description:
+      'High-frequency descriptive adjectives and pairs for vivid everyday conversation.',
+    badge: 'Adjectives',
+    themeColor: 'cempasuchil',
+    notes: [
+      {
+        spanish: 'fácil',
+        english: 'easy',
+        context:
+          'Example: "El examen estuvo muy fácil." ("The exam was very easy.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'difícil',
+        english: 'difficult / hard',
+        context:
+          'Example: "Aprender el subjuntivo es difícil pero divertido." ("Learning the subjunctive is difficult but fun.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'bueno',
+        english: 'good',
+        context:
+          'Example: "Este restaurante tiene muy buen servicio." ("This restaurant has very good service.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'malo',
+        english: 'bad',
+        context:
+          'Example: "Hoy fue un mal día en la oficina." ("Today was a bad day at the office.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'grande',
+        english: 'big / large',
+        context:
+          'Example: "Vivimos en una casa bastante grande." ("We live in a fairly big house.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'pequeño',
+        english: 'small / little',
+        context:
+          'Example: "Mi departamento en la Roma es pequeño pero cómodo." ("My apartment in Roma is small but comfortable.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'caro',
+        english: 'expensive',
+        context:
+          'Example: "Ese café en Polanco está carísimo." ("That coffee in Polanco is really expensive.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'barato',
+        english: 'cheap / inexpensive',
+        context:
+          'Example: "Comer en el mercado es rico y barato." ("Eating at the market is delicious and cheap.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'rápido',
+        english: 'fast / quick',
+        context:
+          'Example: "El metrobús suele ser más rápido que el taxi." ("The Metrobus is usually faster than a taxi.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'lento',
+        english: 'slow',
+        context:
+          'Example: "El internet está muy lento esta tarde." ("The internet is very slow this afternoon.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'nuevo',
+        english: 'new',
+        context:
+          'Example: "Compré una chamarra nueva para el frío." ("I bought a new jacket for the cold.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'viejo',
+        english: 'old',
+        context:
+          'Example: "Ese edificio del centro es muy viejo y bonito." ("That downtown building is very old and pretty.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'joven',
+        english: 'young',
+        context:
+          'Example: "La doctora que me atendió es muy joven." ("The doctor who treated me is very young.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'limpio',
+        english: 'clean',
+        context:
+          'Example: "Dejaron el departamento rechinando de limpio." ("They left the apartment squeaky clean.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'sucio',
+        english: 'dirty',
+        context:
+          'Example: "Los zapatos se me quedaron sucios por el lodo." ("My shoes got dirty from the mud.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'lleno',
+        english: 'full',
+        context:
+          'Example: "El vagón del metro venía llenísimo." ("The metro car was completely full.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'vacío',
+        english: 'empty',
+        context:
+          'Example: "La cafetería estaba vacía a las siete de la mañana." ("The coffee shop was empty at seven in the morning.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'caliente',
+        english: 'hot / warm',
+        context:
+          'Example: "Ten cuidado, la sopa está muy caliente." ("Be careful, the soup is very hot.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'frío',
+        english: 'cold',
+        context:
+          'Example: "Pásame un vaso con agua fría, por favor." ("Pass me a glass of cold water, please.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'abierto',
+        english: 'open',
+        context:
+          'Example: "¿La farmacia sigue abierta a esta hora?" ("Is the pharmacy still open at this hour?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'cerrado',
+        english: 'closed',
+        context:
+          'Example: "El museo está cerrado los lunes." ("The museum is closed on Mondays.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'seguro',
+        english: 'safe / sure',
+        context:
+          'Example: "Este barrio es muy tranquilo y seguro para caminar." ("This neighborhood is very calm and safe to walk in.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'peligroso',
+        english: 'dangerous',
+        context:
+          'Example: "Manejar con lluvia fuerte es peligroso." ("Driving in heavy rain is dangerous.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'fuerte',
+        english: 'strong',
+        context:
+          'Example: "El café de olla tiene un sabor muy fuerte." ("Café de olla has a very strong flavor.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'débil',
+        english: 'weak',
+        context:
+          'Example: "Todavía me siento un poco débil por la gripa." ("I still feel a little weak from the flu.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'alto',
+        english: 'tall / high',
+        context:
+          'Example: "Ese edificio moderno en Reforma es altísimo." ("That modern building on Reforma is very tall.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'bajo',
+        english: 'short / low',
+        context:
+          'Example: "El techo de la recámara es un poco bajo." ("The bedroom ceiling is a bit low.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'largo',
+        english: 'long',
+        context:
+          'Example: "Fue un viaje muy largo en carretera." ("It was a very long road trip.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'corto',
+        english: 'short [length]',
+        context:
+          'Example: "La reunión fue bastante corta y productiva." ("The meeting was quite short and productive.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'pesado',
+        english: 'heavy / tedious',
+        context:
+          'Example: "La mochila está muy pesada con tantos libros." ("The backpack is very heavy with so many books.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'ligero',
+        english: 'light / lightweight',
+        context:
+          'Example: "Cené algo ligero para dormir mejor." ("I had something light for dinner to sleep better.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'claro',
+        english: 'clear / light [color]',
+        context:
+          'Example: "La explicación del profesor fue muy clara." ("The teacher\'s explanation was very clear.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'oscuro',
+        english: 'dark',
+        context:
+          'Example: "El callejón estaba muy oscuro de noche." ("The alley was very dark at night.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'listo',
+        english: 'ready / clever',
+        context:
+          'Example: "¿Ya estás listo para salir?" ("Are you ready to leave yet?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'ocupado',
+        english: 'busy / occupied',
+        context:
+          'Example: "El jefe anda muy ocupado hoy con juntas." ("The boss is very busy today with meetings.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'libre',
+        english: 'free / available',
+        context:
+          'Example: "¿Estás libre este fin de semana?" ("Are you free this weekend?")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'cansado',
+        english: 'tired',
+        context:
+          'Example: "Llegué muy cansado después del trabajo." ("I arrived very tired after work.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'enfermo',
+        english: 'sick / ill',
+        context:
+          'Example: "No fue a clases porque estaba enfermo del estómago." ("He didn\'t go to class because he was sick to his stomach.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'sano',
+        english: 'healthy',
+        context:
+          'Example: "Come muchas verduras para mantenerte sano." ("Eat lots of vegetables to stay healthy.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'rico',
+        english: 'delicious / rich',
+        context:
+          'Example: "Estos tacos al pastor están riquísimos." ("These tacos al pastor are delicious.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'pobre',
+        english: 'poor',
+        context:
+          'Example: "El suelo de este jardín es pobre en nutrientes." ("The soil in this garden is poor in nutrients.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'amable',
+        english: 'kind / friendly',
+        context:
+          'Example: "El mesero fue muy amable y atento con nosotros." ("The waiter was very kind and attentive to us.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tranquilo',
+        english: 'calm / quiet / relaxed',
+        context:
+          'Example: "El parque México es un lugar muy tranquilo." ("Parque México is a very quiet and peaceful place.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'ruidoso',
+        english: 'noisy / loud',
+        context:
+          'Example: "Esa avenida es muy ruidosa por el tráfico." ("That avenue is very noisy because of traffic.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'cómodo',
+        english: 'comfortable',
+        context:
+          'Example: "Estos tenis son comodísimos para caminar." ("These sneakers are super comfortable for walking.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'incómodo',
+        english: 'uncomfortable',
+        context:
+          'Example: "El sillón de la sala es algo incómodo." ("The living room armchair is somewhat uncomfortable.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'bonito',
+        english: 'pretty / nice',
+        context:
+          'Example: "Coyoacán es uno de los barrios más bonitos." ("Coyoacán is one of the prettiest neighborhoods.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'feo',
+        english: 'ugly',
+        context:
+          'Example: "El clima se puso feo por la tarde con granizo." ("The weather got ugly in the afternoon with hail.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'igual',
+        english: 'same / equal',
+        context:
+          'Example: "Los dos platillos saben casi igual." ("The two dishes taste almost the same.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'diferente',
+        english: 'different',
+        context:
+          'Example: "Cada colonia de la ciudad tiene un ambiente diferente." ("Each neighborhood in the city has a different vibe.")',
+        bidirectional: true,
+      },
+    ],
+  },
 ]
 
 export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {
