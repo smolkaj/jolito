@@ -1316,10 +1316,6 @@ export class LayeredNeuralSpeaker implements Speaker {
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
         .then((ready) => {
           if (this.speakGeneration !== currentGen) {
-            if (options?.explicit) {
-              configureAudioSessionCategory('ambient')
-            }
-            options?.onEnded?.()
             return
           }
           if (ready) {
@@ -1358,10 +1354,6 @@ export class LayeredNeuralSpeaker implements Speaker {
         })
         .catch(() => {
           if (this.speakGeneration !== currentGen) {
-            if (options?.explicit) {
-              configureAudioSessionCategory('ambient')
-            }
-            options?.onEnded?.()
             return
           }
           const fallbackPlayed = this.speakFallback(

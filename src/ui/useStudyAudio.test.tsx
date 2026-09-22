@@ -697,4 +697,71 @@ describe('useStudyAudio', () => {
     expect(result.current.isAudioPlaying).toBe(false)
     expect(result.current.audioUnavailable).toBe(true)
   })
+
+  it('clears playing state when paused and does not revive playing state after unpausing', () => {
+    let pausedState = false
+    const { result, rerender } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        paused: pausedState,
+        autoplayPrompt: false,
+      }),
+    )
+
+    act(() => {
+      result.current.playPromptAudio()
+    })
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
+
+    // User opens dialog, setting paused=true
+    pausedState = true
+    rerender()
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+
+    // User closes dialog, setting paused=false
+    pausedState = false
+    rerender()
+    // Must NOT resurrect zombie playing state
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+  })
+
+  it('clears playing state when switching cards during playback', () => {
+    let card = mockCard
+    const { result, rerender } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: card,
+        view: 'review',
+        autoplayPrompt: false,
+      }),
+    )
+
+    act(() => {
+      result.current.playPromptAudio()
+    })
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
+
+    // Switch to another card
+    card = {
+      ...mockCard,
+      id: 'card-2',
+      prompt: 'otro',
+      answer: 'other',
+    }
+    rerender()
+
+    // Must be false on the new card
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+  })
 })

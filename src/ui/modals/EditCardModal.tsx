@@ -34,7 +34,7 @@ function EditCardModalInner({
     locale: string,
     cardSeed?: string,
     options?: SpeakerOptions,
-  ) => void
+  ) => boolean | void
   aiAssistant?: AiAssistant | undefined
   isOnline?: boolean | undefined
   haptics?: HapticsPlayer | undefined
@@ -204,12 +204,20 @@ function EditCardModalInner({
                 playing={playingField === 'prompt'}
                 onClick={() => {
                   setPlayingField('prompt')
-                  onPlayAudio(prompt.trim(), promptLocale, card.id, {
-                    onEnded: () =>
-                      setPlayingField((curr) =>
-                        curr === 'prompt' ? null : curr,
-                      ),
-                  })
+                  const played = onPlayAudio(
+                    prompt.trim(),
+                    promptLocale,
+                    card.id,
+                    {
+                      onEnded: () =>
+                        setPlayingField((curr) =>
+                          curr === 'prompt' ? null : curr,
+                        ),
+                    },
+                  )
+                  if (played === false) {
+                    setPlayingField(null)
+                  }
                 }}
               />
             )}
@@ -242,12 +250,20 @@ function EditCardModalInner({
                 playing={playingField === 'answer'}
                 onClick={() => {
                   setPlayingField('answer')
-                  onPlayAudio(answer.trim(), answerLocale, card.id, {
-                    onEnded: () =>
-                      setPlayingField((curr) =>
-                        curr === 'answer' ? null : curr,
-                      ),
-                  })
+                  const played = onPlayAudio(
+                    answer.trim(),
+                    answerLocale,
+                    card.id,
+                    {
+                      onEnded: () =>
+                        setPlayingField((curr) =>
+                          curr === 'answer' ? null : curr,
+                        ),
+                    },
+                  )
+                  if (played === false) {
+                    setPlayingField(null)
+                  }
                 }}
               />
             )}

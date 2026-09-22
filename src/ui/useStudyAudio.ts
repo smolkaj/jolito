@@ -205,21 +205,36 @@ export function useStudyAudio({
     view,
   ])
 
+  const [prevPaused, setPrevPaused] = useState(paused)
+  const [prevCardId, setPrevCardId] = useState(currentCardId)
+  if (paused !== prevPaused) {
+    setPrevPaused(paused)
+    if (paused) {
+      setActiveTarget(null)
+      setIsAudioPlaying(false)
+    }
+  }
+  if (currentCardId !== prevCardId) {
+    setPrevCardId(currentCardId)
+    setActiveTarget(null)
+    setIsAudioPlaying(false)
+  }
+
   // A dialog interrupts playback; the next interaction can resume normally.
   useEffect(() => {
     if (!paused) return
     clearPendingTimer()
+    playGenerationRef.current++
     speaker.stop?.()
   }, [paused, clearPendingTimer, speaker])
 
   // One lifecycle for both learning modes and manual audio outside practice.
   useEffect(() => {
-    clearPendingTimer()
     return () => {
-      clearPendingTimer()
+      cancelPendingAudio()
       speaker.stop?.()
     }
-  }, [clearPendingTimer, currentCardId, view, speaker])
+  }, [cancelPendingAudio, currentCardId, view, speaker])
 
   return {
     audioUnavailable,

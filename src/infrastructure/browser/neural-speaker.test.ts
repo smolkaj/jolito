@@ -2408,7 +2408,7 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
       }
     })
 
-    it('cleans up audio session category to ambient and fires onEnded when async explicit speak is superseded', async () => {
+    it('does not demote audio session or fire onEnded when async explicit speak is superseded', async () => {
       const mockAudioSession = { type: 'ambient' }
       Object.defineProperty(navigator, 'audioSession', {
         value: mockAudioSession,
@@ -2421,14 +2421,14 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
         speak: vi.fn().mockReturnValue(true),
       }
 
-      let resolveAwait!: (ready: boolean) => void
+      const awaitResolvers: Array<(ready: boolean) => void> = []
       vi.spyOn(localEngine, 'hasAudio').mockReturnValue(false)
       vi.spyOn(localEngine, 'isAudioInFlight').mockReturnValue(false)
       vi.spyOn(localEngine, 'fetchAndCacheAudio').mockResolvedValue(true)
       vi.spyOn(localEngine, 'awaitAudio').mockImplementation(
         () =>
           new Promise((resolve) => {
-            resolveAwait = resolve
+            awaitResolvers.push(resolve)
           }),
       )
 
@@ -2443,16 +2443,20 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
         onEnded: onEndedFirst,
       })
       expect(mockAudioSession.type).toBe('playback')
+      expect(awaitResolvers).toHaveLength(1)
 
-      // Phrase 2 arrives before Phrase 1 resolves, advancing speakGeneration
-      speaker.speak('phrase 2', 'es-MX', { explicit: false })
+      // Phrase 2 arrives before Phrase 1 resolves, advancing speakGeneration with explicit=true
+      speaker.speak('phrase 2', 'es-MX', { explicit: true })
+      expect(mockAudioSession.type).toBe('playback')
+      expect(awaitResolvers).toHaveLength(2)
 
-      // Phrase 1 now resolves late
-      resolveAwait(true)
+      // Phrase 1 resolves late while Phrase 2 is still in-flight
+      awaitResolvers[0]!(true)
       await Promise.resolve()
 
-      expect(onEndedFirst).toHaveBeenCalledTimes(1)
-      expect(mockAudioSession.type).toBe('ambient')
+      // Obsolete Phrase 1 must NOT invoke onEnded or clobber Phrase 2's playback category
+      expect(onEndedFirst).not.toHaveBeenCalled()
+      expect(mockAudioSession.type).toBe('playback')
       localEngine.destroy()
     })
   })

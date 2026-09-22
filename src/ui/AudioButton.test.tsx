@@ -33,7 +33,7 @@ describe('AudioButton', () => {
     expect(button).toHaveClass('is-playing')
     expect(button).toHaveAttribute('data-playing', 'true')
     expect(button).toHaveAttribute('data-prompt-audio', 'true')
-    expect(button).toHaveAttribute('aria-pressed', 'true')
+    expect(button).not.toHaveAttribute('aria-pressed')
   })
 
   it('invokes onClick handler when clicked', async () => {

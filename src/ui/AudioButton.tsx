@@ -14,7 +14,6 @@ export function AudioButton({
       className={`audio-button ${playing ? 'is-playing' : ''}`.trim()}
       type="button"
       aria-label={label}
-      aria-pressed={playing || undefined}
       title={label}
       data-prompt-audio={prompt || undefined}
       data-playing={playing || undefined}
