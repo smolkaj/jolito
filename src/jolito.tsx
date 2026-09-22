@@ -67,6 +67,7 @@ import { PrivacyModal } from './ui/modals/PrivacyModal'
 import { PracticeCard } from './ui/PracticeCard'
 import { SessionComplete } from './ui/SessionComplete'
 import { SessionProgress } from './ui/SessionProgress'
+import { practiceActivity } from './ui/native-live-activity'
 import { Brand } from './ui/Brand'
 import { ConnectionPill } from './ui/ConnectionPill'
 import { RedirectAuthNotice } from './ui/RedirectAuthNotice'
@@ -465,6 +466,8 @@ function LoadedApp({
     filterCards,
     progressPercentage,
     remainingCount,
+    completedCount,
+    effectiveTotal,
   } = studySession
 
   const [savedToast, setSavedToast] = useState<string | null>(null)
@@ -1178,6 +1181,80 @@ function LoadedApp({
     services.clock,
     services.speaker,
     view,
+  ])
+
+  // Manage native iOS Dynamic Island Live Activity during practice sessions
+  const isGrammarActive = view === 'grammar'
+  const isPracticeActive = isGrammarActive
+    ? grammarPractice.mode === 'practice'
+    : view !== 'welcome' &&
+      view !== 'deck' &&
+      view !== 'create' &&
+      view !== 'complete' &&
+      Boolean(currentCard)
+
+  const grammarEffectiveTotal = grammarPractice.session.effectiveTotal
+  const grammarCompletedCount = grammarPractice.session.completedCount
+  const grammarRemainingCount = grammarPractice.session.remainingCount
+  const grammarProgressPercentage = grammarPractice.session.progressPercentage
+  const grammarPrompt = grammarPractice.current?.prompt ?? ''
+  const cardPrompt = currentCard?.prompt ?? ''
+
+  useEffect(() => {
+    if (!isPracticeActive) {
+      void practiceActivity.end()
+      return
+    }
+
+    const total = isGrammarActive ? grammarEffectiveTotal : effectiveTotal
+    const prompt = isGrammarActive ? grammarPrompt : cardPrompt
+    const title = isGrammarActive ? 'Grammar Practice' : 'Card Practice'
+
+    void practiceActivity.start({ total, prompt, title })
+
+    return () => {
+      void practiceActivity.end()
+    }
+  }, [
+    isPracticeActive,
+    isGrammarActive,
+    effectiveTotal,
+    grammarEffectiveTotal,
+    grammarPrompt,
+    cardPrompt,
+  ])
+
+  useEffect(() => {
+    if (!isPracticeActive) return
+
+    const completed = isGrammarActive ? grammarCompletedCount : completedCount
+    const remaining = isGrammarActive ? grammarRemainingCount : remainingCount
+    const total = isGrammarActive ? grammarEffectiveTotal : effectiveTotal
+    const percentage = isGrammarActive
+      ? grammarProgressPercentage
+      : progressPercentage
+    const prompt = isGrammarActive ? grammarPrompt : cardPrompt
+
+    void practiceActivity.update({
+      completed,
+      remaining,
+      total,
+      percentage,
+      prompt,
+    })
+  }, [
+    isPracticeActive,
+    isGrammarActive,
+    completedCount,
+    remainingCount,
+    effectiveTotal,
+    progressPercentage,
+    cardPrompt,
+    grammarCompletedCount,
+    grammarRemainingCount,
+    grammarEffectiveTotal,
+    grammarProgressPercentage,
+    grammarPrompt,
   ])
 
   const renderAppModals = () => (
