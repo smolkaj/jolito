@@ -25,13 +25,13 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        // End any active leftover activity first for deterministic single-activity hygiene
-        if let existing = currentActivity as? Activity<PracticeActivityAttributes> {
+        // End any active leftover activities first for deterministic single-activity hygiene
+        for activity in Activity<PracticeActivityAttributes>.activities {
             Task {
-                await existing.end(nil, dismissalPolicy: .immediate)
+                await activity.end(nil, dismissalPolicy: .immediate)
             }
-            currentActivity = nil
         }
+        currentActivity = nil
 
         let total = call.getInt("total") ?? 0
         let prompt = call.getString("prompt") ?? ""
@@ -104,13 +104,10 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        guard let activity = currentActivity as? Activity<PracticeActivityAttributes> else {
-            call.resolve(["supported": true, "ended": false])
-            return
-        }
-
         Task {
-            await activity.end(nil, dismissalPolicy: .immediate)
+            for activity in Activity<PracticeActivityAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
             self.currentActivity = nil
             call.resolve(["supported": true, "ended": true])
         }

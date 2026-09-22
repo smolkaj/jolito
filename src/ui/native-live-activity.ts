@@ -41,15 +41,28 @@ const noopPlugin: LiveActivityPlugin = {
   endPractice: () => Promise.resolve({ supported: false, ended: false }),
 }
 
-const LiveActivityNative = registerPlugin<LiveActivityPlugin>('LiveActivity', {
-  web: () => noopPlugin,
-})
+export const LiveActivityNative = registerPlugin<LiveActivityPlugin>(
+  'LiveActivity',
+  {
+    web: () => noopPlugin,
+  },
+)
 
 export class PracticeActivityBridge {
   private active = false
+  private startPromise: Promise<boolean> | null = null
+  private plugin: LiveActivityPlugin
+
+  constructor(plugin: LiveActivityPlugin = LiveActivityNative) {
+    this.plugin = plugin
+  }
 
   public isSupported(): boolean {
     return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
+  }
+
+  public isActive(): boolean {
+    return this.active
   }
 
   public async start(options: {
@@ -58,15 +71,23 @@ export class PracticeActivityBridge {
     title?: string
   }): Promise<void> {
     if (!this.isSupported()) return
-    try {
-      const res = await LiveActivityNative.startPractice(options)
-      if (res.started) {
-        this.active = true
+    if (this.active || this.startPromise) return
+
+    const promise = (async () => {
+      try {
+        const res = await this.plugin.startPractice(options)
+        this.active = Boolean(res.started)
+        return this.active
+      } catch {
+        this.active = false
+        return false
+      } finally {
+        this.startPromise = null
       }
-    } catch {
-      // Safe boundary: native live activity errors never disrupt practice
-      this.active = false
-    }
+    })()
+
+    this.startPromise = promise
+    await promise
   }
 
   public async update(options: {
@@ -76,18 +97,26 @@ export class PracticeActivityBridge {
     percentage?: number
     prompt?: string
   }): Promise<void> {
-    if (!this.isSupported() || !this.active) return
+    if (!this.isSupported()) return
+    if (this.startPromise) {
+      await this.startPromise
+    }
+    if (!this.active) return
     try {
-      await LiveActivityNative.updatePractice(options)
+      await this.plugin.updatePractice(options)
     } catch {
-      // Safe boundary
+      // Safe boundary: live activity updates never disrupt study flow
     }
   }
 
   public async end(): Promise<void> {
-    if (!this.isSupported() || !this.active) return
+    if (!this.isSupported()) return
+    if (this.startPromise) {
+      await this.startPromise
+    }
+    if (!this.active) return
     try {
-      await LiveActivityNative.endPractice()
+      await this.plugin.endPractice()
     } catch {
       // Safe boundary
     } finally {

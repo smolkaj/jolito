@@ -1185,13 +1185,13 @@ function LoadedApp({
 
   // Manage native iOS Dynamic Island Live Activity during practice sessions
   const isGrammarActive = view === 'grammar'
-  const isPracticeActive = isGrammarActive
-    ? grammarPractice.mode === 'practice'
-    : view !== 'welcome' &&
-      view !== 'deck' &&
-      view !== 'create' &&
-      view !== 'complete' &&
-      Boolean(currentCard)
+  const isPracticeActive =
+    view !== 'welcome' &&
+    view !== 'deck' &&
+    view !== 'create' &&
+    (isGrammarActive
+      ? grammarPractice.mode === 'practice'
+      : view !== 'complete' && Boolean(currentCard))
 
   const grammarEffectiveTotal = grammarPractice.session.effectiveTotal
   const grammarCompletedCount = grammarPractice.session.completedCount
@@ -1200,29 +1200,32 @@ function LoadedApp({
   const grammarPrompt = grammarPractice.current?.prompt ?? ''
   const cardPrompt = currentCard?.prompt ?? ''
 
+  const practiceActivityInfoRef = useRef({
+    total: effectiveTotal,
+    prompt: cardPrompt,
+    title: 'Card Practice',
+  })
+
+  useEffect(() => {
+    practiceActivityInfoRef.current = {
+      total: isGrammarActive ? grammarEffectiveTotal : effectiveTotal,
+      prompt: isGrammarActive ? grammarPrompt : cardPrompt,
+      title: isGrammarActive ? 'Grammar Practice' : 'Card Practice',
+    }
+  })
+
   useEffect(() => {
     if (!isPracticeActive) {
       void practiceActivity.end()
       return
     }
 
-    const total = isGrammarActive ? grammarEffectiveTotal : effectiveTotal
-    const prompt = isGrammarActive ? grammarPrompt : cardPrompt
-    const title = isGrammarActive ? 'Grammar Practice' : 'Card Practice'
-
-    void practiceActivity.start({ total, prompt, title })
+    void practiceActivity.start(practiceActivityInfoRef.current)
 
     return () => {
       void practiceActivity.end()
     }
-  }, [
-    isPracticeActive,
-    isGrammarActive,
-    effectiveTotal,
-    grammarEffectiveTotal,
-    grammarPrompt,
-    cardPrompt,
-  ])
+  }, [isPracticeActive])
 
   useEffect(() => {
     if (!isPracticeActive) return
@@ -1443,11 +1446,11 @@ function LoadedApp({
     )
   }
 
-  const grammar = view === 'grammar'
+  const grammar = isGrammarActive
   const complete = grammar
     ? grammarPractice.mode === 'complete'
     : view === 'complete' || !currentCard
-  const practicing = grammar ? grammarPractice.mode === 'practice' : !complete
+  const practicing = isPracticeActive
 
   return (
     <>

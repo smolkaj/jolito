@@ -20,81 +20,92 @@ public struct PracticeLiveActivityWidget: Widget {
                         Image(systemName: "character.book.closed.fill")
                             .foregroundColor(rosa)
                             .imageScale(.medium)
+                            .accessibilityHidden(true)
                         Text("Jolito")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundColor(rosa)
                     }
                     .padding(.leading, 4)
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    HStack(spacing: 4) {
-                        Text("\(context.state.completedCount)/\(context.state.totalCount)")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.secondary)
-                        Text("cards")
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.trailing, 4)
+                    Text("\(context.state.completedCount) of \(context.state.totalCount)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.trailing, 4)
                 }
 
                 DynamicIslandExpandedRegion(.center) {
                     if !context.state.currentPrompt.isEmpty {
                         Text(context.state.currentPrompt)
-                            .font(.system(size: 15, weight: .semibold, design: .serif))
-                            .lineLimit(1)
+                            .font(.system(size: 15, weight: .semibold))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .padding(.horizontal, 4)
                     }
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         ProgressView(
                             value: Double(context.state.progressPercentage),
                             total: 100.0
                         )
                         .tint(rosa)
-
-                        HStack {
-                            Text("\(context.state.remainingCount) remaining")
-                                .font(.system(size: 11, weight: .regular))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("\(context.state.progressPercentage)%")
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                .foregroundColor(rosa)
-                        }
+                        .accessibilityLabel("Session progress")
+                        .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
                     }
                     .padding(.horizontal, 4)
-                    .padding(.top, 2)
+                    .padding(.top, 4)
                 }
             } compactLeading: {
-                // Compact Leading: Mini Jolito emblem flanking camera cutout
+                // Compact Leading: Jolito emblem flanking camera cutout
                 Image(systemName: "character.book.closed.fill")
                     .foregroundColor(rosa)
                     .imageScale(.small)
+                    .accessibilityHidden(true)
             } compactTrailing: {
-                // Compact Trailing: Native circular progress ring
-                ProgressView(
-                    value: Double(context.state.progressPercentage),
-                    total: 100.0
+                // Compact Trailing: Determinate circular progress ring
+                PracticeProgressRing(
+                    percentage: context.state.progressPercentage,
+                    rosa: rosa,
+                    size: 18,
+                    strokeWidth: 2.5
                 )
-                .progressViewStyle(.circular)
-                .tint(rosa)
-                .scaleEffect(0.65)
-                .frame(width: 18, height: 18)
+                .accessibilityLabel("Session progress")
+                .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
             } minimal: {
                 // Minimal Presentation (when multiple Live Activities share the island)
-                ProgressView(
-                    value: Double(context.state.progressPercentage),
-                    total: 100.0
+                PracticeProgressRing(
+                    percentage: context.state.progressPercentage,
+                    rosa: rosa,
+                    size: 16,
+                    strokeWidth: 2.2
                 )
-                .progressViewStyle(.circular)
-                .tint(rosa)
-                .scaleEffect(0.6)
-                .frame(width: 16, height: 16)
+                .accessibilityLabel("Session progress")
+                .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
             }
         }
+    }
+}
+
+private struct PracticeProgressRing: View {
+    let percentage: Int
+    let rosa: Color
+    let size: CGFloat
+    let strokeWidth: CGFloat
+
+    var body: some View {
+        let progress = min(max(CGFloat(percentage) / 100.0, 0.0), 1.0)
+        ZStack {
+            Circle()
+                .stroke(rosa.opacity(0.25), lineWidth: strokeWidth)
+            Circle()
+                .trim(from: 0.0, to: progress)
+                .stroke(rosa, style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -105,25 +116,30 @@ private struct LockScreenPracticeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center) {
-                Image(systemName: "character.book.closed.fill")
-                    .foregroundColor(rosa)
-                    .imageScale(.medium)
-                Text("Jolito Practice")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                HStack(spacing: 6) {
+                    Image(systemName: "character.book.closed.fill")
+                        .foregroundColor(rosa)
+                        .imageScale(.medium)
+                        .accessibilityHidden(true)
+                    Text("Jolito Practice")
+                        .font(.system(size: 14, weight: .bold))
+                }
                 Spacer()
-                Text("\(state.completedCount)/\(state.totalCount) cards")
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                Text("\(state.completedCount) of \(state.totalCount) cards")
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
 
             if !state.currentPrompt.isEmpty {
                 Text(state.currentPrompt)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
-                    .lineLimit(1)
+                    .font(.system(size: 16, weight: .semibold))
+                    .lineLimit(2)
             }
 
             ProgressView(value: Double(state.progressPercentage), total: 100.0)
                 .tint(rosa)
+                .accessibilityLabel("Session progress")
+                .accessibilityValue("\(state.completedCount) of \(state.totalCount) cards completed, \(state.progressPercentage) percent")
         }
         .padding(14)
     }
