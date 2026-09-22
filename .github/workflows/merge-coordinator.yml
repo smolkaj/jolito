@@ -1,0 +1,50 @@
+name: Merge Coordinator
+
+on:
+  pull_request_target:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Specific PR number to merge (optional)'
+        required: false
+        type: string
+
+concurrency:
+  group: mainline-merge-lock
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  coordinate:
+    name: Drain merge queue
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ready-to-merge'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit
+
+      - name: Run Merge Coordinator
+        env:
+          GH_TOKEN: ${{ secrets.MERGE_TOKEN || secrets.GITHUB_TOKEN }}
+          SPECIFIC_PR: ${{ inputs.pr_number }}
+        run: |
+          if [ -n "$SPECIFIC_PR" ]; then
+            node scripts/merge-coordinator.ts --pr "$SPECIFIC_PR"
+          else
+            node scripts/merge-coordinator.ts
+          fi

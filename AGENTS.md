@@ -17,10 +17,15 @@ git worktree remove ../jolito-<task> && git worktree prune
 - Open PRs proactively and early; share them with the user for review.
 - Always proactively provide the live branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
 - Never merge PRs without explicit user approval.
-- Once explicitly approved by the user and having passed the independent review loop, land PRs via the GitHub Merge Queue to avoid merge contention:
+- Once explicitly approved by the user and having passed the independent review loop, enqueue the PR for serialized landing:
   ```sh
-  gh pr merge <pr-number> --auto --squash
+  gh pr edit <pr-number> --add-label ready-to-merge
   ```
+  The automated Merge Coordinator serializes landing via squash merge, verifies mainline health, waits for checks, and removes the label. You can also trigger it manually or run it locally:
+  ```sh
+  npm run pr:merge -- --pr <pr-number>
+  ```
+  Never manually rebase or battle for landing locks against other agents; the coordinator manages the queue deterministically.
 - After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
 - For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 
