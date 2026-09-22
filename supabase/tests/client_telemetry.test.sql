@@ -1,5 +1,5 @@
 begin;
-select plan(7);
+select plan(10);
 
 -- 1. Test basic recording via record_client_activity
 select lives_ok(
@@ -43,6 +43,23 @@ select throws_ok(
   $$ select public.record_client_activity('short', 'us', 'web', 'macOS', 'Chrome', 'desktop', 'casual'); $$,
   'Invalid user hash',
   'Throws on invalid user hash length'
+);
+
+-- 6. Add second user and test get_telemetry_summary
+select lives_ok(
+  $$ select public.record_client_activity('hash_fedcba9876543210fedcba9876543210', 'de', 'web', 'macOS', 'Firefox', 'desktop', 'deep'); $$,
+  'Can record second client activity'
+);
+
+select lives_ok(
+  $$ select public.get_telemetry_summary(30) $$,
+  'Can execute get_telemetry_summary'
+);
+
+select is(
+  (public.get_telemetry_summary(30)->>'unique_users')::bigint,
+  2::bigint,
+  'Summary returns correct unique user count'
 );
 
 select * from finish();

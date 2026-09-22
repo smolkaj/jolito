@@ -172,6 +172,12 @@ export type CommunityStatsService = {
   getCommunityStats(signal?: AbortSignal): Promise<CommunityStats | null>
 }
 
+export type TelemetryService = {
+  recordUserInteraction(): void
+  recordReview(): void
+  teardown?(): void
+}
+
 export type DeletionLock = {
   /** Excludes deletion, recovery and cancellation for this storage lifetime. */
   run<T>(operation: () => T | Promise<T>): Promise<T>
@@ -191,4 +197,5 @@ export type AppServices = {
   feedback: FeedbackService
   communityStats?: CommunityStatsService
   aiAssistant?: AiAssistant | undefined
+  telemetry?: TelemetryService
 }

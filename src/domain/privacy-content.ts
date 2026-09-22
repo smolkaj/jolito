@@ -55,6 +55,13 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
           text: ' If you send in-app feedback, we receive your message and email address to follow up.',
         },
       ],
+      [
+        { type: 'strong', text: 'Aggregate Anonymous Demographics:' },
+        {
+          type: 'text',
+          text: ' To understand platform adoption and community distribution, Jolito records anonymous daily aggregate metrics (device form factor, operating system, browser, country, and study engagement tier). We never track individual browsing activity, store IP addresses, or use persistent tracking cookies; daily uniqueness is computed with a monthly-rotating cryptographic hash, and we honor Do Not Track and Global Privacy Control signals.',
+        },
+      ],
     ],
   },
   {

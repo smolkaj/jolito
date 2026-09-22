@@ -102,3 +102,66 @@ $$;
 
 revoke all on function public.record_client_activity(text, text, text, text, text, text, text) from public;
 grant execute on function public.record_client_activity(text, text, text, text, text, text, text) to anon, authenticated;
+
+-- Function to retrieve high-level aggregate telemetry summary
+-- Returns strictly anonymized rollups; never exposes user hashes
+create or replace function public.get_telemetry_summary(
+  p_days integer default 30
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_since date := (now() at time zone 'utc')::date - p_days;
+  v_unique_users bigint;
+  v_by_country jsonb;
+  v_by_platform jsonb;
+  v_by_engagement jsonb;
+begin
+  select count(distinct user_hash) into v_unique_users
+  from public.client_activity_daily
+  where date >= v_since;
+
+  select coalesce(jsonb_agg(row_to_json(c)), '[]'::jsonb) into v_by_country
+  from (
+    select country, count(distinct user_hash) as unique_users, count(*) as active_days
+    from public.client_activity_daily
+    where date >= v_since
+    group by country
+    order by unique_users desc
+    limit 20
+  ) c;
+
+  select coalesce(jsonb_agg(row_to_json(p)), '[]'::jsonb) into v_by_platform
+  from (
+    select platform, count(distinct user_hash) as unique_users, count(*) as active_days
+    from public.client_activity_daily
+    where date >= v_since
+    group by platform
+    order by unique_users desc
+  ) p;
+
+  select coalesce(jsonb_agg(row_to_json(e)), '[]'::jsonb) into v_by_engagement
+  from (
+    select engagement_tier, count(*) as count
+    from public.client_activity_daily
+    where date >= v_since
+    group by engagement_tier
+    order by count desc
+  ) e;
+
+  return jsonb_build_object(
+    'days', p_days,
+    'since', v_since,
+    'unique_users', v_unique_users,
+    'by_country', v_by_country,
+    'by_platform', v_by_platform,
+    'by_engagement', v_by_engagement
+  );
+end;
+$$;
+
+revoke all on function public.get_telemetry_summary(integer) from public;
+grant execute on function public.get_telemetry_summary(integer) to anon, authenticated;

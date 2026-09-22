@@ -6,9 +6,18 @@ import {
   handleSyncAlertRequest,
   type SyncAlertWorkerEnv,
 } from './sync-alert-route'
+import {
+  handleTelemetryRequest,
+  type TelemetryWorkerEnv,
+} from './telemetry-route'
 
 export interface WorkerEnv
-  extends FeedbackWorkerEnv, StatsWorkerEnv, AiWorkerEnv, SyncAlertWorkerEnv {
+  extends
+    FeedbackWorkerEnv,
+    StatsWorkerEnv,
+    AiWorkerEnv,
+    SyncAlertWorkerEnv,
+    TelemetryWorkerEnv {
   ASSETS?: {
     fetch: (request: Request) => Promise<Response>
   }
@@ -32,6 +41,9 @@ export default {
     }
     if (pathname === '/api/alerts/sync-anomaly') {
       return handleSyncAlertRequest(request, env)
+    }
+    if (pathname === '/api/telemetry/heartbeat') {
+      return handleTelemetryRequest(request, env)
     }
 
     if (env?.ASSETS) {
