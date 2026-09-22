@@ -112,7 +112,11 @@ describe('starterPacks', () => {
     expect(
       cards.every((c) => c.noteId.startsWith('curated-common-connectors-')),
     ).toBe(true)
-    expect(cards.every((c) => c.context === '')).toBe(true)
+    expect(
+      cards.every((c) =>
+        /^Example: "[^"]+" \("[^"]+"\)$/.test(c.context.trim()),
+      ),
+    ).toBe(true)
 
     // Verify all 50 Spanish prompts are unique
     const spanishPrompts = cards

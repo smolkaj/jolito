@@ -1776,301 +1776,351 @@ export const starterPackSeeds: StarterPackSeed[] = [
       {
         spanish: 'además',
         english: 'in addition / besides',
-        context: '',
+        context:
+          'Example: "Es barato y, además, de muy buena calidad." ("It\'s inexpensive and, besides, very good quality.")',
         bidirectional: true,
       },
       {
         spanish: 'por lo tanto',
         english: 'therefore / consequently',
-        context: '',
+        context:
+          'Example: "El metro falló; por lo tanto, llegué tarde." ("The metro had issues; therefore, I arrived late.")',
         bidirectional: true,
       },
       {
         spanish: 'por eso',
         english: 'that is why / for that reason',
-        context: '',
+        context:
+          'Example: "Tenía mucho frío, por eso me puse chamarra." ("I was very cold; that is why I put on a jacket.")',
         bidirectional: true,
       },
       {
         spanish: 'así que',
         english: 'so / so then',
-        context: '',
+        context:
+          'Example: "Ya terminamos, así que nos podemos ir." ("We\'re already done, so we can go.")',
         bidirectional: true,
       },
       {
         spanish: 'en cambio',
         english: 'on the other hand / whereas',
-        context: '',
+        context:
+          'Example: "A mí me encanta el café; a ella, en cambio, le gusta el té." ("I love coffee; she, on the other hand, prefers tea.")',
         bidirectional: true,
       },
       {
         spanish: 'de hecho',
         english: 'in fact / actually',
-        context: '',
+        context:
+          'Example: "No tengo hambre; de hecho, acabo de comer." ("I\'m not hungry; in fact, I just ate.")',
         bidirectional: true,
       },
       {
         spanish: 'a pesar de',
         english: 'despite / in spite of',
-        context: '',
+        context:
+          'Example: "Fuimos al parque a pesar de la lluvia." ("We went to the park despite the rain.")',
         bidirectional: true,
       },
       {
         spanish: 'aun así',
         english: 'even so / still',
-        context: '',
+        context:
+          'Example: "Salimos temprano; aun así, había mucho tráfico." ("We left early; even so, there was a lot of traffic.")',
         bidirectional: true,
       },
       {
         spanish: 'no obstante',
         english: 'nevertheless / nonetheless',
-        context: '',
+        context:
+          'Example: "El examen era difícil; no obstante, aprobé." ("The exam was difficult; nevertheless, I passed.")',
         bidirectional: true,
       },
       {
         spanish: 'por el contrario',
         english: 'on the contrary',
-        context: '',
+        context:
+          'Example: "No me molestó; por el contrario, me dio gusto." ("It didn\'t bother me; on the contrary, I was glad.")',
         bidirectional: true,
       },
       {
         spanish: 'es decir',
         english: 'that is to say / meaning',
-        context: '',
+        context:
+          'Example: "Llega el viernes, es decir, pasado mañana." ("He arrives Friday, that is to say, the day after tomorrow.")',
         bidirectional: true,
       },
       {
         spanish: 'en otras palabras',
         english: 'in other words',
-        context: '',
+        context:
+          'Example: "No hay fondos suficientes; en otras palabras, cancelaron el proyecto." ("There aren\'t enough funds; in other words, they cancelled the project.")',
         bidirectional: true,
       },
       {
         spanish: 'por si acaso',
         english: 'just in case',
-        context: '',
+        context:
+          'Example: "Lleva paraguas por si acaso." ("Take an umbrella just in case.")',
         bidirectional: true,
       },
       {
         spanish: 'mientras tanto',
         english: 'meanwhile / in the meantime',
-        context: '',
+        context:
+          'Example: "Prepara la mesa; mientras tanto, yo sirvo los tacos." ("Set the table; meanwhile, I\'ll serve the tacos.")',
         bidirectional: true,
       },
       {
         spanish: 'al fin y al cabo',
         english: 'at the end of the day / after all',
-        context: '',
+        context:
+          'Example: "No te preocupes tanto; al fin y al cabo, todo salió bien." ("Don\'t worry so much; at the end of the day, everything went well.")',
         bidirectional: true,
       },
       {
         spanish: 'de todos modos',
         english: 'anyway / in any case',
-        context: '',
+        context:
+          'Example: "Sé que tienes prisa, pero gracias de todos modos." ("I know you\'re in a hurry, but thanks anyway.")',
         bidirectional: true,
       },
       {
         spanish: 'ya que',
         english: 'since / seeing that',
-        context: '',
+        context:
+          'Example: "Ya que estás aquí, ayúdame tantito." ("Since you\'re here, help me a little bit.")',
         bidirectional: true,
       },
       {
         spanish: 'puesto que',
         english: 'given that / since',
-        context: '',
+        context:
+          'Example: "Puesto que nadie vino, reprogramamos la junta." ("Given that no one came, we rescheduled the meeting.")',
         bidirectional: true,
       },
       {
         spanish: 'debido a',
         english: 'due to',
-        context: '',
+        context:
+          'Example: "El vuelo se retrasó debido a la neblina." ("The flight was delayed due to fog.")',
         bidirectional: true,
       },
       {
         spanish: 'a causa de',
         english: 'because of',
-        context: '',
+        context:
+          'Example: "Cerraron Reforma a causa de una marcha." ("They closed Reforma because of a march.")',
         bidirectional: true,
       },
       {
         spanish: 'gracias a',
         english: 'thanks to',
-        context: '',
+        context:
+          'Example: "Llegamos a tiempo gracias a tu ayuda." ("We arrived on time thanks to your help.")',
         bidirectional: true,
       },
       {
         spanish: 'por culpa de',
         english: 'through the fault of / to blame on',
-        context: '',
+        context:
+          'Example: "Perdimos el tren por culpa de la alarma." ("We missed the train because of the alarm.")',
         bidirectional: true,
       },
       {
         spanish: 'de modo que',
         english: 'so that / in such a way that',
-        context: '',
+        context:
+          'Example: "Acomodé las cosas de modo que cupieran todas." ("I arranged things so that they would all fit.")',
         bidirectional: true,
       },
       {
         spanish: 'por consiguiente',
         english: 'consequently / as a result',
-        context: '',
+        context:
+          'Example: "No hubo quórum; por consiguiente, se suspendió la sesión." ("There was no quorum; consequently, the session was adjourned.")',
         bidirectional: true,
       },
       {
         spanish: 'en consecuencia',
         english: 'as a consequence',
-        context: '',
+        context:
+          'Example: "No revisaron el contrato y, en consecuencia, perdieron el anticipo." ("They didn\'t review the contract and, as a consequence, lost the deposit.")',
         bidirectional: true,
       },
       {
         spanish: 'incluso',
         english: 'even / including',
-        context: '',
+        context:
+          'Example: "Todos fueron a la fiesta, incluso los vecinos." ("Everyone went to the party, even the neighbors.")',
         bidirectional: true,
       },
       {
         spanish: 'es más',
         english: 'what is more / furthermore',
-        context: '',
+        context:
+          'Example: "La comida estuvo riquísima; es más, pedí postre." ("The food was delicious; what is more, I ordered dessert.")',
         bidirectional: true,
       },
       {
         spanish: 'sobre todo',
         english: 'above all / especially',
-        context: '',
+        context:
+          'Example: "Me encanta la Ciudad de México, sobre todo en primavera." ("I love Mexico City, especially in spring.")',
         bidirectional: true,
       },
       {
         spanish: 'asimismo',
         english: 'likewise / also',
-        context: '',
+        context:
+          'Example: "Agradeció a sus colegas; asimismo, felicitó al equipo." ("He thanked his colleagues; likewise, he congratulated the team.")',
         bidirectional: true,
       },
       {
         spanish: 'en realidad',
         english: 'actually / in reality',
-        context: '',
+        context:
+          'Example: "Parece sencillo, pero en realidad requiere mucha práctica." ("It seems simple, but in reality it takes a lot of practice.")',
         bidirectional: true,
       },
       {
         spanish: 'por ejemplo',
         english: 'for example',
-        context: '',
+        context:
+          'Example: "Hay muchas opciones; por ejemplo, podemos pedir sushi." ("There are many options; for example, we can order sushi.")',
         bidirectional: true,
       },
       {
         spanish: 'al principio',
         english: 'at first / at the beginning',
-        context: '',
+        context:
+          'Example: "Al principio fue difícil entender el acento." ("At first it was hard to understand the accent.")',
         bidirectional: true,
       },
       {
         spanish: 'al final',
         english: 'in the end / at last',
-        context: '',
+        context:
+          'Example: "Buscamos por todos lados y al final encontramos las llaves." ("We looked everywhere and in the end found the keys.")',
         bidirectional: true,
       },
       {
         spanish: 'por último',
         english: 'finally / lastly',
-        context: '',
+        context:
+          'Example: "Por último, no olvides apagar las luces." ("Lastly, don\'t forget to turn off the lights.")',
         bidirectional: true,
       },
       {
         spanish: 'en cuanto',
         english: 'as soon as / the moment that',
-        context: '',
+        context:
+          'Example: "Te llamo en cuanto llegue al depa." ("I\'ll call you as soon as I get to the apartment.")',
         bidirectional: true,
       },
       {
         spanish: 'en primer lugar',
         english: 'first of all / in the first place',
-        context: '',
+        context:
+          'Example: "En primer lugar, quiero agradecerles por venir." ("First of all, I want to thank you for coming.")',
         bidirectional: true,
       },
       {
         spanish: 'desde entonces',
         english: 'since then',
-        context: '',
+        context:
+          'Example: "Se mudó en enero y no lo he visto desde entonces." ("He moved in January and I haven\'t seen him since then.")',
         bidirectional: true,
       },
       {
         spanish: 'a partir de',
         english: 'starting from / as of',
-        context: '',
+        context:
+          'Example: "A partir de mañana abren la nueva cafetería." ("Starting tomorrow, the new coffee shop opens.")',
         bidirectional: true,
       },
       {
         spanish: 'al mismo tiempo',
         english: 'at the same time',
-        context: '',
+        context:
+          'Example: "No puedes hablar y comer al mismo tiempo." ("You can\'t talk and eat at the same time.")',
         bidirectional: true,
       },
       {
         spanish: 'pero',
         english: 'but',
-        context: '',
+        context:
+          'Example: "Quería salir a caminar, pero empezó a llover." ("I wanted to go for a walk, but it started raining.")',
         bidirectional: true,
       },
       {
         spanish: 'sino',
         english: 'but rather',
-        context: '',
+        context:
+          'Example: "No pedí agua con gas, sino agua natural." ("I didn\'t order sparkling water, but rather still water.")',
         bidirectional: true,
       },
       {
         spanish: 'por cierto',
         english: 'by the way / incidentally',
-        context: '',
+        context:
+          'Example: "Por cierto, ¿viste el mensaje que te mandé?" ("By the way, did you see the message I sent you?")',
         bidirectional: true,
       },
       {
         spanish: 'de lo contrario',
         english: 'otherwise / or else',
-        context: '',
+        context:
+          'Example: "Date prisa; de lo contrario, no alcanzaremos mesa." ("Hurry up; otherwise, we won\'t get a table.")',
         bidirectional: true,
       },
       {
         spanish: 'para colmo',
         english: 'to top it off / on top of that',
-        context: '',
+        context:
+          'Example: "Perdí la cartera y, para colmo, empezó a granizar." ("I lost my wallet and, to top it off, it started hailing.")',
         bidirectional: true,
       },
       {
         spanish: 'con tal de que',
         english: 'provided that / on the condition that',
-        context: '',
+        context:
+          'Example: "Te presto el coche con tal de que le pongas gasolina." ("I\'ll lend you the car provided that you put gas in it.")',
         bidirectional: true,
       },
       {
         spanish: 'siempre y cuando',
         english: 'as long as / provided that',
-        context: '',
+        context:
+          'Example: "Podemos ir al cine siempre y cuando termines la tarea." ("We can go to the movies as long as you finish your homework.")',
         bidirectional: true,
       },
       {
         spanish: 'a menos que',
         english: 'unless',
-        context: '',
+        context:
+          'Example: "Nos vemos a las ocho, a menos que tengas otro plan." ("See you at eight, unless you have another plan.")',
         bidirectional: true,
       },
       {
         spanish: 'por otra parte',
         english: 'on the other hand / moreover',
-        context: '',
+        context:
+          'Example: "El departamento es amplio; por otra parte, está muy bien ubicado." ("The apartment is spacious; moreover, it\'s very well located.")',
         bidirectional: true,
       },
       {
         spanish: 'en resumen',
         english: 'in summary / in short',
-        context: '',
+        context:
+          'Example: "En resumen, la reunión fue todo un éxito." ("In summary, the meeting was a complete success.")',
         bidirectional: true,
       },
       {
         spanish: 'en conclusión',
         english: 'in conclusion',
-        context: '',
+        context:
+          'Example: "En conclusión, el nuevo horario beneficia a todos." ("In conclusion, the new schedule benefits everyone.")',
         bidirectional: true,
       },
     ],
