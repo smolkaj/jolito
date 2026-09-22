@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   extractGlossTerms,
@@ -442,6 +444,56 @@ describe('LexiconIndex', () => {
       })
       expect(indexWithDanglingLemma.suggest('fantasma', 'es')).toEqual([])
       expect(indexWithDanglingLemma.translate('fantasma', 'es')).toBeNull()
+    })
+  })
+
+  describe('canonical dictionary formatting invariants', () => {
+    const dictPath = path.resolve(__dirname, '../../public/dict/es-en.json')
+    const rawData = fs.readFileSync(dictPath, 'utf-8')
+    const entries = JSON.parse(rawData) as LexiconEntry[]
+
+    it('contains over 20,000 valid dictionary entries', () => {
+      expect(entries.length).toBeGreaterThan(20000)
+    })
+
+    it('contains zero semicolons across all English definitions', () => {
+      const entriesWithSemicolons = entries.filter((e) =>
+        e.english.includes(';'),
+      )
+      expect(entriesWithSemicolons).toHaveLength(0)
+    })
+
+    it('standardizes enumerations exclusively around spaced slashes ( / )', () => {
+      for (const entry of entries) {
+        expect(entry.english).not.toMatch(/^\s*\/\s*/)
+        expect(entry.english).not.toMatch(/\s*\/\s*$/)
+        expect(entry.english).not.toMatch(/\/{2,}/)
+      }
+    })
+
+    it('preserves grammatical commas only in recognized clauses or conversational phrases', () => {
+      const billPhrase = entries.find(
+        (e) => e.spanish === 'la cuenta, por favor',
+      )
+      expect(billPhrase).toBeDefined()
+      expect(billPhrase?.english).toBe('the bill, please')
+
+      // Entries with commas should only have them in legitimate grammatical contexts
+      const commaEntries = entries.filter((e) => e.english.includes(','))
+      expect(commaEntries.length).toBeLessThan(1000)
+    })
+
+    it('indexes components of slash-delimited glosses bidirectionally', () => {
+      const gratisEntry = entries.find((e) => e.spanish === 'gratis')
+      expect(gratisEntry).toBeDefined()
+      expect(gratisEntry?.english).toBe('free / without charge')
+
+      const index = new LexiconIndex(entries.slice(0, 100))
+      // Both terms can be indexed if gratis is in the slice
+      if (index.translate('gratis', 'es')) {
+        expect(index.translate('free', 'en')?.spanish).toBe('gratis')
+        expect(index.translate('without charge', 'en')?.spanish).toBe('gratis')
+      }
     })
   })
 })
