@@ -480,7 +480,7 @@ describe('LexiconIndex', () => {
 
       // Entries with commas should only have them in legitimate grammatical contexts
       const commaEntries = entries.filter((e) => e.english.includes(','))
-      expect(commaEntries.length).toBeLessThan(1000)
+      expect(commaEntries.length).toBeLessThan(700)
     })
 
     it('indexes components of slash-delimited glosses bidirectionally', () => {
@@ -488,12 +488,9 @@ describe('LexiconIndex', () => {
       expect(gratisEntry).toBeDefined()
       expect(gratisEntry?.english).toBe('free / without charge')
 
-      const index = new LexiconIndex(entries.slice(0, 100))
-      // Both terms can be indexed if gratis is in the slice
-      if (index.translate('gratis', 'es')) {
-        expect(index.translate('free', 'en')?.spanish).toBe('gratis')
-        expect(index.translate('without charge', 'en')?.spanish).toBe('gratis')
-      }
+      const index = new LexiconIndex([gratisEntry!])
+      expect(index.translate('free', 'en')?.spanish).toBe('gratis')
+      expect(index.translate('without charge', 'en')?.spanish).toBe('gratis')
     })
   })
 })
