@@ -402,6 +402,48 @@ describe('LexiconIndex', () => {
       expect(enTakeaway[0]?.spanish).toBe('para llevar')
     })
 
+    it('does not crowd out or pollute prefix completions with false ancestor deletions', () => {
+      const precisionIndex = new LexiconIndex([
+        { spanish: 'desayuno', english: 'breakfast' },
+        { spanish: 'desayunar', english: 'to have breakfast' },
+        { spanish: 'desayunado', english: 'breakfasted' },
+        { spanish: 'desalojar', english: 'to evict' },
+        { spanish: 'desalojo', english: 'eviction' },
+        { spanish: 'desalmado', english: 'heartless' },
+      ])
+
+      const exactCompletions = precisionIndex.suggest('desay', 'es', 5)
+      expect(exactCompletions.map((c) => c.spanish)).toEqual([
+        'desayuno',
+        'desayunar',
+        'desayunado',
+      ])
+
+      // When a typo occurs in the prefix (desya), it should surface the breakfast words
+      const typoCompletions = precisionIndex.suggest('desya', 'es', 5)
+      expect(typoCompletions.map((c) => c.spanish)).toContain('desayuno')
+      expect(typoCompletions.map((c) => c.spanish)).toContain('desayunar')
+      expect(typoCompletions[0]?.spanish).toBe('desayuno')
+    })
+
+    it('resolves lemmas independently of whether setLemmaMap is called before or after addEntries', () => {
+      const indexA = new LexiconIndex()
+      indexA.setLemmaMap({ tuvimos: 'tener' })
+      indexA.addEntries([{ spanish: 'tener', english: 'to have' }])
+
+      const indexB = new LexiconIndex()
+      indexB.addEntries([{ spanish: 'tener', english: 'to have' }])
+      indexB.setLemmaMap({ tuvimos: 'tener' })
+
+      expect(indexA.suggest('tuvimos', 'es')).toEqual(
+        indexB.suggest('tuvimos', 'es'),
+      )
+      expect(indexA.suggest('tubimos', 'es')).toEqual(
+        indexB.suggest('tubimos', 'es'),
+      )
+      expect(indexA.suggest('tubimos', 'es')[0]?.spanish).toBe('tener')
+    })
+
     it('limits returned suggestions to requested limit', () => {
       const results = index.suggest('a', 'es', 1)
       expect(results.length).toBeLessThanOrEqual(1)

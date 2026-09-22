@@ -185,30 +185,20 @@ export function unpackLemmas(
   return result
 }
 
-type TrieEntryRef = {
+type TrieEntry = {
   entryIdx: number
-  isSubphrase?: boolean
-  isLemma?: boolean
-  lemmaForm?: string
+  isSubphrase?: boolean | undefined
 }
 
 class TrieNode {
   children: Map<string, TrieNode> = new Map()
-  entries?: TrieEntryRef[]
-}
-
-type TrieSearchResult = {
-  distance: number
-  isPrefix: boolean
-  isSubphrase: boolean
-  isLemma: boolean
-  lemmaForm?: string | undefined
+  entries?: TrieEntry[] | undefined
 }
 
 export class AutocompleteTrie {
   root = new TrieNode()
 
-  insert(phrase: string, ref: TrieEntryRef): void {
+  insert(phrase: string, entryIdx: number, isSubphrase = false): void {
     let node = this.root
     for (let i = 0; i < phrase.length; i++) {
       const ch = phrase.charAt(i)
@@ -222,64 +212,83 @@ export class AutocompleteTrie {
     if (!node.entries) {
       node.entries = []
     }
-    node.entries.push(ref)
+    node.entries.push({ entryIdx, isSubphrase })
   }
 
-  search(
+  findExactPrefix(
+    query: string,
+    maxCollect = 10,
+  ): Array<{ entryIdx: number; isSubphrase?: boolean | undefined }> {
+    let node: TrieNode | undefined = this.root
+    for (let i = 0; i < query.length; i++) {
+      node = node.children.get(query.charAt(i))
+      if (!node) return []
+    }
+
+    const results: Array<{
+      entryIdx: number
+      isSubphrase?: boolean | undefined
+    }> = []
+    const seen = new Set<number>()
+    const queue: TrieNode[] = [node]
+
+    while (queue.length > 0 && results.length < maxCollect) {
+      const cur = queue.shift()!
+      if (cur.entries) {
+        for (const e of cur.entries) {
+          if (!seen.has(e.entryIdx)) {
+            seen.add(e.entryIdx)
+            results.push(e)
+            if (results.length >= maxCollect) break
+          }
+        }
+      }
+      for (const child of cur.children.values()) {
+        queue.push(child)
+      }
+    }
+
+    return results
+  }
+
+  searchFuzzy(
     query: string,
     maxDistance: number,
     lang: 'es' | 'en',
-  ): Map<number, TrieSearchResult> {
+    maxCollect = 20,
+  ): Map<number, { distance: number; isSubphrase: boolean }> {
     const m = query.length
     const initialRow: number[] = new Array<number>(m + 1)
     for (let j = 0; j <= m; j++) {
       initialRow[j] = j
     }
 
-    const matches = new Map<number, TrieSearchResult>()
+    const matches = new Map<
+      number,
+      { distance: number; isSubphrase: boolean }
+    >()
 
     const record = (
       entryIdx: number,
       distance: number,
-      isPrefix: boolean,
-      ref: TrieEntryRef,
+      isSubphrase: boolean,
     ) => {
       const existing = matches.get(entryIdx)
-      const isSub = !!ref.isSubphrase
-      const isLem = !!ref.isLemma
-      if (!existing || distance < existing.distance - 0.001) {
-        const item: TrieSearchResult = {
-          distance,
-          isPrefix,
-          isSubphrase: isSub,
-          isLemma: isLem,
-        }
-        if (ref.lemmaForm !== undefined) {
-          item.lemmaForm = ref.lemmaForm
-        }
-        matches.set(entryIdx, item)
-      } else if (
-        Math.abs(distance - existing.distance) <= 0.001 &&
-        !isSub &&
-        existing.isSubphrase
+      if (
+        !existing ||
+        distance < existing.distance - 0.001 ||
+        (Math.abs(distance - existing.distance) <= 0.001 &&
+          !isSubphrase &&
+          existing.isSubphrase)
       ) {
-        const item: TrieSearchResult = {
-          distance,
-          isPrefix,
-          isSubphrase: false,
-          isLemma: isLem,
-        }
-        if (ref.lemmaForm !== undefined) {
-          item.lemmaForm = ref.lemmaForm
-        }
-        matches.set(entryIdx, item)
+        matches.set(entryIdx, { distance, isSubphrase })
       }
     }
 
     const collectSubtree = (
       node: TrieNode,
-      prefixDistance: number,
-      maxCollect = 20,
+      prefixDist: number,
+      isSub: boolean,
     ) => {
       let count = 0
       const queue: TrieNode[] = [node]
@@ -287,7 +296,7 @@ export class AutocompleteTrie {
         const cur = queue.shift()!
         if (cur.entries) {
           for (const e of cur.entries) {
-            record(e.entryIdx, prefixDistance, true, e)
+            record(e.entryIdx, prefixDist, isSub || !!e.isSubphrase)
             count++
             if (count >= maxCollect) break
           }
@@ -303,6 +312,7 @@ export class AutocompleteTrie {
       prevChar: string | null,
       parentRow: number[],
       grandParentRow: number[] | null,
+      depth: number,
     ) => {
       for (const [ch, child] of node.children.entries()) {
         const curRow = new Array<number>(m + 1)
@@ -365,21 +375,22 @@ export class AutocompleteTrie {
         if (terminalDist === undefined) {
           continue
         }
+
         if (child.entries && terminalDist <= maxDistance) {
           for (const e of child.entries) {
-            record(e.entryIdx, terminalDist, false, e)
+            record(e.entryIdx, terminalDist, !!e.isSubphrase)
           }
         }
 
-        if (terminalDist <= maxDistance) {
-          collectSubtree(child, terminalDist)
+        if (depth + 1 >= m - 1 && terminalDist <= maxDistance) {
+          collectSubtree(child, terminalDist, false)
         }
 
-        dfs(child, ch, curRow, parentRow)
+        dfs(child, ch, curRow, parentRow, depth + 1)
       }
     }
 
-    dfs(this.root, null, initialRow, null)
+    dfs(this.root, null, initialRow, null, 0)
     return matches
   }
 }
@@ -435,20 +446,6 @@ export class LexiconIndex {
           : [...existing, ...normList.filter((t) => !existing.includes(t))]
         this.lemmaMap.set(normForm, merged)
       }
-
-      for (const targetLemma of normList) {
-        const entry = this.normalizedSpanishMap.get(targetLemma)
-        if (entry) {
-          const entryIdx = this.entries.indexOf(entry)
-          if (entryIdx >= 0) {
-            this.esTrie.insert(normForm, {
-              entryIdx,
-              isLemma: true,
-              lemmaForm: normForm,
-            })
-          }
-        }
-      }
     }
   }
 
@@ -463,14 +460,16 @@ export class LexiconIndex {
 
       if (normEs) {
         this.normalizedSpanishMap.set(normEs, entry)
-        this.esTrie.insert(normEs, { entryIdx })
+        this.esTrie.insert(normEs, entryIdx, false)
         let spaceIdx = normEs.indexOf(' ')
-        while (spaceIdx !== -1) {
+        let count = 0
+        while (spaceIdx !== -1 && count < 3) {
           const sub = normEs.slice(spaceIdx + 1)
-          if (sub.length >= 2) {
-            this.esTrie.insert(sub, { entryIdx, isSubphrase: true })
+          if (sub.length >= 3) {
+            this.esTrie.insert(sub, entryIdx, true)
           }
           spaceIdx = normEs.indexOf(' ', spaceIdx + 1)
+          count++
         }
       }
 
@@ -482,18 +481,20 @@ export class LexiconIndex {
 
       for (const term of enTerms) {
         const normEn = normalizeForSearch(term)
-        if (!normEn) continue
+        if (!normEn || normEn.length > 40) continue
         if (!this.normalizedEnglishMap.has(normEn)) {
           this.normalizedEnglishMap.set(normEn, entry)
         }
-        this.enTrie.insert(normEn, { entryIdx })
+        this.enTrie.insert(normEn, entryIdx, false)
         let spaceIdx = normEn.indexOf(' ')
-        while (spaceIdx !== -1) {
+        let count = 0
+        while (spaceIdx !== -1 && count < 3) {
           const sub = normEn.slice(spaceIdx + 1)
-          if (sub.length >= 2) {
-            this.enTrie.insert(sub, { entryIdx, isSubphrase: true })
+          if (sub.length >= 3) {
+            this.enTrie.insert(sub, entryIdx, true)
           }
           spaceIdx = normEn.indexOf(' ', spaceIdx + 1)
+          count++
         }
       }
     }
@@ -541,7 +542,20 @@ export class LexiconIndex {
       }
 
       // 2. Lemma resolution (Spanish only)
-      const lemmaTargets = this.lemmaMap.get(normalized)
+      let lemmaTargets = this.lemmaMap.get(normalized)
+      if (!lemmaTargets) {
+        if (normalized.includes('b') || normalized.includes('v')) {
+          const alt = normalized
+            .replace(/b/g, '__b__')
+            .replace(/v/g, 'b')
+            .replace(/__b__/g, 'v')
+          lemmaTargets = this.lemmaMap.get(alt)
+        }
+        if (!lemmaTargets && !normalized.startsWith('h')) {
+          lemmaTargets = this.lemmaMap.get('h' + normalized)
+        }
+      }
+
       if (lemmaTargets) {
         for (const lemmaTarget of lemmaTargets) {
           const lemmaEntry = this.normalizedSpanishMap.get(lemmaTarget)
@@ -559,73 +573,62 @@ export class LexiconIndex {
       }
     }
 
-    // 3. Trie branch-and-bound approximate search
     const trie = lang === 'es' ? this.esTrie : this.enTrie
-    const maxDist =
-      normalized.length <= 2 ? 0.0 : normalized.length <= 4 ? 1.0 : 2.0
-    const searchHits = trie.search(normalized, maxDist, lang)
 
-    const candidates = Array.from(searchHits.entries()).map(
-      ([entryIdx, meta]) => {
-        const entry = this.entries[entryIdx]!
-        const primaryText =
-          lang === 'es'
-            ? normalizeForSearch(entry.spanish)
-            : normalizeForSearch(entry.english)
-        return {
-          entry,
-          ...meta,
-          termLength: primaryText.length,
-        }
-      },
-    )
-
-    const rankType = (c: (typeof candidates)[number]): number => {
-      if (c.distance === 0) {
-        if (!c.isPrefix && !c.isSubphrase && !c.isLemma) return 0
-        if (c.isLemma) return 1
-        if (!c.isSubphrase) return 2
-        return 3
-      }
-      if (c.isLemma) return 4
-      if (!c.isSubphrase) return 5
-      return 6
-    }
-
-    candidates.sort((a, b) => {
-      if (Math.abs(a.distance - b.distance) > 0.001) {
-        return a.distance - b.distance
-      }
-      const rA = rankType(a)
-      const rB = rankType(b)
-      if (rA !== rB) return rA - rB
-      return a.termLength - b.termLength
-    })
-
-    for (const c of candidates) {
-      if (seen.has(c.entry.spanish)) continue
-      let matchType: 'exact' | 'prefix' | 'lemma' | 'fuzzy'
-      let matchedForm: string | undefined
-
-      if (c.distance === 0) {
-        if (c.isLemma) {
-          matchType = 'lemma'
-          matchedForm = c.lemmaForm ?? query.trim()
-        } else if (c.isPrefix || c.isSubphrase) {
-          matchType = 'prefix'
-        } else {
-          matchType = 'exact'
-        }
-      } else {
-        matchType = c.isLemma ? 'lemma' : 'fuzzy'
-        matchedForm = query.trim()
-      }
-
-      addResult(c.entry, matchType, matchedForm)
+    // 3. Exact prefix completions via Trie (O(|Q|) traversal, < 0.1ms)
+    const exactPrefixMatches = trie.findExactPrefix(normalized, limit)
+    for (const match of exactPrefixMatches) {
+      const entry = this.entries[match.entryIdx]!
+      addResult(entry, 'prefix')
       if (results.length >= limit) return results
     }
 
-    // 4. Fallback substring matches
+    // 4. Approximate / typo search (only if no exact headword/prefix matches found)
+    if (results.length === 0) {
+      const maxDist =
+        normalized.length <= 2 ? 0.0 : normalized.length <= 4 ? 1.0 : 2.0
+      if (maxDist > 0) {
+        const searchHits = trie.searchFuzzy(
+          normalized,
+          maxDist,
+          lang,
+          limit * 2,
+        )
+
+        const candidates = Array.from(searchHits.entries()).map(
+          ([entryIdx, meta]) => {
+            const entry = this.entries[entryIdx]!
+            const primaryText =
+              lang === 'es'
+                ? normalizeForSearch(entry.spanish)
+                : normalizeForSearch(entry.english)
+            return {
+              entry,
+              ...meta,
+              termLength: primaryText.length,
+            }
+          },
+        )
+
+        candidates.sort((a, b) => {
+          if (Math.abs(a.distance - b.distance) > 0.001) {
+            return a.distance - b.distance
+          }
+          if (a.isSubphrase !== b.isSubphrase) {
+            return a.isSubphrase ? 1 : -1
+          }
+          return a.termLength - b.termLength
+        })
+
+        for (const c of candidates) {
+          if (seen.has(c.entry.spanish)) continue
+          addResult(c.entry, 'fuzzy', query.trim())
+          if (results.length >= limit) return results
+        }
+      }
+    }
+
+    // 5. Fallback substring matches (only if still < limit and length >= 3)
     if (results.length < limit && normalized.length >= 3) {
       for (const entry of this.entries) {
         if (seen.has(entry.spanish)) continue
