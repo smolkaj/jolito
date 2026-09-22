@@ -113,7 +113,9 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
         typeof document !== 'undefined' &&
         document.activeElement &&
         document.activeElement instanceof HTMLElement &&
-        document.activeElement !== document.body
+        (document.activeElement instanceof HTMLInputElement ||
+          document.activeElement instanceof HTMLTextAreaElement ||
+          document.activeElement.getAttribute('contenteditable') === 'true')
       ) {
         document.activeElement.blur()
       }
