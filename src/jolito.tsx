@@ -41,7 +41,7 @@ import { useGrammarPractice } from './ui/useGrammarPractice'
 import { StorageRecovery } from './ui/StorageRecovery'
 import { GrammarPractice } from './ui/GrammarPractice'
 import { useStudySession } from './ui/useStudySession'
-import { useStudyAudio } from './ui/useStudyAudio'
+import { cardReviewSeed, useStudyAudio } from './ui/useStudyAudio'
 import type { StarterPack } from './domain/starter-decks'
 import type { SyncStatus } from './domain/sync'
 import { mergeStudyCardsSemantic } from './domain/card-merge'
@@ -676,10 +676,31 @@ function LoadedApp({
         card.id === cardId ? updated : card,
       )
       if (!onUpdateCards(newCards)) return false
+      if (typeof services.speaker.prefetch === 'function') {
+        const seed = cardReviewSeed(updated)
+        const itemsToPrefetch: PrefetchItem[] = []
+        if (updated.prompt.trim()) {
+          itemsToPrefetch.push({
+            text: updated.prompt,
+            locale: localeForPrompt(updated),
+            cardSeed: seed,
+          })
+        }
+        if (updated.answer.trim()) {
+          itemsToPrefetch.push({
+            text: updated.answer,
+            locale: localeForAnswer(updated),
+            cardSeed: seed,
+          })
+        }
+        if (itemsToPrefetch.length > 0) {
+          void services.speaker.prefetch(itemsToPrefetch)
+        }
+      }
       setEditingCard(null)
       return true
     },
-    [onUpdateCards, services.clock],
+    [onUpdateCards, services.clock, services.speaker],
   )
 
   const handleConfirmDelete = useCallback(
