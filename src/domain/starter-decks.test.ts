@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { findStarterPack, starterPacks } from './starter-decks'
 
 describe('starterPacks', () => {
-  it('defines 9 distinct curated starter packs', () => {
-    expect(starterPacks).toHaveLength(9)
+  it('defines 10 distinct curated starter packs', () => {
+    expect(starterPacks).toHaveLength(10)
     const ids = starterPacks.map((p) => p.id)
     expect(ids).toEqual([
       'mexican-street-phrases',
@@ -15,6 +15,7 @@ describe('starterPacks', () => {
       'common-connectors',
       'common-adjectives',
       'common-idioms',
+      'common-adverbs',
     ])
   })
 
@@ -181,6 +182,34 @@ describe('starterPacks', () => {
       .filter((c) => c.direction === 'es-en')
       .map((c) => c.prompt.toLowerCase().trim())
     expect(new Set(spanishPrompts).size).toBe(30)
+  })
+
+  it('contains exactly 50 notes (100 reciprocal cards) for top adverbs', () => {
+    const adverbs = findStarterPack('common-adverbs')
+    expect(adverbs).toBeDefined()
+    expect(adverbs?.title).toBe('Top Adverbs: 1–50')
+    expect(adverbs?.badge).toBe('Adverbs')
+    expect(adverbs?.themeColor).toBe('maya')
+    expect(adverbs?.noteCount).toBe(50)
+    expect(adverbs?.cardCount).toBe(100)
+
+    const cards = adverbs!.createCards(12345)
+    expect(cards).toHaveLength(100)
+    expect(cards.every((c) => !c.noteId.startsWith('starter-'))).toBe(true)
+    expect(
+      cards.every((c) => c.noteId.startsWith('curated-common-adverbs-')),
+    ).toBe(true)
+    expect(
+      cards.every((c) =>
+        /^Example: "[^"]+" \("[^"]+"\)$/.test(c.context.trim()),
+      ),
+    ).toBe(true)
+
+    // Verify all 50 Spanish prompts are unique
+    const spanishPrompts = cards
+      .filter((c) => c.direction === 'es-en')
+      .map((c) => c.prompt.toLowerCase().trim())
+    expect(new Set(spanishPrompts).size).toBe(50)
   })
 
   it('retains slang and spoken etiquette contexts in street phrases while omitting boilerplate context from common verb packs', () => {
