@@ -2240,7 +2240,8 @@ summary:focus-visible,
   .resend-button-sent,
   .resend-button-check,
   .paste-input-btn.is-pasted,
-  .sample-card.is-playing .sample-listen-hint svg {
+  .sample-card.is-playing .sample-listen-hint svg,
+  .audio-button.is-playing svg {
     animation: none;
   }
 
@@ -2359,6 +2360,13 @@ summary:focus-visible,
   box-shadow: 0 0 0 var(--ink);
 }
 
+.audio-button.is-playing {
+  background: var(--turquesa-soft);
+  border-color: var(--turquesa-dark);
+  color: var(--turquesa-dark);
+  box-shadow: 2px 2px 0 var(--turquesa-dark);
+}
+
 .audio-button svg {
   width: 18px;
   height: 18px;
@@ -2367,6 +2375,10 @@ summary:focus-visible,
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.audio-button.is-playing svg {
+  animation: audio-pulse 0.6s ease-in-out infinite alternate;
 }
 
 /* Answer Input */

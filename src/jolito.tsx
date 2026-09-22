@@ -523,6 +523,8 @@ function LoadedApp({
     playAnswerAudio,
     playRevealSensory,
     playGradeSensory,
+    isPlayingPrompt,
+    isPlayingAnswer,
   } = useStudyAudio({
     speaker: services.speaker,
     sounds: services.sounds,
@@ -1487,6 +1489,7 @@ function LoadedApp({
                     <AudioButton
                       prompt
                       label="Play prompt audio"
+                      playing={isPlayingPrompt}
                       onClick={() => playPromptAudio()}
                     />
                   </div>
@@ -1513,6 +1516,7 @@ function LoadedApp({
               onReveal={reveal}
               onGrade={grade}
               onPlayAnswer={() => playAnswerAudio()}
+              isPlayingAnswer={isPlayingAnswer}
               onPlayPrompt={() => playPromptAudio()}
               onEdit={() => setEditingCard(currentCard)}
               onDelete={() => setDeletingCards([currentCard])}

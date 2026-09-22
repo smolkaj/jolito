@@ -8,9 +8,16 @@ import {
   vi,
   type Mock,
 } from 'vitest'
-import type { HapticsPlayer, SoundPlayer, Speaker } from '../application/ports'
+import type {
+  HapticsPlayer,
+  SoundPlayer,
+  Speaker,
+  SpeakerOptions,
+} from '../application/ports'
 import type { StudyCard } from '../domain/card'
 import { useStudyAudio } from './useStudyAudio'
+
+const anyOnEnded = expect.any(Function) as unknown as (() => void) | undefined
 
 const mockCard: StudyCard = {
   id: 'card-1',
@@ -186,6 +193,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       cardSeed: 'card-1:turn3',
       explicit: true,
+      onEnded: anyOnEnded,
     })
   })
 
@@ -208,6 +216,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledWith('hello', 'en-US', {
       cardSeed: 'card-1:turn3',
       explicit: true,
+      onEnded: anyOnEnded,
     })
   })
 
@@ -239,6 +248,7 @@ describe('useStudyAudio', () => {
       cardSeed: 'card-2:turn1',
       dualVoice: false,
       explicit: true,
+      onEnded: anyOnEnded,
     })
 
     act(() => {
@@ -247,6 +257,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledWith('perro', 'es-MX', {
       cardSeed: 'card-2:turn1',
       explicit: true,
+      onEnded: anyOnEnded,
     })
   })
 
@@ -295,6 +306,7 @@ describe('useStudyAudio', () => {
     expect(speakMock).toHaveBeenCalledWith('hello', 'en-US', {
       cardSeed: 'card-1:turn3',
       explicit: false,
+      onEnded: anyOnEnded,
     })
   })
 
@@ -459,6 +471,7 @@ describe('useStudyAudio', () => {
 
     expect(speakMock).toHaveBeenCalledWith('hola', 'es-MX', {
       explicit: true,
+      onEnded: anyOnEnded,
     })
     expect(result.current.audioUnavailable).toBe(true)
   })
@@ -483,6 +496,7 @@ describe('useStudyAudio', () => {
       cardSeed: 'seed-1',
       dualVoice: false,
       explicit: false,
+      onEnded: anyOnEnded,
     })
   })
 
@@ -510,5 +524,177 @@ describe('useStudyAudio', () => {
     })
 
     expect(speakMock).not.toHaveBeenCalled()
+  })
+
+  it('tracks isPlayingPrompt and isAudioPlaying during playPromptAudio and settles on onEnded', () => {
+    let capturedOptions: SpeakerOptions | undefined
+    speakMock.mockImplementation((_t, _l, opts) => {
+      capturedOptions = opts
+      return true
+    })
+
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        autoplayPrompt: false,
+      }),
+    )
+
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+
+    act(() => {
+      result.current.playPromptAudio()
+    })
+
+    expect(result.current.isPlayingPrompt).toBe(true)
+    expect(result.current.isPlayingAnswer).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(true)
+
+    act(() => {
+      capturedOptions?.onEnded?.()
+    })
+
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+  })
+
+  it('tracks isPlayingAnswer and settles on onEnded', () => {
+    let capturedOptions: SpeakerOptions | undefined
+    speakMock.mockImplementation((_t, _l, opts) => {
+      capturedOptions = opts
+      return true
+    })
+
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        autoplayPrompt: false,
+      }),
+    )
+
+    act(() => {
+      result.current.playAnswerAudio()
+    })
+
+    expect(result.current.isPlayingAnswer).toBe(true)
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(true)
+
+    act(() => {
+      capturedOptions?.onEnded?.()
+    })
+
+    expect(result.current.isPlayingAnswer).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+  })
+
+  it('resets playing state immediately on cancelPendingAudio', () => {
+    speakMock.mockReturnValue(true)
+
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        autoplayPrompt: false,
+      }),
+    )
+
+    act(() => {
+      result.current.playPromptAudio()
+    })
+
+    expect(result.current.isPlayingPrompt).toBe(true)
+
+    act(() => {
+      result.current.cancelPendingAudio()
+    })
+
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+  })
+
+  it('guards against race conditions when rapid audio requests overlap', () => {
+    const onEndedCallbacks: Array<() => void> = []
+    speakMock.mockImplementation((_t, _l, opts) => {
+      if (opts?.onEnded) {
+        onEndedCallbacks.push(opts.onEnded)
+      }
+      return true
+    })
+
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        autoplayPrompt: false,
+      }),
+    )
+
+    // Request 1: prompt audio
+    act(() => {
+      result.current.playPromptAudio()
+    })
+    expect(result.current.isPlayingPrompt).toBe(true)
+
+    // Request 2: answer audio arrives before request 1 finishes
+    act(() => {
+      result.current.playAnswerAudio()
+    })
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isPlayingAnswer).toBe(true)
+
+    // Late onEnded from Request 1 fires
+    act(() => {
+      onEndedCallbacks[0]?.()
+    })
+    // Request 2 must NOT be cleared by Request 1's late callback!
+    expect(result.current.isPlayingAnswer).toBe(true)
+    expect(result.current.isAudioPlaying).toBe(true)
+
+    // OnEnded from Request 2 fires
+    act(() => {
+      onEndedCallbacks[1]?.()
+    })
+    expect(result.current.isPlayingAnswer).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+  })
+
+  it('stays false when speaker.speak returns false', () => {
+    speakMock.mockReturnValue(false)
+
+    const { result } = renderHook(() =>
+      useStudyAudio({
+        speaker: mockSpeaker,
+        sounds: mockSounds,
+        haptics: mockHaptics,
+        currentCard: mockCard,
+        view: 'review',
+        autoplayPrompt: false,
+      }),
+    )
+
+    act(() => {
+      const played = result.current.playPromptAudio()
+      expect(played).toBe(false)
+    })
+
+    expect(result.current.isPlayingPrompt).toBe(false)
+    expect(result.current.isAudioPlaying).toBe(false)
+    expect(result.current.audioUnavailable).toBe(true)
   })
 })

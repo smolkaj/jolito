@@ -2350,4 +2350,110 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
       vi.useRealTimers()
     }
   })
+
+  describe('synchronous pre-activation and audio session elevation contract', () => {
+    it('calls preactivateContext synchronously during explicit speak for uncached phrase', () => {
+      const localEngine = new NeuralVoiceEngine()
+      const localFallback: Speaker = {
+        supported: vi.fn().mockReturnValue(true),
+        speak: vi.fn().mockReturnValue(true),
+      }
+      const preactivateSpy = vi.spyOn(localEngine, 'preactivateContext')
+      vi.spyOn(localEngine, 'hasAudio').mockReturnValue(false)
+      vi.spyOn(localEngine, 'isAudioInFlight').mockReturnValue(false)
+      vi.spyOn(localEngine, 'fetchAndCacheAudio').mockResolvedValue(true)
+      vi.spyOn(localEngine, 'awaitAudio').mockResolvedValue(true)
+      vi.spyOn(localEngine, 'playAudio').mockReturnValue(true)
+
+      const speaker = new LayeredNeuralSpeaker({
+        neuralEngine: localEngine,
+        fallbackSpeaker: localFallback,
+      })
+
+      speaker.speak('palabra nueva', 'es-MX', { explicit: true })
+
+      // preactivateContext MUST be called synchronously within the user gesture handler
+      expect(preactivateSpy).toHaveBeenCalledWith(true)
+      localEngine.destroy()
+    })
+
+    it('preactivateContext elevates category to playback and resumes suspended context', () => {
+      const mockAudioSession = { type: 'ambient' }
+      Object.defineProperty(navigator, 'audioSession', {
+        value: mockAudioSession,
+        configurable: true,
+      })
+
+      const resumeSpy = vi.fn().mockResolvedValue(undefined)
+      const mockCtx = {
+        state: 'suspended',
+        resume: resumeSpy,
+        destination: {},
+        createBufferSource: vi.fn(),
+      }
+      const origAudioContext = window.AudioContext
+      window.AudioContext = vi.fn().mockImplementation(function () {
+        return mockCtx
+      }) as typeof AudioContext
+
+      try {
+        const engine = new NeuralVoiceEngine()
+        engine.preactivateContext(true)
+
+        expect(mockAudioSession.type).toBe('playback')
+        expect(resumeSpy).toHaveBeenCalled()
+        engine.destroy()
+      } finally {
+        window.AudioContext = origAudioContext
+      }
+    })
+
+    it('cleans up audio session category to ambient and fires onEnded when async explicit speak is superseded', async () => {
+      const mockAudioSession = { type: 'ambient' }
+      Object.defineProperty(navigator, 'audioSession', {
+        value: mockAudioSession,
+        configurable: true,
+      })
+
+      const localEngine = new NeuralVoiceEngine()
+      const localFallback: Speaker = {
+        supported: vi.fn().mockReturnValue(true),
+        speak: vi.fn().mockReturnValue(true),
+      }
+
+      let resolveAwait!: (ready: boolean) => void
+      vi.spyOn(localEngine, 'hasAudio').mockReturnValue(false)
+      vi.spyOn(localEngine, 'isAudioInFlight').mockReturnValue(false)
+      vi.spyOn(localEngine, 'fetchAndCacheAudio').mockResolvedValue(true)
+      vi.spyOn(localEngine, 'awaitAudio').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveAwait = resolve
+          }),
+      )
+
+      const speaker = new LayeredNeuralSpeaker({
+        neuralEngine: localEngine,
+        fallbackSpeaker: localFallback,
+      })
+
+      const onEndedFirst = vi.fn()
+      speaker.speak('phrase 1', 'es-MX', {
+        explicit: true,
+        onEnded: onEndedFirst,
+      })
+      expect(mockAudioSession.type).toBe('playback')
+
+      // Phrase 2 arrives before Phrase 1 resolves, advancing speakGeneration
+      speaker.speak('phrase 2', 'es-MX', { explicit: false })
+
+      // Phrase 1 now resolves late
+      resolveAwait(true)
+      await Promise.resolve()
+
+      expect(onEndedFirst).toHaveBeenCalledTimes(1)
+      expect(mockAudioSession.type).toBe('ambient')
+      localEngine.destroy()
+    })
+  })
 })

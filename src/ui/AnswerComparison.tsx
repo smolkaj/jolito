@@ -22,12 +22,14 @@ export function AnswerComparison({
   expected,
   lang,
   onPlayAudio,
+  isPlayingAudio = false,
   correctionRule,
 }: {
   typed: string
   expected: string
   lang: string
   onPlayAudio?: (() => void) | undefined
+  isPlayingAudio?: boolean | undefined
   correctionRule?: string | undefined
 }) {
   const comparison = compareAnswer(typed, expected)
@@ -40,7 +42,11 @@ export function AnswerComparison({
           {expected}
         </p>
         {onPlayAudio && (
-          <AudioButton label="Play answer audio" onClick={onPlayAudio} />
+          <AudioButton
+            label="Play answer audio"
+            playing={isPlayingAudio}
+            onClick={onPlayAudio}
+          />
         )}
       </div>
     )
@@ -64,7 +70,11 @@ export function AnswerComparison({
             {renderDiffSegments(comparison.expectedSegments)}
           </p>
           {onPlayAudio && (
-            <AudioButton label="Play answer audio" onClick={onPlayAudio} />
+            <AudioButton
+              label="Play answer audio"
+              playing={isPlayingAudio}
+              onClick={onPlayAudio}
+            />
           )}
           {correctionRule && (
             <p className="diff-rule">

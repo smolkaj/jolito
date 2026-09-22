@@ -1,5 +1,9 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import type { AiAssistant, HapticsPlayer } from '../../application/ports'
+import type {
+  AiAssistant,
+  HapticsPlayer,
+  SpeakerOptions,
+} from '../../application/ports'
 import type { StudyCard, UpdateCardParams } from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
 import { MexicoFlag, EnglishBadge } from '../icons'
@@ -25,7 +29,12 @@ function EditCardModalInner({
   onClose: () => void
   onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
   saveError?: string | null | undefined
-  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
+  onPlayAudio: (
+    text: string,
+    locale: string,
+    cardSeed?: string,
+    options?: SpeakerOptions,
+  ) => void
   aiAssistant?: AiAssistant | undefined
   isOnline?: boolean | undefined
   haptics?: HapticsPlayer | undefined
@@ -34,6 +43,9 @@ function EditCardModalInner({
   const [answer, setAnswer] = useState(card.answer)
   const [context, setContext] = useState(card.context ?? '')
   const [resetProgress, setResetProgress] = useState(false)
+  const [playingField, setPlayingField] = useState<'prompt' | 'answer' | null>(
+    null,
+  )
   const [error, setError] = useState<string | null>(null)
 
   const contextTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -188,9 +200,17 @@ function EditCardModalInner({
             {prompt.trim() && (
               <AudioButton
                 label="Play prompt preview"
-                onClick={() =>
-                  onPlayAudio(prompt.trim(), promptLocale, card.id)
-                }
+                prompt
+                playing={playingField === 'prompt'}
+                onClick={() => {
+                  setPlayingField('prompt')
+                  onPlayAudio(prompt.trim(), promptLocale, card.id, {
+                    onEnded: () =>
+                      setPlayingField((curr) =>
+                        curr === 'prompt' ? null : curr,
+                      ),
+                  })
+                }}
               />
             )}
           </div>
@@ -219,9 +239,16 @@ function EditCardModalInner({
             {answer.trim() && (
               <AudioButton
                 label="Play answer preview"
-                onClick={() =>
-                  onPlayAudio(answer.trim(), answerLocale, card.id)
-                }
+                playing={playingField === 'answer'}
+                onClick={() => {
+                  setPlayingField('answer')
+                  onPlayAudio(answer.trim(), answerLocale, card.id, {
+                    onEnded: () =>
+                      setPlayingField((curr) =>
+                        curr === 'answer' ? null : curr,
+                      ),
+                  })
+                }}
               />
             )}
           </div>
@@ -326,7 +353,12 @@ export interface EditCardModalProps {
   onClose: () => void
   onSave: (cardId: string, updates: UpdateCardParams) => boolean | void
   saveError?: string | null | undefined
-  onPlayAudio: (text: string, locale: string, cardSeed?: string) => void
+  onPlayAudio: (
+    text: string,
+    locale: string,
+    cardSeed?: string,
+    options?: SpeakerOptions,
+  ) => void
   aiAssistant?: AiAssistant | undefined
   isOnline?: boolean | undefined
   haptics?: HapticsPlayer | undefined

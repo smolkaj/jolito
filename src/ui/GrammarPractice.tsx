@@ -213,6 +213,9 @@ export function GrammarPractice({
             </h1>
             <AudioButton
               prompt={!session.revealed}
+              playing={
+                session.revealed ? audio.isPlayingAnswer : audio.isPlayingPrompt
+              }
               label={
                 session.revealed ? 'Play answer audio' : 'Play prompt audio'
               }

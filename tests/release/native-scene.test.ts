@@ -19,3 +19,20 @@ void test('native scenes leave window creation to the scene delegate', () => {
   assert.ok(!keys.includes('UISceneStoryboardFile'))
   assert.ok(keys.includes('UILaunchStoryboardName'))
 })
+
+void test('AppDelegate configures AVAudioSession with playback and mixWithOthers for language learning speech in silent mode', () => {
+  const appDelegate = readFileSync(
+    new URL('../../ios/App/App/AppDelegate.swift', import.meta.url),
+    'utf8',
+  )
+
+  // Explicit pronunciation audio must play in silent mode without pausing background audio (e.g. podcasts/music)
+  assert.match(
+    appDelegate,
+    /audioSession\.setCategory\(\.playback,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
+  )
+  assert.match(
+    appDelegate,
+    /applicationWillEnterForeground[\s\S]*?audioSession\.setCategory\(\.playback,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
+  )
+})
