@@ -1392,6 +1392,21 @@ function LoadedApp({
               onClick={() => openSyncModal()}
             />
           </div>
+          {practicing && (
+            <SessionProgress
+              percentage={
+                grammar
+                  ? grammarPractice.session.progressPercentage
+                  : progressPercentage
+              }
+              remaining={
+                grammar
+                  ? grammarPractice.session.remainingCount
+                  : remainingCount
+              }
+              unit={grammar ? 'form' : 'card'}
+            />
+          )}
         </nav>
         {saveError && !(practicing && !grammar) && !grammarPractice.error && (
           <p className="storage-save-error" role="alert">
@@ -1406,19 +1421,6 @@ function LoadedApp({
           }}
           onCopySessionLink={handleCopySessionLink}
         />
-        {practicing && (
-          <SessionProgress
-            percentage={
-              grammar
-                ? grammarPractice.session.progressPercentage
-                : progressPercentage
-            }
-            remaining={
-              grammar ? grammarPractice.session.remainingCount : remainingCount
-            }
-            unit={grammar ? 'form' : 'card'}
-          />
-        )}
         {grammar ? (
           <GrammarPractice
             saveError={saveError}

@@ -117,6 +117,15 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(answerInput).toBeVisible()
     await expect(answerInput).toBeFocused()
 
+    // Verify Island Progress Capsule is visible inside topbar and coaxial with viewport center
+    const progressTrack = page.locator('.topbar .review-progress-track')
+    await expect(progressTrack).toBeVisible()
+    const trackBox = await progressTrack.boundingBox()
+    expect(trackBox).not.toBeNull()
+    const viewportWidth = page.viewportSize()!.width
+    const trackCenter = trackBox!.x + trackBox!.width / 2
+    expect(Math.abs(trackCenter - viewportWidth / 2)).toBeLessThanOrEqual(2)
+
     await page.screenshot({ path: 'test-results/mobile-unrevealed.png' })
 
     // 3. Type answer on mobile and press Enter / Submit
@@ -146,6 +155,12 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
 
     // Next card should appear and focus
     await expect(page.getByLabel(/your answer/i)).toBeVisible()
+    await expect(progressTrack).toHaveAttribute('role', 'progressbar')
+    await expect(progressTrack).toHaveAttribute(
+      'aria-label',
+      'Session progress',
+    )
+    await page.screenshot({ path: 'test-results/mobile-progress-active.png' })
   })
 
   test('verifies mobile safe-area insets and bottom action bar fit', async ({
