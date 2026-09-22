@@ -2707,6 +2707,367 @@ export const starterPackSeeds: StarterPackSeed[] = [
       },
     ],
   },
+  {
+    id: 'common-adverbs',
+    title: 'Top Adverbs: 1–50',
+    subtitle: 'Time, Place & Manner',
+    description:
+      'High-frequency temporal, frequency, and manner adverbs for everyday fluency.',
+    badge: 'Adverbs',
+    themeColor: 'maya',
+    notes: [
+      {
+        spanish: 'siempre',
+        english: 'always',
+        context:
+          'Example: "Siempre llego diez minutos antes a la oficina." ("I always arrive ten minutes early to the office.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'nunca',
+        english: 'never',
+        context:
+          'Example: "Nunca tomo café después de las seis de la tarde." ("I never drink coffee after six in the evening.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'jamás',
+        english: 'never ever / never',
+        context:
+          'Example: "Jamás olvidaré la primera vez que visité Bellas Artes." ("I will never forget the first time I visited Bellas Artes.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'a veces',
+        english: 'sometimes',
+        context:
+          'Example: "A veces prefiero caminar en vez de tomar el metro." ("Sometimes I prefer walking instead of taking the subway.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'todavía',
+        english: 'still / yet',
+        context:
+          'Example: "Todavía no decido qué pedir de cenar." ("I still haven\'t decided what to order for dinner.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'ya',
+        english: 'already / now',
+        context:
+          'Example: "Ya terminamos la reunión con el equipo." ("We already finished the meeting with the team.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'hoy',
+        english: 'today',
+        context:
+          'Example: "Hoy el clima está fresco y agradable en la ciudad." ("Today the weather is cool and pleasant in the city.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'mañana',
+        english: 'tomorrow',
+        context:
+          'Example: "Mañana tenemos una cita importante con el cliente." ("Tomorrow we have an important meeting with the client.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'ayer',
+        english: 'yesterday',
+        context:
+          'Example: "Ayer llovió muy fuerte durante la tarde." ("Yesterday it rained very hard during the afternoon.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'anoche',
+        english: 'last night',
+        context:
+          'Example: "Anoche vimos una película mexicana muy divertida." ("Last night we watched a very funny Mexican movie.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'antier',
+        english: 'the day before yesterday',
+        context:
+          'Example: "Antier recibí el paquete que estaba esperando." ("The day before yesterday I received the package I was waiting for.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'temprano',
+        english: 'early',
+        context:
+          'Example: "Me levanté temprano para salir a correr al parque." ("I woke up early to go for a run in the park.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tarde',
+        english: 'late',
+        context:
+          'Example: "Llegamos tarde al cine por el tráfico de Reforma." ("We arrived late to the movies because of traffic on Reforma.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'pronto',
+        english: 'soon',
+        context:
+          'Example: "Espero verte pronto para platicar con calma." ("I hope to see you soon to chat at ease.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'luego',
+        english: 'then / later',
+        context:
+          'Example: "Primero desayunamos y luego vamos al supermercado." ("First we eat breakfast and then we go to the supermarket.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'después',
+        english: 'afterwards / later',
+        context:
+          'Example: "Te llamo después cuando salga de la junta." ("I\'ll call you afterwards when I get out of the meeting.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'antes',
+        english: 'before / beforehand',
+        context:
+          'Example: "Lávate las manos antes de sentarte a comer." ("Wash your hands before sitting down to eat.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'entonces',
+        english: 'then / at that time',
+        context:
+          'Example: "Vivía en Guadalajara entonces y estudiaba música." ("I lived in Guadalajara then and studied music.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'ahora',
+        english: 'now',
+        context:
+          'Example: "Ahora vivo en la colonia Roma con mi familia." ("Now I live in the Roma neighborhood with my family.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'enseguida',
+        english: 'right away / immediately',
+        context:
+          'Example: "El mesero nos trae la cuenta enseguida." ("The waiter is bringing us the check right away.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'de repente',
+        english: 'suddenly',
+        context:
+          'Example: "De repente empezó a granizar en medio del paseo." ("Suddenly it began hailing in the middle of our walk.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'a menudo',
+        english: 'often',
+        context:
+          'Example: "Visito a menudo a mis abuelos los domingos." ("I often visit my grandparents on Sundays.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'frecuentemente',
+        english: 'frequently',
+        context:
+          'Example: "Frecuentemente cambiamos la ruta para evitar el tráfico." ("We frequently change the route to avoid traffic.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'rara vez',
+        english: 'rarely / seldom',
+        context:
+          'Example: "Rara vez como postre entre semana." ("I rarely eat dessert during the week.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'apenas',
+        english: 'barely / hardly',
+        context:
+          'Example: "Apenas llegué a tiempo antes de que cerraran la puerta." ("I barely arrived on time before they closed the door.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'finalmente',
+        english: 'finally / at last',
+        context:
+          'Example: "Finalmente conseguí los boletos para el museo." ("I finally got the tickets for the museum.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'actualmente',
+        english: 'currently / nowadays',
+        context:
+          'Example: "Actualmente trabajo como diseñador en una agencia." ("I currently work as a designer at an agency.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'últimamente',
+        english: 'lately / recently',
+        context:
+          'Example: "Últimamente duermo muy bien gracias al ejercicio." ("Lately I have been sleeping very well thanks to exercise.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'mucho',
+        english: 'a lot / much',
+        context:
+          'Example: "Me gustó mucho la comida de esta fondita." ("I liked the food from this little eatery a lot.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'poco',
+        english: 'little / a little bit',
+        context:
+          'Example: "Dormí muy poco anoche por el calor." ("I slept very little last night because of the heat.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'bastante',
+        english: 'quite / fairly',
+        context:
+          'Example: "El departamento es bastante amplio y luminoso." ("The apartment is quite spacious and bright.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'demasiado',
+        english: 'too much / overly',
+        context:
+          'Example: "Ese coche va demasiado rápido por la calle." ("That car is going too fast down the street.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'casi',
+        english: 'almost / nearly',
+        context:
+          'Example: "Casi terminamos de empacar todas las cajas." ("We almost finished packing all the boxes.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'más',
+        english: 'more',
+        context:
+          'Example: "Habla un poco más despacio, por favor." ("Speak a little slower, please.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'menos',
+        english: 'less',
+        context:
+          'Example: "Debes preocuparte menos por esas cosas." ("You should worry less about those things.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tan',
+        english: 'so / as',
+        context:
+          'Example: "No pensé que el examen fuera tan sencillo." ("I didn\'t think the exam would be so simple.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'aquí',
+        english: 'here',
+        context:
+          'Example: "Aquí preparan el mejor chocolate caliente." ("Here they make the best hot chocolate.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'acá',
+        english: 'over here',
+        context:
+          'Example: "Ven para acá que hay sombra bajo este árbol." ("Come over here because there is shade under this tree.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'allá',
+        english: 'over there',
+        context:
+          'Example: "Allá al fondo están los baños del restaurante." ("Over there in the back are the restaurant restrooms.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'cerca',
+        english: 'nearby / close',
+        context:
+          'Example: "La estación del metrobus queda muy cerca." ("The Metrobus station is very close by.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'lejos',
+        english: 'far away / far',
+        context:
+          'Example: "El aeropuerto queda lejos del centro de la ciudad." ("The airport is far from the city center.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'adentro',
+        english: 'inside',
+        context:
+          'Example: "Hace mucho frío afuera, vamos a esperar adentro." ("It\'s very cold outside, let\'s wait inside.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'afuera',
+        english: 'outside',
+        context:
+          'Example: "Dejé la bicicleta afuera junto a la entrada." ("I left the bicycle outside next to the entrance.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'arriba',
+        english: 'up / upstairs',
+        context:
+          'Example: "Las recámaras están arriba en el segundo piso." ("The bedrooms are upstairs on the second floor.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'abajo',
+        english: 'down / downstairs',
+        context:
+          'Example: "Te espero abajo en la recepción del edificio." ("I\'ll wait for you downstairs in the building lobby.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'así',
+        english: 'like this / this way',
+        context:
+          'Example: "Hazlo así para que no se rompa el papel." ("Do it like this so the paper doesn\'t tear.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'despacio',
+        english: 'slowly',
+        context:
+          'Example: "Maneja despacio porque el pavimento está mojado." ("Drive slowly because the pavement is wet.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'tal vez',
+        english: 'maybe / perhaps',
+        context:
+          'Example: "Tal vez vayamos al cine este fin de semana." ("Maybe we\'ll go to the movies this weekend.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'exactamente',
+        english: 'exactly',
+        context:
+          'Example: "Eso es exactamente lo que quería decir." ("That is exactly what I wanted to say.")',
+        bidirectional: true,
+      },
+      {
+        spanish: 'seguramente',
+        english: 'surely / probably',
+        context:
+          'Example: "Seguramente nos veremos mañana en el trabajo." ("We will probably see each other tomorrow at work.")',
+        bidirectional: true,
+      },
+    ],
+  },
 ]
 
 export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {
