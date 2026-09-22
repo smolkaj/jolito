@@ -11,6 +11,7 @@ import { AudioButton } from '../AudioButton'
 import { AiContextActions } from '../AiContextActions'
 import { appendOrReplaceContext, useAiSuggestions } from '../useAiSuggestions'
 import { handleFocusSelect } from '../utils'
+import { shouldAutoFocusOnMount } from '../../infrastructure/browser/environment'
 import { ModalSheet } from './ModalSheet'
 
 function EditCardModalInner({
@@ -112,7 +113,9 @@ function EditCardModalInner({
   const promptInputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    promptInputRef.current?.focus()
+    if (shouldAutoFocusOnMount()) {
+      promptInputRef.current?.focus()
+    }
   }, [])
 
   const currentCard = cards.find((current) => current.id === card.id)

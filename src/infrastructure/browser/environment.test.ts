@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isIOS, isMacOS, isStandalone } from './environment'
+import {
+  isIOS,
+  isMacOS,
+  isStandalone,
+  shouldAutoFocusOnMount,
+} from './environment'
 
 describe('isStandalone', () => {
   it('returns false when window is undefined or null', () => {
@@ -128,5 +133,63 @@ describe('isMacOS', () => {
         platform: 'Linux x86_64',
       }),
     ).toBe(false)
+  })
+})
+
+describe('shouldAutoFocusOnMount', () => {
+  it('returns false for iPhone', () => {
+    const nav = {
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+    }
+    expect(shouldAutoFocusOnMount(null, nav)).toBe(false)
+  })
+
+  it('returns false for iPad and iPadOS', () => {
+    const ipadNav = {
+      userAgent:
+        'Mozilla/5.0 (iPad; CPU OS 16_5 like Mac OS X) AppleWebKit/605.1.15',
+    }
+    expect(shouldAutoFocusOnMount(null, ipadNav)).toBe(false)
+
+    const ipadosNav = {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+      platform: 'MacIntel',
+      maxTouchPoints: 5,
+    }
+    expect(shouldAutoFocusOnMount(null, ipadosNav)).toBe(false)
+  })
+
+  it('returns false when pointer: coarse media query matches (touch/mobile devices)', () => {
+    const desktopNav = {
+      userAgent: 'Mozilla/5.0 (X11; Linux x86_64)',
+      platform: 'Linux x86_64',
+    }
+    const mockTouchWindow = {
+      matchMedia: (query: string) => ({
+        matches: query.includes('pointer: coarse'),
+      }),
+    }
+    expect(shouldAutoFocusOnMount(mockTouchWindow, desktopNav)).toBe(false)
+  })
+
+  it('returns true for desktop environments with fine pointer', () => {
+    const desktopNav = {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      platform: 'MacIntel',
+      maxTouchPoints: 0,
+    }
+    const mockDesktopWindow = {
+      matchMedia: () => ({
+        matches: false,
+      }),
+    }
+    expect(shouldAutoFocusOnMount(mockDesktopWindow, desktopNav)).toBe(true)
+  })
+
+  it('returns true when window and navigator are null', () => {
+    expect(shouldAutoFocusOnMount(null, null)).toBe(true)
   })
 })

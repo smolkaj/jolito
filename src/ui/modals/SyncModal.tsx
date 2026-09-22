@@ -10,7 +10,11 @@ import type {
 import type { StudyCard } from '../../domain/card'
 import { unwrapDomainBoundOtp } from '../../domain/auth'
 import { downloadJsonFile } from '../../infrastructure/browser/download'
-import { isIOS, isStandalone } from '../../infrastructure/browser/environment'
+import {
+  isIOS,
+  isStandalone,
+  shouldAutoFocusOnMount,
+} from '../../infrastructure/browser/environment'
 import {
   ClipboardIcon,
   CloudCheckSticker,
@@ -89,11 +93,15 @@ export function SyncModal({
     }
   }, [statusMsg])
 
+  const shouldAutoFocus = shouldAutoFocusOnMount()
+
   const handleOpenDeleteConfirm = () => {
     setIsConfirmingDelete(true)
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
-    setTimeout(() => deleteInputRef.current?.focus(), 0)
+    if (shouldAutoFocus) {
+      setTimeout(() => deleteInputRef.current?.focus(), 0)
+    }
   }
 
   const handleCancelDeleteConfirm = () => {
@@ -519,7 +527,7 @@ export function SyncModal({
               id="sync-email"
               type="email"
               required
-              autoFocus
+              autoFocus={shouldAutoFocus}
               placeholder="learner@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -571,7 +579,7 @@ export function SyncModal({
                 name="one-time-code"
                 type="text"
                 required
-                autoFocus
+                autoFocus={shouldAutoFocus}
                 placeholder="e.g. 123456 or paste link"
                 autoComplete="one-time-code"
                 inputMode={
