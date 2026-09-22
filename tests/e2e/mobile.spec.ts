@@ -615,4 +615,95 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await feedbackCloseBtn.click()
     await expect(feedbackModal).not.toBeVisible()
   })
+
+  test('ensures card slides underneath header and progress bar during vertical swipe up with proper z-index layering', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await practiceCards(page)
+
+    const studyCard = page.locator('.study-card')
+    const reviewHeader = page.locator('.review-header')
+    const progressBar = page.locator('.review-progress-track')
+    const promptWrap = page.locator('.study-prompt-wrap')
+
+    await expect(studyCard).toBeVisible()
+    await expect(reviewHeader).toBeVisible()
+    await expect(progressBar).toBeVisible()
+
+    // 1. Verify computed z-index layering: review-header must be strictly higher than study-card
+    const { headerZIndex, cardZIndex, headerPosition } = await page.evaluate(
+      () => {
+        const header = document.querySelector('.review-header')
+        const card = document.querySelector('.study-card')
+        return {
+          headerZIndex: header
+            ? Number(window.getComputedStyle(header).zIndex)
+            : 0,
+          cardZIndex: card ? Number(window.getComputedStyle(card).zIndex) : 0,
+          headerPosition: header
+            ? window.getComputedStyle(header).position
+            : '',
+        }
+      },
+    )
+
+    expect(headerPosition).toBe('sticky')
+    expect(headerZIndex).toBeGreaterThan(cardZIndex)
+
+    // 2. Initial geometry at rest
+    const initialPromptBox = await promptWrap.boundingBox()
+    const progressBox = await progressBar.boundingBox()
+    expect(initialPromptBox).not.toBeNull()
+    expect(progressBox).not.toBeNull()
+    expect(initialPromptBox!.y).toBeGreaterThan(
+      progressBox!.y + progressBox!.height,
+    )
+
+    // 3. Perform interactive swipe up drag on mobile touch canvas
+    const promptCenter = {
+      x: initialPromptBox!.x + initialPromptBox!.width / 2,
+      y: initialPromptBox!.y + initialPromptBox!.height / 2,
+    }
+
+    await page.mouse.move(promptCenter.x, promptCenter.y)
+    await page.mouse.down()
+    // Drag upward by 80px (dy = -80)
+    await page.mouse.move(promptCenter.x, promptCenter.y - 80, { steps: 5 })
+    await page.waitForTimeout(100)
+
+    // Verify card is translated upward into the header region
+    const draggingPromptBox = await promptWrap.boundingBox()
+    expect(draggingPromptBox).not.toBeNull()
+    expect(draggingPromptBox!.y).toBeLessThan(initialPromptBox!.y)
+    expect(draggingPromptBox!.y).toBeLessThanOrEqual(
+      progressBox!.y + progressBox!.height + 5,
+    )
+
+    // Verify elementFromPoint above the progress bar hits header/topbar elements, never the study card
+    const elementAboveBar = await page.evaluate((yCoord) => {
+      const el = document.elementFromPoint(window.innerWidth / 2, yCoord)
+      return {
+        tag: el?.tagName.toLowerCase(),
+        className: el?.className,
+        isHeaderOrInside: Boolean(el?.closest('.review-header')),
+        isStudyCard: Boolean(el?.closest('.study-card')),
+      }
+    }, progressBox!.y - 2)
+
+    expect(elementAboveBar.isHeaderOrInside).toBe(true)
+    expect(elementAboveBar.isStudyCard).toBe(false)
+
+    // Capture visual screenshot of card sliding under progress bar and header
+    await page.screenshot({
+      path: 'test-results/mobile-swipe-under-header.png',
+    })
+
+    // 4. Release mouse to complete reveal
+    await page.mouse.up()
+    await page.waitForTimeout(300)
+
+    // Answer should now be revealed
+    await expect(page.locator('.reveal-panel')).toBeVisible()
+  })
 })

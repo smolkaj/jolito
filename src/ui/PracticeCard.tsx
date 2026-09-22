@@ -347,7 +347,7 @@ export function PracticeCard({
 
     if (!revealed) {
       if (dy < 0) {
-        const liftY = Math.max(-130, dy * 0.72)
+        const liftY = Math.max(-110, dy * 0.72)
         dragOffsetRef.current = { x: 0, y: liftY }
         setDragOffset({ x: 0, y: liftY })
 
