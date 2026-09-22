@@ -71,10 +71,23 @@ export function initKeyboardDetection(
     }
   }
 
+  const webkitWin = win as Window & {
+    webkit?: {
+      messageHandlers?: {
+        jolitoKeyboard?: {
+          postMessage: (message: unknown) => void
+        }
+      }
+    }
+  }
+  const hasNativeBridge = Boolean(
+    webkitWin.webkit?.messageHandlers?.jolitoKeyboard,
+  )
+
   // 1. Initial state determination
   if (!isTouchFirst) {
     setKeyboard(true)
-  } else {
+  } else if (!hasNativeBridge) {
     if (root.dataset.keyboard === 'true') {
       try {
         storage?.setItem('jolito:has-keyboard', 'true')
@@ -89,6 +102,15 @@ export function initKeyboardDetection(
       } catch {
         // Ignore storage read issues
       }
+    }
+  }
+
+  // 2. Query native hardware bridge if available (native GCKeyboard is authoritative)
+  if (hasNativeBridge) {
+    try {
+      webkitWin.webkit?.messageHandlers?.jolitoKeyboard?.postMessage('query')
+    } catch {
+      // Ignore webkit bridge query failure
     }
   }
 

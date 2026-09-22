@@ -54,12 +54,18 @@ void test('SceneDelegate monitors GameController hardware keyboard connections a
   )
   assert.match(sceneDelegate, /GCKeyboard\.coalesced/)
   assert.match(sceneDelegate, /jolito:hardware-keyboard/)
+  assert.match(sceneDelegate, /WKScriptMessageHandler/)
   assert.match(
     sceneDelegate,
-    /WKUserScript[\s\S]*?\.atDocumentStart[\s\S]*?addUserScript/,
+    /userContentController\.add\(self,\s*name:\s*"jolitoKeyboard"\)/,
+  )
+  assert.match(
+    sceneDelegate,
+    /func userContentController[\s\S]*?message\.name == "jolitoKeyboard"/,
   )
   assert.match(
     sceneDelegate,
     /func sceneDidBecomeActive[\s\S]*?let isConnected = GCKeyboard\.coalesced != nil[\s\S]*?notifyKeyboardState\(connected: isConnected\)/,
   )
+  assert.doesNotMatch(sceneDelegate, /removeAllUserScripts/)
 })

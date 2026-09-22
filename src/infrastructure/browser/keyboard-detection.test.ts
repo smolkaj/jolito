@@ -191,7 +191,7 @@ describe('keyboard-detection', () => {
     cleanup()
   })
 
-  it('restores keyboard presence from sessionStorage on iOS', () => {
+  it('restores keyboard presence from sessionStorage on iOS web', () => {
     const { win, doc, storage, nav, root } = createMockEnvironment({
       isIos: true,
       maxTouchPoints: 5,
@@ -207,6 +207,32 @@ describe('keyboard-detection', () => {
 
     expect(root.dataset.keyboard).toBe('true')
     expect(root.dataset.platform).toBe('ios')
+
+    cleanup()
+  })
+
+  it('queries native WebKit bridge and ignores stale sessionStorage on native iOS launch', () => {
+    const { win, doc, storage, nav, root } = createMockEnvironment({
+      isIos: true,
+      maxTouchPoints: 5,
+      initialStoredKeyboard: true,
+    })
+    const postMessage = vi.fn()
+    ;(win as unknown as { webkit: unknown }).webkit = {
+      messageHandlers: {
+        jolitoKeyboard: { postMessage },
+      },
+    }
+
+    const cleanup = initKeyboardDetection({
+      window: win,
+      document: doc,
+      sessionStorage: storage,
+      navigator: nav,
+    })
+
+    expect(postMessage).toHaveBeenCalledWith('query')
+    expect(root.dataset.keyboard).toBeUndefined()
 
     cleanup()
   })

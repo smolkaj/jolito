@@ -6713,6 +6713,10 @@ html[data-keyboard='true'] .grade-btn kbd {
   display: inline-flex !important;
 }
 
+html[data-keyboard='true'] .card-gesture-cue-bar {
+  display: none !important;
+}
+
 @keyframes subtle-float-up {
   0%,
   100% {
