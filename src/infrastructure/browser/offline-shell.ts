@@ -33,16 +33,49 @@ export async function triggerManualUpdate(): Promise<void> {
         }
       })
 
-      if (reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' })
-        await waitForController
-        window.location.reload()
-        return
+      let waiting: ServiceWorker | null = reg.waiting
+      if (!waiting) {
+        waiting = await new Promise<ServiceWorker | null>((resolve) => {
+          const timeout = setTimeout(() => resolve(null), 3000)
+          const onStateChange = (worker: ServiceWorker) => {
+            if (worker.state === 'installed') {
+              clearTimeout(timeout)
+              resolve(worker)
+            }
+          }
+          const checkWorker = (worker: ServiceWorker | null) => {
+            if (!worker) return
+            if (worker.state === 'installed') {
+              clearTimeout(timeout)
+              resolve(worker)
+            } else {
+              worker.addEventListener?.('statechange', () =>
+                onStateChange(worker),
+              )
+            }
+          }
+
+          if (reg.installing) {
+            checkWorker(reg.installing)
+          } else if (reg.addEventListener) {
+            reg.addEventListener(
+              'updatefound',
+              () => {
+                checkWorker(reg.installing)
+              },
+              { once: true },
+            )
+          }
+
+          reg.update?.().catch(() => {
+            clearTimeout(timeout)
+            resolve(null)
+          })
+        })
       }
-      await reg.update()
-      const nextWaiting = reg.waiting as ServiceWorker | null
-      if (nextWaiting) {
-        nextWaiting.postMessage({ type: 'SKIP_WAITING' })
+
+      if (waiting) {
+        waiting.postMessage({ type: 'SKIP_WAITING' })
         await waitForController
         window.location.reload()
         return
@@ -59,6 +92,7 @@ export function startOfflineShell(): () => void {
   let cancel: (() => void) | undefined
   let stopped = false
   let refreshing = false
+  let hadController = Boolean(navigator.serviceWorker?.controller)
   let currentRegistration: ServiceWorkerRegistration | null = null
   let pendingWaitingWorker: ServiceWorker | null = null
   let pendingReload = false
@@ -86,6 +120,10 @@ export function startOfflineShell(): () => void {
 
   const onControllerChange = () => {
     if (stopped || refreshing) return
+    if (!hadController) {
+      hadController = true
+      return
+    }
     pendingReload = true
     if (isStandalone()) {
       const isHidden =

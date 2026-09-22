@@ -298,13 +298,16 @@ export function SyncModal({
       <p>{statusMsg.message}</p>
       {statusMsg.syncHelp && (
         <div className="sync-update-actions">
-          <button
-            type="button"
-            className="sync-update-action-btn"
-            onClick={() => void triggerManualUpdate()}
-          >
-            Update &amp; Reload
-          </button>
+          {typeof location !== 'undefined' &&
+            location.protocol !== 'capacitor:' && (
+              <button
+                type="button"
+                className="sync-update-action-btn"
+                onClick={() => void triggerManualUpdate()}
+              >
+                Update &amp; Reload
+              </button>
+            )}
           <a
             href={
               location.protocol === 'capacitor:'
@@ -721,10 +724,12 @@ export function SyncModal({
         >
           Acknowledgements
         </a>
-        <span className="sync-modal-legal-separator" aria-hidden="true">
-          ·
+        <span className="sync-modal-version-group">
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>{' '}
+          <span className="sync-modal-version">v{APP_VERSION}</span>
         </span>
-        <span className="sync-modal-version">v{APP_VERSION}</span>
       </div>
     </ModalSheet>
   )

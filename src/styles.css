@@ -6153,6 +6153,13 @@ kbd {
   user-select: none;
 }
 
+.sync-modal-version-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .sync-modal-version {
   font-size: 12px;
   font-weight: 400;

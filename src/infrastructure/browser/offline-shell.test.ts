@@ -212,6 +212,38 @@ describe('offline preparation page lifecycle', () => {
     window.dispatchEvent(new Event('hashchange'))
     expect(reload).toHaveBeenCalledOnce()
   })
+
+  it('ignores initial controllerchange when launching without an active controller', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload, hash: '' })
+    const swListeners = new Map<string, (event?: unknown) => void>()
+    const registration = {
+      update: vi.fn().mockResolvedValue(undefined),
+      addEventListener: vi.fn(),
+    }
+    register.mockResolvedValue(registration)
+    vi.stubGlobal('navigator', {
+      standalone: true,
+      serviceWorker: {
+        register,
+        ready: Promise.resolve({ active: { postMessage } }),
+        controller: null, // Initial launch: no controller yet
+        addEventListener: (type: string, fn: (event?: unknown) => void) =>
+          swListeners.set(type, fn),
+      },
+    })
+
+    destroy = startOfflineShell()
+    await flush()
+
+    // First controllerchange is the initial worker claiming uncontrolled client
+    swListeners.get('controllerchange')!()
+    expect(reload).not.toHaveBeenCalled()
+
+    // Subsequent controllerchange represents a real update and reloads
+    swListeners.get('controllerchange')!()
+    expect(reload).toHaveBeenCalledOnce()
+  })
 })
 
 describe('triggerManualUpdate', () => {
@@ -238,6 +270,40 @@ describe('triggerManualUpdate', () => {
     const { triggerManualUpdate } = await import('./offline-shell')
     await triggerManualUpdate()
     expect(waitingWorker.postMessage).toHaveBeenCalledWith({
+      type: 'SKIP_WAITING',
+    })
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('awaits installing worker transitioning to installed, posts SKIP_WAITING and reloads', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload })
+    const installingWorker = {
+      state: 'installing',
+      postMessage: vi.fn(),
+      addEventListener: vi.fn((event: string, cb: () => void) => {
+        if (event === 'statechange') {
+          installingWorker.state = 'installed'
+          cb()
+        }
+      }),
+    }
+    const update = vi.fn().mockResolvedValue(undefined)
+    const getRegistration = vi.fn().mockResolvedValue({
+      waiting: null,
+      installing: installingWorker,
+      update,
+    })
+    const addEventListener = vi.fn((event: string, cb: () => void) => {
+      if (event === 'controllerchange') cb()
+    })
+    vi.stubGlobal('navigator', {
+      serviceWorker: { getRegistration, addEventListener },
+    })
+
+    const { triggerManualUpdate } = await import('./offline-shell')
+    await triggerManualUpdate()
+    expect(installingWorker.postMessage).toHaveBeenCalledWith({
       type: 'SKIP_WAITING',
     })
     expect(reload).toHaveBeenCalledOnce()
