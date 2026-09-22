@@ -79,6 +79,16 @@
         .email-title {
           color: #fdf5f8 !important;
         }
+        .email-paragraph {
+          color: #b7c4bd !important;
+        }
+        .divider-line {
+          border-top-color: #2b3832 !important;
+        }
+        .divider-badge {
+          background-color: #161e1a !important;
+          color: #8d9c94 !important;
+        }
         .code-container {
           background-color: #20151b !important;
           border-color: #7a1a4c !important;
@@ -101,11 +111,11 @@
       }
       @media only screen and (max-width: 600px) {
         .email-card {
-          padding: 24px 18px !important;
+          padding: 28px 20px !important;
           border-radius: 14px !important;
         }
         .email-title {
-          font-size: 19px !important;
+          font-size: 22px !important;
         }
         .code-display {
           font-size: 28px !important;
@@ -138,9 +148,10 @@
         font-family: sans-serif;
       "
     >
-      Your Jolito verification code is {{ .Token }}. &#847; &zwnj; &nbsp;
-      &#8199; &shy; &#847; &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199;
-      &shy; &#847; &zwnj; &nbsp; &#8199; &shy;
+      Your Jolito verification code is {{ .Token }}. Your 1-click sign-in link
+      and code for Jolito. &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj;
+      &nbsp; &#8199; &shy; &#847; &zwnj; &nbsp; &#8199; &shy; &#847; &zwnj;
+      &nbsp; &#8199; &shy;
     </div>
 
     <table
@@ -161,10 +172,10 @@
             cellpadding="0"
             cellspacing="0"
             width="100%"
-            style="max-width: 480px; margin-bottom: 20px"
+            style="max-width: 520px; margin-bottom: 24px"
           >
             <tr>
-              <td align="center" style="padding: 8px 0 0 0">
+              <td align="center" style="padding: 12px 0 0 0">
                 <a
                   href="https://joli.to"
                   target="_blank"
@@ -244,13 +255,13 @@
             width="100%"
             class="email-card"
             style="
-              max-width: 480px;
+              max-width: 520px;
               background-color: #ffffff;
               border: 1px solid #e2ddd3;
               border-radius: 18px;
               box-shadow: 0 4px 18px rgba(18, 24, 21, 0.05);
               overflow: hidden;
-              padding: 32px 28px;
+              padding: 36px 32px;
             "
           >
             <tr>
@@ -259,66 +270,35 @@
                 <h1
                   class="email-title"
                   style="
-                    margin: 0 0 16px 0;
+                    margin: 0 0 10px 0;
                     font-family:
                       -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                       Helvetica, Arial, sans-serif;
-                    font-size: 20px;
+                    font-size: 24px;
                     font-weight: 750;
-                    letter-spacing: -0.02em;
+                    letter-spacing: -0.025em;
                     color: #121815;
                     text-align: center;
                   "
                 >
-                  Your verification code
+                  Sign in to Jolito
                 </h1>
 
-                <!-- 6-Digit OTP Container -->
-                <div
-                  class="code-container"
-                  style="
-                    background-color: #fdf0f7;
-                    border: 1.5px dashed #e4007c;
-                    border-radius: 12px;
-                    padding: 14px 16px;
-                    text-align: center;
-                    margin: 0 auto 10px auto;
-                    max-width: 300px;
-                  "
-                >
-                  <span
-                    class="code-display"
-                    style="
-                      font-family:
-                        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                        'Liberation Mono', 'Courier New', monospace;
-                      font-size: 32px;
-                      font-weight: 800;
-                      letter-spacing: 0.28em;
-                      color: #b30060;
-                      display: inline-block;
-                      padding-left: 0.28em;
-                    "
-                    >{{ .Token }}</span
-                  >
-                </div>
-
-                <!-- Domain-bound security format for iOS/macOS AutoFill -->
+                <!-- Intro paragraph -->
                 <p
-                  class="domain-bound-otp"
+                  class="email-paragraph"
                   style="
                     margin: 0 0 24px 0;
                     font-family:
-                      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-                      monospace;
-                    font-size: 11px;
-                    line-height: 1.4;
-                    color: #5f6e66;
+                      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                      Helvetica, Arial, sans-serif;
+                    font-size: 15px;
+                    line-height: 1.5;
+                    color: #3b4740;
                     text-align: center;
-                    letter-spacing: 0.04em;
                   "
                 >
-                  @joli.to #{{ .Token }}
+                  Click below to sign in instantly:
                 </p>
 
                 <!-- 1-Click Magic Link Button -->
@@ -353,11 +333,11 @@
                               class="cta-button"
                               style="
                                 display: inline-block;
-                                padding: 13px 28px;
+                                padding: 14px 32px;
                                 font-family:
                                   -apple-system, BlinkMacSystemFont, 'Segoe UI',
                                   Roboto, Helvetica, Arial, sans-serif;
-                                font-size: 15px;
+                                font-size: 16px;
                                 font-weight: 700;
                                 color: #ffffff;
                                 text-decoration: none;
@@ -374,22 +354,117 @@
                   </tr>
                 </table>
 
+                <!-- Divider: OR -->
+                <table
+                  role="presentation"
+                  border="0"
+                  cellpadding="0"
+                  cellspacing="0"
+                  width="100%"
+                  style="margin: 20px 0"
+                >
+                  <tr>
+                    <td
+                      style="border-top: 1px solid #e2ddd3"
+                      class="divider-line"
+                    ></td>
+                    <td
+                      style="
+                        width: 1%;
+                        padding: 0 12px;
+                        white-space: nowrap;
+                        text-align: center;
+                      "
+                    >
+                      <span
+                        class="divider-badge"
+                        style="
+                          font-family:
+                            -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                            Roboto, Helvetica, Arial, sans-serif;
+                          font-size: 11px;
+                          font-weight: 600;
+                          text-transform: uppercase;
+                          letter-spacing: 0.08em;
+                          color: #5f6e66;
+                          background-color: #ffffff;
+                          padding: 0 4px;
+                        "
+                      >
+                        or enter code
+                      </span>
+                    </td>
+                    <td
+                      style="border-top: 1px solid #e2ddd3"
+                      class="divider-line"
+                    ></td>
+                  </tr>
+                </table>
+
+                <!-- 6-Digit OTP Container -->
+                <div
+                  class="code-container"
+                  style="
+                    background-color: #fdf0f7;
+                    border: 1.5px dashed #e4007c;
+                    border-radius: 12px;
+                    padding: 14px 16px;
+                    text-align: center;
+                    margin: 0 auto 10px auto;
+                    max-width: 320px;
+                  "
+                >
+                  <span
+                    class="code-display"
+                    style="
+                      font-family:
+                        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                        'Liberation Mono', 'Courier New', monospace;
+                      font-size: 32px;
+                      font-weight: 800;
+                      letter-spacing: 0.28em;
+                      color: #b30060;
+                      display: inline-block;
+                      padding-left: 0.28em;
+                    "
+                    >{{ .Token }}</span
+                  >
+                </div>
+
+                <!-- Domain-bound security format for iOS/macOS AutoFill -->
+                <p
+                  class="domain-bound-otp"
+                  style="
+                    margin: 0;
+                    font-family:
+                      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                      monospace;
+                    font-size: 11px;
+                    line-height: 1.4;
+                    color: #5f6e66;
+                    text-align: center;
+                    letter-spacing: 0.04em;
+                  "
+                >
+                  @joli.to #{{ .Token }}
+                </p>
+
                 <!-- Expiry & Ignore Notice (WCAG AA Compliant) -->
                 <p
                   class="expiry-text"
                   style="
-                    margin: 0;
+                    margin: 24px 0 0 0;
                     font-family:
                       -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                       Helvetica, Arial, sans-serif;
                     font-size: 12.5px;
-                    line-height: 1.5;
+                    line-height: 1.6;
                     color: #5f6e66;
                     text-align: center;
                   "
                 >
-                  Code expires in 60 minutes. If you didn’t request this email,
-                  you can safely ignore it.
+                  This code and link expire in 60 minutes.<br />
+                  If you didn’t request this email, you can safely ignore it.
                 </p>
               </td>
             </tr>
@@ -402,7 +477,7 @@
             cellpadding="0"
             cellspacing="0"
             width="100%"
-            style="max-width: 480px; margin-top: 20px"
+            style="max-width: 520px; margin-top: 24px"
           >
             <tr>
               <td align="center" style="padding: 0 16px">
@@ -419,14 +494,14 @@
                     text-align: center;
                   "
                 >
-                  Jolito &bull;
+                  Need help? Reply directly to this email or visit
                   <a
                     href="https://joli.to"
                     target="_blank"
                     class="footer-link"
                     style="color: #5f6e66; text-decoration: underline"
                     >joli.to</a
-                  >
+                  >.
                 </p>
               </td>
             </tr>

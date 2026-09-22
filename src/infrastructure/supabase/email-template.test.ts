@@ -26,15 +26,16 @@ describe('Supabase Auth Email Template', () => {
 
   it('includes explicit verification code phrasing and domain-bound OTP for OS AutoFill heuristics', () => {
     const content = readFileSync(templatePath, 'utf-8')
-    expect(content).toMatch(/Your\s+verification\s+code/i)
+    expect(content).toMatch(/verification\s+code/i)
     expect(content).toContain('@joli.to #{{ .Token }}')
     expect(content).toMatch(/class="domain-bound-otp"[^>]*color:\s*#5f6e66/i)
   })
 
-  it('includes key security guarantees (expiry and ignore disclaimer)', () => {
+  it('includes key security guarantees (expiry and ignore disclaimer) with line breaks after periods', () => {
     const content = readFileSync(templatePath, 'utf-8')
     expect(content).toMatch(/60\s+minutes/i)
     expect(content).toMatch(/safely\s+ignore/i)
+    expect(content).toContain('This code and link expire in 60 minutes.<br />')
   })
 
   it('includes Jolito brand identity, web link, and visual badge', () => {
@@ -53,7 +54,7 @@ describe('Supabase Auth Email Template', () => {
     const content = readFileSync(templatePath, 'utf-8')
     expect(content).not.toMatch(/Spoken Mexican Spanish/i)
     expect(content).not.toMatch(/Signing in on another device/i)
-    expect(content).not.toMatch(/Click below to sign in instantly/i)
+    expect(content).not.toMatch(/completely secure/i)
   })
 
   it('includes responsive and dark mode style rules with explicit contrast protection', () => {
@@ -63,6 +64,12 @@ describe('Supabase Auth Email Template', () => {
 
     // Verify dark mode preserves header brand wordmark contrast
     expect(content).toMatch(/\.brand-wordmark\s*\{[^}]*color:\s*#fdf5f8/i)
+
+    // Verify dark mode divider line and badge contrast
+    expect(content).toMatch(
+      /\.divider-line\s*\{[^}]*border-top-color:\s*#2b3832/i,
+    )
+    expect(content).toMatch(/\.divider-badge\s*\{[^}]*color:\s*#8d9c94/i)
 
     // Verify dark mode aligns OTP code container with brand palette
     expect(content).toMatch(
@@ -79,9 +86,10 @@ describe('Supabase Auth Email Template', () => {
     expect(content).toMatch(/\.code-display\s*\{[^}]*padding-left:\s*0\.22em/i)
   })
 
-  it('preserves WCAG AA contrast on light mode text and footer', () => {
+  it('preserves WCAG AA contrast on light mode text, footer, and divider badge', () => {
     const content = readFileSync(templatePath, 'utf-8')
     // Uses #5f6e66 (5.34:1 on #ffffff, 4.98:1 on #fdf5f8)
+    expect(content).toMatch(/class="divider-badge"[^>]*color:\s*#5f6e66/i)
     expect(content).toMatch(/class="expiry-text"[^>]*color:\s*#5f6e66/i)
     expect(content).toMatch(/class="footer-text"[^>]*color:\s*#5f6e66/i)
   })
