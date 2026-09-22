@@ -130,4 +130,130 @@ describe('offline preparation page lifecycle', () => {
     TestChannel.opened[0]!.reply('cached')
     expect(document.documentElement.dataset.offlineReady).toBe('true')
   })
+
+  it('activates waiting worker and reloads on controllerchange when safe', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload, hash: '' })
+    const waitingWorker = { postMessage: vi.fn() }
+    const swListeners = new Map<string, (event?: unknown) => void>()
+    const regListeners = new Map<string, (event?: unknown) => void>()
+    const registration = {
+      waiting: waitingWorker,
+      update: vi.fn().mockResolvedValue(undefined),
+      addEventListener: (type: string, fn: (event?: unknown) => void) =>
+        regListeners.set(type, fn),
+    }
+    register.mockResolvedValue(registration)
+    vi.stubGlobal('navigator', {
+      standalone: true,
+      serviceWorker: {
+        register,
+        ready: Promise.resolve({ active: { postMessage } }),
+        controller: {},
+        addEventListener: (type: string, fn: (event?: unknown) => void) =>
+          swListeners.set(type, fn),
+      },
+    })
+
+    destroy = startOfflineShell()
+    await flush()
+
+    // When backgrounded (visibility hidden), waiting worker is notified to SKIP_WAITING
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(waitingWorker.postMessage).toHaveBeenCalledWith({
+      type: 'SKIP_WAITING',
+    })
+
+    // Controller change fires in background
+    swListeners.get('controllerchange')!()
+    expect(reload).not.toHaveBeenCalled()
+
+    // When resumed (visibility visible), page reloads into new build
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('defers reload when form fields contain unsaved user input and reloads after safe navigation', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload, hash: '' })
+    const swListeners = new Map<string, (event?: unknown) => void>()
+    const registration = {
+      update: vi.fn().mockResolvedValue(undefined),
+      addEventListener: vi.fn(),
+    }
+    register.mockResolvedValue(registration)
+    vi.stubGlobal('navigator', {
+      standalone: true,
+      serviceWorker: {
+        register,
+        ready: Promise.resolve({ active: { postMessage } }),
+        controller: {},
+        addEventListener: (type: string, fn: (event?: unknown) => void) =>
+          swListeners.set(type, fn),
+      },
+    })
+
+    // User has typed an unsaved draft
+    const input = document.createElement('input')
+    input.value = 'draft text'
+    document.body.appendChild(input)
+
+    destroy = startOfflineShell()
+    await flush()
+
+    // Controller change fires while dirty
+    swListeners.get('controllerchange')!()
+    expect(reload).not.toHaveBeenCalled()
+
+    // User clears the draft / navigates
+    input.value = ''
+    window.dispatchEvent(new Event('hashchange'))
+    expect(reload).toHaveBeenCalledOnce()
+  })
+})
+
+describe('triggerManualUpdate', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('posts SKIP_WAITING to waiting worker if available', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload })
+    const waitingWorker = { postMessage: vi.fn() }
+    const getRegistration = vi.fn().mockResolvedValue({
+      waiting: waitingWorker,
+      update: vi.fn(),
+    })
+    vi.stubGlobal('navigator', {
+      serviceWorker: { getRegistration },
+    })
+
+    const { triggerManualUpdate } = await import('./offline-shell')
+    await triggerManualUpdate()
+    expect(waitingWorker.postMessage).toHaveBeenCalledWith({
+      type: 'SKIP_WAITING',
+    })
+  })
+
+  it('calls update() on registration when waiting is not yet present', async () => {
+    const reload = vi.fn()
+    vi.stubGlobal('location', { ...window.location, reload })
+    const update = vi.fn().mockResolvedValue(undefined)
+    const getRegistration = vi.fn().mockResolvedValue({
+      waiting: null,
+      update,
+    })
+    vi.stubGlobal('navigator', {
+      serviceWorker: { getRegistration },
+    })
+
+    const { triggerManualUpdate } = await import('./offline-shell')
+    await triggerManualUpdate()
+    expect(update).toHaveBeenCalledOnce()
+    expect(reload).toHaveBeenCalledOnce()
+  })
 })

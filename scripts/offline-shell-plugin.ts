@@ -3,6 +3,8 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 
+import { computeAppVersion } from './version.ts'
+
 /** The worker and its complete asset list are versioned together on every build. */
 export function offlineShellPlugin(): Plugin {
   let buildId: string | undefined
@@ -11,10 +13,16 @@ export function offlineShellPlugin(): Plugin {
     apply: 'build',
     transformIndexHtml() {
       if (!buildId) throw new Error('Offline build identity was not generated')
+      const version = computeAppVersion()
       return [
         {
           tag: 'meta',
           attrs: { name: 'jolito-build', content: buildId },
+          injectTo: 'head',
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'jolito-version', content: version },
           injectTo: 'head',
         },
       ]

@@ -2,6 +2,9 @@ import type { Connect, Plugin } from 'vite'
 import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import react from '@vitejs/plugin-react'
 import { offlineShellPlugin } from './scripts/offline-shell-plugin.ts'
+import { computeAppVersion } from './scripts/version.ts'
+
+const appVersion = computeAppVersion()
 
 function createTtsMiddleware(): Connect.NextHandleFunction {
   return (req, res, next) => {
@@ -154,6 +157,9 @@ function apiDevPlugin(): Plugin {
 }
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [react(), apiDevPlugin(), offlineShellPlugin()],
   build: {
     rollupOptions: {

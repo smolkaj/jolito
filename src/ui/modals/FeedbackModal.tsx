@@ -5,6 +5,7 @@ import type {
   HapticsPlayer,
 } from '../../application/ports'
 import type { View } from '../../navigation'
+import { APP_VERSION } from '../../version'
 import { ModalSheet } from './ModalSheet'
 
 function FeedbackModalInner({
@@ -47,7 +48,7 @@ function FeedbackModalInner({
           message: trimmed,
           context: {
             view: currentView,
-            version: '0.1.0',
+            version: APP_VERSION,
             userAgent:
               typeof navigator !== 'undefined' ? navigator.userAgent : null,
             language:
@@ -187,6 +188,7 @@ function FeedbackModalInner({
               {isSubmitting ? 'Sending…' : 'Send feedback'}
             </button>
           </div>
+          <p className="feedback-modal-version">Jolito {APP_VERSION}</p>
         </form>
       )}
     </ModalSheet>
