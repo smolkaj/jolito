@@ -313,9 +313,7 @@ export function PracticeCard({
     dragOffsetRef.current = { x: 0, y: 0 }
   }
 
-  const handlePointerMove = (
-    event: PointerEvent | React.PointerEvent<HTMLElement>,
-  ) => {
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
     if (!pointerStartRef.current || paused || isAnimatingExit) return
     const start = pointerStartRef.current
     if (revealed ? start.isRevealedDragBlocked : start.isUnrevealedInteractive)
@@ -327,6 +325,7 @@ export function PracticeCard({
     if (!isDragging) {
       if (revealed && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) {
         setIsDragging(true)
+        window.getSelection()?.removeAllRanges()
         if (cardRef.current && event.pointerId !== undefined) {
           try {
             cardRef.current.setPointerCapture(event.pointerId)
@@ -336,6 +335,7 @@ export function PracticeCard({
         }
       } else if (!revealed && dy < -8 && Math.abs(dy) > Math.abs(dx)) {
         setIsDragging(true)
+        window.getSelection()?.removeAllRanges()
         if (cardRef.current && event.pointerId !== undefined) {
           try {
             cardRef.current.setPointerCapture(event.pointerId)
@@ -391,9 +391,7 @@ export function PracticeCard({
     }
   }
 
-  const handlePointerUp = (
-    event: PointerEvent | React.PointerEvent<HTMLElement>,
-  ) => {
+  const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
     if (!pointerStartRef.current || paused || isAnimatingExit) return
     const start = pointerStartRef.current
     const actualDx = event.clientX - start.x
@@ -463,26 +461,6 @@ export function PracticeCard({
     setActiveZone(null)
     activeZoneRef.current = null
   }
-
-  useEffect(() => {
-    const onWindowPointerMove = (event: PointerEvent) => {
-      handlePointerMove(event)
-    }
-    const onWindowPointerUp = (event: PointerEvent) => {
-      handlePointerUp(event)
-    }
-    const onWindowPointerCancel = () => {
-      handlePointerCancel()
-    }
-    window.addEventListener('pointermove', onWindowPointerMove)
-    window.addEventListener('pointerup', onWindowPointerUp)
-    window.addEventListener('pointercancel', onWindowPointerCancel)
-    return () => {
-      window.removeEventListener('pointermove', onWindowPointerMove)
-      window.removeEventListener('pointerup', onWindowPointerUp)
-      window.removeEventListener('pointercancel', onWindowPointerCancel)
-    }
-  })
 
   const rotation =
     revealed && !prefersReducedMotion

@@ -6371,8 +6371,8 @@ kbd {
 .study-card.is-dragging .study-prompt,
 .study-card.is-dragging .prompt-meta {
   cursor: grabbing;
-  -webkit-user-select: none !important;
-  user-select: none !important;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .study-card.zone-again {
