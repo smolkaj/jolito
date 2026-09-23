@@ -89,6 +89,41 @@ void test('SceneDelegate registers AppReviewPlugin with StoreKit for native revi
   assert.match(appReviewPlugin, /SKStoreReviewController\.requestReview/)
 })
 
+void test('SceneDelegate registers AppleSignInPlugin with AuthenticationServices and entitlements for native Apple Sign-In', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const applePlugin = readFileSync(
+    new URL('../../ios/App/App/AppleSignInPlugin.swift', import.meta.url),
+    'utf8',
+  )
+  const entitlements = readFileSync(
+    new URL('../../ios/App/App/App.entitlements', import.meta.url),
+    'utf8',
+  )
+  const pbxproj = readFileSync(
+    new URL('../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(AppleSignInPlugin\(\)\)/,
+  )
+  assert.match(applePlugin, /import AuthenticationServices/)
+  assert.match(applePlugin, /import CryptoKit/)
+  assert.match(applePlugin, /@objc\(AppleSignInPlugin\)/)
+  assert.match(applePlugin, /ASAuthorizationAppleIDProvider/)
+  assert.match(applePlugin, /ASAuthorizationControllerDelegate/)
+  assert.match(applePlugin, /request\.nonce\s*=\s*sha256\(rawNonce\)/)
+  assert.match(
+    entitlements,
+    /<key>com\.apple\.developer\.applesignin<\/key>\s*<array>\s*<string>Default<\/string>\s*<\/array>/,
+  )
+  assert.match(pbxproj, /CODE_SIGN_ENTITLEMENTS\s*=\s*App\/App\.entitlements;/)
+})
+
 void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {
   const config = readFileSync(
     new URL('../../capacitor.config.ts', import.meta.url),

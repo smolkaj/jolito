@@ -249,6 +249,20 @@ export class MockAuthService implements AuthService {
     })
   }
 
+  signInWithApple(
+    identityToken: string,
+    nonce?: string,
+  ): Promise<{ success: boolean; error?: string | undefined }> {
+    void identityToken
+    void nonce
+    this.user = {
+      id: 'apple-user-1',
+      email: 'apple.learner@example.com',
+    }
+    this.listeners.forEach((l) => l(this.user))
+    return Promise.resolve({ success: true })
+  }
+
   signOut(): Promise<void> {
     this.user = null
     this.listeners.forEach((l) => l(null))

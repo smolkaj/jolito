@@ -26,6 +26,7 @@
 		B5F841AEEDD947539C44F5C9 /* JolitoWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997016333ECB456A8BBCBF3A /* JolitoWidgetBundle.swift */; };
 		127A46A73FBD48BB970F0585 /* PracticeLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DE302787204AB7B9ACA78C /* PracticeLiveActivityWidget.swift */; };
 		9CF3262392034B98AC405153 /* PracticeActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */; };
+		1BDD5B3E68A34EB88A0DC702 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +51,8 @@
 		997016333ECB456A8BBCBF3A /* JolitoWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JolitoWidgetBundle.swift; sourceTree = "<group>"; };
 		15DE302787204AB7B9ACA78C /* PracticeLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeLiveActivityWidget.swift; sourceTree = "<group>"; };
 		15DE302887204AB7B9ACA78D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5703 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +111,8 @@
 				EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */,
 				D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */,
 				D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */,
+				D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */,
+				D79A203F5C6F46D19F8B5703 /* App.entitlements */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -250,6 +255,7 @@
 				29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */,
+				1BDD5B3E68A34EB88A0DC702 /* AppleSignInPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -399,6 +405,7 @@
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
@@ -421,6 +428,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;

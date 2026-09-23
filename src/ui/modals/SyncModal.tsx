@@ -17,11 +17,16 @@ import {
   shouldAutoFocusOnMount,
 } from '../../infrastructure/browser/environment'
 import {
+  AppleIcon,
   ClipboardIcon,
   CloudCheckSticker,
   ShieldIcon,
   SyncSpinnerIcon,
 } from '../icons'
+import {
+  isAppleSignInSupported,
+  requestAppleSignIn,
+} from '../../infrastructure/browser/apple-signin'
 import { ModalSheet } from './ModalSheet'
 import { triggerManualUpdate } from '../../infrastructure/browser/offline-shell'
 
@@ -75,7 +80,14 @@ export function SyncModal({
     'synced' | 'resent' | 'pasted' | null
   >(null)
   const [loadingAction, setLoadingAction] = useState<
-    'send' | 'verify' | 'sync' | 'signout' | 'delete' | 'delete-backup' | null
+    | 'send'
+    | 'verify'
+    | 'sync'
+    | 'signout'
+    | 'delete'
+    | 'delete-backup'
+    | 'apple'
+    | null
   >(null)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -240,6 +252,53 @@ export function SyncModal({
         type: 'error',
         message: res.error || 'Invalid sign-in link or code.',
       })
+    }
+  }
+
+  const handleAppleSignIn = async () => {
+    if (!auth.signInWithApple) return
+    setLoadingAction('apple')
+    setStatusMsg(null)
+    try {
+      const appleResult = await requestAppleSignIn()
+      if (appleResult.canceled) {
+        setLoadingAction(null)
+        return
+      }
+      if (!appleResult.identityToken) {
+        setStatusMsg({
+          type: 'error',
+          message:
+            appleResult.error ||
+            'Could not complete Apple Sign-In. Please try again.',
+        })
+        return
+      }
+      const res = await auth.signInWithApple(
+        appleResult.identityToken,
+        appleResult.nonce,
+      )
+      if (!res.success) {
+        setStatusMsg({
+          type: 'error',
+          message:
+            res.error || 'Could not complete Apple Sign-In. Please try again.',
+        })
+      } else {
+        setStatusMsg({
+          type: 'success',
+          message: 'Signed in with Apple.',
+        })
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setStatusMsg({
+        type: 'error',
+        message:
+          message || 'Could not complete Apple Sign-In. Please try again.',
+      })
+    } finally {
+      setLoadingAction(null)
     }
   }
 
@@ -574,6 +633,31 @@ export function SyncModal({
           }}
           className="sync-auth-form"
         >
+          {isAppleSignInSupported() &&
+            typeof (auth as { signInWithApple?: unknown }).signInWithApple ===
+              'function' && (
+              <div className="apple-signin-wrapper">
+                <button
+                  type="button"
+                  className="apple-signin-button"
+                  onClick={() => {
+                    void handleAppleSignIn()
+                  }}
+                  disabled={loading}
+                  aria-busy={loadingAction === 'apple'}
+                >
+                  <AppleIcon size={18} />
+                  <span>
+                    {loadingAction === 'apple'
+                      ? 'Signing in…'
+                      : 'Sign in with Apple'}
+                  </span>
+                </button>
+                <div className="signin-divider">
+                  <span>or continue with email</span>
+                </div>
+              </div>
+            )}
           <div className="field-group">
             <label htmlFor="sync-email">Email address</label>
             <input
