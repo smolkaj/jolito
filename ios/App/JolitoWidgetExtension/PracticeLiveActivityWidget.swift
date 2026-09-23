@@ -28,6 +28,7 @@ public struct PracticeLiveActivityWidget: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     Text("\(context.state.completedCount) of \(context.state.totalCount)")
                         .font(.system(size: 12, weight: .medium))
+                        .monospacedDigit()
                         .foregroundColor(.secondary)
                         .padding(.trailing, 4)
                 }
@@ -49,7 +50,7 @@ public struct PracticeLiveActivityWidget: Widget {
                             total: 100.0
                         )
                         .tint(rosa)
-                        .accessibilityLabel("Session progress")
+                        .accessibilityLabel("Jolito session progress")
                         .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
                     }
                     .padding(.horizontal, 4)
@@ -67,7 +68,7 @@ public struct PracticeLiveActivityWidget: Widget {
                     size: 18,
                     strokeWidth: 2.5
                 )
-                .accessibilityLabel("Session progress")
+                .accessibilityLabel("Jolito session progress")
                 .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
             } minimal: {
                 // Minimal Presentation (when multiple Live Activities share the island)
@@ -77,7 +78,7 @@ public struct PracticeLiveActivityWidget: Widget {
                     size: 16,
                     strokeWidth: 2.2
                 )
-                .accessibilityLabel("Session progress")
+                .accessibilityLabel("Jolito session progress")
                 .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
             }
         }
@@ -177,6 +178,7 @@ private struct LockScreenPracticeView: View {
                 Spacer()
                 Text("\(state.completedCount) of \(state.totalCount)")
                     .font(.system(size: 12, weight: .medium))
+                    .monospacedDigit()
                     .foregroundColor(.secondary)
             }
 
@@ -188,7 +190,7 @@ private struct LockScreenPracticeView: View {
 
             ProgressView(value: Double(state.progressPercentage), total: 100.0)
                 .tint(rosa)
-                .accessibilityLabel("Session progress")
+                .accessibilityLabel("Jolito session progress")
                 .accessibilityValue("\(state.completedCount) of \(state.totalCount) completed, \(state.progressPercentage) percent")
         }
         .padding(14)

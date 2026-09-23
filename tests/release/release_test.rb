@@ -366,18 +366,13 @@ class ReleaseTest < Minitest::Test
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
-    profile_xml = Plist::Emit.dump({
-      'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
-      'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
-    })
-    success = Struct.new(:success?).new(true)
     failure = Struct.new(:success?).new(false)
+    base_proc = mock_signing_capture
     capture_proc = lambda do |*args|
       if args[1] == 'set-key-partition-list'
         ['', failure]
       else
-        [profile_xml, success]
+        base_proc.call(*args)
       end
     end
     harness = SigningHarness.new
