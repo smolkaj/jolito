@@ -21,6 +21,11 @@ describe('SEO search snippet and favicon compliance', () => {
     expect(descContent).not.toBe('')
     expect(descContent.toLowerCase()).toContain('jolito')
     expect(descContent.toLowerCase()).toContain('flashcards')
+    expect(descContent.toLowerCase()).toContain('grammar')
+
+    // Keywords should include grammar and conjugations
+    expect(html).toContain('Spanish grammar practice')
+    expect(html).toContain('verb conjugations')
 
     // OpenGraph and Twitter descriptions should also be updated
     expect(html).toMatch(
@@ -33,6 +38,45 @@ describe('SEO search snippet and favicon compliance', () => {
         `<meta\\s+name="twitter:description"\\s+content="${descContent}"`,
       ),
     )
+  })
+
+  it('declares Schema.org WebApplication structured data reflecting core capabilities', () => {
+    const html = readFileSync(indexPath, 'utf-8')
+    const ldJsonMatch = html.match(
+      /<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/,
+    )
+    expect(ldJsonMatch).not.toBeNull()
+    const rawJson: unknown = JSON.parse(ldJsonMatch?.[1] ?? '{}')
+    expect(rawJson).not.toBeNull()
+    expect(typeof rawJson).toBe('object')
+    const parsed = rawJson as {
+      '@context'?: unknown
+      '@type'?: unknown
+      name?: unknown
+      featureList?: unknown
+    }
+
+    expect(parsed['@context']).toBe('https://schema.org')
+    expect(parsed['@type']).toBe('WebApplication')
+    expect(parsed.name).toBe('Jolito')
+    expect(Array.isArray(parsed.featureList)).toBe(true)
+
+    const featureList = parsed.featureList as string[]
+    const features = featureList.join(' ').toLowerCase()
+    expect(features).toContain('grammar')
+    expect(features).toContain('starter packs')
+    expect(features).toContain('audio')
+  })
+
+  it('provides an SPA crawler fallback in noscript covering core capabilities', () => {
+    const html = readFileSync(indexPath, 'utf-8')
+    const noscriptMatch = html.match(/<noscript>([\s\S]*?)<\/noscript>/)
+    expect(noscriptMatch).not.toBeNull()
+    const noscriptContent = (noscriptMatch?.[1] ?? '').toLowerCase()
+
+    expect(noscriptContent).toContain('grammar practice')
+    expect(noscriptContent).toContain('starter packs')
+    expect(noscriptContent).toContain('spaced repetition')
   })
 
   it('declares Google-compliant favicon links with multiples of 48px and fallback ICO', () => {

@@ -4,23 +4,25 @@
 
 ## Origin Story
 
-Jolito was born out of a real-life transition: moving to Mexico City with my Mexican wife and twin daughters, and taking intensive Spanish classes at International House in Condesa. 
+In July 2026, my wife *(Mexican)*, our twins *(Gexican)*, and I *(German)* moved to Mexico City. I started learning Spanish at the [International House in Condesa](https://ihmexico.mx/). The classes were fantastic—but memorizing vocabulary? **My archenemy.** The absolute worst part of learning a new language!
 
-I needed a practical way to internalize what I learned in class and heard on the streets every day at home. While Anki provided the unbeatable spaced repetition algorithm needed for long-term retention, manually creating rich cards—clipping audio, finding pictures, and configuring templates—felt like an exhausting chore when I was tired at the end of the day. Capturing what you learned should feel effortless and fun, with the visual beauty, natural audio, and delightful flow state of modern apps like Duolingo. On the other end of the spectrum, gamified apps locked learners into rigid beginner courses without control over the real-world Mexican phrases they actually wanted to learn.
+I needed what I learned in class and heard on the streets to stick. While Anki provided the unbeatable spaced repetition algorithm needed for long-term retention, manually creating rich cards—clipping audio, finding pictures, and wrestling templates—felt like an exhausting chore at the end of a long day. Gamified apps looked great and sounded natural, but locked learners into rigid beginner courses with zero control over the real-world phrases they actually wanted to speak.
 
-Jolito was created to bridge that gap: pairing the proven power of spaced repetition and multimodal learning with zero-friction card authoring, ear-first native Mexican Spanish audio, active typed recall, and a joyful keyboard flow.
+I built Jolito to make memorization something to look forward to: **fast, tactile, immersive**. Spaced repetition games your memory—**legally!** It resurfaces words just before you forget them, so they stick almost effortlessly.
+
+Memorization and I have become friends!
 
 ## Highlights & Learner Experience
 
-- **Spaced Repetition (SRS):** Smart review intervals optimized for long-term memory retention and daily practice without artificial daily limits.
-- **Keyboard-First Reviews:** Fly through reviews entirely from the keyboard (`Enter` to reveal, `1`–`4` to self-grade, `Space` for audio replay) with automatic input autofocus.
-- **Native Mexican Spanish Audio:** High-quality spoken pronunciation audio for both prompts and answers to train ear comprehension for everyday conversation.
+- **Fast Keyboard & Gesture Flow:** Fly through reviews with `Enter` to reveal, `1`–`4` to grade, and `Space` for audio on desktop, or natural mobile swipe gestures (swipe up to reveal, swipe horizontally to grade) with continuous spring settling.
+- **Spoken Mexican Spanish Audio:** High-quality studio neural audio (alternating male/female) for prompts and answers with automatic playback on reveal and smart prefetching.
 - **Active Typed Recall & Visual Diffs:** Produce words actively with sub-word typo highlighting and accent-sensitive diffs while retaining full authority over self-grading.
-- **Bidirectional Reciprocal Cards:** Create linked Spanish ↔ English cards simultaneously with side-by-side previews, contextual explanations, and rapid batch creation.
-- **Mexican Spanish Lexicon & Autocomplete:** Built-in dictionary of common Mexican Spanish terms, idioms, and CDMX slang with instant suggestions and typo correction during card creation.
-- **Anki Import:** Bring existing Anki decks (`.apkg` packages or text exports) in seconds, preserving learning history and spaced-repetition schedules.
-- **Offline-First Study:** Once connected, review, card creation, audio playback, and spaced repetition run 100% offline via local storage and service worker caching, syncing unobtrusively in the background when connected.
-- **Instant Interactive Demo:** Try spaced repetition immediately in your browser with zero friction. Connect your email to unlock your personal deck and sync across devices.
+- **Focused Grammar Practice:** Bite-sized drills for tricky conjugations—Pretérito Indefinido, Pretérito Perfecto Compuesto, and Gerundio—with numbered accent shortcuts and subject-verb matching.
+- **Curated Starter Packs:** Built-in decks (Top Connectors, Adjectives, Idioms, Adverbs) that merge semantically into your deck without overwriting your progress.
+- **Instant Reciprocal Cards:** Type a Spanish or English phrase to get instant translations, lemmas, and conjugations from a bundled Mexican Spanish dictionary, creating linked reciprocal cards simultaneously.
+- **Anki Import & Offline JSON Backup:** Bring existing Anki decks (`.apkg` packages or text exports) in seconds, preserving learning history and schedules, or export your full deck to JSON anytime.
+- **Native iOS App:** Built for iPhone and iPad with tactile haptics, full offline support, and physical keyboard auto-detection.
+- **Offline-First Study & Cloud Backup:** Review, card creation, and audio playback run 100% offline via local storage and service worker caching, syncing unobtrusively with Supabase when online.
 
 ## Web Application
 

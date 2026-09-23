@@ -26,6 +26,15 @@ describe('llms.txt specification and discovery compliance', () => {
     expect(h2Matches && h2Matches.length >= 2).toBe(true)
     expect(content).toContain('## Origin Story')
 
+    // Must preserve authentic origin story keywords
+    expect(content).toContain('Condesa')
+    expect(content).toContain('Gexican')
+    expect(content).toContain('archenemy')
+
+    // Highlights must include current capabilities
+    expect(content).toContain('Focused Grammar Practice')
+    expect(content).toContain('Curated Starter Packs')
+
     // 4. Must contain bulleted Markdown links [text](url) with descriptions
     const linkMatches = Array.from(
       content.matchAll(/- \[([^\]]+)\]\(([^)]+)\)/g),
@@ -54,6 +63,11 @@ describe('llms.txt specification and discovery compliance', () => {
     expect(content).toContain('Product Overview')
     expect(content).toContain('Core Principles & Learning Design')
     expect(content).toContain('Keyboard Controls & Review Flow')
+    expect(content).toContain('Condesa')
+    expect(content).toContain('Gexican')
+    expect(content).toContain('archenemy')
+    expect(content).toContain('Focused grammar practice')
+    expect(content).toContain('Curated starter packs')
   })
 
   it('includes describedby and alternate link discovery in index.html', () => {
