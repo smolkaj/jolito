@@ -4,7 +4,9 @@ import {
   sortPRQueue,
   evaluateMainlineSettlement,
   evaluatePRMergeability,
+  evaluatePRChecks,
   type QueuedPR,
+  type PRCheckItem,
 } from '../../scripts/merge-coordinator.ts'
 import type { WorkflowRun } from '../../scripts/check-main-health.ts'
 
@@ -134,93 +136,168 @@ void test('evaluatePRMergeability allows clean or mergeable PRs', () => {
   assert.equal(result.message, undefined)
 })
 
-void test('evaluateMainlineSettlement detects when mainline CI runs are still in progress', () => {
+void test('evaluatePRChecks ignores Merge Coordinator workflow runs to prevent self-deadlock', () => {
+  const checks: PRCheckItem[] = [
+    {
+      name: 'Quality gates',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'Quality',
+    },
+    {
+      name: 'Drain merge queue',
+      state: 'IN_PROGRESS',
+      bucket: 'pending',
+      workflow: 'Merge Coordinator',
+    },
+    {
+      name: 'Browser smoke tests',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'Quality',
+    },
+  ]
+
+  const result = evaluatePRChecks(checks)
+  assert.equal(result.allPassing, true)
+  assert.equal(result.hasFailures, false)
+  assert.equal(result.pendingCount, 0)
+})
+
+void test('evaluatePRChecks detects failure when a required check fails', () => {
+  const checks: PRCheckItem[] = [
+    {
+      name: 'Quality gates',
+      state: 'FAILURE',
+      bucket: 'fail',
+      workflow: 'Quality',
+    },
+    {
+      name: 'Browser smoke tests',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'Quality',
+    },
+  ]
+
+  const result = evaluatePRChecks(checks)
+  assert.equal(result.allPassing, false)
+  assert.equal(result.hasFailures, true)
+  assert.equal(result.failures.length, 1)
+  assert.equal(result.failures[0]?.name, 'Quality gates')
+})
+
+void test('evaluateMainlineSettlement detects when mainline CI runs are missing for new commit', () => {
+  // Commit has just landed, only Quality registered so far
   const runs: WorkflowRun[] = [
     {
       workflowName: 'Quality',
       conclusion: null,
       status: 'in_progress',
       url: 'https://example.com/1',
-      headSha: 'abc1234',
-    },
-    {
-      workflowName: 'iOS Native Build',
-      conclusion: 'success',
-      status: 'completed',
-      url: 'https://example.com/2',
-      headSha: 'abc1234',
+      headSha: 'target-new-sha',
     },
   ]
 
-  const result = evaluateMainlineSettlement(runs)
+  const result = evaluateMainlineSettlement(runs, 'target-new-sha')
   assert.equal(result.settled, false)
-  assert.equal(result.inProgress.length, 1)
-  assert.equal(result.inProgress[0]?.workflowName, 'Quality')
+  assert.deepEqual(result.missingWorkflows, ['iOS Native Build', 'CodeQL'])
 })
 
-void test('evaluateMainlineSettlement confirms settlement when all core runs are completed', () => {
+void test('evaluateMainlineSettlement detects in-progress runs on target commit', () => {
   const runs: WorkflowRun[] = [
     {
       workflowName: 'Quality',
       conclusion: 'success',
       status: 'completed',
       url: 'https://example.com/1',
-      headSha: 'abc1234',
+      headSha: 'target-sha',
     },
     {
       workflowName: 'iOS Native Build',
-      conclusion: 'success',
-      status: 'completed',
+      conclusion: null,
+      status: 'in_progress',
       url: 'https://example.com/2',
-      headSha: 'abc1234',
+      headSha: 'target-sha',
     },
     {
       workflowName: 'CodeQL',
       conclusion: 'success',
       status: 'completed',
       url: 'https://example.com/3',
-      headSha: 'abc1234',
+      headSha: 'target-sha',
     },
   ]
 
-  const result = evaluateMainlineSettlement(runs)
-  assert.equal(result.settled, true)
-  assert.equal(result.inProgress.length, 0)
+  const result = evaluateMainlineSettlement(runs, 'target-sha')
+  assert.equal(result.settled, false)
+  assert.equal(result.missingWorkflows.length, 0)
+  assert.equal(result.inProgress.length, 1)
+  assert.equal(result.inProgress[0]?.workflowName, 'iOS Native Build')
 })
 
-void test('evaluateMainlineSettlement ignores in-progress runs from older commits', () => {
+void test('evaluateMainlineSettlement confirms settlement when all core runs exist and complete', () => {
   const runs: WorkflowRun[] = [
     {
       workflowName: 'Quality',
       conclusion: 'success',
       status: 'completed',
-      url: 'https://example.com/latest-quality',
-      headSha: 'new7890',
+      url: 'https://example.com/1',
+      headSha: 'target-sha',
     },
     {
       workflowName: 'iOS Native Build',
       conclusion: 'success',
       status: 'completed',
-      url: 'https://example.com/latest-ios',
-      headSha: 'new7890',
+      url: 'https://example.com/2',
+      headSha: 'target-sha',
     },
     {
       workflowName: 'CodeQL',
       conclusion: 'success',
       status: 'completed',
-      url: 'https://example.com/latest-codeql',
-      headSha: 'new7890',
-    },
-    {
-      workflowName: 'Quality',
-      conclusion: null,
-      status: 'in_progress',
-      url: 'https://example.com/old-quality',
-      headSha: 'old1234',
+      url: 'https://example.com/3',
+      headSha: 'target-sha',
     },
   ]
 
-  const result = evaluateMainlineSettlement(runs)
+  const result = evaluateMainlineSettlement(runs, 'target-sha')
   assert.equal(result.settled, true)
-  assert.equal(result.latestSha, 'new7890')
+  assert.equal(result.inProgress.length, 0)
+  assert.equal(result.missingWorkflows.length, 0)
+})
+
+void test('evaluateMainlineSettlement ignores completed runs from older commits', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/old-quality',
+      headSha: 'older-commit',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/old-ios',
+      headSha: 'older-commit',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/old-codeql',
+      headSha: 'older-commit',
+    },
+  ]
+
+  // If target-new-sha has not yet registered in runs
+  const result = evaluateMainlineSettlement(runs, 'target-new-sha')
+  assert.equal(result.settled, false)
+  assert.deepEqual(result.missingWorkflows, [
+    'Quality',
+    'iOS Native Build',
+    'CodeQL',
+  ])
 })

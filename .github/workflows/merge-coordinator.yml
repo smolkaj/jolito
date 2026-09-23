@@ -3,6 +3,8 @@ name: Merge Coordinator
 on:
   pull_request_target:
     types: [labeled]
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -21,7 +23,7 @@ permissions:
 jobs:
   coordinate:
     name: Drain merge queue
-    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ready-to-merge'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.label.name == 'ready-to-merge'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main

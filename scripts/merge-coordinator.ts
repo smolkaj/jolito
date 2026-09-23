@@ -15,6 +15,13 @@ export interface QueuedPR {
   labels?: Array<{ name: string }>
 }
 
+export interface PRCheckItem {
+  name: string
+  state: string
+  bucket: string
+  workflow?: string
+}
+
 export interface CoordinatorOptions {
   prNumber?: number | undefined
   dryRun?: boolean | undefined
@@ -37,6 +44,14 @@ export function sortPRQueue(prs: QueuedPR[]): QueuedPR[] {
     }
     return a.number - b.number
   })
+}
+
+export function getRepoName(repoArgs: string[] = []): string {
+  const repoIdx = repoArgs.findIndex((a) => a === '--repo' || a === '-R')
+  if (repoIdx !== -1 && repoArgs[repoIdx + 1]) {
+    return repoArgs[repoIdx + 1]!
+  }
+  return process.env.GH_REPO || 'smolkaj/jolito'
 }
 
 export function runGh(
@@ -104,49 +119,86 @@ export function fetchQueuedPRs(repoArgs: string[] = []): QueuedPR[] {
 export function fetchPRDetails(
   prNumber: number,
   repoArgs: string[] = [],
+  pollForMergeable = false,
 ): QueuedPR | null {
+  const maxAttempts = pollForMergeable ? 5 : 1
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const output = runGh(
+        [
+          'pr',
+          'view',
+          String(prNumber),
+          '--json',
+          'number,title,createdAt,headRefName,mergeable,mergeStateStatus,labels',
+        ],
+        repoArgs,
+      )
+      const pr = JSON.parse(output) as QueuedPR
+      if (
+        !pollForMergeable ||
+        pr.mergeable !== 'UNKNOWN' ||
+        attempt === maxAttempts
+      ) {
+        return pr
+      }
+      execFileSync('sleep', ['2'])
+    } catch (error) {
+      console.error(
+        `Failed to fetch PR #${prNumber} details (attempt ${attempt}):`,
+        error,
+      )
+      if (attempt === maxAttempts) return null
+      execFileSync('sleep', ['2'])
+    }
+  }
+  return null
+}
+
+export function fetchMainHeadSha(repoArgs: string[] = []): string | null {
   try {
+    const repo = getRepoName(repoArgs)
     const output = runGh(
-      [
-        'pr',
-        'view',
-        String(prNumber),
-        '--json',
-        'number,title,createdAt,headRefName,mergeable,mergeStateStatus,labels',
-      ],
+      ['api', `repos/${repo}/commits/main`, '--jq', '.sha'],
       repoArgs,
     )
-    return JSON.parse(output) as QueuedPR
+    return output.trim() || null
   } catch (error) {
-    console.error(`Failed to fetch PR #${prNumber} details:`, error)
+    console.error('Failed to fetch main HEAD SHA:', error)
     return null
   }
 }
 
 export function evaluateMainlineSettlement(
   runs: WorkflowRun[],
+  targetMainSha: string,
   coreWorkflows: string[] = ['Quality', 'iOS Native Build', 'CodeQL'],
-): { settled: boolean; inProgress: WorkflowRun[]; latestSha?: string } {
-  if (runs.length === 0) {
-    return { settled: true, inProgress: [] }
+): { settled: boolean; inProgress: WorkflowRun[]; missingWorkflows: string[] } {
+  if (!targetMainSha) {
+    return { settled: true, inProgress: [], missingWorkflows: [] }
   }
 
-  const latestSha = runs[0]?.headSha
-  if (!latestSha) {
-    return { settled: true, inProgress: [] }
-  }
+  const runsForSha = runs.filter((r) => r.headSha === targetMainSha)
+  const observedWorkflows = new Set(runsForSha.map((r) => r.workflowName))
 
-  const latestRuns = runs.filter((r) => r.headSha === latestSha)
-  const inProgress = latestRuns.filter(
+  // 1. Check if all required core workflows have registered runs for this commit
+  const missingWorkflows = coreWorkflows.filter(
+    (w) => !observedWorkflows.has(w),
+  )
+
+  // 2. Check if any core workflows for this commit are queued or in progress
+  const inProgress = runsForSha.filter(
     (r) =>
       coreWorkflows.includes(r.workflowName) &&
       (r.status === 'in_progress' || r.status === 'queued'),
   )
 
+  const settled = missingWorkflows.length === 0 && inProgress.length === 0
+
   return {
-    settled: inProgress.length === 0,
+    settled,
     inProgress,
-    latestSha,
+    missingWorkflows,
   }
 }
 
@@ -165,11 +217,77 @@ export function evaluatePRMergeability(pr: QueuedPR): {
   return { canMerge: true }
 }
 
+export function evaluatePRChecks(checks: PRCheckItem[]): {
+  allPassing: boolean
+  hasFailures: boolean
+  pendingCount: number
+  failures: PRCheckItem[]
+} {
+  // Exclude the coordinator workflow itself to prevent self-deadlock
+  const filtered = checks.filter(
+    (c) =>
+      c.workflow !== 'Merge Coordinator' &&
+      c.name !== 'Drain merge queue' &&
+      c.name !== 'Merge Coordinator',
+  )
+
+  if (filtered.length === 0) {
+    return {
+      allPassing: false,
+      hasFailures: false,
+      pendingCount: 1,
+      failures: [],
+    }
+  }
+
+  const failures = filtered.filter(
+    (c) =>
+      c.bucket === 'fail' ||
+      c.state === 'FAILURE' ||
+      c.state === 'ERROR' ||
+      c.state === 'ACTION_REQUIRED',
+  )
+  const pending = filtered.filter(
+    (c) =>
+      c.bucket === 'pending' ||
+      c.state === 'PENDING' ||
+      c.state === 'QUEUED' ||
+      c.state === 'IN_PROGRESS',
+  )
+  const passing = filtered.filter(
+    (c) =>
+      c.bucket === 'pass' ||
+      c.state === 'SUCCESS' ||
+      c.state === 'SKIPPED' ||
+      c.state === 'NEUTRAL',
+  )
+
+  return {
+    allPassing:
+      failures.length === 0 && pending.length === 0 && passing.length > 0,
+    hasFailures: failures.length > 0,
+    pendingCount: pending.length,
+    failures,
+  }
+}
+
 export function waitForMainlineSettle(
   repoArgs: string[] = [],
   maxWaitMinutes = 30,
   intervalSeconds = 15,
 ): boolean {
+  const targetMainSha = fetchMainHeadSha(repoArgs)
+  if (!targetMainSha) {
+    console.warn(
+      'Could not resolve current origin/main SHA. Proceeding with caution.',
+    )
+    return true
+  }
+
+  console.log(
+    `Ensuring mainline CI on origin/main (${targetMainSha.slice(0, 7)}) is settled...`,
+  )
+
   const start = Date.now()
   const timeoutMs = maxWaitMinutes * 60 * 1000
 
@@ -185,7 +303,7 @@ export function waitForMainlineSettle(
           '--event',
           'push',
           '--limit',
-          '20',
+          '30',
           '--json',
           'workflowName,conclusion,status,url,headSha,createdAt',
         ],
@@ -198,14 +316,26 @@ export function waitForMainlineSettle(
       continue
     }
 
-    const { settled, inProgress, latestSha } = evaluateMainlineSettlement(runs)
+    const { settled, inProgress, missingWorkflows } =
+      evaluateMainlineSettlement(runs, targetMainSha)
+
     if (settled) {
+      console.log(
+        `✓ Mainline CI on ${targetMainMainSha(targetMainSha)} is settled.`,
+      )
       return true
     }
 
-    console.log(
-      `Mainline CI on commit ${latestSha?.slice(0, 7)} has in-progress runs (${inProgress.map((r) => r.workflowName).join(', ')}). Waiting ${intervalSeconds}s...`,
-    )
+    if (missingWorkflows.length > 0) {
+      console.log(
+        `Mainline CI on commit ${targetMainSha.slice(0, 7)} awaiting workflow registration (${missingWorkflows.join(', ')}). Waiting ${intervalSeconds}s...`,
+      )
+    } else {
+      console.log(
+        `Mainline CI on commit ${targetMainSha.slice(0, 7)} has in-progress runs (${inProgress.map((r) => r.workflowName).join(', ')}). Waiting ${intervalSeconds}s...`,
+      )
+    }
+
     execFileSync('sleep', [String(intervalSeconds)])
   }
 
@@ -213,6 +343,10 @@ export function waitForMainlineSettle(
     `Timed out waiting for mainline CI to settle after ${maxWaitMinutes}m`,
   )
   return false
+}
+
+function targetMainMainSha(sha: string): string {
+  return sha.slice(0, 7)
 }
 
 export function verifyMainHealth(
@@ -224,7 +358,7 @@ export function verifyMainHealth(
 ): boolean {
   const isHotfix = pr.title.trim().startsWith('fix-main:')
 
-  // For non-hotfix PRs, wait for any in-flight mainline CI runs to settle first
+  // For non-hotfix PRs, wait for the current mainline commit CI to fully settle first
   if (!isHotfix) {
     const settled = waitForMainlineSettle(
       repoArgs,
@@ -324,28 +458,58 @@ export function waitForChecks(
   console.log(
     `Waiting for required checks on PR #${prNumber} (interval ${intervalSeconds}s, max ${maxWaitMinutes}m)...`,
   )
-  try {
-    runGh(
-      [
-        'pr',
-        'checks',
-        String(prNumber),
-        '--watch',
-        `--interval=${intervalSeconds}`,
-        '--fail-fast',
-      ],
-      repoArgs,
-      { timeout: maxWaitMinutes * 60 * 1000 },
+  const start = Date.now()
+  const timeoutMs = maxWaitMinutes * 60 * 1000
+
+  while (Date.now() - start < timeoutMs) {
+    let checks: PRCheckItem[]
+    try {
+      const output = runGh(
+        [
+          'pr',
+          'checks',
+          String(prNumber),
+          '--required',
+          '--json',
+          'name,state,bucket,workflow',
+        ],
+        repoArgs,
+      )
+      checks = JSON.parse(output || '[]') as PRCheckItem[]
+    } catch (error) {
+      console.warn(
+        `Warning: Could not fetch checks for PR #${prNumber}, retrying...`,
+        error,
+      )
+      execFileSync('sleep', [String(intervalSeconds)])
+      continue
+    }
+
+    const evaluation = evaluatePRChecks(checks)
+
+    if (evaluation.hasFailures) {
+      const failedNames = evaluation.failures
+        .map((f) => `${f.name} (${f.state})`)
+        .join(', ')
+      const msg = `Required status check(s) failed on PR #${prNumber}: ${failedNames}`
+      console.error(`❌ ${msg}`)
+      return { success: false, error: msg }
+    }
+
+    if (evaluation.allPassing) {
+      console.log(`✓ All required checks passed on PR #${prNumber}`)
+      return { success: true }
+    }
+
+    console.log(
+      `PR #${prNumber} has ${evaluation.pendingCount} check(s) in progress/pending. Waiting ${intervalSeconds}s...`,
     )
-    console.log(`✓ All checks passed on PR #${prNumber}`)
-    return { success: true }
-  } catch (error: unknown) {
-    const err = error as { stderr?: string; stdout?: string; message?: string }
-    const errorMsg =
-      err?.stderr || err?.stdout || err?.message || 'Checks failed or timed out'
-    console.error(`❌ Checks failed on PR #${prNumber}:\n${errorMsg}`)
-    return { success: false, error: String(errorMsg) }
+    execFileSync('sleep', [String(intervalSeconds)])
   }
+
+  const timeoutMsg = `Timed out waiting for required checks on PR #${prNumber} after ${maxWaitMinutes}m`
+  console.error(`❌ ${timeoutMsg}`)
+  return { success: false, error: timeoutMsg }
 }
 
 export function squashMergePR(
@@ -406,7 +570,7 @@ export function processQueuedPR(
   }
 
   // 2. Refresh PR details & check mergeability / conflicts
-  const freshPr = fetchPRDetails(pr.number, repoArgs) ?? pr
+  const freshPr = fetchPRDetails(pr.number, repoArgs, true) ?? pr
   const mergeability = evaluatePRMergeability(freshPr)
   if (!mergeability.canMerge) {
     if (mergeability.message) {
@@ -417,7 +581,7 @@ export function processQueuedPR(
     return false
   }
 
-  // 3. Wait for all status checks to pass
+  // 3. Wait for all required status checks to pass (deadlock-free)
   if (!dryRun) {
     const checkResult = waitForChecks(
       pr.number,
