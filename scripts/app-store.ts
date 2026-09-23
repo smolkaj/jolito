@@ -15,6 +15,7 @@ export const settings = settingsSchema.parse(
     readFileSync(new URL('../fastlane/release.json', import.meta.url), 'utf8'),
   ),
 )
+export const CONTENT_RIGHTS_DECLARATION = 'DOES_NOT_USE_THIRD_PARTY_CONTENT'
 const idSchema = z.object({ type: z.string(), id: z.string().min(1) })
 const resourceSchema = idSchema.extend({
   attributes: z.record(z.string(), z.unknown()).default({}),
@@ -101,7 +102,9 @@ export function priceSchedule(appId: string, pricePoint: string) {
 }
 
 export async function configureStore(api: AppleApi, apply: boolean) {
-  const apps = await api.list(`/v1/apps?filter[bundleId]=${settings.bundleId}`)
+  const apps = await api.list(
+    `/v1/apps?filter[bundleId]=${settings.bundleId}&fields[apps]=bundleId,contentRightsDeclaration`,
+  )
   if (apps.length !== 1)
     throw new Error('Create the Jolito app record in App Store Connect first')
   const app = apps[0]!
@@ -122,15 +125,14 @@ export async function configureStore(api: AppleApi, apply: boolean) {
 
   if (apply) {
     if (
-      app.attributes.contentRightsDeclaration !==
-      'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+      app.attributes.contentRightsDeclaration !== CONTENT_RIGHTS_DECLARATION
     ) {
       await api.call(`/v1/apps/${app.id}`, 'PATCH', {
         data: {
           type: 'apps',
           id: app.id,
           attributes: {
-            contentRightsDeclaration: 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+            contentRightsDeclaration: CONTENT_RIGHTS_DECLARATION,
           },
         },
       })
@@ -221,14 +223,15 @@ export async function configureStore(api: AppleApi, apply: boolean) {
       `Availability differs for: ${mismatches.map((t) => t.id).join(', ')}`,
     )
   const currentApp = resourceSchema.parse(
-    (await api.call(`/v1/apps/${app.id}`)).data,
+    (await api.call(`/v1/apps/${app.id}?fields[apps]=contentRightsDeclaration`))
+      .data,
   )
   if (
     currentApp.attributes.contentRightsDeclaration !==
-    'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+    CONTENT_RIGHTS_DECLARATION
   )
     throw new Error(
-      'Content rights declaration differs: expected DOES_NOT_USE_THIRD_PARTY_CONTENT',
+      `Content rights declaration differs: expected ${CONTENT_RIGHTS_DECLARATION}`,
     )
   console.log(
     'Verified US$2.99 base price, content rights declaration, and configured worldwide availability. Apple eligibility and agreements still apply.',

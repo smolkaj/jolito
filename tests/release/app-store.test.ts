@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   AppleApi,
   configureStore,
+  CONTENT_RIGHTS_DECLARATION,
   priceSchedule,
 } from '../../scripts/app-store.ts'
 
@@ -35,24 +36,25 @@ function store(
       patchedContentRights = true
       return reply({
         data: record('apps', 'app', {
-          contentRightsDeclaration: 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+          contentRightsDeclaration: CONTENT_RIGHTS_DECLARATION,
         }),
       })
     }
+    const fields = url.searchParams.get('fields[apps]')?.split(',') ?? []
+    const requestedRights = fields.includes('contentRightsDeclaration')
+    const rightsValue =
+      requestedRights &&
+      !(options.missingContentRights && !patchedContentRights)
+        ? CONTENT_RIGHTS_DECLARATION
+        : undefined
     const responses: Record<string, unknown> = {
       '/v1/apps': [
         record('apps', 'app', {
-          contentRightsDeclaration: options.wrongPrice || options.unavailable || options.expiringPrice
-            ? 'DOES_NOT_USE_THIRD_PARTY_CONTENT'
-            : options.missingContentRights
-              ? undefined
-              : 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+          contentRightsDeclaration: rightsValue,
         }),
       ],
       '/v1/apps/app': record('apps', 'app', {
-        contentRightsDeclaration: options.missingContentRights && !patchedContentRights
-          ? undefined
-          : 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+        contentRightsDeclaration: rightsValue,
       }),
       '/v1/territories': [
         record('territories', 'USA'),
@@ -135,6 +137,8 @@ void test('apply configures a single US base price, leaves exchange prices to Ap
   assert.deepEqual(JSON.parse(writes[0]!.body!), priceSchedule('app', 'paid'))
   assert.equal(writes[1]!.url.pathname, '/v2/appAvailabilities')
   assert.equal(calls[calls.length - 1]!.method, 'GET')
+  const patch = calls.find((c) => c.method === 'PATCH')
+  assert.equal(patch, undefined, 'Did not expect PATCH when already configured')
 })
 
 void test('apply patches contentRightsDeclaration when missing', async () => {
@@ -148,7 +152,7 @@ void test('apply patches contentRightsDeclaration when missing', async () => {
       type: 'apps',
       id: 'app',
       attributes: {
-        contentRightsDeclaration: 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+        contentRightsDeclaration: CONTENT_RIGHTS_DECLARATION,
       },
     },
   })
