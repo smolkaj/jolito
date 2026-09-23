@@ -87,6 +87,11 @@
   --brand-weight: 800;
   --brand-letter-spacing: -0.6px;
   --phrase-letter-spacing: -0.8px;
+  /* Safe Area Insets */
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
 
   font-family: var(--font-sans);
   color: var(--ink);
@@ -631,7 +636,8 @@ summary:focus-visible,
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: clamp(16px, 2.5vh, 32px) 0 max(21px, env(safe-area-inset-bottom));
+  padding: clamp(16px, 2.5vh, 32px) 0
+    max(28px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   box-sizing: border-box;
 }
 
@@ -6856,21 +6862,33 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     padding-top: 0;
     padding-left: 0;
     padding-right: 0;
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(
+      56px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    );
     box-sizing: border-box;
   }
 
   .review-page .review-header {
-    padding-top: max(12px, env(safe-area-inset-top));
+    padding-top: max(
+      12px,
+      var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+    );
   }
 
   .review-page .topbar,
   .review-page .review-progress-track {
-    margin-left: max(16px, env(safe-area-inset-left));
-    margin-right: max(16px, env(safe-area-inset-right));
+    margin-left: max(
+      16px,
+      var(--safe-area-inset-left, env(safe-area-inset-left, 0px))
+    );
+    margin-right: max(
+      16px,
+      var(--safe-area-inset-right, env(safe-area-inset-right, 0px))
+    );
     width: calc(
-      100% - max(16px, env(safe-area-inset-left)) -
-        max(16px, env(safe-area-inset-right))
+      100% -
+        max(16px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px))) -
+        max(16px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))
     );
     box-sizing: border-box;
   }
@@ -6882,8 +6900,10 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: clamp(16px, 3vh, 28px) max(16px, env(safe-area-inset-right)) 20px
-      max(16px, env(safe-area-inset-left));
+    padding: clamp(16px, 3vh, 28px)
+      max(16px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))
+      20px
+      max(16px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
     box-sizing: border-box;
     cursor: pointer;
   }
@@ -6897,8 +6917,13 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     left: 0;
     right: 0;
     z-index: 100;
-    height: calc(56px + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    height: calc(
+      56px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    );
+    padding-bottom: var(
+      --safe-area-inset-bottom,
+      env(safe-area-inset-bottom, 0px)
+    );
     background: rgba(253, 245, 248, 0.92);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -6977,7 +7002,9 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
 
   /* Reachability for pages under fixed mobile tab bar */
   .app-shell {
-    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(
+      68px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+    );
   }
 
   /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */
@@ -6988,6 +7015,12 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
   .topbar-feedback-btn {
     display: inline-flex !important;
     flex-shrink: 0;
+  }
+}
+
+@media (min-width: 681px) {
+  .review-page .study-card {
+    margin-top: clamp(48px, 8vh, 100px);
   }
 }
 

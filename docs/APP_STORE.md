@@ -121,13 +121,15 @@ The App Store screenshot set showcases Jolito's real product experience across a
 4. **`04-create`:** Intelligent card authoring with trie-based autocomplete, slang/typo tags (`ahorita`), AI helpers, bidirectional toggle, and "Save card".
 5. **`05-deck`:** Deck management showing curated starter packs (`Mexican Street Phrases`), filter pills, and 100% offline & local readiness.
 
-Generate and refresh the exact high-resolution assets locally:
+Generate and refresh the exact high-resolution store assets locally:
 
 ```sh
 npm run generate:screenshots
 ```
 
-Or capture from the native app on iPhone and iPad simulators on demand via GitHub Actions (`gh workflow run ios.yml` or on a PR with `[test-native]` in the title / `test-native` label).
+This canonical screenshot generator uses Playwright with exact mobile viewport scaling (3x on iPhone 17 Pro Max for 1320x2868, 2x on iPad Pro 13-inch for 2064x2752), pixel-perfect native safe areas and status bar overlays, authentic Mexican Spanish seed data, and touch-first interaction (no keyboard shortcuts).
+
+Separately, `scripts/NativeScreenshots.swift` and `scripts/capture-native-screenshots.sh` serve as the **native simulator lifecycle contract test** in CI (`gh workflow run ios.yml` or PRs with `[test-native]`). That test exercises cold boot, card draft preservation across scene suspension/resumption, and process termination on real Xcode simulators.
 
 Stage and commit the reviewed PNGs under `fastlane/native-screenshots/en-US/`, using ordered filenames containing their device family. Verify dimensions against [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/) (e.g. 1320x2868 for iPhone 17 Pro Max, 2064x2752 for iPad Pro 13-inch) with no debug overlays or obscured UI. Metadata and native screenshots can be synchronized to App Store Connect via GitHub Actions:
 
@@ -142,7 +144,7 @@ bundle exec fastlane ios metadata
 ```
 
 The metadata lane does not upload a binary or submit for review. It uses only
-this dedicated native screenshot directory, never old browser renders.
+this dedicated screenshot directory.
 
 Review contact information and reviewer notes are version-controlled in
 `fastlane/metadata/review_information/` (`first_name.txt`, `last_name.txt`,

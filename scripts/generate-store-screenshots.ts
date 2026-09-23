@@ -2,11 +2,18 @@ import { chromium, type BrowserContext } from '@playwright/test'
 import { createServer } from 'node:http'
 import { readFileSync, statSync, mkdirSync } from 'node:fs'
 import { resolve, join, sep } from 'node:path'
+import { execSync } from 'node:child_process'
 
 const rootDir = process.cwd()
 const distDir = join(rootDir, 'dist')
 const outputDir = join(rootDir, 'fastlane/native-screenshots/en-US')
 mkdirSync(outputDir, { recursive: true })
+
+console.log('Building dist prior to screenshot generation...')
+execSync(
+  'VITE_SUPABASE_URL=https://mock.supabase.co VITE_SUPABASE_ANON_KEY=mock-key npm run build',
+  { stdio: 'inherit' },
+)
 
 const server = createServer((req, res) => {
   let reqPath = decodeURIComponent((req.url || '/').split('?')[0] || '/')
@@ -185,6 +192,64 @@ const librariesEnvelope = {
 }
 
 async function prepareContext(context: BrowserContext, isPhone: boolean) {
+  // Mock Supabase sync & auth RPCs so connection pill displays green "Synced" state
+  await context.route('**/rest/v1/**', async (route) => {
+    const url = route.request().url()
+    if (url.includes('read_deck_snapshot')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            user_id: 'usr-store',
+            revision: 1,
+            updated_at: new Date().toISOString(),
+            data: {
+              version: 1,
+              app: 'jolito',
+              updatedAt: new Date().toISOString(),
+              deviceId: 'dev-store',
+              cards: sampleCards,
+              deletedCardIds: [],
+            },
+          },
+        ]),
+      })
+    } else if (
+      url.includes('compare_and_set_deck') ||
+      url.includes('commit_deck_snapshot')
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(2),
+      })
+    } else {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      })
+    }
+  })
+
+  await context.route('**/auth/v1/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        access_token: authSession.accessToken,
+        refresh_token: authSession.refreshToken,
+        expires_at: authSession.expiresAt,
+        user: authSession.user,
+      }),
+    })
+  })
+
+  await context.route('**/api/**', async (route) => {
+    await route.fulfill({ status: 200, body: '{}' })
+  })
+
   await context.addInitScript(
     ({ session, libs, legacyCards, isMobilePhone }) => {
       window.localStorage.setItem(
@@ -196,98 +261,29 @@ async function prepareContext(context: BrowserContext, isPhone: boolean) {
         'jolito-library-v1',
         JSON.stringify({ version: 1, cards: legacyCards }),
       )
-      Object.defineProperty(navigator, 'onLine', { value: false })
+      window.sessionStorage.removeItem('jolito:has-keyboard')
 
-      const injectChrome = () => {
-        if (!document.head || !document.body) return
-        if (document.querySelector('.ios-status-bar')) return
-
-        const style = document.createElement('style')
-        style.textContent = `
-          :root {
-            --safe-area-inset-top: ${isMobilePhone ? '59px' : '24px'} !important;
-            --safe-area-inset-bottom: ${isMobilePhone ? '34px' : '20px'} !important;
-          }
-          body {
-            padding-top: var(--safe-area-inset-top) !important;
-            padding-bottom: var(--safe-area-inset-bottom) !important;
-          }
-          .ios-status-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: ${isMobilePhone ? '59px' : '24px'};
-            z-index: 99999;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 ${isMobilePhone ? '36px' : '24px'};
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-            font-size: ${isMobilePhone ? '17px' : '14px'};
-            font-weight: 600;
-            color: #000000;
-            pointer-events: none;
-            background: rgba(253, 245, 248, 0.96);
-            backdrop-filter: blur(12px);
-          }
-          .ios-island {
-            position: fixed;
-            top: 11px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 125px;
-            height: 37px;
-            background: #000000;
-            border-radius: 20px;
-            z-index: 100000;
-            pointer-events: none;
-          }
-          .ios-home-indicator {
-            position: fixed;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 140px;
-            height: 5px;
-            background: #000000;
-            border-radius: 3px;
-            z-index: 99999;
-            pointer-events: none;
-            opacity: 0.7;
-          }
-        `
-        document.head.appendChild(style)
-
-        const bar = document.createElement('div')
-        bar.className = 'ios-status-bar'
-        bar.innerHTML = `
-          <span>9:41</span>
-          <div style="display: flex; gap: 7px; align-items: center;">
-            <svg width="18" height="13" viewBox="0 0 18 13" fill="#000"><path d="M9 2.5C12.1 2.5 15 3.8 17.1 5.9L15.5 7.5C13.8 5.8 11.5 4.8 9 4.8C6.5 4.8 4.2 5.8 2.5 7.5L0.9 5.9C3 3.8 5.9 2.5 9 2.5ZM9 6.8C10.7 6.8 12.3 7.5 13.5 8.7L9 13.2L4.5 8.7C5.7 7.5 7.3 6.8 9 6.8Z"/></svg>
-            <svg width="25" height="12" viewBox="0 0 25 12" fill="none" stroke="#000" stroke-width="1.2" rx="3"><rect x="0.6" y="0.6" width="21" height="10.8" rx="3"/><path d="M23.5 4v4" stroke-linecap="round"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.5" fill="#000"/></svg>
-          </div>
-        `
-        document.body.appendChild(bar)
-
-        if (isMobilePhone) {
-          const island = document.createElement('div')
-          island.className = 'ios-island'
-          document.body.appendChild(island)
-        }
-
-        const home = document.createElement('div')
-        home.className = 'ios-home-indicator'
-        document.body.appendChild(home)
+      const setSafeAreas = () => {
+        if (!document.documentElement) return
+        document.documentElement.dataset.platform = 'ios'
+        delete document.documentElement.dataset.keyboard
+        document.documentElement.style.setProperty(
+          '--safe-area-inset-top',
+          isMobilePhone ? '59px' : '24px',
+        )
+        document.documentElement.style.setProperty(
+          '--safe-area-inset-bottom',
+          isMobilePhone ? '34px' : '20px',
+        )
       }
 
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', injectChrome)
+        document.addEventListener('DOMContentLoaded', setSafeAreas)
       } else {
-        injectChrome()
+        setSafeAreas()
       }
-      setTimeout(injectChrome, 100)
-      setTimeout(injectChrome, 400)
+      setTimeout(setSafeAreas, 50)
+      setTimeout(setSafeAreas, 300)
     },
     {
       session: authSession,
@@ -305,6 +301,8 @@ const DEVICES = [
     height: 956,
     scale: 3, // Renders 1320 x 2868
     isPhone: true,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1',
   },
   {
     prefix: 'iPad_Pro_13-inch',
@@ -312,6 +310,8 @@ const DEVICES = [
     height: 1376,
     scale: 2, // Renders 2064 x 2752
     isPhone: false,
+    userAgent:
+      'Mozilla/5.0 (iPad; CPU OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1',
   },
 ]
 
@@ -322,27 +322,23 @@ for (const dev of DEVICES) {
     deviceScaleFactor: dev.scale,
     isMobile: dev.isPhone,
     hasTouch: true,
+    userAgent: dev.userAgent,
   })
   await prepareContext(context, dev.isPhone)
   const page = await context.newPage()
 
-  // 1. Welcome with Mascot Greeting Bubble
+  // 1. Welcome Screen (clean mascot, no speech bubble)
   await page.goto(`${baseUrl}/#/`)
   await page.waitForLoadState('networkidle')
-  await page.waitForTimeout(400)
-  const mascot = page.getByRole('button', { name: /meet jolito the ajolote/i })
-  if (await mascot.isVisible()) {
-    await mascot.click()
-    await page.waitForTimeout(400)
-  }
+  await page.waitForTimeout(500)
   const file01 = join(outputDir, `1_${dev.prefix}_01-welcome.png`)
   await page.screenshot({ path: file01 })
   console.log(`Saved ${file01}`)
 
-  // 2. Study Prompt (Active Recall)
+  // 2. Study Prompt (Active Recall - Touch First)
   await page.goto(`${baseUrl}/#/study`)
   await page.waitForLoadState('networkidle')
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(600)
   const answerInput = page.getByLabel('Your answer')
   if (await answerInput.isVisible()) {
     await answerInput.fill('Pardon?')
@@ -352,8 +348,16 @@ for (const dev of DEVICES) {
   await page.screenshot({ path: file02 })
   console.log(`Saved ${file02}`)
 
-  // 3. Review Answer & SRS Grading
-  await page.keyboard.press('Enter')
+  // 3. Review Answer & SRS Grading (Click reveal button rather than physical keyboard Enter)
+  const revealBtn = page.locator('.reveal-button')
+  if (await revealBtn.isVisible()) {
+    await revealBtn.click()
+  } else {
+    const fallbackReveal = page.locator('form.answer-form button')
+    if (await fallbackReveal.isVisible()) {
+      await fallbackReveal.click()
+    }
+  }
   await page.waitForTimeout(400)
   const file03 = join(outputDir, `3_${dev.prefix}_03-review.png`)
   await page.screenshot({ path: file03 })
