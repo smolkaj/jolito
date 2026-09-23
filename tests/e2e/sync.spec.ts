@@ -495,7 +495,7 @@ test('displays guarded account deletion flow with zero WCAG violations', async (
 
   // Verify backup checkbox is checked by default
   const backupCheckbox = page.getByRole('checkbox', {
-    name: /download an offline backup/i,
+    name: /(?:save|download) an offline backup/i,
   })
   await expect(backupCheckbox).toBeChecked()
 

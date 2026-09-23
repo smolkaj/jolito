@@ -1,8 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 import { downloadJsonFile } from './download'
+import * as shareFileModule from './share-file'
 
 describe('downloadJsonFile', () => {
-  it('creates blob url, triggers download click, and revokes url', () => {
+  it('delegates to native sharing when isNative is true', async () => {
+    const shareSpy = vi
+      .spyOn(shareFileModule, 'shareFileNative')
+      .mockResolvedValue('completed')
+
+    const res = await downloadJsonFile('test-deck.json', '{"version":1}', true)
+
+    expect(shareSpy).toHaveBeenCalledWith('test-deck.json', '{"version":1}')
+    expect(res).toBe('completed')
+    shareSpy.mockRestore()
+  })
+
+  it('creates blob url, triggers download click, and revokes url on web', async () => {
     const createObjectURLMock = vi.fn().mockReturnValue('blob:mock-url')
     const revokeObjectURLMock = vi.fn()
     window.URL.createObjectURL = createObjectURLMock
@@ -23,23 +36,25 @@ describe('downloadJsonFile', () => {
       },
     )
 
-    downloadJsonFile('test-deck.json', '{"version":1}')
+    const res = await downloadJsonFile('test-deck.json', '{"version":1}', false)
 
     expect(createObjectURLMock).toHaveBeenCalled()
     expect(clickMock).toHaveBeenCalled()
     expect(appendChildSpy).toHaveBeenCalled()
     expect(removeChildSpy).toHaveBeenCalled()
     expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:mock-url')
+    expect(res).toBe('completed')
 
     vi.restoreAllMocks()
   })
 
-  it('no-ops safely when document is undefined', () => {
+  it('no-ops safely when document is undefined', async () => {
     const originalDocument = globalThis.document
     // @ts-expect-error test SSR/undefined environment
     delete globalThis.document
 
-    expect(() => downloadJsonFile('file.json', '{}')).not.toThrow()
+    const res = await downloadJsonFile('file.json', '{}', false)
+    expect(res).toBe('error')
 
     globalThis.document = originalDocument
   })

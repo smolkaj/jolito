@@ -16,6 +16,7 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */; };
+		1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */; };
 		29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */; };
 		1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */; };
 		891EBE9D6AD048A2BEAFA998 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65F2620A285E489E99246ED6 /* ActivityKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -39,6 +40,7 @@
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPlugin.swift; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareFilePlugin.swift; sourceTree = "<group>"; };
 		EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeActivityAttributes.swift; sourceTree = "<group>"; };
 		D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
 		65F2620A285E489E99246ED6 /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
@@ -105,6 +107,7 @@
 				D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */,
 				EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */,
 				D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */,
+				D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -246,6 +249,7 @@
 				1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */,
 				29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */,
+				1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

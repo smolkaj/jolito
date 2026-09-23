@@ -75,7 +75,7 @@ export function SyncModal({
     'synced' | 'resent' | 'pasted' | null
   >(null)
   const [loadingAction, setLoadingAction] = useState<
-    'send' | 'verify' | 'sync' | 'signout' | 'delete' | null
+    'send' | 'verify' | 'sync' | 'signout' | 'delete' | 'delete-backup' | null
   >(null)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -282,18 +282,35 @@ export function SyncModal({
   const handleDeleteAccount = async () => {
     if (!user) return
     clearTransientFeedback()
-    setLoadingAction('delete')
     setStatusMsg(null)
     try {
       if (backupBeforeDelete) {
         if (onDownloadBackup) {
           onDownloadBackup(cards)
         } else {
+          setLoadingAction('delete-backup')
           const backupClock = clock ?? { now: () => Date.now() }
           const backup = createDeckBackup(cards, backupClock)
-          downloadJsonFile(backup.filename, backup.json)
+          const outcome = await downloadJsonFile(backup.filename, backup.json)
+          if (outcome === 'canceled') {
+            setStatusMsg({
+              type: 'info',
+              message:
+                'Account deletion cancelled because backup was not saved.',
+            })
+            return
+          }
+          if (outcome === 'error') {
+            setStatusMsg({
+              type: 'error',
+              message:
+                'Account deletion stopped because backup could not be saved.',
+            })
+            return
+          }
         }
       }
+      setLoadingAction('delete')
       const authRes = await onDeleteAccount()
       if (!authRes.success) {
         setStatusMsg({
@@ -350,8 +367,10 @@ export function SyncModal({
       )}
     </div>
   )
-  const showDeletionError =
-    user && isConfirmingDelete && statusMsg?.type === 'error'
+  const showDeletionFeedback =
+    user &&
+    isConfirmingDelete &&
+    (statusMsg?.type === 'error' || statusMsg?.type === 'info')
 
   return (
     <ModalSheet
@@ -383,7 +402,7 @@ export function SyncModal({
         </button>
       </div>
 
-      {!showDeletionError && statusBanner}
+      {!showDeletionFeedback && statusBanner}
 
       {!isBackendConfigured && !user ? (
         <div className="sync-notice-card">
@@ -483,9 +502,7 @@ export function SyncModal({
                   checked={backupBeforeDelete}
                   onChange={(e) => setBackupBeforeDelete(e.target.checked)}
                 />
-                <span>
-                  Download an offline backup to this device before deleting
-                </span>
+                <span>Save an offline backup before deleting</span>
               </label>
 
               <div className="delete-confirm-input-wrap">
@@ -509,7 +526,7 @@ export function SyncModal({
                 />
               </div>
 
-              {showDeletionError && statusBanner}
+              {showDeletionFeedback && statusBanner}
               <div className="delete-confirm-actions">
                 <button
                   type="button"
@@ -523,10 +540,16 @@ export function SyncModal({
                   type="submit"
                   className="danger-button confirm-delete-btn"
                   disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
+                  aria-busy={
+                    loadingAction === 'delete' ||
+                    loadingAction === 'delete-backup'
+                  }
                 >
                   {loadingAction === 'delete'
                     ? 'Deleting…'
-                    : 'Yes, delete cloud data'}
+                    : loadingAction === 'delete-backup'
+                      ? 'Saving backup…'
+                      : 'Yes, delete cloud data'}
                 </button>
               </div>
             </form>

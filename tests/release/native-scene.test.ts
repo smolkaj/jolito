@@ -121,3 +121,22 @@ void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Li
   )
   assert.match(plist, /<key>NSSupportsLiveActivities<\/key>\s*<true\/>/)
 })
+
+void test('SceneDelegate registers ShareFilePlugin with UIActivityViewController for native file sharing', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const shareFilePlugin = readFileSync(
+    new URL('../../ios/App/App/ShareFilePlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(ShareFilePlugin\(\)\)/,
+  )
+  assert.match(shareFilePlugin, /class ShareFilePlugin:\s*CAPPlugin/)
+  assert.match(shareFilePlugin, /UIActivityViewController/)
+  assert.match(shareFilePlugin, /popoverPresentationController/)
+})

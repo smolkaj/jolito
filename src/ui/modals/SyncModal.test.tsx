@@ -109,7 +109,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     )
 
     const checkbox = screen.getByRole('checkbox', {
-      name: /download an offline backup/i,
+      name: /(?:save|download) an offline backup/i,
     })
     expect(checkbox).toBeChecked()
 
@@ -125,6 +125,100 @@ describe('SyncModal Account Deletion and Legal', () => {
     await waitFor(() => {
       expect(onDownloadBackup).toHaveBeenCalledWith([])
     })
+  })
+
+  it('halts deletion and shows info banner when backup is canceled', async () => {
+    const downloadModule = await import('../../infrastructure/browser/download')
+    const downloadSpy = vi
+      .spyOn(downloadModule, 'downloadJsonFile')
+      .mockResolvedValueOnce('canceled')
+
+    const auth = new MockAuthService()
+    auth.user = { id: 'user-del-cancel', email: 'cancel@example.com' }
+    const onDeleteAccount = vi.fn()
+
+    render(
+      <SyncModal
+        onDeleteAccount={onDeleteAccount}
+        user={auth.user}
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /delete cloud account & data/i,
+      }),
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('DELETE'), {
+      target: { value: 'DELETE' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /yes, delete cloud data/i,
+      }),
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Account deletion cancelled because backup was not saved.',
+        ),
+      ).toBeInTheDocument()
+    })
+    expect(onDeleteAccount).not.toHaveBeenCalled()
+    downloadSpy.mockRestore()
+  })
+
+  it('halts deletion and shows alert banner when backup fails with error', async () => {
+    const downloadModule = await import('../../infrastructure/browser/download')
+    const downloadSpy = vi
+      .spyOn(downloadModule, 'downloadJsonFile')
+      .mockResolvedValueOnce('error')
+
+    const auth = new MockAuthService()
+    auth.user = { id: 'user-del-err', email: 'err@example.com' }
+    const onDeleteAccount = vi.fn()
+
+    render(
+      <SyncModal
+        onDeleteAccount={onDeleteAccount}
+        user={auth.user}
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /delete cloud account & data/i,
+      }),
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('DELETE'), {
+      target: { value: 'DELETE' },
+    })
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /yes, delete cloud data/i,
+      }),
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Account deletion stopped because backup could not be saved.',
+      )
+    })
+    expect(onDeleteAccount).not.toHaveBeenCalled()
+    downloadSpy.mockRestore()
   })
 
   it('bypasses backup download if user unchecks the backup checkbox', async () => {
@@ -153,7 +247,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     )
 
     const checkbox = screen.getByRole('checkbox', {
-      name: /download an offline backup/i,
+      name: /(?:save|download) an offline backup/i,
     })
     fireEvent.click(checkbox)
     expect(checkbox).not.toBeChecked()
