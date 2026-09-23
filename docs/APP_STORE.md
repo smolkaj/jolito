@@ -115,7 +115,7 @@ Complete these App Store Connect declarations against the release candidate:
 
 The App Store screenshot set showcases Jolito's real product experience across a 5-screen storyboard on iPhone (6.9"/6.7") and iPad (13"):
 
-1. **`01-welcome`:** Welcome view with Jolito the axolotl mascot greeting speech bubble, brand typography, and quick study action.
+1. **`01-welcome`:** Welcome view with Jolito the axolotl mascot, brand typography, and quick study action.
 2. **`02-study`:** Spoken active recall practice session with Mexican Spanish prompt (`¿Mande?`), native audio playback, and learner typing input.
 3. **`03-review`:** Spaced repetition (SRS) answer grading with diff inspection, Mexican cultural nuance context, and 4-tier rating intervals.
 4. **`04-create`:** Intelligent card authoring with trie-based autocomplete, slang/typo tags (`ahorita`), AI helpers, bidirectional toggle, and "Save card".
