@@ -901,25 +901,10 @@ export class SupabaseAuthService implements AuthService {
             errorData,
           },
         )
-        const rawError =
-          errorData.error_description ||
-          errorData.msg ||
-          errorData.message ||
-          errorData.error
-        let friendlyError =
-          'Apple Sign-In could not be verified with the server.'
-        if (
-          errorData.error_code === 'provider_disabled' ||
-          /not enabled/i.test(rawError ?? '')
-        ) {
-          friendlyError =
-            'Sign in with Apple is not enabled on the authentication server. Please verify the Apple provider configuration in Supabase.'
-        } else if (rawError) {
-          friendlyError = rawError
-        }
         return {
           success: false,
-          error: friendlyError,
+          error:
+            'Apple Sign-In could not be verified with the server. Please try again.',
         }
       }
 
@@ -936,7 +921,7 @@ export class SupabaseAuthService implements AuthService {
       const data = parsed.data
       const user: AuthUser = {
         id: data.user.id,
-        email: data.user.email || fallbackEmail || '',
+        email: data.user.email || fallbackEmail?.trim() || '',
       }
 
       if (!isCurrent()) return stale()

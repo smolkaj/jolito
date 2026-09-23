@@ -1372,7 +1372,7 @@ describe('SupabaseAuthService', () => {
       service.destroy()
     })
 
-    it('returns actionable error when provider is disabled on Supabase server', async () => {
+    it('logs detailed diagnostics and returns calm error copy when provider is disabled on server', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: false,
@@ -1394,7 +1394,7 @@ describe('SupabaseAuthService', () => {
       const res = await service.signInWithApple('valid-token')
       expect(res.success).toBe(false)
       expect(res.error).toBe(
-        'Sign in with Apple is not enabled on the authentication server. Please verify the Apple provider configuration in Supabase.',
+        'Apple Sign-In could not be verified with the server. Please try again.',
       )
       expect(consoleSpy).toHaveBeenCalledWith(
         '[AuthService] Apple Sign-In verification attempt failed:',
@@ -1411,7 +1411,7 @@ describe('SupabaseAuthService', () => {
       service.destroy()
     })
 
-    it('propagates error_description from server when available', async () => {
+    it('logs detailed error_description from server while returning calm error copy to learner', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: false,
@@ -1431,7 +1431,19 @@ describe('SupabaseAuthService', () => {
       )
       const res = await service.signInWithApple('invalid-token')
       expect(res.success).toBe(false)
-      expect(res.error).toBe('Bad ID token')
+      expect(res.error).toBe(
+        'Apple Sign-In could not be verified with the server. Please try again.',
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[AuthService] Apple Sign-In verification attempt failed:',
+        {
+          status: 400,
+          errorData: {
+            error: 'invalid request',
+            error_description: 'Bad ID token',
+          },
+        },
+      )
       consoleSpy.mockRestore()
       service.destroy()
     })
@@ -1453,7 +1465,7 @@ describe('SupabaseAuthService', () => {
       const res = await service.signInWithApple('invalid-token')
       expect(res.success).toBe(false)
       expect(res.error).toBe(
-        'Apple Sign-In could not be verified with the server.',
+        'Apple Sign-In could not be verified with the server. Please try again.',
       )
       consoleSpy.mockRestore()
       service.destroy()
