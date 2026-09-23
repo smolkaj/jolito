@@ -140,8 +140,9 @@ void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for nati
   )
   assert.match(speechPlugin, /import AVFoundation/)
   assert.match(speechPlugin, /@objc\(NativeSpeechPlugin\)/)
-  assert.match(speechPlugin, /AVSpeechSynthesizer/)
-  assert.match(speechPlugin, /AVSpeechSynthesisVoice/)
+  assert.match(speechPlugin, /AVSpeechSynthesizerDelegate/)
+  assert.match(speechPlugin, /UIApplication\.didEnterBackgroundNotification/)
+  assert.match(speechPlugin, /utterance\s*===\s*self\.activeUtterance/)
 })
 
 void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {

@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import AVFoundation
+import UIKit
 
 @objc(NativeSpeechPlugin)
 public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDelegate {
@@ -15,10 +16,35 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
 
     private let synthesizer = AVSpeechSynthesizer()
     private var activeCall: CAPPluginCall?
+    private var activeUtterance: AVSpeechUtterance?
 
     override public func load() {
         super.load()
         synthesizer.delegate = self
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func handleAppDidEnterBackground() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if self.synthesizer.isSpeaking || self.activeUtterance != nil {
+                self.synthesizer.stopSpeaking(at: .immediate)
+            }
+            if let call = self.activeCall {
+                self.activeCall = nil
+                self.activeUtterance = nil
+                call.resolve(["completed": false, "interrupted": true])
+            }
+        }
     }
 
     @objc func isAvailable(_ call: CAPPluginCall) {
@@ -67,8 +93,6 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         }
 
         let locale = call.getString("locale") ?? "es-MX"
-        // Web rates are centered around 1.0. AVSpeechUtteranceDefaultSpeechRate is ~0.5.
-        // Map caller's rate (e.g. 0.88 or 1.0) so 1.0 corresponds to AVSpeechUtteranceDefaultSpeechRate.
         let requestedRate = call.getFloat("rate") ?? (locale.lowercased().hasPrefix("es") ? 0.88 : 0.92)
         let rate = requestedRate * AVSpeechUtteranceDefaultSpeechRate
         let pitch = call.getFloat("pitch") ?? 1.0
@@ -78,11 +102,12 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            if self.synthesizer.isSpeaking {
+            if self.synthesizer.isSpeaking || self.activeUtterance != nil {
                 self.synthesizer.stopSpeaking(at: .immediate)
                 if let prevCall = self.activeCall {
-                    prevCall.resolve(["completed": false, "interrupted": true])
                     self.activeCall = nil
+                    self.activeUtterance = nil
+                    prevCall.resolve(["completed": false, "interrupted": true])
                 }
             }
 
@@ -93,6 +118,7 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             utterance.voice = self.selectVoice(locale: locale, preferredGender: gender, preferredVoice: voiceIdentifier)
 
             self.activeCall = call
+            self.activeUtterance = utterance
             self.synthesizer.speak(utterance)
         }
     }
@@ -100,12 +126,13 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
     @objc func stop(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            if self.synthesizer.isSpeaking {
+            if self.synthesizer.isSpeaking || self.activeUtterance != nil {
                 self.synthesizer.stopSpeaking(at: .immediate)
             }
             if let prevCall = self.activeCall {
-                prevCall.resolve(["completed": false, "interrupted": true])
                 self.activeCall = nil
+                self.activeUtterance = nil
+                prevCall.resolve(["completed": false, "interrupted": true])
             }
             call.resolve(["stopped": true])
         }
@@ -124,23 +151,29 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         }
 
         let normalizedTarget = locale.replacingOccurrences(of: "_", with: "-").lowercased()
+        let langPrefix = String(normalizedTarget.prefix(2))
 
         // 2. Filter matching target locale or language prefix
         let localeMatches = allVoices.filter {
             $0.language.replacingOccurrences(of: "_", with: "-").lowercased() == normalizedTarget
         }
-        let pool = !localeMatches.isEmpty ? localeMatches : allVoices.filter {
-            $0.language.replacingOccurrences(of: "_", with: "-").lowercased().hasPrefix(String(normalizedTarget.prefix(2)))
+        let langMatches = allVoices.filter {
+            $0.language.replacingOccurrences(of: "_", with: "-").lowercased().hasPrefix(langPrefix)
         }
 
-        // 3. Filter by gender if requested
+        // 3. Filter by gender if requested with cross-dialect fallback
         let genderPool: [AVSpeechSynthesisVoice]
         if let preferredGender = preferredGender, #available(iOS 13.0, *) {
             let targetGender: AVSpeechSynthesisVoiceGender = preferredGender == "male" ? .male : .female
-            let matchingGender = pool.filter { $0.gender == targetGender }
-            genderPool = !matchingGender.isEmpty ? matchingGender : pool
+            let localGenderMatches = localeMatches.filter { $0.gender == targetGender }
+            if !localGenderMatches.isEmpty {
+                genderPool = localGenderMatches
+            } else {
+                let broadGenderMatches = langMatches.filter { $0.gender == targetGender }
+                genderPool = !broadGenderMatches.isEmpty ? broadGenderMatches : (!localeMatches.isEmpty ? localeMatches : langMatches)
+            }
         } else {
-            genderPool = pool
+            genderPool = !localeMatches.isEmpty ? localeMatches : langMatches
         }
 
         // 4. Quality sorting: prefer premium, then enhanced
@@ -153,12 +186,21 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             }
         }
 
-        // 5. Prefer Mexican names like Paulina or Jorge
-        if let mexicanNamed = genderPool.first(where: {
-            let name = $0.name.lowercased()
-            return name.contains("paulina") || name.contains("jorge")
-        }) {
-            return mexicanNamed
+        // 5. Prefer natural voices: Mexican names (Paulina, Jorge) for Spanish, natural names (Samantha, Alex, Ava, Allison) for English
+        if langPrefix == "es" {
+            if let mexicanNamed = genderPool.first(where: {
+                let name = $0.name.lowercased()
+                return name.contains("paulina") || name.contains("jorge")
+            }) {
+                return mexicanNamed
+            }
+        } else if langPrefix == "en" {
+            if let englishNamed = genderPool.first(where: {
+                let name = $0.name.lowercased()
+                return name.contains("samantha") || name.contains("alex") || name.contains("ava") || name.contains("allison")
+            }) {
+                return englishNamed
+            }
         }
 
         return genderPool.first ?? AVSpeechSynthesisVoice(language: locale)
@@ -167,18 +209,22 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
     // MARK: - AVSpeechSynthesizerDelegate
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        if let call = activeCall {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard utterance === self.activeUtterance, let call = self.activeCall else { return }
+            self.activeCall = nil
+            self.activeUtterance = nil
             call.resolve(["completed": true, "interrupted": false])
-            activeCall = nil
         }
-        notifyListeners("speechFinished", data: ["text": utterance.speechString])
     }
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        if let call = activeCall {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            guard utterance === self.activeUtterance, let call = self.activeCall else { return }
+            self.activeCall = nil
+            self.activeUtterance = nil
             call.resolve(["completed": false, "interrupted": true])
-            activeCall = nil
         }
-        notifyListeners("speechCancelled", data: ["text": utterance.speechString])
     }
 }
