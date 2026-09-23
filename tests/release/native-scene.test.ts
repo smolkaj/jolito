@@ -129,6 +129,26 @@ void test('SceneDelegate registers AppleSignInPlugin with AuthenticationServices
   assert.match(applePlugin, /ASAuthorizationControllerDelegate/)
 })
 
+void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for native speech synthesis', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const speechPlugin = readFileSync(
+    new URL('../../ios/App/App/NativeSpeechPlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(NativeSpeechPlugin\(\)\)/,
+  )
+  assert.match(speechPlugin, /import AVFoundation/)
+  assert.match(speechPlugin, /@objc\(NativeSpeechPlugin\)/)
+  assert.match(speechPlugin, /AVSpeechSynthesizer/)
+  assert.match(speechPlugin, /AVSpeechSynthesisVoice/)
+})
+
 void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {
   const config = readFileSync(
     new URL('../../capacitor.config.ts', import.meta.url),
