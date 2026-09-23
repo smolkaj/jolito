@@ -3076,11 +3076,6 @@ kbd {
     flex-shrink: 0;
   }
 
-  .review-page .nav-actions .text-button + .text-button,
-  .complete-page .nav-actions .text-button + .text-button {
-    display: none;
-  }
-
   .brand {
     font-size: 22px;
     gap: 6px;
@@ -4007,22 +4002,28 @@ kbd {
 
 .demo-deck-modal-actions {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
 }
 
-@media (max-width: 600px) {
-  .demo-deck-modal-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
+.demo-deck-modal-actions button {
+  width: 100%;
+  justify-content: center;
+}
 
-  .demo-deck-modal-actions button {
-    width: 100%;
-    justify-content: center;
-  }
+.demo-deck-dismiss-btn {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  color: var(--ink-soft) !important;
+}
+
+.demo-deck-dismiss-btn:hover {
+  background: var(--paper-subtle) !important;
+  color: var(--ink) !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 /* ==========================================================================
@@ -6022,56 +6023,6 @@ kbd {
 }
 
 /* App Footer */
-.app-footer {
-  margin-top: auto;
-  padding-top: 16px;
-  width: min(1080px, 100%);
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.app-footer-inner {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.footer-link-button {
-  background: rgba(250, 248, 245, 0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--line-subtle);
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-muted);
-  cursor: pointer;
-  border-radius: 999px;
-  text-decoration: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition:
-    color 120ms ease,
-    border-color 120ms ease,
-    background-color 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.footer-link-button:hover {
-  color: var(--rosa-dark);
-  border-color: var(--rosa-soft);
-  background: var(--paper-clean);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.footer-link-button:focus-visible {
-  outline: 2px solid var(--rosa);
-  outline-offset: 2px;
-}
-
 /* Sync Modal Account Deletion & Privacy Legal */
 .sync-account-footer {
   display: flex;

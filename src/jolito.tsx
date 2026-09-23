@@ -1412,13 +1412,6 @@ function LoadedApp({
           >
             <Brand onClick={goHome} />
             <div className="nav-actions" data-nosnippet>
-              <button
-                type="button"
-                className="text-button topbar-feedback-btn"
-                onClick={openFeedbackModal}
-              >
-                Feedback
-              </button>
               {grammar ? (
                 grammarPractice.mode !== 'choose' && (
                   <button
@@ -1443,6 +1436,15 @@ function LoadedApp({
                     + New card
                   </button>
                 </>
+              )}
+              {!practicing && (
+                <button
+                  type="button"
+                  className="text-button topbar-feedback-btn"
+                  onClick={openFeedbackModal}
+                >
+                  Feedback
+                </button>
               )}
               <ConnectionPill
                 authUser={authUser}

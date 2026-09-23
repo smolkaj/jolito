@@ -643,13 +643,6 @@ export function CreateCardView({
         <Brand onClick={onGoHome} />
         <div className="nav-actions" data-nosnippet>
           <button
-            type="button"
-            className="text-button topbar-feedback-btn"
-            onClick={onOpenFeedback}
-          >
-            Feedback
-          </button>
-          <button
             className="text-button topbar-nav-btn"
             onClick={onNavigateToDeck}
           >
@@ -660,6 +653,13 @@ export function CreateCardView({
               Practice
             </button>
           )}
+          <button
+            type="button"
+            className="text-button topbar-feedback-btn"
+            onClick={onOpenFeedback}
+          >
+            Feedback
+          </button>
           <ConnectionPill
             authUser={authUser}
             syncStatus={syncStatus}

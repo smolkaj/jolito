@@ -185,17 +185,17 @@ export function WelcomeView({
           <Brand />
           <div className="nav-actions" data-nosnippet>
             <button
+              className="text-button topbar-nav-btn"
+              onClick={onNavigateToDeck}
+            >
+              Manage deck
+            </button>
+            <button
               type="button"
               className="text-button topbar-feedback-btn"
               onClick={onOpenFeedback}
             >
               Feedback
-            </button>
-            <button
-              className="text-button topbar-nav-btn"
-              onClick={onNavigateToDeck}
-            >
-              Manage deck
             </button>
             <ConnectionPill
               authUser={authUser}

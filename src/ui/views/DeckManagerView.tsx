@@ -196,13 +196,6 @@ export function DeckManagerView({
         <nav className="topbar" aria-label="Deck navigation">
           <Brand onClick={onGoHome} />
           <div className="nav-actions" data-nosnippet>
-            <button
-              type="button"
-              className="text-button topbar-feedback-btn"
-              onClick={onOpenFeedback}
-            >
-              Feedback
-            </button>
             {vocabularyCards.length > 0 && (
               <button
                 className="text-button topbar-nav-btn"
@@ -219,6 +212,13 @@ export function DeckManagerView({
                 Practice
               </button>
             )}
+            <button
+              type="button"
+              className="text-button topbar-feedback-btn"
+              onClick={onOpenFeedback}
+            >
+              Feedback
+            </button>
             <ConnectionPill
               authUser={authUser}
               syncStatus={syncStatus}

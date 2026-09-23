@@ -72,7 +72,11 @@ export function DemoDeckModal({
             Explore starter packs
           </button>
         )}
-        <button type="button" className="secondary-button" onClick={onClose}>
+        <button
+          type="button"
+          className="secondary-button demo-deck-dismiss-btn"
+          onClick={onClose}
+        >
           Explore demo deck
         </button>
       </div>

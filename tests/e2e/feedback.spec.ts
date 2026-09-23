@@ -112,30 +112,26 @@ test.describe('Feedback modal & submission', () => {
     await expect(errorBanner).not.toBeVisible()
   })
 
-  test('preserves consistent vertical baseline and right alignment of Feedback button across home, deck, and app views', async ({
+  test('preserves consistent topbar vertical baseline and alignment of Feedback button across home, deck, and complete views', async ({
     page,
   }) => {
-    // 1. Verify desktop alignment parity across all standard views
+    // 1. Verify desktop alignment parity across topbar views
     await page.setViewportSize({ width: 1280, height: 800 })
 
     const desktopViews = [
       { name: 'home', path: '/' },
       { name: 'deck', path: '/#/deck' },
       { name: 'complete', path: '/#/complete' },
-      { name: 'grammar', path: '/#/grammar' },
     ]
 
     const desktopMeasurements: Array<{
       name: string
-      bottomOffset: number
-      rightOffset: number
+      topOffset: number
     }> = []
 
     for (const view of desktopViews) {
       await page.goto(view.path)
-      const feedbackBtn = page
-        .locator('.app-footer')
-        .getByRole('button', { name: /^feedback$/i })
+      const feedbackBtn = page.locator('.topbar-feedback-btn')
       await expect(feedbackBtn).toBeVisible()
 
       const box = await feedbackBtn.boundingBox()
@@ -143,8 +139,7 @@ test.describe('Feedback modal & submission', () => {
 
       desktopMeasurements.push({
         name: view.name,
-        bottomOffset: 800 - (box!.y + box!.height),
-        rightOffset: 1280 - (box!.x + box!.width),
+        topOffset: box!.y,
       })
     }
 
@@ -153,50 +148,29 @@ test.describe('Feedback modal & submission', () => {
     if (!firstDesktop) return
 
     for (const m of desktopMeasurements.slice(1)) {
-      // Allow at most 1px subpixel variation across flex and grid baseline rendering
       expect(
-        Math.abs(m.bottomOffset - firstDesktop.bottomOffset),
-        `Vertical bottom offset mismatch between home (${firstDesktop.bottomOffset}px) and ${m.name} (${m.bottomOffset}px)`,
-      ).toBeLessThanOrEqual(1)
-
-      expect(
-        Math.abs(m.rightOffset - firstDesktop.rightOffset),
-        `Right offset mismatch between home (${firstDesktop.rightOffset}px) and ${m.name} (${m.rightOffset}px)`,
+        Math.abs(m.topOffset - firstDesktop.topOffset),
+        `Vertical top offset mismatch between home (${firstDesktop.topOffset}px) and ${m.name} (${m.topOffset}px)`,
       ).toBeLessThanOrEqual(1)
     }
 
     // 2. Verify mobile alignment parity across views
     await page.setViewportSize({ width: 390, height: 844 })
 
-    // Home view has no mobile tab bar, resting at the viewport baseline
-    await page.goto('/')
-    const homeFeedbackBtn = page
-      .locator('.app-footer')
-      .getByRole('button', { name: /^feedback$/i })
-    await expect(homeFeedbackBtn).toBeVisible()
-    const homeBox = await homeFeedbackBtn.boundingBox()
-    expect(homeBox).not.toBeNull()
-    const homeBottomOffset = 844 - (homeBox!.y + homeBox!.height)
-    expect(homeBottomOffset).toBe(28)
-
-    // Mobile app views display the mobile tab bar and maintain a consistent elevated baseline
-    const mobileAppViews = [
+    const mobileViews = [
+      { name: 'home', path: '/' },
       { name: 'deck', path: '/#/deck' },
       { name: 'complete', path: '/#/complete' },
-      { name: 'grammar', path: '/#/grammar' },
     ]
 
     const mobileMeasurements: Array<{
       name: string
-      bottomOffset: number
-      rightOffset: number
+      topOffset: number
     }> = []
 
-    for (const view of mobileAppViews) {
+    for (const view of mobileViews) {
       await page.goto(view.path)
-      const feedbackBtn = page
-        .locator('.app-footer')
-        .getByRole('button', { name: /^feedback$/i })
+      const feedbackBtn = page.locator('.topbar-feedback-btn')
       await expect(feedbackBtn).toBeVisible()
 
       const box = await feedbackBtn.boundingBox()
@@ -204,8 +178,7 @@ test.describe('Feedback modal & submission', () => {
 
       mobileMeasurements.push({
         name: view.name,
-        bottomOffset: 844 - (box!.y + box!.height),
-        rightOffset: 390 - (box!.x + box!.width),
+        topOffset: box!.y,
       })
     }
 
@@ -215,13 +188,8 @@ test.describe('Feedback modal & submission', () => {
 
     for (const m of mobileMeasurements.slice(1)) {
       expect(
-        Math.abs(m.bottomOffset - firstMobile.bottomOffset),
-        `Mobile bottom offset mismatch between deck (${firstMobile.bottomOffset}px) and ${m.name} (${m.bottomOffset}px)`,
-      ).toBeLessThanOrEqual(1)
-
-      expect(
-        Math.abs(m.rightOffset - firstMobile.rightOffset),
-        `Mobile right offset mismatch between deck (${firstMobile.rightOffset}px) and ${m.name} (${m.rightOffset}px)`,
+        Math.abs(m.topOffset - firstMobile.topOffset),
+        `Mobile top offset mismatch between home (${firstMobile.topOffset}px) and ${m.name} (${m.topOffset}px)`,
       ).toBeLessThanOrEqual(1)
     }
   })
