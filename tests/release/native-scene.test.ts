@@ -109,6 +109,26 @@ void test('SceneDelegate registers ShareFilePlugin with UIActivityViewController
   assert.match(sharePlugin, /popoverPresentationController/)
 })
 
+void test('SceneDelegate registers AppleSignInPlugin with AuthenticationServices for native Apple Sign-In', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const applePlugin = readFileSync(
+    new URL('../../ios/App/App/AppleSignInPlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(AppleSignInPlugin\(\)\)/,
+  )
+  assert.match(applePlugin, /import AuthenticationServices/)
+  assert.match(applePlugin, /@objc\(AppleSignInPlugin\)/)
+  assert.match(applePlugin, /ASAuthorizationAppleIDProvider/)
+  assert.match(applePlugin, /ASAuthorizationControllerDelegate/)
+})
+
 void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {
   const config = readFileSync(
     new URL('../../capacitor.config.ts', import.meta.url),

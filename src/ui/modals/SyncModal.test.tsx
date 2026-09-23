@@ -1076,4 +1076,77 @@ describe('SyncModal Live Sync Status Contract', () => {
     await screen.findByText('Synced!')
     expect(onSync).toHaveBeenCalledTimes(1)
   })
+
+  describe('SyncModal Apple Sign-In', () => {
+    it('renders Sign in with Apple button when supported and signs in', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(true)
+      const requestSpy = vi
+        .spyOn(appleAuthModule, 'requestAppleSignIn')
+        .mockResolvedValue({
+          identityToken: 'mock-token',
+        })
+
+      const auth = new MockAuthService()
+      const signInWithAppleMock = vi
+        .spyOn(auth, 'signInWithApple')
+        .mockResolvedValue({ success: true })
+      const onClose = vi.fn()
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={onClose}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const appleBtn = screen.getByRole('button', {
+        name: /sign in with apple/i,
+      })
+      expect(appleBtn).toBeInTheDocument()
+
+      fireEvent.click(appleBtn)
+      await waitFor(() => {
+        expect(signInWithAppleMock).toHaveBeenCalledWith('mock-token')
+        expect(onClose).toHaveBeenCalled()
+      })
+
+      supportSpy.mockRestore()
+      requestSpy.mockRestore()
+    })
+
+    it('does not render Sign in with Apple button on unsupported platforms', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(false)
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={createMockAuth()}
+          onSync={vi.fn()}
+        />,
+      )
+
+      expect(
+        screen.queryByRole('button', { name: /sign in with apple/i }),
+      ).toBeNull()
+
+      supportSpy.mockRestore()
+    })
+  })
 })

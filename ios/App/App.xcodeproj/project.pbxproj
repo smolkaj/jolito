@@ -17,6 +17,7 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */; };
 		1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */; };
+		1BDD5B3E68A34EB88A0DC702 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPlugin.swift; sourceTree = "<group>"; };
 		D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareFilePlugin.swift; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +78,7 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 				D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */,
 				D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */,
+				D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -164,6 +167,7 @@
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */,
+				1BDD5B3E68A34EB88A0DC702 /* AppleSignInPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

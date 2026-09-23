@@ -8,6 +8,7 @@ class MainViewController: CAPBridgeViewController {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(AppReviewPlugin())
         bridge?.registerPluginInstance(ShareFilePlugin())
+        bridge?.registerPluginInstance(AppleSignInPlugin())
     }
 }
 
