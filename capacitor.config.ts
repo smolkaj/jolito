@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli'
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard'
 
 const config: CapacitorConfig = {
   appId: 'to.joli.app',
@@ -19,8 +20,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'body',
-      style: 'light',
+      resize: KeyboardResize.Body,
+      style: KeyboardStyle.Light,
       resizeOnFullScreen: true,
     },
     StatusBar: {

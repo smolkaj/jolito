@@ -433,6 +433,7 @@ export function SyncModal({
 
   return (
     <ModalSheet
+      isOpen={isOpen}
       onClose={handleClose}
       className="sync-modal"
       ariaLabelledBy="sync-modal-title"
@@ -662,12 +663,18 @@ export function SyncModal({
             <label htmlFor="sync-email">Email address</label>
             <input
               id="sync-email"
+              name="email"
               type="email"
               required
               autoFocus={shouldAutoFocus}
               placeholder="learner@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
             />
           </div>
           <button
@@ -719,6 +726,9 @@ export function SyncModal({
                 autoFocus={shouldAutoFocus}
                 placeholder="e.g. 123456 or paste link"
                 autoComplete="one-time-code"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 inputMode={
                   token.trim().length === 0 || /^[\d\s-]+$/.test(token.trim())
                     ? 'numeric'
