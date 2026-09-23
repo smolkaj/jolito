@@ -137,6 +137,13 @@ a {
   touch-action: manipulation;
 }
 
+/* Prevent iOS WebKit automatic viewport zoom on focus */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 button,
 summary {
   cursor: pointer;
@@ -4025,7 +4032,7 @@ kbd {
   border: 2px dashed var(--line);
   border-radius: 12px;
   background: var(--card);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--ink);
   cursor: pointer;
 }
@@ -5011,7 +5018,7 @@ kbd {
   border: 1.5px solid var(--line-subtle);
   border-radius: var(--pill-radius);
   background-color: var(--card);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1;
   color: var(--ink);
@@ -5771,13 +5778,13 @@ kbd {
 
 .edit-card-form .field-group textarea#edit-context,
 .field-group textarea#context {
-  min-height: 64px;
+  min-height: 68px;
   max-height: 180px;
   field-sizing: content;
   overflow-y: auto;
   font-family: var(--font-sans);
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 16px;
+  line-height: 1.4;
   padding: 10px 14px;
 }
 
@@ -6111,7 +6118,7 @@ kbd {
   min-height: 120px;
   padding: 12px 14px;
   font-family: inherit;
-  font-size: 14.5px;
+  font-size: 16px;
   line-height: 1.45;
   color: var(--ink);
   background: var(--paper);
@@ -6252,7 +6259,7 @@ kbd {
 .delete-input {
   width: 100%;
   padding: 10px 14px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: 0.05em;

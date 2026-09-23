@@ -188,6 +188,56 @@ void test('Capacitor iOS configuration uses contentInset: never to prevent doubl
   assert.match(config, /ios:\s*\{[\s\S]*?contentInset:\s*['"]never['"]/)
 })
 
+void test('Form inputs and textareas enforce minimum 16px font-size to prevent iOS WebKit automatic viewport zoom', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // In iOS WebKit (Safari / WKWebView / Capacitor iOS), form inputs with font-size < 16px
+  // trigger an unwanted automatic viewport zoom on focus.
+  // 1. Verify global base rule enforces 16px on inputs, textareas, and selects
+  assert.match(
+    css,
+    /input,\s*\n\s*textarea,\s*\n\s*select\s*\{[\s\S]*?font-size:\s*16px;/,
+    'Base input, textarea, select must declare font-size: 16px to prevent iOS auto-zoom',
+  )
+
+  // 2. Verify additional context textareas declare font-size: 16px
+  assert.match(
+    css,
+    /\.edit-card-form \.field-group textarea#edit-context,\s*\n\s*\.field-group textarea#context\s*\{[\s\S]*?font-size:\s*16px;/,
+    'Additional context textareas (#context, #edit-context) must have font-size: 16px',
+  )
+
+  // 3. Statically audit all CSS rule blocks targeting input, textarea, or select: none may have font-size < 16px
+  const rules = css.match(/[^{}]+{[^{}]+}/g) || []
+  for (const rule of rules) {
+    const [selector, body] = rule.split('{')
+    const sel = selector!.trim()
+    const isFormControl =
+      /(?:^|[\s,>+~])(?:input|textarea|select)\b|\.feedback-textarea\b|\.delete-input\b|\.pill-select\b/.test(
+        sel,
+      ) &&
+      !/(?:checkbox|radio|hidden|\.file-input-label|\.delete-input-label|\.paste-input-btn|\.deck-select-checkbox)/.test(
+        sel,
+      )
+
+    if (isFormControl) {
+      const fsMatch = body!.match(/font-size:\s*([0-9.]+)(px|rem)/)
+      if (fsMatch) {
+        const val = parseFloat(fsMatch[1]!)
+        const unit = fsMatch[2]!
+        const px = unit === 'rem' ? val * 16 : val
+        assert.ok(
+          px >= 16,
+          `Selector "${sel}" declares font-size ${fsMatch[0]}, which is less than 16px and causes iOS WebKit auto-zoom`,
+        )
+      }
+    }
+  }
+})
+
 void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Live Activities', () => {
   const sceneDelegate = readFileSync(
     new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),

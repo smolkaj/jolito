@@ -163,6 +163,11 @@ test('additional context placeholder and multiline content do not overflow or cl
       `Additional context clientHeight is too short for 2 rows in ${vp.label}`,
     ).toBeGreaterThanOrEqual(56)
 
+    expect(
+      metrics.fontSize,
+      `Additional context font-size must be at least 16px to prevent iOS WebKit auto-zoom in ${vp.label}`,
+    ).toBeGreaterThanOrEqual(16)
+
     // Verify auto-growth when multiline content is typed
     await contextEl.fill('Line 1\nLine 2\nLine 3\nLine 4\nLine 5')
     const multiLineMetrics = await contextEl.evaluate(
@@ -219,6 +224,7 @@ test('edit modal additional context placeholder does not overflow or clip across
     const metrics = await contextEl.evaluate((el: HTMLTextAreaElement) => ({
       clientHeight: el.clientHeight,
       scrollHeight: el.scrollHeight,
+      fontSize: parseFloat(window.getComputedStyle(el).fontSize),
     }))
 
     expect(
@@ -230,6 +236,11 @@ test('edit modal additional context placeholder does not overflow or clip across
       metrics.clientHeight,
       `Edit modal additional context clientHeight is too short for 2 rows in ${vp.label}`,
     ).toBeGreaterThanOrEqual(56)
+
+    expect(
+      metrics.fontSize,
+      `Edit modal additional context font-size must be at least 16px to prevent iOS WebKit auto-zoom in ${vp.label}`,
+    ).toBeGreaterThanOrEqual(16)
 
     // Close modal with Cancel or Escape
     await page.keyboard.press('Escape')
