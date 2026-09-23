@@ -151,9 +151,9 @@ export async function configureStore(api: AppleApi, apply: boolean) {
         throw error
       }
     }
-    // POST replaces the availability selection, including on an existing app.
+    // Initial availability creation requires POST /v2/appAvailabilities.
+    // If availability already exists for this app, Apple returns HTTP 409 Conflict.
     // Eligibility remains Apple's decision; restrictions must be recorded in release.json.
-    // If availability already exists, Apple returns HTTP 409 Conflict.
     const included = territories.map((t) => ({
       type: 'territoryAvailabilities',
       id: `\u0024{availability-${t.id}}`,

@@ -20,6 +20,7 @@ function store(
     expiringPrice?: boolean
     missingContentRights?: boolean
     conflictAvailability?: boolean
+    conflictPriceSchedule?: boolean
   } = {},
 ) {
   let patchedContentRights = false
@@ -32,6 +33,12 @@ function store(
       ...(typeof init?.body === 'string' ? { body: init.body } : {}),
     })
     if (init?.method === 'POST') {
+      if (
+        options.conflictPriceSchedule &&
+        url.pathname === '/v1/appPriceSchedules'
+      ) {
+        return Promise.resolve(new Response('Conflict', { status: 409 }))
+      }
       if (
         options.conflictAvailability &&
         url.pathname === '/v2/appAvailabilities'
@@ -155,6 +162,15 @@ void test('apply succeeds idempotently when app availability already exists (HTT
   const writes = calls.filter((c) => c.method === 'POST')
   assert.equal(writes.length, 2)
   assert.equal(writes[1]!.url.pathname, '/v2/appAvailabilities')
+  assert.equal(calls[calls.length - 1]!.method, 'GET')
+})
+
+void test('apply succeeds idempotently when price schedule already exists (HTTP 409 Conflict)', async () => {
+  const { api, calls } = store({ conflictPriceSchedule: true })
+  await configureStore(api, true)
+  const writes = calls.filter((c) => c.method === 'POST')
+  assert.equal(writes.length, 2)
+  assert.equal(writes[0]!.url.pathname, '/v1/appPriceSchedules')
   assert.equal(calls[calls.length - 1]!.method, 'GET')
 })
 
