@@ -793,4 +793,78 @@ describe('initKeyboardAvoidance controller lifecycle', () => {
       vi.useRealTimers()
     }
   })
+
+  it('preserves settled timer across duplicate events with identical heights', () => {
+    vi.useFakeTimers()
+    try {
+      const listeners: Record<string, ((event: Event) => void)[]> = {}
+      const mockScrollBy = vi.fn()
+      const mockClearTimeout = vi.fn((id: number) => {
+        clearTimeout(id)
+      })
+      const mockWin = {
+        innerHeight: 844,
+        document,
+        scrollBy: mockScrollBy,
+        getComputedStyle: vi.fn().mockReturnValue({ overflowY: 'visible' }),
+        matchMedia: vi.fn().mockReturnValue({ matches: false }),
+        addEventListener: vi.fn((event: string, cb: (e: Event) => void) => {
+          listeners[event] = listeners[event] || []
+          listeners[event].push(cb)
+        }),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        requestAnimationFrame: vi.fn((cb: () => void) => {
+          cb()
+          return 1
+        }),
+        setTimeout: vi.fn((cb: () => void, ms: number) => {
+          return setTimeout(cb, ms)
+        }),
+        clearTimeout: mockClearTimeout,
+      } as unknown as Window
+
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+      input.focus()
+
+      const controller = initKeyboardAvoidance({
+        window: mockWin,
+        document,
+      })
+
+      // Initial keyboard show event
+      listeners['keyboardWillShow']?.forEach((cb) =>
+        cb(
+          new CustomEvent('keyboardWillShow', {
+            detail: { keyboardHeight: 336 },
+          }),
+        ),
+      )
+
+      expect(controller.getKeyboardHeight()).toBe(336)
+      expect(mockClearTimeout).not.toHaveBeenCalled()
+
+      // Duplicate event arrives at 50ms with identical height (e.g. from bridge or visualViewport)
+      vi.advanceTimersByTime(50)
+      listeners['keyboardWillShow']?.forEach((cb) =>
+        cb(
+          new CustomEvent('keyboardWillShow', {
+            detail: { keyboardHeight: 336 },
+          }),
+        ),
+      )
+
+      // Duplicate event must NOT clear the pending settled timer
+      expect(mockClearTimeout).not.toHaveBeenCalled()
+
+      // When settled timer reaches 250ms (total 250ms elapsed), timer fires
+      vi.advanceTimersByTime(200)
+
+      controller.destroy()
+      document.body.removeChild(input)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

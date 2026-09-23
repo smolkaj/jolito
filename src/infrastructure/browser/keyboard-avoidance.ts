@@ -266,10 +266,10 @@ export function initKeyboardAvoidance(
 
   const updateInset = (height: number) => {
     if (!isMounted) return
-    clearSettledTimer()
     const safeHeight = Math.max(0, height)
     if (safeHeight === currentKeyboardHeight) return
 
+    clearSettledTimer()
     currentKeyboardHeight = safeHeight
 
     if (safeHeight > 0) {
