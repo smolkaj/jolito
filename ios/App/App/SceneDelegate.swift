@@ -6,7 +6,6 @@ import WebKit
 class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
-        bridge?.registerPluginInstance(LiveActivityPlugin())
         bridge?.registerPluginInstance(AppReviewPlugin())
     }
 }
