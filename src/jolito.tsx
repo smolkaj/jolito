@@ -73,7 +73,6 @@ import { SessionProgress } from './ui/SessionProgress'
 import { Brand } from './ui/Brand'
 import { ConnectionPill } from './ui/ConnectionPill'
 import { RedirectAuthNotice } from './ui/RedirectAuthNotice'
-import { AppFooter } from './ui/AppFooter'
 import { WelcomeView } from './ui/views/WelcomeView'
 import {
   CreateCardView,
@@ -1346,7 +1345,6 @@ function LoadedApp({
           onOpenSync={openSyncModal}
           onEditCard={(card) => setEditingCard(card)}
           onOpenFeedback={openFeedbackModal}
-          onOpenPrivacy={openPrivacyModal}
           onSaveCard={handleSaveCard}
           onPlayAudio={playAudio}
           assistant={services.assistant}
@@ -1382,7 +1380,6 @@ function LoadedApp({
           onPractice={handlePractice}
           onOpenSync={openSyncModal}
           onOpenFeedback={openFeedbackModal}
-          onOpenPrivacy={openPrivacyModal}
           onEditCard={(card) => setEditingCard(card)}
           onDeleteCards={(cardsToDelete) => setDeletingCards(cardsToDelete)}
           onUpdateCards={onUpdateCards}
@@ -1415,6 +1412,13 @@ function LoadedApp({
           >
             <Brand onClick={goHome} />
             <div className="nav-actions" data-nosnippet>
+              <button
+                type="button"
+                className="text-button topbar-feedback-btn"
+                onClick={openFeedbackModal}
+              >
+                Feedback
+              </button>
               {grammar ? (
                 grammarPractice.mode !== 'choose' && (
                   <button
@@ -1599,12 +1603,6 @@ function LoadedApp({
               )}
             </PracticeCard>
           )
-        )}
-        {!practicing && (
-          <AppFooter
-            onOpenFeedback={openFeedbackModal}
-            onOpenPrivacy={openPrivacyModal}
-          />
         )}
       </main>
       {renderMobileTabBar()}

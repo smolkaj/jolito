@@ -6,6 +6,7 @@ export interface DemoDeckModalProps {
   isOpen: boolean
   onClose: () => void
   onSignIn: () => void
+  onExploreStarterPacks?: (() => void) | undefined
   haptics?: HapticsPlayer | undefined
 }
 
@@ -13,6 +14,7 @@ export function DemoDeckModal({
   isOpen,
   onClose,
   onSignIn,
+  onExploreStarterPacks,
   haptics,
 }: DemoDeckModalProps) {
   useEffect(() => {
@@ -58,6 +60,18 @@ export function DemoDeckModal({
         >
           Sign in to build your deck <span aria-hidden="true">→</span>
         </button>
+        {onExploreStarterPacks && (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              onClose()
+              onExploreStarterPacks()
+            }}
+          >
+            Explore starter packs
+          </button>
+        )}
         <button type="button" className="secondary-button" onClick={onClose}>
           Explore demo deck
         </button>

@@ -38,7 +38,6 @@ describe('AI Card Suggestions', () => {
         onOpenSync={() => {}}
         onEditCard={() => {}}
         onOpenFeedback={() => {}}
-        onOpenPrivacy={() => {}}
         onSaveCard={() => true}
         onPlayAudio={() => {}}
         assistant={dummyAssistant}

@@ -7,7 +7,6 @@ import { starterHeroSampleCards } from '../../application/starter-cards'
 import type { CommunityStats } from '../../domain/community-stats'
 import type { SyncStatus } from '../../domain/sync'
 import { isWhyJolitoHash } from '../../navigation'
-import { AppFooter } from '../AppFooter'
 import { Brand } from '../Brand'
 import { ConnectionPill } from '../ConnectionPill'
 import { EnglishBadge, MexicoFlag } from '../icons'
@@ -185,7 +184,17 @@ export function WelcomeView({
         <nav className="topbar" aria-label="Main navigation">
           <Brand />
           <div className="nav-actions" data-nosnippet>
-            <button className="text-button" onClick={onNavigateToDeck}>
+            <button
+              type="button"
+              className="text-button topbar-feedback-btn"
+              onClick={onOpenFeedback}
+            >
+              Feedback
+            </button>
+            <button
+              className="text-button topbar-nav-btn"
+              onClick={onNavigateToDeck}
+            >
               Manage deck
             </button>
             <ConnectionPill
@@ -422,7 +431,7 @@ export function WelcomeView({
                 ↓
               </span>
             </a>
-            <AppFooter onOpenFeedback={onOpenFeedback} showPrivacy={false} />
+            <div className="welcome-hero-footer-spacer" aria-hidden="true" />
           </div>
         </section>
       </div>

@@ -441,9 +441,6 @@ describe('Jolito', () => {
 
     const heroVisual = container.querySelector('.hero-visual')
     expect(heroVisual).toHaveAttribute('data-nosnippet')
-
-    const footerInner = container.querySelector('.app-footer-inner')
-    expect(footerInner).toHaveAttribute('data-nosnippet')
   })
 
   it('renders community stats in the welcome hero footer when stats are available', async () => {
@@ -3761,7 +3758,26 @@ describe('Jolito', () => {
       screen.getByRole('dialog', { name: /^demo deck$/i }),
     ).toBeInTheDocument()
 
-    // 5. Click sign in from demo modal to open sync modal
+    // 5. Click 'Explore starter packs' from demo modal opens starter packs modal
+    await user.click(
+      screen.getByRole('button', { name: /explore starter packs/i }),
+    )
+    expect(
+      screen.getByRole('heading', { name: /curated starter packs/i }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /close dialog/i }))
+    expect(
+      screen.queryByRole('dialog', { name: /^demo deck$/i }),
+    ).not.toBeInTheDocument()
+
+    // 6. Return to Create and back to Deck to re-trigger modal and test sign in
+    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
+    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    expect(
+      screen.getByRole('dialog', { name: /^demo deck$/i }),
+    ).toBeInTheDocument()
+
+    // 7. Click sign in from demo modal to open sync modal
     await user.click(
       screen.getByRole('button', { name: /sign in to build your deck/i }),
     )
