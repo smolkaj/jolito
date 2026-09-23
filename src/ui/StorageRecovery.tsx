@@ -10,6 +10,8 @@ export function StorageRecovery({
   onRetry: () => void
 }) {
   const [downloadError, setDownloadError] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [isDownloaded, setIsDownloaded] = useState(false)
   return (
     <main className="app-shell storage-recovery">
       <section aria-labelledby="storage-recovery-title">
@@ -23,16 +25,30 @@ export function StorageRecovery({
           {recovery.raw !== null && (
             <button
               className="primary-button"
+              disabled={isDownloading}
+              aria-busy={isDownloading}
               onClick={() => {
-                try {
-                  downloadJsonFile('jolito-recovery.json', recovery.raw!)
-                  setDownloadError(false)
-                } catch {
-                  setDownloadError(true)
-                }
+                if (isDownloading) return
+                setIsDownloading(true)
+                void (async () => {
+                  try {
+                    const outcome = await downloadJsonFile(
+                      'jolito-recovery.json',
+                      recovery.raw!,
+                    )
+                    if (outcome === 'error') {
+                      setDownloadError(true)
+                    } else if (outcome === 'completed') {
+                      setDownloadError(false)
+                      setIsDownloaded(true)
+                    }
+                  } finally {
+                    setIsDownloading(false)
+                  }
+                })()
               }}
             >
-              Download saved data
+              {isDownloaded ? 'Saved data downloaded ✓' : 'Download saved data'}
             </button>
           )}
           <button className="secondary-button" onClick={onRetry}>
@@ -49,9 +65,8 @@ export function StorageRecovery({
           </a>
         </div>
         {downloadError && (
-          <p role="alert">
-            The download couldn’t start. Allow downloads in your browser, then
-            try again.
+          <p className="storage-save-error" role="alert">
+            Unable to download saved data. Please try again.
           </p>
         )}
       </section>

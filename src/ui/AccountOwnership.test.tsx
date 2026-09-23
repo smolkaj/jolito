@@ -105,7 +105,9 @@ it('keeps local deletion failure visible after auth unmount, then retries only t
     screen.getByRole('button', { name: /delete cloud account & data/i }),
   )
   await user.click(
-    screen.getByRole('checkbox', { name: /download an offline backup/i }),
+    screen.getByRole('checkbox', {
+      name: /(?:save|download) an offline backup/i,
+    }),
   )
   await user.type(screen.getByPlaceholderText('DELETE'), 'DELETE')
   vi.spyOn(repo, 'forget').mockImplementationOnce(() => {
@@ -146,7 +148,9 @@ it('does not contact the cloud without a durable request, and keeps unknown outc
     screen.getByRole('button', { name: /delete cloud account & data/i }),
   )
   await user.click(
-    screen.getByRole('checkbox', { name: /download an offline backup/i }),
+    screen.getByRole('checkbox', {
+      name: /(?:save|download) an offline backup/i,
+    }),
   )
   await user.type(screen.getByPlaceholderText('DELETE'), 'DELETE')
   vi.spyOn(repo, 'setPendingDeletion').mockImplementationOnce(() => {

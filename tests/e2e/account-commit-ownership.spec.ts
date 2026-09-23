@@ -172,7 +172,9 @@ for (const transition of [
             .getByRole('button', { name: /delete cloud account & data/i })
             .click()
           await other
-            .getByRole('checkbox', { name: /download an offline backup/i })
+            .getByRole('checkbox', {
+              name: /(?:save|download) an offline backup/i,
+            })
             .uncheck()
           await other.getByPlaceholder('DELETE').fill('DELETE')
           await other

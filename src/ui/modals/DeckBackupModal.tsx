@@ -56,6 +56,7 @@ function DeckBackupModalInner({
   const [isParsingImport, setIsParsingImport] = useState(false)
   const importReadState = useRef({ generation: 0 })
   const [isExported, setIsExported] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const exportedTimerRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const backupStatusRef = useRef<HTMLDivElement>(null)
@@ -78,17 +79,33 @@ function DeckBackupModalInner({
     }
   }, [])
 
-  const handleExport = () => {
-    const backup = createDeckBackup(cards, clock)
-    downloadJsonFile(backup.filename, backup.json)
-    setIsExported(true)
-    if (exportedTimerRef.current !== null) {
-      window.clearTimeout(exportedTimerRef.current)
+  const handleExport = async () => {
+    if (isExporting) return
+    setIsExporting(true)
+    try {
+      const backup = createDeckBackup(cards, clock)
+      const outcome = await downloadJsonFile(backup.filename, backup.json)
+      if (outcome === 'error') {
+        setBackupStatus({
+          type: 'error',
+          message: 'Unable to export deck backup. Please try again.',
+        })
+        return
+      }
+      if (outcome !== 'completed') return
+
+      setBackupStatus(null)
+      setIsExported(true)
+      if (exportedTimerRef.current !== null) {
+        window.clearTimeout(exportedTimerRef.current)
+      }
+      exportedTimerRef.current = window.setTimeout(() => {
+        setIsExported(false)
+        exportedTimerRef.current = null
+      }, 2500)
+    } finally {
+      setIsExporting(false)
     }
-    exportedTimerRef.current = window.setTimeout(() => {
-      setIsExported(false)
-      exportedTimerRef.current = null
-    }, 2500)
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -250,7 +267,9 @@ function DeckBackupModalInner({
           <button
             type="button"
             className={`primary-button export-button ${isExported ? 'is-exported' : ''}`}
-            onClick={handleExport}
+            disabled={isExporting}
+            aria-busy={isExporting}
+            onClick={() => void handleExport()}
           >
             {isExported ? (
               <span className="export-button-exported">

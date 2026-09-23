@@ -160,3 +160,49 @@ it('retains an edit draft and deletion selection across failed commits and retry
   expect(reloaded.load([]).cards).toEqual([])
   expect(reloaded.getDeletedCardIds()).toEqual([cards[0]!.id])
 })
+
+it('handles download saved data outcome and displays error alert when download fails', async () => {
+  const downloadModule = await import('../infrastructure/browser/download')
+  const downloadSpy = vi.spyOn(downloadModule, 'downloadJsonFile')
+
+  const recovery = {
+    status: 'recovery' as const,
+    reason: 'corrupt' as const,
+    cards: [] as [],
+    raw: '{"bad": "data"}',
+    message: 'Storage corrupted',
+  }
+  const { StorageRecovery } = await import('./StorageRecovery')
+  render(<StorageRecovery recovery={recovery} onRetry={vi.fn()} />)
+
+  downloadSpy.mockResolvedValueOnce('error')
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Download saved data' }),
+  )
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'Unable to download saved data. Please try again.',
+  )
+
+  downloadSpy.mockResolvedValueOnce('canceled')
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Download saved data' }),
+  )
+  // Canceled should keep previous state or not trigger new alert if clear
+  expect(screen.getByRole('alert')).toBeInTheDocument()
+
+  downloadSpy.mockResolvedValueOnce('completed')
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Download saved data' }),
+  )
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.getByText('Saved data downloaded ✓')).toBeInTheDocument()
+
+  // Verify routine cancel from clean state does not trigger alert
+  downloadSpy.mockResolvedValueOnce('canceled')
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Saved data downloaded ✓' }),
+  )
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+  downloadSpy.mockRestore()
+})
