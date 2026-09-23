@@ -24,6 +24,7 @@ import { BrowserHapticsPlayer } from './haptics'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
 import { EnhancedBrowserSpeaker } from './speech'
+import { NativeSpeaker } from './native-speech'
 import { DefaultAppReviewService, NativeAppReview } from './app-review'
 
 export class SystemClock implements Clock {
@@ -45,6 +46,7 @@ export {
   EnhancedBrowserSpeaker,
   EnhancedBrowserSpeaker as BrowserSpeaker,
   LayeredNeuralSpeaker,
+  NativeSpeaker,
 }
 
 class StorageInitializationError extends Error {}
@@ -112,7 +114,7 @@ export function createBrowserServices(): AppServices {
   void assistant.loadDictionary()
 
   const speaker: Speaker = Capacitor.isNativePlatform()
-    ? new EnhancedBrowserSpeaker()
+    ? new NativeSpeaker()
     : new LayeredNeuralSpeaker()
   void speaker.prewarm?.()
 
