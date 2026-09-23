@@ -33,6 +33,7 @@
     "setup:email": "node scripts/setup-email.ts",
     "generate:seo": "node scripts/generate-seo-assets.ts",
     "generate:splash": "node scripts/generate-splash-screens.ts",
+    "generate:screenshots": "node --experimental-strip-types scripts/generate-store-screenshots.ts",
     "build:favicons": "node scripts/build-favicons.mjs",
     "cap:sync": "cap sync",
     "cap:ios": "cap open ios",
