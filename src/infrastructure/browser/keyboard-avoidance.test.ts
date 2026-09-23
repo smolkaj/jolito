@@ -57,6 +57,24 @@ describe('isTextInput helper', () => {
     expect(isTextInput(null)).toBe(false)
     expect(isTextInput(undefined)).toBe(false)
   })
+
+  it('rejects disabled and readonly inputs', () => {
+    const disabledInput = document.createElement('input')
+    disabledInput.type = 'text'
+    disabledInput.disabled = true
+    const readonlyInput = document.createElement('input')
+    readonlyInput.type = 'text'
+    readonlyInput.readOnly = true
+    const disabledTextarea = document.createElement('textarea')
+    disabledTextarea.disabled = true
+    const readonlyTextarea = document.createElement('textarea')
+    readonlyTextarea.readOnly = true
+
+    expect(isTextInput(disabledInput)).toBe(false)
+    expect(isTextInput(readonlyInput)).toBe(false)
+    expect(isTextInput(disabledTextarea)).toBe(false)
+    expect(isTextInput(readonlyTextarea)).toBe(false)
+  })
 })
 
 describe('getScrollParent helper', () => {
@@ -703,5 +721,76 @@ describe('initKeyboardAvoidance controller lifecycle', () => {
     expect(callArgs.top).toBeLessThan(0) // scrolls up so element moves down below topbar
 
     document.body.removeChild(input)
+  })
+
+  it('cancels settled timer when keyboard hides quickly to prevent ghost scroll', () => {
+    vi.useFakeTimers()
+    try {
+      const listeners: Record<string, ((event: Event) => void)[]> = {}
+      const mockScrollBy = vi.fn()
+      const mockClearTimeout = vi.fn((id: number) => {
+        clearTimeout(id)
+      })
+      const mockWin = {
+        innerHeight: 844,
+        document,
+        scrollBy: mockScrollBy,
+        getComputedStyle: vi.fn().mockReturnValue({ overflowY: 'visible' }),
+        matchMedia: vi.fn().mockReturnValue({ matches: false }),
+        addEventListener: vi.fn((event: string, cb: (e: Event) => void) => {
+          listeners[event] = listeners[event] || []
+          listeners[event].push(cb)
+        }),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        requestAnimationFrame: vi.fn((cb: () => void) => {
+          cb()
+          return 1
+        }),
+        setTimeout: vi.fn((cb: () => void, ms: number) => {
+          return setTimeout(cb, ms)
+        }),
+        clearTimeout: mockClearTimeout,
+      } as unknown as Window
+
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+      input.focus()
+
+      const controller = initKeyboardAvoidance({
+        window: mockWin,
+        document,
+      })
+
+      // Keyboard shows
+      listeners['keyboardWillShow']?.forEach((cb) =>
+        cb(
+          new CustomEvent('keyboardWillShow', {
+            detail: { keyboardHeight: 336 },
+          }),
+        ),
+      )
+
+      expect(controller.getKeyboardHeight()).toBe(336)
+
+      // Keyboard hides at 50ms (before 250ms settled timer fires)
+      vi.advanceTimersByTime(50)
+      listeners['keyboardWillHide']?.forEach((cb) =>
+        cb(new Event('keyboardWillHide')),
+      )
+
+      expect(controller.getKeyboardHeight()).toBe(0)
+      expect(mockClearTimeout).toHaveBeenCalled()
+
+      // Advance past 250ms
+      vi.advanceTimersByTime(300)
+
+      expect(controller.getKeyboardHeight()).toBe(0)
+
+      controller.destroy()
+      document.body.removeChild(input)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

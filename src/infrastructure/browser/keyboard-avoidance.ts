@@ -26,6 +26,13 @@ export interface KeyboardAvoidanceController {
  */
 export function isTextInput(el: unknown): el is HTMLElement {
   if (!el || !(el instanceof HTMLElement)) return false
+  if (
+    el.hasAttribute('disabled') ||
+    el.hasAttribute('readonly') ||
+    (el as HTMLInputElement).readOnly
+  ) {
+    return false
+  }
   const tag = el.tagName.toLowerCase()
   if (tag === 'textarea') return true
   if (
@@ -244,10 +251,22 @@ export function initKeyboardAvoidance(
   let currentKeyboardHeight = 0
   let isMounted = true
   const handles: PluginListenerHandle[] = []
-  const timers: Array<number | ReturnType<typeof setTimeout>> = []
+  let settledTimer: number | ReturnType<typeof setTimeout> | null = null
+
+  const clearSettledTimer = () => {
+    if (settledTimer !== null) {
+      if (typeof win.clearTimeout === 'function') {
+        win.clearTimeout(settledTimer as number)
+      } else {
+        clearTimeout(settledTimer as Parameters<typeof clearTimeout>[0])
+      }
+      settledTimer = null
+    }
+  }
 
   const updateInset = (height: number) => {
     if (!isMounted) return
+    clearSettledTimer()
     const safeHeight = Math.max(0, height)
     if (safeHeight === currentKeyboardHeight) return
 
@@ -286,11 +305,11 @@ export function initKeyboardAvoidance(
     if (safeHeight > 0) {
       // Schedule auto-scroll on next frame so CSS padding-bottom reflow is applied first
       win.requestAnimationFrame(() => {
-        if (!isMounted) return
+        if (!isMounted || currentKeyboardHeight <= 0) return
         const active = doc.activeElement
         if (isTextInput(active)) {
           scrollElementIntoKeyboardSafeView(active, {
-            keyboardHeight: safeHeight,
+            keyboardHeight: currentKeyboardHeight,
             window: win,
           })
         }
@@ -302,17 +321,17 @@ export function initKeyboardAvoidance(
         typeof win.setTimeout === 'function'
           ? (cb: () => void, ms: number) => win.setTimeout(cb, ms)
           : setTimeout
-      const settledTimer = scheduleTimer(() => {
-        if (!isMounted) return
+      settledTimer = scheduleTimer(() => {
+        settledTimer = null
+        if (!isMounted || currentKeyboardHeight <= 0) return
         const active = doc.activeElement
         if (isTextInput(active)) {
           scrollElementIntoKeyboardSafeView(active, {
-            keyboardHeight: safeHeight,
+            keyboardHeight: currentKeyboardHeight,
             window: win,
           })
         }
       }, 250)
-      timers.push(settledTimer)
     }
   }
 
@@ -423,6 +442,7 @@ export function initKeyboardAvoidance(
   const controller: KeyboardAvoidanceController = {
     destroy: () => {
       isMounted = false
+      clearSettledTimer()
       if (win.visualViewport) {
         win.visualViewport.removeEventListener('resize', updateVisualViewport)
         win.visualViewport.removeEventListener('scroll', updateVisualViewport)
@@ -430,14 +450,6 @@ export function initKeyboardAvoidance(
       win.removeEventListener('keyboardWillShow', handleWindowKeyboardWillShow)
       win.removeEventListener('keyboardWillHide', handleWindowKeyboardWillHide)
       win.removeEventListener('focusin', onFocusIn, { capture: true })
-      timers.forEach((t) => {
-        if (typeof win.clearTimeout === 'function') {
-          win.clearTimeout(t as number)
-        } else {
-          clearTimeout(t as Parameters<typeof clearTimeout>[0])
-        }
-      })
-      timers.length = 0
       handles.forEach((h) => void h.remove())
       root.style.setProperty('--keyboard-inset', '0px')
       delete root.dataset.keyboardOpen

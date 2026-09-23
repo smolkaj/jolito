@@ -1310,7 +1310,7 @@ export class LayeredNeuralSpeaker implements Speaker {
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
-      const graceTimeout = options?.explicit ? 1500 : isDiskCached ? 150 : 500
+      const graceTimeout = options?.explicit ? 1500 : isDiskCached ? 150 : 800
 
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
