@@ -113,9 +113,10 @@ Complete these App Store Connect declarations against the release candidate:
 - **Accessibility:** make only claims verified on devices with VoiceOver,
   larger text, reduced motion, and the keyboard.
 
-The `iOS Native Build` workflow now captures welcome and creation screens from
-the real bundled app on iPhone and iPad simulators. Download both
-`native-screenshots-*` artifacts from the **candidate commit's** successful run,
+The `iOS Native Build` workflow can capture welcome and creation screens from
+the real bundled app on iPhone and iPad simulators on demand (`gh workflow run ios.yml`
+or on a PR with `[test-native]` in the title / `test-native` label). Download both
+`native-screenshots-*` artifacts from the run,
 inspect the exported PNGs and XCTest results, and select the two named
 attachments (`01-welcome`, `02-create`). These initial screens need no account.
 Add authenticated screenshots only after using the real candidate with a test
