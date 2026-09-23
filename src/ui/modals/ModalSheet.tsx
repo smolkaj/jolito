@@ -7,6 +7,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
+import { Keyboard, type KeyboardInfo } from '@capacitor/keyboard'
 import type { HapticsPlayer } from '../../application/ports'
 
 export interface ModalSheetProps {
@@ -57,10 +59,15 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
     useEffect(() => {
-      if (!isOpen || typeof window === 'undefined' || !window.visualViewport)
-        return
+      if (!isOpen || typeof window === 'undefined') return
+
+      let isMounted = true
+      const handles: PluginListenerHandle[] = []
 
       const updateViewport = () => {
+        // When running natively inside Capacitor on iOS/Android, native keyboard
+        // events are authoritative and prevent visualViewport jitter.
+        if (Capacitor.isNativePlatform()) return
         const vv = window.visualViewport
         if (!vv) return
         const inset = Math.max(
@@ -70,13 +77,90 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
         setKeyboardInset(inset)
       }
 
-      window.visualViewport.addEventListener('resize', updateViewport)
-      window.visualViewport.addEventListener('scroll', updateViewport)
-      updateViewport()
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateViewport)
+        window.visualViewport.addEventListener('scroll', updateViewport)
+        updateViewport()
+      }
+
+      const onKeyboardShow = (
+        info: KeyboardInfo | { keyboardHeight: number },
+      ) => {
+        if (!isMounted) return
+        setKeyboardInset(Math.max(0, info.keyboardHeight))
+      }
+
+      const onKeyboardHide = () => {
+        if (!isMounted) return
+        setKeyboardInset(0)
+      }
+
+      if (Capacitor.isPluginAvailable('Keyboard')) {
+        void Keyboard.addListener('keyboardWillShow', onKeyboardShow)
+          .then((handle) => {
+            if (isMounted) handles.push(handle)
+            else void handle.remove()
+          })
+          .catch(() => {})
+
+        void Keyboard.addListener('keyboardDidShow', onKeyboardShow)
+          .then((handle) => {
+            if (isMounted) handles.push(handle)
+            else void handle.remove()
+          })
+          .catch(() => {})
+
+        void Keyboard.addListener('keyboardWillHide', onKeyboardHide)
+          .then((handle) => {
+            if (isMounted) handles.push(handle)
+            else void handle.remove()
+          })
+          .catch(() => {})
+
+        void Keyboard.addListener('keyboardDidHide', onKeyboardHide)
+          .then((handle) => {
+            if (isMounted) handles.push(handle)
+            else void handle.remove()
+          })
+          .catch(() => {})
+      }
+
+      // Defensive window listeners for Capacitor's triggerWindowJSEvent bridge
+      const handleWindowKeyboardWillShow = (event: Event) => {
+        if (!isMounted) return
+        const custom = event as CustomEvent<{ keyboardHeight?: number }>
+        const height =
+          custom.detail?.keyboardHeight ??
+          (event as unknown as { keyboardHeight?: number }).keyboardHeight ??
+          0
+        if (height > 0) {
+          setKeyboardInset(height)
+        }
+      }
+
+      const handleWindowKeyboardWillHide = () => {
+        if (!isMounted) return
+        setKeyboardInset(0)
+      }
+
+      window.addEventListener('keyboardWillShow', handleWindowKeyboardWillShow)
+      window.addEventListener('keyboardWillHide', handleWindowKeyboardWillHide)
 
       return () => {
+        isMounted = false
         window.visualViewport?.removeEventListener('resize', updateViewport)
         window.visualViewport?.removeEventListener('scroll', updateViewport)
+        window.removeEventListener(
+          'keyboardWillShow',
+          handleWindowKeyboardWillShow,
+        )
+        window.removeEventListener(
+          'keyboardWillHide',
+          handleWindowKeyboardWillHide,
+        )
+        handles.forEach((h) => {
+          void h.remove()
+        })
       }
     }, [isOpen])
 

@@ -994,6 +994,58 @@ describe('SyncModal iOS Keyboard and Autofocus Avoidance', () => {
     expect(document.activeElement).not.toBe(deleteInput)
     vi.useRealTimers()
   })
+
+  it('exposes full autocompletion contract for password managers (1Password / iCloud Keychain) on email input', () => {
+    const auth = new MockAuthService()
+    render(
+      <SyncModal
+        user={null}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    expect(emailInput).toHaveAttribute('name', 'email')
+    expect(emailInput).toHaveAttribute('type', 'email')
+    expect(emailInput).toHaveAttribute('autocomplete', 'email')
+    expect(emailInput).toHaveAttribute('autocapitalize', 'none')
+    expect(emailInput).toHaveAttribute('autocorrect', 'off')
+    expect(emailInput).toHaveAttribute('spellcheck', 'false')
+    expect(emailInput).toHaveAttribute('inputmode', 'email')
+  })
+
+  it('exposes one-time-code autocompletion contract for SMS/Email OTP autofill', async () => {
+    const auth = new MockAuthService()
+    render(
+      <SyncModal
+        user={null}
+        onDeleteAccount={() => auth.deleteAccount()}
+        isOpen
+        onClose={vi.fn()}
+        cards={[]}
+        auth={auth}
+        onSync={vi.fn()}
+      />,
+    )
+
+    const emailInput = screen.getByLabelText(/email address/i)
+    fireEvent.change(emailInput, { target: { value: 'learner@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: /send sign-in link/i }))
+
+    const otpInput = await screen.findByLabelText(
+      /6-digit code or sign-in link/i,
+    )
+    expect(otpInput).toHaveAttribute('name', 'one-time-code')
+    expect(otpInput).toHaveAttribute('autocomplete', 'one-time-code')
+    expect(otpInput).toHaveAttribute('autocapitalize', 'none')
+    expect(otpInput).toHaveAttribute('autocorrect', 'off')
+    expect(otpInput).toHaveAttribute('spellcheck', 'false')
+  })
 })
 
 describe('SyncModal Live Sync Status Contract', () => {

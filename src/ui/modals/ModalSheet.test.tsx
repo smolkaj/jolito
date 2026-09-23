@@ -2,8 +2,19 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { Capacitor } from '@capacitor/core'
 import { ModalSheet } from './ModalSheet'
 import type { HapticsPlayer } from '../../application/ports'
+
+const { mockKeyboardAddListener } = vi.hoisted(() => ({
+  mockKeyboardAddListener: vi.fn(),
+}))
+
+vi.mock('@capacitor/keyboard', () => ({
+  Keyboard: {
+    addListener: mockKeyboardAddListener,
+  },
+}))
 
 function createMockHaptics() {
   const trigger = vi.fn()
@@ -316,6 +327,96 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
     // Verify .modal-sheet .modal-close is suppressed under max-width: 680px
     expect(sheetMediaBlock).toMatch(
       /\.modal-sheet\s+\.modal-close\s*\{[^}]*display:\s*none;/s,
+    )
+  })
+
+  it('updates --keyboard-inset style on backdrop when Capacitor Keyboard triggers keyboardWillShow/Hide', () => {
+    type Listener = (info?: { keyboardHeight: number }) => void
+    const listeners: Record<string, Listener> = {}
+
+    vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
+    mockKeyboardAddListener.mockImplementation(
+      (event: string, cb: Listener) => {
+        listeners[event] = cb
+        return Promise.resolve({
+          remove: vi.fn(),
+        })
+      },
+    )
+
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={vi.fn()}>
+        <p>Capacitor Keyboard Test</p>
+      </ModalSheet>,
+    )
+
+    const backdrop = container.querySelector('.modal-backdrop') as HTMLElement
+    expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('')
+    expect(backdrop).not.toHaveClass('is-keyboard-open')
+
+    // Simulate native keyboard appearance (e.g. 336px)
+    act(() => {
+      listeners['keyboardWillShow']?.({ keyboardHeight: 336 })
+    })
+
+    expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('336px')
+    expect(backdrop).toHaveClass('is-keyboard-open')
+
+    // Simulate native keyboard dismiss
+    act(() => {
+      listeners['keyboardWillHide']?.()
+    })
+
+    expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('')
+    expect(backdrop).not.toHaveClass('is-keyboard-open')
+  })
+
+  it('updates --keyboard-inset style on backdrop when window keyboardWillShow/Hide events are fired', () => {
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={vi.fn()}>
+        <p>Window Keyboard Test</p>
+      </ModalSheet>,
+    )
+
+    const backdrop = container.querySelector('.modal-backdrop') as HTMLElement
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('keyboardWillShow', {
+          detail: { keyboardHeight: 301 },
+        }),
+      )
+    })
+
+    expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('301px')
+    expect(backdrop).toHaveClass('is-keyboard-open')
+
+    act(() => {
+      window.dispatchEvent(new Event('keyboardWillHide'))
+    })
+
+    expect(backdrop.style.getPropertyValue('--keyboard-inset')).toBe('')
+    expect(backdrop).not.toHaveClass('is-keyboard-open')
+  })
+
+  it('enforces architectural invariant that modal-backdrop has smooth padding-bottom transition with reduced motion override', () => {
+    const cssContent = readFileSync(
+      resolve(process.cwd(), 'src/styles.css'),
+      'utf-8',
+    )
+
+    // Base modal-backdrop transition
+    expect(cssContent).toMatch(
+      /\.modal-backdrop\s*\{[^}]*transition:\s*padding-bottom\s+240ms/s,
+    )
+
+    // Reduced motion suppression
+    const reducedMotionMarker = '@media (prefers-reduced-motion: reduce)'
+    const index = cssContent.lastIndexOf(reducedMotionMarker)
+    expect(index).toBeGreaterThan(-1)
+    const block = cssContent.slice(index)
+    expect(block).toMatch(
+      /\.modal-backdrop,\s*\.modal-content\.modal-sheet\s*\{[^}]*transition:\s*none\s*!important;/s,
     )
   })
 })
