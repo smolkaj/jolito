@@ -347,31 +347,34 @@ describe('accent keyboard insertion', () => {
       stop: vi.fn().mockResolvedValue(undefined),
     }
 
+    const onStopAudio = vi.fn()
     const { rerender } = render(
       <PracticeCard
         {...initial}
         revealed={false}
         speechRecognizer={mockRecognizer}
+        onStopAudio={onStopAudio}
       />,
     )
 
     // Wait for support check
     const micBtn = await screen.findByRole('button', {
-      name: 'Speak your answer',
+      name: 'Start voice input',
     })
     expect(micBtn).toBeInTheDocument()
 
     // Tap mic button to start listening
     await user.click(micBtn)
+    expect(onStopAudio).toHaveBeenCalledTimes(1)
     expect(mockRecognizer.start).toHaveBeenCalledWith(
       expect.objectContaining({ locale: 'es-MX' }),
     )
     expect(
-      screen.getByRole('button', { name: 'Stop spoken recall' }),
+      screen.getByRole('button', { name: 'Stop voice input' }),
     ).toHaveClass('is-listening')
 
-    // Stream spoken transcript
-    callbacks.transcript?.('hablamos', false)
+    // Stream spoken transcript with speech-engine inserted trailing period
+    callbacks.transcript?.('hablamos.', false)
     expect(initial.onAnswerChange).toHaveBeenCalledWith('hablamos')
 
     // Revealing the answer automatically stops speech recognition
@@ -380,6 +383,7 @@ describe('accent keyboard insertion', () => {
         {...initial}
         revealed={true}
         speechRecognizer={mockRecognizer}
+        onStopAudio={onStopAudio}
       />,
     )
     expect(mockRecognizer.stop).toHaveBeenCalled()

@@ -15,6 +15,7 @@ import {
 import type { HapticsPlayer } from '../application/ports'
 import {
   DefaultSpeechRecognizer,
+  normalizeSpokenAnswer,
   type SpeechRecognizer,
 } from '../infrastructure/browser/speech-recognition'
 import { AnswerComparison } from './AnswerComparison'
@@ -23,6 +24,7 @@ import { MicIcon } from './icons'
 
 const accentLetters = ['á', 'é', 'í', 'ó', 'ú']
 const MAX_SWIPE_LIFT_Y = -110
+let cachedSpeechAvailable: boolean | null = null
 
 /** Shared recall → feedback → grade interaction; learning modes supply content. */
 export function PracticeCard({
@@ -50,6 +52,7 @@ export function PracticeCard({
   onFeedback,
   haptics,
   speechRecognizer,
+  onStopAudio,
 }: {
   card: StudyCard
   prompt: ReactNode
@@ -62,6 +65,7 @@ export function PracticeCard({
   onPlayAnswer: () => void
   isPlayingAnswer?: boolean
   onPlayPrompt?: () => void
+  onStopAudio?: (() => void) | undefined
   onEdit?: () => void
   onDelete?: () => void
   paused: boolean
@@ -110,7 +114,10 @@ export function PracticeCard({
   }
 
   const [isListening, setIsListening] = useState(false)
-  const [spokenRecallAvailable, setSpokenRecallAvailable] = useState(false)
+  const [usedVoiceInput, setUsedVoiceInput] = useState(false)
+  const [spokenRecallAvailable, setSpokenRecallAvailable] = useState<boolean>(
+    () => cachedSpeechAvailable ?? false,
+  )
   const recognizerRef = useRef<SpeechRecognizer | null>(null)
   if (recognizerRef.current == null) {
     recognizerRef.current = speechRecognizer ?? new DefaultSpeechRecognizer()
@@ -122,6 +129,7 @@ export function PracticeCard({
     if (recognizer) {
       void Promise.resolve(recognizer.isSupported(answerLang)).then(
         (supported) => {
+          cachedSpeechAvailable = supported
           if (active) setSpokenRecallAvailable(supported)
         },
       )
@@ -153,18 +161,24 @@ export function PracticeCard({
     if (isListening) {
       await recognizerRef.current.stop()
       setIsListening(false)
+      haptics?.trigger('selection')
     } else {
+      onStopAudio?.()
       haptics?.trigger('selection')
       const started = await recognizerRef.current.start({
         locale: answerLang,
         onTranscript: (text) => {
-          onAnswerChange(text)
+          setUsedVoiceInput(true)
+          const normalized = normalizeSpokenAnswer(text, card.answer)
+          onAnswerChange(normalized)
         },
         onEnd: () => {
           setIsListening(false)
+          haptics?.trigger('selection')
         },
-        onError: () => {
+        onError: (err) => {
           setIsListening(false)
+          console.warn('Speech recognition notice:', err)
         },
       })
       if (started) {
@@ -202,6 +216,8 @@ export function PracticeCard({
     onPlayAnswer,
     onPlayPrompt,
     onEdit,
+    toggleSpokenRecall,
+    spokenRecallAvailable,
   })
   useEffect(() => {
     actions.current = {
@@ -211,13 +227,29 @@ export function PracticeCard({
       onPlayAnswer,
       onPlayPrompt,
       onEdit,
+      toggleSpokenRecall,
+      spokenRecallAvailable,
     }
   })
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const state = actions.current
-      if (state.paused || event.repeat || event.altKey || event.isComposing)
+      if (state.paused || event.repeat || event.isComposing) return
+
+      if (
+        event.altKey &&
+        (event.code === 'Space' ||
+          event.key === ' ' ||
+          event.key.toLowerCase() === 'm') &&
+        !state.revealed &&
+        state.spokenRecallAvailable
+      ) {
+        event.preventDefault()
+        void state.toggleSpokenRecall()
         return
+      }
+
+      if (event.altKey) return
       const target = event.target instanceof HTMLElement ? event.target : null
       const typing = Boolean(
         target?.closest('input, textarea, select, [contenteditable="true"]'),
@@ -317,6 +349,7 @@ export function PracticeCard({
 
   if (prevCardId !== card.id) {
     setPrevCardId(card.id)
+    setUsedVoiceInput(false)
     setPrevRevealed(revealed)
     setDragOffset({ x: 0, y: 0 })
     setIsDragging(false)
@@ -719,55 +752,63 @@ export function PracticeCard({
               <label className="sr-only" htmlFor={answerId}>
                 {answerLabel}
               </label>
-              <input
-                ref={input}
-                id={answerId}
-                className={`answer-input ${spokenRecallAvailable ? 'has-speech' : ''}`.trim()}
-                value={answer}
-                onChange={(event) => onAnswerChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (
-                    !accents ||
-                    paused ||
-                    event.ctrlKey ||
-                    event.metaKey ||
-                    event.altKey ||
-                    event.shiftKey ||
-                    event.nativeEvent.isComposing
-                  )
-                    return
-                  const letter = accentLetters[Number(event.key) - 1]
-                  if (!letter) return
-                  event.preventDefault()
-                  if (!event.repeat) insertAccent(letter)
-                }}
-                placeholder={placeholder}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                lang={answerLang}
-              />
-              {spokenRecallAvailable && (
-                <button
-                  type="button"
-                  className={`speech-recall-btn ${isListening ? 'is-listening' : ''}`.trim()}
-                  onClick={() => void toggleSpokenRecall()}
-                  aria-label={
-                    isListening ? 'Stop spoken recall' : 'Speak your answer'
-                  }
-                  title={
-                    isListening
-                      ? 'Listening… (tap to stop)'
-                      : 'Speak your answer (offline on-device)'
-                  }
-                >
-                  <MicIcon size={18} />
-                </button>
-              )}
+              <div className="answer-input-wrap">
+                {spokenRecallAvailable && (
+                  <button
+                    type="button"
+                    className={`speech-recall-btn ${isListening ? 'is-listening' : ''}`.trim()}
+                    onClick={() => void toggleSpokenRecall()}
+                    aria-label={
+                      isListening ? 'Stop voice input' : 'Start voice input'
+                    }
+                    title={
+                      isListening
+                        ? 'Listening… (tap or ⌥Space to stop)'
+                        : 'Voice input (⌥Space, on-device)'
+                    }
+                  >
+                    <MicIcon size={18} />
+                  </button>
+                )}
+                <input
+                  ref={input}
+                  id={answerId}
+                  className={`answer-input ${spokenRecallAvailable ? 'has-speech' : ''}`.trim()}
+                  value={answer}
+                  onChange={(event) => {
+                    setUsedVoiceInput(false)
+                    onAnswerChange(event.target.value)
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      !accents ||
+                      paused ||
+                      event.ctrlKey ||
+                      event.metaKey ||
+                      event.altKey ||
+                      event.shiftKey ||
+                      event.nativeEvent.isComposing
+                    )
+                      return
+                    const letter = accentLetters[Number(event.key) - 1]
+                    if (!letter) return
+                    event.preventDefault()
+                    if (!event.repeat) insertAccent(letter)
+                  }}
+                  placeholder={placeholder}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  lang={answerLang}
+                />
+              </div>
               <button className="reveal-button" type="submit">
                 Reveal answer <kbd>Enter</kbd>
               </button>
+              <div className="visually-hidden" aria-live="polite">
+                {isListening ? 'Listening for your spoken answer…' : ''}
+              </div>
             </form>
             {accents && (
               <div className="answer-accents" aria-label="Spanish accents">
@@ -810,6 +851,7 @@ export function PracticeCard({
                     lang={answerLang}
                     onPlayAudio={showAnswerAudio ? onPlayAnswer : undefined}
                     isPlayingAudio={isPlayingAnswer}
+                    inputMode={usedVoiceInput ? 'spoken' : 'typed'}
                   />
                 </div>
                 {children}
@@ -889,6 +931,12 @@ export function PracticeCard({
                 <>
                   {' '}
                   · <kbd>⌃ Space</kbd> replay audio
+                </>
+              )}
+              {spokenRecallAvailable && (
+                <>
+                  {' '}
+                  · <kbd>⌥ Space</kbd> voice
                 </>
               )}
             </>

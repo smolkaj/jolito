@@ -24,6 +24,7 @@ export function AnswerComparison({
   onPlayAudio,
   isPlayingAudio = false,
   correctionRule,
+  inputMode = 'typed',
 }: {
   typed: string
   expected: string
@@ -31,6 +32,7 @@ export function AnswerComparison({
   onPlayAudio?: (() => void) | undefined
   isPlayingAudio?: boolean | undefined
   correctionRule?: string | undefined
+  inputMode?: 'typed' | 'spoken' | undefined
 }) {
   const comparison = compareAnswer(typed, expected)
   const hasTyped = typed.trim().length > 0
@@ -57,7 +59,9 @@ export function AnswerComparison({
       <div className="diff-rows">
         {hasTyped && (
           <div className="diff-row">
-            <span className="diff-label">You wrote</span>
+            <span className="diff-label">
+              {inputMode === 'spoken' ? 'You said' : 'You wrote'}
+            </span>
             <p className="diff-text" lang={lang}>
               {renderDiffSegments(comparison.typedSegments)}
             </p>

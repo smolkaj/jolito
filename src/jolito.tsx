@@ -1624,6 +1624,7 @@ function LoadedApp({
           currentCard && (
             <PracticeCard
               haptics={services.haptics}
+              onStopAudio={cancelPendingAudio}
               error={
                 saveError === STORAGE_SAVE_ERROR
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'

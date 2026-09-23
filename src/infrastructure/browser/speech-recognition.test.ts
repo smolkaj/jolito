@@ -2,8 +2,29 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { Capacitor } from '@capacitor/core'
 import {
   DefaultSpeechRecognizer,
+  normalizeSpokenAnswer,
   type SpeechRecognitionPluginInterface,
 } from './speech-recognition'
+
+describe('normalizeSpokenAnswer', () => {
+  it('strips leading inverted and trailing sentence punctuation', () => {
+    expect(normalizeSpokenAnswer('¿hablas español?')).toBe('hablas español')
+    expect(normalizeSpokenAnswer('¡buenos días!')).toBe('buenos días')
+    expect(normalizeSpokenAnswer('gracias.')).toBe('gracias')
+    expect(normalizeSpokenAnswer('  por favor...  ')).toBe('por favor')
+  })
+
+  it('aligns casing with target answer when characters match', () => {
+    expect(normalizeSpokenAnswer('Hablé.', 'hablé')).toBe('hablé')
+    expect(normalizeSpokenAnswer('EL GATO', 'el gato')).toBe('el gato')
+    expect(normalizeSpokenAnswer('adiós', 'Adiós')).toBe('Adiós')
+  })
+
+  it('preserves accents and handles empty input gracefully', () => {
+    expect(normalizeSpokenAnswer('')).toBe('')
+    expect(normalizeSpokenAnswer('árbol')).toBe('árbol')
+  })
+})
 
 describe('DefaultSpeechRecognizer', () => {
   let mockPlugin: {
@@ -42,7 +63,7 @@ describe('DefaultSpeechRecognizer', () => {
     vi.restoreAllMocks()
   })
 
-  it('checks support via native plugin on native platform', async () => {
+  it('checks support via native plugin on native platform with on-device capability', async () => {
     vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
     vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
 
@@ -53,6 +74,33 @@ describe('DefaultSpeechRecognizer', () => {
 
     expect(supported).toBe(true)
     expect(mockPlugin.isAvailable).toHaveBeenCalledWith({ locale: 'es-MX' })
+  })
+
+  it('reports false when on-device recognition is not supported (offline / $0.00 invariant)', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
+    mockPlugin.isAvailable.mockResolvedValue({
+      available: true,
+      supportsOnDevice: false,
+    })
+
+    const recognizer = new DefaultSpeechRecognizer(
+      mockPlugin as unknown as SpeechRecognitionPluginInterface,
+    )
+    const supported = await recognizer.isSupported('es-MX')
+
+    expect(supported).toBe(false)
+  })
+
+  it('reports false on web (strictly offline & $0.00 invariant)', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false)
+
+    const recognizer = new DefaultSpeechRecognizer(
+      mockPlugin as unknown as SpeechRecognitionPluginInterface,
+    )
+    const supported = await recognizer.isSupported('es-MX')
+
+    expect(supported).toBe(false)
   })
 
   it('reports false when native plugin is unavailable or throws', async () => {

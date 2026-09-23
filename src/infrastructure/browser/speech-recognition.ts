@@ -38,6 +38,34 @@ export interface SpeechRecognizer {
   stop(): Promise<void>
 }
 
+/**
+ * Normalizes speech recognition output for flashcard answer comparisons:
+ * - Trims leading and trailing whitespace
+ * - Strips leading punctuation (¿, ¡) and trailing sentence punctuation (. , ! ? ; :)
+ * - Normalizes Unicode combining characters (NFC)
+ * - Collapses internal whitespace runs
+ * - Aligns casing with targetAnswer when lowercased text matches
+ */
+export function normalizeSpokenAnswer(
+  text: string,
+  targetAnswer?: string,
+): string {
+  if (!text) return ''
+  let cleaned = text.normalize('NFC').trim()
+  cleaned = cleaned.replace(/^[¿¡]+/, '')
+  cleaned = cleaned.replace(/[.,!?;:]+$/, '')
+  cleaned = cleaned.replace(/\s+/g, ' ').trim()
+
+  if (targetAnswer) {
+    const trimmedTarget = targetAnswer.trim()
+    if (cleaned.toLowerCase() === trimmedTarget.toLowerCase()) {
+      return trimmedTarget
+    }
+  }
+
+  return cleaned
+}
+
 export class DefaultSpeechRecognizer implements SpeechRecognizer {
   private active = false
   private plugin: SpeechRecognitionPluginInterface
@@ -53,18 +81,16 @@ export class DefaultSpeechRecognizer implements SpeechRecognizer {
       Capacitor.isPluginAvailable('SpeechRecognition')
     ) {
       try {
-        const { available } = await this.plugin.isAvailable({ locale })
-        return available
+        const { available, supportsOnDevice } = await this.plugin.isAvailable({
+          locale,
+        })
+        return Boolean(available && supportsOnDevice)
       } catch {
         return false
       }
     }
-    if (
-      typeof window !== 'undefined' &&
-      ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
-    ) {
-      return true
-    }
+    // On web, on-device offline speech recognition is not supported.
+    // Core Invariant: Strictly $0.00 operating costs; local-first & offline by default.
     return false
   }
 
@@ -139,19 +165,19 @@ export class DefaultSpeechRecognizer implements SpeechRecognizer {
           recognition.interimResults = true
 
           recognition.onresult = (event) => {
-            let interim = ''
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
+            let fullTranscript = ''
+            let hasFinal = false
+            for (let i = 0; i < event.results.length; ++i) {
               const res = event.results[i]
               if (res?.[0]) {
+                fullTranscript += res[0].transcript
                 if (res.isFinal) {
-                  options.onTranscript(res[0].transcript, true)
-                } else {
-                  interim += res[0].transcript
+                  hasFinal = true
                 }
               }
             }
-            if (interim) {
-              options.onTranscript(interim, false)
+            if (fullTranscript) {
+              options.onTranscript(fullTranscript, hasFinal)
             }
           }
 
