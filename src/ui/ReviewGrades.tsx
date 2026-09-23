@@ -27,16 +27,24 @@ export function ReviewGrades({
 }) {
   const isDraggingAgain = Boolean(dragOffset && dragOffset.x < 0)
   const isDraggingGood = Boolean(dragOffset && dragOffset.x > 0)
+  const isAgainActive = activeZone === 'again'
+  const isGoodActive = activeZone === 'good'
 
-  const arrowAgainTransform =
-    !prefersReducedMotion && isDraggingAgain && dragOffset
-      ? `translateX(${Math.max(-8, dragOffset.x * 0.08)}px)`
-      : undefined
+  const arrowAgainTransform = prefersReducedMotion
+    ? undefined
+    : isDraggingAgain && dragOffset
+      ? `${isAgainActive ? 'scale(1.2) ' : ''}translateX(${Math.max(-8, dragOffset.x * 0.08)}px)`.trim()
+      : isAgainActive
+        ? 'scale(1.2)'
+        : undefined
 
-  const arrowGoodTransform =
-    !prefersReducedMotion && isDraggingGood && dragOffset
-      ? `translateX(${Math.min(8, dragOffset.x * 0.08)}px)`
-      : undefined
+  const arrowGoodTransform = prefersReducedMotion
+    ? undefined
+    : isDraggingGood && dragOffset
+      ? `${isGoodActive ? 'scale(1.2) ' : ''}translateX(${Math.min(8, dragOffset.x * 0.08)}px)`.trim()
+      : isGoodActive
+        ? 'scale(1.2)'
+        : undefined
 
   return (
     <fieldset className="grade-fieldset">

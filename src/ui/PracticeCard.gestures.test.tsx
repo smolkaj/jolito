@@ -1134,9 +1134,11 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     })
 
     expect(goodBtn).toHaveClass('is-gesture-active')
-    expect(
-      goodBtn.querySelector('.grade-gesture-cue.cue-good'),
-    ).toHaveTextContent('✓')
+    const activeGoodCue = goodBtn.querySelector(
+      '.grade-gesture-cue.cue-good',
+    ) as HTMLElement
+    expect(activeGoodCue).toHaveTextContent('✓')
+    expect(activeGoodCue.style.transform).toContain('scale(1.2)')
     expect(againBtn).not.toHaveClass('is-gesture-active')
     expect(trigger).toHaveBeenCalledWith('selection')
 
@@ -1160,9 +1162,11 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     })
 
     expect(againBtn).toHaveClass('is-gesture-active')
-    expect(
-      againBtn.querySelector('.grade-gesture-cue.cue-again'),
-    ).toHaveTextContent('↺')
+    const activeAgainCue = againBtn.querySelector(
+      '.grade-gesture-cue.cue-again',
+    ) as HTMLElement
+    expect(activeAgainCue).toHaveTextContent('↺')
+    expect(activeAgainCue.style.transform).toContain('scale(1.2)')
     expect(goodBtn).not.toHaveClass('is-gesture-active')
 
     // Drag back to neutral center (dx = 0)
