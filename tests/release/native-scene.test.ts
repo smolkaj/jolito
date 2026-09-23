@@ -238,6 +238,14 @@ void test('Capacitor Android configuration matches appId and brand background', 
     'utf8',
   )
 
+  const stringsXml = readFileSync(
+    new URL(
+      '../../android/app/src/main/res/values/strings.xml',
+      import.meta.url,
+    ),
+    'utf8',
+  )
+
   // App ID and Android scheme
   assert.match(config, /appId:\s*['"]to\.joli\.app['"]/)
   assert.match(config, /androidScheme:\s*['"]https['"]/)
@@ -251,5 +259,13 @@ void test('Capacitor Android configuration matches appId and brand background', 
   assert.match(buildGradle, /namespace\s*=\s*['"]to\.joli\.app['"]/)
 
   // Manifest activity & permissions
+  assert.match(manifest, /android:name="\.MainActivity"/)
   assert.match(manifest, /android\.permission\.INTERNET/)
+
+  // Strings resources package name & app name
+  assert.match(
+    stringsXml,
+    /<string name="package_name">to\.joli\.app<\/string>/,
+  )
+  assert.match(stringsXml, /<string name="app_name">Jolito<\/string>/)
 })
