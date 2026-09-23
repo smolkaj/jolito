@@ -30,7 +30,10 @@ import {
   type StudyCard,
   type UpdateCardParams,
 } from './domain/card'
-import { createStudySession } from './domain/study-session'
+import {
+  createStudySession,
+  sessionCompletedCount,
+} from './domain/study-session'
 import {
   availableGrammarCards,
   grammarContext,
@@ -405,6 +408,7 @@ function LoadedApp({
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const sessionHadErrorRef = useRef(false)
   const vocabularyCards = useMemo(
     () => cards.filter((card) => !isGrammarCard(card)),
     [cards],
@@ -589,6 +593,7 @@ function LoadedApp({
       newDeletedCardIds?: string[],
     ) => {
       if (!canCommit()) {
+        sessionHadErrorRef.current = true
         if (lifetime.current.active) setSaveError(OWNERSHIP_SAVE_ERROR)
         return false
       }
@@ -601,6 +606,7 @@ function LoadedApp({
       try {
         services.cards.save(newCards, deletedIdsArray)
       } catch {
+        sessionHadErrorRef.current = true
         setSaveError(STORAGE_SAVE_ERROR)
         return false
       }
@@ -1013,7 +1019,7 @@ function LoadedApp({
       )
       if (!onUpdateCards(nextCards, false)) return
 
-      const { isComplete } = advanceOnGrade(
+      const { isComplete, nextSession } = advanceOnGrade(
         currentCard.id,
         reviewed.schedule,
         buriedCardIds,
@@ -1026,6 +1032,12 @@ function LoadedApp({
       if (isComplete) {
         flushSync()
         navigateTo('complete')
+        if (services.appReview) {
+          void services.appReview.recordSessionAndPromptIfEligible({
+            cardsReviewedInSession: sessionCompletedCount(nextSession),
+            hasSessionError: sessionHadErrorRef.current,
+          })
+        }
       } else {
         scheduleDebouncedSync()
       }
@@ -1038,6 +1050,7 @@ function LoadedApp({
       navigateTo,
       playGradeSensory,
       scheduleDebouncedSync,
+      services.appReview,
       services.clock,
       services.telemetry,
     ],
@@ -1050,6 +1063,7 @@ function LoadedApp({
   }
 
   function handlePractice() {
+    sessionHadErrorRef.current = false
     if (queue.length > 0) {
       navigateTo('review')
     } else {
@@ -1058,6 +1072,7 @@ function LoadedApp({
   }
 
   function beginReview(cardIds?: string[]) {
+    sessionHadErrorRef.current = false
     cancelPendingAudio()
     const now = services.clock.now()
     const nextQueue =
@@ -1263,39 +1278,6 @@ function LoadedApp({
     grammarEffectiveTotal,
     grammarProgressPercentage,
     grammarPrompt,
-  ])
-
-  const isSessionComplete = isGrammarActive
-    ? grammarPractice.mode === 'complete'
-    : view === 'complete' || (view === 'review' && !currentCard)
-
-  // Guarded App Store review prompt when practice session completes
-  const appReviewTriggeredRef = useRef(false)
-  useEffect(() => {
-    if (!isSessionComplete) {
-      appReviewTriggeredRef.current = false
-      return
-    }
-
-    if (appReviewTriggeredRef.current) return
-    const sessionPracticedCount = isGrammarActive
-      ? grammarCompletedCount
-      : practicedCount
-
-    if (sessionPracticedCount > 0 && services.appReview) {
-      appReviewTriggeredRef.current = true
-      void services.appReview.recordSessionAndPromptIfEligible({
-        cardsReviewedInSession: sessionPracticedCount,
-        hasSessionError: Boolean(saveError),
-      })
-    }
-  }, [
-    isSessionComplete,
-    isGrammarActive,
-    grammarCompletedCount,
-    practicedCount,
-    saveError,
-    services.appReview,
   ])
 
   const renderAppModals = () => (
@@ -1575,6 +1557,15 @@ function LoadedApp({
             paused={paused}
             signedIn={Boolean(authUser)}
             onSignIn={() => openSyncModal()}
+            onFeedback={openFeedbackModal}
+            onComplete={(formsCount, hasError) => {
+              if (services.appReview) {
+                void services.appReview.recordSessionAndPromptIfEligible({
+                  cardsReviewedInSession: formsCount,
+                  hasSessionError: hasError || sessionHadErrorRef.current,
+                })
+              }
+            }}
           />
         ) : complete ? (
           <SessionComplete

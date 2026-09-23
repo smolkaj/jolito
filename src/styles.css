@@ -2875,11 +2875,16 @@ kbd {
 .practice-error-feedback-button {
   background: none;
   border: none;
-  padding: 0;
+  padding: 2px 4px;
+  margin: -2px 0;
+  display: inline-block;
   color: inherit;
   font: inherit;
   text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 4px;
   cursor: pointer;
+  transition: color 150ms ease;
 }
 .practice-error-feedback-button:hover,
 .practice-error-feedback-button:focus-visible {

@@ -75,12 +75,16 @@ void test('SceneDelegate registers AppReviewPlugin with StoreKit for native revi
     new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
     'utf8',
   )
+  const appReviewPlugin = readFileSync(
+    new URL('../../ios/App/App/AppReviewPlugin.swift', import.meta.url),
+    'utf8',
+  )
 
-  assert.match(sceneDelegate, /import StoreKit/)
-  assert.match(sceneDelegate, /@objc\(AppReviewPlugin\)/)
   assert.match(
     sceneDelegate,
     /bridge\?\.registerPluginInstance\(AppReviewPlugin\(\)\)/,
   )
-  assert.match(sceneDelegate, /SKStoreReviewController\.requestReview/)
+  assert.match(appReviewPlugin, /import StoreKit/)
+  assert.match(appReviewPlugin, /@objc\(AppReviewPlugin\)/)
+  assert.match(appReviewPlugin, /SKStoreReviewController\.requestReview/)
 })

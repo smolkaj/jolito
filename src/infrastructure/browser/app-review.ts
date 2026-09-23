@@ -3,7 +3,7 @@ import type {
   AppReviewOptions,
   AppReviewService,
   Clock,
-} from '../application/ports'
+} from '../../application/ports'
 import {
   APP_REVIEW_STORAGE_KEY,
   canPromptForReview,
@@ -11,7 +11,7 @@ import {
   recordPromptShown,
   recordSessionCompletion,
   type AppReviewState,
-} from '../domain/app-review'
+} from '../../domain/app-review'
 
 export interface NativeAppReviewPlugin {
   requestReview(): Promise<{ requested: boolean }>

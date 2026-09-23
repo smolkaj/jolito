@@ -24,10 +24,7 @@ import { BrowserHapticsPlayer } from './haptics'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
 import { EnhancedBrowserSpeaker } from './speech'
-import {
-  DefaultAppReviewService,
-  NativeAppReview,
-} from '../../ui/native-app-review'
+import { DefaultAppReviewService, NativeAppReview } from './app-review'
 
 export class SystemClock implements Clock {
   now(): number {

@@ -17,6 +17,7 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */; };
 		1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */; };
+		1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */; };
 		891EBE9D6AD048A2BEAFA998 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65F2620A285E489E99246ED6 /* ActivityKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		8D7B849134B84AACB38DE99D /* JolitoWidgetExtension.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = B7F0595D70894F43A021778C /* JolitoWidgetExtension.appex */; };
 		3560A65467E148D1A1820E2A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3A93CEE435D4326916F86A3 /* WidgetKit.framework */; };
@@ -39,6 +40,7 @@
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeActivityAttributes.swift; sourceTree = "<group>"; };
 		D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPlugin.swift; sourceTree = "<group>"; };
 		65F2620A285E489E99246ED6 /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
 		B7F0595D70894F43A021778C /* JolitoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JolitoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3A93CEE435D4326916F86A3 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -102,6 +104,7 @@
 				50B271D01FEDC1A000F3C39B /* public */,
 				EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */,
 				D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */,
+				D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -242,6 +245,7 @@
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */,
+				1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

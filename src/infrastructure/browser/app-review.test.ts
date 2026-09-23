@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import {
   DefaultAppReviewService,
   type NativeAppReviewPlugin,
-} from './native-app-review'
-import type { Clock } from '../application/ports'
-import { INITIAL_APP_REVIEW_STATE } from '../domain/app-review'
+} from './app-review'
+import type { Clock } from '../../application/ports'
+import { INITIAL_APP_REVIEW_STATE } from '../../domain/app-review'
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>()
