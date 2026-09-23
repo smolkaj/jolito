@@ -4012,18 +4012,21 @@ kbd {
   justify-content: center;
 }
 
-.demo-deck-dismiss-btn {
-  background: transparent !important;
-  box-shadow: none !important;
-  border-color: transparent !important;
-  color: var(--ink-soft) !important;
+.demo-deck-modal-actions .demo-deck-dismiss-btn {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+  color: var(--ink-soft);
+  min-height: 48px;
+  font-size: 14px;
 }
 
-.demo-deck-dismiss-btn:hover {
-  background: var(--paper-subtle) !important;
-  color: var(--ink) !important;
-  box-shadow: none !important;
-  transform: none !important;
+.demo-deck-modal-actions .demo-deck-dismiss-btn:hover {
+  background: var(--paper-subtle);
+  border-color: transparent;
+  color: var(--ink);
+  box-shadow: none;
+  transform: none;
 }
 
 /* ==========================================================================

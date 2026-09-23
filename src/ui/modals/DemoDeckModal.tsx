@@ -74,7 +74,7 @@ export function DemoDeckModal({
         )}
         <button
           type="button"
-          className="secondary-button demo-deck-dismiss-btn"
+          className="text-button demo-deck-dismiss-btn"
           onClick={onClose}
         >
           Explore demo deck
