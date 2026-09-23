@@ -53,8 +53,8 @@ module ReleaseConfig
     value.to_s
   end
 
-  def self.profile!(profile, env = ENV)
-    expected = "#{env.fetch('APPLE_TEAM_ID')}.#{SETTINGS.fetch('bundleId')}"
+  def self.profile!(profile, env = ENV, expected_bundle_id = SETTINGS.fetch('bundleId'))
+    expected = "#{env.fetch('APPLE_TEAM_ID')}.#{expected_bundle_id}"
     raise 'Provisioning profile does not match the app/team' unless profile.dig('Entitlements', 'application-identifier') == expected && profile.fetch('TeamIdentifier').include?(env.fetch('APPLE_TEAM_ID'))
     expiry = profile.fetch('ExpirationDate')
     valid_expiry = (expiry.is_a?(Time) || expiry.is_a?(DateTime)) && expiry.to_time > Time.now

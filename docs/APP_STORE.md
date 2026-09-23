@@ -235,19 +235,17 @@ TestFlight, and device evidence remain explicit release gates.
 Apple's `ActivityKit` requires UI to be rendered via an embedded `WidgetKit` extension (`JolitoWidgetExtension.appex`).
 For TestFlight internal distribution and App Store releases, Apple requires every embedded app extension to possess its own distinct App ID and distribution provisioning profile.
 
-### Why TestFlight Build 1 does not display Live Activities
+### Dynamic Island and Live Activities architecture & signing
 
-PR #373 initially introduced the `JolitoWidgetExtension` target and native `LiveActivityPlugin`. However, because the repository only has the parent profile (`to.joli.app`) provisioned, Fastlane's manual code-signing and `ipa` packaging failed on CI during candidate export. PR #391 cleanly reverted PR #373 to unblock the initial TestFlight build upload without leaving dead code or severed targets.
+Apple's `ActivityKit` requires UI to be rendered via an embedded `WidgetKit` extension (`JolitoWidgetExtension.appex`).
+For TestFlight internal distribution and App Store releases, Apple requires every embedded app extension to possess its own distinct App ID and distribution provisioning profile.
 
-### Account holder prerequisite to enable Live Activities
+To maintain our repository invariant of **100% config-as-code & zero manual drift**, Fastlane and `scripts/provision-widget.ts` automatically manage the widget extension profile:
 
-Enabling Live Activities requires the team account holder to register the extension identifier and upload the matching profile:
+1. **Automated API Provisioning:** In CI, when `APP_STORE_CONNECT_API_KEY_KEY` is present, `scripts/provision-widget.ts` connects directly to the App Store Connect REST API (`/v1/bundleIds`, `/v1/certificates`, `/v1/profiles`), ensures `to.joli.app.JolitoWidgetExtension` is registered, resolves the active Apple Distribution certificate, and generates or reuses an active `IOS_APP_STORE` provisioning profile on the fly without any manual portal intervention.
+2. **Optional Override:** If `APPLE_WIDGET_PROVISIONING_PROFILE` is configured in repository secrets, Fastlane prioritizes the provided profile.
 
-1. **Register App ID:** In [Apple Developer Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list), register an explicit App ID for `to.joli.app.JolitoWidgetExtension` with the `Push Notifications` and/or `ActivityKit` capability.
-2. **Generate Distribution Profile:** Under Profiles, create an **App Store Distribution Profile** for `to.joli.app.JolitoWidgetExtension` using the existing Apple Distribution certificate.
-3. **Save Repository Secret:** Base64-encode the downloaded `.mobileprovision` file (`base64 -w 0 JolitoWidgetExtension.mobileprovision`) and add it to GitHub Actions Secrets as `APPLE_WIDGET_PROVISIONING_PROFILE`.
-
-Once the secret is present, the widget extension target can be re-introduced and signed deterministically in CI.
+Both profiles (`to.joli.app` and `to.joli.app.JolitoWidgetExtension`) are installed into the ephemeral build keychain and passed into Xcode `export_options`, packaging a signed release candidate with full Dynamic Island and Lock Screen Live Activity capabilities.
 
 References: [Apple enrollment](https://developer.apple.com/programs/enroll/),
 [paid agreements](https://developer.apple.com/help/app-store-connect/manage-agreements/sign-and-update-agreements/),
