@@ -8,6 +8,7 @@ import {
 export interface QueuedPR {
   number: number
   title: string
+  state?: string
   createdAt: string
   headRefName?: string
   mergeable?: string
@@ -29,6 +30,14 @@ export interface CoordinatorOptions {
   maxWaitMinutes?: number | undefined
   checkIntervalSeconds?: number | undefined
 }
+
+export const REQUIRED_RULESET_CHECKS = [
+  'Quality gates',
+  'Browser smoke tests',
+  'Dependency review',
+  'CodeQL analysis',
+  'Xcode iOS compilation gate',
+]
 
 export function sortPRQueue(prs: QueuedPR[]): QueuedPR[] {
   return [...prs].sort((a, b) => {
@@ -104,7 +113,7 @@ export function fetchQueuedPRs(repoArgs: string[] = []): QueuedPR[] {
         '--state',
         'open',
         '--json',
-        'number,title,createdAt,headRefName,mergeable,mergeStateStatus',
+        'number,title,state,createdAt,headRefName,mergeable,mergeStateStatus',
       ],
       repoArgs,
     )
@@ -130,7 +139,7 @@ export function fetchPRDetails(
           'view',
           String(prNumber),
           '--json',
-          'number,title,createdAt,headRefName,mergeable,mergeStateStatus,labels',
+          'number,title,state,createdAt,headRefName,mergeable,mergeStateStatus,labels',
         ],
         repoArgs,
       )
@@ -217,11 +226,15 @@ export function evaluatePRMergeability(pr: QueuedPR): {
   return { canMerge: true }
 }
 
-export function evaluatePRChecks(checks: PRCheckItem[]): {
+export function evaluatePRChecks(
+  checks: PRCheckItem[],
+  requiredContexts: string[] = REQUIRED_RULESET_CHECKS,
+): {
   allPassing: boolean
   hasFailures: boolean
   pendingCount: number
   failures: PRCheckItem[]
+  missingRequired: string[]
 } {
   // Exclude the coordinator workflow itself to prevent self-deadlock
   const filtered = checks.filter(
@@ -231,22 +244,22 @@ export function evaluatePRChecks(checks: PRCheckItem[]): {
       c.name !== 'Merge Coordinator',
   )
 
-  if (filtered.length === 0) {
-    return {
-      allPassing: false,
-      hasFailures: false,
-      pendingCount: 1,
-      failures: [],
-    }
-  }
+  const observedNames = new Set(filtered.map((c) => c.name))
+  const missingRequired = requiredContexts.filter(
+    (name) => !observedNames.has(name),
+  )
 
   const failures = filtered.filter(
     (c) =>
       c.bucket === 'fail' ||
+      c.bucket === 'cancel' ||
       c.state === 'FAILURE' ||
       c.state === 'ERROR' ||
+      c.state === 'CANCELLED' ||
+      c.state === 'TIMED_OUT' ||
       c.state === 'ACTION_REQUIRED',
   )
+
   const pending = filtered.filter(
     (c) =>
       c.bucket === 'pending' ||
@@ -254,6 +267,7 @@ export function evaluatePRChecks(checks: PRCheckItem[]): {
       c.state === 'QUEUED' ||
       c.state === 'IN_PROGRESS',
   )
+
   const passing = filtered.filter(
     (c) =>
       c.bucket === 'pass' ||
@@ -262,12 +276,19 @@ export function evaluatePRChecks(checks: PRCheckItem[]): {
       c.state === 'NEUTRAL',
   )
 
+  const allPassing =
+    missingRequired.length === 0 &&
+    failures.length === 0 &&
+    pending.length === 0 &&
+    filtered.length > 0 &&
+    passing.length === filtered.length
+
   return {
-    allPassing:
-      failures.length === 0 && pending.length === 0 && passing.length > 0,
+    allPassing,
     hasFailures: failures.length > 0,
-    pendingCount: pending.length,
+    pendingCount: pending.length + missingRequired.length,
     failures,
+    missingRequired,
   }
 }
 
@@ -320,9 +341,7 @@ export function waitForMainlineSettle(
       evaluateMainlineSettlement(runs, targetMainSha)
 
     if (settled) {
-      console.log(
-        `✓ Mainline CI on ${targetMainMainSha(targetMainSha)} is settled.`,
-      )
+      console.log(`✓ Mainline CI on ${targetMainSha.slice(0, 7)} is settled.`)
       return true
     }
 
@@ -343,10 +362,6 @@ export function waitForMainlineSettle(
     `Timed out waiting for mainline CI to settle after ${maxWaitMinutes}m`,
   )
   return false
-}
-
-function targetMainMainSha(sha: string): string {
-  return sha.slice(0, 7)
 }
 
 export function verifyMainHealth(
@@ -469,7 +484,6 @@ export function waitForChecks(
           'pr',
           'checks',
           String(prNumber),
-          '--required',
           '--json',
           'name,state,bucket,workflow',
         ],
@@ -489,9 +503,9 @@ export function waitForChecks(
 
     if (evaluation.hasFailures) {
       const failedNames = evaluation.failures
-        .map((f) => `${f.name} (${f.state})`)
+        .map((f) => `${f.name} (${f.state || f.bucket})`)
         .join(', ')
-      const msg = `Required status check(s) failed on PR #${prNumber}: ${failedNames}`
+      const msg = `Required status check(s) failed or were cancelled on PR #${prNumber}: ${failedNames}`
       console.error(`❌ ${msg}`)
       return { success: false, error: msg }
     }
@@ -501,9 +515,16 @@ export function waitForChecks(
       return { success: true }
     }
 
-    console.log(
-      `PR #${prNumber} has ${evaluation.pendingCount} check(s) in progress/pending. Waiting ${intervalSeconds}s...`,
-    )
+    if (evaluation.missingRequired.length > 0) {
+      console.log(
+        `PR #${prNumber} awaiting registration of required checks (${evaluation.missingRequired.join(', ')}). Waiting ${intervalSeconds}s...`,
+      )
+    } else {
+      console.log(
+        `PR #${prNumber} has ${evaluation.pendingCount} check(s) in progress/pending. Waiting ${intervalSeconds}s...`,
+      )
+    }
+
     execFileSync('sleep', [String(intervalSeconds)])
   }
 
@@ -554,6 +575,13 @@ export function processQueuedPR(
   console.log(`Processing PR #${pr.number}: "${pr.title}"`)
   console.log(`========================================`)
 
+  // Check state early
+  if (pr.state && pr.state !== 'OPEN') {
+    console.warn(`PR #${pr.number} is not open (state: ${pr.state}). Skipping.`)
+    removeReadyLabel(pr.number, repoArgs, dryRun)
+    return false
+  }
+
   // 1. Verify mainline health (including waiting for in-flight main CI)
   const healthy = verifyMainHealth(
     pr,
@@ -571,6 +599,14 @@ export function processQueuedPR(
 
   // 2. Refresh PR details & check mergeability / conflicts
   const freshPr = fetchPRDetails(pr.number, repoArgs, true) ?? pr
+  if (freshPr.state && freshPr.state !== 'OPEN') {
+    console.warn(
+      `PR #${pr.number} is no longer open (state: ${freshPr.state}). Skipping.`,
+    )
+    removeReadyLabel(pr.number, repoArgs, dryRun)
+    return false
+  }
+
   const mergeability = evaluatePRMergeability(freshPr)
   if (!mergeability.canMerge) {
     if (mergeability.message) {
@@ -581,7 +617,7 @@ export function processQueuedPR(
     return false
   }
 
-  // 3. Wait for all required status checks to pass (deadlock-free)
+  // 3. Wait for all required status checks to pass (deadlock-free, gates guaranteed)
   if (!dryRun) {
     const checkResult = waitForChecks(
       pr.number,
@@ -622,15 +658,13 @@ export function coordinate(options: CoordinatorOptions = {}): void {
 
   console.log('Starting Jolito Merge Coordinator...')
 
-  // Fetch all open PRs in the repository to guarantee hotfix mutex fidelity
-  const allOpenPrs = fetchAllOpenPRs(repoArgs)
-
   if (prNumber) {
     const pr = fetchPRDetails(prNumber, repoArgs)
     if (!pr) {
       console.error(`PR #${prNumber} not found. Exiting.`)
       process.exit(1)
     }
+    const allOpenPrs = fetchAllOpenPRs(repoArgs)
     const success = processQueuedPR(pr, allOpenPrs, options)
     if (!success) {
       process.exit(1)
@@ -638,27 +672,27 @@ export function coordinate(options: CoordinatorOptions = {}): void {
     return
   }
 
-  // Drain mode: process all PRs labeled ready-to-merge
-  const queue = fetchQueuedPRs(repoArgs)
-  if (queue.length === 0) {
-    console.log(
-      'No pull requests currently queued with "ready-to-merge" label.',
+  // Drain mode: process all PRs labeled ready-to-merge dynamically
+  while (true) {
+    const queue = fetchQueuedPRs(repoArgs)
+    if (queue.length === 0) {
+      console.log(
+        'No pull requests currently queued with "ready-to-merge" label.',
+      )
+      break
+    }
+
+    console.log(`\nFound ${queue.length} PR(s) in merge queue:`)
+    queue.forEach((p, idx) =>
+      console.log(`  ${idx + 1}. #${p.number}: "${p.title}"`),
     )
-    return
-  }
 
-  console.log(`Found ${queue.length} PR(s) in merge queue:`)
-  queue.forEach((p, idx) =>
-    console.log(`  ${idx + 1}. #${p.number}: "${p.title}"`),
-  )
-
-  for (const pr of queue) {
-    // Refresh all open PRs before each landing to detect new hotfixes
+    const nextPr = queue[0]!
     const currentOpenPrs = fetchAllOpenPRs(repoArgs)
-    const success = processQueuedPR(pr, currentOpenPrs, options)
+    const success = processQueuedPR(nextPr, currentOpenPrs, options)
     if (!success) {
       console.warn(
-        `Stopped draining queue after PR #${pr.number} failed or was skipped.`,
+        `Stopped draining queue after PR #${nextPr.number} failed or was skipped.`,
       )
       break
     }

@@ -5,6 +5,7 @@ import {
   evaluateMainlineSettlement,
   evaluatePRMergeability,
   evaluatePRChecks,
+  REQUIRED_RULESET_CHECKS,
   type QueuedPR,
   type PRCheckItem,
 } from '../../scripts/merge-coordinator.ts'
@@ -136,40 +137,71 @@ void test('evaluatePRMergeability allows clean or mergeable PRs', () => {
   assert.equal(result.message, undefined)
 })
 
-void test('evaluatePRChecks ignores Merge Coordinator workflow runs to prevent self-deadlock', () => {
-  const checks: PRCheckItem[] = [
-    {
-      name: 'Quality gates',
-      state: 'SUCCESS',
-      bucket: 'pass',
-      workflow: 'Quality',
-    },
-    {
-      name: 'Drain merge queue',
-      state: 'IN_PROGRESS',
-      bucket: 'pending',
-      workflow: 'Merge Coordinator',
-    },
-    {
-      name: 'Browser smoke tests',
-      state: 'SUCCESS',
-      bucket: 'pass',
-      workflow: 'Quality',
-    },
-  ]
+void test('evaluatePRChecks requires all ruleset checks and ignores Merge Coordinator', () => {
+  const checks: PRCheckItem[] = REQUIRED_RULESET_CHECKS.map((name) => ({
+    name,
+    state: 'SUCCESS',
+    bucket: 'pass',
+    workflow: 'CI',
+  }))
+
+  // Add the coordinator itself in progress (should be ignored)
+  checks.push({
+    name: 'Drain merge queue',
+    state: 'IN_PROGRESS',
+    bucket: 'pending',
+    workflow: 'Merge Coordinator',
+  })
 
   const result = evaluatePRChecks(checks)
   assert.equal(result.allPassing, true)
   assert.equal(result.hasFailures, false)
+  assert.equal(result.missingRequired.length, 0)
   assert.equal(result.pendingCount, 0)
 })
 
-void test('evaluatePRChecks detects failure when a required check fails', () => {
+void test('evaluatePRChecks prevents premature landing when downstream gate check is not yet registered', () => {
+  // Only 4 of the 5 required checks have finished; Browser smoke tests not registered yet
   const checks: PRCheckItem[] = [
     {
       name: 'Quality gates',
-      state: 'FAILURE',
-      bucket: 'fail',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'Quality',
+    },
+    {
+      name: 'Dependency review',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'Quality',
+    },
+    {
+      name: 'CodeQL analysis',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'CodeQL',
+    },
+    {
+      name: 'Xcode iOS compilation gate',
+      state: 'SUCCESS',
+      bucket: 'pass',
+      workflow: 'iOS Native Build',
+    },
+  ]
+
+  const result = evaluatePRChecks(checks)
+  assert.equal(result.allPassing, false)
+  assert.equal(result.hasFailures, false)
+  assert.deepEqual(result.missingRequired, ['Browser smoke tests'])
+  assert.equal(result.pendingCount, 1)
+})
+
+void test('evaluatePRChecks catches cancelled and timed out checks as failures', () => {
+  const checks: PRCheckItem[] = [
+    {
+      name: 'Quality gates',
+      state: 'CANCELLED',
+      bucket: 'cancel',
       workflow: 'Quality',
     },
     {
@@ -188,7 +220,6 @@ void test('evaluatePRChecks detects failure when a required check fails', () => 
 })
 
 void test('evaluateMainlineSettlement detects when mainline CI runs are missing for new commit', () => {
-  // Commit has just landed, only Quality registered so far
   const runs: WorkflowRun[] = [
     {
       workflowName: 'Quality',
@@ -292,7 +323,6 @@ void test('evaluateMainlineSettlement ignores completed runs from older commits'
     },
   ]
 
-  // If target-new-sha has not yet registered in runs
   const result = evaluateMainlineSettlement(runs, 'target-new-sha')
   assert.equal(result.settled, false)
   assert.deepEqual(result.missingWorkflows, [
