@@ -50,6 +50,7 @@ import type { SyncStatus } from './domain/sync'
 import { mergeStudyCardsSemantic } from './domain/card-merge'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
 import { initializeBrowserServices } from './infrastructure/browser/services'
+import { prewarmSpeechRecognition } from './infrastructure/browser/speech-recognition'
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
 import {
   type View,
@@ -520,6 +521,10 @@ function LoadedApp({
     isSyncOpen ||
     isFeedbackOpen ||
     isPrivacyOpen
+
+  useEffect(() => {
+    prewarmSpeechRecognition('es-MX')
+  }, [])
 
   const {
     audioUnavailable,

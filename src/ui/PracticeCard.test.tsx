@@ -427,4 +427,41 @@ describe('accent keyboard insertion', () => {
       screen.getByRole('button', { name: 'Start voice input' }),
     ).not.toHaveClass('is-listening')
   })
+
+  it('displays visible feedback when voice input fails and clears it on input', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi.fn().mockResolvedValue(false),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    await user.click(micBtn)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Voice input unavailable or permission denied',
+    )
+    expect(alert).toBeVisible()
+
+    // Typing clears the error notice
+    const answerInput = screen.getByPlaceholderText('Type your answer…')
+    await user.type(answerInput, 'h')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Voice input unavailable or permission denied'),
+    ).not.toBeInTheDocument()
+  })
 })

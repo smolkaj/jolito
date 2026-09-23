@@ -104,8 +104,9 @@ export function PracticeCard({
     if (isListening) {
       void recognizer.stop()
       setIsListening(false)
-      setSpeechNotice(null)
     }
+    setSpeechNotice(null)
+    setSpeechError(null)
     setUsedVoiceInput(false)
     const start = element.selectionStart ?? answer.length
     const end = element.selectionEnd ?? start
@@ -121,6 +122,7 @@ export function PracticeCard({
 
   const [isListening, setIsListening] = useState(false)
   const [speechNotice, setSpeechNotice] = useState<string | null>(null)
+  const [speechError, setSpeechError] = useState<string | null>(null)
   const [usedVoiceInput, setUsedVoiceInput] = useState(false)
   const [spokenRecallAvailable, setSpokenRecallAvailable] = useState<boolean>(
     () => cachedSpeechAvailableByLocale.get(answerLang) ?? false,
@@ -147,6 +149,7 @@ export function PracticeCard({
         setIsListening(false)
         setSpeechNotice(null)
       }
+      setSpeechError(null)
     }
   }, [revealed, paused, isListening, recognizer])
 
@@ -162,15 +165,18 @@ export function PracticeCard({
       await recognizer.stop()
       setIsListening(false)
       setSpeechNotice(null)
+      setSpeechError(null)
       haptics?.trigger('selection')
     } else {
       onStopAudio?.()
       haptics?.trigger('selection')
       setSpeechNotice('Listening for your spoken answer…')
+      setSpeechError(null)
       const started = await recognizer.start({
         locale: answerLang,
         onTranscript: (text) => {
           setUsedVoiceInput(true)
+          setSpeechError(null)
           const normalized = normalizeSpokenAnswer(text, card.answer)
           onAnswerChange(normalized)
         },
@@ -182,13 +188,16 @@ export function PracticeCard({
         onError: (err) => {
           setIsListening(false)
           setSpeechNotice('Voice input unavailable or permission denied')
+          setSpeechError('Voice input unavailable or permission denied')
           console.warn('Speech recognition notice:', err)
         },
       })
       if (started) {
         setIsListening(true)
+        setSpeechError(null)
       } else {
         setSpeechNotice('Voice input unavailable or permission denied')
+        setSpeechError('Voice input unavailable or permission denied')
       }
     }
   }
@@ -753,6 +762,7 @@ export function PracticeCard({
                   setIsListening(false)
                   setSpeechNotice(null)
                 }
+                setSpeechError(null)
                 onReveal()
               }}
             >
@@ -769,9 +779,11 @@ export function PracticeCard({
                       isListening ? 'Stop voice input' : 'Start voice input'
                     }
                     title={
-                      isListening
-                        ? 'Listening… (tap or ⌥Space to stop)'
-                        : 'Voice input (⌥Space, on-device)'
+                      speechError
+                        ? speechError
+                        : isListening
+                          ? 'Listening… (tap or ⌥Space to stop)'
+                          : 'Voice input (⌥Space, on-device)'
                     }
                   >
                     <MicIcon size={18} />
@@ -786,8 +798,9 @@ export function PracticeCard({
                     if (isListening) {
                       void recognizer.stop()
                       setIsListening(false)
-                      setSpeechNotice(null)
                     }
+                    setSpeechNotice(null)
+                    setSpeechError(null)
                     setUsedVoiceInput(false)
                     onAnswerChange(event.target.value)
                   }}
@@ -795,8 +808,9 @@ export function PracticeCard({
                     if (isListening) {
                       void recognizer.stop()
                       setIsListening(false)
-                      setSpeechNotice(null)
                     }
+                    setSpeechNotice(null)
+                    setSpeechError(null)
                     if (
                       !accents ||
                       paused ||
@@ -820,6 +834,11 @@ export function PracticeCard({
                   lang={answerLang}
                 />
               </div>
+              {speechError && (
+                <p className="speech-error-notice" role="alert">
+                  {speechError}
+                </p>
+              )}
               <button className="reveal-button" type="submit">
                 Reveal answer <kbd>Enter</kbd>
               </button>

@@ -262,6 +262,7 @@ export function GrammarPractice({
       showAnswerAudio={false}
       onPlayAnswer={() => audio.playAnswerAudio()}
       onPlayPrompt={() => audio.playPromptAudio()}
+      onStopAudio={audio.cancelPendingAudio}
       paused={paused}
       audioUnavailable={audio.audioUnavailable}
       answerLabel="Your conjugation"

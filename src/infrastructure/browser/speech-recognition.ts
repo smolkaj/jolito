@@ -58,7 +58,15 @@ export function normalizeSpokenAnswer(
 
   if (targetAnswer) {
     const trimmedTarget = targetAnswer.trim()
-    if (cleaned.toLowerCase() === trimmedTarget.toLowerCase()) {
+    const stripPunctuation = (str: string) =>
+      str
+        .normalize('NFC')
+        .replace(/[¿¡.,!?;:]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+
+    if (stripPunctuation(cleaned) === stripPunctuation(trimmedTarget)) {
       return trimmedTarget
     }
   }
@@ -179,3 +187,12 @@ export class DefaultSpeechRecognizer implements SpeechRecognizer {
 
 export const defaultSpeechRecognizer: SpeechRecognizer =
   new DefaultSpeechRecognizer()
+
+export function prewarmSpeechRecognition(locale = 'es-MX'): void {
+  if (cachedSpeechAvailableByLocale.has(locale)) return
+  void Promise.resolve(defaultSpeechRecognizer.isSupported(locale)).then(
+    (supported) => {
+      cachedSpeechAvailableByLocale.set(locale, supported)
+    },
+  )
+}

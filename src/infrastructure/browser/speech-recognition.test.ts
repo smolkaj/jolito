@@ -14,10 +14,17 @@ describe('normalizeSpokenAnswer', () => {
     expect(normalizeSpokenAnswer('  por favor...  ')).toBe('por favor')
   })
 
-  it('aligns casing with target answer when characters match', () => {
+  it('aligns casing and target punctuation when characters match', () => {
     expect(normalizeSpokenAnswer('Hablé.', 'hablé')).toBe('hablé')
     expect(normalizeSpokenAnswer('EL GATO', 'el gato')).toBe('el gato')
     expect(normalizeSpokenAnswer('adiós', 'Adiós')).toBe('Adiós')
+    expect(normalizeSpokenAnswer('dónde está', '¿Dónde está?')).toBe(
+      '¿Dónde está?',
+    )
+    expect(normalizeSpokenAnswer('¡genial!', '¡Genial!')).toBe('¡Genial!')
+    expect(normalizeSpokenAnswer('sí por favor', 'Sí, por favor.')).toBe(
+      'Sí, por favor.',
+    )
   })
 
   it('preserves accents and handles empty input gracefully', () => {

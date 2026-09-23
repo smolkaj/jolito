@@ -2536,6 +2536,14 @@ summary:focus-visible,
   }
 }
 
+.speech-error-notice {
+  margin: 6px 0 0;
+  color: var(--tezontle-dark);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .reveal-button {
   position: absolute;
   right: 8px;

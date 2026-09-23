@@ -60,9 +60,10 @@ export function useStudyAudio({
   const cancelPendingAudio = useCallback(() => {
     clearPendingTimer()
     playGenerationRef.current++
+    speaker.stop?.()
     setActiveTarget(null)
     setIsAudioPlaying(false)
-  }, [clearPendingTimer])
+  }, [clearPendingTimer, speaker])
 
   const playAudio = useCallback(
     (
