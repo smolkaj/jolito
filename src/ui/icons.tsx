@@ -154,13 +154,28 @@ export function CloudCheckIcon({
 export function CloudCheckSticker({
   size = 60,
   className = '',
+  status = 'synced',
 }: {
   size?: number
   className?: string
+  status?: 'synced' | 'syncing' | 'error' | 'offline' | 'idle'
 }) {
+  const bodyFill =
+    status === 'error'
+      ? 'var(--tezontle, #d32f2f)'
+      : status === 'offline'
+        ? 'var(--cempasuchil-dark, #b45309)'
+        : 'var(--turquesa-deep, #2d5a43)'
+  const highlightStroke =
+    status === 'error'
+      ? '#f87171'
+      : status === 'offline'
+        ? 'var(--cempasuchil, #f59e0b)'
+        : 'var(--turquesa-border, #9ec2ad)'
+
   return (
     <svg
-      className={`cloud-check-sticker ${className}`.trim()}
+      className={`cloud-check-sticker status-${status} ${className}`.trim()}
       viewBox="0 0 64 48"
       width={size}
       height={(size * 48) / 64}
@@ -172,28 +187,89 @@ export function CloudCheckSticker({
         fill="rgba(18, 24, 21, 0.08)"
         transform="translate(2, 3)"
       />
-      {/* Cloud sticker body - Vibrant Oaxacan Turquesa */}
+      {/* Cloud sticker body */}
       <path
         d="M51.5 21C49.8 12.6 42.4 6.5 33.5 6.5c-7 0-13.1 3.9-16.1 9.8C7.6 17 2 23.2 2 30.7 2 38.6 8.5 45 16.5 45h35c6.6 0 12-5.4 12-12 0-6.3-4.9-11.4-11.2-11.9z"
-        fill="#2a7a63"
+        fill={bodyFill}
       />
       {/* Subtle organic upper highlight */}
       <path
         d="M33.5 8.5c6.2 0 11.6 3.8 13.8 9.5"
         fill="none"
-        stroke="#5ab69c"
+        stroke={highlightStroke}
         strokeWidth="2.5"
         strokeLinecap="round"
       />
-      {/* Bold Crisp White Checkmark */}
-      <path
-        d="M22 28.5l7.5 7.5 15-15"
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Inner emblem based on status */}
+      {status === 'syncing' ? (
+        <g
+          className="sticker-spinner is-spinning"
+          style={{ transformOrigin: '33px 29px' }}
+        >
+          <g transform="translate(33 29) scale(0.85) translate(-12 -12)">
+            <path
+              d="M21 12a9 9 0 0 0-15.5-6.36L3 8"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M3 3v5h5"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M3 12a9 9 0 0 0 15.5 6.36L21 16"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M21 21v-5h-5"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        </g>
+      ) : status === 'error' ? (
+        <g>
+          <path
+            d="M33.5 20v9"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+          />
+          <circle cx="33.5" cy="35" r="2" fill="#ffffff" />
+        </g>
+      ) : status === 'offline' ? (
+        <path
+          d="M21 19L45 39"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+        />
+      ) : (
+        <path
+          d="M22 28.5l7.5 7.5 15-15"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="4.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
     </svg>
   )
 }

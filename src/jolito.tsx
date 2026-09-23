@@ -1281,6 +1281,8 @@ function LoadedApp({
         onOpenPrivacy={openPrivacyModal}
         onOpenFeedback={openFeedbackModal}
         haptics={services.haptics}
+        syncStatus={syncStatus}
+        isOnline={isOnline}
       />
       <EditCardModal
         saveError={saveError}

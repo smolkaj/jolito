@@ -48,7 +48,7 @@ it('serializes automatic and manual sync while confirming an in-flight rating an
   await user.keyboard('{Enter}4')
   await user.type(screen.getByRole('textbox'), 'unfinished next answer')
   await user.click(screen.getByRole('button', { name: /synchronizing deck/i }))
-  await user.click(screen.getByRole('button', { name: /sync now/i }))
+  expect(screen.getByRole('button', { name: /syncing…/i })).toBeDisabled()
   await act(async () => {
     fireEvent(window, new Event('focus'))
     fireEvent(document, new Event('visibilitychange'))
@@ -59,8 +59,11 @@ it('serializes automatic and manual sync while confirming an in-flight rating an
     release({ success: true, cards, deletedCardIds: [] })
     await Promise.resolve()
   })
-  await screen.findByText('Synced!')
+  const syncNowBtn = await screen.findByRole('button', { name: /sync now/i })
   expect(sync).toHaveBeenCalledTimes(3)
+  await user.click(syncNowBtn)
+  await screen.findByText('Synced!')
+  expect(sync).toHaveBeenCalledTimes(4)
   expect(
     services.mockSync.decks
       .get(owner.id)
