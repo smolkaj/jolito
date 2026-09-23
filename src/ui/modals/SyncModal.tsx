@@ -291,7 +291,7 @@ export function SyncModal({
         } else {
           const backupClock = clock ?? { now: () => Date.now() }
           const backup = createDeckBackup(cards, backupClock)
-          downloadJsonFile(backup.filename, backup.json)
+          void downloadJsonFile(backup.filename, backup.json)
         }
       }
       const authRes = await onDeleteAccount()

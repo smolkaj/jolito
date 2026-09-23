@@ -89,6 +89,26 @@ void test('SceneDelegate registers AppReviewPlugin with StoreKit for native revi
   assert.match(appReviewPlugin, /SKStoreReviewController\.requestReview/)
 })
 
+void test('SceneDelegate registers ShareFilePlugin with UIActivityViewController for native file sharing', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const sharePlugin = readFileSync(
+    new URL('../../ios/App/App/ShareFilePlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(ShareFilePlugin\(\)\)/,
+  )
+  assert.match(sharePlugin, /import UIKit/)
+  assert.match(sharePlugin, /@objc\(ShareFilePlugin\)/)
+  assert.match(sharePlugin, /UIActivityViewController/)
+  assert.match(sharePlugin, /popoverPresentationController/)
+})
+
 void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {
   const config = readFileSync(
     new URL('../../capacitor.config.ts', import.meta.url),

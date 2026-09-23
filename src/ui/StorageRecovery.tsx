@@ -25,7 +25,7 @@ export function StorageRecovery({
               className="primary-button"
               onClick={() => {
                 try {
-                  downloadJsonFile('jolito-recovery.json', recovery.raw!)
+                  void downloadJsonFile('jolito-recovery.json', recovery.raw!)
                   setDownloadError(false)
                 } catch {
                   setDownloadError(true)

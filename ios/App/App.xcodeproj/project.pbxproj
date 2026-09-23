@@ -16,6 +16,7 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */; };
+		1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewPlugin.swift; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareFilePlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +75,7 @@
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
 				D79A203F5C6F46D19F8B5700 /* AppReviewPlugin.swift */,
+				D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -160,6 +163,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC700 /* AppReviewPlugin.swift in Sources */,
+				1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

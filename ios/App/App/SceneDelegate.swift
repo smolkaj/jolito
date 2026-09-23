@@ -7,6 +7,7 @@ class MainViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         bridge?.registerPluginInstance(AppReviewPlugin())
+        bridge?.registerPluginInstance(ShareFilePlugin())
     }
 }
 

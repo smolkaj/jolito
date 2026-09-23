@@ -80,7 +80,7 @@ function DeckBackupModalInner({
 
   const handleExport = () => {
     const backup = createDeckBackup(cards, clock)
-    downloadJsonFile(backup.filename, backup.json)
+    void downloadJsonFile(backup.filename, backup.json)
     setIsExported(true)
     if (exportedTimerRef.current !== null) {
       window.clearTimeout(exportedTimerRef.current)
