@@ -80,7 +80,14 @@ export function SyncModal({
     'synced' | 'resent' | 'pasted' | null
   >(null)
   const [loadingAction, setLoadingAction] = useState<
-    'send' | 'verify' | 'sync' | 'signout' | 'delete' | 'delete-backup' | 'apple' | null
+    | 'send'
+    | 'verify'
+    | 'sync'
+    | 'signout'
+    | 'delete'
+    | 'delete-backup'
+    | 'apple'
+    | null
   >(null)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
