@@ -196,7 +196,11 @@ standard email verification codes apply.
    submitting the tested build, and requests automatic release after Apple approval.
    The lane cannot rebuild or fall back to “latest.” Any build change requires new
    device validation.
-7. Address review findings, then verify the public listing, US$2.99 purchase
+7. Check review status anytime via **App Store Production Deployment → status**
+   (or locally with credentials: `node scripts/app-store.ts --status`), which queries
+   the App Store Connect API and prints the active version strings, build numbers, and
+   review lifecycle states (`WAITING_FOR_REVIEW`, `IN_REVIEW`, `READY_FOR_SALE`).
+8. Address review findings, then verify the public listing, US$2.99 purchase
    price, territory availability, and a production installation. Report the
    live App Store URL. An upload or submission alone is not completion.
 

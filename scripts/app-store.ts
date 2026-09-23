@@ -257,6 +257,75 @@ export async function configureStore(api: AppleApi, apply: boolean) {
   )
 }
 
+export interface AppStoreVersionSummary {
+  versionString: string
+  state: string
+  buildNumber?: string | undefined
+}
+
+export interface AppStoreStatus {
+  appId: string
+  bundleId: string
+  name?: string | undefined
+  versions: AppStoreVersionSummary[]
+}
+
+export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
+  const apps = await api.list(
+    `/v1/apps?filter[bundleId]=${settings.bundleId}&fields[apps]=bundleId,name`,
+  )
+  if (apps.length !== 1)
+    throw new Error('Create the Jolito app record in App Store Connect first')
+  const app = apps[0]!
+  const name =
+    typeof app.attributes.name === 'string' ? app.attributes.name : undefined
+
+  const response = await api.call(
+    `/v1/apps/${app.id}/appStoreVersions?include=build&limit=10`,
+  )
+  const versionsData = z.array(resourceSchema).parse(response.data)
+  const versions: AppStoreVersionSummary[] = versionsData.map((v) => {
+    const versionString =
+      typeof v.attributes.versionString === 'string'
+        ? v.attributes.versionString
+        : ''
+    const state =
+      typeof v.attributes.appStoreState === 'string'
+        ? v.attributes.appStoreState
+        : 'UNKNOWN'
+    const buildRel = idSchema.safeParse(v.relationships.build?.data)
+    const buildResource = buildRel.success
+      ? response.included.find(
+          (r) => r.type === 'builds' && r.id === buildRel.data.id,
+        )
+      : undefined
+    const buildNumber =
+      buildResource && typeof buildResource.attributes.version === 'string'
+        ? buildResource.attributes.version
+        : undefined
+    return { versionString, state, buildNumber }
+  })
+
+  console.log(
+    `App: ${name ?? settings.bundleId} (${settings.bundleId}, ID: ${app.id})`,
+  )
+  if (versions.length === 0) {
+    console.log('No App Store versions found.')
+  } else {
+    for (const v of versions) {
+      const buildInfo = v.buildNumber ? ` (Build ${v.buildNumber})` : ''
+      console.log(`Version ${v.versionString}${buildInfo}: ${v.state}`)
+    }
+  }
+
+  return {
+    appId: app.id,
+    bundleId: settings.bundleId,
+    name,
+    versions,
+  }
+}
+
 function token() {
   const env = z
     .object({
@@ -294,9 +363,17 @@ function token() {
 
 if (import.meta.main) {
   try {
-    if (!['--apply', '--check'].includes(process.argv[2] ?? ''))
-      throw new Error('Usage: node scripts/app-store.ts --check|--apply')
-    await configureStore(new AppleApi(token()), process.argv[2] === '--apply')
+    const command = process.argv[2] ?? ''
+    if (!['--apply', '--check', '--status'].includes(command))
+      throw new Error(
+        'Usage: node scripts/app-store.ts --check|--apply|--status',
+      )
+    const api = new AppleApi(token())
+    if (command === '--status') {
+      await checkStatus(api)
+    } else {
+      await configureStore(api, command === '--apply')
+    }
   } catch (error) {
     console.error(
       error instanceof Error ? error.message : 'App Store configuration failed',
