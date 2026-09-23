@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStudyCards, type Grade } from '../domain/card'
 import { createGrammarCards } from '../domain/grammar'
+import { cachedSpeechAvailableByLocale } from '../infrastructure/browser/speech-recognition'
 import { PracticeCard } from './PracticeCard'
 
 function props() {
@@ -23,6 +24,10 @@ function props() {
 }
 
 describe('shared practice interaction lifecycle', () => {
+  beforeEach(() => {
+    cachedSpeechAvailableByLocale.clear()
+  })
+
   it('pauses shortcuts, resumes with current actions, and stays inert after teardown', () => {
     const initial = props()
     const app = render(<PracticeCard {...initial} />)
@@ -387,5 +392,39 @@ describe('accent keyboard insertion', () => {
       />,
     )
     expect(mockRecognizer.stop).toHaveBeenCalled()
+  })
+
+  it('stops active listening when user types into the answer input', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi.fn().mockResolvedValue(true),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    await user.click(micBtn)
+    expect(
+      screen.getByRole('button', { name: 'Stop voice input' }),
+    ).toHaveClass('is-listening')
+
+    // Typing into the input field immediately stops speech recognition
+    const answerInput = screen.getByPlaceholderText('Type your answer…')
+    await user.type(answerInput, 'a')
+    expect(mockRecognizer.stop).toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Start voice input' }),
+    ).not.toHaveClass('is-listening')
   })
 })

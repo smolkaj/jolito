@@ -2487,6 +2487,12 @@ summary:focus-visible,
   z-index: 2;
 }
 
+.speech-recall-btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
 .speech-recall-btn:hover {
   color: var(--ink);
   background: var(--turquesa-soft);
@@ -2495,7 +2501,7 @@ summary:focus-visible,
 }
 
 .speech-recall-btn:focus-visible {
-  outline: 2px solid var(--turquesa);
+  outline: 2px solid var(--turquesa-dark);
   outline-offset: 2px;
 }
 
@@ -2506,19 +2512,19 @@ summary:focus-visible,
 
 .speech-recall-btn.is-listening {
   color: #ffffff;
-  background: var(--turquesa);
-  border-color: var(--turquesa-dark);
+  background: var(--turquesa-dark);
+  border-color: var(--turquesa-deep);
   animation: speech-recall-pulse 1.2s ease-in-out infinite alternate;
 }
 
 @keyframes speech-recall-pulse {
   0% {
     transform: translateY(-50%) scale(1);
-    box-shadow: 0 0 0 0 rgba(10, 147, 150, 0.4);
+    box-shadow: 0 0 0 0 var(--turquesa-glow);
   }
   100% {
     transform: translateY(-50%) scale(1.06);
-    box-shadow: 0 0 8px 2px rgba(10, 147, 150, 0.5);
+    box-shadow: 0 0 8px 2px var(--turquesa-glow);
   }
 }
 

@@ -111,6 +111,10 @@ public class SpeechRecognitionPlugin: CAPPlugin, CAPBridgedPlugin, SFSpeechRecog
 
             let node = self.audioEngine.inputNode
             let recordingFormat = node.outputFormat(forBus: 0)
+            guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
+                call.reject("Invalid audio recording format")
+                return
+            }
 
             self.recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
                 DispatchQueue.main.async {

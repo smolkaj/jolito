@@ -66,6 +66,8 @@ export function normalizeSpokenAnswer(
   return cleaned
 }
 
+export const cachedSpeechAvailableByLocale = new Map<string, boolean>()
+
 export class DefaultSpeechRecognizer implements SpeechRecognizer {
   private active = false
   private plugin: SpeechRecognitionPluginInterface
@@ -144,69 +146,7 @@ export class DefaultSpeechRecognizer implements SpeechRecognizer {
       }
     }
 
-    if (typeof window !== 'undefined') {
-      const SpeechRecognitionCtor =
-        (
-          window as unknown as {
-            SpeechRecognition?: new () => BrowserSpeechRecognition
-          }
-        ).SpeechRecognition ??
-        (
-          window as unknown as {
-            webkitSpeechRecognition?: new () => BrowserSpeechRecognition
-          }
-        ).webkitSpeechRecognition
-
-      if (SpeechRecognitionCtor) {
-        try {
-          const recognition = new SpeechRecognitionCtor()
-          recognition.lang = options.locale
-          recognition.continuous = true
-          recognition.interimResults = true
-
-          recognition.onresult = (event) => {
-            let fullTranscript = ''
-            let hasFinal = false
-            for (let i = 0; i < event.results.length; ++i) {
-              const res = event.results[i]
-              if (res?.[0]) {
-                fullTranscript += res[0].transcript
-                if (res.isFinal) {
-                  hasFinal = true
-                }
-              }
-            }
-            if (fullTranscript) {
-              options.onTranscript(fullTranscript, hasFinal)
-            }
-          }
-
-          recognition.onerror = (event) => {
-            options.onError?.(event.error)
-          }
-
-          recognition.onend = () => {
-            this.active = false
-            options.onEnd?.()
-          }
-
-          recognition.start()
-          this.active = true
-          this.cleanupListeners.push(() => {
-            try {
-              recognition.stop()
-            } catch {
-              // Ignore stop errors
-            }
-          })
-          return true
-        } catch (err) {
-          options.onError?.(err instanceof Error ? err.message : String(err))
-          return false
-        }
-      }
-    }
-
+    options.onError?.('Speech recognition is only supported on native iOS')
     return false
   }
 
@@ -237,26 +177,5 @@ export class DefaultSpeechRecognizer implements SpeechRecognizer {
   }
 }
 
-interface BrowserSpeechRecognitionResult {
-  isFinal: boolean
-  [index: number]: { transcript: string }
-}
-
-interface BrowserSpeechRecognitionEvent {
-  resultIndex: number
-  results: {
-    length: number
-    [index: number]: BrowserSpeechRecognitionResult
-  }
-}
-
-interface BrowserSpeechRecognition {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null
-  onerror: ((event: { error: string }) => void) | null
-  onend: (() => void) | null
-  start(): void
-  stop(): void
-}
+export const defaultSpeechRecognizer: SpeechRecognizer =
+  new DefaultSpeechRecognizer()
