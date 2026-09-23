@@ -2454,6 +2454,96 @@ summary:focus-visible,
   background: var(--paper-subtle);
 }
 
+.answer-input-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.answer-input.has-speech {
+  padding-left: 54px;
+}
+
+.speech-recall-btn {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 120ms var(--ease-spring);
+  box-shadow: 1px 1px 0 var(--ink);
+  z-index: 2;
+}
+
+.speech-recall-btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+
+.speech-recall-btn:hover {
+  color: var(--ink);
+  background: var(--turquesa-soft);
+  transform: translateY(calc(-50% - 1px));
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.speech-recall-btn:focus-visible {
+  outline: 2px solid var(--turquesa-dark);
+  outline-offset: 2px;
+}
+
+.speech-recall-btn:active {
+  transform: translateY(calc(-50% + 1px));
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.speech-recall-btn.is-listening {
+  color: #ffffff;
+  background: var(--turquesa-dark);
+  border-color: var(--turquesa-deep);
+  animation: speech-recall-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes speech-recall-pulse {
+  0% {
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 0 0 0 var(--turquesa-glow);
+  }
+  100% {
+    transform: translateY(-50%) scale(1.06);
+    box-shadow: 0 0 8px 2px var(--turquesa-glow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speech-recall-btn.is-listening {
+    animation: none;
+    transform: translateY(-50%);
+    box-shadow: 0 0 0 2px var(--turquesa-dark);
+  }
+}
+
+.speech-error-notice {
+  margin: 6px 0 0;
+  color: var(--tezontle-dark);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .reveal-button {
   position: absolute;
   right: 8px;
@@ -3305,6 +3395,11 @@ kbd {
   .answer-input {
     padding-right: 18px;
     font-size: 18px;
+  }
+
+  .answer-input.has-speech {
+    padding-left: 54px;
+    padding-right: 54px;
   }
 
   .reveal-button {

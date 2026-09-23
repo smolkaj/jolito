@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStudyCards, type Grade } from '../domain/card'
 import { createGrammarCards } from '../domain/grammar'
+import { cachedSpeechAvailableByLocale } from '../infrastructure/browser/speech-recognition'
 import { PracticeCard } from './PracticeCard'
 
 function props() {
@@ -23,6 +24,10 @@ function props() {
 }
 
 describe('shared practice interaction lifecycle', () => {
+  beforeEach(() => {
+    cachedSpeechAvailableByLocale.clear()
+  })
+
   it('pauses shortcuts, resumes with current actions, and stays inert after teardown', () => {
     const initial = props()
     const app = render(<PracticeCard {...initial} />)
@@ -319,6 +324,144 @@ describe('accent keyboard insertion', () => {
     rerender(<PracticeCard {...initial} error={null} onFeedback={onFeedback} />)
     expect(
       screen.queryByRole('button', { name: 'Report issue' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('supports spoken recall, streams transcription to answer, and cleans up on reveal', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const callbacks: {
+      transcript: ((text: string, isFinal: boolean) => void) | null
+    } = {
+      transcript: null,
+    }
+
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi
+        .fn()
+        .mockImplementation(
+          (opts: {
+            locale: string
+            onTranscript: (t: string, isFinal: boolean) => void
+          }) => {
+            callbacks.transcript = opts.onTranscript
+            return Promise.resolve(true)
+          },
+        ),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    const onStopAudio = vi.fn()
+    const { rerender } = render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+        onStopAudio={onStopAudio}
+      />,
+    )
+
+    // Wait for support check
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    expect(micBtn).toBeInTheDocument()
+
+    // Tap mic button to start listening
+    await user.click(micBtn)
+    expect(onStopAudio).toHaveBeenCalledTimes(1)
+    expect(mockRecognizer.start).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: 'es-MX' }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Stop voice input' }),
+    ).toHaveClass('is-listening')
+
+    // Stream spoken transcript with speech-engine inserted trailing period
+    callbacks.transcript?.('hablamos.', false)
+    expect(initial.onAnswerChange).toHaveBeenCalledWith('hablamos')
+
+    // Revealing the answer automatically stops speech recognition
+    rerender(
+      <PracticeCard
+        {...initial}
+        revealed={true}
+        speechRecognizer={mockRecognizer}
+        onStopAudio={onStopAudio}
+      />,
+    )
+    expect(mockRecognizer.stop).toHaveBeenCalled()
+  })
+
+  it('stops active listening when user types into the answer input', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi.fn().mockResolvedValue(true),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    await user.click(micBtn)
+    expect(
+      screen.getByRole('button', { name: 'Stop voice input' }),
+    ).toHaveClass('is-listening')
+
+    // Typing into the input field immediately stops speech recognition
+    const answerInput = screen.getByPlaceholderText('Type your answer…')
+    await user.type(answerInput, 'a')
+    expect(mockRecognizer.stop).toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Start voice input' }),
+    ).not.toHaveClass('is-listening')
+  })
+
+  it('displays visible feedback when voice input fails and clears it on input', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi.fn().mockResolvedValue(false),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    await user.click(micBtn)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Voice input unavailable or permission denied',
+    )
+    expect(alert).toBeVisible()
+
+    // Typing clears the error notice
+    const answerInput = screen.getByPlaceholderText('Type your answer…')
+    await user.type(answerInput, 'h')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Voice input unavailable or permission denied'),
     ).not.toBeInTheDocument()
   })
 })

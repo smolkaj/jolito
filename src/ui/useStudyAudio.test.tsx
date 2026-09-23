@@ -647,6 +647,7 @@ describe('useStudyAudio', () => {
 
     expect(result.current.isPlayingPrompt).toBe(false)
     expect(result.current.isAudioPlaying).toBe(false)
+    expect(stopMock).toHaveBeenCalled()
   })
 
   it('guards against race conditions when rapid audio requests overlap', () => {
