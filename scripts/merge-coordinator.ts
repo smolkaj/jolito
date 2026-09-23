@@ -31,6 +31,11 @@ export interface CoordinatorOptions {
   checkIntervalSeconds?: number | undefined
 }
 
+export type ProcessPRResult =
+  | { outcome: 'merged' }
+  | { outcome: 'disqualified'; reason: string }
+  | { outcome: 'mainline_halt'; reason: string }
+
 export const REQUIRED_RULESET_CHECKS = [
   'Quality gates',
   'Browser smoke tests',
@@ -69,7 +74,13 @@ export function runGh(
   options: { timeout?: number } = {},
 ): string {
   const fullArgs = [...args]
-  if (repoArgs.length > 0 && !args.includes('--repo') && !args.includes('-R')) {
+  // gh api does not accept --repo / -R flags; repository is already encoded in the endpoint URI
+  if (
+    repoArgs.length > 0 &&
+    args[0] !== 'api' &&
+    !args.includes('--repo') &&
+    !args.includes('-R')
+  ) {
     fullArgs.push(...repoArgs)
   }
   return execFileSync('gh', fullArgs, {
@@ -112,6 +123,8 @@ export function fetchQueuedPRs(repoArgs: string[] = []): QueuedPR[] {
         'ready-to-merge',
         '--state',
         'open',
+        '--limit',
+        '100',
         '--json',
         'number,title,state,createdAt,headRefName,mergeable,mergeStateStatus',
       ],
@@ -300,9 +313,9 @@ export function waitForMainlineSettle(
   const targetMainSha = fetchMainHeadSha(repoArgs)
   if (!targetMainSha) {
     console.warn(
-      'Could not resolve current origin/main SHA. Proceeding with caution.',
+      'Could not resolve current origin/main SHA. Halting mainline settlement.',
     )
-    return true
+    return false
   }
 
   console.log(
@@ -563,7 +576,7 @@ export function processQueuedPR(
   pr: QueuedPR,
   allOpenPrs: OpenPullRequest[],
   options: CoordinatorOptions = {},
-): boolean {
+): ProcessPRResult {
   const {
     dryRun = false,
     repoArgs = [],
@@ -577,9 +590,10 @@ export function processQueuedPR(
 
   // Check state early
   if (pr.state && pr.state !== 'OPEN') {
-    console.warn(`PR #${pr.number} is not open (state: ${pr.state}). Skipping.`)
+    const reason = `PR #${pr.number} is not open (state: ${pr.state})`
+    console.warn(`${reason}. Skipping.`)
     removeReadyLabel(pr.number, repoArgs, dryRun)
-    return false
+    return { outcome: 'disqualified', reason }
   }
 
   // 1. Verify mainline health (including waiting for in-flight main CI)
@@ -591,30 +605,29 @@ export function processQueuedPR(
     checkIntervalSeconds,
   )
   if (!healthy) {
-    console.error(
-      `Halting merge coordinator: mainline is currently failing or in-flight runs timed out. Awaiting fix-main hotfix.`,
-    )
-    return false
+    const reason = `Mainline is currently failing or in-flight runs timed out. Awaiting fix-main hotfix.`
+    console.error(`Halting merge coordinator: ${reason}`)
+    return { outcome: 'mainline_halt', reason }
   }
 
   // 2. Refresh PR details & check mergeability / conflicts
   const freshPr = fetchPRDetails(pr.number, repoArgs, true) ?? pr
   if (freshPr.state && freshPr.state !== 'OPEN') {
-    console.warn(
-      `PR #${pr.number} is no longer open (state: ${freshPr.state}). Skipping.`,
-    )
+    const reason = `PR #${pr.number} is no longer open (state: ${freshPr.state})`
+    console.warn(`${reason}. Skipping.`)
     removeReadyLabel(pr.number, repoArgs, dryRun)
-    return false
+    return { outcome: 'disqualified', reason }
   }
 
   const mergeability = evaluatePRMergeability(freshPr)
   if (!mergeability.canMerge) {
+    const reason = `PR #${pr.number} has git merge conflicts with main`
     if (mergeability.message) {
       console.error(mergeability.message)
       removeReadyLabel(pr.number, repoArgs, dryRun)
       postPRComment(pr.number, mergeability.message, repoArgs, dryRun)
     }
-    return false
+    return { outcome: 'disqualified', reason }
   }
 
   // 3. Wait for all required status checks to pass (deadlock-free, gates guaranteed)
@@ -626,31 +639,33 @@ export function processQueuedPR(
       maxWaitMinutes,
     )
     if (!checkResult.success) {
+      const reason = `Required checks failed or timed out: ${checkResult.error || 'Checks failed'}`
       const msg =
         `❌ **Merge Coordinator**: Required checks failed or timed out for PR #${pr.number}.\n\n` +
         `Error output:\n\`\`\`\n${checkResult.error || 'Checks failed'}\n\`\`\`\n\n` +
         `Removed \`ready-to-merge\` label. Please fix failures and re-enqueue once green.`
       removeReadyLabel(pr.number, repoArgs, dryRun)
       postPRComment(pr.number, msg, repoArgs, dryRun)
-      return false
+      return { outcome: 'disqualified', reason }
     }
   }
 
   // 4. Squash merge PR into main
   const mergeResult = squashMergePR(pr.number, repoArgs, dryRun)
   if (!mergeResult.success) {
+    const reason = `Failed to squash-merge PR into main: ${mergeResult.error || 'Unknown error'}`
     const msg =
       `❌ **Merge Coordinator**: Failed to squash-merge PR #${pr.number} into \`main\`.\n\n` +
       `Error details:\n\`\`\`\n${mergeResult.error || 'Unknown error'}\n\`\`\`\n\n` +
       `Removed \`ready-to-merge\` label.`
     removeReadyLabel(pr.number, repoArgs, dryRun)
     postPRComment(pr.number, msg, repoArgs, dryRun)
-    return false
+    return { outcome: 'disqualified', reason }
   }
 
   // 5. Clean up label
   removeReadyLabel(pr.number, repoArgs, dryRun)
-  return true
+  return { outcome: 'merged' }
 }
 
 export function coordinate(options: CoordinatorOptions = {}): void {
@@ -665,8 +680,8 @@ export function coordinate(options: CoordinatorOptions = {}): void {
       process.exit(1)
     }
     const allOpenPrs = fetchAllOpenPRs(repoArgs)
-    const success = processQueuedPR(pr, allOpenPrs, options)
-    if (!success) {
+    const result = processQueuedPR(pr, allOpenPrs, options)
+    if (result.outcome !== 'merged') {
       process.exit(1)
     }
     return
@@ -689,13 +704,23 @@ export function coordinate(options: CoordinatorOptions = {}): void {
 
     const nextPr = queue[0]!
     const currentOpenPrs = fetchAllOpenPRs(repoArgs)
-    const success = processQueuedPR(nextPr, currentOpenPrs, options)
-    if (!success) {
-      console.warn(
-        `Stopped draining queue after PR #${nextPr.number} failed or was skipped.`,
-      )
+    const result = processQueuedPR(nextPr, currentOpenPrs, options)
+
+    if (result.outcome === 'mainline_halt') {
+      console.error(`Halting merge coordinator: ${result.reason}`)
       break
     }
+
+    if (result.outcome === 'disqualified') {
+      console.warn(
+        `Disqualified PR #${nextPr.number}: ${result.reason}. Continuing queue drain...`,
+      )
+      continue
+    }
+
+    console.log(
+      `Successfully processed PR #${nextPr.number}. Continuing queue drain...`,
+    )
   }
 
   console.log('\nMerge Coordinator queue processing finished.')

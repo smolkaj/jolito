@@ -6,6 +6,7 @@ import {
   evaluatePRMergeability,
   evaluatePRChecks,
   REQUIRED_RULESET_CHECKS,
+  getRepoName,
   type QueuedPR,
   type PRCheckItem,
 } from '../../scripts/merge-coordinator.ts'
@@ -330,4 +331,10 @@ void test('evaluateMainlineSettlement ignores completed runs from older commits'
     'iOS Native Build',
     'CodeQL',
   ])
+})
+
+void test('getRepoName resolves repository name from CLI arguments or environment', () => {
+  assert.equal(getRepoName(['--repo', 'custom/repo']), 'custom/repo')
+  assert.equal(getRepoName(['-R', 'another/repo']), 'another/repo')
+  assert.equal(getRepoName([]), process.env.GH_REPO || 'smolkaj/jolito')
 })
