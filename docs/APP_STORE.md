@@ -225,6 +225,25 @@ surviving interruption and voice listeners surviving destruction: repeated
 round trips and teardown immobility now guard that entire class. Real signing,
 TestFlight, and device evidence remain explicit release gates.
 
+## Dynamic Island and Live Activities (ActivityKit)
+
+Apple's `ActivityKit` requires UI to be rendered via an embedded `WidgetKit` extension (`JolitoWidgetExtension.appex`).
+For TestFlight internal distribution and App Store releases, Apple requires every embedded app extension to possess its own distinct App ID and distribution provisioning profile.
+
+### Why TestFlight Build 1 does not display Live Activities
+
+PR #373 initially introduced the `JolitoWidgetExtension` target and native `LiveActivityPlugin`. However, because the repository only has the parent profile (`to.joli.app`) provisioned, Fastlane's manual code-signing and `ipa` packaging failed on CI during candidate export. PR #391 cleanly reverted PR #373 to unblock the initial TestFlight build upload without leaving dead code or severed targets.
+
+### Account holder prerequisite to enable Live Activities
+
+Enabling Live Activities requires the team account holder to register the extension identifier and upload the matching profile:
+
+1. **Register App ID:** In [Apple Developer Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list), register an explicit App ID for `to.joli.app.JolitoWidgetExtension` with the `Push Notifications` and/or `ActivityKit` capability.
+2. **Generate Distribution Profile:** Under Profiles, create an **App Store Distribution Profile** for `to.joli.app.JolitoWidgetExtension` using the existing Apple Distribution certificate.
+3. **Save Repository Secret:** Base64-encode the downloaded `.mobileprovision` file (`base64 -w 0 JolitoWidgetExtension.mobileprovision`) and add it to GitHub Actions Secrets as `APPLE_WIDGET_PROVISIONING_PROFILE`.
+
+Once the secret is present, the widget extension target can be re-introduced and signed deterministically in CI.
+
 References: [Apple enrollment](https://developer.apple.com/programs/enroll/),
 [paid agreements](https://developer.apple.com/help/app-store-connect/manage-agreements/sign-and-update-agreements/),
 [pricing](https://developer.apple.com/help/app-store-connect/manage-app-pricing/set-a-price/),

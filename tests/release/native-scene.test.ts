@@ -88,3 +88,19 @@ void test('SceneDelegate registers AppReviewPlugin with StoreKit for native revi
   assert.match(appReviewPlugin, /@objc\(AppReviewPlugin\)/)
   assert.match(appReviewPlugin, /SKStoreReviewController\.requestReview/)
 })
+
+void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {
+  const config = readFileSync(
+    new URL('../../capacitor.config.ts', import.meta.url),
+    'utf8',
+  )
+  const indexHtml = readFileSync(
+    new URL('../../index.html', import.meta.url),
+    'utf8',
+  )
+
+  // With viewport-fit=cover, CSS env(safe-area-inset-*) handles safe areas.
+  // contentInset: 'never' prevents UIKit from adding duplicate safe-area margins.
+  assert.match(indexHtml, /viewport-fit=cover/)
+  assert.match(config, /ios:\s*\{[\s\S]*?contentInset:\s*['"]never['"]/)
+})

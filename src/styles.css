@@ -579,8 +579,10 @@ summary:focus-visible,
   background: var(--card);
   transition: background 140ms var(--ease-spring);
 }
-.flat-choice:hover {
-  background: var(--turquesa-soft);
+@media (hover: hover) and (pointer: fine) {
+  .flat-choice:hover {
+    background: var(--turquesa-soft);
+  }
 }
 .flat-choice:active,
 .flat-choice.is-selected {
@@ -6898,10 +6900,15 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
   .app-shell.review-page {
     display: flex;
     flex-direction: column;
-    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding-top: 0;
     padding-left: 0;
     padding-right: 0;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
   }
 
   .review-page .review-header {
