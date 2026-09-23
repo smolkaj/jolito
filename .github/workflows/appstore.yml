@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Configure price/availability, upload metadata/screenshots, or submit a tested build'
+        description: 'Configure price/availability, upload metadata/screenshots, check review status, or submit a tested build'
         type: choice
-        options: [configure, metadata, submit]
+        options: [configure, metadata, status, submit]
         required: true
       build_number:
         description: 'Exact tested build number from the TestFlight release artifact (submit only)'
@@ -46,6 +46,8 @@ jobs:
         run: node scripts/app-store.ts --apply
       - if: inputs.operation == 'metadata'
         run: bundle exec fastlane ios metadata
+      - if: inputs.operation == 'status'
+        run: node scripts/app-store.ts --status
       - if: inputs.operation == 'submit'
         run: |
           node scripts/app-store.ts --apply

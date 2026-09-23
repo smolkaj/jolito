@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   AppleApi,
+  checkStatus,
   configureStore,
   CONTENT_RIGHTS_DECLARATION,
   priceSchedule,
@@ -21,6 +22,9 @@ function store(
     missingContentRights?: boolean
     conflictAvailability?: boolean
     conflictPriceSchedule?: boolean
+    emptyVersions?: boolean
+    buildMissing?: boolean
+    appMissing?: boolean
   } = {},
 ) {
   let patchedContentRights = false
@@ -63,14 +67,31 @@ function store(
         ? CONTENT_RIGHTS_DECLARATION
         : undefined
     const responses: Record<string, unknown> = {
-      '/v1/apps': [
-        record('apps', 'app', {
-          contentRightsDeclaration: rightsValue,
-        }),
-      ],
+      '/v1/apps': options.appMissing
+        ? []
+        : [
+            record('apps', 'app', {
+              name: 'Jolito',
+              contentRightsDeclaration: rightsValue,
+            }),
+          ],
       '/v1/apps/app': record('apps', 'app', {
+        name: 'Jolito',
         contentRightsDeclaration: rightsValue,
       }),
+      '/v1/apps/app/appStoreVersions': options.emptyVersions
+        ? []
+        : [
+            record(
+              'appStoreVersions',
+              'v1',
+              {
+                versionString: '1.0',
+                appStoreState: 'WAITING_FOR_REVIEW',
+              },
+              options.buildMissing ? {} : { build: rel('builds', 'b4') },
+            ),
+          ],
       '/v1/territories': [
         record('territories', 'USA'),
         record('territories', 'MEX'),
@@ -117,6 +138,15 @@ function store(
       ),
     }
     assert.ok(url.pathname in responses, `Unexpected request: ${url}`)
+    if (
+      url.pathname === '/v1/apps/app/appStoreVersions' &&
+      !options.buildMissing
+    ) {
+      return reply({
+        data: responses[url.pathname],
+        included: [record('builds', 'b4', { version: '4' })],
+      })
+    }
     return reply({ data: responses[url.pathname] })
   }
   return { api: new AppleApi('test-token', request), calls }
@@ -227,4 +257,34 @@ void test('invalid responses, cycles, and HTTP failures stop with no silent succ
   await assert.rejects(unauthorized.call('/page'), {
     message: 'Apple API GET /page: HTTP 401',
   })
+})
+
+void test('checkStatus resolves and prints current App Store version states with build numbers', async () => {
+  const { api, calls } = store()
+  const status = await checkStatus(api)
+  assert.equal(status.appId, 'app')
+  assert.equal(status.bundleId, 'to.joli.app')
+  assert.equal(status.name, 'Jolito')
+  assert.equal(status.versions.length, 1)
+  assert.deepEqual(status.versions[0], {
+    versionString: '1.0',
+    state: 'WAITING_FOR_REVIEW',
+    buildNumber: '4',
+  })
+  assert.ok(calls.every((c) => c.method === 'GET'))
+})
+
+void test('checkStatus handles apps with empty versions or missing build attachments', async () => {
+  const empty = await checkStatus(store({ emptyVersions: true }).api)
+  assert.equal(empty.versions.length, 0)
+
+  const noBuild = await checkStatus(store({ buildMissing: true }).api)
+  assert.equal(noBuild.versions.length, 1)
+  assert.equal(noBuild.versions[0]?.buildNumber, undefined)
+  assert.equal(noBuild.versions[0]?.state, 'WAITING_FOR_REVIEW')
+
+  await assert.rejects(
+    checkStatus(store({ appMissing: true }).api),
+    /Create the Jolito app record/,
+  )
 })
