@@ -233,7 +233,11 @@ void test('evaluateMainlineSettlement detects when mainline CI runs are missing 
 
   const result = evaluateMainlineSettlement(runs, 'target-new-sha')
   assert.equal(result.settled, false)
-  assert.deepEqual(result.missingWorkflows, ['iOS Native Build', 'CodeQL'])
+  assert.deepEqual(result.missingWorkflows, [
+    'iOS Native Build',
+    'Android Native Build',
+    'CodeQL',
+  ])
 })
 
 void test('evaluateMainlineSettlement detects in-progress runs on target commit', () => {
@@ -253,10 +257,17 @@ void test('evaluateMainlineSettlement detects in-progress runs on target commit'
       headSha: 'target-sha',
     },
     {
-      workflowName: 'CodeQL',
+      workflowName: 'Android Native Build',
       conclusion: 'success',
       status: 'completed',
       url: 'https://example.com/3',
+      headSha: 'target-sha',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/4',
       headSha: 'target-sha',
     },
   ]
@@ -266,6 +277,45 @@ void test('evaluateMainlineSettlement detects in-progress runs on target commit'
   assert.equal(result.missingWorkflows.length, 0)
   assert.equal(result.inProgress.length, 1)
   assert.equal(result.inProgress[0]?.workflowName, 'iOS Native Build')
+})
+
+void test('evaluateMainlineSettlement detects in-progress Android Native Build on target commit', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/1',
+      headSha: 'target-sha',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/2',
+      headSha: 'target-sha',
+    },
+    {
+      workflowName: 'Android Native Build',
+      conclusion: null,
+      status: 'in_progress',
+      url: 'https://example.com/3',
+      headSha: 'target-sha',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/4',
+      headSha: 'target-sha',
+    },
+  ]
+
+  const result = evaluateMainlineSettlement(runs, 'target-sha')
+  assert.equal(result.settled, false)
+  assert.equal(result.missingWorkflows.length, 0)
+  assert.equal(result.inProgress.length, 1)
+  assert.equal(result.inProgress[0]?.workflowName, 'Android Native Build')
 })
 
 void test('evaluateMainlineSettlement confirms settlement when all core runs exist and complete', () => {
@@ -285,10 +335,17 @@ void test('evaluateMainlineSettlement confirms settlement when all core runs exi
       headSha: 'target-sha',
     },
     {
-      workflowName: 'CodeQL',
+      workflowName: 'Android Native Build',
       conclusion: 'success',
       status: 'completed',
       url: 'https://example.com/3',
+      headSha: 'target-sha',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/4',
       headSha: 'target-sha',
     },
   ]
@@ -316,6 +373,13 @@ void test('evaluateMainlineSettlement ignores completed runs from older commits'
       headSha: 'older-commit',
     },
     {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/old-android',
+      headSha: 'older-commit',
+    },
+    {
       workflowName: 'CodeQL',
       conclusion: 'success',
       status: 'completed',
@@ -329,6 +393,7 @@ void test('evaluateMainlineSettlement ignores completed runs from older commits'
   assert.deepEqual(result.missingWorkflows, [
     'Quality',
     'iOS Native Build',
+    'Android Native Build',
     'CodeQL',
   ])
 })

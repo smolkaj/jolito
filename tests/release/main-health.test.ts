@@ -23,6 +23,13 @@ void test('evaluates mainline as healthy when all core workflows succeed', () =>
       url: 'https://github.com/smolkaj/jolito/actions/runs/2',
     },
     {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2b',
+    },
+    {
       workflowName: 'CodeQL',
       conclusion: 'success',
       status: 'completed',
@@ -53,6 +60,13 @@ void test('evaluates mainline as unhealthy when a core workflow fails', () => {
       url: 'https://github.com/smolkaj/jolito/actions/runs/2',
     },
     {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2b',
+    },
+    {
       workflowName: 'CodeQL',
       conclusion: 'success',
       status: 'completed',
@@ -67,6 +81,47 @@ void test('evaluates mainline as unhealthy when a core workflow fails', () => {
   assert.ok(failure)
   assert.equal(failure.workflowName, 'iOS Native Build')
   assert.match(result.message, /iOS Native Build/)
+  assert.match(result.message, /abc1234/)
+})
+
+void test('evaluates mainline as unhealthy when Android Native Build fails', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/1',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2',
+    },
+    {
+      workflowName: 'Android Native Build',
+      conclusion: 'failure',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2b',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/3',
+    },
+  ]
+
+  const result = evaluateMainHealth(runs)
+  assert.equal(result.healthy, false)
+  const failure = result.failures?.[0]
+  assert.ok(failure)
+  assert.equal(failure.workflowName, 'Android Native Build')
+  assert.match(result.message, /Android Native Build/)
   assert.match(result.message, /abc1234/)
 })
 
@@ -92,6 +147,13 @@ void test('ignores in-progress runs and evaluates the latest completed run', () 
       status: 'completed',
       headSha: 'abc1234',
       url: 'https://github.com/smolkaj/jolito/actions/runs/2',
+    },
+    {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2b',
     },
     {
       workflowName: 'CodeQL',
@@ -246,6 +308,14 @@ void test('correctly resolves the latest run even if input runs are unsorted', (
       headSha: 'new1234',
       createdAt: '2026-09-12T10:00:00Z',
       url: 'https://github.com/smolkaj/jolito/actions/runs/ios',
+    },
+    {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'new1234',
+      createdAt: '2026-09-12T10:00:00Z',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/android',
     },
     {
       workflowName: 'CodeQL',

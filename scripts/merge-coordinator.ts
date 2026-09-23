@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import {
   evaluateMainHealth,
+  CORE_WORKFLOWS,
   type WorkflowRun,
   type OpenPullRequest,
 } from './check-main-health.ts'
@@ -194,7 +195,7 @@ export function fetchMainHeadSha(repoArgs: string[] = []): string | null {
 export function evaluateMainlineSettlement(
   runs: WorkflowRun[],
   targetMainSha: string,
-  coreWorkflows: string[] = ['Quality', 'iOS Native Build', 'CodeQL'],
+  coreWorkflows: readonly string[] = CORE_WORKFLOWS,
 ): { settled: boolean; inProgress: WorkflowRun[]; missingWorkflows: string[] } {
   if (!targetMainSha) {
     return { settled: true, inProgress: [], missingWorkflows: [] }
