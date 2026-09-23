@@ -94,9 +94,9 @@ Suggested keyboard controls:
 
 #### Horizon 1: Native iOS App & Mobile Polish (Active Next)
 
-- **Native iOS Client & App Store ($2.99 once):** Production iOS app via Capacitor (`ios/App`) with tactile haptics, Dynamic Island Live Activities (`ActivityKit`), TestFlight distribution, and App Store release tooling.
+- **Native iOS Client & App Store ($2.99 once):** Production iOS app via Capacitor (`ios/App`) with tactile haptics, TestFlight distribution, and App Store release tooling.
 - **Native iOS Authentication:** Apple Sign-In integrated with Supabase Auth.
-- **Ecosystem Widgets:** Quick-review Lock Screen and Home Screen widgets on iOS.
+- **Ecosystem Widgets & Live Activities:** Quick-review Lock Screen and Home Screen widgets, and Dynamic Island practice sessions via ActivityKit.
 - **Configurable Study Controls:** Custom daily new-card intake limits and advanced queue prioritization.
 - **Retention & Habit Insights:** Visual retention curves, interval distribution, and daily practice streak insights.
 - **Contextual Organization:** Lightweight user-defined tagging by topic, register, or situation.

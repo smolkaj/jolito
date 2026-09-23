@@ -39,7 +39,7 @@ I am glad to report: **Memorization and I have become friends!**
 - **Curated Mexican Spanish starter packs:** Hit the ground running with built-in packs for top connectors, adjectives, idioms, and adverbs that merge semantically into your deck without overwriting your progress.
 - **Fast keyboard & gesture flow:** Fly through reviews with `Enter` to reveal, `1`–`4` to grade, and `Space` for audio—or use natural mobile swipe gestures (swipe up to reveal, swipe horizontally to grade) with continuous spring settling.
 - **Instant reciprocal cards:** Type a Spanish or English phrase to get instant translations, lemmas, and conjugations from a bundled Mexican Spanish dictionary, creating linked reciprocal cards simultaneously.
-- **Native iOS app & Live Activity:** Built for iPhone and iPad with tactile haptics, Lock Screen / Dynamic Island practice progress via ActivityKit, and physical keyboard auto-detection.
+- **Native iOS app:** Built for iPhone and iPad with tactile haptics, full offline support, and physical keyboard auto-detection.
 - **100% offline-first & cloud backup:** Zero-latency study anywhere. Your deck lives in local storage and syncs smoothly via Supabase when you connect.
 - **Anki import & offline JSON backup:** Bring existing `.apkg` collections or text exports in seconds—preserving your exact intervals and spaced-repetition history—or export your full deck to JSON anytime.
 
