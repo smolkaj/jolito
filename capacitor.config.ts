@@ -8,7 +8,9 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   ios: {
-    contentInset: 'always',
+    // 'never' prevents UIKit from double-insetting WKWebView scroll views
+    // on top of CSS env(safe-area-inset-*) when viewport-fit=cover is set.
+    contentInset: 'never',
     preferredContentMode: 'mobile',
     backgroundColor: '#fdf5f8',
   },
