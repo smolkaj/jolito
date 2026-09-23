@@ -137,13 +137,23 @@ export async function configureStore(api: AppleApi, apply: boolean) {
         },
       })
     }
-    await api.call(
-      '/v1/appPriceSchedules',
-      'POST',
-      priceSchedule(app.id, point.id),
-    )
+    try {
+      await api.call(
+        '/v1/appPriceSchedules',
+        'POST',
+        priceSchedule(app.id, point.id),
+      )
+    } catch (error) {
+      if (!(
+        error instanceof Error &&
+        error.message.includes('POST /v1/appPriceSchedules: HTTP 409')
+      )) {
+        throw error
+      }
+    }
     // POST replaces the availability selection, including on an existing app.
     // Eligibility remains Apple's decision; restrictions must be recorded in release.json.
+    // If availability already exists, Apple returns HTTP 409 Conflict.
     const included = territories.map((t) => ({
       type: 'territoryAvailabilities',
       id: `\u0024{availability-${t.id}}`,
@@ -153,21 +163,30 @@ export async function configureStore(api: AppleApi, apply: boolean) {
       },
       relationships: { territory: relation('territories', t.id) },
     }))
-    await api.call('/v2/appAvailabilities', 'POST', {
-      data: {
-        type: 'appAvailabilities',
-        attributes: {
-          availableInNewTerritories: settings.availableInNewTerritories,
-        },
-        relationships: {
-          app: relation('apps', app.id),
-          territoryAvailabilities: {
-            data: included.map(({ type, id }) => ({ type, id })),
+    try {
+      await api.call('/v2/appAvailabilities', 'POST', {
+        data: {
+          type: 'appAvailabilities',
+          attributes: {
+            availableInNewTerritories: settings.availableInNewTerritories,
+          },
+          relationships: {
+            app: relation('apps', app.id),
+            territoryAvailabilities: {
+              data: included.map(({ type, id }) => ({ type, id })),
+            },
           },
         },
-      },
-      included,
-    })
+        included,
+      })
+    } catch (error) {
+      if (!(
+        error instanceof Error &&
+        error.message.includes('POST /v2/appAvailabilities: HTTP 409')
+      )) {
+        throw error
+      }
+    }
   }
 
   const schedule = resourceSchema.parse(
