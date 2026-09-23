@@ -48,6 +48,6 @@ jobs:
         run: bundle exec fastlane ios metadata
       - if: inputs.operation == 'submit'
         run: |
-          node scripts/app-store.ts --check
+          node scripts/app-store.ts --apply
           bundle exec fastlane ios metadata
           bundle exec fastlane ios release build_number:"$BUILD_NUMBER"
