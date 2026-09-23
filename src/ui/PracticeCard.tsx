@@ -13,8 +13,13 @@ import {
   type StudyCard,
 } from '../domain/card'
 import type { HapticsPlayer } from '../application/ports'
+import {
+  DefaultSpeechRecognizer,
+  type SpeechRecognizer,
+} from '../infrastructure/browser/speech-recognition'
 import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
+import { MicIcon } from './icons'
 
 const accentLetters = ['á', 'é', 'í', 'ó', 'ú']
 const MAX_SWIPE_LIFT_Y = -110
@@ -44,6 +49,7 @@ export function PracticeCard({
   error,
   onFeedback,
   haptics,
+  speechRecognizer,
 }: {
   card: StudyCard
   prompt: ReactNode
@@ -68,6 +74,7 @@ export function PracticeCard({
   error?: string | null
   onFeedback?: (() => void) | undefined
   haptics?: HapticsPlayer | undefined
+  speechRecognizer?: SpeechRecognizer | undefined
 }) {
   const answerLang = localeForAnswer(card)
   const answerId = useId()
@@ -99,6 +106,70 @@ export function PracticeCard({
     } else {
       caret.current = start + 1
       onAnswerChange(nextAnswer)
+    }
+  }
+
+  const [isListening, setIsListening] = useState(false)
+  const [spokenRecallAvailable, setSpokenRecallAvailable] = useState(false)
+  const recognizerRef = useRef<SpeechRecognizer | null>(null)
+  if (recognizerRef.current == null) {
+    recognizerRef.current = speechRecognizer ?? new DefaultSpeechRecognizer()
+  }
+
+  useEffect(() => {
+    let active = true
+    const recognizer = recognizerRef.current
+    if (recognizer) {
+      void Promise.resolve(recognizer.isSupported(answerLang)).then(
+        (supported) => {
+          if (active) setSpokenRecallAvailable(supported)
+        },
+      )
+    }
+    return () => {
+      active = false
+    }
+  }, [answerLang])
+
+  useEffect(() => {
+    if (revealed || paused) {
+      if (isListening && recognizerRef.current) {
+        void recognizerRef.current.stop()
+        setIsListening(false)
+      }
+    }
+  }, [revealed, paused, isListening])
+
+  useEffect(() => {
+    return () => {
+      if (recognizerRef.current) {
+        void recognizerRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleSpokenRecall = async () => {
+    if (paused || revealed || !recognizerRef.current) return
+    if (isListening) {
+      await recognizerRef.current.stop()
+      setIsListening(false)
+    } else {
+      haptics?.trigger('selection')
+      const started = await recognizerRef.current.start({
+        locale: answerLang,
+        onTranscript: (text) => {
+          onAnswerChange(text)
+        },
+        onEnd: () => {
+          setIsListening(false)
+        },
+        onError: () => {
+          setIsListening(false)
+        },
+      })
+      if (started) {
+        setIsListening(true)
+      }
     }
   }
 
@@ -638,6 +709,10 @@ export function PracticeCard({
               className="answer-form"
               onSubmit={(event) => {
                 event.preventDefault()
+                if (isListening && recognizerRef.current) {
+                  void recognizerRef.current.stop()
+                  setIsListening(false)
+                }
                 onReveal()
               }}
             >
@@ -647,7 +722,7 @@ export function PracticeCard({
               <input
                 ref={input}
                 id={answerId}
-                className="answer-input"
+                className={`answer-input ${spokenRecallAvailable ? 'has-speech' : ''}`.trim()}
                 value={answer}
                 onChange={(event) => onAnswerChange(event.target.value)}
                 onKeyDown={(event) => {
@@ -673,6 +748,23 @@ export function PracticeCard({
                 spellCheck={false}
                 lang={answerLang}
               />
+              {spokenRecallAvailable && (
+                <button
+                  type="button"
+                  className={`speech-recall-btn ${isListening ? 'is-listening' : ''}`.trim()}
+                  onClick={() => void toggleSpokenRecall()}
+                  aria-label={
+                    isListening ? 'Stop spoken recall' : 'Speak your answer'
+                  }
+                  title={
+                    isListening
+                      ? 'Listening… (tap to stop)'
+                      : 'Speak your answer (offline on-device)'
+                  }
+                >
+                  <MicIcon size={18} />
+                </button>
+              )}
               <button className="reveal-button" type="submit">
                 Reveal answer <kbd>Enter</kbd>
               </button>
