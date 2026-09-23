@@ -38,7 +38,8 @@
     "cap:ios": "cap open ios",
     "deploy": "npm run build && wrangler deploy",
     "deploy:preview": "npm run build && wrangler versions upload",
-    "test:release": "node --test tests/release/*.test.ts"
+    "test:release": "node --test tests/release/*.test.ts",
+    "pr:merge": "node scripts/merge-coordinator.ts"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
