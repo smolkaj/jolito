@@ -137,12 +137,10 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
-				E449725593CC46A99044C61A /* Copy Files */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				8B1C2D3E4F5A6B7C8D9E0F1A /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
