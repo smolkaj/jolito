@@ -15,28 +15,70 @@ const labels: Record<Grade, string> = {
 export function ReviewGrades({
   card,
   onGrade,
+  activeZone,
+  dragOffset,
+  prefersReducedMotion = false,
 }: {
   card: StudyCard
   onGrade: (grade: Grade) => void
+  activeZone?: Grade | null
+  dragOffset?: { x: number; y: number }
+  prefersReducedMotion?: boolean
 }) {
+  const isDraggingAgain = Boolean(dragOffset && dragOffset.x < 0)
+  const isDraggingGood = Boolean(dragOffset && dragOffset.x > 0)
+
+  const arrowAgainTransform =
+    !prefersReducedMotion && isDraggingAgain && dragOffset
+      ? `translateX(${Math.max(-8, dragOffset.x * 0.08)}px)`
+      : undefined
+
+  const arrowGoodTransform =
+    !prefersReducedMotion && isDraggingGood && dragOffset
+      ? `translateX(${Math.min(8, dragOffset.x * 0.08)}px)`
+      : undefined
+
   return (
     <fieldset className="grade-fieldset">
       <legend className="sr-only">How did that feel?</legend>
       <div className="grade-buttons">
-        {grades.map((grade, index) => (
-          <button
-            type="button"
-            className={`grade-${grade}`}
-            data-grade={index + 1}
-            onClick={() => onGrade(grade)}
-            key={grade}
-            aria-label={`${index + 1} ${labels[grade]} ${intervalLabel(card, grade)}`}
-          >
-            <kbd aria-hidden="true">{index + 1}</kbd>
-            <strong>{labels[grade]}</strong>
-            <small>{intervalLabel(card, grade)}</small>
-          </button>
-        ))}
+        {grades.map((grade, index) => {
+          const isActive = activeZone === grade
+          return (
+            <button
+              type="button"
+              className={`grade-${grade} ${isActive ? 'is-gesture-active' : ''}`.trim()}
+              data-grade={index + 1}
+              onClick={() => onGrade(grade)}
+              key={grade}
+              aria-label={`${index + 1} ${labels[grade]} ${intervalLabel(card, grade)}`}
+            >
+              <kbd aria-hidden="true">{index + 1}</kbd>
+              {grade === 'again' && (
+                <span
+                  className={`grade-gesture-cue cue-again ${isActive ? 'is-active' : ''}`.trim()}
+                  style={{ transform: arrowAgainTransform }}
+                  aria-hidden="true"
+                >
+                  {isActive ? '↺' : '←'}
+                </span>
+              )}
+              <span className="grade-copy">
+                <strong>{labels[grade]}</strong>
+                <small>{intervalLabel(card, grade)}</small>
+              </span>
+              {grade === 'good' && (
+                <span
+                  className={`grade-gesture-cue cue-good ${isActive ? 'is-active' : ''}`.trim()}
+                  style={{ transform: arrowGoodTransform }}
+                  aria-hidden="true"
+                >
+                  {isActive ? '✓' : '→'}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
     </fieldset>
   )

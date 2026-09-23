@@ -2815,18 +2815,34 @@ kbd {
 .grade-buttons {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas: 'again hard good easy';
   gap: 12px;
   margin-top: 0;
+}
+
+.grade-buttons .grade-again {
+  grid-area: again;
+}
+
+.grade-buttons .grade-hard {
+  grid-area: hard;
+}
+
+.grade-buttons .grade-good {
+  grid-area: good;
+}
+
+.grade-buttons .grade-easy {
+  grid-area: easy;
 }
 
 .grade-buttons button {
   min-width: 0;
   min-height: 44px;
-  padding: 10px 12px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  padding: 8px 12px;
+  display: flex;
   align-items: center;
-  gap: 2px 9px;
+  gap: 8px;
   border: 2px solid var(--line);
   border-radius: 14px;
   color: var(--ink);
@@ -2840,19 +2856,28 @@ kbd {
   box-shadow: 0 0 0 var(--ink);
 }
 
-.grade-buttons kbd {
-  grid-row: span 2;
+.grade-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
-.grade-buttons strong {
+.grade-copy strong {
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.2;
 }
 
-.grade-buttons small {
+.grade-copy small {
   color: var(--ink-muted);
   font-size: 10px;
   font-weight: 600;
+  line-height: 1.2;
+}
+
+.grade-gesture-cue {
+  display: none;
 }
 
 /* Tactile Chroma-Brutalist Solid Colored Chiclets for 1–4 */
@@ -3439,10 +3464,15 @@ kbd {
 
   .grade-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'again good'
+      'hard  easy';
+    gap: 10px;
   }
 
   .grade-buttons button {
-    min-height: 44px;
+    min-height: 48px;
+    padding: 10px 14px;
   }
 
   .keyboard-hint {
@@ -6759,13 +6789,15 @@ kbd {
 }
 
 /* Synchronize bottom grade button active feedback */
-.study-card.zone-again .grade-buttons .grade-again {
+.study-card.zone-again .grade-buttons .grade-again,
+.grade-buttons .grade-again.is-gesture-active {
   transform: scale(1.08);
   box-shadow: 0 0 20px var(--rosa-glow);
   border-color: var(--rosa);
 }
 
-.study-card.zone-good .grade-buttons .grade-good {
+.study-card.zone-good .grade-buttons .grade-good,
+.grade-buttons .grade-good.is-gesture-active {
   transform: scale(1.08);
   box-shadow: 0 0 20px var(--turquesa-glow);
   border-color: var(--turquesa-dark);
@@ -6805,12 +6837,37 @@ kbd {
   color: var(--cempasuchil);
 }
 
-/* Gestural discoverability bar beneath study card */
+/* Gestural discoverability bar beneath study card (unrevealed state) */
 .card-gesture-cue-bar {
   display: none;
 }
 
 @media (hover: none) and (pointer: coarse), (max-width: 680px) {
+  .grade-gesture-cue {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1;
+    flex-shrink: 0;
+    transition:
+      transform 120ms ease,
+      opacity 120ms ease;
+  }
+
+  .grade-gesture-cue.cue-again {
+    margin-right: 2px;
+  }
+
+  .grade-gesture-cue.cue-good {
+    margin-left: auto;
+  }
+
+  .grade-gesture-cue.is-active {
+    transform: scale(1.2);
+  }
+
   .card-gesture-cue-bar {
     display: flex;
     align-items: center;
@@ -6865,36 +6922,6 @@ kbd {
     box-shadow: 0 4px 16px var(--turquesa-glow);
   }
 
-  .gesture-cue-pill.is-ready-again {
-    background: var(--card);
-    border-color: var(--rosa-dark);
-    color: var(--rosa-dark);
-    font-weight: 700;
-    transform: scale(1.08);
-    box-shadow:
-      0 4px 20px var(--rosa-glow),
-      0 0 0 1.5px var(--rosa-dark);
-  }
-
-  .gesture-cue-pill.is-ready-again .gesture-cue-arrow {
-    color: var(--rosa-dark);
-  }
-
-  .gesture-cue-pill.is-ready-good {
-    background: var(--card);
-    border-color: var(--turquesa-dark);
-    color: var(--turquesa-dark);
-    font-weight: 700;
-    transform: scale(1.08);
-    box-shadow:
-      0 4px 20px var(--turquesa-glow),
-      0 0 0 1.5px var(--turquesa-dark);
-  }
-
-  .gesture-cue-pill.is-ready-good .gesture-cue-arrow {
-    color: var(--turquesa-dark);
-  }
-
   .gesture-cue-pill.is-ready .gesture-cue-icon {
     display: inline-flex;
     align-items: center;
@@ -6926,27 +6953,6 @@ kbd {
     display: inline-block;
     color: var(--ink-muted);
     animation: subtle-float-up 2.2s ease-in-out infinite;
-  }
-
-  .gesture-cue-arrow.arrow-left {
-    color: rgba(228, 0, 124, 0.7);
-  }
-
-  .gesture-cue-arrow.arrow-right {
-    color: rgba(13, 122, 104, 0.7);
-  }
-
-  .gesture-cue-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .gesture-cue-sep {
-    color: var(--line);
-    font-size: 18px;
-    opacity: 0.5;
-    font-weight: 400;
   }
 
   .keyboard-hint,
@@ -6982,7 +6988,8 @@ html[data-keyboard='true'] .grade-btn kbd {
   display: inline-flex !important;
 }
 
-html[data-keyboard='true'] .card-gesture-cue-bar {
+html[data-keyboard='true'] .card-gesture-cue-bar,
+html[data-keyboard='true'] .grade-gesture-cue {
   display: none !important;
 }
 
