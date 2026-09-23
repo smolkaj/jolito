@@ -6,6 +6,7 @@ import {
   grammarVerb,
   type GrammarTopic,
 } from '../domain/grammar-catalog'
+import { sessionCompletedCount } from '../domain/study-session'
 import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
 import { PracticeCard } from './PracticeCard'
@@ -21,6 +22,8 @@ export function GrammarPractice({
   paused,
   signedIn,
   onSignIn,
+  onFeedback,
+  onComplete,
 }: {
   practice: GrammarPracticeState
   saveError?: string | null
@@ -29,6 +32,8 @@ export function GrammarPractice({
   paused: boolean
   signedIn: boolean
   onSignIn: () => void
+  onFeedback?: (() => void) | undefined
+  onComplete?: ((formsReviewed: number, hasError: boolean) => void) | undefined
 }) {
   const { mode, current, session, focus, topic, canResume } = practice
   const content = grammarTopics[topic]
@@ -51,7 +56,15 @@ export function GrammarPractice({
   })
   const grade = (value: Grade) => {
     const result = practice.grade(value)
-    if (result) audio.playGradeSensory(value, result.isComplete)
+    if (result) {
+      audio.playGradeSensory(value, result.isComplete)
+      if (result.isComplete) {
+        onComplete?.(
+          sessionCompletedCount(result.nextSession),
+          Boolean(practice.error || saveError),
+        )
+      }
+    }
   }
 
   const now = services.clock.now()
@@ -255,6 +268,7 @@ export function GrammarPractice({
       placeholder="Type the verb…"
       accents
       error={practice.error && (saveError ?? practice.error)}
+      onFeedback={onFeedback}
       correctionRule={context.explanation}
     />
   )

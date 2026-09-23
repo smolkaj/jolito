@@ -69,3 +69,22 @@ void test('SceneDelegate monitors GameController hardware keyboard connections a
   )
   assert.doesNotMatch(sceneDelegate, /removeAllUserScripts/)
 })
+
+void test('SceneDelegate registers AppReviewPlugin with StoreKit for native reviews', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const appReviewPlugin = readFileSync(
+    new URL('../../ios/App/App/AppReviewPlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(AppReviewPlugin\(\)\)/,
+  )
+  assert.match(appReviewPlugin, /import StoreKit/)
+  assert.match(appReviewPlugin, /@objc\(AppReviewPlugin\)/)
+  assert.match(appReviewPlugin, /SKStoreReviewController\.requestReview/)
+})

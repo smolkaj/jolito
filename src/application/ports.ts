@@ -183,6 +183,15 @@ export type DeletionLock = {
   run<T>(operation: () => T | Promise<T>): Promise<T>
 }
 
+export type AppReviewOptions = {
+  cardsReviewedInSession: number
+  hasSessionError: boolean
+}
+
+export type AppReviewService = {
+  recordSessionAndPromptIfEligible(options: AppReviewOptions): Promise<boolean>
+}
+
 export type AppServices = {
   deletionLock: DeletionLock
   clock: Clock
@@ -198,4 +207,5 @@ export type AppServices = {
   communityStats?: CommunityStatsService
   aiAssistant?: AiAssistant | undefined
   telemetry?: TelemetryService
+  appReview?: AppReviewService
 }

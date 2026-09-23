@@ -288,4 +288,37 @@ describe('accent keyboard insertion', () => {
     )
     expect(fireEvent.keyDown(window, { key: '1' })).toBe(true)
   })
+
+  it('renders "Report issue" button when error is present and onFeedback is provided', async () => {
+    const user = userEvent.setup()
+    const onFeedback = vi.fn()
+    const initial = props()
+
+    const { rerender } = render(
+      <PracticeCard
+        {...initial}
+        error="Your progress couldn’t be saved."
+        onFeedback={onFeedback}
+      />,
+    )
+
+    const button = screen.getByRole('button', { name: 'Report issue' })
+    expect(button).toBeInTheDocument()
+    await user.click(button)
+    expect(onFeedback).toHaveBeenCalledTimes(1)
+
+    // Omitted onFeedback
+    rerender(
+      <PracticeCard {...initial} error="Your progress couldn’t be saved." />,
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Report issue' }),
+    ).not.toBeInTheDocument()
+
+    // Omitted error
+    rerender(<PracticeCard {...initial} error={null} onFeedback={onFeedback} />)
+    expect(
+      screen.queryByRole('button', { name: 'Report issue' }),
+    ).not.toBeInTheDocument()
+  })
 })

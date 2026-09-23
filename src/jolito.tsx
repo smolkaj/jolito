@@ -30,7 +30,10 @@ import {
   type StudyCard,
   type UpdateCardParams,
 } from './domain/card'
-import { createStudySession } from './domain/study-session'
+import {
+  createStudySession,
+  sessionCompletedCount,
+} from './domain/study-session'
 import {
   availableGrammarCards,
   grammarContext,
@@ -404,6 +407,7 @@ function LoadedApp({
 
   const [cards, setCards] = useState<StudyCard[]>(initialCards)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const sessionHadErrorRef = useRef(false)
   const vocabularyCards = useMemo(
     () => cards.filter((card) => !isGrammarCard(card)),
     [cards],
@@ -586,6 +590,7 @@ function LoadedApp({
       newDeletedCardIds?: string[],
     ) => {
       if (!canCommit()) {
+        sessionHadErrorRef.current = true
         if (lifetime.current.active) setSaveError(OWNERSHIP_SAVE_ERROR)
         return false
       }
@@ -598,6 +603,7 @@ function LoadedApp({
       try {
         services.cards.save(newCards, deletedIdsArray)
       } catch {
+        sessionHadErrorRef.current = true
         setSaveError(STORAGE_SAVE_ERROR)
         return false
       }
@@ -1010,7 +1016,7 @@ function LoadedApp({
       )
       if (!onUpdateCards(nextCards, false)) return
 
-      const { isComplete } = advanceOnGrade(
+      const { isComplete, nextSession } = advanceOnGrade(
         currentCard.id,
         reviewed.schedule,
         buriedCardIds,
@@ -1023,6 +1029,14 @@ function LoadedApp({
       if (isComplete) {
         flushSync()
         navigateTo('complete')
+        const hadSessionError = sessionHadErrorRef.current
+        sessionHadErrorRef.current = false
+        if (services.appReview) {
+          void services.appReview.recordSessionAndPromptIfEligible({
+            cardsReviewedInSession: sessionCompletedCount(nextSession),
+            hasSessionError: hadSessionError,
+          })
+        }
       } else {
         scheduleDebouncedSync()
       }
@@ -1035,18 +1049,21 @@ function LoadedApp({
       navigateTo,
       playGradeSensory,
       scheduleDebouncedSync,
+      services.appReview,
       services.clock,
       services.telemetry,
     ],
   )
 
   function goHome() {
+    sessionHadErrorRef.current = false
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
     resetPromptState()
   }
 
   function handlePractice() {
+    sessionHadErrorRef.current = false
     if (queue.length > 0) {
       navigateTo('review')
     } else {
@@ -1055,6 +1072,7 @@ function LoadedApp({
   }
 
   function beginReview(cardIds?: string[]) {
+    sessionHadErrorRef.current = false
     cancelPendingAudio()
     const now = services.clock.now()
     const nextQueue =
@@ -1130,6 +1148,9 @@ function LoadedApp({
     deletedCardIds,
     clock: services.clock,
     save: saveGrammarCard,
+    onSessionStart: () => {
+      sessionHadErrorRef.current = false
+    },
   })
 
   // Prepare the active learning mode first; grammar includes both sentence contexts.
@@ -1286,7 +1307,10 @@ function LoadedApp({
           onCopySessionLink={handleCopySessionLink}
           onNavigateToDeck={() => navigateTo('deck')}
           onNavigateToCreate={() => navigateTo('create')}
-          onNavigateToGrammar={() => navigateTo('grammar')}
+          onNavigateToGrammar={() => {
+            sessionHadErrorRef.current = false
+            navigateTo('grammar')
+          }}
           onPractice={handlePractice}
           onOpenSync={openSyncModal}
           onOpenFeedback={openFeedbackModal}
@@ -1462,6 +1486,17 @@ function LoadedApp({
             paused={paused}
             signedIn={Boolean(authUser)}
             onSignIn={() => openSyncModal()}
+            onFeedback={openFeedbackModal}
+            onComplete={(formsCount, hasError) => {
+              const hadSessionError = hasError || sessionHadErrorRef.current
+              sessionHadErrorRef.current = false
+              if (services.appReview) {
+                void services.appReview.recordSessionAndPromptIfEligible({
+                  cardsReviewedInSession: formsCount,
+                  hasSessionError: hadSessionError,
+                })
+              }
+            }}
           />
         ) : complete ? (
           <SessionComplete
@@ -1508,6 +1543,7 @@ function LoadedApp({
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
                   : saveError
               }
+              onFeedback={openFeedbackModal}
               card={currentCard}
               prompt={
                 <>

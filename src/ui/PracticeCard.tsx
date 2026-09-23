@@ -42,6 +42,7 @@ export function PracticeCard({
   children,
   correctionRule,
   error,
+  onFeedback,
   haptics,
 }: {
   card: StudyCard
@@ -65,6 +66,7 @@ export function PracticeCard({
   children?: ReactNode
   correctionRule?: string
   error?: string | null
+  onFeedback?: (() => void) | undefined
   haptics?: HapticsPlayer | undefined
 }) {
   const answerLang = localeForAnswer(card)
@@ -722,6 +724,18 @@ export function PracticeCard({
             className="practice-error"
           >
             {error}
+            {onFeedback && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  className="practice-error-feedback-button"
+                  onClick={onFeedback}
+                >
+                  Report issue
+                </button>
+              </>
+            )}
           </p>
         )}
         <p className="keyboard-hint">

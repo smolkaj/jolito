@@ -16,11 +16,13 @@ export function useGrammarPractice({
   deletedCardIds,
   clock,
   save,
+  onSessionStart,
 }: {
   cards: StudyCard[]
   deletedCardIds: string[]
   clock: Clock
   save: (card: GrammarCard) => void
+  onSessionStart?: () => void
 }) {
   const [topic, setSelectedTopic] = useState<GrammarTopic>('preterite')
   const [focus, setFocus] = useState<GrammarFocus>('mixed')
@@ -45,6 +47,7 @@ export function useGrammarPractice({
   const current = snapshots.find((c) => c.id === session.currentCardId)
 
   const start = () => {
+    onSessionStart?.()
     const selected = grammarQueue(available, clock.now(), focus, topic)
     setSnapshots(selected)
     session.startSession(selected.map((c) => c.id))
