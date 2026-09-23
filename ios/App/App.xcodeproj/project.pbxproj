@@ -15,15 +15,6 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
-		29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */; };
-		1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */; };
-		891EBE9D6AD048A2BEAFA998 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 65F2620A285E489E99246ED6 /* ActivityKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		8D7B849134B84AACB38DE99D /* JolitoWidgetExtension.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = B7F0595D70894F43A021778C /* JolitoWidgetExtension.appex */; };
-		3560A65467E148D1A1820E2A /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3A93CEE435D4326916F86A3 /* WidgetKit.framework */; };
-		E24A97210FF8477D954C4897 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77F2662FFE7448D486FBD40E /* SwiftUI.framework */; };
-		B5F841AEEDD947539C44F5C9 /* JolitoWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997016333ECB456A8BBCBF3A /* JolitoWidgetBundle.swift */; };
-		127A46A73FBD48BB970F0585 /* PracticeLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DE302787204AB7B9ACA78C /* PracticeLiveActivityWidget.swift */; };
-		9CF3262392034B98AC405153 /* PracticeActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,15 +28,6 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
-		EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeActivityAttributes.swift; sourceTree = "<group>"; };
-		D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityPlugin.swift; sourceTree = "<group>"; };
-		65F2620A285E489E99246ED6 /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
-		B7F0595D70894F43A021778C /* JolitoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JolitoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		A3A93CEE435D4326916F86A3 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
-		77F2662FFE7448D486FBD40E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		997016333ECB456A8BBCBF3A /* JolitoWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JolitoWidgetBundle.swift; sourceTree = "<group>"; };
-		15DE302787204AB7B9ACA78C /* PracticeLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PracticeLiveActivityWidget.swift; sourceTree = "<group>"; };
-		15DE302887204AB7B9ACA78D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,16 +36,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
-				891EBE9D6AD048A2BEAFA998 /* ActivityKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		6AF9BB0BF1BD49548196F34A /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3560A65467E148D1A1820E2A /* WidgetKit.framework in Frameworks */,
-				E24A97210FF8477D954C4897 /* SwiftUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,7 +48,6 @@
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
-				F768A0DD2B814263A570F074 /* JolitoWidgetExtension */,
 			);
 			sourceTree = "<group>";
 		};
@@ -84,7 +55,6 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
-				B7F0595D70894F43A021778C /* JolitoWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -100,31 +70,8 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
-				EF38A74FE3E247A99AD79BFA /* PracticeActivityAttributes.swift */,
-				D79A203F5C6F46D19F8B56A5 /* LiveActivityPlugin.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		00D139041F88477985C5354A /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				65F2620A285E489E99246ED6 /* ActivityKit.framework */,
-				A3A93CEE435D4326916F86A3 /* WidgetKit.framework */,
-				77F2662FFE7448D486FBD40E /* SwiftUI.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		F768A0DD2B814263A570F074 /* JolitoWidgetExtension */ = {
-			isa = PBXGroup;
-			children = (
-				997016333ECB456A8BBCBF3A /* JolitoWidgetBundle.swift */,
-				15DE302787204AB7B9ACA78C /* PracticeLiveActivityWidget.swift */,
-				15DE302887204AB7B9ACA78D /* Info.plist */,
-			);
-			name = JolitoWidgetExtension;
-			path = JolitoWidgetExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -150,39 +97,18 @@
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
 		};
-		B64425BD97FA49D48E924745 /* JolitoWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			name = "JolitoWidgetExtension";
-			productName = "JolitoWidgetExtension";
-			productReference = B7F0595D70894F43A021778C;
-			productType = "com.apple.product-type.app-extension";
-			buildConfigurationList = ED86FD442C0F49BA95378268;
-			buildPhases = (
-				1B6ADBB658494DC4857C1EE2 /* Sources */,
-				6AF9BB0BF1BD49548196F34A /* Frameworks */,
-				518CF239F86B4A3F991BA141 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		504EC2FC1FED79650016851F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 920;
-				LastUpgradeCheck = 920;
+				LastSwiftUpdateCheck = 0920;
+				LastUpgradeCheck = 0920;
 				TargetAttributes = {
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
-						ProvisioningStyle = Automatic;
-					};
-					B64425BD97FA49D48E924745 = {
-						CreatedOnToolsVersion = 14.0;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -204,7 +130,6 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
-				B64425BD97FA49D48E924745 /* JolitoWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -222,13 +147,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		518CF239F86B4A3F991BA141 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -238,32 +156,13 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
-				29CA220D26F84357B25F9707 /* PracticeActivityAttributes.swift in Sources */,
-				1BDD5B3E68A34EB88A0DC699 /* LiveActivityPlugin.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1B6ADBB658494DC4857C1EE2 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B5F841AEEDD947539C44F5C9 /* JolitoWidgetBundle.swift in Sources */,
-				127A46A73FBD48BB970F0585 /* PracticeLiveActivityWidget.swift in Sources */,
-				9CF3262392034B98AC405153 /* PracticeActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXTargetDependency section */
-		8B1C2D3E4F5A6B7C8D9E0F1A /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = B64425BD97FA49D48E924745 /* JolitoWidgetExtension */;
-			targetProxy = 8A1B2C3D4E5F6A7B8C9D0E1F /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXVariantGroup section */
+
 		504EC3101FED79650016851F /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -428,47 +327,6 @@
 			};
 			name = Release;
 		};
-		B49306C7558749EFBD584B03 /* Debug */ = {
-			name = Debug;
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				INFOPLIST_FILE = JolitoWidgetExtension/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				PRODUCT_NAME = "JolitoWidgetExtension";
-				SKIP_INSTALL = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.widget";
-				SWIFT_VERSION = 5.0;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				GENERATE_INFOPLIST_FILE = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				MARKETING_VERSION = 1.0;
-			};
-		};
-		CE3F018411C6469498946C2E /* Release */ = {
-			name = Release;
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				INFOPLIST_FILE = JolitoWidgetExtension/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				PRODUCT_NAME = "JolitoWidgetExtension";
-				SKIP_INSTALL = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.widget";
-				SWIFT_VERSION = 5.0;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				GENERATE_INFOPLIST_FILE = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				MARKETING_VERSION = 1.0;
-				CODE_SIGN_IDENTITY = "Apple Distribution";
-			};
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -490,15 +348,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		ED86FD442C0F49BA95378268 /* Build configuration list for PBXNativeTarget "JolitoWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B49306C7558749EFBD584B03 /* Debug */,
-				CE3F018411C6469498946C2E /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -515,30 +364,6 @@
 			productName = "CapApp-SPM";
 		};
 /* End XCSwiftPackageProductDependency section */
-
-/* Begin PBXContainerItemProxy section */
-		8A1B2C3D4E5F6A7B8C9D0E1F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = B64425BD97FA49D48E924745;
-			remoteInfo = JolitoWidgetExtension;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		E449725593CC46A99044C61A /* Copy Files */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				8D7B849134B84AACB38DE99D /* JolitoWidgetExtension.appex in Copy Files */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			name = "Copy Files";
-			dstPath = "";
-			dstSubfolderSpec = 13;
-		};
-/* End PBXCopyFilesBuildPhase section */
 	};
 	rootObject = 504EC2FC1FED79650016851F /* Project object */;
 }
