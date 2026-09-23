@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { Capacitor } from '@capacitor/core'
 import type { Speaker } from '../../application/ports'
+import { hashString } from '../tts/voices'
 import {
   NativeSpeaker,
   type NativeSpeechPluginInterface,
@@ -246,7 +247,7 @@ describe('NativeSpeaker', () => {
     expect(mockPlugin.speak).toHaveBeenCalledTimes(1)
   })
 
-  it('derives deterministic persona gender from cardSeed', () => {
+  it('resets duplicate speak throttle when stop() is called', () => {
     vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
     vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
 
@@ -255,12 +256,36 @@ describe('NativeSpeaker', () => {
       mockPlugin as unknown as NativeSpeechPluginInterface,
     )
 
-    speaker.speak('gato', 'es-MX', { cardSeed: 'seed-a' })
-    const calls = mockPlugin.speak.mock.calls as unknown as Array<
-      [{ gender?: string }]
-    >
-    const gender = calls[0]?.[0]?.gender
-    expect(gender === 'female' || gender === 'male').toBe(true)
+    speaker.speak('perro', 'es-MX')
+    expect(mockPlugin.speak).toHaveBeenCalledTimes(1)
+
+    // Explicit stop resets lastSpeakText
+    speaker.stop()
+
+    // Immediate replay of identical text is permitted
+    speaker.speak('perro', 'es-MX')
+    expect(mockPlugin.speak).toHaveBeenCalledTimes(2)
+  })
+
+  it('derives deterministic persona gender matching canonical hashString from cardSeed', () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
+
+    const speaker = new NativeSpeaker(
+      mockFallback as unknown as Speaker,
+      mockPlugin as unknown as NativeSpeechPluginInterface,
+    )
+
+    const testSeeds = ['card-123', 'card-456', 'seed-alpha', 'seed-beta']
+    for (const seed of testSeeds) {
+      mockPlugin.speak.mockClear()
+      speaker.stop()
+      speaker.speak('hola', 'es-MX', { cardSeed: seed })
+      const expectedGender = hashString(seed) % 2 === 0 ? 'female' : 'male'
+      expect(mockPlugin.speak).toHaveBeenCalledWith(
+        expect.objectContaining({ gender: expectedGender }),
+      )
+    }
   })
 
   it('stops playback when document visibility changes to hidden', () => {

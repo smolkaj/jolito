@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import type { Speaker, SpeakerOptions } from '../../application/ports'
+import { hashString } from '../tts/voices'
 import { EnhancedBrowserSpeaker } from './speech'
 
 export interface NativeVoice {
@@ -104,11 +105,10 @@ export class NativeSpeaker implements Speaker {
         }
       }
       if (!gender && options?.cardSeed) {
-        let hash = 0
-        for (let i = 0; i < options.cardSeed.length; i++) {
-          hash = (hash * 31 + options.cardSeed.charCodeAt(i)) >>> 0
+        const seedKey = options.cardSeed.trim()
+        if (seedKey.length > 0) {
+          gender = hashString(seedKey) % 2 === 0 ? 'female' : 'male'
         }
-        gender = hash % 2 === 0 ? 'female' : 'male'
       }
 
       this.plugin
@@ -138,6 +138,7 @@ export class NativeSpeaker implements Speaker {
 
   stop(): void {
     if (this.isDestroyed) return
+    this.lastSpeakText = ''
     if (this.isNativeAvailable()) {
       this.plugin.stop().catch(() => {})
     }
