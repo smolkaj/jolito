@@ -121,13 +121,18 @@ attachments (`01-welcome`, `02-create`). These initial screens need no account.
 Add authenticated screenshots only after using the real candidate with a test
 account; never fabricate logged-in native screenshots from a browser mock.
 
-Stage the reviewed PNGs locally under `fastlane/native-screenshots/en-US/`,
-using ordered filenames containing their device family. This directory is
-ignored because it contains release artifacts. Verify dimensions against
+Stage and commit the reviewed PNGs under `fastlane/native-screenshots/en-US/`,
+using ordered filenames containing their device family. Verify dimensions against
 [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
 and ensure the two device families are present, with no launch screen,
-keyboard obscuring content, debug overlay, or duplicate attachment. On the
-same candidate checkout, run:
+keyboard obscuring content, debug overlay, or duplicate attachment. Metadata and
+native screenshots can be synchronized via GitHub Actions:
+
+```sh
+gh workflow run appstore.yml -f operation=metadata
+```
+
+Or locally with credentials loaded:
 
 ```sh
 bundle exec fastlane ios metadata
@@ -179,13 +184,15 @@ mailbox, privileged account, or hidden authentication bypass.
    - Check mute-switch behavior, keyboard, VoiceOver, larger text, and layouts
      on both devices. Verify privacy/support links and account deletion using
      a disposable account, including deletion from the backend.
-5. Upload reviewed metadata/screenshots, publish privacy answers, complete
-   age/export/regional declarations and private review information. Run the
-   read-only price check and verify it shows the expected configuration.
+5. Publish privacy answers, complete age/export/regional declarations and private
+   review information in App Store Connect. Run the read-only price check and verify
+   it shows the expected configuration.
 6. Dispatch **App Store Production Deployment → submit**, specifying the exact
-   tested build number from the artifact (via GitHub Actions web UI or `gh workflow run appstore.yml -f operation=submit -f build_number=<tested_build_number>`). The lane cannot rebuild or fall back
-   to “latest.” It submits that version/build and requests automatic release
-   after Apple approval. Any build change requires new device validation.
+   tested build number from the artifact (via GitHub Actions web UI or `gh workflow run appstore.yml -f operation=submit -f build_number=<tested_build_number>`).
+   The workflow automatically synchronizes reviewed metadata/screenshots before
+   submitting the tested build, and requests automatic release after Apple approval.
+   The lane cannot rebuild or fall back to “latest.” Any build change requires new
+   device validation.
 7. Address review findings, then verify the public listing, US$2.99 purchase
    price, territory availability, and a production installation. Report the
    live App Store URL. An upload or submission alone is not completion.

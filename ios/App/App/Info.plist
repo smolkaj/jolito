@@ -64,7 +64,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
 </dict>
 </plist>

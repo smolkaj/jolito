@@ -270,6 +270,20 @@ class ReleaseTest < Minitest::Test
     assert options.fetch(:automatic_release)
   end
 
+  def test_metadata_lane_validates_native_screenshots_and_uses_deliver_options
+    Fastlane::Actions.load_default_actions
+    harness = LaneHarness.new
+    harness.execute(:metadata)
+    assert_equal [:connect, :upload_to_app_store], harness.calls.map(&:first)
+    options = harness.calls.last.last
+    assert_equal 'to.joli.app', options.fetch(:app_identifier)
+    assert_equal '1.0', options.fetch(:app_version)
+    assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots'), options.fetch(:screenshots_path)
+    assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/metadata'), options.fetch(:metadata_path)
+    assert options.fetch(:skip_binary_upload)
+    refute options.fetch(:submit_for_review)
+  end
+
   def test_invalid_submission_never_contacts_apple
     harness = LaneHarness.new
     assert_raises(RuntimeError) { harness.execute(:release) }

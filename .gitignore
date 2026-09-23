@@ -17,7 +17,6 @@ vendor/bundle/
 build/
 fastlane/report.xml
 fastlane/README.md
-fastlane/native-screenshots/
 *.p12
 *.mobileprovision
 *.p8

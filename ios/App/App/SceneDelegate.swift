@@ -3,13 +3,6 @@ import Capacitor
 import GameController
 import WebKit
 
-class MainViewController: CAPBridgeViewController {
-    override func capacitorDidLoad() {
-        super.capacitorDidLoad()
-        bridge?.registerPluginInstance(LiveActivityPlugin())
-    }
-}
-
 class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler {
     var window: UIWindow?
     private weak var bridgeViewController: CAPBridgeViewController?
@@ -21,7 +14,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
 
         // This delegate is the sole window owner; the scene has no storyboard.
         window = UIWindow(windowScene: windowScene)
-        let bridgeVC = MainViewController()
+        let bridgeVC = CAPBridgeViewController()
         bridgeViewController = bridgeVC
         window?.rootViewController = bridgeVC
         window?.makeKeyAndVisible()
