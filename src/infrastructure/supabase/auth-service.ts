@@ -827,6 +827,108 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
+  async signInWithApple(
+    identityToken: string,
+  ): Promise<{ success: boolean; error?: string | undefined }> {
+    const generation = ++this.generation
+    this.inFlightRefresh = null
+    const stale = () => ({
+      success: false,
+      error: 'Your sign-in session changed. Please try again.',
+    })
+    if (!this.isCurrent(generation)) return stale()
+
+    let persistedSession: string | null
+    try {
+      persistedSession = this.storage.getItem?.(STORAGE_KEY) ?? null
+      const initial =
+        persistedSession === null
+          ? null
+          : storedSessionSchema.safeParse(
+              JSON.parse(persistedSession) as unknown,
+            )
+      if (initial && !initial.success) return stale()
+      if ((initial?.data.user.id ?? null) !== (this.currentUser?.id ?? null))
+        return stale()
+    } catch {
+      return { success: false, error: new SessionStorageError().message }
+    }
+
+    const isCurrent = () => {
+      if (!this.isCurrent(generation)) return false
+      try {
+        return (
+          (this.storage.getItem?.(STORAGE_KEY) ?? null) === persistedSession
+        )
+      } catch {
+        return false
+      }
+    }
+
+    try {
+      const res = await withRequestDeadline(async (signal) =>
+        fetch(`${this.supabaseUrl}/auth/v1/token?grant_type=id_token`, {
+          method: 'POST',
+          headers: {
+            apikey: this.supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            provider: 'apple',
+            id_token: identityToken,
+          }),
+          signal,
+        }),
+      )
+
+      if (!isCurrent()) return stale()
+      if (!res.ok) {
+        return {
+          success: false,
+          error: 'Apple Sign-In could not be verified with the server.',
+        }
+      }
+
+      const rawJson: unknown = await res.json()
+      if (!isCurrent()) return stale()
+      const parsed = authSessionResponseSchema.safeParse(rawJson)
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: 'Invalid response from authentication server.',
+        }
+      }
+
+      const data = parsed.data
+      const user: AuthUser = {
+        id: data.user.id,
+        email: data.user.email || '',
+      }
+
+      if (!isCurrent()) return stale()
+
+      const saved = this.saveSession({
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: Date.now() + data.expires_in * 1000,
+        user,
+      })
+
+      return saved
+        ? { success: true }
+        : { success: false, error: new SessionStorageError().message }
+    } catch (error) {
+      if (!isCurrent()) return stale()
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Sign-in failed. Please try again.',
+      }
+    }
+  }
+
   async signOut(): Promise<void> {
     if (this.destroyed) return
     const owner = this.currentUser?.id

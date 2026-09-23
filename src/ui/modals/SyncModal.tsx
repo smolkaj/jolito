@@ -17,11 +17,16 @@ import {
   shouldAutoFocusOnMount,
 } from '../../infrastructure/browser/environment'
 import {
+  AppleIcon,
   ClipboardIcon,
   CloudCheckSticker,
   ShieldIcon,
   SyncSpinnerIcon,
 } from '../icons'
+import {
+  isAppleSignInSupported,
+  requestAppleSignIn,
+} from '../../infrastructure/browser/apple-signin'
 import { ModalSheet } from './ModalSheet'
 import { triggerManualUpdate } from '../../infrastructure/browser/offline-shell'
 
@@ -75,7 +80,7 @@ export function SyncModal({
     'synced' | 'resent' | 'pasted' | null
   >(null)
   const [loadingAction, setLoadingAction] = useState<
-    'send' | 'verify' | 'sync' | 'signout' | 'delete' | 'delete-backup' | null
+    'send' | 'verify' | 'sync' | 'signout' | 'delete' | 'delete-backup' | 'apple' | null
   >(null)
   const [statusMsg, setStatusMsg] = useState<{
     type: 'success' | 'error' | 'info'
@@ -240,6 +245,46 @@ export function SyncModal({
         type: 'error',
         message: res.error || 'Invalid sign-in link or code.',
       })
+    }
+  }
+
+  const handleAppleSignIn = async () => {
+    if (!auth.signInWithApple) return
+    setLoadingAction('apple')
+    setStatusMsg(null)
+    try {
+      const appleResult = await requestAppleSignIn()
+      if (appleResult.canceled) {
+        setLoadingAction(null)
+        return
+      }
+      if (!appleResult.identityToken) {
+        setStatusMsg({
+          type: 'error',
+          message: 'Apple Sign-In could not retrieve an identity token.',
+        })
+        setLoadingAction(null)
+        return
+      }
+      const res = await auth.signInWithApple(appleResult.identityToken)
+      if (!res.success) {
+        setStatusMsg({
+          type: 'error',
+          message: res.error || 'Failed to sign in with Apple.',
+        })
+      } else {
+        if (pendingCardPrompt) {
+          onSaveLocally?.()
+        }
+        onClose()
+      }
+    } catch {
+      setStatusMsg({
+        type: 'error',
+        message: 'An error occurred during Apple Sign-In.',
+      })
+    } finally {
+      setLoadingAction(null)
     }
   }
 
@@ -574,6 +619,28 @@ export function SyncModal({
           }}
           className="sync-auth-form"
         >
+          {isAppleSignInSupported() && (
+            <div className="apple-signin-wrapper">
+              <button
+                type="button"
+                className="apple-signin-button"
+                onClick={() => {
+                  void handleAppleSignIn()
+                }}
+                disabled={loading}
+              >
+                <AppleIcon size={18} />
+                <span>
+                  {loadingAction === 'apple'
+                    ? 'Signing in…'
+                    : 'Sign in with Apple'}
+                </span>
+              </button>
+              <div className="signin-divider">
+                <span>or continue with email</span>
+              </div>
+            </div>
+          )}
           <div className="field-group">
             <label htmlFor="sync-email">Email address</label>
             <input

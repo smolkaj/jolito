@@ -127,6 +127,9 @@ export type AuthService = {
     email: string,
     token: string,
   ): Promise<{ success: boolean; error?: string | undefined }>
+  signInWithApple?(
+    identityToken: string,
+  ): Promise<{ success: boolean; error?: string | undefined }>
   signOut(): Promise<void>
   deleteAccount?(): Promise<{
     success: boolean

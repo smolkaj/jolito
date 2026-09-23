@@ -1246,4 +1246,75 @@ describe('SupabaseAuthService', () => {
       unconfigured.destroy()
     })
   })
+
+  describe('signInWithApple', () => {
+    it('authenticates user and saves session on valid Apple token', async () => {
+      delete mockStorage['jolito-auth-session-v1']
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'apple-access-jwt',
+            refresh_token: 'apple-refresh-token',
+            expires_in: 3600,
+            user: {
+              id: 'apple-user-123',
+              email: 'apple.learner@privaterelay.appleid.com',
+            },
+          }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const subscriber = vi.fn()
+      service.onAuthStateChange(subscriber)
+
+      const res = await service.signInWithApple('valid-apple-identity-token')
+      expect(res.error).toBeUndefined()
+      expect(res.success).toBe(true)
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/auth/v1/token?grant_type=id_token',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            provider: 'apple',
+            id_token: 'valid-apple-identity-token',
+          }),
+        }),
+      )
+      expect(service.getCurrentUser()).toEqual({
+        id: 'apple-user-123',
+        email: 'apple.learner@privaterelay.appleid.com',
+      })
+      expect(subscriber).toHaveBeenCalledWith({
+        id: 'apple-user-123',
+        email: 'apple.learner@privaterelay.appleid.com',
+      })
+      service.destroy()
+    })
+
+    it('returns error when server rejects Apple token', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        text: () => Promise.resolve('Invalid identity token'),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const res = await service.signInWithApple('invalid-token')
+      expect(res.success).toBe(false)
+      expect(res.error).toBe(
+        'Apple Sign-In could not be verified with the server.',
+      )
+      service.destroy()
+    })
+  })
 })
