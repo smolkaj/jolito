@@ -1182,6 +1182,7 @@ describe('SyncModal Live Sync Status Contract', () => {
         .spyOn(appleAuthModule, 'requestAppleSignIn')
         .mockResolvedValue({
           identityToken: 'mock-token',
+          nonce: 'mock-nonce',
         })
 
       const auth = new MockAuthService()
@@ -1209,12 +1210,86 @@ describe('SyncModal Live Sync Status Contract', () => {
 
       fireEvent.click(appleBtn)
       await waitFor(() => {
-        expect(signInWithAppleMock).toHaveBeenCalledWith('mock-token')
-        expect(onClose).toHaveBeenCalled()
+        expect(signInWithAppleMock).toHaveBeenCalledWith(
+          'mock-token',
+          'mock-nonce',
+        )
+        expect(onClose).not.toHaveBeenCalled()
       })
+      expect(
+        await screen.findByText('Signed in with Apple.'),
+      ).toBeInTheDocument()
 
       supportSpy.mockRestore()
       requestSpy.mockRestore()
+    })
+
+    it('displays learner-facing error copy when token retrieval fails', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(true)
+      const requestSpy = vi
+        .spyOn(appleAuthModule, 'requestAppleSignIn')
+        .mockResolvedValue({
+          error: 'Could not complete Apple Sign-In. Please try again.',
+        })
+
+      const auth = new MockAuthService()
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const appleBtn = screen.getByRole('button', {
+        name: /sign in with apple/i,
+      })
+      fireEvent.click(appleBtn)
+      expect(
+        await screen.findByText(
+          'Could not complete Apple Sign-In. Please try again.',
+        ),
+      ).toBeInTheDocument()
+
+      supportSpy.mockRestore()
+      requestSpy.mockRestore()
+    })
+
+    it('does not render Sign in with Apple button when auth service does not support it', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(true)
+
+      const auth = new MockAuthService()
+      ;(auth as { signInWithApple?: unknown }).signInWithApple = undefined
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      expect(
+        screen.queryByRole('button', { name: /sign in with apple/i }),
+      ).toBeNull()
+
+      supportSpy.mockRestore()
     })
 
     it('does not render Sign in with Apple button on unsupported platforms', async () => {

@@ -3,11 +3,13 @@ import { Capacitor, registerPlugin } from '@capacitor/core'
 export interface AppleSignInResult {
   identityToken?: string | undefined
   authorizationCode?: string | undefined
+  nonce?: string | undefined
   user?: string | undefined
   email?: string | null | undefined
   givenName?: string | null | undefined
   familyName?: string | null | undefined
   canceled?: boolean | undefined
+  error?: string | undefined
 }
 
 export interface NativeAppleSignInPlugin {
@@ -37,10 +39,11 @@ export async function requestAppleSignIn(
 ): Promise<AppleSignInResult> {
   try {
     return await nativePlugin.signIn()
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
     return {
       canceled: false,
-      identityToken: undefined,
+      error: message,
     }
   }
 }

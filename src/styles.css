@@ -4270,27 +4270,20 @@ kbd {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  min-height: 44px;
+  min-height: 50px;
   background-color: #000000;
   color: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: var(--radius-sm, 10px);
+  border-radius: var(--pill-radius);
   font-family: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .apple-signin-button:hover:not(:disabled) {
   opacity: 0.9;
-}
-
-.apple-signin-button:active:not(:disabled) {
-  transform: scale(0.98);
 }
 
 .apple-signin-button:disabled {
@@ -4310,7 +4303,7 @@ kbd {
 .signin-divider::after {
   content: '';
   flex: 1;
-  border-bottom: 1px solid var(--border-soft, #e8e4e6);
+  border-bottom: 1px solid var(--line-subtle);
 }
 
 .signin-divider span {

@@ -1297,6 +1297,48 @@ describe('SupabaseAuthService', () => {
       service.destroy()
     })
 
+    it('forwards raw nonce to Supabase auth payload when provided', async () => {
+      delete mockStorage['jolito-auth-session-v1']
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'apple-access-jwt',
+            refresh_token: 'apple-refresh-token',
+            expires_in: 3600,
+            user: {
+              id: 'apple-user-456',
+              email: 'apple.learner@privaterelay.appleid.com',
+            },
+          }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const res = await service.signInWithApple(
+        'valid-apple-identity-token',
+        'raw-nonce-secret',
+      )
+      expect(res.success).toBe(true)
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/auth/v1/token?grant_type=id_token',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            provider: 'apple',
+            id_token: 'valid-apple-identity-token',
+            nonce: 'raw-nonce-secret',
+          }),
+        }),
+      )
+      service.destroy()
+    })
+
     it('returns error when server rejects Apple token', async () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: false,

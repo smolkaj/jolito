@@ -21,6 +21,7 @@ describe('requestAppleSignIn', () => {
       .fn<NativeAppleSignInPlugin['signIn']>()
       .mockResolvedValue({
         identityToken: 'mock-jwt-token',
+        nonce: 'raw-nonce-123',
         user: '001234.apple.id',
         email: 'learner@example.com',
       })
@@ -30,6 +31,7 @@ describe('requestAppleSignIn', () => {
 
     const result = await requestAppleSignIn(mockPlugin)
     expect(result.identityToken).toBe('mock-jwt-token')
+    expect(result.nonce).toBe('raw-nonce-123')
     expect(result.user).toBe('001234.apple.id')
     expect(result.email).toBe('learner@example.com')
   })
@@ -48,7 +50,7 @@ describe('requestAppleSignIn', () => {
     expect(result.canceled).toBe(true)
   })
 
-  it('safely catches native plugin failure', async () => {
+  it('safely catches native plugin failure and preserves structured error', async () => {
     const signInMock = vi
       .fn<NativeAppleSignInPlugin['signIn']>()
       .mockRejectedValue(new Error('Native error'))
@@ -59,6 +61,7 @@ describe('requestAppleSignIn', () => {
     const result = await requestAppleSignIn(mockPlugin)
     expect(result.identityToken).toBeUndefined()
     expect(result.canceled).toBe(false)
+    expect(result.error).toBe('Native error')
   })
 
   it('web no-op plugin returns canceled: true', async () => {

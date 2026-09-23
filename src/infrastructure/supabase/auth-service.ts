@@ -829,6 +829,7 @@ export class SupabaseAuthService implements AuthService {
 
   async signInWithApple(
     identityToken: string,
+    nonce?: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
     const generation = ++this.generation
     this.inFlightRefresh = null
@@ -876,6 +877,7 @@ export class SupabaseAuthService implements AuthService {
           body: JSON.stringify({
             provider: 'apple',
             id_token: identityToken,
+            ...(nonce ? { nonce } : {}),
           }),
           signal,
         }),

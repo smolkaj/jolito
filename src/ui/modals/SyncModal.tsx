@@ -268,27 +268,34 @@ export function SyncModal({
       if (!appleResult.identityToken) {
         setStatusMsg({
           type: 'error',
-          message: 'Apple Sign-In could not retrieve an identity token.',
+          message:
+            appleResult.error ||
+            'Could not complete Apple Sign-In. Please try again.',
         })
-        setLoadingAction(null)
         return
       }
-      const res = await auth.signInWithApple(appleResult.identityToken)
+      const res = await auth.signInWithApple(
+        appleResult.identityToken,
+        appleResult.nonce,
+      )
       if (!res.success) {
         setStatusMsg({
           type: 'error',
-          message: res.error || 'Failed to sign in with Apple.',
+          message:
+            res.error || 'Could not complete Apple Sign-In. Please try again.',
         })
       } else {
-        if (pendingCardPrompt) {
-          onSaveLocally?.()
-        }
-        onClose()
+        setStatusMsg({
+          type: 'success',
+          message: 'Signed in with Apple.',
+        })
       }
-    } catch {
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
       setStatusMsg({
         type: 'error',
-        message: 'An error occurred during Apple Sign-In.',
+        message:
+          message || 'Could not complete Apple Sign-In. Please try again.',
       })
     } finally {
       setLoadingAction(null)
@@ -626,28 +633,31 @@ export function SyncModal({
           }}
           className="sync-auth-form"
         >
-          {isAppleSignInSupported() && (
-            <div className="apple-signin-wrapper">
-              <button
-                type="button"
-                className="apple-signin-button"
-                onClick={() => {
-                  void handleAppleSignIn()
-                }}
-                disabled={loading}
-              >
-                <AppleIcon size={18} />
-                <span>
-                  {loadingAction === 'apple'
-                    ? 'Signing in…'
-                    : 'Sign in with Apple'}
-                </span>
-              </button>
-              <div className="signin-divider">
-                <span>or continue with email</span>
+          {isAppleSignInSupported() &&
+            typeof (auth as { signInWithApple?: unknown }).signInWithApple ===
+              'function' && (
+              <div className="apple-signin-wrapper">
+                <button
+                  type="button"
+                  className="apple-signin-button"
+                  onClick={() => {
+                    void handleAppleSignIn()
+                  }}
+                  disabled={loading}
+                  aria-busy={loadingAction === 'apple'}
+                >
+                  <AppleIcon size={18} />
+                  <span>
+                    {loadingAction === 'apple'
+                      ? 'Signing in…'
+                      : 'Sign in with Apple'}
+                  </span>
+                </button>
+                <div className="signin-divider">
+                  <span>or continue with email</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           <div className="field-group">
             <label htmlFor="sync-email">Email address</label>
             <input
