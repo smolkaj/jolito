@@ -104,3 +104,20 @@ void test('Capacitor iOS configuration uses contentInset: never to prevent doubl
   assert.match(indexHtml, /viewport-fit=cover/)
   assert.match(config, /ios:\s*\{[\s\S]*?contentInset:\s*['"]never['"]/)
 })
+
+void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Live Activities', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const plist = readFileSync(
+    new URL('../../ios/App/App/Info.plist', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(LiveActivityPlugin\(\)\)/,
+  )
+  assert.match(plist, /<key>NSSupportsLiveActivities<\/key>\s*<true\/>/)
+})

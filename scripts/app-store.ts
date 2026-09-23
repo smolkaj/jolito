@@ -326,7 +326,7 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
   }
 }
 
-function token() {
+export function token() {
   const env = z
     .object({
       APP_STORE_CONNECT_API_KEY_KEY_ID: z.string().min(1),

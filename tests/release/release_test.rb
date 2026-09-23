@@ -33,6 +33,7 @@ class ReleaseTest < Minitest::Test
     env = api_env.merge({
       'APPLE_TEAM_ID' => 'ABCDEFGHIJ', 'APPLE_CERTIFICATE_PASS' => 'fixture-password',
       'APPLE_PROVISIONING_PROFILE' => Base64.strict_encode64('fixture-profile'),
+      'APPLE_WIDGET_PROVISIONING_PROFILE' => Base64.strict_encode64('fixture-widget-profile'),
       'VITE_SUPABASE_URL' => 'https://production.supabase.co',
       'VITE_SUPABASE_ANON_KEY' => 'header.' + Base64.urlsafe_encode64(JSON.generate({ role: 'anon', exp: Time.now.to_i + 3600 })) + '.signature'
     })
@@ -160,21 +161,39 @@ class ReleaseTest < Minitest::Test
     def respond_to_missing?(_name, _private = false) = true
   end
 
+  def mock_signing_capture(app_uuid = 'profile-id', widget_uuid = 'widget-profile-id')
+    app_profile_xml = Plist::Emit.dump({
+      'UUID' => app_uuid, 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    widget_profile_xml = Plist::Emit.dump({
+      'UUID' => widget_uuid, 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app.JolitoWidgetExtension', 'get-task-allow' => false }
+    })
+    status = Struct.new(:success?).new(true)
+    lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', status]
+      elsif args.any? { |a| a.to_s.include?('widget.mobileprovision') }
+        [widget_profile_xml, status]
+      else
+        [app_profile_xml, status]
+      end
+    end
+  end
+
   def test_signing_and_upload_failures_always_remove_credentials_and_never_submit
     Fastlane::Actions.load_default_actions
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
-    profile_xml = Plist::Emit.dump({
-      'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
-      'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
-    })
-    status = Struct.new(:success?).new(true)
+    capture_proc = mock_signing_capture
     %i[import_certificate build_app upload_to_testflight].each do |failure|
       harness = SigningHarness.new
       harness.failure = failure
-      Open3.stub(:capture2, [profile_xml, status]) do
+      Open3.stub(:capture2, capture_proc) do
         error = assert_raises(RuntimeError) { harness.execute(:beta) }
         assert_equal 'simulated signing/upload failure', error.message
       end
@@ -192,16 +211,11 @@ class ReleaseTest < Minitest::Test
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
-    profile_xml = Plist::Emit.dump({
-      'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
-      'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
-    })
-    status = Struct.new(:success?).new(true)
     captured_commands = []
+    base_proc = mock_signing_capture
     capture_proc = lambda do |*args|
       captured_commands << args
-      [profile_xml, status]
+      base_proc.call(*args)
     end
     harness = SigningHarness.new
     Open3.stub(:capture2, capture_proc) do
@@ -220,7 +234,128 @@ class ReleaseTest < Minitest::Test
     assert build_call, 'Expected build_app call'
     xcargs = build_call[1][:xcargs]
     assert_includes xcargs, 'CODE_SIGN_IDENTITY="Apple Distribution"'
-    assert_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER=profile-id'
+    refute_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER'
+
+    app_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['App'] }
+    assert app_signing, 'Expected update_code_signing_settings for App'
+    assert_equal 'profile-id', app_signing[1][:profile_uuid]
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_supports_widget_extension_signing_when_profile_provided
+    Fastlane::Actions.load_default_actions
+    env = signing_env.merge('APPLE_WIDGET_PROVISIONING_PROFILE' => Base64.strict_encode64('widget-profile-content'))
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    capture_proc = mock_signing_capture('app-profile-id', 'widget-profile-id')
+    harness = SigningHarness.new
+    Open3.stub(:capture2, capture_proc) do
+      harness.execute(:beta)
+    end
+    widget_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['JolitoWidgetExtension'] }
+    assert widget_signing, 'Expected update_code_signing_settings for JolitoWidgetExtension'
+    assert_equal 'widget-profile-id', widget_signing[1][:profile_uuid]
+
+    build_call = harness.calls.find { |name, _| name == :build_app }
+    assert_equal 'app-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app']
+    assert_equal 'widget-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app.JolitoWidgetExtension']
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_auto_provisions_widget_extension_when_profile_not_provided
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    env.delete('APPLE_WIDGET_PROVISIONING_PROFILE')
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    status = Struct.new(:success?).new(true)
+    base_proc = mock_signing_capture('app-profile-id', 'auto-widget-profile-id')
+    node_command_args = nil
+    capture2e_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-widget.ts') }
+        node_command_args = args
+        output_idx = args.index('--output')
+        if output_idx && args[output_idx + 1]
+          File.binwrite(args[output_idx + 1], 'simulated-widget-profile-content')
+        end
+        ['Auto-provisioned widget profile', status]
+      else
+        base_proc.call(*args)
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2e, capture2e_proc) do
+      Open3.stub(:capture2, base_proc) do
+        harness.execute(:beta)
+      end
+    end
+    assert node_command_args, 'Expected provision-widget.ts to be invoked via node'
+    assert_includes node_command_args, '--output'
+
+    widget_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['JolitoWidgetExtension'] }
+    assert widget_signing, 'Expected update_code_signing_settings for JolitoWidgetExtension'
+    assert_equal 'auto-widget-profile-id', widget_signing[1][:profile_uuid]
+
+    build_call = harness.calls.find { |name, _| name == :build_app }
+    assert_equal 'auto-widget-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app.JolitoWidgetExtension']
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_fails_fast_when_widget_profile_unresolved
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    env.delete('APPLE_WIDGET_PROVISIONING_PROFILE')
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    failure_status = Struct.new(:success?).new(false)
+    base_proc = mock_signing_capture
+    capture2e_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-widget.ts') }
+        ['Auto-provisioning failed: 403 Forbidden', failure_status]
+      else
+        base_proc.call(*args)
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2e, capture2e_proc) do
+      Open3.stub(:capture2, base_proc) do
+        error = assert_raises(StandardError) { harness.execute(:beta) }
+        assert_includes error.message, 'Failed to auto-provision widget extension profile'
+      end
+    end
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_fails_fast_when_widget_uuid_cannot_be_resolved
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    env.delete('APPLE_WIDGET_PROVISIONING_PROFILE')
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    success_status = Struct.new(:success?).new(true)
+    base_proc = mock_signing_capture
+    capture2e_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-widget.ts') }
+        ['Finished without writing output', success_status]
+      else
+        base_proc.call(*args)
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2e, capture2e_proc) do
+      Open3.stub(:capture2, base_proc) do
+        error = assert_raises(StandardError) { harness.execute(:beta) }
+        assert_includes error.message, 'JolitoWidgetExtension provisioning profile could not be resolved'
+      end
+    end
   ensure
     FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
@@ -231,18 +366,13 @@ class ReleaseTest < Minitest::Test
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
-    profile_xml = Plist::Emit.dump({
-      'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
-      'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
-    })
-    success = Struct.new(:success?).new(true)
     failure = Struct.new(:success?).new(false)
+    base_proc = mock_signing_capture
     capture_proc = lambda do |*args|
       if args[1] == 'set-key-partition-list'
         ['', failure]
       else
-        [profile_xml, success]
+        base_proc.call(*args)
       end
     end
     harness = SigningHarness.new

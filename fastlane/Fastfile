@@ -33,6 +33,10 @@ platform :ios do
       keychain = File.join(temp, 'release.keychain-db')
       password = SecureRandom.hex(32)
       profile_path = nil
+      widget_installed_path = nil
+      widget_bundle_id = 'to.joli.app.JolitoWidgetExtension'
+      widget_profile_file = File.join(temp, 'widget.mobileprovision')
+      widget_uuid = nil
       begin
         certificate = File.join(temp, 'distribution.p12')
         profile_file = File.join(temp, 'distribution.mobileprovision')
@@ -44,6 +48,29 @@ platform :ios do
         profile = Plist.parse_xml(xml)
         uuid = ReleaseConfig.profile!(profile)
         profile_path = install_provisioning_profile(path: profile_file)
+
+        # Resolve or auto-provision widget extension profile
+        if ENV['APPLE_WIDGET_PROVISIONING_PROFILE'] && !ENV['APPLE_WIDGET_PROVISIONING_PROFILE'].strip.empty?
+          File.binwrite(widget_profile_file, Base64.strict_decode64(ENV.fetch('APPLE_WIDGET_PROVISIONING_PROFILE')))
+        elsif ENV['APP_STORE_CONNECT_API_KEY_KEY']
+          provision_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-widget.ts')
+          if File.exist?(provision_script)
+            UI.message('Auto-provisioning JolitoWidgetExtension profile via App Store Connect API...')
+            output, prov_status = Open3.capture2e('node', provision_script, '--output', widget_profile_file)
+            UI.message(output) if output && !output.empty?
+            UI.user_error!('Failed to auto-provision widget extension profile') unless prov_status.success?
+          end
+        end
+
+        if File.exist?(widget_profile_file)
+          File.chmod(0600, widget_profile_file)
+          widget_xml, widget_status = Open3.capture2('security', 'cms', '-D', '-i', widget_profile_file)
+          UI.user_error!('Cannot decode widget provisioning profile') unless widget_status.success?
+          parsed_widget_profile = Plist.parse_xml(widget_xml)
+          widget_uuid = ReleaseConfig.profile!(parsed_widget_profile, ENV, widget_bundle_id)
+          widget_installed_path = install_provisioning_profile(path: widget_profile_file)
+        end
+
         create_keychain(path: keychain, password: password, default_keychain: true,
                         unlock: true, timeout: 3600, add_to_search_list: true)
         import_certificate(certificate_path: certificate,
@@ -53,20 +80,34 @@ platform :ios do
           'security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', password, keychain
         )
         UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
+        UI.user_error!('JolitoWidgetExtension provisioning profile could not be resolved') unless widget_uuid
+
         update_code_signing_settings(
           use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
           targets: ['App'], build_configurations: ['Release'],
           team_id: ENV.fetch('APPLE_TEAM_ID'), code_sign_identity: 'Apple Distribution',
           profile_uuid: uuid, bundle_identifier: bundle_id
         )
+        update_code_signing_settings(
+          use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
+          targets: ['JolitoWidgetExtension'], build_configurations: ['Release'],
+          team_id: ENV.fetch('APPLE_TEAM_ID'), code_sign_identity: 'Apple Distribution',
+          profile_uuid: widget_uuid, bundle_identifier: widget_bundle_id
+        )
+
+        provisioning_profiles = {
+          bundle_id => uuid,
+          widget_bundle_id => widget_uuid
+        }
+
         build_app(
           project: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'), scheme: 'App', configuration: 'Release',
           export_method: 'app-store', output_directory: File.join(ReleaseConfig::ROOT, 'build'), output_name: 'Jolito.ipa',
           clean: true,
-          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number} CODE_SIGN_IDENTITY=\"Apple Distribution\" PROVISIONING_PROFILE_SPECIFIER=#{uuid}",
+          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number} CODE_SIGN_IDENTITY=\"Apple Distribution\"",
           export_options: {
             signingStyle: 'manual', teamID: ENV.fetch('APPLE_TEAM_ID'),
-            provisioningProfiles: { bundle_id => uuid }, manageAppVersionAndBuildNumber: false
+            provisioningProfiles: provisioning_profiles, manageAppVersionAndBuildNumber: false
           }
         )
         upload_to_testflight(
@@ -85,6 +126,7 @@ platform :ios do
           delete_keychain(keychain_path: keychain) if File.exist?(keychain)
         ensure
           FileUtils.rm_f(profile_path) if profile_path
+          FileUtils.rm_f(widget_installed_path) if widget_installed_path
         end
       end
     end
