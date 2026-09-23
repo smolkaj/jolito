@@ -183,7 +183,7 @@ void test('Capacitor iOS configuration uses contentInset: never to prevent doubl
   )
 
   // With viewport-fit=cover, CSS env(safe-area-inset-*) handles safe areas.
-  // contentInset: 'never' prevents UIKit from adding duplicate safe-area margins.
+  // contentInset: 'never' prevents UIKit from dynamic double margins.
   assert.match(indexHtml, /viewport-fit=cover/)
   assert.match(config, /ios:\s*\{[\s\S]*?contentInset:\s*['"]never['"]/)
 })
@@ -222,4 +222,50 @@ void test('SceneDelegate registers ShareFilePlugin with UIActivityViewController
   assert.match(shareFilePlugin, /class ShareFilePlugin:\s*CAPPlugin/)
   assert.match(shareFilePlugin, /UIActivityViewController/)
   assert.match(shareFilePlugin, /popoverPresentationController/)
+})
+
+void test('Capacitor Android configuration matches appId and brand background', () => {
+  const config = readFileSync(
+    new URL('../../capacitor.config.ts', import.meta.url),
+    'utf8',
+  )
+  const buildGradle = readFileSync(
+    new URL('../../android/app/build.gradle', import.meta.url),
+    'utf8',
+  )
+  const manifest = readFileSync(
+    new URL('../../android/app/src/main/AndroidManifest.xml', import.meta.url),
+    'utf8',
+  )
+
+  const stringsXml = readFileSync(
+    new URL(
+      '../../android/app/src/main/res/values/strings.xml',
+      import.meta.url,
+    ),
+    'utf8',
+  )
+
+  // App ID and Android scheme
+  assert.match(config, /appId:\s*['"]to\.joli\.app['"]/)
+  assert.match(config, /androidScheme:\s*['"]https['"]/)
+  assert.match(
+    config,
+    /android:\s*\{[\s\S]*?backgroundColor:\s*['"]#fdf5f8['"]/,
+  )
+
+  // Gradle appId and namespace
+  assert.match(buildGradle, /applicationId\s+['"]to\.joli\.app['"]/)
+  assert.match(buildGradle, /namespace\s*=\s*['"]to\.joli\.app['"]/)
+
+  // Manifest activity & permissions
+  assert.match(manifest, /android:name="\.MainActivity"/)
+  assert.match(manifest, /android\.permission\.INTERNET/)
+
+  // Strings resources package name & app name
+  assert.match(
+    stringsXml,
+    /<string name="package_name">to\.joli\.app<\/string>/,
+  )
+  assert.match(stringsXml, /<string name="app_name">Jolito<\/string>/)
 })

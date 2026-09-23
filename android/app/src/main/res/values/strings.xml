@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jolito</string>
+    <string name="title_activity_main">Jolito</string>
+    <string name="package_name">to.joli.app</string>
+    <string name="custom_url_scheme">to.joli.app</string>
+</resources>

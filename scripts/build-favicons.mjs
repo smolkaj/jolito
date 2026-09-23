@@ -118,9 +118,118 @@ async function buildRasters() {
     await page.close()
   }
 
+  // 3. Android launcher & adaptive icons (mipmap densities)
+  const androidResDir = path.join(rootDir, 'android/app/src/main/res')
+  if (fs.existsSync(androidResDir)) {
+    const androidMipmaps = [
+      { density: 'mdpi', size: 48, fgSize: 108, fgMark: 72 },
+      { density: 'hdpi', size: 72, fgSize: 162, fgMark: 108 },
+      { density: 'xhdpi', size: 96, fgSize: 216, fgMark: 144 },
+      { density: 'xxhdpi', size: 144, fgSize: 324, fgMark: 216 },
+      { density: 'xxxhdpi', size: 192, fgSize: 432, fgMark: 288 },
+    ]
+
+    for (const item of androidMipmaps) {
+      const mipmapDir = path.join(androidResDir, `mipmap-${item.density}`)
+      if (!fs.existsSync(mipmapDir)) {
+        fs.mkdirSync(mipmapDir, { recursive: true })
+      }
+
+      // Legacy launcher & round launcher (solid #fdf5f8 background, 88% scale)
+      const markSize = Math.round(item.size * 0.88)
+      const page = await browser.newPage({
+        viewport: { width: item.size, height: item.size },
+        deviceScaleFactor: 1,
+      })
+      await page.setContent(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              width: ${item.size}px;
+              height: ${item.size}px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #fdf5f8;
+              overflow: hidden;
+            }
+            .mark-wrapper {
+              width: ${markSize}px;
+              height: ${markSize}px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            svg { width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <div class="mark-wrapper">
+            ${option4Svg}
+          </div>
+        </body>
+        </html>
+      `)
+      const launcherBuffer = await page.screenshot({ omitBackground: false })
+      fs.writeFileSync(path.join(mipmapDir, 'ic_launcher.png'), launcherBuffer)
+      fs.writeFileSync(
+        path.join(mipmapDir, 'ic_launcher_round.png'),
+        launcherBuffer,
+      )
+      await page.close()
+
+      // Adaptive foreground (transparent background, centered mark)
+      const fgPage = await browser.newPage({
+        viewport: { width: item.fgSize, height: item.fgSize },
+        deviceScaleFactor: 1,
+      })
+      await fgPage.setContent(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              width: ${item.fgSize}px;
+              height: ${item.fgSize}px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: transparent;
+              overflow: hidden;
+            }
+            .mark-wrapper {
+              width: ${item.fgMark}px;
+              height: ${item.fgMark}px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            svg { width: 100%; height: 100%; }
+          </style>
+        </head>
+        <body>
+          <div class="mark-wrapper">
+            ${option4Svg}
+          </div>
+        </body>
+        </html>
+      `)
+      const fgBuffer = await fgPage.screenshot({ omitBackground: true })
+      fs.writeFileSync(
+        path.join(mipmapDir, 'ic_launcher_foreground.png'),
+        fgBuffer,
+      )
+      await fgPage.close()
+    }
+  }
+
   await browser.close()
   console.log(
-    'Generated production raster icons (transparent tab favicons + solid paper app icons)',
+    'Generated production raster icons (transparent tab favicons + solid paper app icons + Android mipmaps)',
   )
 }
 
