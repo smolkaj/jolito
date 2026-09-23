@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createStudyCards } from '../../domain/card'
 import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { Capacitor } from '@capacitor/core'
-import { EnhancedBrowserSpeaker } from './speech'
+import { NativeSpeaker } from './native-speech'
 import { OfflineCardAssistant } from '../../application/card-assistant'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import {
@@ -93,10 +93,10 @@ describe('createBrowserServices', () => {
       .mockResolvedValue(true)
     const services = createBrowserServices()
     expect(services.deletionLock).toBeInstanceOf(NativeDeletionLock)
-    expect(services.speaker).toBeInstanceOf(EnhancedBrowserSpeaker)
+    expect(services.speaker).toBeInstanceOf(NativeSpeaker)
     expect('prefetch' in services.speaker).toBe(false)
     expect(prewarm).not.toHaveBeenCalled()
-    ;(services.speaker as EnhancedBrowserSpeaker).destroy()
+    ;(services.speaker as NativeSpeaker).destroy()
 
     platform.mockRestore()
     prewarm.mockRestore()

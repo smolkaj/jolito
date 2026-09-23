@@ -10,6 +10,7 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(LiveActivityPlugin())
         bridge?.registerPluginInstance(ShareFilePlugin())
         bridge?.registerPluginInstance(AppleSignInPlugin())
+        bridge?.registerPluginInstance(NativeSpeechPlugin())
     }
 }
 
