@@ -159,11 +159,23 @@ void test('provisionAppProfile registers capability and recreates profile when m
       c.url.pathname.endsWith('/v1/bundleIdCapabilities'),
   )
   assert.ok(capPost, 'Expected bundleIdCapabilities POST')
-  assert.equal(
-    (capPost?.body as { data: { attributes: { capabilityType: string } } })
-      ?.data.attributes.capabilityType,
-    'APPLE_ID_AUTH',
-  )
+  const capAttrs = (
+    capPost?.body as {
+      data: {
+        attributes: {
+          capabilityType: string
+          settings?: { key: string; options?: { key: string }[] }[]
+        }
+      }
+    }
+  )?.data.attributes
+  assert.equal(capAttrs?.capabilityType, 'APPLE_ID_AUTH')
+  assert.deepEqual(capAttrs?.settings, [
+    {
+      key: 'APPLE_ID_AUTH_APP_CONSENT',
+      options: [{ key: 'PRIMARY_APP_CONSENT' }],
+    },
+  ])
 
   // Verify old profile was deleted
   assert.ok(
@@ -194,7 +206,7 @@ void test('provisionAppProfile throws if no active distribution certificate exis
       return reply({
         data: [
           record('bundleIdCapabilities', 'cap-1', {
-            capabilityType: 'SIGN_IN_WITH_APPLE',
+            capabilityType: 'APPLE_ID_AUTH',
           }),
         ],
       })

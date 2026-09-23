@@ -44,9 +44,7 @@ export async function provisionAppProfile(
     `/v1/bundleIds/${bundleIdId}/bundleIdCapabilities`,
   )
   const hasSignInWithAppleCap = capabilities.some(
-    (cap) =>
-      cap.attributes.capabilityType === 'APPLE_ID_AUTH' ||
-      cap.attributes.capabilityType === 'SIGN_IN_WITH_APPLE',
+    (cap) => cap.attributes.capabilityType === 'APPLE_ID_AUTH',
   )
   if (!hasSignInWithAppleCap) {
     console.log(`Enabling APPLE_ID_AUTH capability on ${APP_BUNDLE_ID}...`)
@@ -56,6 +54,12 @@ export async function provisionAppProfile(
           type: 'bundleIdCapabilities',
           attributes: {
             capabilityType: 'APPLE_ID_AUTH',
+            settings: [
+              {
+                key: 'APPLE_ID_AUTH_APP_CONSENT',
+                options: [{ key: 'PRIMARY_APP_CONSENT' }],
+              },
+            ],
           },
           relationships: {
             bundleId: {

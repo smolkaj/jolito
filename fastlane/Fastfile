@@ -58,13 +58,17 @@ platform :ios do
           end
         end
 
-        if need_app_provision && ENV['APP_STORE_CONNECT_API_KEY_KEY']
-          provision_app_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-app.ts')
-          if File.exist?(provision_app_script)
-            UI.message('Auto-provisioning Jolito AppStore profile with Sign In with Apple via App Store Connect API...')
-            output, prov_status = Open3.capture2e('node', provision_app_script, '--output', profile_file)
-            UI.message(output) if output && !output.empty?
-            UI.user_error!('Failed to auto-provision app profile') unless prov_status.success?
+        if need_app_provision
+          if ENV['APP_STORE_CONNECT_API_KEY_KEY']
+            provision_app_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-app.ts')
+            if File.exist?(provision_app_script)
+              UI.message('Auto-provisioning Jolito AppStore profile with Sign In with Apple via App Store Connect API...')
+              output, prov_status = Open3.capture2e('node', provision_app_script, '--output', profile_file)
+              UI.message(output) if output && !output.empty?
+              UI.user_error!('Failed to auto-provision app profile') unless prov_status.success?
+            end
+          else
+            UI.user_error!('App Store provisioning profile lacks Sign In with Apple capability (com.apple.developer.applesignin) and cannot be auto-provisioned without App Store Connect API keys')
           end
         end
 
