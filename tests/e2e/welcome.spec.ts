@@ -1038,21 +1038,21 @@ test('configures mobile viewport and touch action defaults for iOS standalone er
   expect(touchAction).toBe('manipulation')
 })
 
-test('ensures zero horizontal overflow across mobile and desktop viewports and verifies vertical fit for single-screen views', async ({
-  page,
-}) => {
-  const viewports = [
-    { name: 'Narrow Mobile (320x568)', width: 320, height: 568 },
-    { name: 'iPhone SE (375x667)', width: 375, height: 667 },
-    { name: 'iPhone 14 (390x844)', width: 390, height: 844 },
-    { name: 'iPhone Pro Max (430x932)', width: 430, height: 932 },
-    { name: 'Tablet Narrow (681x800)', width: 681, height: 800 },
-    { name: 'Tablet Mid (768x1024)', width: 768, height: 1024 },
-    { name: 'Tablet Wide (860x900)', width: 860, height: 900 },
-    { name: 'Desktop (1280x800)', width: 1280, height: 800 },
-  ]
+const viewportOverflowCases = [
+  { name: 'Narrow Mobile (320x568)', width: 320, height: 568 },
+  { name: 'iPhone SE (375x667)', width: 375, height: 667 },
+  { name: 'iPhone 14 (390x844)', width: 390, height: 844 },
+  { name: 'iPhone Pro Max (430x932)', width: 430, height: 932 },
+  { name: 'Tablet Narrow (681x800)', width: 681, height: 800 },
+  { name: 'Tablet Mid (768x1024)', width: 768, height: 1024 },
+  { name: 'Tablet Wide (860x900)', width: 860, height: 900 },
+  { name: 'Desktop (1280x800)', width: 1280, height: 800 },
+]
 
-  for (const vp of viewports) {
+for (const vp of viewportOverflowCases) {
+  test(`ensures zero horizontal overflow and single-screen fit on ${vp.name}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: vp.width, height: vp.height })
 
     for (const testPage of ['welcome', 'deck', 'review', 'create']) {
@@ -1089,8 +1089,8 @@ test('ensures zero horizontal overflow across mobile and desktop viewports and v
         ).toBe(dims.docClientHeight)
       }
     }
-  }
-})
+  })
+}
 
 test('scales hero cards fluidly without clipping and preserves 2-line headline layout across resizing', async ({
   page,
