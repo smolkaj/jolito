@@ -3370,7 +3370,7 @@ kbd {
 
   .create-layout {
     grid-template-columns: minmax(0, 1fr);
-    margin-block: auto;
+    margin-block: 16px 24px;
   }
 
   .create-layout h1 {
@@ -7178,12 +7178,6 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
   html[data-keyboard-open='true'] .mobile-tab-bar,
   .is-keyboard-open .mobile-tab-bar {
     display: none !important;
-  }
-
-  /* When virtual keyboard is open on mobile, anchor create layout to top */
-  html[data-keyboard-open='true'] .create-layout,
-  .is-keyboard-open .create-layout {
-    margin-block: 12px 24px;
   }
 
   /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */

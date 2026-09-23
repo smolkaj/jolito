@@ -227,6 +227,123 @@ describe('scrollElementIntoKeyboardSafeView', () => {
     expect(mockScrollBy).not.toHaveBeenCalled()
   })
 
+  it('preserves field-group header context (label row, audio trigger) when scrolling in container', () => {
+    const container = mockDocument.createElement('div')
+    const fieldGroup = mockDocument.createElement('div')
+    fieldGroup.className = 'field-group'
+    const labelRow = mockDocument.createElement('div')
+    labelRow.className = 'field-label-row'
+    const input = mockDocument.createElement('textarea')
+    fieldGroup.appendChild(labelRow)
+    fieldGroup.appendChild(input)
+    container.appendChild(fieldGroup)
+    mockDocument.body.appendChild(container)
+
+    vi.spyOn(mockWindow, 'getComputedStyle').mockImplementation((node) => {
+      if (node === container) {
+        return { overflowY: 'auto' } as CSSStyleDeclaration
+      }
+      return { overflowY: 'visible' } as CSSStyleDeclaration
+    })
+
+    const containerScrollBy = vi.fn()
+    container.scrollBy = containerScrollBy
+
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+      bottom: 500,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 400,
+      x: 0,
+      y: 100,
+      toJSON: () => {},
+    })
+
+    // field-group spans y: 110 to 220 (groupTopInParent = 10, which is < 16)
+    vi.spyOn(fieldGroup, 'getBoundingClientRect').mockReturnValue({
+      top: 110,
+      bottom: 220,
+      left: 20,
+      right: 380,
+      width: 360,
+      height: 110,
+      x: 20,
+      y: 110,
+      toJSON: () => {},
+    })
+
+    // input itself is at y: 142 (elemTopInParent = 42, which alone would not trigger < 16)
+    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({
+      top: 142,
+      bottom: 220,
+      left: 20,
+      right: 380,
+      width: 360,
+      height: 78,
+      x: 20,
+      y: 142,
+      toJSON: () => {},
+    })
+
+    scrollElementIntoKeyboardSafeView(input, {
+      keyboardHeight: 336,
+      window: mockWindow,
+    })
+
+    // Must scroll based on groupTopInParent (10 - 24 = -14) so the label row remains visible
+    expect(containerScrollBy).toHaveBeenCalledWith(
+      expect.objectContaining({ top: -14 }),
+    )
+  })
+
+  it('does not early-return on window scroll if enclosing group context/helpers are occluded', () => {
+    mockScrollBy.mockClear()
+    const fieldGroup = mockDocument.createElement('div')
+    fieldGroup.className = 'field-group'
+    const input = mockDocument.createElement('textarea')
+    const aiButtons = mockDocument.createElement('div')
+    aiButtons.className = 'ai-actions'
+    fieldGroup.appendChild(input)
+    fieldGroup.appendChild(aiButtons)
+    mockDocument.body.appendChild(fieldGroup)
+
+    // Window height 844, keyboard 336 => visibleBottom = 844 - 336 - 24 = 484
+    // input is in [380, 460] (inside [60, 484]), but AI buttons push group bottom to 520 (> 484)
+    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({
+      top: 380,
+      bottom: 460,
+      left: 20,
+      right: 380,
+      width: 360,
+      height: 80,
+      x: 20,
+      y: 380,
+      toJSON: () => {},
+    })
+
+    vi.spyOn(fieldGroup, 'getBoundingClientRect').mockReturnValue({
+      top: 340,
+      bottom: 520,
+      left: 20,
+      right: 380,
+      width: 360,
+      height: 180,
+      x: 20,
+      y: 340,
+      toJSON: () => {},
+    })
+
+    scrollElementIntoKeyboardSafeView(input, {
+      keyboardHeight: 336,
+      window: mockWindow,
+    })
+
+    // Group extends to 520 which is occluded by keyboard (visibleBottom 484), so scrollBy MUST be called
+    expect(mockScrollBy).toHaveBeenCalledTimes(1)
+  })
+
   it('respects prefers-reduced-motion with behavior: auto', () => {
     const reducedScrollBy = vi.fn()
     const reducedMotionWin = {

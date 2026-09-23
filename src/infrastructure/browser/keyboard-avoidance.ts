@@ -132,40 +132,76 @@ export function scrollElementIntoKeyboardSafeView(
 
   if (scrollParent) {
     const parentRect = scrollParent.getBoundingClientRect()
-    const elemTopInParent = elemRect.top - parentRect.top
-    const elemBottomInParent = elemRect.bottom - parentRect.top
+    const groupTopInParent = groupRect.top - parentRect.top
+    const groupBottomInParent = groupRect.bottom - parentRect.top
     const parentVisibleBottom = Math.min(
       parentRect.height,
       visibleBottom - Math.max(0, parentRect.top),
     )
 
-    if (
-      elemBottomInParent > parentVisibleBottom - bottomMargin ||
-      elemTopInParent < 16
-    ) {
-      const scrollOffset = elemTopInParent - 24
-      scrollParent.scrollBy({
-        top: scrollOffset,
-        behavior,
-      })
+    const fitsInParent = groupRect.height <= parentVisibleBottom - 16
+
+    if (fitsInParent) {
+      if (
+        groupBottomInParent > parentVisibleBottom - bottomMargin ||
+        groupTopInParent < 16
+      ) {
+        const scrollOffset = groupTopInParent - 24
+        scrollParent.scrollBy({
+          top: scrollOffset,
+          behavior,
+        })
+      }
+    } else {
+      // Group is taller than visible area in parent: ensure focused input is visible with label clearance
+      const elemTopInParent = elemRect.top - parentRect.top
+      const elemBottomInParent = elemRect.bottom - parentRect.top
+      if (
+        elemBottomInParent > parentVisibleBottom - bottomMargin ||
+        elemTopInParent < 16
+      ) {
+        const scrollOffset = elemTopInParent - 32
+        scrollParent.scrollBy({
+          top: scrollOffset,
+          behavior,
+        })
+      }
     }
   } else {
     // Window scroll:
-    // If element is already completely in the visible range [visibleTop, visibleBottom], no jump needed
-    if (elemRect.top >= visibleTop && elemRect.bottom <= visibleBottom) {
-      return
-    }
-
-    // Center the element/group comfortably in the visible area above the keyboard
     const visibleHeight = visibleBottom - visibleTop
-    const fieldCenter = (groupRect.top + groupRect.bottom) / 2
-    const visibleCenter = visibleTop + visibleHeight / 2
-    const delta = fieldCenter - visibleCenter
+    const fitsVisibleArea = groupRect.height <= visibleHeight
 
-    win.scrollBy({
-      top: delta,
-      behavior,
-    })
+    if (fitsVisibleArea) {
+      // If the entire group (label + input + AI buttons) is already in the visible range, no jump needed
+      if (groupRect.top >= visibleTop && groupRect.bottom <= visibleBottom) {
+        return
+      }
+
+      // Center the group comfortably in the visible area above the keyboard
+      const fieldCenter = (groupRect.top + groupRect.bottom) / 2
+      const visibleCenter = visibleTop + visibleHeight / 2
+      const delta = fieldCenter - visibleCenter
+
+      win.scrollBy({
+        top: delta,
+        behavior,
+      })
+    } else {
+      // Group is taller than visible area: ensure focused input is in view with label clearance
+      if (elemRect.top >= visibleTop + 24 && elemRect.bottom <= visibleBottom) {
+        return
+      }
+
+      const fieldCenter = (elemRect.top + elemRect.bottom) / 2
+      const visibleCenter = visibleTop + visibleHeight / 2
+      const delta = fieldCenter - visibleCenter
+
+      win.scrollBy({
+        top: delta,
+        behavior,
+      })
+    }
   }
 }
 
@@ -208,6 +244,7 @@ export function initKeyboardAvoidance(
   let currentKeyboardHeight = 0
   let isMounted = true
   const handles: PluginListenerHandle[] = []
+  const timers: Array<number | ReturnType<typeof setTimeout>> = []
 
   const updateInset = (height: number) => {
     if (!isMounted) return
@@ -258,6 +295,24 @@ export function initKeyboardAvoidance(
           })
         }
       })
+
+      // Also schedule settled auto-scroll after the 240ms transition finishes
+      // to guarantee alignment once padding-bottom has completely expanded
+      const scheduleTimer =
+        typeof win.setTimeout === 'function'
+          ? (cb: () => void, ms: number) => win.setTimeout(cb, ms)
+          : setTimeout
+      const settledTimer = scheduleTimer(() => {
+        if (!isMounted) return
+        const active = doc.activeElement
+        if (isTextInput(active)) {
+          scrollElementIntoKeyboardSafeView(active, {
+            keyboardHeight: safeHeight,
+            window: win,
+          })
+        }
+      }, 250)
+      timers.push(settledTimer)
     }
   }
 
@@ -266,7 +321,10 @@ export function initKeyboardAvoidance(
     if (Capacitor.isNativePlatform()) return
     const vv = win.visualViewport
     if (!vv) return
-    const inset = Math.max(0, win.innerHeight - (vv.offsetTop + vv.height))
+    const inset = Math.max(
+      0,
+      Math.round(win.innerHeight - (vv.offsetTop + vv.height)),
+    )
     updateInset(inset)
   }
 
@@ -372,6 +430,14 @@ export function initKeyboardAvoidance(
       win.removeEventListener('keyboardWillShow', handleWindowKeyboardWillShow)
       win.removeEventListener('keyboardWillHide', handleWindowKeyboardWillHide)
       win.removeEventListener('focusin', onFocusIn, { capture: true })
+      timers.forEach((t) => {
+        if (typeof win.clearTimeout === 'function') {
+          win.clearTimeout(t as number)
+        } else {
+          clearTimeout(t as Parameters<typeof clearTimeout>[0])
+        }
+      })
+      timers.length = 0
       handles.forEach((h) => void h.remove())
       root.style.setProperty('--keyboard-inset', '0px')
       delete root.dataset.keyboardOpen
