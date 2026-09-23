@@ -5,6 +5,15 @@ updates:
     schedule:
       interval: weekly
     groups:
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
+      capacitor:
+        patterns:
+          - '@capacitor/*'
       development-dependencies:
         dependency-type: development
     # TODO(#104): Remove typescript ignore once typescript-eslint supports TypeScript 7+
