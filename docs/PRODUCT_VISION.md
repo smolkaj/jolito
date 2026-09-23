@@ -82,6 +82,8 @@ Suggested keyboard controls:
 - **Web Application (PWA):** Installable, offline-capable progressive web application at [`joli.to`](https://joli.to) with local browser storage, service worker caching, and full mobile touch compliance.
 - **Unified Card Collection:** Single personal card collection with creation date and alphabetical sorting, duplicate detection and resolution, and instant editing.
 - **Multimodal Mexican Spanish:** Spanish ↔ English reciprocal card creation with lexicon assistance, autocomplete, lemma resolution, and verb conjugation ranking.
+- **Curated Starter Packs:** Built-in starter decks (Top Connectors, Adjectives, Idioms, Adverbs) that merge semantically into personal decks without overwriting progress.
+- **Focused Grammar Practice:** Dedicated drills for Pretérito Indefinido, Pretérito Perfecto Compuesto, and Gerundio with accent shortcuts and subject-verb matching.
 - **Spoken Audio Immersion:** Spoken Mexican Spanish audio on prompts and answers with dual-voice studio neural synthesis (`/api/tts`), practice prefetching, and graceful offline device speech synthesis fallback.
 - **Active Typed Recall & Flow:** Production-first typed recall with affine gap alignment diffs, case-insensitivity, automatic audio reveal playback, Web Audio earcons, and sprint study batching.
 - **Spaced Repetition & Continuity:** Proven Anki-compatible scheduling, overdue queue prioritization, active study session preservation across navigation, and cross-device daily progress sync.
@@ -92,10 +94,9 @@ Suggested keyboard controls:
 
 #### Horizon 1: Native iOS App & Mobile Polish (Active Next)
 
-- **Native iOS Client via Capacitor:** Packaging the local-first application shell as an official iOS app (`ios/App`) with sensory haptics, TestFlight beta distribution, and App Store readiness.
-- **Studio Neural Voice Engine:** High-fidelity edge-synthesized neural Mexican Spanish voices (`/api/tts`), practice prefetching, voice cycling, and service worker audio caching beyond standard OS/device voices.
+- **Native iOS Client & App Store ($2.99 once):** Production iOS app via Capacitor (`ios/App`) with tactile haptics, TestFlight distribution, and App Store release tooling.
 - **Native iOS Authentication:** Apple Sign-In integrated with Supabase Auth.
-- **Ecosystem Widgets:** Quick-review Lock Screen and Home Screen widgets on iOS.
+- **Ecosystem Widgets & Live Activities:** Quick-review Lock Screen and Home Screen widgets, and Dynamic Island practice sessions via ActivityKit.
 - **Configurable Study Controls:** Custom daily new-card intake limits and advanced queue prioritization.
 - **Retention & Habit Insights:** Visual retention curves, interval distribution, and daily practice streak insights.
 - **Contextual Organization:** Lightweight user-defined tagging by topic, register, or situation.
