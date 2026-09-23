@@ -113,21 +113,25 @@ Complete these App Store Connect declarations against the release candidate:
 - **Accessibility:** make only claims verified on devices with VoiceOver,
   larger text, reduced motion, and the keyboard.
 
-The `iOS Native Build` workflow can capture welcome and creation screens from
-the real bundled app on iPhone and iPad simulators on demand (`gh workflow run ios.yml`
-or on a PR with `[test-native]` in the title / `test-native` label). Download both
-`native-screenshots-*` artifacts from the run,
-inspect the exported PNGs and XCTest results, and select the two named
-attachments (`01-welcome`, `02-create`). These initial screens need no account.
-Add authenticated screenshots only after using the real candidate with a test
-account; never fabricate logged-in native screenshots from a browser mock.
+The App Store screenshot set showcases Jolito's real product experience across a 5-screen storyboard on iPhone (6.9"/6.7") and iPad (13"):
 
-Stage and commit the reviewed PNGs under `fastlane/native-screenshots/en-US/`,
-using ordered filenames containing their device family. Verify dimensions against
-[Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
-and ensure the two device families are present, with no launch screen,
-keyboard obscuring content, debug overlay, or duplicate attachment. Metadata and
-native screenshots can be synchronized via GitHub Actions:
+1. **`01-welcome`:** Welcome view with Jolito the axolotl mascot, brand typography, and quick study action.
+2. **`02-study`:** Spoken active recall practice session with Mexican Spanish prompt (`¿Mande?`), native audio playback, and learner typing input.
+3. **`03-review`:** Spaced repetition (SRS) answer grading with diff inspection, Mexican cultural nuance context, and 4-tier rating intervals.
+4. **`04-create`:** Intelligent card authoring with trie-based autocomplete, slang/typo tags (`ahorita`), AI helpers, bidirectional toggle, and "Save card".
+5. **`05-deck`:** Deck management showing curated starter packs (`Mexican Street Phrases`), filter pills, and 100% offline & local readiness.
+
+Generate and refresh the exact high-resolution store assets locally:
+
+```sh
+npm run generate:screenshots
+```
+
+This canonical screenshot generator uses Playwright with exact mobile viewport scaling (3x on iPhone 17 Pro Max for 1320x2868, 2x on iPad Pro 13-inch for 2064x2752), pixel-perfect native safe areas and status bar overlays, authentic Mexican Spanish seed data, and touch-first interaction (no keyboard shortcuts).
+
+Separately, `scripts/NativeScreenshots.swift` and `scripts/capture-native-screenshots.sh` serve as the **native simulator lifecycle contract test** in CI (`gh workflow run ios.yml` or PRs with `[test-native]`). That test exercises cold boot, card draft preservation across scene suspension/resumption, and process termination on real Xcode simulators.
+
+Stage and commit the reviewed PNGs under `fastlane/native-screenshots/en-US/`, using ordered filenames containing their device family. Verify dimensions against [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/) (e.g. 1320x2868 for iPhone 17 Pro Max, 2064x2752 for iPad Pro 13-inch) with no debug overlays or obscured UI. Metadata and native screenshots can be synchronized to App Store Connect via GitHub Actions:
 
 ```sh
 gh workflow run appstore.yml -f operation=metadata
@@ -140,7 +144,7 @@ bundle exec fastlane ios metadata
 ```
 
 The metadata lane does not upload a binary or submit for review. It uses only
-this dedicated native screenshot directory, never old browser renders.
+this dedicated screenshot directory.
 
 Review contact information and reviewer notes are version-controlled in
 `fastlane/metadata/review_information/` (`first_name.txt`, `last_name.txt`,
