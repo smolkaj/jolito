@@ -141,13 +141,15 @@ bundle exec fastlane ios metadata
 The metadata lane does not upload a binary or submit for review. It uses only
 this dedicated native screenshot directory, never old browser renders.
 
-Provide App Review a dedicated test account and an isolated mailbox through
-App Store Connect's private review information. Include mailbox URL and login
-instructions so the reviewer can receive the normal email verification code.
-The mailbox must contain only this test account's mail and remain accessible
-through review. Explain how to paste the code into Jolito, create/import cards,
-review them, and delete the test account. Do not use a static OTP, personal
-mailbox, privileged account, or hidden authentication bypass.
+Review contact information and reviewer notes are version-controlled in
+`fastlane/metadata/review_information/` (`first_name.txt`, `last_name.txt`,
+`email_address.txt`, `phone_number.txt`, `notes.txt`). Because Jolito is a
+local-first spaced repetition application where all core features (card
+creation, study sessions, audio pronunciation, offline SM-2 scheduling) function
+immediately upon launch without authentication, no demo account is required
+(`demo_user.txt` and `demo_password.txt` are omitted so App Store Connect marks
+demo account as not required). If an optional cloud sync test is performed,
+standard email verification codes apply.
 
 ## Release procedure
 
