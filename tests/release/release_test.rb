@@ -284,6 +284,26 @@ class ReleaseTest < Minitest::Test
     refute options.fetch(:submit_for_review)
   end
 
+  def test_review_information_metadata_satisfies_app_store_connect_contract
+    review_dir = File.join(ReleaseConfig::ROOT, 'fastlane/metadata/review_information')
+    assert Dir.exist?(review_dir), 'Expected fastlane/metadata/review_information directory to exist'
+    %w[first_name last_name phone_number email_address notes].each do |field|
+      file = File.join(review_dir, "#{field}.txt")
+      assert File.file?(file), "Expected #{field}.txt to exist in #{review_dir}"
+      content = File.read(file).strip
+      refute_empty content, "#{field}.txt must not be empty"
+      case field
+      when 'phone_number'
+        assert_match(/\A\+[0-9]/, content, 'Phone number must start with + and country code')
+      when 'email_address'
+        assert_match(/\A[^@\s]+@[^@\s]+\.[^@\s]+\z/, content, 'Email address must be a valid email format')
+      end
+    end
+    # Ensure demo accounts are not enabled by default for anonymous local-first app
+    refute File.exist?(File.join(review_dir, 'demo_user.txt')), 'Anonymous app should not have demo_user.txt'
+    refute File.exist?(File.join(review_dir, 'demo_password.txt')), 'Anonymous app should not have demo_password.txt'
+  end
+
   def test_invalid_submission_never_contacts_apple
     harness = LaneHarness.new
     assert_raises(RuntimeError) { harness.execute(:release) }
