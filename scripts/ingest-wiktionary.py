@@ -181,6 +181,46 @@ def is_grammatical_comma(chunk):
         return True
     return False
 
+PRONOUN_PREPS = {
+    'to you', 'for you', 'to me', 'for me',
+    'to us', 'for us', 'to him', 'for him',
+    'to her', 'for her', 'to them', 'for them',
+}
+
+def score_variant(v):
+    vl = v.lower()
+    if vl.startswith('to ') and vl not in PRONOUN_PREPS:
+        return 10
+    if vl.startswith('the '):
+        head = v[4:].strip()
+        if head and head[0].isupper():
+            return 8
+        return 2
+    if vl.startswith('a ') or vl.startswith('an '):
+        return 1
+    return 5
+
+def prune_redundant_items(items):
+    groups = {}
+    for it in items:
+        it_lower = it.lower().strip()
+        if it_lower in PRONOUN_PREPS:
+            groups[it_lower] = [it]
+            continue
+        bare = re.sub(r'^(to|the|a|an)\s+', '', it_lower).strip()
+        if bare not in groups:
+            groups[bare] = []
+        groups[bare].append(it)
+
+    final_items = []
+    for bare, variants in groups.items():
+        if len(variants) == 1:
+            final_items.append(variants[0])
+        else:
+            best = max(variants, key=score_variant)
+            final_items.append(best)
+    return final_items
+
 def standardize_gloss(english):
     raw_senses = re.split(r'\s*[;/]\s*', english)
     items = []
@@ -205,9 +245,11 @@ def standardize_gloss(english):
             seen.add(key)
             deduped.append(cleaned_item)
 
+    pruned = prune_redundant_items(deduped)
+
     result_parts = []
     current_len = 0
-    for part in deduped:
+    for part in pruned:
         part_len = len(part) + (3 if result_parts else 0)
         if result_parts and (len(result_parts) >= 3 or current_len + part_len > 120):
             break

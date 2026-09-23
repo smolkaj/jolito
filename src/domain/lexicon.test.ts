@@ -584,5 +584,38 @@ describe('LexiconIndex', () => {
       expect(index.translate('free', 'en')?.spanish).toBe('gratis')
       expect(index.translate('without charge', 'en')?.spanish).toBe('gratis')
     })
+
+    it('prunes redundant article and infinitive near-duplicates across definitions', () => {
+      const pronounPreps = new Set([
+        'to you',
+        'for you',
+        'to me',
+        'for me',
+        'to us',
+        'for us',
+        'to him',
+        'for him',
+        'to her',
+        'for her',
+        'to them',
+        'for them',
+      ])
+
+      for (const entry of entries) {
+        if (!entry.english.includes('/')) continue
+        const items = entry.english
+          .split('/')
+          .map((i) => i.trim().toLowerCase())
+        const bareForms = items
+          .filter((i) => !pronounPreps.has(i))
+          .map((i) => i.replace(/^(to|the|a|an)\s+/, '').trim())
+
+        const uniqueBare = new Set(bareForms)
+        expect(
+          bareForms,
+          `Duplicate bare form in "${entry.spanish}": ${entry.english}`,
+        ).toHaveLength(uniqueBare.size)
+      }
+    })
   })
 })
