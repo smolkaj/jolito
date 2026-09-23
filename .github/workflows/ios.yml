@@ -48,7 +48,6 @@ jobs:
   native-screenshots:
     name: Native screenshots (iPhone & iPad)
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       github.event_name == 'workflow_dispatch' ||
       startsWith(github.event.pull_request.title, 'fix-main:') ||
       contains(github.event.pull_request.title, '[test-native]') ||

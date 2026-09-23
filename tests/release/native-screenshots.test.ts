@@ -34,3 +34,21 @@ void test('capture-native-screenshots.sh incorporates test-level and runner-leve
   assert.match(content, /for attempt in 1 2; do/)
   assert.match(content, /exit 1/)
 })
+
+void test('ios.yml does not trigger slow native-screenshots on push to main', () => {
+  const workflowPath = fileURLToPath(
+    new URL('../../.github/workflows/ios.yml', import.meta.url),
+  )
+  const content = fs.readFileSync(workflowPath, 'utf8')
+
+  // The native-screenshots job must not execute on every push to main,
+  // which causes the Merge Coordinator to wait 20+ minutes for mainline settlement.
+  assert.doesNotMatch(
+    content,
+    /github\.event_name\s*==\s*'push'\s*&&\s*github\.ref\s*==\s*'refs\/heads\/main'/,
+  )
+
+  // It should remain dispatchable and opt-in for PRs
+  assert.match(content, /github\.event_name == 'workflow_dispatch'/)
+  assert.match(content, /test-native/)
+})
