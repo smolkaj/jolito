@@ -274,10 +274,16 @@ export function SyncModal({
         })
         return
       }
-      const res = await auth.signInWithApple(
-        appleResult.identityToken,
-        appleResult.nonce,
-      )
+      const res = appleResult.email
+        ? await auth.signInWithApple(
+            appleResult.identityToken,
+            appleResult.nonce,
+            appleResult.email,
+          )
+        : await auth.signInWithApple(
+            appleResult.identityToken,
+            appleResult.nonce,
+          )
       if (!res.success) {
         setStatusMsg({
           type: 'error',

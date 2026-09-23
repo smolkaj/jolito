@@ -61,8 +61,20 @@ describe('Domain & Supabase Setup Utilities', () => {
       expect(patch.mailer_autoconfirm).toBe(false)
       expect(patch.uri_allow_list).toContain('https://joli.to/**')
       expect(patch.uri_allow_list).toContain('http://localhost:*/**')
+      expect(patch.external_apple_enabled).toBe(true)
+      expect(patch.external_apple_client_id).toBe('to.joli.app')
+      expect(patch.external_apple_secret).toBe('placeholder-native-secret')
       expect(patch.smtp_host).toBeUndefined()
       expect(patch.mailer_templates_magic_link_content).toBeUndefined()
+    })
+
+    it('allows overriding appleBundleId', () => {
+      const patch = buildSupabaseAuthPatch({
+        domain: 'joli.to',
+        appleBundleId: 'custom.bundle.id',
+      })
+
+      expect(patch.external_apple_client_id).toBe('custom.bundle.id')
     })
 
     it('attaches Resend custom SMTP settings when resendApiKey is provided', () => {

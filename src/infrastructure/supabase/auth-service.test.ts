@@ -1339,10 +1339,109 @@ describe('SupabaseAuthService', () => {
       service.destroy()
     })
 
-    it('returns error when server rejects Apple token', async () => {
+    it('falls back to fallbackEmail when user email is absent in server response', async () => {
+      delete mockStorage['jolito-auth-session-v1']
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'apple-access-jwt',
+            refresh_token: 'apple-refresh-token',
+            expires_in: 3600,
+            user: {
+              id: 'apple-user-789',
+              email: '',
+            },
+          }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const res = await service.signInWithApple(
+        'valid-apple-identity-token',
+        undefined,
+        'fallback@apple.com',
+      )
+      expect(res.success).toBe(true)
+      expect(service.getCurrentUser()?.email).toBe('fallback@apple.com')
+      service.destroy()
+    })
+
+    it('returns actionable error when provider is disabled on Supabase server', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: false,
-        text: () => Promise.resolve('Invalid identity token'),
+        status: 400,
+        json: () =>
+          Promise.resolve({
+            code: 400,
+            error_code: 'provider_disabled',
+            msg: 'Provider (issuer "https://appleid.apple.com") is not enabled',
+          }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const res = await service.signInWithApple('valid-token')
+      expect(res.success).toBe(false)
+      expect(res.error).toBe(
+        'Sign in with Apple is not enabled on the authentication server. Please verify the Apple provider configuration in Supabase.',
+      )
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[AuthService] Apple Sign-In verification attempt failed:',
+        {
+          status: 400,
+          errorData: {
+            code: 400,
+            error_code: 'provider_disabled',
+            msg: 'Provider (issuer "https://appleid.apple.com") is not enabled',
+          },
+        },
+      )
+      consoleSpy.mockRestore()
+      service.destroy()
+    })
+
+    it('propagates error_description from server when available', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () =>
+          Promise.resolve({
+            error: 'invalid request',
+            error_description: 'Bad ID token',
+          }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const res = await service.signInWithApple('invalid-token')
+      expect(res.success).toBe(false)
+      expect(res.error).toBe('Bad ID token')
+      consoleSpy.mockRestore()
+      service.destroy()
+    })
+
+    it('returns error when server rejects Apple token with generic response', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Cannot parse')),
       })
       vi.stubGlobal('fetch', fetchSpy)
 
@@ -1356,6 +1455,7 @@ describe('SupabaseAuthService', () => {
       expect(res.error).toBe(
         'Apple Sign-In could not be verified with the server.',
       )
+      consoleSpy.mockRestore()
       service.destroy()
     })
   })

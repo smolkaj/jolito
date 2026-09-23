@@ -4386,6 +4386,12 @@ kbd {
   transition: opacity 0.15s ease;
 }
 
+.apple-signin-button .icon-apple {
+  flex-shrink: 0;
+  position: relative;
+  top: -0.5px;
+}
+
 .apple-signin-button:hover:not(:disabled) {
   opacity: 0.9;
 }
