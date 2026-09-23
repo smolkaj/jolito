@@ -56,8 +56,8 @@ platform :ios do
           provision_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-widget.ts')
           if File.exist?(provision_script)
             UI.message('Auto-provisioning JolitoWidgetExtension profile via App Store Connect API...')
-            stdout, prov_status = Open3.capture2('node', provision_script, '--output', widget_profile_file)
-            UI.message(stdout) if stdout && !stdout.empty?
+            output, prov_status = Open3.capture2e('node', provision_script, '--output', widget_profile_file)
+            UI.message(output) if output && !output.empty?
             UI.user_error!('Failed to auto-provision widget extension profile') unless prov_status.success?
           end
         end

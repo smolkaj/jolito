@@ -50,7 +50,7 @@ export const LiveActivityNative = registerPlugin<LiveActivityPlugin>(
 
 export class PracticeActivityBridge {
   private active = false
-  private startPromise: Promise<boolean> | null = null
+  private queue: Promise<void> = Promise.resolve()
   private plugin: LiveActivityPlugin
 
   constructor(plugin: LiveActivityPlugin = LiveActivityNative) {
@@ -65,29 +65,30 @@ export class PracticeActivityBridge {
     return this.active
   }
 
+  private enqueue<T>(op: () => Promise<T>): Promise<T> {
+    const run = this.queue.then(op, op)
+    this.queue = run.then(
+      () => {},
+      () => {},
+    )
+    return run
+  }
+
   public async start(options: {
     total: number
     prompt?: string
     title?: string
   }): Promise<void> {
     if (!this.isSupported()) return
-    if (this.active || this.startPromise) return
-
-    const promise = (async () => {
+    await this.enqueue(async () => {
+      if (this.active) return
       try {
         const res = await this.plugin.startPractice(options)
         this.active = Boolean(res.started)
-        return this.active
       } catch {
         this.active = false
-        return false
-      } finally {
-        this.startPromise = null
       }
-    })()
-
-    this.startPromise = promise
-    await promise
+    })
   }
 
   public async update(options: {
@@ -98,30 +99,28 @@ export class PracticeActivityBridge {
     prompt?: string
   }): Promise<void> {
     if (!this.isSupported()) return
-    if (this.startPromise) {
-      await this.startPromise
-    }
-    if (!this.active) return
-    try {
-      await this.plugin.updatePractice(options)
-    } catch {
-      // Safe boundary: live activity updates never disrupt study flow
-    }
+    await this.enqueue(async () => {
+      if (!this.active) return
+      try {
+        await this.plugin.updatePractice(options)
+      } catch {
+        // Safe boundary: live activity updates never disrupt study flow
+      }
+    })
   }
 
   public async end(): Promise<void> {
     if (!this.isSupported()) return
-    if (this.startPromise) {
-      await this.startPromise
-    }
-    if (!this.active) return
-    try {
-      await this.plugin.endPractice()
-    } catch {
-      // Safe boundary
-    } finally {
-      this.active = false
-    }
+    await this.enqueue(async () => {
+      if (!this.active) return
+      try {
+        await this.plugin.endPractice()
+      } catch {
+        // Safe boundary
+      } finally {
+        this.active = false
+      }
+    })
   }
 }
 

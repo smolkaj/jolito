@@ -209,4 +209,57 @@ describe('PracticeActivityBridge (Dynamic Island Live Activity)', () => {
     await expect(bridge.end()).resolves.toBeUndefined()
     expect(bridge.isActive()).toBe(false)
   })
+
+  it('serializes rapid session interleaving so an in-flight end() does not drop an immediate subsequent start()', async () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    vi.spyOn(Capacitor, 'getPlatform').mockReturnValue('ios')
+
+    let resolveEnd: (value: { supported: boolean; ended: boolean }) => void
+    const endPromise = new Promise<{ supported: boolean; ended: boolean }>(
+      (res) => {
+        resolveEnd = res
+      },
+    )
+
+    const startPracticeSpy = vi
+      .fn()
+      .mockResolvedValue({ supported: true, started: true, id: 'act-2' })
+    const updatePracticeSpy = vi
+      .fn()
+      .mockResolvedValue({ supported: true, updated: true })
+    const endPracticeSpy = vi.fn().mockReturnValue(endPromise)
+
+    const mockPlugin: LiveActivityPlugin = {
+      startPractice: startPracticeSpy,
+      updatePractice: updatePracticeSpy,
+      endPractice: endPracticeSpy,
+    }
+    const bridge = new PracticeActivityBridge(mockPlugin)
+
+    // Initially active from a previous session
+    await bridge.start({ total: 10, title: 'Session 1' })
+    expect(bridge.isActive()).toBe(true)
+
+    // Trigger end() which is in-flight (not resolved yet)
+    const endCall = bridge.end()
+
+    // Immediately trigger start() for Session 2 while end() is still resolving in native land
+    const startCall = bridge.start({ total: 20, title: 'Session 2' })
+
+    // startPractice should not have been called yet because end is still in-flight
+    expect(startPracticeSpy).toHaveBeenCalledTimes(1)
+
+    // Now resolve end()
+    resolveEnd!({ supported: true, ended: true })
+    await endCall
+    await startCall
+
+    // Now Session 2 startPractice must have been called cleanly and bridge is active
+    expect(startPracticeSpy).toHaveBeenCalledTimes(2)
+    expect(startPracticeSpy).toHaveBeenLastCalledWith({
+      total: 20,
+      title: 'Session 2',
+    })
+    expect(bridge.isActive()).toBe(true)
+  })
 })
