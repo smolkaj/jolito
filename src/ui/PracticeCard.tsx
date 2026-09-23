@@ -208,21 +208,56 @@ export function PracticeCard({
   } | null>(null)
   const dragOffsetRef = useRef({ x: 0, y: 0 })
   const activeZoneRef = useRef<Grade | null>(null)
-  const [isPeelingUp, setIsPeelingUp] = useState(false)
-  const isPeelingUpRef = useRef(false)
+  const [isSettling, setIsSettling] = useState(false)
+  const isSettlingRef = useRef(false)
+  const settleTimerRef = useRef<number | null>(null)
   const [isReadyToReveal, setIsReadyToReveal] = useState(false)
   const isReadyToRevealRef = useRef(false)
-  const peelTimerRef = useRef<number | null>(null)
   const [prevCardId, setPrevCardId] = useState(card.id)
   const [prevRevealed, setPrevRevealed] = useState(revealed)
 
-  if (prevCardId !== card.id || prevRevealed !== revealed) {
+  const cancelSettling = () => {
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current)
+      settleTimerRef.current = null
+    }
+    isSettlingRef.current = false
+    setIsSettling(false)
+  }
+
+  const startSettling = () => {
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current)
+    }
+    if (prefersReducedMotion) {
+      settleTimerRef.current = null
+      isSettlingRef.current = false
+      setIsSettling(false)
+      return
+    }
+    isSettlingRef.current = true
+    setIsSettling(true)
+    settleTimerRef.current = window.setTimeout(() => {
+      settleTimerRef.current = null
+      isSettlingRef.current = false
+      setIsSettling(false)
+    }, 260)
+  }
+
+  if (prevCardId !== card.id) {
     setPrevCardId(card.id)
     setPrevRevealed(revealed)
     setDragOffset({ x: 0, y: 0 })
     setIsDragging(false)
     setIsAnimatingExit(false)
-    setIsPeelingUp(false)
+    setIsSettling(false)
+    setIsReadyToReveal(false)
+    setActiveZone(null)
+  } else if (prevRevealed !== revealed) {
+    setPrevRevealed(revealed)
+    setDragOffset({ x: 0, y: 0 })
+    setIsDragging(false)
+    setIsAnimatingExit(false)
     setIsReadyToReveal(false)
     setActiveZone(null)
   }
@@ -231,17 +266,20 @@ export function PracticeCard({
     dragOffsetRef.current = { x: 0, y: 0 }
     activeZoneRef.current = null
     isAnimatingExitRef.current = false
-    isPeelingUpRef.current = false
     isReadyToRevealRef.current = false
     if (exitTimerRef.current !== null) {
       window.clearTimeout(exitTimerRef.current)
       exitTimerRef.current = null
     }
-    if (peelTimerRef.current !== null) {
-      window.clearTimeout(peelTimerRef.current)
-      peelTimerRef.current = null
-    }
   }, [card.id, revealed])
+
+  useEffect(() => {
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current)
+      settleTimerRef.current = null
+    }
+    isSettlingRef.current = false
+  }, [card.id])
 
   useEffect(() => {
     return () => {
@@ -249,36 +287,26 @@ export function PracticeCard({
         window.clearTimeout(exitTimerRef.current)
         exitTimerRef.current = null
       }
-      if (peelTimerRef.current !== null) {
-        window.clearTimeout(peelTimerRef.current)
-        peelTimerRef.current = null
+      if (settleTimerRef.current !== null) {
+        window.clearTimeout(settleTimerRef.current)
+        settleTimerRef.current = null
       }
     }
   }, [])
 
   const triggerSwipeUpReveal = () => {
-    if (isPeelingUpRef.current || isAnimatingExitRef.current) return
-    isPeelingUpRef.current = true
-    setIsPeelingUp(true)
+    if (isAnimatingExitRef.current) return
     setIsDragging(false)
     setIsReadyToReveal(false)
     isReadyToRevealRef.current = false
     pointerStartRef.current = null
-    haptics?.trigger('selection')
 
-    const targetLift = MAX_SWIPE_LIFT_Y
-    setDragOffset({ x: 0, y: targetLift })
-    dragOffsetRef.current = { x: 0, y: targetLift }
-
-    const revealDelay = prefersReducedMotion ? 0 : 200
-    peelTimerRef.current = window.setTimeout(() => {
-      peelTimerRef.current = null
-      setIsPeelingUp(false)
-      isPeelingUpRef.current = false
-      setDragOffset({ x: 0, y: 0 })
-      dragOffsetRef.current = { x: 0, y: 0 }
-      onReveal()
-    }, revealDelay)
+    if (dragOffsetRef.current.y !== 0) {
+      startSettling()
+    }
+    setDragOffset({ x: 0, y: 0 })
+    dragOffsetRef.current = { x: 0, y: 0 }
+    onReveal()
   }
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
@@ -286,14 +314,13 @@ export function PracticeCard({
       event.pointerType === 'touch' ||
       (typeof window !== 'undefined' && window.innerWidth <= 680)
     if (!isTouchOrMobile) return
-    if (
-      paused ||
-      isAnimatingExit ||
-      isPeelingUp ||
-      pointerStartRef.current !== null
-    )
-      return
+    if (paused || isAnimatingExit || pointerStartRef.current !== null) return
     if (event.button !== 0) return
+
+    if (isSettlingRef.current) {
+      cancelSettling()
+    }
+
     const target = event.target as HTMLElement | null
     const isUnrevealedInteractive = Boolean(
       target?.closest(
@@ -420,6 +447,9 @@ export function PracticeCard({
       if (!start.isUnrevealedInteractive && wasReady) {
         triggerSwipeUpReveal()
       } else {
+        if (dragOffsetRef.current.y !== 0) {
+          startSettling()
+        }
         setDragOffset({ x: 0, y: 0 })
         dragOffsetRef.current = { x: 0, y: 0 }
       }
@@ -444,6 +474,9 @@ export function PracticeCard({
         onGrade(gradeToSubmit)
       }, exitDelay)
     } else {
+      if (dragOffsetRef.current.x !== 0 || dragOffsetRef.current.y !== 0) {
+        startSettling()
+      }
       setDragOffset({ x: 0, y: 0 })
       dragOffsetRef.current = { x: 0, y: 0 }
       setActiveZone(null)
@@ -456,10 +489,11 @@ export function PracticeCard({
     setIsDragging(false)
     isReadyToRevealRef.current = false
     setIsReadyToReveal(false)
-    if (!isPeelingUpRef.current) {
-      setDragOffset({ x: 0, y: 0 })
-      dragOffsetRef.current = { x: 0, y: 0 }
+    if (dragOffsetRef.current.x !== 0 || dragOffsetRef.current.y !== 0) {
+      startSettling()
     }
+    setDragOffset({ x: 0, y: 0 })
+    dragOffsetRef.current = { x: 0, y: 0 }
     setActiveZone(null)
     activeZoneRef.current = null
   }
@@ -469,23 +503,23 @@ export function PracticeCard({
       ? Math.max(-14, Math.min(14, dragOffset.x * 0.065))
       : 0
 
-  const isTransitioning = isDragging || isAnimatingExit || isPeelingUp
+  const isTransitioning = isDragging || isAnimatingExit
   const transformStyle = isTransitioning
     ? {
-        transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0) rotate(${rotation}deg)${isPeelingUp ? ' scale(0.97)' : ''}`,
-        opacity: isPeelingUp ? 0.75 : 1,
+        transform: `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0px) rotate(${rotation}deg)`,
+        opacity: 1,
         transition:
           isDragging || prefersReducedMotion
             ? 'none'
             : 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease-out',
       }
-    : dragOffset.x !== 0 || dragOffset.y !== 0
+    : isSettling
       ? {
-          transform: 'translate3d(0, 0, 0) rotate(0deg)',
+          transform: 'translate3d(0px, 0px, 0px) rotate(0deg)',
           opacity: 1,
           transition: prefersReducedMotion
             ? 'none'
-            : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
+            : 'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
         }
       : undefined
 

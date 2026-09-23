@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { createStudyCards } from '../domain/card'
 import { PracticeCard } from './PracticeCard'
@@ -368,7 +368,6 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     })
 
     expect(trigger).toHaveBeenCalledWith('selection')
-    vi.advanceTimersByTime(200)
     expect(onReveal).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
   })
@@ -1010,7 +1009,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
   it('grades immediately without exit animation delay when prefers-reduced-motion is active', () => {
     vi.useFakeTimers()
-    const hadMatchMedia = 'matchMedia' in window
+    const originalMatchMedia =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia.bind(window)
+        : undefined
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       configurable: true,
@@ -1067,7 +1069,9 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       vi.advanceTimersByTime(0)
       expect(onGrade).toHaveBeenCalledWith('again')
     } finally {
-      if (!hadMatchMedia) {
+      if (originalMatchMedia) {
+        window.matchMedia = originalMatchMedia
+      } else {
         delete (window as { matchMedia?: unknown }).matchMedia
       }
       vi.useRealTimers()
@@ -1167,7 +1171,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
   it('respects prefers-reduced-motion by suppressing inline arrow translations and transforms', () => {
     const card = mockCards[0]!
-    const hadMatchMedia = 'matchMedia' in window
+    const originalMatchMedia =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia.bind(window)
+        : undefined
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       configurable: true,
@@ -1240,9 +1247,264 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
         pointerType: 'touch',
       })
     } finally {
-      if (!hadMatchMedia) {
+      if (originalMatchMedia) {
+        window.matchMedia = originalMatchMedia
+      } else {
         delete (window as { matchMedia?: unknown }).matchMedia
       }
     }
+  })
+
+  it('smoothly settles to rest on swipe up reveal without artificial lift, scale shrink, or dimming', () => {
+    vi.useFakeTimers()
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card') as HTMLElement
+
+    // Drag up past threshold (dy = -60)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 140,
+      pointerType: 'touch',
+    })
+
+    // During drag, transform reflects pointer lift with no transition
+    expect(studyCard.style.transform).toMatch(
+      /translate3d\(0px, -43\..*px, 0px\)/,
+    )
+    expect(studyCard.style.opacity).toBe('1')
+
+    // Release pointer
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 140,
+      pointerType: 'touch',
+    })
+
+    // Immediately reveals without 200ms delay
+    expect(onReveal).toHaveBeenCalledTimes(1)
+
+    // Enters smooth settling transition back to (0, 0) with full opacity and no scale shrink
+    expect(studyCard.style.transform).toBe(
+      'translate3d(0px, 0px, 0px) rotate(0deg)',
+    )
+    expect(studyCard.style.opacity).toBe('1')
+    expect(studyCard.style.transition).toContain(
+      'transform 260ms cubic-bezier(0.16, 1, 0.3, 1)',
+    )
+
+    // After settling duration, inline transform is cleanly cleared to pristine rest
+    act(() => {
+      vi.advanceTimersByTime(260)
+    })
+    expect(studyCard.style.transform).toBe('')
+    vi.useRealTimers()
+  })
+
+  it('smoothly settles to rest when swipe up is cancelled below threshold', () => {
+    vi.useFakeTimers()
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card') as HTMLElement
+
+    // Drag up below threshold (dy = -25)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 175,
+      pointerType: 'touch',
+    })
+
+    expect(studyCard.style.transform).toContain('translate3d(0px, -18px, 0px)')
+
+    // Release pointer
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 175,
+      pointerType: 'touch',
+    })
+
+    expect(onReveal).not.toHaveBeenCalled()
+    // Smoothly glides home instead of snapping
+    expect(studyCard.style.transform).toBe(
+      'translate3d(0px, 0px, 0px) rotate(0deg)',
+    )
+    expect(studyCard.style.transition).toContain('transform 260ms')
+
+    act(() => {
+      vi.advanceTimersByTime(260)
+    })
+    expect(studyCard.style.transform).toBe('')
+    vi.useRealTimers()
+  })
+
+  it('smoothly settles to rest when horizontal drag on revealed card is cancelled below threshold', () => {
+    vi.useFakeTimers()
+    const card = mockCards[0]!
+    const onGrade = vi.fn()
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={onGrade}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card') as HTMLElement
+
+    // Drag right below threshold (dx = 30)
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 230,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(studyCard.style.transform).toContain('translate3d(30px, 0px, 0px)')
+
+    fireEvent.pointerUp(studyCard, {
+      clientX: 230,
+      clientY: 200,
+      pointerType: 'touch',
+    })
+
+    expect(onGrade).not.toHaveBeenCalled()
+    expect(studyCard.style.transform).toBe(
+      'translate3d(0px, 0px, 0px) rotate(0deg)',
+    )
+    expect(studyCard.style.transition).toContain('transform 260ms')
+
+    act(() => {
+      vi.advanceTimersByTime(260)
+    })
+    expect(studyCard.style.transform).toBe('')
+    vi.useRealTimers()
+  })
+
+  it('cancels settling animation cleanly when a new touch gesture begins mid-settle', () => {
+    vi.useFakeTimers()
+    const card = mockCards[0]!
+    const onReveal = vi.fn()
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={false}
+        onAnswerChange={vi.fn()}
+        onReveal={onReveal}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const studyCard = container.querySelector('.study-card') as HTMLElement
+
+    // Drag below threshold and release
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 175,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 175,
+      pointerType: 'touch',
+    })
+
+    expect(studyCard.style.transform).toBe(
+      'translate3d(0px, 0px, 0px) rotate(0deg)',
+    )
+
+    // 100ms into the 260ms settling transition, user starts a new drag
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+    fireEvent.pointerDown(studyCard, {
+      clientX: 200,
+      clientY: 200,
+      button: 0,
+      pointerType: 'touch',
+    })
+    fireEvent.pointerMove(studyCard, {
+      clientX: 200,
+      clientY: 140,
+      pointerType: 'touch',
+    })
+
+    // Active drag takes over immediately without delay or conflicting settling timer
+    expect(studyCard.style.transform).toMatch(
+      /translate3d\(0px, -43\..*px, 0px\)/,
+    )
+    expect(studyCard.style.transition).toBe('none')
+
+    fireEvent.pointerUp(studyCard, {
+      clientX: 200,
+      clientY: 140,
+      pointerType: 'touch',
+    })
+    expect(onReveal).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 })
