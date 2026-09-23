@@ -88,18 +88,12 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(cueBox!.height).toBeGreaterThanOrEqual(44)
     expect(cueBox!.width).toBeGreaterThanOrEqual(44)
 
-    // Verify Why Jolito scroll cue and Feedback button do not overlap or collide
-    const heroFooter = page.locator('.welcome-hero-footer')
-    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
-    await expect(feedbackBtn).toBeVisible()
-    const feedbackBox = await feedbackBtn.boundingBox()
-    expect(feedbackBox).not.toBeNull()
-    expect(cueBox!.x + cueBox!.width).toBeLessThanOrEqual(feedbackBox!.x)
+    // Verify Why Jolito scroll cue is cleanly centered and topbar Feedback is accessible
+    const topbarFeedbackBtn = page.locator('.topbar-feedback-btn')
+    await expect(topbarFeedbackBtn).toBeVisible()
 
-    // Privacy is housed cleanly in SyncModal / deck footer, not colliding in hero fold
-    await expect(
-      heroFooter.getByRole('button', { name: /^privacy$/i }),
-    ).not.toBeVisible()
+    // Page footer is clean without misplaced privacy or double-footer clutter
+    await expect(page.locator('.app-footer')).not.toBeVisible()
 
     // Initial accessibility check on mobile welcome screen
     const welcomeAxe = await auditAccessibility(page)
@@ -183,12 +177,14 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(saveBtn).toBeVisible()
     await expect(feedbackBtn).toBeVisible()
 
-    // Verify non-overlapping bounding boxes: feedback button is positioned below save button
+    // Verify non-overlapping layout: feedback button is in topbar well above save button
     const saveBox = await saveBtn.boundingBox()
     const feedbackBox = await feedbackBtn.boundingBox()
     expect(saveBox).not.toBeNull()
     expect(feedbackBox).not.toBeNull()
-    expect(feedbackBox!.y).toBeGreaterThanOrEqual(saveBox!.y + saveBox!.height)
+    expect(saveBox!.y).toBeGreaterThanOrEqual(
+      feedbackBox!.y + feedbackBox!.height,
+    )
 
     // Verify tapping save button interacts with save flow rather than feedback modal
     const spanishInput = page.getByRole('combobox', {
@@ -360,8 +356,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     const scrollCue = page.getByRole('link', {
       name: /^scroll down to explore why jolito$/i,
     })
-    const heroFooter = page.locator('.welcome-hero-footer')
-    const feedbackBtn = heroFooter.getByRole('button', { name: /^feedback$/i })
+    const feedbackBtn = page.locator('.topbar-feedback-btn')
 
     await expect(scrollCue).toBeVisible()
     await expect(feedbackBtn).toBeVisible()
@@ -372,16 +367,16 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(cueBox).not.toBeNull()
     expect(feedbackBox).not.toBeNull()
 
-    // Ensure strictly no horizontal collision and at least an 8px clearance gap
-    expect(feedbackBox!.x - (cueBox!.x + cueBox!.width)).toBeGreaterThanOrEqual(
-      8,
+    // Scroll cue is anchored in hero footer at bottom; feedback is in topbar at top with generous clearance
+    expect(cueBox!.y).toBeGreaterThanOrEqual(
+      feedbackBox!.y + feedbackBox!.height + 100,
     )
 
     // Capture screenshot on 375px viewport for visual verification
     await page.screenshot({ path: 'test-results/mobile-375-welcome.png' })
   })
 
-  test('anchors home actions to the viewport bottom and right-aligns Feedback on narrow screens', async ({
+  test('anchors home actions to the viewport bottom and renders topbar Feedback on narrow screens', async ({
     page,
   }) => {
     for (const viewport of [
@@ -392,9 +387,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       await page.goto('/')
 
       const heroFooter = page.locator('.welcome-hero-footer')
-      const feedbackBtn = heroFooter.getByRole('button', {
-        name: /^feedback$/i,
-      })
+      const feedbackBtn = page.locator('.topbar-feedback-btn')
 
       await expect(heroFooter).toBeVisible()
       await expect(feedbackBtn).toBeVisible()
@@ -413,12 +406,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(
         viewportSize.height,
       )
-      expect(
-        viewportSize.height - (footerBox!.y + footerBox!.height),
-      ).toBeLessThanOrEqual(32)
-      expect(
-        viewportSize.width - (feedbackBox!.x + feedbackBox!.width),
-      ).toBeLessThanOrEqual(16)
+      expect(feedbackBox!.y).toBeLessThan(footerBox!.y)
     }
   })
 

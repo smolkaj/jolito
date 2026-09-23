@@ -14,7 +14,6 @@ import { findDuplicateNoteCards } from '../../domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from '../../domain/lexicon'
 import type { SyncStatus } from '../../domain/sync'
 import { AiContextActions } from '../AiContextActions'
-import { AppFooter } from '../AppFooter'
 import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
@@ -53,7 +52,6 @@ export interface CreateCardViewProps {
   onOpenSync: () => void
   onEditCard: (card: StudyCard) => void
   onOpenFeedback: () => void
-  onOpenPrivacy: () => void
   onSaveCard: (params: CreateCardParams) => boolean
   onPlayAudio: (
     text: string,
@@ -91,7 +89,6 @@ export function CreateCardView({
   onOpenSync,
   onEditCard,
   onOpenFeedback,
-  onOpenPrivacy,
   onSaveCard,
   onPlayAudio,
   assistant,
@@ -656,6 +653,13 @@ export function CreateCardView({
               Practice
             </button>
           )}
+          <button
+            type="button"
+            className="text-button topbar-feedback-btn"
+            onClick={onOpenFeedback}
+          >
+            Feedback
+          </button>
           <ConnectionPill
             authUser={authUser}
             syncStatus={syncStatus}
@@ -963,10 +967,6 @@ export function CreateCardView({
           </div>
         </form>
       </section>
-      <AppFooter
-        onOpenFeedback={onOpenFeedback}
-        onOpenPrivacy={onOpenPrivacy}
-      />
     </main>
   )
 }

@@ -14,7 +14,6 @@ import type { StudyCard } from '../../domain/card'
 import { getDuplicateGroups } from '../../domain/duplicate'
 import type { StarterPack } from '../../domain/starter-decks'
 import type { SyncStatus } from '../../domain/sync'
-import { AppFooter } from '../AppFooter'
 import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
@@ -46,7 +45,6 @@ export interface DeckManagerViewProps {
   onPractice: () => void
   onOpenSync: () => void
   onOpenFeedback: () => void
-  onOpenPrivacy: () => void
   onEditCard: (card: StudyCard) => void
   onDeleteCards: (cards: StudyCard[]) => void
   onUpdateCards: (
@@ -81,7 +79,6 @@ export function DeckManagerView({
   onPractice,
   onOpenSync,
   onOpenFeedback,
-  onOpenPrivacy,
   onEditCard,
   onDeleteCards,
   onUpdateCards,
@@ -215,6 +212,13 @@ export function DeckManagerView({
                 Practice
               </button>
             )}
+            <button
+              type="button"
+              className="text-button topbar-feedback-btn"
+              onClick={onOpenFeedback}
+            >
+              Feedback
+            </button>
             <ConnectionPill
               authUser={authUser}
               syncStatus={syncStatus}
@@ -596,10 +600,6 @@ export function DeckManagerView({
             </div>
           )}
         </section>
-        <AppFooter
-          onOpenFeedback={onOpenFeedback}
-          onOpenPrivacy={onOpenPrivacy}
-        />
       </main>
       <StarterPacksModal
         saveErrorMessage={saveError}
@@ -626,6 +626,10 @@ export function DeckManagerView({
         isOpen={!authUser && !isDemoDeckDismissed}
         onClose={() => setIsDemoDeckDismissed(true)}
         onSignIn={onOpenSync}
+        onExploreStarterPacks={() => {
+          setIsDemoDeckDismissed(true)
+          setIsStarterPacksOpen(true)
+        }}
         haptics={haptics}
       />
     </>
