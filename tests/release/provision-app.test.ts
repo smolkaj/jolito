@@ -30,7 +30,7 @@ void test('provisionAppProfile reuses existing bundle ID and profile when capabi
       return reply({
         data: [
           record('bundleIdCapabilities', 'cap-1', {
-            capabilityType: 'SIGN_IN_WITH_APPLE',
+            capabilityType: 'APPLE_ID_AUTH',
           }),
         ],
       })
@@ -102,7 +102,7 @@ void test('provisionAppProfile registers capability and recreates profile when m
     ) {
       return reply({
         data: record('bundleIdCapabilities', 'cap-new', {
-          capabilityType: 'SIGN_IN_WITH_APPLE',
+          capabilityType: 'APPLE_ID_AUTH',
         }),
       })
     }
@@ -162,7 +162,7 @@ void test('provisionAppProfile registers capability and recreates profile when m
   assert.equal(
     (capPost?.body as { data: { attributes: { capabilityType: string } } })
       ?.data.attributes.capabilityType,
-    'SIGN_IN_WITH_APPLE',
+    'APPLE_ID_AUTH',
   )
 
   // Verify old profile was deleted

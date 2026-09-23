@@ -39,21 +39,23 @@ export async function provisionAppProfile(
     bundleIdId = parsed.id
   }
 
-  // 2. Ensure SIGN_IN_WITH_APPLE capability is registered on the bundle ID
+  // 2. Ensure APPLE_ID_AUTH capability is registered on the bundle ID
   const capabilities = await api.list(
     `/v1/bundleIds/${bundleIdId}/bundleIdCapabilities`,
   )
   const hasSignInWithAppleCap = capabilities.some(
-    (cap) => cap.attributes.capabilityType === 'SIGN_IN_WITH_APPLE',
+    (cap) =>
+      cap.attributes.capabilityType === 'APPLE_ID_AUTH' ||
+      cap.attributes.capabilityType === 'SIGN_IN_WITH_APPLE',
   )
   if (!hasSignInWithAppleCap) {
-    console.log(`Enabling SIGN_IN_WITH_APPLE capability on ${APP_BUNDLE_ID}...`)
+    console.log(`Enabling APPLE_ID_AUTH capability on ${APP_BUNDLE_ID}...`)
     try {
       await api.call('/v1/bundleIdCapabilities', 'POST', {
         data: {
           type: 'bundleIdCapabilities',
           attributes: {
-            capabilityType: 'SIGN_IN_WITH_APPLE',
+            capabilityType: 'APPLE_ID_AUTH',
           },
           relationships: {
             bundleId: {
