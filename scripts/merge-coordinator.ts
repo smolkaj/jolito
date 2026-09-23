@@ -194,7 +194,12 @@ export function fetchMainHeadSha(repoArgs: string[] = []): string | null {
 export function evaluateMainlineSettlement(
   runs: WorkflowRun[],
   targetMainSha: string,
-  coreWorkflows: string[] = ['Quality', 'iOS Native Build', 'CodeQL'],
+  coreWorkflows: string[] = [
+    'Quality',
+    'iOS Native Build',
+    'Android Native Build',
+    'CodeQL',
+  ],
 ): { settled: boolean; inProgress: WorkflowRun[]; missingWorkflows: string[] } {
   if (!targetMainSha) {
     return { settled: true, inProgress: [], missingWorkflows: [] }

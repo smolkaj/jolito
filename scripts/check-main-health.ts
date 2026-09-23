@@ -72,7 +72,12 @@ export function evaluateMainHealth(
   }
 
   // Core workflows that define mainline health
-  const CORE_WORKFLOWS = ['Quality', 'iOS Native Build', 'CodeQL']
+  const CORE_WORKFLOWS = [
+    'Quality',
+    'iOS Native Build',
+    'Android Native Build',
+    'CodeQL',
+  ]
 
   const completed = runs
     .filter((r) => r.status === 'completed')
@@ -109,8 +114,7 @@ export function evaluateMainHealth(
   return {
     healthy: true,
     latest: latestByWorkflow,
-    message:
-      '✓ origin/main is healthy. All core workflows (Quality, iOS Native Build, CodeQL) are passing.',
+    message: `✓ origin/main is healthy. All core workflows (${CORE_WORKFLOWS.join(', ')}) are passing.`,
   }
 }
 
