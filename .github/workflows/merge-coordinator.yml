@@ -38,9 +38,18 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit
 
+      - name: Verify MERGE_TOKEN configuration
+        env:
+          MERGE_TOKEN: ${{ secrets.MERGE_TOKEN }}
+        run: |
+          if [ -z "$MERGE_TOKEN" ]; then
+            echo "::error::MERGE_TOKEN secret is not set! Merging with GITHUB_TOKEN suppresses downstream push workflows (supabase migrations, CI). Please set the MERGE_TOKEN repository secret."
+            exit 1
+          fi
+
       - name: Run Merge Coordinator
         env:
-          GH_TOKEN: ${{ secrets.MERGE_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MERGE_TOKEN }}
           SPECIFIC_PR: ${{ inputs.pr_number }}
         run: |
           if [ -n "$SPECIFIC_PR" ]; then

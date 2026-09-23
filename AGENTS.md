@@ -21,11 +21,7 @@ git worktree remove ../jolito-<task> && git worktree prune
   ```sh
   gh pr edit <pr-number> --add-label ready-to-merge
   ```
-  The automated Merge Coordinator serializes landing via squash merge, verifies mainline health, waits for checks, and removes the label. You can also trigger it manually or run it locally:
-  ```sh
-  npm run pr:merge -- --pr <pr-number>
-  ```
-  Never manually rebase or battle for landing locks against other agents; the coordinator manages the queue deterministically.
+  The automated Merge Coordinator serializes landing via squash merge, verifies mainline health, waits for checks, and removes the label. Enqueueing via the `ready-to-merge` label is the canonical landing path so that GitHub Actions enforces serialized mutual exclusion via `mainline-merge-lock`. Never manually rebase or battle for landing locks against other agents; the coordinator manages the queue deterministically. (Use `npm run pr:merge -- --dry-run` solely for local previewing/debugging).
 - After merging a PR, consider whether your work uncovered a natural follow-up. Propose at most 1–2 concrete items, or state that the task is complete.
 - For every proposal, verify the friction in the code and explicitly justify: is the value worth the added complexity? Never pad lists with speculative ideas or low-value filler.
 

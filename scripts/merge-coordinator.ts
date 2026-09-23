@@ -39,7 +39,11 @@ export function sortPRQueue(prs: QueuedPR[]): QueuedPR[] {
   })
 }
 
-export function runGh(args: string[], repoArgs: string[] = []): string {
+export function runGh(
+  args: string[],
+  repoArgs: string[] = [],
+  options: { timeout?: number } = {},
+): string {
   const fullArgs = [...args]
   if (repoArgs.length > 0 && !args.includes('--repo') && !args.includes('-R')) {
     fullArgs.push(...repoArgs)
@@ -47,8 +51,31 @@ export function runGh(args: string[], repoArgs: string[] = []): string {
   return execFileSync('gh', fullArgs, {
     encoding: 'utf8',
     stdio: ['inherit', 'pipe', 'pipe'],
+    timeout: options.timeout,
     env: { ...process.env },
   }).trim()
+}
+
+export function fetchAllOpenPRs(repoArgs: string[] = []): OpenPullRequest[] {
+  try {
+    const output = runGh(
+      [
+        'pr',
+        'list',
+        '--state',
+        'open',
+        '--limit',
+        '100',
+        '--json',
+        'number,title,createdAt',
+      ],
+      repoArgs,
+    )
+    return JSON.parse(output || '[]') as OpenPullRequest[]
+  } catch (error) {
+    console.error('Failed to fetch open PRs:', error)
+    return []
+  }
 }
 
 export function fetchQueuedPRs(repoArgs: string[] = []): QueuedPR[] {
@@ -96,11 +123,122 @@ export function fetchPRDetails(
   }
 }
 
+export function evaluateMainlineSettlement(
+  runs: WorkflowRun[],
+  coreWorkflows: string[] = ['Quality', 'iOS Native Build', 'CodeQL'],
+): { settled: boolean; inProgress: WorkflowRun[]; latestSha?: string } {
+  if (runs.length === 0) {
+    return { settled: true, inProgress: [] }
+  }
+
+  const latestSha = runs[0]?.headSha
+  if (!latestSha) {
+    return { settled: true, inProgress: [] }
+  }
+
+  const latestRuns = runs.filter((r) => r.headSha === latestSha)
+  const inProgress = latestRuns.filter(
+    (r) =>
+      coreWorkflows.includes(r.workflowName) &&
+      (r.status === 'in_progress' || r.status === 'queued'),
+  )
+
+  return {
+    settled: inProgress.length === 0,
+    inProgress,
+    latestSha,
+  }
+}
+
+export function evaluatePRMergeability(pr: QueuedPR): {
+  canMerge: boolean
+  message?: string
+} {
+  if (pr.mergeable === 'CONFLICTING') {
+    return {
+      canMerge: false,
+      message:
+        `❌ **Merge Coordinator**: PR #${pr.number} has git merge conflicts with \`main\`.\n\n` +
+        `Removed \`ready-to-merge\` label. Please resolve conflicts, re-verify checks, and re-enqueue.`,
+    }
+  }
+  return { canMerge: true }
+}
+
+export function waitForMainlineSettle(
+  repoArgs: string[] = [],
+  maxWaitMinutes = 30,
+  intervalSeconds = 15,
+): boolean {
+  const start = Date.now()
+  const timeoutMs = maxWaitMinutes * 60 * 1000
+
+  while (Date.now() - start < timeoutMs) {
+    let runs: WorkflowRun[]
+    try {
+      const runsJson = runGh(
+        [
+          'run',
+          'list',
+          '--branch',
+          'main',
+          '--event',
+          'push',
+          '--limit',
+          '20',
+          '--json',
+          'workflowName,conclusion,status,url,headSha,createdAt',
+        ],
+        repoArgs,
+      )
+      runs = JSON.parse(runsJson || '[]') as WorkflowRun[]
+    } catch (error) {
+      console.warn('Warning: Could not fetch mainline runs, retrying...', error)
+      execFileSync('sleep', [String(intervalSeconds)])
+      continue
+    }
+
+    const { settled, inProgress, latestSha } = evaluateMainlineSettlement(runs)
+    if (settled) {
+      return true
+    }
+
+    console.log(
+      `Mainline CI on commit ${latestSha?.slice(0, 7)} has in-progress runs (${inProgress.map((r) => r.workflowName).join(', ')}). Waiting ${intervalSeconds}s...`,
+    )
+    execFileSync('sleep', [String(intervalSeconds)])
+  }
+
+  console.error(
+    `Timed out waiting for mainline CI to settle after ${maxWaitMinutes}m`,
+  )
+  return false
+}
+
 export function verifyMainHealth(
   pr: QueuedPR,
   openPrs: OpenPullRequest[],
   repoArgs: string[] = [],
+  maxWaitMinutes = 30,
+  intervalSeconds = 15,
 ): boolean {
+  const isHotfix = pr.title.trim().startsWith('fix-main:')
+
+  // For non-hotfix PRs, wait for any in-flight mainline CI runs to settle first
+  if (!isHotfix) {
+    const settled = waitForMainlineSettle(
+      repoArgs,
+      maxWaitMinutes,
+      intervalSeconds,
+    )
+    if (!settled) {
+      console.error(
+        `Mainline CI did not settle in time. Halting landing for PR #${pr.number}.`,
+      )
+      return false
+    }
+  }
+
   try {
     const runsJson = runGh(
       [
@@ -108,6 +246,8 @@ export function verifyMainHealth(
         'list',
         '--branch',
         'main',
+        '--event',
+        'push',
         '--limit',
         '30',
         '--json',
@@ -180,7 +320,7 @@ export function waitForChecks(
   repoArgs: string[] = [],
   intervalSeconds = 15,
   maxWaitMinutes = 30,
-): boolean {
+): { success: boolean; error?: string } {
   console.log(
     `Waiting for required checks on PR #${prNumber} (interval ${intervalSeconds}s, max ${maxWaitMinutes}m)...`,
   )
@@ -195,12 +335,16 @@ export function waitForChecks(
         '--fail-fast',
       ],
       repoArgs,
+      { timeout: maxWaitMinutes * 60 * 1000 },
     )
     console.log(`✓ All checks passed on PR #${prNumber}`)
-    return true
-  } catch {
-    console.error(`❌ Checks failed or timed out on PR #${prNumber}`)
-    return false
+    return { success: true }
+  } catch (error: unknown) {
+    const err = error as { stderr?: string; stdout?: string; message?: string }
+    const errorMsg =
+      err?.stderr || err?.stdout || err?.message || 'Checks failed or timed out'
+    console.error(`❌ Checks failed on PR #${prNumber}:\n${errorMsg}`)
+    return { success: false, error: String(errorMsg) }
   }
 }
 
@@ -208,10 +352,10 @@ export function squashMergePR(
   prNumber: number,
   repoArgs: string[] = [],
   dryRun = false,
-): boolean {
+): { success: boolean; error?: string } {
   if (dryRun) {
     console.log(`[dry-run] Would squash-merge PR #${prNumber} into main`)
-    return true
+    return { success: true }
   }
   try {
     console.log(`Squash-merging PR #${prNumber} into main...`)
@@ -220,10 +364,13 @@ export function squashMergePR(
       repoArgs,
     )
     console.log(`✓ Successfully squash-merged PR #${prNumber} into main!`)
-    return true
-  } catch (error) {
-    console.error(`❌ Failed to squash-merge PR #${prNumber}:`, error)
-    return false
+    return { success: true }
+  } catch (error: unknown) {
+    const err = error as { stderr?: string; stdout?: string; message?: string }
+    const errorMsg =
+      err?.stderr || err?.stdout || err?.message || 'Unknown merge failure'
+    console.error(`❌ Failed to squash-merge PR #${prNumber}:`, errorMsg)
+    return { success: false, error: String(errorMsg) }
   }
 }
 
@@ -243,38 +390,45 @@ export function processQueuedPR(
   console.log(`Processing PR #${pr.number}: "${pr.title}"`)
   console.log(`========================================`)
 
-  // 1. Verify mainline health
-  const healthy = verifyMainHealth(pr, allOpenPrs, repoArgs)
+  // 1. Verify mainline health (including waiting for in-flight main CI)
+  const healthy = verifyMainHealth(
+    pr,
+    allOpenPrs,
+    repoArgs,
+    maxWaitMinutes,
+    checkIntervalSeconds,
+  )
   if (!healthy) {
     console.error(
-      `Halting merge coordinator: mainline is currently failing. Awaiting fix-main hotfix.`,
+      `Halting merge coordinator: mainline is currently failing or in-flight runs timed out. Awaiting fix-main hotfix.`,
     )
     return false
   }
 
   // 2. Refresh PR details & check mergeability / conflicts
   const freshPr = fetchPRDetails(pr.number, repoArgs) ?? pr
-  if (freshPr.mergeable === 'CONFLICTING') {
-    const msg =
-      `❌ **Merge Coordinator**: PR #${pr.number} has git merge conflicts with \`main\`.\n\n` +
-      `Removed \`ready-to-merge\` label. Please resolve conflicts, re-verify checks, and re-enqueue.`
-    console.error(msg)
-    removeReadyLabel(pr.number, repoArgs, dryRun)
-    postPRComment(pr.number, msg, repoArgs, dryRun)
+  const mergeability = evaluatePRMergeability(freshPr)
+  if (!mergeability.canMerge) {
+    if (mergeability.message) {
+      console.error(mergeability.message)
+      removeReadyLabel(pr.number, repoArgs, dryRun)
+      postPRComment(pr.number, mergeability.message, repoArgs, dryRun)
+    }
     return false
   }
 
   // 3. Wait for all status checks to pass
   if (!dryRun) {
-    const checksPassed = waitForChecks(
+    const checkResult = waitForChecks(
       pr.number,
       repoArgs,
       checkIntervalSeconds,
       maxWaitMinutes,
     )
-    if (!checksPassed) {
+    if (!checkResult.success) {
       const msg =
         `❌ **Merge Coordinator**: Required checks failed or timed out for PR #${pr.number}.\n\n` +
+        `Error output:\n\`\`\`\n${checkResult.error || 'Checks failed'}\n\`\`\`\n\n` +
         `Removed \`ready-to-merge\` label. Please fix failures and re-enqueue once green.`
       removeReadyLabel(pr.number, repoArgs, dryRun)
       postPRComment(pr.number, msg, repoArgs, dryRun)
@@ -283,9 +437,14 @@ export function processQueuedPR(
   }
 
   // 4. Squash merge PR into main
-  const merged = squashMergePR(pr.number, repoArgs, dryRun)
-  if (!merged) {
+  const mergeResult = squashMergePR(pr.number, repoArgs, dryRun)
+  if (!mergeResult.success) {
+    const msg =
+      `❌ **Merge Coordinator**: Failed to squash-merge PR #${pr.number} into \`main\`.\n\n` +
+      `Error details:\n\`\`\`\n${mergeResult.error || 'Unknown error'}\n\`\`\`\n\n` +
+      `Removed \`ready-to-merge\` label.`
     removeReadyLabel(pr.number, repoArgs, dryRun)
+    postPRComment(pr.number, msg, repoArgs, dryRun)
     return false
   }
 
@@ -299,19 +458,15 @@ export function coordinate(options: CoordinatorOptions = {}): void {
 
   console.log('Starting Jolito Merge Coordinator...')
 
+  // Fetch all open PRs in the repository to guarantee hotfix mutex fidelity
+  const allOpenPrs = fetchAllOpenPRs(repoArgs)
+
   if (prNumber) {
     const pr = fetchPRDetails(prNumber, repoArgs)
     if (!pr) {
       console.error(`PR #${prNumber} not found. Exiting.`)
       process.exit(1)
     }
-    const allOpenPrs: OpenPullRequest[] = [
-      {
-        number: pr.number,
-        title: pr.title,
-        createdAt: pr.createdAt,
-      },
-    ]
     const success = processQueuedPR(pr, allOpenPrs, options)
     if (!success) {
       process.exit(1)
@@ -333,14 +488,10 @@ export function coordinate(options: CoordinatorOptions = {}): void {
     console.log(`  ${idx + 1}. #${p.number}: "${p.title}"`),
   )
 
-  const allOpenPrs: OpenPullRequest[] = queue.map((p) => ({
-    number: p.number,
-    title: p.title,
-    createdAt: p.createdAt,
-  }))
-
   for (const pr of queue) {
-    const success = processQueuedPR(pr, allOpenPrs, options)
+    // Refresh all open PRs before each landing to detect new hotfixes
+    const currentOpenPrs = fetchAllOpenPRs(repoArgs)
+    const success = processQueuedPR(pr, currentOpenPrs, options)
     if (!success) {
       console.warn(
         `Stopped draining queue after PR #${pr.number} failed or was skipped.`,

@@ -1,6 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { sortPRQueue, type QueuedPR } from '../../scripts/merge-coordinator.ts'
+import {
+  sortPRQueue,
+  evaluateMainlineSettlement,
+  evaluatePRMergeability,
+  type QueuedPR,
+} from '../../scripts/merge-coordinator.ts'
+import type { WorkflowRun } from '../../scripts/check-main-health.ts'
 
 void test('sortPRQueue orders PRs strictly FIFO by createdAt timestamp', () => {
   const prs: QueuedPR[] = [
@@ -99,4 +105,122 @@ void test('sortPRQueue falls back to PR number if timestamps match exactly', () 
     sorted.map((p) => p.number),
     [302, 305],
   )
+})
+
+void test('evaluatePRMergeability rejects conflicting PRs with explanatory feedback', () => {
+  const conflictingPr: QueuedPR = {
+    number: 999,
+    title: 'feat: conflicting changes',
+    createdAt: '2026-09-22T10:00:00Z',
+    mergeable: 'CONFLICTING',
+  }
+
+  const result = evaluatePRMergeability(conflictingPr)
+  assert.equal(result.canMerge, false)
+  assert.match(result.message ?? '', /git merge conflicts with `main`/)
+  assert.match(result.message ?? '', /#999/)
+})
+
+void test('evaluatePRMergeability allows clean or mergeable PRs', () => {
+  const cleanPr: QueuedPR = {
+    number: 101,
+    title: 'feat: clean changes',
+    createdAt: '2026-09-22T10:00:00Z',
+    mergeable: 'MERGEABLE',
+  }
+
+  const result = evaluatePRMergeability(cleanPr)
+  assert.equal(result.canMerge, true)
+  assert.equal(result.message, undefined)
+})
+
+void test('evaluateMainlineSettlement detects when mainline CI runs are still in progress', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: null,
+      status: 'in_progress',
+      url: 'https://example.com/1',
+      headSha: 'abc1234',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/2',
+      headSha: 'abc1234',
+    },
+  ]
+
+  const result = evaluateMainlineSettlement(runs)
+  assert.equal(result.settled, false)
+  assert.equal(result.inProgress.length, 1)
+  assert.equal(result.inProgress[0]?.workflowName, 'Quality')
+})
+
+void test('evaluateMainlineSettlement confirms settlement when all core runs are completed', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/1',
+      headSha: 'abc1234',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/2',
+      headSha: 'abc1234',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/3',
+      headSha: 'abc1234',
+    },
+  ]
+
+  const result = evaluateMainlineSettlement(runs)
+  assert.equal(result.settled, true)
+  assert.equal(result.inProgress.length, 0)
+})
+
+void test('evaluateMainlineSettlement ignores in-progress runs from older commits', () => {
+  const runs: WorkflowRun[] = [
+    {
+      workflowName: 'Quality',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/latest-quality',
+      headSha: 'new7890',
+    },
+    {
+      workflowName: 'iOS Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/latest-ios',
+      headSha: 'new7890',
+    },
+    {
+      workflowName: 'CodeQL',
+      conclusion: 'success',
+      status: 'completed',
+      url: 'https://example.com/latest-codeql',
+      headSha: 'new7890',
+    },
+    {
+      workflowName: 'Quality',
+      conclusion: null,
+      status: 'in_progress',
+      url: 'https://example.com/old-quality',
+      headSha: 'old1234',
+    },
+  ]
+
+  const result = evaluateMainlineSettlement(runs)
+  assert.equal(result.settled, true)
+  assert.equal(result.latestSha, 'new7890')
 })
