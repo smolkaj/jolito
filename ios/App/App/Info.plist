@@ -45,6 +45,10 @@
 	<string>LaunchScreen</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Jolito uses your microphone to practice spoken recall and pronunciation during reviews.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Jolito uses on-device speech recognition to verify spoken recall answers offline.</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

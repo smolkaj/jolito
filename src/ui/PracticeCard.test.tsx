@@ -321,4 +321,67 @@ describe('accent keyboard insertion', () => {
       screen.queryByRole('button', { name: 'Report issue' }),
     ).not.toBeInTheDocument()
   })
+
+  it('supports spoken recall, streams transcription to answer, and cleans up on reveal', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const callbacks: {
+      transcript: ((text: string, isFinal: boolean) => void) | null
+    } = {
+      transcript: null,
+    }
+
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi
+        .fn()
+        .mockImplementation(
+          (opts: {
+            locale: string
+            onTranscript: (t: string, isFinal: boolean) => void
+          }) => {
+            callbacks.transcript = opts.onTranscript
+            return Promise.resolve(true)
+          },
+        ),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    const { rerender } = render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+
+    // Wait for support check
+    const micBtn = await screen.findByRole('button', {
+      name: 'Speak your answer',
+    })
+    expect(micBtn).toBeInTheDocument()
+
+    // Tap mic button to start listening
+    await user.click(micBtn)
+    expect(mockRecognizer.start).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: 'es-MX' }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Stop spoken recall' }),
+    ).toHaveClass('is-listening')
+
+    // Stream spoken transcript
+    callbacks.transcript?.('hablamos', false)
+    expect(initial.onAnswerChange).toHaveBeenCalledWith('hablamos')
+
+    // Revealing the answer automatically stops speech recognition
+    rerender(
+      <PracticeCard
+        {...initial}
+        revealed={true}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+    expect(mockRecognizer.stop).toHaveBeenCalled()
+  })
 })

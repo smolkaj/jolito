@@ -19,6 +19,7 @@
 		1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */; };
 		1BDD5B3E68A34EB88A0DC702 /* AppleSignInPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */; };
 		1BDD5B3E68A34EB88A0DC703 /* NativeSpeechPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5703 /* NativeSpeechPlugin.swift */; };
+		1BDD5B3E68A34EB88A0DC704 /* SpeechRecognitionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79A203F5C6F46D19F8B5704 /* SpeechRecognitionPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareFilePlugin.swift; sourceTree = "<group>"; };
 		D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInPlugin.swift; sourceTree = "<group>"; };
 		D79A203F5C6F46D19F8B5703 /* NativeSpeechPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSpeechPlugin.swift; sourceTree = "<group>"; };
+		D79A203F5C6F46D19F8B5704 /* SpeechRecognitionPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +84,7 @@
 				D79A203F5C6F46D19F8B5701 /* ShareFilePlugin.swift */,
 				D79A203F5C6F46D19F8B5702 /* AppleSignInPlugin.swift */,
 				D79A203F5C6F46D19F8B5703 /* NativeSpeechPlugin.swift */,
+				D79A203F5C6F46D19F8B5704 /* SpeechRecognitionPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -172,6 +175,7 @@
 				1BDD5B3E68A34EB88A0DC701 /* ShareFilePlugin.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC702 /* AppleSignInPlugin.swift in Sources */,
 				1BDD5B3E68A34EB88A0DC703 /* NativeSpeechPlugin.swift in Sources */,
+				1BDD5B3E68A34EB88A0DC704 /* SpeechRecognitionPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -149,6 +149,33 @@ void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for nati
   assert.match(speechPlugin, /AVSpeechSynthesisVoice/)
 })
 
+void test('SceneDelegate registers SpeechRecognitionPlugin with Speech and AVFoundation for spoken recall', () => {
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+  const speechRecognitionPlugin = readFileSync(
+    new URL('../../ios/App/App/SpeechRecognitionPlugin.swift', import.meta.url),
+    'utf8',
+  )
+  const plist = readFileSync(
+    new URL('../../ios/App/App/Info.plist', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(
+    sceneDelegate,
+    /bridge\?\.registerPluginInstance\(SpeechRecognitionPlugin\(\)\)/,
+  )
+  assert.match(speechRecognitionPlugin, /import Speech/)
+  assert.match(speechRecognitionPlugin, /import AVFoundation/)
+  assert.match(speechRecognitionPlugin, /@objc\(SpeechRecognitionPlugin\)/)
+  assert.match(speechRecognitionPlugin, /SFSpeechRecognizer/)
+  assert.match(speechRecognitionPlugin, /SFSpeechAudioBufferRecognitionRequest/)
+  assert.match(plist, /NSMicrophoneUsageDescription/)
+  assert.match(plist, /NSSpeechRecognitionUsageDescription/)
+})
+
 void test('Capacitor iOS configuration uses contentInset: never to prevent double safe-area insetting', () => {
   const config = readFileSync(
     new URL('../../capacitor.config.ts', import.meta.url),
