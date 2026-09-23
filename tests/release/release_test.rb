@@ -220,7 +220,52 @@ class ReleaseTest < Minitest::Test
     assert build_call, 'Expected build_app call'
     xcargs = build_call[1][:xcargs]
     assert_includes xcargs, 'CODE_SIGN_IDENTITY="Apple Distribution"'
-    assert_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER=profile-id'
+    refute_includes xcargs, 'PROVISIONING_PROFILE_SPECIFIER'
+
+    app_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['App'] }
+    assert app_signing, 'Expected update_code_signing_settings for App'
+    assert_equal 'profile-id', app_signing[1][:profile_uuid]
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_supports_widget_extension_signing_when_profile_provided
+    Fastlane::Actions.load_default_actions
+    env = signing_env.merge('APPLE_WIDGET_PROVISIONING_PROFILE' => Base64.strict_encode64('widget-profile-content'))
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    widget_profile_xml = Plist::Emit.dump({
+      'UUID' => 'widget-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app.JolitoWidgetExtension', 'get-task-allow' => false }
+    })
+    status = Struct.new(:success?).new(true)
+    capture_proc = lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', status]
+      elsif args.include?('widget.mobileprovision')
+        [widget_profile_xml, status]
+      else
+        [app_profile_xml, status]
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2, capture_proc) do
+      harness.execute(:beta)
+    end
+    widget_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['JolitoWidgetExtension'] }
+    assert widget_signing, 'Expected update_code_signing_settings for JolitoWidgetExtension'
+    assert_equal 'widget-profile-id', widget_signing[1][:profile_uuid]
+
+    build_call = harness.calls.find { |name, _| name == :build_app }
+    assert_equal 'app-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app']
+    assert_equal 'widget-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app.JolitoWidgetExtension']
   ensure
     FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }

@@ -446,7 +446,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				PRODUCT_NAME = "JolitoWidgetExtension";
 				SKIP_INSTALL = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.widget";
+				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.JolitoWidgetExtension";
 				SWIFT_VERSION = 5.0;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -464,7 +464,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
 				PRODUCT_NAME = "JolitoWidgetExtension";
 				SKIP_INSTALL = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.widget";
+				PRODUCT_BUNDLE_IDENTIFIER = "to.joli.app.JolitoWidgetExtension";
 				SWIFT_VERSION = 5.0;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				TARGETED_DEVICE_FAMILY = "1,2";

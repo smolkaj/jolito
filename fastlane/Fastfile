@@ -65,11 +65,10 @@ platform :ios do
         if File.exist?(widget_profile_file)
           File.chmod(0600, widget_profile_file)
           widget_xml, widget_status = Open3.capture2('security', 'cms', '-D', '-i', widget_profile_file)
-          if widget_status.success?
-            parsed_widget_profile = Plist.parse_xml(widget_xml)
-            widget_uuid = ReleaseConfig.profile!(parsed_widget_profile, ENV, widget_bundle_id)
-            widget_installed_path = install_provisioning_profile(path: widget_profile_file)
-          end
+          UI.user_error!('Cannot decode widget provisioning profile') unless widget_status.success?
+          parsed_widget_profile = Plist.parse_xml(widget_xml)
+          widget_uuid = ReleaseConfig.profile!(parsed_widget_profile, ENV, widget_bundle_id)
+          widget_installed_path = install_provisioning_profile(path: widget_profile_file)
         end
 
         create_keychain(path: keychain, password: password, default_keychain: true,
@@ -103,7 +102,7 @@ platform :ios do
           project: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'), scheme: 'App', configuration: 'Release',
           export_method: 'app-store', output_directory: File.join(ReleaseConfig::ROOT, 'build'), output_name: 'Jolito.ipa',
           clean: true,
-          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number} CODE_SIGN_IDENTITY=\"Apple Distribution\" PROVISIONING_PROFILE_SPECIFIER=#{uuid}",
+          xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{number} CODE_SIGN_IDENTITY=\"Apple Distribution\"",
           export_options: {
             signingStyle: 'manual', teamID: ENV.fetch('APPLE_TEAM_ID'),
             provisioningProfiles: provisioning_profiles, manageAppVersionAndBuildNumber: false

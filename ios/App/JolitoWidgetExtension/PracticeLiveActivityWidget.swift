@@ -11,7 +11,7 @@ public struct PracticeLiveActivityWidget: Widget {
     public var body: some WidgetConfiguration {
         ActivityConfiguration(for: PracticeActivityAttributes.self) { context in
             // Lock Screen / StandBy presentation
-            LockScreenPracticeView(state: context.state, rosa: rosa)
+            LockScreenPracticeView(attributes: context.attributes, state: context.state, rosa: rosa)
         } dynamicIsland: { context in
             DynamicIsland {
                 // Expanded Presentation (when long-pressing the Dynamic Island)
@@ -50,7 +50,7 @@ public struct PracticeLiveActivityWidget: Widget {
                         )
                         .tint(rosa)
                         .accessibilityLabel("Session progress")
-                        .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
+                        .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
                     }
                     .padding(.horizontal, 4)
                     .padding(.top, 4)
@@ -68,7 +68,7 @@ public struct PracticeLiveActivityWidget: Widget {
                     strokeWidth: 2.5
                 )
                 .accessibilityLabel("Session progress")
-                .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
+                .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
             } minimal: {
                 // Minimal Presentation (when multiple Live Activities share the island)
                 PracticeProgressRing(
@@ -78,7 +78,7 @@ public struct PracticeLiveActivityWidget: Widget {
                     strokeWidth: 2.2
                 )
                 .accessibilityLabel("Session progress")
-                .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) cards completed, \(context.state.progressPercentage) percent")
+                .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
             }
         }
     }
@@ -149,16 +149,19 @@ private struct PracticeProgressRing: View {
         ZStack {
             Circle()
                 .stroke(rosa.opacity(0.25), lineWidth: strokeWidth)
-            Circle()
-                .trim(from: 0.0, to: progress)
-                .stroke(rosa, style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
-                .rotationEffect(.degrees(-90))
+            if progress > 0 {
+                Circle()
+                    .trim(from: 0.0, to: progress)
+                    .stroke(rosa, style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
         }
         .frame(width: size, height: size)
     }
 }
 
 private struct LockScreenPracticeView: View {
+    let attributes: PracticeActivityAttributes
     let state: PracticeActivityAttributes.ContentState
     let rosa: Color
 
@@ -168,7 +171,7 @@ private struct LockScreenPracticeView: View {
                 HStack(spacing: 6) {
                     JolitoEmblem(size: 18)
                         .accessibilityHidden(true)
-                    Text("Jolito Practice")
+                    Text(attributes.sessionTitle.isEmpty ? "Jolito Practice" : attributes.sessionTitle)
                         .font(.system(size: 14, weight: .bold))
                 }
                 Spacer()
@@ -186,7 +189,7 @@ private struct LockScreenPracticeView: View {
             ProgressView(value: Double(state.progressPercentage), total: 100.0)
                 .tint(rosa)
                 .accessibilityLabel("Session progress")
-                .accessibilityValue("\(state.completedCount) of \(state.totalCount) cards completed, \(state.progressPercentage) percent")
+                .accessibilityValue("\(state.completedCount) of \(state.totalCount) completed, \(state.progressPercentage) percent")
         }
         .padding(14)
     }

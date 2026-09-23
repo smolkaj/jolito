@@ -33,7 +33,9 @@ void test('provisionWidgetProfile reuses existing bundle ID and unexpired profil
     }
     if (url.pathname.includes('/v1/certificates')) {
       return reply({
-        data: [record('certificates', 'cert-123')],
+        data: [
+          record('certificates', 'cert-123', { expirationDate: futureDate }),
+        ],
       })
     }
     if (url.pathname.includes('/v1/profiles')) {
@@ -83,8 +85,11 @@ void test('provisionWidgetProfile creates bundle ID and profile when missing', a
       })
     }
     if (url.pathname.includes('/v1/certificates')) {
+      const futureDate = new Date(Date.now() + 86400000).toISOString()
       return reply({
-        data: [record('certificates', 'cert-999')],
+        data: [
+          record('certificates', 'cert-999', { expirationDate: futureDate }),
+        ],
       })
     }
     if (url.pathname.includes('/v1/profiles')) {
@@ -139,4 +144,74 @@ void test('provisionWidgetProfile throws if no distribution certificate exists',
     () => provisionWidgetProfile(api),
     /No active distribution certificate found/,
   )
+})
+
+void test('provisionWidgetProfile deletes expired profile before creating a new one', async () => {
+  const expiredDate = new Date(Date.now() - 86400000).toISOString()
+  const futureDate = new Date(Date.now() + 86400000).toISOString()
+  const newProfileContent = Buffer.from('recreated-content').toString('base64')
+
+  const calls: { url: URL; method: string }[] = []
+  const mockFetch: typeof fetch = (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : input)
+    const method = init?.method ?? 'GET'
+    calls.push({ url, method })
+
+    if (url.pathname.includes('/v1/bundleIds')) {
+      return reply({
+        data: [
+          record('bundleIds', 'bundle-123', { identifier: WIDGET_BUNDLE_ID }),
+        ],
+      })
+    }
+    if (url.pathname.includes('/v1/certificates')) {
+      return reply({
+        data: [
+          record('certificates', 'cert-123', { expirationDate: futureDate }),
+        ],
+      })
+    }
+    if (url.pathname.includes('/v1/profiles')) {
+      if (method === 'DELETE') {
+        return Promise.resolve(new Response(null, { status: 204 }))
+      }
+      if (method === 'GET') {
+        return reply({
+          data: [
+            record('profiles', 'old-expired-prof', {
+              name: WIDGET_PROFILE_NAME,
+              profileContent: 'stale-content',
+              expirationDate: expiredDate,
+            }),
+          ],
+        })
+      }
+      return reply({
+        data: record('profiles', 'new-created-prof', {
+          name: WIDGET_PROFILE_NAME,
+          profileContent: newProfileContent,
+          expirationDate: futureDate,
+        }),
+      })
+    }
+    return Promise.reject(new Error(`Unhandled URL: ${url.href}`))
+  }
+
+  const api = new AppleApi('mock-token', mockFetch)
+  const result = await provisionWidgetProfile(api)
+
+  assert.equal(result.profileId, 'new-created-prof')
+  assert.equal(result.profileContent, newProfileContent)
+
+  const deleteCall = calls.find(
+    (c) =>
+      c.method === 'DELETE' &&
+      c.url.pathname.includes('/v1/profiles/old-expired-prof'),
+  )
+  assert.ok(deleteCall, 'Expected DELETE call for expired profile')
+
+  const postProfile = calls.find(
+    (c) => c.method === 'POST' && c.url.pathname.includes('/v1/profiles'),
+  )
+  assert.ok(postProfile, 'Expected POST call to create fresh profile')
 })

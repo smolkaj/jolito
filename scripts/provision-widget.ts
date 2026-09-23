@@ -48,10 +48,14 @@ export async function provisionWidgetProfile(
       '/v1/certificates?filter[certificateType]=IOS_DISTRIBUTION',
     )
   }
-  if (certs.length === 0) {
+  const validCerts = certs.filter((cert) => {
+    const expiry = cert.attributes.expirationDate
+    return typeof expiry === 'string' && new Date(expiry).getTime() > Date.now()
+  })
+  if (validCerts.length === 0) {
     throw new Error('No active distribution certificate found in Apple account')
   }
-  const certId = certs[0]!.id
+  const certId = validCerts[0]!.id
 
   // 3. Check for existing App Store distribution profile
   const existingProfiles = await api.list(
@@ -60,18 +64,21 @@ export async function provisionWidgetProfile(
 
   for (const prof of existingProfiles) {
     const rawContent = prof.attributes.profileContent
-    if (typeof rawContent === 'string' && rawContent.length > 0) {
-      const expiry = prof.attributes.expirationDate
-      if (
-        typeof expiry === 'string' &&
-        new Date(expiry).getTime() > Date.now()
-      ) {
-        console.log(
-          `Using existing profile: ${WIDGET_PROFILE_NAME} (${prof.id})`,
-        )
-        return { profileId: prof.id, profileContent: rawContent }
-      }
+    const expiry = prof.attributes.expirationDate
+    const isValid =
+      typeof rawContent === 'string' &&
+      rawContent.length > 0 &&
+      typeof expiry === 'string' &&
+      new Date(expiry).getTime() > Date.now()
+
+    if (isValid) {
+      console.log(`Using existing profile: ${WIDGET_PROFILE_NAME} (${prof.id})`)
+      return { profileId: prof.id, profileContent: rawContent }
     }
+
+    // Expired or invalid profile with this name: delete it to avoid 409 conflict upon recreation
+    console.log(`Deleting expired/invalid profile: ${prof.id}...`)
+    await api.call(`/v1/profiles/${prof.id}`, 'DELETE')
   }
 
   // 4. Create new App Store distribution profile
