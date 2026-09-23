@@ -7227,6 +7227,8 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     touch-action: pan-y;
   }
 
+  html[data-keyboard-open='true'] .modal-content.modal-sheet,
+  .is-keyboard-open .modal-content.modal-sheet,
   .modal-backdrop.is-keyboard-open .modal-content.modal-sheet {
     padding-bottom: 20px !important;
   }
