@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test'
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 
 interface DeviceSpec {
@@ -148,15 +148,8 @@ async function generateSplashScreens() {
     `🎨 Generating ${DEVICES.length} iOS splash screens with solo smiling Jolito mascot...`,
   )
 
-  for (const device of DEVICES) {
-    const context = await browser.newContext({
-      viewport: { width: device.width, height: device.height },
-      deviceScaleFactor: device.pixelRatio,
-    })
-    const page = await context.newPage()
-
-    // Render solo smiling mascot centered on Jolito paper background
-    const html = `<!DOCTYPE html>
+  // Render solo smiling mascot centered on Jolito paper background
+  const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -193,6 +186,13 @@ async function generateSplashScreens() {
 </body>
 </html>`
 
+  for (const device of DEVICES) {
+    const context = await browser.newContext({
+      viewport: { width: device.width, height: device.height },
+      deviceScaleFactor: device.pixelRatio,
+    })
+    const page = await context.newPage()
+
     await page.setContent(html)
     const outPath = join(splashDir, device.filename)
     const rawBuffer = await page.screenshot()
@@ -217,8 +217,54 @@ async function generateSplashScreens() {
   writeFileSync(fallbackDest, readFileSync(fallbackSource))
   console.log('✔ [Fallback] apple-splash-fallback.png')
 
+  // Android splash screens
+  const androidResDir = resolve(rootDir, 'android/app/src/main/res')
+  if (existsSync(androidResDir)) {
+    console.log('🎨 Generating Android splash screens with Jolito mascot...')
+    const androidSpecs = [
+      { dir: 'drawable', width: 480, height: 320 },
+      { dir: 'drawable-port-mdpi', width: 320, height: 480 },
+      { dir: 'drawable-port-hdpi', width: 480, height: 800 },
+      { dir: 'drawable-port-xhdpi', width: 720, height: 1280 },
+      { dir: 'drawable-port-xxhdpi', width: 960, height: 1600 },
+      { dir: 'drawable-port-xxxhdpi', width: 1280, height: 1920 },
+      { dir: 'drawable-land-mdpi', width: 480, height: 320 },
+      { dir: 'drawable-land-hdpi', width: 800, height: 480 },
+      { dir: 'drawable-land-xhdpi', width: 1280, height: 720 },
+      { dir: 'drawable-land-xxhdpi', width: 1600, height: 960 },
+      { dir: 'drawable-land-xxxhdpi', width: 1920, height: 1280 },
+    ]
+
+    for (const spec of androidSpecs) {
+      const targetDir = join(androidResDir, spec.dir)
+      mkdirSync(targetDir, { recursive: true })
+      const context = await browser.newContext({
+        viewport: { width: spec.width, height: spec.height },
+        deviceScaleFactor: 1,
+      })
+      const page = await context.newPage()
+      await page.setContent(html)
+      const outPath = join(targetDir, 'splash.png')
+      const rawBuffer = await page.screenshot()
+      try {
+        const { default: sharp } = await import('sharp')
+        const compressed = await sharp(rawBuffer)
+          .png({ quality: 80, compressionLevel: 9, palette: true })
+          .toBuffer()
+        writeFileSync(outPath, compressed)
+      } catch {
+        writeFileSync(outPath, rawBuffer)
+      }
+      await context.close()
+      console.log(
+        `✔ [Android] ${spec.dir}/splash.png (${spec.width}x${spec.height})`,
+      )
+    }
+    console.log('🎉 Android splash screens generated successfully!')
+  }
+
   await browser.close()
-  console.log('🎉 iOS splash screens generated successfully!')
+  console.log('🎉 iOS and Android splash screens generated successfully!')
 }
 
 generateSplashScreens().catch((err) => {

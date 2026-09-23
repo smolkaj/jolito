@@ -20,3 +20,5 @@ fastlane/README.md
 *.p12
 *.mobileprovision
 *.p8
+*.jks
+*.keystore

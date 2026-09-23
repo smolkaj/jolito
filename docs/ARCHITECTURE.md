@@ -90,7 +90,7 @@ content differences and the browser/lifecycle contracts that enforce this bounda
 - Supabase provides passwordless authentication (email Magic Link / OTP) and Row-Level Security (RLS) policies for user isolation.
 - PowerSync / operation-log sync remains under evaluation for future fine-grained multi-device concurrent editing ([ADR 0003](adr/0003-offline-sync-evaluation.md)).
 - Cloudflare Workers serve static assets and edge API endpoints (such as `/api/tts` for neural text-to-speech) without requiring a heavy standalone application server, with automated branch previews on pull requests and production deployment on merge to `main` (`joli.to`). When privileged backend work or long-running jobs require a dedicated Node.js service, adopt Fastify within an npm workspace.
-- Native iOS is delivered via Capacitor (`@capacitor/core`, `@capacitor/ios`), directly reusing the React web shell, local storage, and sound engine while bridging native sensory haptics, keyboard resize behavior, and status bar controls.
+- Native iOS and Android are delivered via Capacitor (`@capacitor/core`, `@capacitor/ios`, `@capacitor/android`), directly reusing the React web shell, local storage, and sound engine while bridging native sensory haptics, keyboard resize behavior, and status bar controls.
 
 ## Data evolution
 
