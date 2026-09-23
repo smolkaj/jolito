@@ -1032,10 +1032,12 @@ function LoadedApp({
       if (isComplete) {
         flushSync()
         navigateTo('complete')
+        const hadSessionError = sessionHadErrorRef.current
+        sessionHadErrorRef.current = false
         if (services.appReview) {
           void services.appReview.recordSessionAndPromptIfEligible({
             cardsReviewedInSession: sessionCompletedCount(nextSession),
-            hasSessionError: sessionHadErrorRef.current,
+            hasSessionError: hadSessionError,
           })
         }
       } else {
@@ -1057,6 +1059,7 @@ function LoadedApp({
   )
 
   function goHome() {
+    sessionHadErrorRef.current = false
     setReferenceTime(services.clock.now())
     navigateTo('welcome')
     resetPromptState()
@@ -1148,6 +1151,9 @@ function LoadedApp({
     deletedCardIds,
     clock: services.clock,
     save: saveGrammarCard,
+    onSessionStart: () => {
+      sessionHadErrorRef.current = false
+    },
   })
 
   // Prepare the active learning mode first; grammar includes both sentence contexts.
@@ -1381,7 +1387,10 @@ function LoadedApp({
           onCopySessionLink={handleCopySessionLink}
           onNavigateToDeck={() => navigateTo('deck')}
           onNavigateToCreate={() => navigateTo('create')}
-          onNavigateToGrammar={() => navigateTo('grammar')}
+          onNavigateToGrammar={() => {
+            sessionHadErrorRef.current = false
+            navigateTo('grammar')
+          }}
           onPractice={handlePractice}
           onOpenSync={openSyncModal}
           onOpenFeedback={openFeedbackModal}
@@ -1559,10 +1568,12 @@ function LoadedApp({
             onSignIn={() => openSyncModal()}
             onFeedback={openFeedbackModal}
             onComplete={(formsCount, hasError) => {
+              const hadSessionError = hasError || sessionHadErrorRef.current
+              sessionHadErrorRef.current = false
               if (services.appReview) {
                 void services.appReview.recordSessionAndPromptIfEligible({
                   cardsReviewedInSession: formsCount,
-                  hasSessionError: hasError || sessionHadErrorRef.current,
+                  hasSessionError: hadSessionError,
                 })
               }
             }}

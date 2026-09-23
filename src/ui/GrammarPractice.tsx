@@ -6,6 +6,7 @@ import {
   grammarVerb,
   type GrammarTopic,
 } from '../domain/grammar-catalog'
+import { sessionCompletedCount } from '../domain/study-session'
 import type { GrammarPracticeState } from './useGrammarPractice'
 import { useStudyAudio } from './useStudyAudio'
 import { PracticeCard } from './PracticeCard'
@@ -59,7 +60,7 @@ export function GrammarPractice({
       audio.playGradeSensory(value, result.isComplete)
       if (result.isComplete) {
         onComplete?.(
-          practice.session.completedCount,
+          sessionCompletedCount(result.nextSession),
           Boolean(practice.error || saveError),
         )
       }

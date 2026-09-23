@@ -730,7 +730,6 @@ export function PracticeCard({
                 <button
                   type="button"
                   className="practice-error-feedback-button"
-                  aria-label="Report issue with saving progress"
                   onClick={onFeedback}
                 >
                   Report issue

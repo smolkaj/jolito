@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SyncResult } from '../application/ports'
 import { App } from '../jolito'
 import { createTestServices } from '../test/services'
+import { GrammarPractice } from './GrammarPractice'
+import { useGrammarPractice } from './useGrammarPractice'
 import {
   createGrammarCards,
   grammarContext,
@@ -494,5 +496,48 @@ describe('grammar practice in Jolito', () => {
       services.memoryCards.saved!.filter(isGrammarCard)[0]!.schedule.reviews,
     ).toBe(1)
     save.mockRestore()
+  })
+
+  it('invokes onComplete with accurate completedCount upon finishing a round', async () => {
+    function GrammarPracticeWrapper({
+      onComplete,
+    }: {
+      onComplete: (count: number, hasError: boolean) => void
+    }) {
+      const services = createTestServices()
+      const cards = createGrammarCards(0, 'preterite').slice(0, 2)
+      const practice = useGrammarPractice({
+        cards,
+        deletedCardIds: [],
+        clock: services.clock,
+        save: (card) => {
+          services.cards.save([card], [])
+        },
+      })
+      return (
+        <GrammarPractice
+          practice={practice}
+          services={services}
+          onHome={vi.fn()}
+          paused={false}
+          signedIn={false}
+          onSignIn={vi.fn()}
+          onComplete={onComplete}
+        />
+      )
+    }
+
+    const onComplete = vi.fn()
+    const user = userEvent.setup()
+    render(<GrammarPracticeWrapper onComplete={onComplete} />)
+
+    await user.click(screen.getByRole('button', { name: 'Start practice' }))
+
+    for (let turn = 0; turn < 8; turn++) {
+      await user.keyboard('{Enter}4')
+    }
+
+    expect(onComplete).toHaveBeenCalledTimes(1)
+    expect(onComplete).toHaveBeenCalledWith(8, false)
   })
 })

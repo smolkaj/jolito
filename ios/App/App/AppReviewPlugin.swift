@@ -12,8 +12,14 @@ public class AppReviewPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func requestReview(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            if let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
-                SKStoreReviewController.requestReview(in: windowScene)
+            if let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) {
+                if #available(iOS 16.0, *) {
+                    AppStore.requestReview(in: windowScene)
+                } else {
+                    SKStoreReviewController.requestReview(in: windowScene)
+                }
                 call.resolve(["requested": true])
             } else {
                 call.resolve(["requested": false])
