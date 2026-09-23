@@ -149,6 +149,13 @@ void test('ignores in-progress runs and evaluates the latest completed run', () 
       url: 'https://github.com/smolkaj/jolito/actions/runs/2',
     },
     {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'abc1234',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/2b',
+    },
+    {
       workflowName: 'CodeQL',
       conclusion: 'success',
       status: 'completed',
@@ -301,6 +308,14 @@ void test('correctly resolves the latest run even if input runs are unsorted', (
       headSha: 'new1234',
       createdAt: '2026-09-12T10:00:00Z',
       url: 'https://github.com/smolkaj/jolito/actions/runs/ios',
+    },
+    {
+      workflowName: 'Android Native Build',
+      conclusion: 'success',
+      status: 'completed',
+      headSha: 'new1234',
+      createdAt: '2026-09-12T10:00:00Z',
+      url: 'https://github.com/smolkaj/jolito/actions/runs/android',
     },
     {
       workflowName: 'CodeQL',

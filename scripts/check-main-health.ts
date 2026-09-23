@@ -24,6 +24,14 @@ export interface HealthEvaluation {
   latest?: Record<string, WorkflowRun>
 }
 
+// Core workflows that define mainline health
+export const CORE_WORKFLOWS: readonly string[] = [
+  'Quality',
+  'iOS Native Build',
+  'Android Native Build',
+  'CodeQL',
+] as const
+
 export function evaluateMainHealth(
   runs: WorkflowRun[],
   {
@@ -70,14 +78,6 @@ export function evaluateMainHealth(
         '✓ PR holds the canonical fix-main mutex lock. Bypassing mainline health check.',
     }
   }
-
-  // Core workflows that define mainline health
-  const CORE_WORKFLOWS = [
-    'Quality',
-    'iOS Native Build',
-    'Android Native Build',
-    'CodeQL',
-  ]
 
   const completed = runs
     .filter((r) => r.status === 'completed')
