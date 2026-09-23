@@ -41,7 +41,33 @@ platform :ios do
         certificate = File.join(temp, 'distribution.p12')
         profile_file = File.join(temp, 'distribution.mobileprovision')
         File.binwrite(certificate, Base64.strict_decode64(ENV.fetch('APPLE_CERTIFICATE_P12')))
-        File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
+        if ENV['APPLE_PROVISIONING_PROFILE'] && !ENV['APPLE_PROVISIONING_PROFILE'].strip.empty?
+          File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
+        end
+
+        # Resolve or auto-provision main app profile with Sign In with Apple capability
+        need_app_provision = !File.exist?(profile_file)
+        if File.exist?(profile_file)
+          File.chmod(0600, profile_file)
+          xml_check, check_status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
+          if check_status.success?
+            parsed_check = Plist.parse_xml(xml_check)
+            need_app_provision = parsed_check.dig('Entitlements', 'com.apple.developer.applesignin').nil?
+          else
+            need_app_provision = true
+          end
+        end
+
+        if need_app_provision && ENV['APP_STORE_CONNECT_API_KEY_KEY']
+          provision_app_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-app.ts')
+          if File.exist?(provision_app_script)
+            UI.message('Auto-provisioning Jolito AppStore profile with Sign In with Apple via App Store Connect API...')
+            output, prov_status = Open3.capture2e('node', provision_app_script, '--output', profile_file)
+            UI.message(output) if output && !output.empty?
+            UI.user_error!('Failed to auto-provision app profile') unless prov_status.success?
+          end
+        end
+
         File.chmod(0600, certificate, profile_file)
         xml, status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
         UI.user_error!('Cannot decode provisioning profile') unless status.success?
