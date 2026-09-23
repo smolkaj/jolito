@@ -17,8 +17,10 @@ function store(
     wrongPrice?: boolean
     unavailable?: boolean
     expiringPrice?: boolean
+    missingContentRights?: boolean
   } = {},
 ) {
+  let patchedContentRights = false
   const calls: { url: URL; method: string; body?: string }[] = []
   const request: typeof fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input)
@@ -29,8 +31,29 @@ function store(
     })
     if (init?.method === 'POST')
       return reply({ data: record('result', 'saved') })
+    if (init?.method === 'PATCH') {
+      patchedContentRights = true
+      return reply({
+        data: record('apps', 'app', {
+          contentRightsDeclaration: 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+        }),
+      })
+    }
     const responses: Record<string, unknown> = {
-      '/v1/apps': [record('apps', 'app')],
+      '/v1/apps': [
+        record('apps', 'app', {
+          contentRightsDeclaration: options.wrongPrice || options.unavailable || options.expiringPrice
+            ? 'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+            : options.missingContentRights
+              ? undefined
+              : 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+        }),
+      ],
+      '/v1/apps/app': record('apps', 'app', {
+        contentRightsDeclaration: options.missingContentRights && !patchedContentRights
+          ? undefined
+          : 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+      }),
       '/v1/territories': [
         record('territories', 'USA'),
         record('territories', 'MEX'),
@@ -98,6 +121,10 @@ void test('check is read-only and checks both the paid base price and all territ
     configureStore(store({ unavailable: true }).api, false),
     /MEX/,
   )
+  await assert.rejects(
+    configureStore(store({ missingContentRights: true }).api, false),
+    /Content rights/,
+  )
 })
 
 void test('apply configures a single US base price, leaves exchange prices to Apple, and verifies the result', async () => {
@@ -108,6 +135,23 @@ void test('apply configures a single US base price, leaves exchange prices to Ap
   assert.deepEqual(JSON.parse(writes[0]!.body!), priceSchedule('app', 'paid'))
   assert.equal(writes[1]!.url.pathname, '/v2/appAvailabilities')
   assert.equal(calls[calls.length - 1]!.method, 'GET')
+})
+
+void test('apply patches contentRightsDeclaration when missing', async () => {
+  const { api, calls } = store({ missingContentRights: true })
+  await configureStore(api, true)
+  const patch = calls.find((c) => c.method === 'PATCH')
+  assert.ok(patch, 'Expected PATCH to be called')
+  assert.equal(patch.url.pathname, '/v1/apps/app')
+  assert.deepEqual(JSON.parse(patch.body!), {
+    data: {
+      type: 'apps',
+      id: 'app',
+      attributes: {
+        contentRightsDeclaration: 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+      },
+    },
+  })
 })
 
 void test('pagination follows all pages without leaking credentials to another origin', async () => {

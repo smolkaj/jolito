@@ -121,6 +121,20 @@ export async function configureStore(api: AppleApi, apply: boolean) {
   const point = matching[0]!
 
   if (apply) {
+    if (
+      app.attributes.contentRightsDeclaration !==
+      'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+    ) {
+      await api.call(`/v1/apps/${app.id}`, 'PATCH', {
+        data: {
+          type: 'apps',
+          id: app.id,
+          attributes: {
+            contentRightsDeclaration: 'DOES_NOT_USE_THIRD_PARTY_CONTENT',
+          },
+        },
+      })
+    }
     await api.call(
       '/v1/appPriceSchedules',
       'POST',
@@ -206,8 +220,18 @@ export async function configureStore(api: AppleApi, apply: boolean) {
     throw new Error(
       `Availability differs for: ${mismatches.map((t) => t.id).join(', ')}`,
     )
+  const currentApp = resourceSchema.parse(
+    (await api.call(`/v1/apps/${app.id}`)).data,
+  )
+  if (
+    currentApp.attributes.contentRightsDeclaration !==
+    'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+  )
+    throw new Error(
+      'Content rights declaration differs: expected DOES_NOT_USE_THIRD_PARTY_CONTENT',
+    )
   console.log(
-    'Verified US$2.99 base price and configured worldwide availability. Apple eligibility and agreements still apply.',
+    'Verified US$2.99 base price, content rights declaration, and configured worldwide availability. Apple eligibility and agreements still apply.',
   )
 }
 
