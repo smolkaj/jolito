@@ -73,7 +73,8 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        guard let activity = currentActivity as? Activity<PracticeActivityAttributes> else {
+        let activity = (currentActivity as? Activity<PracticeActivityAttributes>) ?? Activity<PracticeActivityAttributes>.activities.first
+        guard let targetActivity = activity else {
             call.resolve(["supported": true, "updated": false])
             return
         }
@@ -93,7 +94,8 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         )
 
         Task {
-            await activity.update(ActivityContent(state: state, staleDate: nil))
+            self.currentActivity = targetActivity
+            await targetActivity.update(ActivityContent(state: state, staleDate: nil))
             call.resolve(["supported": true, "updated": true])
         }
     }

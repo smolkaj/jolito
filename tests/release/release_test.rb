@@ -249,7 +249,7 @@ class ReleaseTest < Minitest::Test
     capture_proc = lambda do |*args|
       if args[1] == 'set-key-partition-list'
         ['', status]
-      elsif args.include?('widget.mobileprovision')
+      elsif args.any? { |arg| arg.to_s.include?('widget.mobileprovision') }
         [widget_profile_xml, status]
       else
         [app_profile_xml, status]
@@ -266,6 +266,92 @@ class ReleaseTest < Minitest::Test
     build_call = harness.calls.find { |name, _| name == :build_app }
     assert_equal 'app-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app']
     assert_equal 'widget-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app.JolitoWidgetExtension']
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_auto_provisions_widget_extension_when_profile_not_provided
+    Fastlane::Actions.load_default_actions
+    env = signing_env.merge(
+      'APP_STORE_CONNECT_API_KEY_KEY' => 'bW9jay1rZXk=',
+      'APP_STORE_CONNECT_API_KEY_KEY_ID' => 'MOCKKEYID',
+      'APP_STORE_CONNECT_API_KEY_ISSUER_ID' => 'mock-issuer-id'
+    )
+    env.delete('APPLE_WIDGET_PROVISIONING_PROFILE')
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    widget_profile_xml = Plist::Emit.dump({
+      'UUID' => 'auto-widget-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app.JolitoWidgetExtension', 'get-task-allow' => false }
+    })
+    status = Struct.new(:success?).new(true)
+    node_command_args = nil
+    capture_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-widget.ts') }
+        node_command_args = args
+        output_idx = args.index('--output')
+        if output_idx && args[output_idx + 1]
+          File.binwrite(args[output_idx + 1], 'simulated-widget-profile-content')
+        end
+        ['Auto-provisioned widget profile', status]
+      elsif args[1] == 'set-key-partition-list'
+        ['', status]
+      elsif args.any? { |arg| arg.to_s.include?('widget.mobileprovision') }
+        [widget_profile_xml, status]
+      else
+        [app_profile_xml, status]
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2, capture_proc) do
+      harness.execute(:beta)
+    end
+    assert node_command_args, 'Expected provision-widget.ts to be invoked via node'
+    assert_includes node_command_args, '--output'
+
+    widget_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['JolitoWidgetExtension'] }
+    assert widget_signing, 'Expected update_code_signing_settings for JolitoWidgetExtension'
+    assert_equal 'auto-widget-profile-id', widget_signing[1][:profile_uuid]
+
+    build_call = harness.calls.find { |name, _| name == :build_app }
+    assert_equal 'auto-widget-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app.JolitoWidgetExtension']
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_fails_fast_when_widget_profile_unresolved
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    env.delete('APPLE_WIDGET_PROVISIONING_PROFILE')
+    env.delete('APP_STORE_CONNECT_API_KEY_KEY')
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    status = Struct.new(:success?).new(true)
+    capture_proc = lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', status]
+      else
+        [app_profile_xml, status]
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2, capture_proc) do
+      error = assert_raises(StandardError) { harness.execute(:beta) }
+      assert_includes error.message, 'JolitoWidgetExtension provisioning profile could not be resolved'
+    end
   ensure
     FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }

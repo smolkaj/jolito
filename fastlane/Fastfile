@@ -80,23 +80,25 @@ platform :ios do
           'security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', password, keychain
         )
         UI.user_error!('Cannot set keychain partition list') unless partition_status.success?
+        UI.user_error!('JolitoWidgetExtension provisioning profile could not be resolved') unless widget_uuid
+
         update_code_signing_settings(
           use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
           targets: ['App'], build_configurations: ['Release'],
           team_id: ENV.fetch('APPLE_TEAM_ID'), code_sign_identity: 'Apple Distribution',
           profile_uuid: uuid, bundle_identifier: bundle_id
         )
-        if widget_uuid
-          update_code_signing_settings(
-            use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
-            targets: ['JolitoWidgetExtension'], build_configurations: ['Release'],
-            team_id: ENV.fetch('APPLE_TEAM_ID'), code_sign_identity: 'Apple Distribution',
-            profile_uuid: widget_uuid, bundle_identifier: widget_bundle_id
-          )
-        end
+        update_code_signing_settings(
+          use_automatic_signing: false, path: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'),
+          targets: ['JolitoWidgetExtension'], build_configurations: ['Release'],
+          team_id: ENV.fetch('APPLE_TEAM_ID'), code_sign_identity: 'Apple Distribution',
+          profile_uuid: widget_uuid, bundle_identifier: widget_bundle_id
+        )
 
-        provisioning_profiles = { bundle_id => uuid }
-        provisioning_profiles[widget_bundle_id] = widget_uuid if widget_uuid
+        provisioning_profiles = {
+          bundle_id => uuid,
+          widget_bundle_id => widget_uuid
+        }
 
         build_app(
           project: File.join(ReleaseConfig::ROOT, 'ios/App/App.xcodeproj'), scheme: 'App', configuration: 'Release',

@@ -40,22 +40,24 @@ export async function provisionWidgetProfile(
   }
 
   // 2. Locate active distribution certificate
-  let certs = await api.list(
-    '/v1/certificates?filter[certificateType]=DISTRIBUTION',
-  )
-  if (certs.length === 0) {
-    certs = await api.list(
-      '/v1/certificates?filter[certificateType]=IOS_DISTRIBUTION',
-    )
-  }
-  const validCerts = certs.filter((cert) => {
+  const isUnexpired = (cert: { attributes: { expirationDate?: unknown } }) => {
     const expiry = cert.attributes.expirationDate
     return typeof expiry === 'string' && new Date(expiry).getTime() > Date.now()
-  })
-  if (validCerts.length === 0) {
+  }
+  let certs = (
+    await api.list('/v1/certificates?filter[certificateType]=DISTRIBUTION')
+  ).filter(isUnexpired)
+  if (certs.length === 0) {
+    certs = (
+      await api.list(
+        '/v1/certificates?filter[certificateType]=IOS_DISTRIBUTION',
+      )
+    ).filter(isUnexpired)
+  }
+  if (certs.length === 0) {
     throw new Error('No active distribution certificate found in Apple account')
   }
-  const certId = validCerts[0]!.id
+  const certId = certs[0]!.id
 
   // 3. Check for existing App Store distribution profile
   const existingProfiles = await api.list(
@@ -65,11 +67,15 @@ export async function provisionWidgetProfile(
   for (const prof of existingProfiles) {
     const rawContent = prof.attributes.profileContent
     const expiry = prof.attributes.expirationDate
+    const relData = prof.relationships?.bundleId?.data as
+      { id?: unknown } | undefined
+    const bundleMatches = !relData?.id || relData.id === bundleIdId
     const isValid =
       typeof rawContent === 'string' &&
       rawContent.length > 0 &&
       typeof expiry === 'string' &&
-      new Date(expiry).getTime() > Date.now()
+      new Date(expiry).getTime() > Date.now() &&
+      bundleMatches
 
     if (isValid) {
       console.log(`Using existing profile: ${WIDGET_PROFILE_NAME} (${prof.id})`)
