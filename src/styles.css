@@ -2872,6 +2872,19 @@ kbd {
   color: var(--tezontle-dark);
   font-size: 14px;
 }
+.practice-error-feedback-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.practice-error-feedback-button:hover,
+.practice-error-feedback-button:focus-visible {
+  color: var(--obsidian);
+}
 @media (max-width: 600px) {
   .answer-accents {
     justify-content: space-between;

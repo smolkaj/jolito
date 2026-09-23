@@ -1265,6 +1265,39 @@ function LoadedApp({
     grammarPrompt,
   ])
 
+  const isSessionComplete = isGrammarActive
+    ? grammarPractice.mode === 'complete'
+    : view === 'complete' || (view === 'review' && !currentCard)
+
+  // Guarded App Store review prompt when practice session completes
+  const appReviewTriggeredRef = useRef(false)
+  useEffect(() => {
+    if (!isSessionComplete) {
+      appReviewTriggeredRef.current = false
+      return
+    }
+
+    if (appReviewTriggeredRef.current) return
+    const sessionPracticedCount = isGrammarActive
+      ? grammarCompletedCount
+      : practicedCount
+
+    if (sessionPracticedCount > 0 && services.appReview) {
+      appReviewTriggeredRef.current = true
+      void services.appReview.recordSessionAndPromptIfEligible({
+        cardsReviewedInSession: sessionPracticedCount,
+        hasSessionError: Boolean(saveError),
+      })
+    }
+  }, [
+    isSessionComplete,
+    isGrammarActive,
+    grammarCompletedCount,
+    practicedCount,
+    saveError,
+    services.appReview,
+  ])
+
   const renderAppModals = () => (
     <>
       <SyncModal
@@ -1588,6 +1621,7 @@ function LoadedApp({
                   ? 'Your progress couldn’t be saved. Free up device storage, then try rating again.'
                   : saveError
               }
+              onFeedback={openFeedbackModal}
               card={currentCard}
               prompt={
                 <>

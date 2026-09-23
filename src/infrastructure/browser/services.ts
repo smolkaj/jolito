@@ -24,6 +24,10 @@ import { BrowserHapticsPlayer } from './haptics'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import { WebAudioSoundPlayer } from './sound'
 import { EnhancedBrowserSpeaker } from './speech'
+import {
+  DefaultAppReviewService,
+  NativeAppReview,
+} from '../../ui/native-app-review'
 
 export class SystemClock implements Clock {
   now(): number {
@@ -126,11 +130,19 @@ export function createBrowserServices(): AppServices {
   const telemetry = new ClientTelemetryService({ storage })
   telemetry.init()
 
+  const clock = new SystemClock()
+  const appReview = new DefaultAppReviewService(
+    storage,
+    clock,
+    NativeAppReview,
+    Capacitor.getPlatform() === 'ios',
+  )
+
   return {
     deletionLock: Capacitor.isNativePlatform()
       ? new NativeDeletionLock()
       : new BrowserDeletionLock(navigator.locks),
-    clock: new SystemClock(),
+    clock,
     ids: new RandomIdGenerator(),
     cards,
     speaker,
@@ -143,5 +155,6 @@ export function createBrowserServices(): AppServices {
     communityStats,
     aiAssistant: new BrowserAiAssistant(),
     telemetry,
+    appReview,
   }
 }
