@@ -526,3 +526,60 @@ export function MicIcon({
     </svg>
   )
 }
+
+export function PencilIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-pencil ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  )
+}
+
+export function TrashIcon({
+  className = '',
+  size = 14,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-trash ${className}`.trim()}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={ariaHidden}
+    >
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  )
+}

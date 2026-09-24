@@ -170,3 +170,43 @@ test('card layout hierarchy places keyboard shortcuts above card management acti
     expect(hierarchy.quickActionsTop).toBeGreaterThan(hierarchy.kbdHintTop)
   }
 })
+
+test('mobile practice card places input, accents, and reveal button in natural sequential order', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/grammar')
+  const startBtn = page.getByRole('button', { name: 'Start practice' })
+  if (await startBtn.isVisible()) {
+    await startBtn.click()
+  }
+  await expect(
+    page.getByRole('textbox', { name: 'Your conjugation' }),
+  ).toBeVisible()
+
+  const mobileOrder = await page.evaluate(() => {
+    const input = document
+      .querySelector('.answer-input')!
+      .getBoundingClientRect()
+    const accents = document
+      .querySelector('.answer-accents-container')!
+      .getBoundingClientRect()
+    const reveal = document
+      .querySelector('.reveal-button')!
+      .getBoundingClientRect()
+    return {
+      inputBottom: input.bottom,
+      accentsTop: accents.top,
+      accentsBottom: accents.bottom,
+      revealTop: reveal.top,
+    }
+  })
+
+  // Natural flow: input -> accents -> reveal button
+  expect(mobileOrder.accentsTop).toBeGreaterThanOrEqual(
+    mobileOrder.inputBottom - 2,
+  )
+  expect(mobileOrder.revealTop).toBeGreaterThanOrEqual(
+    mobileOrder.accentsBottom - 2,
+  )
+})

@@ -2440,6 +2440,10 @@ summary:focus-visible,
   min-width: 0;
   box-sizing: border-box;
   margin: 0 auto;
+  display: grid;
+  grid-template-areas:
+    'input'
+    'accents';
 }
 
 .answer-input {
@@ -2472,6 +2476,7 @@ summary:focus-visible,
 }
 
 .answer-input-wrap {
+  grid-area: input;
   position: relative;
   width: 100%;
   display: flex;
@@ -2564,10 +2569,13 @@ summary:focus-visible,
 }
 
 .reveal-button {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  grid-area: input;
+  justify-self: end;
+  align-self: center;
+  margin-right: 8px;
+  z-index: 2;
+  position: static;
+  transform: none;
   max-width: 100%;
   box-sizing: border-box;
   padding: 7px 14px;
@@ -2586,17 +2594,56 @@ summary:focus-visible,
 
 .reveal-button:hover {
   background: var(--turquesa-soft);
-  transform: translateY(calc(-50% - 1px));
+  transform: translateY(-1px);
   box-shadow: 3px 3px 0 var(--ink);
 }
 
 .reveal-button:active {
-  transform: translateY(calc(-50% + 1px));
+  transform: translateY(1px);
   box-shadow: 0 0 0 var(--ink);
 }
 
 .reveal-gesture-cue {
   display: none;
+}
+
+/* Composer Island Unification (when accents toolbar is present) */
+.answer-form.has-accents .answer-input {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 1px solid var(--line-subtle);
+  box-shadow: none;
+}
+
+.answer-form.has-accents .answer-accents-container {
+  border: 2.5px solid var(--line);
+  border-top: none;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  background: rgba(18, 24, 21, 0.02);
+  box-shadow: var(--shadow-sm);
+  padding: 4px 6px;
+  min-height: 42px;
+  box-sizing: border-box;
+  margin-top: 0;
+  transition: border-color 140ms ease;
+}
+
+.answer-form.has-accents .answer-input:focus {
+  border-color: var(--rosa);
+  box-shadow: none;
+}
+
+.answer-form.has-accents:focus-within .answer-accents-container {
+  border-color: var(--rosa);
+}
+
+/* When docked above keyboard on mobile, restore standalone input border radius */
+.study-card.has-docked-accents .answer-form.has-accents .answer-input {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-bottom: 2.5px solid var(--line);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Keyboard Keycap Badges */
@@ -2980,8 +3027,8 @@ kbd {
 }
 
 .answer-accents-container {
-  min-height: 48px;
-  margin-top: 10px;
+  grid-area: accents;
+  min-height: 42px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -3000,7 +3047,7 @@ kbd {
 .accent-toolbar-scroll {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -3021,46 +3068,54 @@ kbd {
   justify-content: center;
   gap: 3px;
   padding: 0;
-  flex: 0 0 44px;
-  min-width: 44px;
-  width: 44px;
-  height: 44px;
-  border: 1px solid rgba(18, 24, 21, 0.08);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.75);
-  box-shadow: 0 1px 2px rgba(18, 24, 21, 0.04);
-  color: var(--ink);
-  font-size: 18px;
+  flex: 0 0 36px;
+  min-width: 36px;
+  width: 36px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-soft);
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  opacity: 0.85;
   transition:
     background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease,
     transform 100ms ease;
 }
 
 .answer-accents button:hover,
 .accent-toolbar-btn:hover {
-  background: var(--paper-subtle);
+  background: var(--card);
+  border-color: rgba(18, 24, 21, 0.08);
+  box-shadow: 0 1px 2px rgba(18, 24, 21, 0.04);
   color: var(--ink);
+  opacity: 1;
 }
 
 .answer-accents button:active,
 .accent-toolbar-btn:active {
   transform: scale(0.92);
-  background: var(--paper-subtle);
+  background: var(--card);
 }
 
 .accent-toolbar-btn kbd {
-  font-size: 11px;
+  font-size: 10px;
   font-family: var(--font-mono, monospace);
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: var(--paper-subtle);
-  border: 1px solid var(--line-subtle);
+  padding: 0 2px;
+  border-radius: 3px;
+  background: transparent;
+  border: none;
   color: var(--ink-muted);
+  opacity: 0.6;
 }
 
 @media (max-width: 479px) {
@@ -3087,19 +3142,7 @@ kbd {
 @media (min-width: 601px) {
   .accent-toolbar-scroll {
     justify-content: safe center;
-    gap: 8px;
-  }
-  .answer-accents button,
-  .accent-toolbar-btn {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    color: var(--ink-soft);
-  }
-  .answer-accents button:hover,
-  .accent-toolbar-btn:hover {
-    background: var(--paper-subtle);
-    color: var(--ink);
+    gap: 6px;
   }
 }
 
@@ -3650,15 +3693,26 @@ kbd {
     padding-right: 54px;
   }
 
+  .answer-form {
+    grid-template-areas:
+      'input'
+      'accents'
+      'reveal';
+  }
+
   .reveal-button {
+    grid-area: reveal;
     position: static;
-    margin-top: 12px;
+    margin-top: 14px;
+    margin-right: 0;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     scroll-margin-bottom: calc(var(--keyboard-inset, 0px) + 72px);
     transform: none;
     justify-content: center;
+    justify-self: stretch;
+    align-self: auto;
   }
 
   .reveal-panel {
@@ -6300,23 +6354,26 @@ kbd {
 .study-card-quick-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-subtle);
 }
 
 .study-quick-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: 5px;
+  padding: 4px 8px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-muted);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
   transition: all 120ms ease;
+  cursor: pointer;
 }
 
 .study-quick-btn:hover {
@@ -6334,6 +6391,12 @@ kbd {
 .study-quick-btn:focus-visible {
   outline: 2px solid var(--rosa);
   outline-offset: 2px;
+}
+
+.study-quick-sep {
+  color: var(--line);
+  font-size: 12px;
+  user-select: none;
 }
 
 /* Feedback Modal Styles */

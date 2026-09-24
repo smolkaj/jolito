@@ -557,7 +557,7 @@ describe('accent keyboard insertion', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders accent toolbar outside the answer form and keeps keyboard hints above quick actions', () => {
+  it('renders accent toolbar inside the answer form composer and keeps keyboard hints above quick actions', () => {
     const initial = props()
     const onDelete = vi.fn()
     const { container } = render(
@@ -570,19 +570,33 @@ describe('accent keyboard insertion', () => {
     )
 
     const form = container.querySelector('.answer-form')!
+    const inputWrap = container.querySelector('.answer-input-wrap')!
     const accents = container.querySelector('.answer-accents-container')!
+    const revealBtn = container.querySelector('.reveal-button')!
     const kbdHint = container.querySelector('.keyboard-hint')!
     const quickActions = container.querySelector('.study-card-quick-actions')!
 
     expect(form).toBeInTheDocument()
+    expect(form).toHaveClass('has-accents')
+    expect(inputWrap).toBeInTheDocument()
     expect(accents).toBeInTheDocument()
+    expect(revealBtn).toBeInTheDocument()
     expect(kbdHint).toBeInTheDocument()
     expect(quickActions).toBeInTheDocument()
 
-    // Accents container must be outside form so form height strictly matches answer input
-    expect(form.contains(accents)).toBe(false)
+    // Accents container is nested inside the answer-form composer island
+    expect(form.contains(accents)).toBe(true)
 
-    // DOM order must place keyboard hints above quick actions
+    // Form DOM order places input, then accents, then reveal button
+    const formChildren = Array.from(form.children)
+    const inputIndex = formChildren.indexOf(inputWrap)
+    const accentsIndex = formChildren.indexOf(accents)
+    const revealIndex = formChildren.indexOf(revealBtn)
+    expect(inputIndex).toBeGreaterThan(-1)
+    expect(accentsIndex).toBeGreaterThan(inputIndex)
+    expect(revealIndex).toBeGreaterThan(accentsIndex)
+
+    // Card DOM order must place keyboard hints above quick actions
     const cardChildren = Array.from(
       container.querySelector('.study-card')!.children,
     )

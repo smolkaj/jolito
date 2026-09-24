@@ -22,7 +22,7 @@ import {
 } from '../infrastructure/browser/speech-recognition'
 import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
-import { MicIcon } from './icons'
+import { MicIcon, PencilIcon, TrashIcon } from './icons'
 import { AccentToolbar } from './AccentToolbar'
 import { SPANISH_ACCENT_CHARACTERS } from './accent-characters'
 
@@ -804,7 +804,7 @@ export function PracticeCard({
         {!revealed ? (
           <>
             <form
-              className="answer-form"
+              className={`answer-form ${accents ? 'has-accents' : ''}`.trim()}
               onSubmit={(event) => {
                 event.preventDefault()
                 if (isListening) {
@@ -885,6 +885,23 @@ export function PracticeCard({
                   lang={answerLang}
                 />
               </div>
+              {accents && (
+                <div
+                  className="answer-accents-container"
+                  style={
+                    isDocked
+                      ? { visibility: 'hidden', pointerEvents: 'none' }
+                      : undefined
+                  }
+                  aria-hidden={isDocked}
+                >
+                  <AccentToolbar
+                    onInsert={insertAccent}
+                    isDocked={false}
+                    disabled={paused || isDocked}
+                  />
+                </div>
+              )}
               <button
                 className={`reveal-button ${isReadyToReveal ? 'is-gesture-ready' : ''}`.trim()}
                 type="submit"
@@ -913,23 +930,6 @@ export function PracticeCard({
               <p className="speech-error-notice" role="alert">
                 {speechError}
               </p>
-            )}
-            {accents && (
-              <div
-                className="answer-accents-container"
-                style={
-                  isDocked
-                    ? { visibility: 'hidden', pointerEvents: 'none' }
-                    : undefined
-                }
-                aria-hidden={isDocked}
-              >
-                <AccentToolbar
-                  onInsert={insertAccent}
-                  isDocked={false}
-                  disabled={paused || isDocked}
-                />
-              </div>
             )}
             {accents &&
               isDocked &&
@@ -1043,8 +1043,14 @@ export function PracticeCard({
                 aria-label={`Edit card: ${card.prompt}`}
                 onClick={onEdit}
               >
-                ✏️ Edit card
+                <PencilIcon size={13} />
+                <span>Edit card</span>
               </button>
+            )}
+            {onEdit && onDelete && (
+              <span className="study-quick-sep" aria-hidden="true">
+                ·
+              </span>
             )}
             {onDelete && (
               <button
@@ -1053,7 +1059,8 @@ export function PracticeCard({
                 aria-label={`Delete card: ${card.prompt}`}
                 onClick={onDelete}
               >
-                🗑️ Delete card
+                <TrashIcon size={13} />
+                <span>Delete card</span>
               </button>
             )}
           </div>
