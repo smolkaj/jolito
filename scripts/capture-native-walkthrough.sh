@@ -59,7 +59,8 @@ deadline = time.monotonic() + 120
 while pending:
     for track, marker, pid in pending[:]:
         os.kill(pid, 0)
-        if marker in (folder / f'{track}.log').read_text():
+        log_file = folder / f'{track}.log'
+        if log_file.exists() and marker in log_file.read_text():
             (folder / f'{track}-start.txt').write_text(str(time.time()))
             pending.remove((track, marker, pid))
     if time.monotonic() > deadline:

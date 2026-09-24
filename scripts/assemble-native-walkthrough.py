@@ -31,7 +31,7 @@ subprocess.run([
     '-ss', str(audio_offset), '-i', str(folder / 'audio.wav'),
     '-t', str(end - start), '-map', '0:v:0', '-map', '1:a:0',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
-    '-c:a', 'aac', '-b:a', '160k', '-af', 'apad', '-movflags', '+faststart', str(partial),
+    '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(partial),
 ], check=True)
 probe = json.loads(subprocess.check_output([
     'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(partial)
@@ -56,6 +56,7 @@ partial.replace(folder / 'native-walkthrough.mp4')
     'authentication': 'Real production email-code authentication; dedicated reviewer and disposable deletion accounts',
     'audioPeakDb': float(peak[1]),
     'audio': 'Original Simulator system audio via BlackHole; no voiceover or replacement speech',
+    'launch': 'Home Screen icon tap, resuming the warmed app',
     'presentation': 'Native device mask; setup/teardown trimmed; no added titles, borders or pointer overlays',
     'chapters': chapters,
 }, indent=2) + '\n')

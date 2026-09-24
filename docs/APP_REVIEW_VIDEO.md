@@ -22,7 +22,8 @@ separate unsigned build of that application source.
 
 ### Script and pacing
 
-1. Launch Jolito from the iPhone Home Screen and let Welcome settle. Go directly
+1. Open the warmed app by tapping Jolito on the iPhone Home Screen and let
+   Welcome settle. Go directly
    to Create a card, with no mascot greeting detour.
 2. Save **¿Me trae la cuenta, por favor? / Could you bring me the bill, please?**
    and sign into the dedicated reviewer account with an actual emailed code.

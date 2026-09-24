@@ -29,11 +29,16 @@ final class NativeWalkthrough: XCTestCase {
         app.launch()
         let create = button("Create a card")
         XCTAssertTrue(create.waitForExistence(timeout: 90))
-        app.terminate()
         XCUIDevice.shared.press(.home)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let icon = springboard.icons["Jolito"].firstMatch
+        let homeReady = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in icon.isHittable && icon.frame.width > 0 }, object: nil
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [homeReady], timeout: 20), .completed)
         print("WALKTHROUGH_START \(Date().timeIntervalSince1970)")
         pause(3)
-        app.launch()
+        icon.tap()
         XCTAssertTrue(create.waitForExistence(timeout: 60))
         pause(5)
 
@@ -69,7 +74,7 @@ final class NativeWalkthrough: XCTestCase {
         for index in 0..<2 {
             let reveal = button("Reveal answer")
             XCTAssertTrue(reveal.waitForExistence(timeout: 20))
-            dismissPracticeKeyboard()
+            dismissKeyboard()
             pause(7)
             // Start on the noninteractive prompt area. Up reveals; right grades Good.
             let frame = app.frame
@@ -88,21 +93,21 @@ final class NativeWalkthrough: XCTestCase {
             pause(2)
         }
 
-        dismissPracticeKeyboard()
+        dismissKeyboard()
         chapter("Practice verb forms in context")
         tap(button("Grammar"))
         pause(4)
         tap(button("Start practice"))
         for _ in 0..<2 {
             XCTAssertTrue(button("Reveal answer").waitForExistence(timeout: 20))
-            dismissPracticeKeyboard()
+            dismissKeyboard()
             pause(6)
             tap(button("Reveal answer"))
             pause(7)
             tap(button("Good"))
         }
 
-        dismissPracticeKeyboard()
+        dismissKeyboard()
         chapter("Return to the same account")
         tap(button("Deck synced with cloud."))
         tap(button("Sign out"))
@@ -196,10 +201,6 @@ final class NativeWalkthrough: XCTestCase {
         )
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed)
         pause(2)
-    }
-
-    private func dismissPracticeKeyboard() {
-        dismissKeyboard()
     }
 
     private func closeSheetIfOpen() {
