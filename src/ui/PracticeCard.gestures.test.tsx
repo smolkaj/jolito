@@ -552,7 +552,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     ).toHaveTextContent('→')
   })
 
-  it('transforms reveal button to "Release to reveal" with ready state when pulling up past threshold', () => {
+  it('activates ready state on reveal button while keeping label and arrow calm when pulling up past threshold', () => {
     const card = mockCards[0]!
     const { trigger, haptics } = createMockHaptics()
 
@@ -595,9 +595,9 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     })
 
     expect(revealBtn).toHaveClass('is-gesture-ready')
-    expect(revealBtn).toHaveTextContent('Release to reveal')
-    expect(revealCue).toHaveTextContent('👁️')
-    expect(revealCue.style.transform).toContain('scale(1.2)')
+    expect(revealBtn).toHaveTextContent('Reveal answer')
+    expect(revealCue).toHaveTextContent('↑')
+    expect(revealCue.style.transform).toMatch(/^translateY\(-[0-9.]+px\)$/)
     expect(trigger).toHaveBeenCalledWith('selection')
 
     // Pull back down below threshold (dy = -10) -> reverts ready state

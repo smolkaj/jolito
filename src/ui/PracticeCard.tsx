@@ -844,23 +844,18 @@ export function PracticeCard({
                 type="submit"
               >
                 <span
-                  className={`reveal-gesture-cue ${isReadyToReveal ? 'is-ready' : ''}`.trim()}
+                  className="reveal-gesture-cue"
                   style={{
-                    transform: prefersReducedMotion
-                      ? undefined
-                      : isDragging && dragOffset.y < 0
-                        ? `${isReadyToReveal ? 'scale(1.2) ' : ''}translateY(${Math.max(-6, dragOffset.y * 0.12)}px)`.trim()
-                        : isReadyToReveal
-                          ? 'scale(1.2)'
-                          : undefined,
+                    transform:
+                      prefersReducedMotion || !isDragging || dragOffset.y >= 0
+                        ? undefined
+                        : `translateY(${Math.max(-6, dragOffset.y * 0.12)}px)`,
                   }}
                   aria-hidden="true"
                 >
-                  {isReadyToReveal ? '👁️' : '↑'}
+                  ↑
                 </span>
-                <span className="reveal-button-label">
-                  {isReadyToReveal ? 'Release to reveal' : 'Reveal answer'}
-                </span>
+                <span className="reveal-button-label">Reveal answer</span>
                 <kbd>Enter</kbd>
               </button>
               <div className="visually-hidden" aria-live="polite">

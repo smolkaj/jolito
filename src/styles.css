@@ -3440,10 +3440,6 @@ kbd {
     justify-content: center;
   }
 
-  .reveal-button.is-gesture-ready {
-    transform: scale(1.04);
-  }
-
   .reveal-panel {
     padding: 18px 16px 16px;
     border-radius: 18px;
@@ -6896,15 +6892,9 @@ kbd {
       opacity 120ms ease;
   }
 
-  .reveal-gesture-cue.is-ready {
-    transform: scale(1.2);
-  }
-
   .reveal-button.is-gesture-ready {
     background: var(--turquesa-soft);
     border-color: var(--turquesa-dark);
-    box-shadow: 0 0 16px var(--turquesa-glow);
-    transform: scale(1.04);
   }
 
   .keyboard-hint,
