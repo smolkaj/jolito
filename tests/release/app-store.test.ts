@@ -406,13 +406,12 @@ void test('validateBuildNumber accepts valid build numbers and rejects invalid o
   )
 })
 
-void test('submitAppStoreVersion attaches build if needed, cancels stuck submissions, creates new submission, and submits', async () => {
+void test('submitAppStoreVersion attaches build if needed, cancels UNRESOLVED_ISSUES submissions, creates new submission, and submits', async () => {
   const { api, calls } = store({
     versionState: 'PREPARE_FOR_SUBMISSION',
     versionBuildNumber: '9',
     reviewSubmissions: [
       { id: 'sub-stuck', state: 'UNRESOLVED_ISSUES' },
-      { id: 'sub-ready', state: 'READY_FOR_REVIEW' },
       { id: 'sub-old', state: 'COMPLETE' },
     ],
   })
@@ -456,7 +455,7 @@ void test('submitAppStoreVersion attaches build if needed, cancels stuck submiss
     },
   })
 
-  // Verify stuck submissions were canceled
+  // Verify stuck submission was canceled
   const patchCancelStuck = calls.find(
     (c) =>
       c.method === 'PATCH' &&
@@ -470,23 +469,6 @@ void test('submitAppStoreVersion attaches build if needed, cancels stuck submiss
     data: {
       type: 'reviewSubmissions',
       id: 'sub-stuck',
-      attributes: { canceled: true },
-    },
-  })
-
-  const patchCancelReady = calls.find(
-    (c) =>
-      c.method === 'PATCH' &&
-      c.url.pathname === '/v1/reviewSubmissions/sub-ready',
-  )
-  assert.ok(
-    patchCancelReady,
-    'Expected PATCH to cancel READY_FOR_REVIEW submission',
-  )
-  assert.deepEqual(JSON.parse(patchCancelReady.body!), {
-    data: {
-      type: 'reviewSubmissions',
-      id: 'sub-ready',
       attributes: { canceled: true },
     },
   })
@@ -515,6 +497,68 @@ void test('submitAppStoreVersion attaches build if needed, cancels stuck submiss
     data: {
       type: 'reviewSubmissions',
       id: 'sub-new',
+      attributes: { submitted: true },
+    },
+  })
+})
+
+void test('submitAppStoreVersion reuses existing READY_FOR_REVIEW submission without creating a new one', async () => {
+  const { api, calls } = store({
+    versionState: 'PREPARE_FOR_SUBMISSION',
+    versionBuildNumber: '10',
+    reviewSubmissions: [{ id: 'sub-ready', state: 'READY_FOR_REVIEW' }],
+  })
+
+  await submitAppStoreVersion(api, '10')
+
+  // Verify READY_FOR_REVIEW was NOT canceled
+  assert.ok(
+    !calls.some(
+      (c) =>
+        c.method === 'PATCH' &&
+        c.url.pathname === '/v1/reviewSubmissions/sub-ready' &&
+        c.body?.includes('"canceled":true'),
+    ),
+    'READY_FOR_REVIEW must not be canceled',
+  )
+
+  // Verify no new review submission created
+  assert.ok(
+    !calls.some(
+      (c) => c.method === 'POST' && c.url.pathname === '/v1/reviewSubmissions',
+    ),
+    'Must not POST /v1/reviewSubmissions when READY_FOR_REVIEW exists',
+  )
+
+  // Verify item attached to existing sub-ready
+  const postItem = calls.find(
+    (c) =>
+      c.method === 'POST' && c.url.pathname === '/v1/reviewSubmissionItems',
+  )
+  assert.ok(postItem, 'Expected POST /v1/reviewSubmissionItems')
+  assert.deepEqual(JSON.parse(postItem.body!), {
+    data: {
+      type: 'reviewSubmissionItems',
+      relationships: {
+        reviewSubmission: {
+          data: { type: 'reviewSubmissions', id: 'sub-ready' },
+        },
+        appStoreVersion: { data: { type: 'appStoreVersions', id: 'v1' } },
+      },
+    },
+  })
+
+  // Verify sub-ready submitted
+  const patchSubmit = calls.find(
+    (c) =>
+      c.method === 'PATCH' &&
+      c.url.pathname === '/v1/reviewSubmissions/sub-ready',
+  )
+  assert.ok(patchSubmit, 'Expected PATCH /v1/reviewSubmissions/sub-ready')
+  assert.deepEqual(JSON.parse(patchSubmit.body!), {
+    data: {
+      type: 'reviewSubmissions',
+      id: 'sub-ready',
       attributes: { submitted: true },
     },
   })
