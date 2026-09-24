@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configureAudioSessionCategory, WebAudioSoundPlayer } from './sound'
+import { Capacitor } from '@capacitor/core'
 
 describe('configureAudioSessionCategory', () => {
-  it('sets navigator.audioSession.type when audioSession API is supported', () => {
+  it('sets navigator.audioSession.type when audioSession API is supported on web', () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false)
     const originalNavigator = globalThis.navigator
     const mockAudioSession = { type: 'auto' }
     Object.defineProperty(globalThis, 'navigator', {
@@ -22,6 +24,28 @@ describe('configureAudioSessionCategory', () => {
       configurable: true,
       writable: true,
     })
+    vi.restoreAllMocks()
+  })
+
+  it('leaves native AVAudioSession untouched when running on native platforms', () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    const originalNavigator = globalThis.navigator
+    const mockAudioSession = { type: 'playback' }
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { ...originalNavigator, audioSession: mockAudioSession },
+      configurable: true,
+      writable: true,
+    })
+
+    configureAudioSessionCategory('ambient')
+    expect(mockAudioSession.type).toBe('playback')
+
+    Object.defineProperty(globalThis, 'navigator', {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    })
+    vi.restoreAllMocks()
   })
 
   it('silently ignores environments without navigator.audioSession', () => {
