@@ -91,11 +91,11 @@ final class NativeWalkthrough: XCTestCase {
             XCTAssertTrue(reveal.waitForExistence(timeout: 20))
             XCTAssertFalse(button("Reveal answer Enter").exists, "Study must use touch mode without hardware-keyboard hints")
             dismissKeyboard()
+            let prompt = visibleStudyPrompt()
             pause(7)
             // Start on the noninteractive prompt area. Up reveals; right grades Good.
-            let frame = app.frame
-            let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.22))
-            let upwards = origin.withOffset(CGVector(dx: 0, dy: -min(100, frame.height * 0.1)))
+            let origin = prompt.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+            let upwards = origin.withOffset(CGVector(dx: 0, dy: -80))
             origin.press(forDuration: 0.08, thenDragTo: upwards, withVelocity: .slow, thenHoldForDuration: 0.15)
             XCTAssertTrue(button("3 Good").waitForExistence(timeout: 10), "Swipe up must reveal the answer")
             pause(7)
@@ -103,7 +103,7 @@ final class NativeWalkthrough: XCTestCase {
                 tap(app.buttons["Play answer audio"].firstMatch)
                 pause(4)
             }
-            let grading = app.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.25))
+            let grading = visibleStudyPrompt().coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5))
             grading.press(forDuration: 0.08, thenDragTo: grading.withOffset(CGVector(dx: 210, dy: 0)), withVelocity: .slow, thenHoldForDuration: 0.2)
             XCTAssertTrue(reveal.waitForExistence(timeout: 10), "Swipe right must advance the study session")
             pause(2)
@@ -274,6 +274,25 @@ final class NativeWalkthrough: XCTestCase {
         )
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed)
         pause(2)
+    }
+
+    private func visibleStudyPrompt() -> XCUIElement {
+        let prompt = app.staticTexts.matching(NSPredicate(format: "label IN %@", [
+            "La cuenta, por favor", "The bill, please", "Provecho", "Enjoy your meal",
+        ])).firstMatch
+        XCTAssertTrue(prompt.waitForExistence(timeout: 15))
+        let header = app.otherElements["section header"].firstMatch
+        // WebKit can retain the answer field's scroll position after dismissing
+        // its keyboard. Pull the page margin down, outside the card's gesture
+        // surface, until the prompt clears the sticky navigation header.
+        for _ in 0..<2 {
+            if prompt.frame.minY > header.frame.maxY + 8 { break }
+            let margin = app.coordinate(withNormalizedOffset: CGVector(dx: 0.015, dy: 0.3))
+            margin.press(forDuration: 0.05, thenDragTo: margin.withOffset(CGVector(dx: 0, dy: 300)), withVelocity: .slow, thenHoldForDuration: 0.1)
+            pause(2)
+        }
+        XCTAssertGreaterThan(prompt.frame.minY, header.frame.maxY + 8, "The entire prompt must be visible before demonstrating gestures")
+        return prompt
     }
 
     private func closeSheetIfOpen() {
