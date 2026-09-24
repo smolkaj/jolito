@@ -8,6 +8,7 @@ test -n "$device"
 video_pid=
 audio_pid=
 test_pid=
+ready_pid=
 cleanup() {
   for pid in "$video_pid" "$audio_pid"; do
     if [ -n "$pid" ]; then kill -INT "$pid" 2>/dev/null || true; fi
@@ -24,12 +25,14 @@ cleanup() {
     if [ -n "$pid" ]; then kill -KILL "$pid" 2>/dev/null || true; wait "$pid" || true; fi
   done
   xcrun simctl io "$device" screenshot --mask=black "$output/final-frame.png" 2>/dev/null || true
-  if [ -n "$test_pid" ]; then
-    kill -TERM "$test_pid" 2>/dev/null || true
-    sleep 2
-    kill -KILL "$test_pid" 2>/dev/null || true
-    wait "$test_pid" 2>/dev/null || true
-  fi
+  for pid in "$test_pid" "$ready_pid"; do
+    if [ -n "$pid" ]; then
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 2
+      kill -KILL "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+    fi
+  done
   # The hosted runner disposes the device. Do not block export on Xcode teardown.
 }
 trap cleanup EXIT
@@ -43,11 +46,12 @@ xcrun simctl bootstatus "$device" -b
 open -b com.apple.dt.Devices
 xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.mov" > "$output/video.log" 2>&1 &
 video_pid=$!
-ffmpeg -hide_banner -nostats -y -f avfoundation -i ':BlackHole 2ch' -af 'aresample=async=1:first_pts=0' -c:a pcm_s16le "$output/audio.wav" > "$output/audio.log" 2>&1 &
+ffmpeg -hide_banner -nostats -y -f avfoundation -i ':BlackHole 2ch' -af 'asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0' -c:a pcm_s16le "$output/audio.wav" > "$output/audio.log" 2>&1 &
 audio_pid=$!
 # AVFoundation initialization can lag process launch by a minute on a cold host.
 # Anchor each track when it reports readiness, not when its process was spawned.
-python3 - "$output" "$video_pid" "$audio_pid" <<'PYREADY'
+# Monitor concurrently: XCTest must wake the device display and audio session.
+python3 - "$output" "$video_pid" "$audio_pid" <<'PYREADY' &
 from pathlib import Path
 import os
 import sys
@@ -55,7 +59,7 @@ import time
 folder = Path(sys.argv[1])
 pending = [('video', 'Recording started', int(sys.argv[2])),
            ('audio', "Output #0, wav", int(sys.argv[3]))]
-deadline = time.monotonic() + 120
+deadline = time.monotonic() + 180
 while pending:
     for track, marker, pid in pending[:]:
         os.kill(pid, 0)
@@ -67,6 +71,7 @@ while pending:
         raise SystemExit('Capture tools did not become ready')
     time.sleep(0.05)
 PYREADY
+ready_pid=$!
 xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -destination "platform=iOS Simulator,id=$device" -configuration Release \
   -derivedDataPath build/WalkthroughDerivedData -resultBundlePath "$output/result.xcresult" \
@@ -81,6 +86,7 @@ for attempt in $(seq 1 600); do
   if ! kill -0 "$test_pid" 2>/dev/null; then break; fi
   sleep 2
 done
+wait "$ready_pid"
 cleanup
 video_pid=
 audio_pid=
