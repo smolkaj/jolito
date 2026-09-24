@@ -153,6 +153,42 @@ void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for nati
   assert.match(speechPlugin, /utterance\s*===\s*self\.activeUtterance/)
 })
 
+void test('NativeSpeechPlugin filters out Eloquence and legacy novelty robotic synthesizers and prioritizes natural voices', () => {
+  const speechPlugin = readFileSync(
+    new URL('../../ios/App/App/NativeSpeechPlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  // 1. Robotic and screen-reader synthesizers must be detected and filtered out
+  assert.match(speechPlugin, /func isRoboticOrNoveltyVoice/)
+  assert.match(speechPlugin, /identifier\.contains\("eloquence"\)/)
+  assert.match(
+    speechPlugin,
+    /identifier\.contains\("speech\.synthesis\.voice"\)\s*&&\s*!identifier\.contains\("alex"\)/,
+  )
+  assert.match(speechPlugin, /"eddy",\s*"floyd",\s*"grandpa"/)
+  assert.match(speechPlugin, /"reed",\s*"rocko",\s*"sandy",\s*"shelley"/)
+
+  // 2. Candidate voice pool excludes robotic synthesizers
+  assert.match(
+    speechPlugin,
+    /let naturalVoices\s*=\s*allVoices\.filter\s*\{\s*!self\.isRoboticOrNoveltyVoice\(\$0\)\s*\}/,
+  )
+
+  // 3. Neural persona name hint mappings (Jorge, Paulina/Dalia, Samantha/Jenny, Alex/Guy)
+  assert.match(speechPlugin, /lowerPreferred\.contains\("jorge"\)/)
+  assert.match(
+    speechPlugin,
+    /lowerPreferred\.contains\("dalia"\)\s*\|\|\s*lowerPreferred\.contains\("paulina"\)/,
+  )
+
+  // 4. Preferred natural Spanish voices include Jorge and Paulina
+  assert.match(
+    speechPlugin,
+    /preferredSpanishNames[\s\S]*?jorge[\s\S]*?paulina/,
+  )
+})
+
 void test('SceneDelegate registers SpeechRecognitionPlugin with Speech and AVFoundation for spoken recall', () => {
   const sceneDelegate = readFileSync(
     new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),

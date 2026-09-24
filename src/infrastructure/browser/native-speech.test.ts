@@ -283,9 +283,39 @@ describe('NativeSpeaker', () => {
       speaker.speak('hola', 'es-MX', { cardSeed: seed })
       const expectedGender = hashString(seed) % 2 === 0 ? 'female' : 'male'
       expect(mockPlugin.speak).toHaveBeenCalledWith(
-        expect.objectContaining({ gender: expectedGender }),
+        expect.objectContaining({
+          gender: expectedGender,
+          voice: undefined,
+        }),
       )
     }
+  })
+
+  it('maps neural voice hints to persona gender and passes voice hint', () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
+
+    const speaker = new NativeSpeaker(
+      mockFallback as unknown as Speaker,
+      mockPlugin as unknown as NativeSpeechPluginInterface,
+    )
+
+    speaker.speak('hola', 'es-MX', { voice: 'es-MX-JorgeNeural' })
+    expect(mockPlugin.speak).toHaveBeenCalledWith({
+      text: 'hola',
+      locale: 'es-MX',
+      gender: 'male',
+      voice: 'es-MX-JorgeNeural',
+    })
+
+    speaker.stop()
+    speaker.speak('hola', 'es-MX', { voice: 'es-MX-DaliaNeural' })
+    expect(mockPlugin.speak).toHaveBeenCalledWith({
+      text: 'hola',
+      locale: 'es-MX',
+      gender: 'female',
+      voice: 'es-MX-DaliaNeural',
+    })
   })
 
   it('stops playback when document visibility changes to hidden', () => {
