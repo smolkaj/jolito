@@ -65,9 +65,7 @@ final class NativeWalkthrough: XCTestCase {
         pause(3)
 
         chapter("Listen, recall, reveal and grade with touch gestures")
-        tap(button("Practice"))
-        let cards = app.buttons["Cards"].firstMatch
-        if cards.waitForExistence(timeout: 2) { tap(cards) }
+        tap(button("Cards"))
         for index in 0..<2 {
             let reveal = button("Reveal answer")
             XCTAssertTrue(reveal.waitForExistence(timeout: 20))
@@ -91,10 +89,7 @@ final class NativeWalkthrough: XCTestCase {
         }
 
         chapter("Practice verb forms in context")
-        tap(button("Jolito home"))
-        tap(button("Practice"))
-        let grammar = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Grammar")).firstMatch
-        tap(grammar)
+        tap(button("Grammar"))
         pause(4)
         tap(button("Start practice"))
         for _ in 0..<2 {

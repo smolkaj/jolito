@@ -31,8 +31,8 @@ separate unsigned build of that application source.
 4. Study consecutive cards. Let automatic prompt speech finish, think, swipe up
    to reveal, listen to the answer, then swipe right to grade Good. Replay one
    answer after automatic playback has already been demonstrated.
-5. Use Home navigation to reach Grammar, start a round, and review two verb
-   forms in context. The Home action has a concrete navigation purpose.
+5. Open the Grammar tab, start a round, and review two verb forms in context.
+   There is no mascot or Home navigation detour.
 6. Sign out and return using a fresh emailed code. Confirm the saved phrase
    remains in the deck.
 7. Switch to a separate disposable account, complete registration, read the
