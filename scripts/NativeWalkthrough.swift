@@ -28,10 +28,7 @@ final class NativeWalkthrough: XCTestCase {
         XCUIDevice.shared.press(.home)
         print("WALKTHROUGH_START \(Date().timeIntervalSince1970)")
         pause(3)
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let icon = springboard.icons["Jolito"].firstMatch
-        XCTAssertTrue(icon.waitForExistence(timeout: 15))
-        icon.tap()
+        app.launch()
         XCTAssertTrue(create.waitForExistence(timeout: 60))
         pause(5)
 

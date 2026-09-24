@@ -28,9 +28,10 @@ scheme.add_build_target(target)
 scheme.add_test_target(target)
 scheme.set_launch_target(app)
 if name == 'NativeWalkthrough'
-  scheme.test_action.environment_variables = {
-    'WALKTHROUGH_EMAIL' => ENV.fetch('APP_REVIEW_EMAIL'),
-    'WALKTHROUGH_MAILBOX_PASSWORD' => ENV.fetch('APP_REVIEW_MAILBOX_PASSWORD')
-  }
+  scheme.test_action.should_use_launch_scheme_args_env = false
+  scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([
+    { key: 'WALKTHROUGH_EMAIL', value: ENV.fetch('APP_REVIEW_EMAIL') },
+    { key: 'WALKTHROUGH_MAILBOX_PASSWORD', value: ENV.fetch('APP_REVIEW_MAILBOX_PASSWORD') }
+  ])
 end
 scheme.save_as(project.path, name, true)

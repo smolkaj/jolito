@@ -32,7 +32,7 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -derivedDataPath build/WalkthroughDerivedData CODE_SIGNING_ALLOWED=NO \
   ONLY_ACTIVE_ARCH=YES build-for-testing > "$output/build.log" 2>&1
 python3 -c 'import time; print(time.time())' > "$output/video-start.txt"
-xcrun simctl io "$device" recordVideo --codec=h264 "$output/screen.mov" > "$output/video.log" 2>&1 &
+xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.mov" > "$output/video.log" 2>&1 &
 video_pid=$!
 python3 -c 'import time; print(time.time())' > "$output/audio-start.txt"
 ffmpeg -hide_banner -y -f avfoundation -i ':BlackHole 2ch' -c:a pcm_s16le "$output/audio.wav" > "$output/audio.log" 2>&1 &
