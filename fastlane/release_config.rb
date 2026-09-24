@@ -52,6 +52,12 @@ module ReleaseConfig
     raise 'Invalid release URL, base64 signing data, or certificate password'
   end
 
+  def self.review_account!(env = ENV)
+    required!(env, %w[APP_REVIEW_EMAIL APP_REVIEW_MAILBOX_PASSWORD])
+    raise 'APP_REVIEW_EMAIL must be an email address' unless env.fetch('APP_REVIEW_EMAIL').match?(/\A[^@\s]+@[^@\s]+\.[^@\s]+\z/)
+    { demo_user: env.fetch('APP_REVIEW_EMAIL'), demo_password: env.fetch('APP_REVIEW_MAILBOX_PASSWORD') }
+  end
+
   def self.build_number!(value)
     raise 'Specify the exact tested build number (1–9999)' unless value.to_s.match?(/\A[1-9]\d{0,3}\z/)
     value.to_s

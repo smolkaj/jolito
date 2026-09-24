@@ -371,6 +371,106 @@ export function validateBuildNumber(buildNumber: string | undefined): string {
   return trimmed
 }
 
+// Explicit replacement is separate from submit: a queued release is never
+// withdrawn merely because a caller asks to submit a different build.
+export async function withdrawForReplacement(
+  api: AppleApi,
+  buildNumber: string,
+  pause: () => Promise<void> = () =>
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+) {
+  const number = validateBuildNumber(buildNumber)
+  const apps = await api.list(`/v1/apps?filter[bundleId]=${settings.bundleId}`)
+  if (apps.length !== 1) throw new Error('Cannot uniquely resolve Jolito')
+  const app = apps[0]!
+  const response = await api.call(
+    `/v1/apps/${app.id}/appStoreVersions?include=build&limit=10`,
+  )
+  const version = z
+    .array(resourceSchema)
+    .parse(response.data)
+    .find((v) => v.attributes.versionString === settings.version)
+  if (!version) throw new Error('App Store version missing')
+  const candidates = await api.call(
+    `/v1/builds?filter[app]=${app.id}&filter[version]=${number}&include=preReleaseVersion&limit=10`,
+  )
+  const builds = z.array(resourceSchema).parse(candidates.data)
+  const build = builds[0]
+  const release =
+    build &&
+    candidates.included.find(
+      (item) => item.id === relatedId(build, 'preReleaseVersion'),
+    )
+  if (
+    builds.length !== 1 ||
+    build?.attributes.processingState !== 'VALID' ||
+    build.attributes.expired !== false ||
+    release?.attributes.version !== settings.version ||
+    release.attributes.platform !== 'IOS'
+  ) {
+    throw new Error(
+      'Replacement requires a processed, unexpired iOS build for the configured version',
+    )
+  }
+  if (
+    idSchema.safeParse(version.relationships.build?.data).data?.id === build.id
+  ) {
+    console.log(`Build ${number} is already selected; no withdrawal needed.`)
+    return
+  }
+  const submissions = await api.list(
+    `/v1/apps/${app.id}/reviewSubmissions?limit=10`,
+  )
+  for (const submission of submissions) {
+    if (
+      ![
+        'WAITING_FOR_REVIEW',
+        'IN_REVIEW',
+        'UNRESOLVED_ISSUES',
+        'CANCELING',
+      ].includes(String(submission.attributes.state))
+    )
+      continue
+    const items = await api.list(`/v1/reviewSubmissions/${submission.id}/items`)
+    if (
+      !items.some(
+        (item) =>
+          idSchema.safeParse(item.relationships.appStoreVersion?.data).data
+            ?.id === version.id,
+      )
+    )
+      continue
+    if (items.length !== 1)
+      throw new Error(
+        'Cannot withdraw a submission containing additional items',
+      )
+    if (submission.attributes.state !== 'CANCELING') {
+      await api.call(`/v1/reviewSubmissions/${submission.id}`, 'PATCH', {
+        data: {
+          type: 'reviewSubmissions',
+          id: submission.id,
+          attributes: { canceled: true },
+        },
+      })
+    }
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const current = resourceSchema.parse(
+        (await api.call(`/v1/reviewSubmissions/${submission.id}`)).data,
+      )
+      if (current.attributes.state === 'COMPLETE') {
+        console.log(
+          `Withdrew previous build; replacement ${number} can now be submitted.`,
+        )
+        return
+      }
+      await pause()
+    }
+    throw new Error(
+      'Apple is still canceling the previous submission; retry replacement after cancellation completes',
+    )
+  }
+}
+
 export async function submitAppStoreVersion(
   api: AppleApi,
   buildNumber: string,
@@ -401,6 +501,15 @@ export async function submitAppStoreVersion(
       : 'UNKNOWN'
 
   if (appStoreState === 'WAITING_FOR_REVIEW' || appStoreState === 'IN_REVIEW') {
+    const selected = idSchema.safeParse(version.relationships.build?.data)
+    const queued =
+      selected.success &&
+      response.included.find((item) => item.id === selected.data.id)
+    if (!queued || queued.attributes.version !== validatedBuildNumber) {
+      throw new Error(
+        'A different build is already queued; use the explicit replacement operation',
+      )
+    }
     console.log(
       `Version ${settings.version} is already in ${appStoreState}. No submission needed.`,
     )
@@ -619,13 +728,19 @@ export function token() {
 if (import.meta.main) {
   try {
     const command = process.argv[2] ?? ''
-    if (!['--apply', '--check', '--status', '--submit'].includes(command))
+    if (
+      !['--apply', '--check', '--status', '--submit', '--withdraw'].includes(
+        command,
+      )
+    )
       throw new Error(
-        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit <build_number>',
+        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit|--withdraw <build_number>',
       )
     const api = new AppleApi(token())
     if (command === '--status') {
       await checkStatus(api)
+    } else if (command === '--withdraw') {
+      await withdrawForReplacement(api, validateBuildNumber(process.argv[3]))
     } else if (command === '--submit') {
       const buildNumber = validateBuildNumber(process.argv[3])
       await submitAppStoreVersion(api, buildNumber)

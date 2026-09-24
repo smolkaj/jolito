@@ -1,45 +1,31 @@
-Dear App Review Team,
+Hello App Review Team,
 
-Thank you for your review. Below are responses to Guideline 2.1 inquiries, along with our iOS device walkthrough video.
+Updated information for Jolito 1.0, build 11, addressing Guideline 2.1:
 
-1. SCREEN RECORDING (DEVICE WALKTHROUGH & FLOW DEMONSTRATION)
-Demo video on iPhone viewport (390x844, 1:1 edge-to-edge):
-- Web Video: https://litter.catbox.moe/9zzdd0.webm
-- Cloudflare Mirror: https://agy-appstore-submission-fixes-jolito.smolkaj.workers.dev/demo.webm
+1. RECORDING AND FUNCTIONALITY
+Attached: native-walkthrough.mp4. Mirror:
+https://github.com/smolkaj/jolito/raw/refs/heads/main/docs/media/native-walkthrough.mp4
+This is the bundled iOS app captured in Apple's iPhone Air Simulator on iOS 27, with native status bar, touch gestures and original app audio. It is simulator evidence, not the physical-device recording requested. We are providing it as supplemental evidence and are not claiming that the physical-device requirement is fulfilled.
+The recording starts with app launch and demonstrates personal cards, real email-code sign-in, signed-in study, automatic pronunciation and account deletion using a separate disposable account. The reviewer account remains available.
+Cards are private study material: no public feed, public sharing or user-to-user interaction. Content reporting/blocking does not apply. The app costs US$2.99 upfront (local equivalents set by Apple); no subscriptions, IAP or feature paywalls.
 
-Walkthrough Highlights:
-- 00:00 Cold Launch & Welcome: Interactive Mexican Spanish greeting and pronunciation by Jolito the axolotl.
-- 00:07 Spaced Repetition Drill: Core loop—listening to prompt audio ("aguacate"), typing answer, revealing, hearing native audio, grading ("Good"); card 2 ("qué padre"), typing, reveal, grading ("Easy").
-- 00:21 Custom Card Creation: Adding custom card ("¡No manches!" / "No way! / You're kidding!"), saving to deck.
-- 00:30 Account & Sign-In Flow: Prompted to save personal card; showing native "Sign in with Apple" and passwordless Email OTP (reviewer@apple.com), entering OTP, completing sign-in.
-- 00:41 Deck Manager: Browsing personal deck displaying the new card.
-- 00:45 Account Deletion & Permanent Purge (Guideline 5.1.1(v)): Signed-in user opens Account, selects "Delete cloud account & data", unchecks backup, types "DELETE", confirming instant cloud wipe and returning cleanly to local offline mode.
+2. PURPOSE AND AUDIENCE
+For Mexican Spanish learners, travelers and residents who want to remember useful phrases and verb forms. Learners create personal flashcards, hear pronunciation and practice recall with spaced repetition.
 
-Note on Screencast Audio: The video is a visual screen capture without embedded audio track. Animated speaker click states demonstrate audio triggers. Reviewers can test live neural audio directly in the build by tapping any speaker button.
+3. SETUP AND REVIEWER ACCESS
+The starter demo works without an account. Personal card creation, imports and synchronization require free sign-in and an initial internet connection. Subsequent study works offline; pronunciation uses installed device voices. There is one learner account type; no sample files required.
+Use the username in App Review's sign-in fields as the email in Jolito, then tap Send sign-in link. To read the code, open https://mail.tm/en/ in a browser, choose Account > Log in, and use BOTH credentials from App Review's sign-in fields. The password is for this dedicated email inbox, not a Jolito password. Open the latest Jolito email and enter its six-digit code in Jolito, then tap Sign in. Request a fresh code for each login. This inbox and account are dedicated to review; no developer intervention is needed.
+Create: enter Spanish and English, optionally context/both directions, then Save card. Practice: recall, swipe up or tap Reveal answer, listen, then swipe right for Good or tap a rating. Audio plays automatically; speaker buttons replay it. Deck: browse/search/edit cards and add starter packs. Grammar: Home > Practice menu > Grammar > Start practice. Delete: Account/Sync > Delete cloud account & data, read the warning, type DELETE and confirm.
 
-Additional Clarifications:
-- User-Generated Content (UGC): Flashcards are strictly private to the user for personal study. The app has no social feeds, public sharing, or user-to-user interaction; reporting/blocking mechanisms are not applicable.
-- Paid Content & In-App Purchases: Jolito is an upfront paid app ($2.99) with zero IAP, zero subscriptions, and zero paywalls. All features are fully unlocked upon purchase.
+4. EXTERNAL SERVICES
+Supabase: authentication, database and sync. Apple: Sign in with Apple. Resend: authentication/transactional email. Cloudflare: web/API hosting and Workers AI for optional example/mnemonic suggestions. iOS pronunciation: device speech voices (the web version uses a separate cloud speech service). Bundled dictionary: Wiktionary/Kaikki. Mail.tm provides only the dedicated reviewer inbox, not app functionality. No advertising or third-party tracking SDKs; first-party aggregate telemetry is described in the privacy policy.
 
-2. APP PURPOSE & TARGET AUDIENCE
-Jolito is a distraction-free spaced repetition flashcard app engineered specifically for Mexican Spanish learners (travelers, expatriates, and students). It focuses on authentic Mexican vocabulary, slang, and grammar with native pronunciation audio and evidence-based SRS scheduling.
+5. REGIONS
+No intentional regional feature or curriculum variation. Content focuses on Mexican Spanish (es-MX). Apple manages store availability/prices; installed voices and online-service availability may vary.
 
-3. SETUP & ACCESS INSTRUCTIONS
-- Local-first architecture: No account or credentials required to use the app.
-- All core features (practice, audio, custom cards, deck manager) are immediately available upon launch.
-- Optional Cloud Sync: Users can tap "Account" / "Sync" to sign in via "Sign in with Apple" or email OTP.
-- For review testing, reviewers can use "Sign in with Apple" directly or enter any valid test email for an OTP.
+6. REGULATION AND RIGHTS
+Language learning, not a regulated-industry service. Dictionary and open-source licenses/attributions:
+https://joli.to/acknowledgements
+Wiktionary data is attributed under CC BY-SA 3.0; fonts under SIL Open Font License. The repository is Apache-2.0 licensed. No regulated-service credentials are applicable.
 
-4. EXTERNAL SERVICES & PLATFORMS
-- Supabase (PostgreSQL & Auth): Optional cloud sync, authentication (Apple Sign-In & Email OTP), and immediate account/data deletion.
-- Bundled Mexican Spanish Audio / Cloudflare CDN: Pre-rendered neural audio files cached via Cloudflare CDN.
-- No third-party ad networks, tracking SDKs, or analytics brokers.
-
-5. REGIONAL DIFFERENCES
-Functions identically worldwide with zero regional differences, geofencing, or localized feature locks. The curriculum focuses on Mexican Spanish (es-MX).
-
-6. REGULATORY & THIRD-PARTY RIGHTS
-Jolito does not operate in a regulated industry. All vocabulary, artwork (mascot Jolito), audio, and code are original or permissively licensed open-source. Contains no protected third-party IP.
-
-CONTACT
-Steffen Smolka: steffen.smolka@gmail.com
+Steffen Smolka — steffen.smolka@gmail.com

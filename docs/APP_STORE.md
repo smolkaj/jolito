@@ -148,13 +148,19 @@ this dedicated screenshot directory.
 
 Review contact information and reviewer notes are version-controlled in
 `fastlane/metadata/review_information/` (`first_name.txt`, `last_name.txt`,
-`email_address.txt`, `phone_number.txt`, `notes.txt`). Because Jolito is a
-local-first spaced repetition application where all core features (card
-creation, study sessions, audio pronunciation, offline SM-2 scheduling) function
-immediately upon launch without authentication, no demo account is required
-(`demo_user.txt` and `demo_password.txt` are omitted so App Store Connect marks
-demo account as not required). If an optional cloud sync test is performed,
-standard email verification codes apply.
+`email_address.txt`, `phone_number.txt`, `notes.txt`). Personal decks require
+sign-in; the starter demo is available anonymously. The metadata lane requires
+`APP_REVIEW_EMAIL` and `APP_REVIEW_MAILBOX_PASSWORD` from private release secrets
+and supplies them to Apple's demo-account fields. Never commit these values.
+The password opens the dedicated reviewer inbox at https://mail.tm/en/; Jolito
+itself uses the fresh emailed code. The notes give the complete independent login
+procedure. Verify both the inbox login and app sign-in before every submission.
+The disposable account used to demonstrate deletion must be separate.
+
+The same lane attaches `docs/media/native-walkthrough.mp4`. See
+[recording provenance and script](APP_REVIEW_VIDEO.md). The recording is a native
+iOS Simulator capture; it does not satisfy a request for physical-device footage.
+Do not describe it as physical-device QA.
 
 ## Release procedure
 
@@ -200,11 +206,16 @@ standard email verification codes apply.
    submitting the tested build, and requests automatic release after Apple approval.
    The lane cannot rebuild or fall back to “latest.” Any build change requires new
    device validation.
-7. Check review status anytime via **App Store Production Deployment → status**
+7. When replacing a queued build, use **App Store Production Deployment → replace**
+   with the exact tested replacement number. It validates the processed candidate,
+   withdraws only the submission containing this app version, waits for cancellation,
+   uploads the review package, and submits the replacement. Plain `submit` refuses
+   to silently accept a different queued build. Recheck status after completion.
+8. Check review status anytime via **App Store Production Deployment → status**
    (or locally with credentials: `node scripts/app-store.ts --status`), which queries
    the App Store Connect API and prints the active version strings, build numbers, and
    review lifecycle states (`WAITING_FOR_REVIEW`, `IN_REVIEW`, `READY_FOR_SALE`).
-8. Address review findings, then verify the public listing, US$2.99 purchase
+9. Address review findings, then verify the public listing, US$2.99 purchase
    price, territory availability, and a production installation. Report the
    live App Store URL. An upload or submission alone is not completion.
 

@@ -88,7 +88,7 @@ final class NativeWalkthrough: XCTestCase {
 
         chapter("Practice verb forms in context")
         tap(button("Jolito home"))
-        tap(app.buttons["Practice ▾"].firstMatch)
+        tap(button("Practice"))
         let grammar = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Grammar")).firstMatch
         tap(grammar)
         pause(4)

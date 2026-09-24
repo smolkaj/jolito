@@ -53,3 +53,4 @@ cleanup
 video_pid=
 audio_pid=
 trap - EXIT
+python3 scripts/assemble-native-walkthrough.py "$output" "$(git rev-parse HEAD)"
