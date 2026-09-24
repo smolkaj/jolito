@@ -541,6 +541,13 @@ describe('accent keyboard insertion', () => {
     )
     expect(alert).toBeVisible()
 
+    // Speech error notice must be outside form so form height strictly matches answer input
+    const form = screen
+      .getByPlaceholderText('Type your answer…')
+      .closest('form')!
+    expect(form).toBeInTheDocument()
+    expect(form.contains(alert)).toBe(false)
+
     // Typing clears the error notice
     const answerInput = screen.getByPlaceholderText('Type your answer…')
     await user.type(answerInput, 'h')
@@ -583,5 +590,43 @@ describe('accent keyboard insertion', () => {
     const quickActionsIndex = cardChildren.indexOf(quickActions)
     expect(kbdHintIndex).toBeGreaterThan(-1)
     expect(quickActionsIndex).toBeGreaterThan(kbdHintIndex)
+  })
+
+  it('preserves answer-form boundary invariant when voice error is displayed', async () => {
+    const user = userEvent.setup()
+    const initial = props()
+    const mockRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi.fn().mockResolvedValue(false),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    const { container } = render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        speechRecognizer={mockRecognizer}
+      />,
+    )
+
+    const form = container.querySelector('.answer-form')!
+    const revealBtn = container.querySelector('.reveal-button')!
+    expect(form).toBeInTheDocument()
+    expect(revealBtn).toBeInTheDocument()
+
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    await user.click(micBtn)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toBeInTheDocument()
+
+    // Speech error notice must remain strictly outside answer-form
+    expect(form.contains(alert)).toBe(false)
+    expect(form.contains(revealBtn)).toBe(true)
+
+    // The alert should be a sibling directly following the form
+    expect(form.nextElementSibling).toBe(alert)
   })
 })
