@@ -59,6 +59,19 @@ done
 for tutorial in DidShowContinuousPathIntroduction KeyboardDidShowProductivityTutorial DidShowGestureKeyboardIntroduction UIKeyboardDidShowInternationalInfoIntroduction; do
   xcrun simctl spawn "$device" defaults write com.apple.keyboard.preferences "$tutorial" -bool true
 done
+# Xcode can attach a virtual hardware keyboard when Device Hub starts. Initialize
+# its touch setting before the UI test, without permission-gated desktop scripting.
+open -b com.apple.dt.Devices
+# The sandbox container is created on first launch; wait for that initialization.
+keyboard_configured=false
+for attempt in $(seq 1 30); do
+  if defaults -container com.apple.dt.Devices write com.apple.dt.Devices alwaysSimulateHardwareKeyboard -bool false 2>/dev/null; then
+    keyboard_configured=true
+    break
+  fi
+  sleep 1
+done
+test "$keyboard_configured" = true
 # Simulator apps use their own output UID, independent of the Mac's default.
 # Set only that route; preserve the device's volume and ringer state.
 python3 - "$device" "$output" <<'PYAUDIO'

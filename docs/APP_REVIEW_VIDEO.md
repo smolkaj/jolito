@@ -69,7 +69,9 @@ UI-test runner only. The app target receives no test-account secrets.
 captures masked H.264 video and continuous PCM system audio. The Simulator’s
 own output-device UID is routed to BlackHole, preserving device volume and
 ringer state. The Mac’s default output alone does not configure that route.
-Capture runs without Device Hub, desktop UI scripting or Apple Events. Text is entered by tapping actual software keys: XCTest's `typeText` attaches a virtual hardware
+Device Hub’s keyboard setting is initialized to touch mode before capture;
+otherwise Xcode can attach a virtual hardware keyboard during typing. No desktop
+UI scripting or Apple Events are used. Text is entered by tapping actual software keys: XCTest's `typeText` attaches a virtual hardware
 keyboard, so it is unsuitable for a touch-mode recording. Study asserts the
 absence of keyboard-only reveal hints. The capture device has keyboard
 autocorrection and prediction disabled so English corrections cannot rewrite
