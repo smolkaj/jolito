@@ -381,6 +381,8 @@ export async function verifyReviewInformation(
     fileSize: number
     checksum: string
   },
+  pause: () => Promise<void> = () =>
+    new Promise((resolve) => setTimeout(resolve, 2000)),
 ) {
   if (!expected.email || !expected.password)
     throw new Error('Reviewer credentials are required for verification')
@@ -393,39 +395,49 @@ export async function verifyReviewInformation(
     (item) => item.attributes.versionString === settings.version,
   )
   if (!version) throw new Error('App Store version missing')
-  const response = await api.call(
-    `/v1/appStoreVersions/${version.id}/appStoreReviewDetail?include=appStoreReviewAttachments`,
-  )
-  const detail = resourceSchema.parse(response.data).attributes
-  if (
-    detail.notes !== expected.notes.trim() ||
-    detail.demoAccountRequired !== true ||
-    detail.demoAccountName !== expected.email ||
-    detail.demoAccountPassword !== expected.password
-  ) {
-    throw new Error(
-      'Stored App Review notes or private account credentials do not match the release package',
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const response = await api.call(
+      `/v1/appStoreVersions/${version.id}/appStoreReviewDetail?include=appStoreReviewAttachments`,
     )
+    const detail = resourceSchema.parse(response.data).attributes
+    if (
+      detail.notes !== expected.notes.trim() ||
+      detail.demoAccountRequired !== true ||
+      detail.demoAccountName !== expected.email ||
+      detail.demoAccountPassword !== expected.password
+    ) {
+      throw new Error(
+        'Stored App Review notes or private account credentials do not match the release package',
+      )
+    }
+    const attachment = response.included.find(
+      (item) =>
+        item.type === 'appStoreReviewAttachments' &&
+        item.attributes.fileName === 'native-walkthrough.mp4',
+    )
+    const delivery = z
+      .object({ state: z.string().min(1) })
+      .safeParse(attachment?.attributes.assetDeliveryState)
+    if (!delivery.success || delivery.data.state === 'FAILED')
+      throw new Error(
+        'Native review video attachment is missing or failed delivery',
+      )
+    if (delivery.data.state === 'COMPLETE') {
+      if (
+        attachment?.attributes.fileSize !== expected.fileSize ||
+        attachment.attributes.sourceFileChecksum !== expected.checksum
+      )
+        throw new Error(
+          'Native review video attachment differs from the reviewed file',
+        )
+      console.log(
+        'Verified stored review notes, private account credentials and completed native video attachment.',
+      )
+      return
+    }
+    if (attempt < 59) await pause()
   }
-  const attachment = response.included.find(
-    (item) =>
-      item.type === 'appStoreReviewAttachments' &&
-      item.attributes.fileName === 'native-walkthrough.mp4',
-  )
-  const delivery = z
-    .object({ state: z.literal('COMPLETE') })
-    .safeParse(attachment?.attributes.assetDeliveryState)
-  if (
-    !delivery.success ||
-    attachment?.attributes.fileSize !== expected.fileSize ||
-    attachment.attributes.sourceFileChecksum !== expected.checksum
-  )
-    throw new Error(
-      'Native review video attachment is missing, incomplete or differs from the reviewed file',
-    )
-  console.log(
-    'Verified stored review notes, private account credentials and completed native video attachment.',
-  )
+  throw new Error('Native review video attachment did not finish processing')
 }
 
 // Explicit replacement is separate from submit: a queued release is never

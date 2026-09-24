@@ -812,3 +812,54 @@ void test('review readback validates private access and complete video without m
     else await verifyReviewInformation(api, expected)
   }
 })
+
+void test('review readback waits for asynchronous video delivery and bounds failed processing', async () => {
+  const expected = {
+    notes: 'Notes',
+    email: 'review@example.com',
+    password: 'private',
+    fileSize: 10,
+    checksum: 'md5',
+  }
+  for (const outcome of ['COMPLETE', 'FAILED', 'UPLOAD_COMPLETE']) {
+    let reads = 0
+    let waits = 0
+    const api = new AppleApi('token', (input, init) => {
+      assert.equal(init?.method, 'GET')
+      const url = new URL(input instanceof Request ? input.url : input)
+      if (url.pathname === '/v1/apps')
+        return reply({ data: [record('apps', 'app')] })
+      if (url.pathname.endsWith('/appStoreVersions'))
+        return reply({
+          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+        })
+      reads++
+      return reply({
+        data: record('appStoreReviewDetails', 'detail', {
+          notes: expected.notes,
+          demoAccountRequired: true,
+          demoAccountName: expected.email,
+          demoAccountPassword: expected.password,
+        }),
+        included: [
+          record('appStoreReviewAttachments', 'video', {
+            fileName: 'native-walkthrough.mp4',
+            fileSize: expected.fileSize,
+            sourceFileChecksum: expected.checksum,
+            assetDeliveryState: {
+              state: reads < 3 ? 'UPLOAD_COMPLETE' : outcome,
+            },
+          }),
+        ],
+      })
+    })
+    const verification = verifyReviewInformation(api, expected, () => {
+      waits++
+      return Promise.resolve()
+    })
+    if (outcome === 'COMPLETE') await verification
+    else await assert.rejects(verification, /video attachment/)
+    assert.equal(reads, outcome === 'UPLOAD_COMPLETE' ? 60 : 3)
+    assert.equal(waits, reads - 1)
+  }
+})
