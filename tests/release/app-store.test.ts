@@ -9,6 +9,7 @@ import {
   CONTENT_RIGHTS_DECLARATION,
   priceSchedule,
   submitAppStoreVersion,
+  validateBuildNumber,
 } from '../../scripts/app-store.ts'
 
 function record(type: string, id: string, attributes = {}, relationships = {}) {
@@ -363,47 +364,103 @@ void test('checkStatus includes review submissions when present', async () => {
   ])
 })
 
+void test('validateBuildNumber accepts valid build numbers and rejects invalid ones', () => {
+  assert.equal(validateBuildNumber('1'), '1')
+  assert.equal(validateBuildNumber('10'), '10')
+  assert.equal(validateBuildNumber('9999'), '9999')
+  assert.equal(validateBuildNumber('  42  '), '42')
+
+  assert.throws(
+    () => validateBuildNumber(''),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('   '),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber(undefined),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('0'),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('10000'),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('abc'),
+    /Specify the exact tested build number/,
+  )
+})
+
 void test('submitAppStoreVersion attaches build if needed, cancels stuck submissions, creates new submission, and submits', async () => {
   const { api, calls } = store({
     versionState: 'PREPARE_FOR_SUBMISSION',
     versionBuildNumber: '9',
     reviewSubmissions: [
       { id: 'sub-stuck', state: 'UNRESOLVED_ISSUES' },
+      { id: 'sub-ready', state: 'READY_FOR_REVIEW' },
       { id: 'sub-old', state: 'COMPLETE' },
     ],
   })
 
   await submitAppStoreVersion(api, '10')
 
-  // Verify build was attached via PATCH
+  // Verify build was attached and releaseType configured via PATCH
   const patchBuild = calls.find(
     (c) => c.method === 'PATCH' && c.url.pathname === '/v1/appStoreVersions/v1',
   )
   assert.ok(
     patchBuild,
-    'Expected PATCH /v1/appStoreVersions/v1 to attach build',
+    'Expected PATCH /v1/appStoreVersions/v1 to attach build and configure releaseType',
   )
   assert.deepEqual(JSON.parse(patchBuild.body!), {
     data: {
       type: 'appStoreVersions',
       id: 'v1',
+      attributes: {
+        releaseType: 'AFTER_APPROVAL',
+      },
       relationships: {
         build: { data: { type: 'builds', id: 'b10' } },
       },
     },
   })
 
-  // Verify stuck submission was canceled
-  const patchCancel = calls.find(
+  // Verify stuck submissions were canceled
+  const patchCancelStuck = calls.find(
     (c) =>
       c.method === 'PATCH' &&
       c.url.pathname === '/v1/reviewSubmissions/sub-stuck',
   )
-  assert.ok(patchCancel, 'Expected PATCH to cancel stuck submission')
-  assert.deepEqual(JSON.parse(patchCancel.body!), {
+  assert.ok(
+    patchCancelStuck,
+    'Expected PATCH to cancel UNRESOLVED_ISSUES submission',
+  )
+  assert.deepEqual(JSON.parse(patchCancelStuck.body!), {
     data: {
       type: 'reviewSubmissions',
       id: 'sub-stuck',
+      attributes: { canceled: true },
+    },
+  })
+
+  const patchCancelReady = calls.find(
+    (c) =>
+      c.method === 'PATCH' &&
+      c.url.pathname === '/v1/reviewSubmissions/sub-ready',
+  )
+  assert.ok(
+    patchCancelReady,
+    'Expected PATCH to cancel READY_FOR_REVIEW submission',
+  )
+  assert.deepEqual(JSON.parse(patchCancelReady.body!), {
+    data: {
+      type: 'reviewSubmissions',
+      id: 'sub-ready',
       attributes: { canceled: true },
     },
   })
@@ -460,6 +517,16 @@ void test('submitAppStoreVersion rejects when version is missing or target build
       '999',
     ),
     /Build 999 not found/,
+  )
+
+  await assert.rejects(
+    submitAppStoreVersion(store().api, ''),
+    /Specify the exact tested build number/,
+  )
+
+  await assert.rejects(
+    submitAppStoreVersion(store().api, 'invalid'),
+    /Specify the exact tested build number/,
   )
 })
 

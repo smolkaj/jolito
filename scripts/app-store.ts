@@ -312,19 +312,16 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
     return { versionString, state, buildNumber }
   })
 
-  let reviewSubmissions: ReviewSubmissionSummary[] = []
-  try {
-    const submissionsData = await api.list(
-      `/v1/apps/${app.id}/reviewSubmissions?limit=10`,
-    )
-    reviewSubmissions = submissionsData.map((s) => ({
+  const submissionsData = await api.list(
+    `/v1/apps/${app.id}/reviewSubmissions?limit=10`,
+  )
+  const reviewSubmissions: ReviewSubmissionSummary[] = submissionsData.map(
+    (s) => ({
       id: s.id,
       state:
         typeof s.attributes.state === 'string' ? s.attributes.state : 'UNKNOWN',
-    }))
-  } catch {
-    // Tolerant if reviewSubmissions endpoint is unavailable or empty
-  }
+    }),
+  )
 
   console.log(
     `App: ${name ?? settings.bundleId} (${settings.bundleId}, ID: ${app.id})`,
@@ -354,10 +351,20 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
   }
 }
 
+export function validateBuildNumber(buildNumber: string | undefined): string {
+  const trimmed = buildNumber?.trim() ?? ''
+  if (!/^[1-9]\d{0,3}$/.test(trimmed)) {
+    throw new Error('Specify the exact tested build number (1–9999)')
+  }
+  return trimmed
+}
+
 export async function submitAppStoreVersion(
   api: AppleApi,
-  buildNumber?: string,
+  buildNumber: string,
 ) {
+  const validatedBuildNumber = validateBuildNumber(buildNumber)
+
   const apps = await api.list(
     `/v1/apps?filter[bundleId]=${settings.bundleId}&fields[apps]=bundleId,name`,
   )
@@ -388,41 +395,54 @@ export async function submitAppStoreVersion(
     return
   }
 
-  if (buildNumber) {
-    const buildRel = idSchema.safeParse(version.relationships.build?.data)
-    const currentBuildResource = buildRel.success
-      ? response.included.find(
-          (r) => r.type === 'builds' && r.id === buildRel.data.id,
-        )
+  const buildRel = idSchema.safeParse(version.relationships.build?.data)
+  const currentBuildResource = buildRel.success
+    ? response.included.find(
+        (r) => r.type === 'builds' && r.id === buildRel.data.id,
+      )
+    : undefined
+  const currentBuildNumber =
+    currentBuildResource &&
+    typeof currentBuildResource.attributes.version === 'string'
+      ? currentBuildResource.attributes.version
       : undefined
-    const currentBuildNumber =
-      currentBuildResource &&
-      typeof currentBuildResource.attributes.version === 'string'
-        ? currentBuildResource.attributes.version
-        : undefined
 
-    if (currentBuildNumber !== buildNumber) {
+  const needsBuildPatch = currentBuildNumber !== validatedBuildNumber
+  const needsReleaseTypePatch =
+    version.attributes.releaseType !== 'AFTER_APPROVAL'
+
+  if (needsBuildPatch || needsReleaseTypePatch) {
+    const patchData: {
+      type: 'appStoreVersions'
+      id: string
+      attributes?: { releaseType: string }
+      relationships?: { build: { data: { type: string; id: string } } }
+    } = {
+      type: 'appStoreVersions',
+      id: version.id,
+    }
+    if (needsReleaseTypePatch) {
+      patchData.attributes = { releaseType: 'AFTER_APPROVAL' }
+    }
+    if (needsBuildPatch) {
       const builds = await api.list(
-        `/v1/builds?filter[app]=${app.id}&filter[version]=${buildNumber}&limit=10`,
+        `/v1/builds?filter[app]=${app.id}&filter[version]=${validatedBuildNumber}&limit=10`,
       )
       if (builds.length === 0) {
         throw new Error(
-          `Build ${buildNumber} not found for version ${settings.version}`,
+          `Build ${validatedBuildNumber} not found for version ${settings.version}`,
         )
       }
-      await api.call(`/v1/appStoreVersions/${version.id}`, 'PATCH', {
-        data: {
-          type: 'appStoreVersions',
-          id: version.id,
-          relationships: {
-            build: relation('builds', builds[0]!.id),
-          },
-        },
-      })
-      console.log(
-        `Attached build ${buildNumber} to version ${settings.version}`,
-      )
+      patchData.relationships = {
+        build: relation('builds', builds[0]!.id),
+      }
     }
+    await api.call(`/v1/appStoreVersions/${version.id}`, 'PATCH', {
+      data: patchData,
+    })
+    console.log(
+      `Updated version ${settings.version}: build=${validatedBuildNumber}, releaseType=AFTER_APPROVAL`,
+    )
   }
 
   const existingSubmissions = await api.list(
@@ -546,13 +566,13 @@ if (import.meta.main) {
     const command = process.argv[2] ?? ''
     if (!['--apply', '--check', '--status', '--submit'].includes(command))
       throw new Error(
-        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit [build_number]',
+        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit <build_number>',
       )
     const api = new AppleApi(token())
     if (command === '--status') {
       await checkStatus(api)
     } else if (command === '--submit') {
-      const buildNumber = process.argv[3]
+      const buildNumber = validateBuildNumber(process.argv[3])
       await submitAppStoreVersion(api, buildNumber)
     } else {
       await configureStore(api, command === '--apply')
