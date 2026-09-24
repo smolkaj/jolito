@@ -189,3 +189,60 @@ platform :ios do
     )
   end
 end
+
+platform :android do
+  desc 'Build release Android App Bundle (AAB)'
+  lane :build do
+    gradle(
+      task: 'bundleRelease',
+      project_dir: 'android/'
+    )
+  end
+
+  desc 'Upload release bundle and metadata to Google Play track (internal, closed, production)'
+  lane :deploy do |options|
+    track = options[:track] || 'internal'
+    build unless options[:skip_build]
+    supply(
+      package_name: ReleaseConfig::SETTINGS.fetch('bundleId'),
+      track: track,
+      aab: File.join(ReleaseConfig::ROOT, 'android/app/build/outputs/bundle/release/app-release.aab'),
+      metadata_path: File.join(ReleaseConfig::ROOT, 'fastlane/metadata/android'),
+      json_key: ENV['SUPPLY_JSON_KEY'],
+      json_key_data: ENV['SUPPLY_JSON_KEY_DATA']
+    )
+  end
+
+  desc 'Upload release bundle to Google Play Internal Testing'
+  lane :internal do |options|
+    deploy(track: 'internal', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload release bundle to Google Play Closed Testing'
+  lane :closed do |options|
+    deploy(track: 'closed', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload release bundle to Google Play Production track'
+  lane :production do |options|
+    deploy(track: 'production', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload release bundle to Google Play Production track (alias for production)'
+  lane :release do |options|
+    deploy(track: 'production', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload Google Play listing metadata and screenshots without a binary'
+  lane :metadata do
+    supply(
+      package_name: ReleaseConfig::SETTINGS.fetch('bundleId'),
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      metadata_path: File.join(ReleaseConfig::ROOT, 'fastlane/metadata/android'),
+      json_key: ENV['SUPPLY_JSON_KEY'],
+      json_key_data: ENV['SUPPLY_JSON_KEY_DATA']
+    )
+  end
+end
+

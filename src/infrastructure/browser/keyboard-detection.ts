@@ -41,6 +41,9 @@ export function initKeyboardDetection(
 
   const root = doc.documentElement
   const isIosDevice = isIOS(nav)
+  const isAndroidDevice = Boolean(
+    nav?.userAgent && /Android/i.test(nav.userAgent),
+  )
   const isMobileDevice = Boolean(
     nav?.userAgent &&
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -51,6 +54,8 @@ export function initKeyboardDetection(
 
   if (isIosDevice) {
     root.dataset.platform = 'ios'
+  } else if (isAndroidDevice) {
+    root.dataset.platform = 'android'
   }
 
   const setKeyboard = (present: boolean) => {

@@ -166,6 +166,7 @@ describe('keyboard-detection', () => {
     })
 
     expect(root.dataset.keyboard).toBeUndefined()
+    expect(root.dataset.platform).toBe('android')
     expect(storage.getItem('jolito:has-keyboard')).toBeNull()
 
     cleanup()
