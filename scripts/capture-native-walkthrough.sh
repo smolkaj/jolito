@@ -41,15 +41,31 @@ xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
 # Xcode 27 uses Device Hub. Its default input mode has no hardware keyboard.
 open -b com.apple.dt.Devices
-python3 -c 'import time; print(time.time())' > "$output/video-start.txt"
 xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.mov" > "$output/video.log" 2>&1 &
 video_pid=$!
-python3 -c 'import time; print(time.time())' > "$output/audio-start.txt"
 ffmpeg -hide_banner -nostats -y -f avfoundation -i ':BlackHole 2ch' -af 'aresample=async=1:first_pts=0' -c:a pcm_s16le "$output/audio.wav" > "$output/audio.log" 2>&1 &
 audio_pid=$!
-sleep 3
-kill -0 "$video_pid"
-kill -0 "$audio_pid"
+# AVFoundation initialization can lag process launch by a minute on a cold host.
+# Anchor each track when it reports readiness, not when its process was spawned.
+python3 - "$output" "$video_pid" "$audio_pid" <<'PYREADY'
+from pathlib import Path
+import os
+import sys
+import time
+folder = Path(sys.argv[1])
+pending = [('video', 'Recording started', int(sys.argv[2])),
+           ('audio', "Output #0, wav", int(sys.argv[3]))]
+deadline = time.monotonic() + 120
+while pending:
+    for track, marker, pid in pending[:]:
+        os.kill(pid, 0)
+        if marker in (folder / f'{track}.log').read_text():
+            (folder / f'{track}-start.txt').write_text(str(time.time()))
+            pending.remove((track, marker, pid))
+    if time.monotonic() > deadline:
+        raise SystemExit('Capture tools did not become ready')
+    time.sleep(0.05)
+PYREADY
 xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -destination "platform=iOS Simulator,id=$device" -configuration Release \
   -derivedDataPath build/WalkthroughDerivedData -resultBundlePath "$output/result.xcresult" \

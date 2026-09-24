@@ -38,14 +38,23 @@ probe = json.loads(subprocess.check_output([
 ]))
 if {stream['codec_type'] for stream in probe['streams']} != {'audio', 'video'}:
     raise SystemExit('Final recording must contain both audio and video')
-if abs(float(probe['format']['duration']) - (end - start)) > 1:
-    raise SystemExit('Final recording does not cover the full walkthrough')
+if any(abs(float(stream.get('duration', 0)) - (end - start)) > 1
+       for stream in probe['streams']):
+    raise SystemExit('Both tracks must cover the full walkthrough; refusing a truncated capture')
+audio_check = subprocess.run([
+    'ffmpeg', '-hide_banner', '-nostats', '-i', str(partial),
+    '-vn', '-af', 'volumedetect', '-f', 'null', '-',
+], check=True, capture_output=True, text=True)
+peak = re.search(r'max_volume: (-?[0-9.]+) dB', audio_check.stderr)
+if not peak or float(peak[1]) < -45:
+    raise SystemExit('Refusing a silent or inaudible recording')
 partial.replace(folder / 'native-walkthrough.mp4')
 (folder / 'native-walkthrough.json').write_text(json.dumps({
     'capture': 'iOS Simulator — not a physical-device recording',
     'device': 'iPhone Air', 'operatingSystem': 'iOS 27.0',
     'sourceCommit': source, 'durationSeconds': round(end - start, 2),
     'authentication': 'Real production email-code authentication; dedicated reviewer and disposable deletion accounts',
+    'audioPeakDb': float(peak[1]),
     'audio': 'Original Simulator system audio via BlackHole; no voiceover or replacement speech',
     'presentation': 'Native device mask; setup/teardown trimmed; no added titles, borders or pointer overlays',
     'chapters': chapters,

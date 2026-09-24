@@ -150,7 +150,14 @@ final class NativeWalkthrough: XCTestCase {
         if let value = field.value as? String, value != field.placeholderValue, !value.isEmpty {
             field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))
         }
-        field.typeText(text)
+        if label == "Mexican Spanish" || label == "English" {
+            for (index, word) in text.split(separator: " ").enumerated() {
+                field.typeText((index == 0 ? "" : " ") + String(word))
+                pause(0.2)
+            }
+        } else {
+            field.typeText(text)
+        }
         pause(2)
     }
 
@@ -178,17 +185,19 @@ final class NativeWalkthrough: XCTestCase {
     }
 
     private func dismissKeyboard() {
-        app.staticTexts["New flashcard"].firstMatch.tap()
+        if !app.keyboards.firstMatch.exists { return }
+        // Tap the visible page margin. Resolving an offscreen heading can scroll
+        // it underneath the status bar and leave the keyboard focused.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.25)).tap()
+        let gone = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in !self.app.keyboards.firstMatch.exists }, object: nil
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed)
         pause(2)
-        XCTAssertFalse(app.keyboards.firstMatch.exists)
     }
 
     private func dismissPracticeKeyboard() {
-        if app.keyboards.firstMatch.exists {
-            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.16)).tap()
-            pause(2)
-        }
-        XCTAssertFalse(app.keyboards.firstMatch.exists, "Practice should remain in touch mode")
+        dismissKeyboard()
     }
 
     private func closeSheetIfOpen() {

@@ -65,11 +65,12 @@ registration/deletion take; do not delete the persistent reviewer account.
 accessibility elements and touch gestures. Credentials are injected into the
 UI-test runner only. The app target receives no test-account secrets.
 [`capture-native-walkthrough.sh`](../scripts/capture-native-walkthrough.sh)
-captures masked H.264 video and system audio. The audio resampler retains silence
+captures masked H.264 video and system audio, anchoring each track only after
+its capture tool reports readiness. The audio resampler retains silence
 between timestamped speech buffers so sound does not collapse toward the start.
 [`assemble-native-walkthrough.py`](../scripts/assemble-native-walkthrough.py)
 requires a successful complete take, trims at logged boundaries and muxes AAC
-into the final MP4. Failed takes are diagnostic artifacts, never release videos.
+into the final MP4. It rejects truncated tracks and silent audio. Failed takes are diagnostic artifacts, never release videos.
 
 Artifacts deliberately exclude generated schemes and `.xcresult` bundles,
 which may contain runner environment values. Before publishing, inspect the
