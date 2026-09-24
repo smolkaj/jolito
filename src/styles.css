@@ -2611,7 +2611,7 @@ summary:focus-visible,
 .answer-form.has-accents .answer-input {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  border-bottom: 1px solid var(--line-subtle);
+  border-bottom: 2.5px solid var(--line-subtle);
   box-shadow: none;
 }
 
@@ -2623,7 +2623,7 @@ summary:focus-visible,
   background: rgba(18, 24, 21, 0.02);
   box-shadow: var(--shadow-sm);
   padding: 4px 6px;
-  min-height: 42px;
+  min-height: 52px;
   box-sizing: border-box;
   margin-top: 0;
   transition: border-color 140ms ease;
@@ -3028,7 +3028,7 @@ kbd {
 
 .answer-accents-container {
   grid-area: accents;
-  min-height: 42px;
+  min-height: 52px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -3068,22 +3068,22 @@ kbd {
   justify-content: center;
   gap: 3px;
   padding: 0;
-  flex: 0 0 36px;
-  min-width: 36px;
-  width: 36px;
-  height: 34px;
+  flex: 0 0 44px;
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   box-shadow: none;
   color: var(--ink-soft);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
-  opacity: 0.85;
+  opacity: 0.9;
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
@@ -3108,14 +3108,13 @@ kbd {
 }
 
 .accent-toolbar-btn kbd {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-mono, monospace);
   padding: 0 2px;
   border-radius: 3px;
   background: transparent;
   border: none;
   color: var(--ink-muted);
-  opacity: 0.6;
 }
 
 @media (max-width: 479px) {

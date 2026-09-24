@@ -486,7 +486,7 @@ export function PracticeCard({
     const target = event.target as HTMLElement | null
     const isUnrevealedInteractive = Boolean(
       target?.closest(
-        'input, textarea, select, a, button.audio-button, button.speech-recall-btn, .speech-recall-btn, .answer-accents',
+        'button, input, textarea, select, a, [role="button"], .answer-accents',
       ),
     )
     const isRevealedDragBlocked = Boolean(
@@ -921,7 +921,7 @@ export function PracticeCard({
                 <span className="reveal-button-label">Reveal answer</span>
                 <kbd>Enter</kbd>
               </button>
-              <div className="visually-hidden" aria-live="polite">
+              <div className="sr-only" aria-live="polite">
                 {speechNotice ??
                   (isListening ? 'Listening for your spoken answer…' : '')}
               </div>
