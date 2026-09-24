@@ -1,5 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 import {
   AppleApi,
   checkStatus,
@@ -286,5 +288,18 @@ void test('checkStatus handles apps with empty versions or missing build attachm
   await assert.rejects(
     checkStatus(store({ appMissing: true }).api),
     /Create the Jolito app record/,
+  )
+})
+
+void test('review notes exist and do not exceed App Store Connect 4000 character limit', () => {
+  const notesPath = path.resolve(
+    'fastlane/metadata/review_information/notes.txt',
+  )
+  assert.ok(fs.existsSync(notesPath), 'Review notes file must exist')
+  const content = fs.readFileSync(notesPath, 'utf8')
+  assert.ok(content.length > 0, 'Review notes must not be empty')
+  assert.ok(
+    content.length <= 4000,
+    `Review notes cannot exceed 4000 characters (found ${content.length})`,
   )
 })
