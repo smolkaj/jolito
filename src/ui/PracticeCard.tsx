@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import {
   grades,
   localeForAnswer,
@@ -22,9 +23,23 @@ import {
 import { AnswerComparison } from './AnswerComparison'
 import { ReviewGrades } from './ReviewGrades'
 import { MicIcon } from './icons'
+import { AccentToolbar } from './AccentToolbar'
+import { SPANISH_ACCENT_CHARACTERS } from './accent-characters'
 
-const accentLetters = ['á', 'é', 'í', 'ó', 'ú']
 const MAX_SWIPE_LIFT_Y = -110
+
+function getInitialKeyboardState(): { isOpen: boolean; height: number } {
+  if (typeof document === 'undefined') return { isOpen: false, height: 0 }
+  const root = document.documentElement
+  const isOpen =
+    root.dataset.keyboardOpen === 'true' ||
+    root.classList.contains('is-keyboard-open')
+  const heightStr =
+    root.dataset.keyboardHeight ||
+    root.style.getPropertyValue('--keyboard-inset')
+  const height = parseInt(heightStr || '0', 10) || 0
+  return { isOpen, height }
+}
 
 /** Shared recall → feedback → grade interaction; learning modes supply content. */
 export function PracticeCard({
@@ -98,6 +113,33 @@ export function PracticeCard({
     else input.current?.focus()
   }, [card.id, card.schedule.reviews, revealed, paused])
 
+  const [keyboardState, setKeyboardState] = useState(getInitialKeyboardState)
+
+  useEffect(() => {
+    const handleKeyboardChange = (e: Event) => {
+      const custom = e as CustomEvent<{
+        isOpen?: boolean
+        keyboardHeight?: number
+      }>
+      const isOpen = Boolean(custom.detail?.isOpen)
+      const height = custom.detail?.keyboardHeight ?? 0
+      setKeyboardState({ isOpen, height })
+    }
+
+    window.addEventListener('jolito:keyboard-change', handleKeyboardChange)
+    return () => {
+      window.removeEventListener('jolito:keyboard-change', handleKeyboardChange)
+    }
+  }, [])
+
+  const isDocked = Boolean(
+    accents &&
+    !revealed &&
+    !paused &&
+    keyboardState.isOpen &&
+    keyboardState.height > 0,
+  )
+
   const insertAccent = (letter: string) => {
     const element = input.current
     if (paused || revealed || !element) return
@@ -113,11 +155,12 @@ export function PracticeCard({
     const nextAnswer = answer.slice(0, start) + letter + answer.slice(end)
     element.focus()
     if (nextAnswer === answer) {
-      element.setSelectionRange(start + 1, start + 1)
+      element.setSelectionRange(start + letter.length, start + letter.length)
     } else {
-      caret.current = start + 1
+      caret.current = start + letter.length
       onAnswerChange(nextAnswer)
     }
+    haptics?.trigger('selection')
   }
 
   const [isListening, setIsListening] = useState(false)
@@ -314,6 +357,18 @@ export function PracticeCard({
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+  useEffect(() => {
+    if (!isDocked || !input.current) return
+    const timer = setTimeout(() => {
+      if (!input.current) return
+      input.current.scrollIntoView({
+        block: 'center',
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      })
+    }, 60)
+    return () => clearTimeout(timer)
+  }, [isDocked, prefersReducedMotion])
 
   const cardRef = useRef<HTMLElement>(null)
   const pointerStartRef = useRef<{
@@ -714,8 +769,15 @@ export function PracticeCard({
       )}
       <section
         ref={cardRef}
-        className={`study-card ${revealed ? 'is-revealed' : ''} ${isDragging ? 'is-dragging' : ''} ${activeZone ? `zone-${activeZone}` : ''}`.trim()}
-        style={transformStyle}
+        className={`study-card ${revealed ? 'is-revealed' : ''} ${isDragging ? 'is-dragging' : ''} ${activeZone ? `zone-${activeZone}` : ''} ${isDocked ? 'has-docked-accents' : ''}`.trim()}
+        style={{
+          ...transformStyle,
+          ...(isDocked && keyboardState.height > 0
+            ? ({
+                '--keyboard-inset': `${keyboardState.height}px`,
+              } as React.CSSProperties)
+            : {}),
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -821,7 +883,8 @@ export function PracticeCard({
                       event.nativeEvent.isComposing
                     )
                       return
-                    const letter = accentLetters[Number(event.key) - 1]
+                    const letter =
+                      SPANISH_ACCENT_CHARACTERS[Number(event.key) - 1]
                     if (!letter) return
                     event.preventDefault()
                     if (!event.repeat) insertAccent(letter)
@@ -839,6 +902,23 @@ export function PracticeCard({
                   {speechError}
                 </p>
               )}
+              {accents && (
+                <div
+                  className="answer-accents-container"
+                  style={
+                    isDocked
+                      ? { visibility: 'hidden', pointerEvents: 'none' }
+                      : undefined
+                  }
+                  aria-hidden={isDocked}
+                >
+                  <AccentToolbar
+                    onInsert={insertAccent}
+                    isDocked={false}
+                    disabled={paused || isDocked}
+                  />
+                </div>
+              )}
               <button className="reveal-button" type="submit">
                 Reveal answer <kbd>Enter</kbd>
               </button>
@@ -847,29 +927,18 @@ export function PracticeCard({
                   (isListening ? 'Listening for your spoken answer…' : '')}
               </div>
             </form>
-            {accents && (
-              <div className="answer-accents" aria-label="Spanish accents">
-                {accentLetters.map((letter, index) => (
-                  <button
-                    type="button"
-                    key={letter}
-                    aria-label={`Insert ${letter}`}
-                    aria-keyshortcuts={String(index + 1)}
-                    title={`Insert ${letter} (${index + 1} while typing)`}
-                    onPointerDown={(event) => {
-                      if (
-                        event.button === 0 &&
-                        document.activeElement === input.current
-                      )
-                        event.preventDefault()
-                    }}
-                    onClick={() => insertAccent(letter)}
-                  >
-                    <kbd aria-hidden="true">{index + 1}</kbd> {letter}
-                  </button>
-                ))}
-              </div>
-            )}
+            {accents &&
+              isDocked &&
+              typeof document !== 'undefined' &&
+              createPortal(
+                <AccentToolbar
+                  onInsert={insertAccent}
+                  isDocked={true}
+                  keyboardInset={keyboardState.height}
+                  disabled={paused}
+                />,
+                document.body,
+              )}
           </>
         ) : (
           <div className="reveal-panel">
