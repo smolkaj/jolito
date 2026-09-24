@@ -1355,6 +1355,7 @@ function LoadedApp({
       dueCount={dueCount}
       onPractice={() => {
         if (isSyncOpen) closeSyncModal()
+        if (practicing) return
         handlePractice()
       }}
       onNavigateToDeck={() => {
@@ -1402,6 +1403,7 @@ function LoadedApp({
           onOpenFeedback={openFeedbackModal}
           onPlayAudio={playAudio}
           welcomeRef={welcomeRef}
+          haptics={services.haptics}
         />
         {renderMobileTabBar()}
         {renderAppModals()}
@@ -1438,6 +1440,7 @@ function LoadedApp({
           onPlayAudio={playAudio}
           assistant={services.assistant}
           aiAssistant={services.aiAssistant}
+          haptics={services.haptics}
         />
         {renderMobileTabBar()}
         {renderAppModals()}
@@ -1503,7 +1506,7 @@ function LoadedApp({
             <DesktopSegmentedNav
               currentView={view}
               dueCount={dueCount}
-              onPractice={handlePractice}
+              onPractice={practicing ? () => {} : handlePractice}
               onNavigateToDeck={() => navigateTo('deck')}
               onNavigateToCreate={() => navigateTo('create')}
               haptics={services.haptics}

@@ -26,6 +26,8 @@ export function DesktopSegmentedNav({
     currentView === 'complete'
   const isDeckActive = currentView === 'deck'
   const isCreateActive = currentView === 'create'
+  const showDueBadge =
+    dueCount > 0 && currentView !== 'review' && currentView !== 'complete'
 
   const handleClick = (action: () => void) => {
     haptics?.trigger('selection')
@@ -40,12 +42,12 @@ export function DesktopSegmentedNav({
         className={`desktop-segmented-btn ${isPracticeActive ? 'is-active' : ''}`}
         onClick={() => handleClick(onPractice)}
         aria-label={
-          dueCount > 0 ? `Practice (${dueCount} cards due)` : 'Practice'
+          showDueBadge ? `Practice (${dueCount} cards due)` : 'Practice'
         }
       >
         <PracticeTabIcon size={16} />
         <span className="desktop-segmented-label">Practice</span>
-        {dueCount > 0 && (
+        {showDueBadge && (
           <span
             className="desktop-segmented-badge"
             aria-hidden="true"

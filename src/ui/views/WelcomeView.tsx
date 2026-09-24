@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import familyLogoUrl from '../../../assets/jolito-family.webp'
 import logoUrl from '../../../assets/jolito-welcome.webp'
 import sampleAguacateUrl from '../../../assets/sample-aguacate.webp'
-import type { AuthUser } from '../../application/ports'
+import type { AuthUser, HapticsPlayer } from '../../application/ports'
 import { starterHeroSampleCards } from '../../application/starter-cards'
 import type { CommunityStats } from '../../domain/community-stats'
 import type { SyncStatus } from '../../domain/sync'
@@ -38,6 +38,7 @@ export interface WelcomeViewProps {
     cardSeed?: string,
   ) => void
   welcomeRef?: React.RefObject<HTMLElement | null> | undefined
+  haptics?: HapticsPlayer | undefined
 }
 
 export function WelcomeView({
@@ -60,6 +61,7 @@ export function WelcomeView({
   onOpenFeedback,
   onPlayAudio,
   welcomeRef,
+  haptics,
 }: WelcomeViewProps) {
   const localRef = useRef<HTMLElement>(null)
   const mainRef = welcomeRef ?? localRef
@@ -192,6 +194,7 @@ export function WelcomeView({
             onPractice={onPractice}
             onNavigateToDeck={onNavigateToDeck}
             onNavigateToCreate={onNavigateToCreate}
+            haptics={haptics}
           />
           <div className="nav-actions" data-nosnippet>
             <button
