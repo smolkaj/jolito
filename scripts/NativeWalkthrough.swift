@@ -30,6 +30,7 @@ final class NativeWalkthrough: XCTestCase {
         let disposable = Mailbox(address: deletionAddress, password: deletionPassword)
         print("WALKTHROUGH_VOICES \(AVSpeechSynthesisVoice.speechVoices().map { $0.identifier })")
         print("WALKTHROUGH_HARDWARE_KEYBOARD \(GCKeyboard.coalesced != nil)")
+        XCTAssertNil(GCKeyboard.coalesced, "Capture must start without a connected hardware keyboard")
         app.launch()
         let create = button("Create a card")
         XCTAssertTrue(create.waitForExistence(timeout: 90))
