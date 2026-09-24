@@ -890,23 +890,6 @@ export function PracticeCard({
                   {speechError}
                 </p>
               )}
-              {accents && (
-                <div
-                  className="answer-accents-container"
-                  style={
-                    isDocked
-                      ? { visibility: 'hidden', pointerEvents: 'none' }
-                      : undefined
-                  }
-                  aria-hidden={isDocked}
-                >
-                  <AccentToolbar
-                    onInsert={insertAccent}
-                    isDocked={false}
-                    disabled={paused || isDocked}
-                  />
-                </div>
-              )}
               <button
                 className={`reveal-button ${isReadyToReveal ? 'is-gesture-ready' : ''}`.trim()}
                 type="submit"
@@ -931,6 +914,23 @@ export function PracticeCard({
                   (isListening ? 'Listening for your spoken answer…' : '')}
               </div>
             </form>
+            {accents && (
+              <div
+                className="answer-accents-container"
+                style={
+                  isDocked
+                    ? { visibility: 'hidden', pointerEvents: 'none' }
+                    : undefined
+                }
+                aria-hidden={isDocked}
+              >
+                <AccentToolbar
+                  onInsert={insertAccent}
+                  isDocked={false}
+                  disabled={paused || isDocked}
+                />
+              </div>
+            )}
             {accents &&
               isDocked &&
               typeof document !== 'undefined' &&
@@ -974,30 +974,6 @@ export function PracticeCard({
               dragOffset={dragOffset}
               prefersReducedMotion={prefersReducedMotion}
             />
-          </div>
-        )}
-        {(onEdit || onDelete) && (
-          <div className="study-card-quick-actions">
-            {onEdit && (
-              <button
-                type="button"
-                className="study-quick-btn edit-btn"
-                aria-label={`Edit card: ${card.prompt}`}
-                onClick={onEdit}
-              >
-                ✏️ Edit card
-              </button>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                className="study-quick-btn delete-btn"
-                aria-label={`Delete card: ${card.prompt}`}
-                onClick={onDelete}
-              >
-                🗑️ Delete card
-              </button>
-            )}
           </div>
         )}
         {error && (
@@ -1058,6 +1034,30 @@ export function PracticeCard({
             </>
           )}
         </p>
+        {(onEdit || onDelete) && (
+          <div className="study-card-quick-actions">
+            {onEdit && (
+              <button
+                type="button"
+                className="study-quick-btn edit-btn"
+                aria-label={`Edit card: ${card.prompt}`}
+                onClick={onEdit}
+              >
+                ✏️ Edit card
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                className="study-quick-btn delete-btn"
+                aria-label={`Delete card: ${card.prompt}`}
+                onClick={onDelete}
+              >
+                🗑️ Delete card
+              </button>
+            )}
+          </div>
+        )}
       </section>
     </>
   )
