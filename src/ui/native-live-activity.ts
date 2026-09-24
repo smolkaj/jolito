@@ -23,6 +23,7 @@ export interface LiveActivityPlugin {
     total: number
     prompt?: string
     title?: string
+    deepLinkUrl?: string
   }): Promise<LiveActivityStartResult>
   updatePractice(options: {
     completed: number
@@ -78,6 +79,7 @@ export class PracticeActivityBridge {
     total: number
     prompt?: string
     title?: string
+    deepLinkUrl?: string
   }): Promise<void> {
     if (!this.isSupported()) return
     await this.enqueue(async () => {

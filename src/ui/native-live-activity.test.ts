@@ -82,11 +82,17 @@ describe('PracticeActivityBridge (Dynamic Island Live Activity)', () => {
     expect(bridge.isActive()).toBe(false)
 
     // 1. Start
-    await bridge.start({ total: 10, prompt: 'Hola', title: 'Card Practice' })
+    await bridge.start({
+      total: 10,
+      prompt: 'Hola',
+      title: 'Card Practice',
+      deepLinkUrl: 'jolito://practice/cards',
+    })
     expect(startPracticeSpy).toHaveBeenCalledWith({
       total: 10,
       prompt: 'Hola',
       title: 'Card Practice',
+      deepLinkUrl: 'jolito://practice/cards',
     })
     expect(bridge.isActive()).toBe(true)
 

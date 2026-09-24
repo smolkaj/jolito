@@ -28,6 +28,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         let total = call.getInt("total") ?? 0
         let prompt = call.getString("prompt") ?? ""
         let title = call.getString("title") ?? "Practice"
+        let deepLinkUrl = call.getString("deepLinkUrl") ?? (title == "Grammar Practice" ? "jolito://practice/grammar" : "jolito://practice/cards")
 
         Task {
             // End any active leftover activities first for deterministic single-activity hygiene
@@ -36,7 +37,7 @@ public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             self.currentActivity = nil
 
-            let attributes = PracticeActivityAttributes(sessionTitle: title)
+            let attributes = PracticeActivityAttributes(sessionTitle: title, deepLinkUrl: deepLinkUrl)
             let state = PracticeActivityAttributes.ContentState(
                 completedCount: 0,
                 remainingCount: total,

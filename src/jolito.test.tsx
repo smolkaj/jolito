@@ -10,6 +10,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
+import { practiceActivity } from './ui/native-live-activity'
 import { createStudyCards, type StudyCard } from './domain/card'
 import { createCards } from './application/create-cards'
 import { starterCards } from './application/starter-cards'
@@ -667,6 +668,115 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toHaveAttribute('aria-valuetext', '3 cards remaining')
+  })
+
+  it('jumps straight into practice mode via jolito:deep-link runtime event', () => {
+    const services = createTestServices()
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Dispatch runtime deep-link event from native
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:deep-link', {
+          detail: { url: 'jolito://practice/cards' },
+        }),
+      )
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toBeInTheDocument()
+  })
+
+  it('jumps straight into grammar practice via jolito:deep-link runtime event', () => {
+    const services = createTestServices()
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:deep-link', {
+          detail: { url: 'jolito://practice/grammar' },
+        }),
+      )
+    })
+
+    expect(
+      screen.getByRole('button', { name: /start practice/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', {
+        name: /grammar \(practice grammar\)/i,
+      })[0]!,
+    ).toHaveClass('is-active')
+  })
+
+  it('cold boots directly into review mode when launched via jolito://practice/cards (injected hash #/study)', () => {
+    const services = createTestServices()
+    window.location.hash = '#/study'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toBeInTheDocument()
+  })
+
+  it('cold boots directly into grammar practice when launched via jolito://practice/grammar (injected hash #/grammar)', () => {
+    const services = createTestServices()
+    window.location.hash = '#/grammar'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('button', { name: /start practice/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', {
+        name: /grammar \(practice grammar\)/i,
+      })[0]!,
+    ).toHaveClass('is-active')
+  })
+
+  it('configures Live Activity with context-specific deepLinkUrl when practicing cards or grammar', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    const startSpy = vi.spyOn(practiceActivity, 'start')
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    await practiceCards(user)
+
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Card Practice',
+        deepLinkUrl: 'jolito://practice/cards',
+      }),
+    )
+
+    // Switch to grammar and start grammar practice
+    await user.click(
+      screen.getAllByRole('button', {
+        name: /grammar \(practice grammar\)/i,
+      })[0]!,
+    )
+    await user.click(screen.getByRole('button', { name: /start practice/i }))
+
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Grammar Practice',
+        deepLinkUrl: 'jolito://practice/grammar',
+      }),
+    )
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation without populating context on selection', async () => {
