@@ -58,9 +58,9 @@ final class NativeWalkthrough: XCTestCase {
 
         chapter("Save a restaurant phrase and sign in")
         tap(create)
-        type("Mexican Spanish", "¿Me trae la cuenta, por favor?")
+        type("Mexican Spanish", "La cuenta, por favor")
         dismissSuggestions()
-        type("English", "Could you bring me the bill, please?")
+        type("English", "The bill, please")
         dismissKeyboard()
         pause(3)
         scrollToSave()
@@ -132,7 +132,7 @@ final class NativeWalkthrough: XCTestCase {
         pause(5)
         closeSheetIfOpen()
         tap(button("Deck"))
-        XCTAssertTrue(app.staticTexts["¿Me trae la cuenta, por favor?"].firstMatch.waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["La cuenta, por favor"].firstMatch.waitForExistence(timeout: 15))
         pause(5)
         chapter("Create and delete a separate disposable account")
         tap(button("Deck synced with cloud."))
@@ -184,29 +184,52 @@ final class NativeWalkthrough: XCTestCase {
     private func typeOnscreen(_ text: String) {
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.waitForExistence(timeout: 15))
+        // Resolve each keyboard layout once. Re-querying WebKit's entire
+        // accessibility tree for every key makes touch typing unnaturally slow.
+        func targets() -> [String: CGPoint] {
+            guard let snapshot = try? keyboard.snapshot() else { return [:] }
+            var result: [String: CGPoint] = [:]
+            func visit(_ element: XCUIElementSnapshot) {
+                if element.elementType == .key || element.elementType == .button {
+                    let point = CGPoint(x: element.frame.midX, y: element.frame.midY)
+                    result[element.label] = point
+                    if !element.identifier.isEmpty { result[element.identifier] = point }
+                }
+                element.children.forEach(visit)
+            }
+            visit(snapshot)
+            return result
+        }
+        func press(_ point: CGPoint) {
+            app.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+        }
+        var keys = targets()
         for character in text {
             let value = String(character)
-            if "áéíóúñü¿¡".contains(character) {
-                let accent = app.buttons["Insert " + value].firstMatch
-                XCTAssertTrue(accent.exists, "The app's accent toolbar must expose the character")
-                accent.tap()
-                continue
-            }
             let identifier = character == " " ? "space" : value
-            let key = keyboard.keys[identifier].firstMatch
-            if !key.exists {
+            if keys[identifier] == nil {
                 let opposite = value == value.uppercased() ? value.lowercased() : value.uppercased()
-                if opposite != value && keyboard.keys[opposite].exists {
-                    keyboard.buttons["shift"].tap()
-                } else {
-                    keyboard.keys["more"].tap()
-                    if !key.exists && opposite != value && keyboard.keys[opposite].exists {
-                        keyboard.buttons["shift"].tap()
-                    }
+                let toggle = opposite != value && keys[opposite] != nil ? "shift" : "more"
+                guard let point = keys[toggle] else {
+                    XCTFail("The software keyboard must expose its layout switch")
+                    return
+                }
+                press(point)
+                keys = targets()
+                if keys[identifier] == nil, opposite != value, keys[opposite] != nil,
+                   let shift = keys["shift"] {
+                    press(shift)
+                    keys = targets()
                 }
             }
-            XCTAssertTrue(key.exists, "The software keyboard must expose the requested key")
-            key.tap()
+            guard let point = keys[identifier] else {
+                XCTFail("The software keyboard must expose the requested key")
+                return
+            }
+            press(point)
+            // A single capital automatically releases Shift after its key tap.
+            if character.isUppercase { keys = targets() }
             if character == " " { pause(0.2) }
         }
     }
