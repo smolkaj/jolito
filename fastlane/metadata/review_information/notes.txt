@@ -1,1 +1,61 @@
-Jolito is a local-first spaced repetition flashcard app. No user account, registration, or login credentials are required to use the app. All core features (creating cards, studying cards, offline spaced repetition, audio playback) are fully functional immediately upon launch without signing in. If you have any questions or need further clarification, please contact steffen.smolka@gmail.com.
+Dear App Review Team,
+
+Thank you for your review and guidance under Guideline 2.1 (Information Needed - New App Submission). Below please find detailed responses to each of the 6 items requested, along with a link to our complete walkthrough video demonstrating all key flows on iOS.
+
+================================================================================
+1. SCREEN RECORDING (DEVICE WALKTHROUGH & FLOW DEMONSTRATION)
+================================================================================
+We have recorded a screen walkthrough on an iOS device viewport (iPhone 16 Pro dimensions) demonstrating the app from a cold launch through all core workflows.
+
+Video URLs:
+- High-resolution web video: https://litter.catbox.moe/amtqev.webm
+- Alternate permanent mirror: https://joli.to/demo.webm
+
+Walkthrough Highlights:
+- 00:00 Cold Launch & Welcome: Clean launch into Jolito, showing interactive Mexican Spanish greeting and pronunciation by Jolito the axolotl.
+- 00:05 Account & Sign-In Options: Opening the Account sheet showing Sign in with Apple and passwordless email OTP options.
+- 00:10 Spaced Repetition Practice Drill: Core learning loop—viewing Mexican Spanish prompt, tapping pronunciation audio, flipping card, and rating difficulty ("Good" / "Easy").
+- 00:20 Custom Card Creation: Adding a custom Mexican Spanish flashcard ("¡No manches!"), entering translation, and saving it to the deck.
+- 00:28 Deck Manager: Inspecting the personal deck list and custom vocabulary.
+- 00:33 Account Deletion & Permanent Purge (Guideline 5.1.1(v)): Signed-in user navigates to Account settings, selects "Delete cloud account & data", types "DELETE" into the safety confirmation dialog, and permanently purges the cloud account and synced data immediately in-app.
+
+Clarifications on Additional Flow Guidelines:
+- User-Generated Content (UGC): Flashcards in Jolito are strictly private to the individual user for personal study. The app contains no social feeds, public sharing, community decks, or user-to-user interactions. Content reporting and blocking mechanisms are therefore not applicable.
+- Paid Content & In-App Purchases: Jolito is a standard upfront paid app ($2.99). It contains zero in-app purchases, zero paywalls, and zero recurring subscriptions. All features are fully unlocked upon purchase.
+
+================================================================================
+2. APP PURPOSE & TARGET AUDIENCE
+================================================================================
+Jolito is a dedicated, distraction-free spaced repetition flashcard app engineered specifically for learners of Mexican Spanish. While standard language apps often teach Peninsular (European) Spanish or formal textbook idioms, Jolito focuses on authentic Mexican Spanish vocabulary, colloquial expressions, and grammar nuances used daily in Mexico. It provides immediate value to travelers, expatriates, and serious language students by combining natural Mexican Spanish pronunciation audio with an evidence-based spaced repetition memory schedule.
+
+================================================================================
+3. SETUP & ACCESS INSTRUCTIONS
+================================================================================
+Jolito is designed with a local-first architecture:
+- No account or login credentials are required to use the app.
+- All core features—including practicing cards, listening to Mexican Spanish audio, creating new cards, and viewing deck statistics—are immediately accessible upon cold launch without an account.
+- Optional Cloud Sync: Users who wish to sync their flashcards across devices may tap the "Account" / "Sync" icon in the navigation bar to sign in via "Sign in with Apple" or via email one-time passcode (OTP).
+- For review testing of cloud sync, reviewers may use "Sign in with Apple" directly or enter any valid test email address to receive an OTP code.
+
+================================================================================
+4. EXTERNAL SERVICES & PLATFORMS
+================================================================================
+Jolito uses minimal external infrastructure to preserve user privacy and operating simplicity:
+- Supabase (PostgreSQL & Auth): Powers optional cloud sync, authentication (Sign in with Apple and Email OTP), and immediate account/data deletion.
+- Bundled Mexican Spanish Audio / Cloudflare CDN: Pre-rendered neural audio files stored locally and cached via Cloudflare CDN for low latency.
+- No third-party ad networks, tracking SDKs, behavioral analytics, or data brokers are integrated into the application.
+
+================================================================================
+5. REGIONAL DIFFERENCES
+================================================================================
+The app functions identically across all App Store territories worldwide without regional differences, geofencing, or localized feature locks. While the curriculum focuses specifically on the Mexican Spanish dialect (es-MX), learners anywhere in the world have identical access to all features.
+
+================================================================================
+6. REGULATORY & THIRD-PARTY RIGHTS
+================================================================================
+Jolito does not operate in a regulated industry. All linguistic examples, translations, artwork (including our mascot Jolito), sound assets, and code are original property of the developer or used under permissive open-source licenses. The app does not include any protected third-party intellectual property or copyrighted materials.
+
+================================================================================
+CONTACT
+================================================================================
+If you have any questions or require additional details or custom test builds, please contact Steffen Smolka at steffen.smolka@gmail.com. We are happy to assist promptly.
