@@ -3439,6 +3439,10 @@ kbd {
     justify-content: center;
   }
 
+  .reveal-button.is-gesture-ready {
+    transform: scale(1.04);
+  }
+
   .reveal-panel {
     padding: 18px 16px 16px;
     border-radius: 18px;
@@ -6841,11 +6845,6 @@ kbd {
   color: var(--cempasuchil);
 }
 
-/* Gestural discoverability bar beneath study card (unrevealed state) */
-.card-gesture-cue-bar {
-  display: none;
-}
-
 @media (hover: none) and (pointer: coarse), (max-width: 680px) {
   .grade-gesture-cue {
     display: inline-flex;
@@ -6893,7 +6892,7 @@ kbd {
     background: var(--turquesa-soft);
     border-color: var(--turquesa-dark);
     box-shadow: 0 0 16px var(--turquesa-glow);
-    transform: scale(1.04);
+    transform: translateY(-50%) scale(1.04);
   }
 
   .keyboard-hint,
@@ -7225,9 +7224,11 @@ button:active,
   .demo-deck-chip:active,
   .mobile-tab-btn:active,
   .gesture-zone-badge,
-  .gesture-cue-pill,
-  .gesture-cue-arrow,
-  .gesture-cue-icon {
+  .grade-gesture-cue,
+  .reveal-gesture-cue,
+  .reveal-button.is-gesture-ready,
+  .grade-buttons .grade-again.is-gesture-active,
+  .grade-buttons .grade-good.is-gesture-active {
     transform: none !important;
     transition: none !important;
     animation: none !important;

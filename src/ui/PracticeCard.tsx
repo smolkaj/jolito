@@ -846,8 +846,9 @@ export function PracticeCard({
                 <span
                   className={`reveal-gesture-cue ${isReadyToReveal ? 'is-ready' : ''}`.trim()}
                   style={{
-                    transform:
-                      !prefersReducedMotion && isDragging && dragOffset.y < 0
+                    transform: prefersReducedMotion
+                      ? undefined
+                      : isDragging && dragOffset.y < 0
                         ? `${isReadyToReveal ? 'scale(1.2) ' : ''}translateY(${Math.max(-6, dragOffset.y * 0.12)}px)`.trim()
                         : isReadyToReveal
                           ? 'scale(1.2)'
