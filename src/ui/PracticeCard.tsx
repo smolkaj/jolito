@@ -885,11 +885,6 @@ export function PracticeCard({
                   lang={answerLang}
                 />
               </div>
-              {speechError && (
-                <p className="speech-error-notice" role="alert">
-                  {speechError}
-                </p>
-              )}
               <button
                 className={`reveal-button ${isReadyToReveal ? 'is-gesture-ready' : ''}`.trim()}
                 type="submit"
@@ -914,6 +909,11 @@ export function PracticeCard({
                   (isListening ? 'Listening for your spoken answer…' : '')}
               </div>
             </form>
+            {speechError && (
+              <p className="speech-error-notice" role="alert">
+                {speechError}
+              </p>
+            )}
             {accents && (
               <div
                 className="answer-accents-container"

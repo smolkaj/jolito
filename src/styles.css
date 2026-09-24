@@ -2554,7 +2554,9 @@ summary:focus-visible,
 }
 
 .speech-error-notice {
-  margin: 6px 0 0;
+  margin: 6px auto 0;
+  max-width: 560px;
+  box-sizing: border-box;
   color: var(--tezontle-dark);
   font-size: 12px;
   font-weight: 600;
