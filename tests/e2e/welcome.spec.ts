@@ -1058,7 +1058,12 @@ for (const vp of viewportOverflowCases) {
     for (const testPage of ['welcome', 'deck', 'review', 'create']) {
       await page.goto('/')
       if (testPage === 'deck') {
-        await page.getByRole('button', { name: /manage deck/i }).click()
+        const topbarBtn = page.getByRole('button', { name: /manage deck/i })
+        if (await topbarBtn.isVisible()) {
+          await topbarBtn.click()
+        } else {
+          await page.getByRole('button', { name: /^deck$/i }).click()
+        }
       } else if (testPage === 'review') {
         await practiceCards(page)
       } else if (testPage === 'create') {

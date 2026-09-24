@@ -791,13 +791,20 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
       )
     })
 
-    // 1. Welcome view keeps focused editorial hero without floating tab bar clutter
+    // 1. Welcome view with floating tab bar
     await page.goto('/')
     const tabBar = page.locator('.mobile-tab-bar')
-    await expect(tabBar).not.toBeVisible()
+    await expect(tabBar).toBeVisible()
+
+    // Verify floating geometry: detached from bottom edge
+    const tabBox = await tabBar.boundingBox()
+    expect(tabBox).not.toBeNull()
+    expect(tabBox!.y + tabBox!.height).toBeLessThan(852)
+
+    await page.screenshot({ path: 'test-results/mobile-floating-welcome.png' })
 
     // 2. Deck view with floating tab bar
-    await page.getByRole('button', { name: /manage deck/i }).click()
+    await page.getByRole('button', { name: /^deck$/i }).click()
     await expect(page.locator('.deck-page')).toBeVisible()
     const demoDismissBtn = page.getByRole('button', {
       name: /explore demo deck/i,
@@ -808,9 +815,9 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(tabBar).toBeVisible()
 
     // Verify floating geometry: detached from bottom edge
-    const tabBox = await tabBar.boundingBox()
-    expect(tabBox).not.toBeNull()
-    expect(tabBox!.y + tabBox!.height).toBeLessThan(852)
+    const deckTabBox = await tabBar.boundingBox()
+    expect(deckTabBox).not.toBeNull()
+    expect(deckTabBox!.y + deckTabBox!.height).toBeLessThan(852)
 
     await page.screenshot({ path: 'test-results/mobile-floating-deck.png' })
 
