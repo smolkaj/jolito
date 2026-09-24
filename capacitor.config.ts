@@ -21,11 +21,11 @@ const config: CapacitorConfig = {
   plugins: {
     Keyboard: {
       resize: KeyboardResize.Body,
-      style: KeyboardStyle.Light,
+      style: KeyboardStyle.Default,
       resizeOnFullScreen: true,
     },
     StatusBar: {
-      style: 'light',
+      style: 'DEFAULT',
       backgroundColor: '#fdf5f8',
     },
   },
