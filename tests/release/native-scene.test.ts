@@ -471,4 +471,25 @@ void test('CSS dark mode architectural invariants and contrast tokens', () => {
     /document\.documentElement\.setAttribute\(['"]data-theme['"],\s*['"]dark['"]\)/,
     'index.html must set data-theme="dark" attribute when opted in',
   )
+
+  // 10. Primary button shadow token in dark mode must be a valid shadow color/token without length offsets
+  assert.match(
+    css,
+    /:root\[data-theme=['"]dark['"]\]\s*\{[\s\S]*?--btn-primary-shadow:\s*var\(\s*--shadow-ink\s*\);/,
+    ':root[data-theme="dark"] must set --btn-primary-shadow to var(--shadow-ink) without length offsets',
+  )
+
+  // 11. Danger buttons must use semantic tokens to maintain WCAG AA contrast in dark mode
+  assert.match(
+    css,
+    /\.danger-button\s*\{[\s\S]*?background:\s*var\(--btn-danger-bg\);[\s\S]*?color:\s*var\(--btn-danger-color\);/,
+    '.danger-button must use semantic --btn-danger-bg and --btn-danger-color',
+  )
+
+  // 12. Gesture card floods must use semantic flood color tokens
+  assert.match(
+    css,
+    /\.gesture-card-flood\.zone-again\s*\{[\s\S]*?color:\s*var\(--flood-again-color\)\s*!important;/,
+    '.gesture-card-flood.zone-again must use var(--flood-again-color)',
+  )
 })

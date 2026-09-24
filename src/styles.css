@@ -106,6 +106,25 @@
   --btn-primary-hover-shadow: var(--rosa-dark);
   --btn-primary-hover-color: #ffffff;
 
+  --btn-danger-bg: var(--tezontle-dark);
+  --btn-danger-color: #ffffff;
+  --btn-danger-hover-bg: #7f1d1d;
+
+  --paper-warm: #fdfaf7;
+  --paper-hover: #edebe4;
+  --cantera: #c2410c;
+  --obsidian: #0d1310;
+
+  --badge-due-bg: var(--paper-warm);
+  --badge-due-color: var(--rosa-dark);
+  --badge-due-border: var(--rosa-dark);
+
+  --flood-again-color: #ffffff;
+  --flood-good-color: #ffffff;
+  --badge-active-color: #ffffff;
+  --btn-synced-color: #ffffff;
+  --btn-listening-color: #ffffff;
+
   --btn-secondary-color: var(--ink);
   --btn-secondary-bg: var(--card);
   --btn-secondary-border: var(--line);
@@ -314,11 +333,34 @@
   ); /* Deep Obsidian #0d1310 on Rosa #ff3399: 5.52:1 contrast (WCAG AA compliant) */
   --btn-primary-bg: var(--rosa);
   --btn-primary-border: var(--rosa-dark);
-  --btn-primary-shadow: 4px 4px 0 var(--shadow-ink);
+  --btn-primary-shadow: var(--shadow-ink);
   --btn-primary-hover-bg: #ff4da6;
   --btn-primary-hover-border: #ff80c0;
-  --btn-primary-hover-shadow: 6px 6px 0 var(--shadow-ink);
+  --btn-primary-hover-shadow: var(--shadow-ink);
   --btn-primary-hover-color: var(--paper);
+
+  --btn-danger-bg: var(--tezontle-dark);
+  --btn-danger-color: var(--paper); /* 5.8:1 contrast on coral #f87171 */
+  --btn-danger-hover-bg: #fca5a5;
+
+  --paper-warm: var(--paper-subtle);
+  --paper-hover: var(--paper-deep);
+  --cantera: var(--cempasuchil-dark);
+  --obsidian: var(--ink);
+
+  --badge-due-bg: var(--rosa-soft);
+  --badge-due-color: var(--rosa-dark);
+  --badge-due-border: var(--rosa);
+
+  --flood-again-color: var(
+    --paper
+  ); /* 5.52:1 contrast on Rosa Mexicano #ff3399 */
+  --flood-good-color: var(
+    --paper
+  ); /* 9.5:1 contrast on Turquesa Dark #7ec29d */
+  --badge-active-color: var(--paper); /* 5.6:1 contrast on Verde #22c55e */
+  --btn-synced-color: var(--paper); /* 5.6:1 on Verde, 9.8:1 on Verde Dark */
+  --btn-listening-color: var(--paper); /* 9.5:1 on Turquesa Dark #7ec29d */
 
   --btn-secondary-color: var(--ink);
   --btn-secondary-bg: var(--card);
@@ -1321,7 +1363,7 @@ summary:focus-visible,
 .mascot-speech-text em {
   font-style: italic;
   font-weight: 600;
-  color: var(--cantera, #c2410c);
+  color: var(--cantera);
 }
 
 .mascot-speech-speak-btn {
@@ -1344,7 +1386,7 @@ summary:focus-visible,
 }
 
 .mascot-speech-speak-btn:hover {
-  background: var(--paper-hover, #edebe4);
+  background: var(--paper-hover);
   transform: scale(1.08);
 }
 
@@ -2649,7 +2691,7 @@ summary:focus-visible,
 
 .save-button.is-saved {
   background: var(--verde);
-  color: #ffffff;
+  color: var(--btn-synced-color);
   border-color: var(--verde-dark);
   box-shadow: 4px 4px 0 var(--verde-dark);
   animation: saveButtonPop 320ms var(--ease-spring);
@@ -3008,7 +3050,7 @@ summary:focus-visible,
 }
 
 .speech-recall-btn.is-listening {
-  color: #ffffff;
+  color: var(--btn-listening-color);
   background: var(--turquesa-dark);
   border-color: var(--turquesa-deep);
   animation: speech-recall-pulse 1.2s ease-in-out infinite alternate;
@@ -5137,7 +5179,7 @@ kbd {
 
 .sync-now-button.is-synced {
   background: var(--verde);
-  color: #ffffff;
+  color: var(--btn-synced-color);
   border-color: var(--verde-dark);
   box-shadow: 4px 4px 0 var(--verde-dark);
   animation: saveButtonPop 320ms var(--ease-spring);
@@ -5792,8 +5834,8 @@ kbd {
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
-  background: var(--tezontle-dark);
-  color: #ffffff;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
   border: 1.5px solid var(--line);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -5803,7 +5845,7 @@ kbd {
 .deck-batch-actions .danger-button.batch-delete-btn:hover,
 .deck-batch-actions .batch-delete-btn:hover,
 .batch-delete-btn:hover {
-  background: #7f1d1d;
+  background: var(--btn-danger-hover-bg);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
@@ -6270,7 +6312,7 @@ kbd {
 
 .starter-pack-theme-tag.theme-turquesa {
   background: var(--turquesa-soft);
-  color: var(--turquesa-deep);
+  color: var(--turquesa-dark);
   border-color: var(--turquesa-border);
 }
 
@@ -6356,7 +6398,7 @@ kbd {
 
 .starter-pack-btn.is-complete {
   background: var(--turquesa-soft);
-  color: var(--turquesa-deep);
+  color: var(--turquesa-dark);
   border: 1.5px solid var(--turquesa-border);
   box-shadow: none;
   cursor: default;
@@ -6547,7 +6589,7 @@ kbd {
 
 .inspect-badge.in-deck {
   background: var(--card);
-  color: var(--turquesa-deep);
+  color: var(--turquesa-dark);
   border: 1px solid var(--turquesa-border);
 }
 
@@ -6579,7 +6621,7 @@ kbd {
 .inspect-item-add-btn:hover {
   background: var(--turquesa-soft);
   border-color: var(--turquesa-border);
-  color: var(--turquesa-deep);
+  color: var(--turquesa-dark);
   transform: translateY(-1px);
 }
 
@@ -6861,8 +6903,8 @@ kbd {
 }
 
 .danger-button {
-  background: var(--tezontle-dark);
-  color: #ffffff;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
   border: 2px solid var(--line);
   padding: 10px 18px;
   border-radius: 12px;
@@ -6875,7 +6917,7 @@ kbd {
 }
 
 .danger-button:hover {
-  background: #7f1d1d;
+  background: var(--btn-danger-hover-bg);
   transform: translateY(-1px);
   box-shadow: 3px 3px 0 var(--shadow-ink);
 }
@@ -7158,8 +7200,8 @@ kbd {
   padding: 8px 16px;
   font-size: 13px;
   border-radius: var(--pill-radius);
-  background: var(--tezontle-dark);
-  color: #ffffff;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
   border: 2px solid var(--line);
   box-shadow: 2px 2px 0 var(--shadow-ink);
   font-weight: 700;
@@ -7176,7 +7218,7 @@ kbd {
 }
 
 .delete-confirm-actions .confirm-delete-btn:not(:disabled):hover {
-  background: #7f1d1d;
+  background: var(--btn-danger-hover-bg);
 }
 
 .sync-modal-legal {
@@ -7499,12 +7541,12 @@ kbd {
 
 .gesture-card-flood.zone-again {
   background: var(--rosa) !important;
-  color: #ffffff !important;
+  color: var(--flood-again-color) !important;
 }
 
 .gesture-card-flood.zone-good {
   background: var(--turquesa-dark) !important;
-  color: #ffffff !important;
+  color: var(--flood-good-color) !important;
 }
 
 .gesture-card-flood .flood-content {
@@ -7645,10 +7687,10 @@ kbd {
 .gesture-zone-badge.zone-easy.is-active {
   transform: translateX(-50%) scale(1.12);
   background: var(--verde);
-  color: #ffffff;
+  color: var(--badge-active-color);
 }
 .gesture-zone-badge.zone-easy.is-active .badge-key {
-  background: #ffffff;
+  background: var(--badge-active-color);
   color: var(--verde);
 }
 
