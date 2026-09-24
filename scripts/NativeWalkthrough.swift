@@ -137,6 +137,9 @@ final class NativeWalkthrough: XCTestCase {
         tap(button("Sign out"))
         try signIn(disposable)
         pause(5)
+        if !button("Delete cloud account & data").exists {
+            tap(button("Deck synced with cloud."))
+        }
         tap(button("Delete cloud account & data"))
         pause(6)
         let backup = app.switches["Save an offline backup before deleting"].firstMatch
@@ -149,7 +152,7 @@ final class NativeWalkthrough: XCTestCase {
         pause(3)
         tap(button("Yes, delete cloud data"))
         XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 30))
-        XCTAssertTrue(app.textFields["Email address"].firstMatch.exists)
+        XCTAssertTrue(button("Not signed in.").waitForExistence(timeout: 15))
         pause(7)
         print("WALKTHROUGH_END \(Date().timeIntervalSince1970)")
     }

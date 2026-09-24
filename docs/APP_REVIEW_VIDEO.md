@@ -50,7 +50,7 @@ using its [documented API](https://docs.mail.tm/), exclusively in the test runne
 
 Dispatch `ios.yml` with `walkthrough=true`. Its dedicated capture job uses the
 free public-repository `xcode-27` runner, the existing generated XCTest harness,
-FFmpeg, SwitchAudioSource and BlackHole. Required GitHub secrets:
+FFmpeg for video assembly, a small AVAudioRecorder helper, SwitchAudioSource and BlackHole. Required GitHub secrets:
 
 - `APP_REVIEW_EMAIL` and `APP_REVIEW_MAILBOX_PASSWORD` for the persistent account.
 - `APP_REVIEW_DELETE_EMAIL` and `APP_REVIEW_DELETE_MAILBOX_PASSWORD` for a
@@ -66,9 +66,11 @@ registration/deletion take; do not delete the persistent reviewer account.
 accessibility elements and touch gestures. Credentials are injected into the
 UI-test runner only. The app target receives no test-account secrets.
 [`capture-native-walkthrough.sh`](../scripts/capture-native-walkthrough.sh)
-captures masked H.264 video and system audio, anchoring each track only after
-its capture tool reports readiness. The audio resampler retains silence
-between timestamped speech buffers so sound does not collapse toward the start.
+captures masked H.264 video and continuous PCM system audio. Device Hub's
+hardware-keyboard simulation is disabled through its actual menu before capture.
+The native audio recorder writes its start clock; video is anchored when its
+recorder reports readiness. This avoids the dropped short audio buffers observed
+with FFmpeg's AVFoundation input on the hosted runner.
 [`assemble-native-walkthrough.py`](../scripts/assemble-native-walkthrough.py)
 requires a successful complete take, trims at logged boundaries and muxes AAC
 into the final MP4. It rejects truncated tracks and silent audio. Failed takes are diagnostic artifacts, never release videos.
