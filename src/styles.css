@@ -3117,12 +3117,17 @@ textarea::placeholder {
   border-color: var(--rosa);
 }
 
-/* When docked above keyboard on mobile, restore standalone input border radius */
-.study-card.has-docked-accents .answer-form.has-accents .answer-input {
+/* When docked above keyboard or active voice listening, restore standalone input border radius */
+.study-card.has-docked-accents .answer-form.has-accents .answer-input,
+.answer-form.has-accents.is-listening .answer-input {
   border-bottom-left-radius: 16px;
   border-bottom-right-radius: 16px;
   border-bottom: 2.5px solid var(--line);
   box-shadow: var(--shadow-sm);
+}
+
+.answer-form.has-accents.is-listening .answer-accents-container {
+  display: none !important;
 }
 
 /* Keyboard Keycap Badges */
@@ -7749,6 +7754,38 @@ html[data-platform='android']:not([data-keyboard='true'])
 html[data-platform='android']:not([data-keyboard='true']) .grade-buttons kbd,
 html[data-platform='android']:not([data-keyboard='true']) .grade-btn kbd {
   display: none !important;
+}
+
+/* On mobile touch devices without a physical keyboard, accents are exclusively a virtual keyboard accessory */
+html[data-platform='ios']:not([data-keyboard='true']) .answer-accents-container,
+html[data-platform='android']:not([data-keyboard='true'])
+  .answer-accents-container {
+  display: none !important;
+}
+
+html[data-platform='ios']:not([data-keyboard='true'])
+  .answer-form.has-accents
+  .answer-input,
+html[data-platform='android']:not([data-keyboard='true'])
+  .answer-form.has-accents
+  .answer-input {
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-bottom: 2.5px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  html:not([data-keyboard='true']) .answer-accents-container {
+    display: none !important;
+  }
+
+  html:not([data-keyboard='true']) .answer-form.has-accents .answer-input {
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    border-bottom: 2.5px solid var(--line);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 /* When a physical keyboard is active, reveal the shortcuts */

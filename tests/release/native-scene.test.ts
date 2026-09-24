@@ -393,3 +393,42 @@ void test('CSS architectural invariants for universal keyboard avoidance and rea
     'prefers-reduced-motion must disable .app-shell transitions',
   )
 })
+void test('CSS architectural invariants for mobile keyboard accent toolbar accessories', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // 1. On iOS without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /html\[data-platform='ios'\]:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container[\s\S]*?display:\s*none\s*!important;/,
+    'iOS without physical keyboard must suppress in-card accents container',
+  )
+
+  // 2. On Android without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /html\[data-platform='android'\]:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container[\s\S]*?display:\s*none\s*!important;/,
+    'Android without physical keyboard must suppress in-card accents container',
+  )
+
+  // 3. On mobile touch screens without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /@media\s*\(max-width:\s*640px\),\s*\(pointer:\s*coarse\)\s*\{[\s\S]*?html:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    'Mobile touch screens without physical keyboard must suppress in-card accents container',
+  )
+
+  // 4. Active voice listening suppresses in-card accent toolbar and restores standalone input border radius
+  assert.match(
+    css,
+    /\.answer-form\.has-accents\.is-listening\s*\.answer-input\s*\{[\s\S]*?border-bottom-left-radius:\s*16px;[\s\S]*?border-bottom-right-radius:\s*16px;/,
+    'Active voice listening must restore standalone input border radius',
+  )
+  assert.match(
+    css,
+    /\.answer-form\.has-accents\.is-listening\s*\.answer-accents-container\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    'Active voice listening must suppress in-card accents container',
+  )
+})

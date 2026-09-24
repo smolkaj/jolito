@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStudyCards, type Grade } from '../domain/card'
 import { createGrammarCards } from '../domain/grammar'
-import { cachedSpeechAvailableByLocale } from '../infrastructure/browser/speech-recognition'
+import {
+  cachedSpeechAvailableByLocale,
+  type SpeechRecognizer,
+} from '../infrastructure/browser/speech-recognition'
 import type { HapticsPlayer } from '../application/ports'
 import { PracticeCard } from './PracticeCard'
 
@@ -199,12 +202,14 @@ function AccentPractice({
   accents = true,
   onGrade = vi.fn(),
   haptics,
+  speechRecognizer,
 }: {
   paused?: boolean
   revealed?: boolean
   accents?: boolean
   onGrade?: (grade: Grade) => void
   haptics?: HapticsPlayer
+  speechRecognizer?: SpeechRecognizer
 }) {
   const [answer, setAnswer] = useState('')
   return (
@@ -217,6 +222,7 @@ function AccentPractice({
       accents={accents}
       onGrade={onGrade}
       haptics={haptics}
+      speechRecognizer={speechRecognizer}
     />
   )
 }
@@ -315,6 +321,89 @@ describe('accent keyboard insertion', () => {
     ).toBe(false)
     expect(inFormContainer).not.toHaveStyle({ visibility: 'hidden' })
     expect(card).not.toHaveClass('has-docked-accents')
+  })
+
+  it('suppresses in-card accent toolbar during active voice recording and coordinates clean round-trip with software keyboard', async () => {
+    let onEndCallback: (() => void) | undefined
+    let onTranscriptCallback:
+      ((text: string, isFinal: boolean) => void) | undefined
+    const mockRecognizer: SpeechRecognizer = {
+      isSupported: vi.fn().mockResolvedValue(true),
+      start: vi
+        .fn()
+        .mockImplementation(
+          (opts: {
+            onTranscript: (t: string, f: boolean) => void
+            onEnd?: () => void
+          }) => {
+            onTranscriptCallback = opts.onTranscript
+            onEndCallback = opts.onEnd
+            return Promise.resolve(true)
+          },
+        ),
+      stop: vi.fn().mockResolvedValue(undefined),
+    }
+
+    const { container } = render(
+      <AccentPractice speechRecognizer={mockRecognizer} />,
+    )
+    const inFormContainer = container.querySelector(
+      '.answer-accents-container',
+    )!
+    const form = container.querySelector('.answer-form')!
+    expect(inFormContainer).toBeInTheDocument()
+    expect(inFormContainer).not.toHaveStyle({ visibility: 'hidden' })
+    expect(form).not.toHaveClass('is-listening')
+
+    // Simulate virtual keyboard open while typing
+    fireEvent(
+      window,
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: true, keyboardHeight: 336 },
+      }),
+    )
+
+    // Docked toolbar appears in body
+    const docked = screen
+      .getAllByRole('toolbar', { name: 'Spanish accents' })
+      .find((el) => el.classList.contains('is-docked'))
+    expect(docked).toBeDefined()
+    expect(inFormContainer).toHaveStyle({ visibility: 'hidden' })
+
+    // User taps mic button to switch to voice input
+    const micBtn = await screen.findByRole('button', {
+      name: 'Start voice input',
+    })
+    await userEvent.click(micBtn)
+
+    // Virtual keyboard dismisses on blur
+    fireEvent(
+      window,
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: false, keyboardHeight: 0 },
+      }),
+    )
+
+    // Form enters is-listening state
+    expect(form).toHaveClass('is-listening')
+    // Docked toolbar unmounts
+    const dockedAfterMic = screen
+      .queryAllByRole('toolbar', { name: 'Spanish accents' })
+      .find((el) => el.classList.contains('is-docked'))
+    expect(dockedAfterMic).toBeUndefined()
+    // In-form container remains suppressed/hidden while listening
+    expect(inFormContainer).toHaveStyle({ visibility: 'hidden' })
+    expect(inFormContainer).toHaveAttribute('aria-hidden', 'true')
+
+    // Voice recognition transcribes and ends
+    act(() => {
+      onTranscriptCallback?.('habló', true)
+      onEndCallback?.()
+    })
+
+    // Once listening finishes and keyboard is closed, in-form container returns to non-hidden resting state
+    expect(form).not.toHaveClass('is-listening')
+    expect(inFormContainer).not.toHaveStyle({ visibility: 'hidden' })
   })
 
   it('respects modifiers/composition, pause/resume, reveal grading and teardown', async () => {

@@ -804,7 +804,7 @@ export function PracticeCard({
         {!revealed ? (
           <>
             <form
-              className={`answer-form ${accents ? 'has-accents' : ''}`.trim()}
+              className={`answer-form ${accents ? 'has-accents' : ''} ${isListening ? 'is-listening' : ''}`.trim()}
               onSubmit={(event) => {
                 event.preventDefault()
                 if (isListening) {
@@ -889,16 +889,16 @@ export function PracticeCard({
                 <div
                   className="answer-accents-container"
                   style={
-                    isDocked
+                    isDocked || isListening
                       ? { visibility: 'hidden', pointerEvents: 'none' }
                       : undefined
                   }
-                  aria-hidden={isDocked}
+                  aria-hidden={isDocked || isListening}
                 >
                   <AccentToolbar
                     onInsert={insertAccent}
                     isDocked={false}
-                    disabled={paused || isDocked}
+                    disabled={paused || isDocked || isListening}
                   />
                 </div>
               )}

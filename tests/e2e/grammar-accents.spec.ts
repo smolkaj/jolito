@@ -210,3 +210,122 @@ test('mobile practice card places input, accents, and reveal button in natural s
     mobileOrder.accentsBottom - 2,
   )
 })
+
+test('mobile practice card on iOS/touch without physical keyboard suppresses in-card accents at rest and places reveal directly below input', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  // Emulate iOS touch environment without physical keyboard
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    })
+  })
+  await page.goto('/#/grammar')
+  const startBtn = page.getByRole('button', { name: 'Start practice' })
+  if (await startBtn.isVisible()) {
+    await startBtn.click()
+  }
+  await expect(
+    page.getByRole('textbox', { name: 'Your conjugation' }),
+  ).toBeVisible()
+
+  const metrics = await page.evaluate(() => {
+    const input = document
+      .querySelector('.answer-input')!
+      .getBoundingClientRect()
+    const accents = document.querySelector('.answer-accents-container')!
+    const reveal = document
+      .querySelector('.reveal-button')!
+      .getBoundingClientRect()
+    const accentsComputed = window.getComputedStyle(accents)
+    return {
+      accentsDisplay: accentsComputed.display,
+      inputBottom: input.bottom,
+      revealTop: reveal.top,
+      revealDirectlyBelow: reveal.top - input.bottom,
+    }
+  })
+
+  // In-card accents container is suppressed on mobile touch devices
+  expect(metrics.accentsDisplay).toBe('none')
+  // Reveal button sits directly below input without an empty blank gap
+  expect(metrics.revealTop).toBeGreaterThanOrEqual(metrics.inputBottom - 2)
+  expect(metrics.revealDirectlyBelow).toBeLessThan(40)
+})
+
+test('mobile practice card preserves clean layout across keyboard open and voice input transitions', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    })
+  })
+  await page.goto('/#/grammar')
+  const startBtn = page.getByRole('button', { name: 'Start practice' })
+  if (await startBtn.isVisible()) {
+    await startBtn.click()
+  }
+
+  // 1. Initial rest state: in-card accents container is hidden
+  const inCardAccents = page.locator('.answer-accents-container')
+  await expect(inCardAccents).toBeHidden()
+  await page.screenshot({ path: 'test-results/mobile-ios-rest.png' })
+
+  // 2. Simulate virtual keyboard open
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: true, keyboardHeight: 336 },
+      }),
+    )
+  })
+
+  // 3. Docked toolbar appears above keyboard
+  const dockedToolbar = page.locator('.answer-accents.is-docked')
+  await expect(dockedToolbar).toBeVisible()
+  await expect(inCardAccents).toBeHidden()
+  await page.screenshot({ path: 'test-results/mobile-ios-docked.png' })
+
+  // 4. Simulate keyboard dismiss (e.g. voice input mic tap or blur)
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: false, keyboardHeight: 0 },
+      }),
+    )
+  })
+
+  // 5. Docked toolbar unmounts and in-card accents remain completely hidden (no jump!)
+  await expect(dockedToolbar).toHaveCount(0)
+  await expect(inCardAccents).toBeHidden()
+
+  // 6. Reveal button sits right below input
+  const metrics = await page.evaluate(() => {
+    const input = document
+      .querySelector('.answer-input')!
+      .getBoundingClientRect()
+    const reveal = document
+      .querySelector('.reveal-button')!
+      .getBoundingClientRect()
+    return {
+      gap: reveal.top - input.bottom,
+    }
+  })
+  expect(metrics.gap).toBeGreaterThanOrEqual(-2)
+  expect(metrics.gap).toBeLessThan(40)
+})
