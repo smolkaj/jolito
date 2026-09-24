@@ -448,4 +448,27 @@ void test('CSS dark mode architectural invariants and contrast tokens', () => {
     /\.redirect-auth-banner\s+\.banner-action-btn:hover\s*\{[^}]*background:\s*#ffffff;/,
     '.redirect-auth-banner .banner-action-btn:hover must not use hardcoded #ffffff',
   )
+
+  // 8. Dark mode must not activate automatically via prefers-color-scheme (dormant until opted in)
+  assert.doesNotMatch(
+    css,
+    /@media\s*\(prefers-color-scheme:\s*dark\)/,
+    'CSS must not auto-activate dark mode via prefers-color-scheme media query',
+  )
+
+  // 9. index.html must initialize data-theme="dark" when opted in via query param or localStorage
+  const indexHtml = readFileSync(
+    new URL('../../index.html', import.meta.url),
+    'utf8',
+  )
+  assert.match(
+    indexHtml,
+    /theme === ['"]dark['"]/,
+    'index.html must check theme query parameter for dark mode',
+  )
+  assert.match(
+    indexHtml,
+    /document\.documentElement\.setAttribute\(['"]data-theme['"],\s*['"]dark['"]\)/,
+    'index.html must set data-theme="dark" attribute when opted in',
+  )
 })
