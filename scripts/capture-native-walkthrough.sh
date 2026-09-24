@@ -51,8 +51,9 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   ONLY_ACTIVE_ARCH=YES build-for-testing > "$output/build.log" 2>&1
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
-# Capture the simulator display directly. Desktop Device Hub is unnecessary
-# for XCTest and would connect the host keyboard and request desktop permissions.
+# Device Hub routes simulator audio to the host output. Do not use desktop
+# Apple Events: those request host-control permission and block unattended runs.
+open -b com.apple.dt.Devices
 xcrun simctl spawn "$device" log stream --style compact --level error \
   --predicate 'subsystem CONTAINS[c] "speech" OR subsystem CONTAINS[c] "voice"' \
   > "$output/speech.log" 2>&1 &
@@ -88,7 +89,7 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -derivedDataPath build/WalkthroughDerivedData -resultBundlePath "$output/result.xcresult" \
   -parallel-testing-enabled NO -test-timeouts-enabled YES \
   -maximum-test-execution-time-allowance 900 CODE_SIGNING_ALLOWED=NO test-without-building \
-  > "$output/test.log" 2>&1 &
+  > >(tee "$output/test.log") 2>&1 &
 test_pid=$!
 # Xcode 27 can hang after XCTest has finished. The suite result is authoritative;
 # stop capture immediately instead of leaving minutes of dead footage at the end.

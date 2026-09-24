@@ -148,7 +148,7 @@ final class NativeWalkthrough: XCTestCase {
         else { tap(app.checkBoxes["Save an offline backup before deleting"].firstMatch) }
         let confirmation = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "DELETE")).firstMatch
         tap(confirmation)
-        confirmation.typeText("DELETE")
+        typeOnscreen("DELETE")
         app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Permanently deletes your account")).firstMatch.tap()
         pause(3)
         tap(button("Yes, delete cloud data"))
@@ -173,17 +173,41 @@ final class NativeWalkthrough: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 15))
         field.tap()
         if let value = field.value as? String, value != field.placeholderValue, !value.isEmpty {
-            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))
+            for _ in value { app.keyboards.keys["delete"].tap() }
         }
-        if label == "Mexican Spanish" || label == "English" {
-            for (index, word) in text.split(separator: " ").enumerated() {
-                field.typeText((index == 0 ? "" : " ") + String(word))
-                pause(0.2)
-            }
-        } else {
-            field.typeText(text)
-        }
+        typeOnscreen(text)
+        XCTAssertEqual(field.value as? String, text, "Onscreen typing must preserve the intended phrase")
         pause(2)
+    }
+
+    private func typeOnscreen(_ text: String) {
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 15))
+        for character in text {
+            let value = String(character)
+            if "áéíóúñü¿¡".contains(character) {
+                let accent = app.buttons["Insert " + value].firstMatch
+                XCTAssertTrue(accent.exists, "The app's accent toolbar must expose the character")
+                accent.tap()
+                continue
+            }
+            let identifier = character == " " ? "space" : value
+            let key = keyboard.keys[identifier].firstMatch
+            if !key.exists {
+                let opposite = value == value.uppercased() ? value.lowercased() : value.uppercased()
+                if opposite != value && keyboard.keys[opposite].exists {
+                    keyboard.buttons["shift"].tap()
+                } else {
+                    keyboard.keys["more"].tap()
+                    if !key.exists && opposite != value && keyboard.keys[opposite].exists {
+                        keyboard.buttons["shift"].tap()
+                    }
+                }
+            }
+            XCTAssertTrue(key.exists, "The software keyboard must expose the requested key")
+            key.tap()
+            if character == " " { pause(0.2) }
+        }
     }
 
     private func createCard(_ spanish: String, _ english: String) {
@@ -239,7 +263,7 @@ final class NativeWalkthrough: XCTestCase {
         XCTAssertTrue(codeField.waitForExistence(timeout: 20))
         let code = try deliveredCode(mailbox, after: sentAfter)
         codeField.tap()
-        codeField.typeText(code)
+        typeOnscreen(code)
         pause(2)
         tap(button("Sign in &"))
         let authenticated = app.buttons.matching(NSPredicate(format: "label IN %@", ["Sign out", "Deck synced with cloud. Tap to manage sync."])).firstMatch

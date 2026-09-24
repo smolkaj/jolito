@@ -10,7 +10,7 @@ Credentials belong in private release secrets, never this repository.
 The native capture uses Apple's **iPhone Air Simulator, iOS 27.0**, running the
 bundled Release app with production Supabase authentication and device speech.
 It retains the native status bar, Dynamic Island mask, screen corners, keyboard
-and app audio. No synthetic voice, decorative frame, added title/footer, mouse
+and app audio. No added voiceover, decorative frame, added title/footer, mouse
 pointer, mocked auth, or injected app state is used. Onscreen typing is limited
 to authoring and account input; study uses touch reveal/rating gestures.
 
@@ -66,9 +66,11 @@ registration/deletion take; do not delete the persistent reviewer account.
 accessibility elements and touch gestures. Credentials are injected into the
 UI-test runner only. The app target receives no test-account secrets.
 [`capture-native-walkthrough.sh`](../scripts/capture-native-walkthrough.sh)
-captures masked H.264 video and continuous PCM system audio. Study asserts the absence of keyboard-only reveal hints. The desktop Device Hub
-is not opened; `simctl` captures the device display directly without connecting
-the host keyboard or requesting desktop-control permissions.
+captures masked H.264 video and continuous PCM system audio. Device Hub provides the simulator-to-host audio route; no desktop UI scripting
+or Apple Events are used. Text is entered by tapping actual software keys and
+the app's accent toolbar: XCTest's `typeText` attaches a virtual hardware
+keyboard, so it is unsuitable for a touch-mode recording. Study asserts the
+absence of keyboard-only reveal hints.
 The native audio recorder writes its start clock; video is anchored when its
 recorder reports readiness. This avoids the dropped short audio buffers observed
 with FFmpeg's AVFoundation input on the hosted runner.
