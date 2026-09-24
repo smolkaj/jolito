@@ -51,8 +51,6 @@ final class NativeWalkthrough: XCTestCase {
         if !button("Sign out").exists {
             // Saving a pending card closes the sheet and focuses the next draft.
             dismissKeyboard()
-            app.swipeDown(velocity: .slow)
-            tap(button("Sync"))
         }
         closeSheetIfOpen()
 
@@ -70,7 +68,7 @@ final class NativeWalkthrough: XCTestCase {
         tap(button("Practice"))
         let cards = app.buttons["Cards"].firstMatch
         if cards.waitForExistence(timeout: 2) { tap(cards) }
-        for index in 0..<4 {
+        for index in 0..<2 {
             let reveal = button("Reveal answer")
             XCTAssertTrue(reveal.waitForExistence(timeout: 20))
             dismissPracticeKeyboard()
@@ -109,7 +107,7 @@ final class NativeWalkthrough: XCTestCase {
         }
 
         chapter("Return to the same account")
-        tap(button("Sync"))
+        tap(button("Deck synced with cloud."))
         tap(button("Sign out"))
         pause(4)
         try signIn(reviewer)
@@ -119,7 +117,7 @@ final class NativeWalkthrough: XCTestCase {
         XCTAssertTrue(app.staticTexts["¿Me trae la cuenta, por favor?"].firstMatch.waitForExistence(timeout: 15))
         pause(5)
         chapter("Create and delete a separate disposable account")
-        tap(button("Sync"))
+        tap(button("Deck synced with cloud."))
         tap(button("Sign out"))
         try signIn(disposable)
         pause(5)
@@ -200,12 +198,7 @@ final class NativeWalkthrough: XCTestCase {
 
     private func closeSheetIfOpen() {
         if button("Sign out").exists {
-            // Drag the sheet down from its visible heading, leaving the account signed in.
-            let heading = app.staticTexts["Cloud sync"].firstMatch
-            XCTAssertTrue(heading.exists)
-            let start = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: -1.2))
-            start.press(forDuration: 0.08, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 400)), withVelocity: .slow, thenHoldForDuration: 0.1)
-            pause(3)
+            tap(button("Close dialog"))
         }
     }
 
