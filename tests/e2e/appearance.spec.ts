@@ -45,13 +45,16 @@ for (const colorScheme of ['light', 'dark'] as const) {
           const reverse = page.getByRole('checkbox', {
             name: /practice both directions/i,
           })
-          await reverse.uncheck()
+          await reverse.focus()
+          await reverse.press('Space')
+          await expect(reverse).not.toBeChecked()
           expect((await auditAccessibility(page)).violations).toEqual([])
           await page.screenshot({
             path: testInfo.outputPath('one-direction.png'),
             fullPage: true,
           })
-          await reverse.check()
+          await reverse.press('Space')
+          await expect(reverse).toBeChecked()
 
           await page
             .getByLabel('Mexican Spanish', { exact: true })
