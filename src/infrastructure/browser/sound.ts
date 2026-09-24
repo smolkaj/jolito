@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import type { Earcon, SoundPlayer } from '../../application/ports'
 
 interface AudioSession {
@@ -14,6 +15,12 @@ export function configureAudioSessionCategory(
   category: 'ambient' | 'playback',
 ): void {
   if (typeof navigator === 'undefined') return
+  // On native platforms (iOS/Android), the native host layer (e.g. AppDelegate)
+  // manages AVAudioSession (.playback with mixWithOthers). Mutating navigator.audioSession
+  // from the webview resets the process audio session to ambient, silencing all audio
+  // when the physical silent switch is engaged.
+  if (Capacitor.isNativePlatform()) return
+
   const nav = navigator as unknown as { audioSession?: AudioSession }
   if (nav.audioSession && nav.audioSession.type !== category) {
     try {

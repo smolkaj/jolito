@@ -102,6 +102,20 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
+            // Ensure AVAudioSession is active and configured for playback
+            // so pronunciation audio plays clearly even when the physical silent switch is engaged
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.mixWithOthers])
+                try audioSession.setActive(true)
+            } catch {
+                // Non-fatal: continue synthesis attempt
+            }
+
+            if #available(iOS 16.0, *) {
+                self.synthesizer.usesApplicationAudioSession = true
+            }
+
             if self.synthesizer.isSpeaking || self.activeUtterance != nil {
                 self.synthesizer.stopSpeaking(at: .immediate)
                 if let prevCall = self.activeCall {
@@ -174,14 +188,16 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             }
             let pool = langCandidates.isEmpty ? candidateVoices : langCandidates
 
+            // Prefer guaranteed installed .default quality voices over un-downloaded premium/enhanced catalog voices
             let sortedPool: [AVSpeechSynthesisVoice]
             if #available(iOS 16.0, *) {
                 sortedPool = pool.sorted {
                     let rank: (AVSpeechSynthesisVoiceQuality) -> Int = { q in
                         switch q {
-                        case .premium: return 2
+                        case .default: return 2
                         case .enhanced: return 1
-                        default: return 0
+                        case .premium: return 0
+                        @unknown default: return 0
                         }
                     }
                     return rank($0.quality) > rank($1.quality)
@@ -257,22 +273,22 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             genderPool = !localeMatches.isEmpty ? localeMatches : langMatches
         }
 
-        // 4. Quality sorting: prefer premium, then enhanced
-        if #available(iOS 16.0, *) {
-            if let premium = genderPool.first(where: { $0.quality == .premium }) {
-                return premium
-            }
-            if let enhanced = genderPool.first(where: { $0.quality == .enhanced }) {
-                return enhanced
-            }
-        }
-
-        // 5. Prefer natural voices: Mexican names (Paulina, Jorge) for Spanish, natural names (Samantha, Alex, Ava, Allison) for English
+        // 4. Prefer natural voices: Mexican names (Paulina, Jorge) for Spanish, natural names (Samantha, Alex, Ava, Allison) for English
         if langPrefix == "es" {
             let preferredSpanishNames = preferredGender == "male"
                 ? ["jorge", "carlos", "diego", "juan", "raul"]
                 : ["paulina", "mónica", "monica", "soledad", "francisca"]
 
+            // 4a. Prioritize preferred natural names that are guaranteed installed (.default quality)
+            if #available(iOS 16.0, *) {
+                for name in preferredSpanishNames {
+                    if let matched = genderPool.first(where: { $0.name.lowercased().contains(name) && $0.quality == .default }) {
+                        return matched
+                    }
+                }
+            }
+
+            // 4b. Match preferred natural names across any available quality
             for name in preferredSpanishNames {
                 if let matched = genderPool.first(where: { $0.name.lowercased().contains(name) }) {
                     return matched
@@ -289,6 +305,16 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
                 ? ["alex", "tom", "aaron"]
                 : ["samantha", "ava", "allison", "serena"]
 
+            // 4a. Prioritize preferred natural names that are guaranteed installed (.default quality)
+            if #available(iOS 16.0, *) {
+                for name in preferredEnglishNames {
+                    if let matched = genderPool.first(where: { $0.name.lowercased().contains(name) && $0.quality == .default }) {
+                        return matched
+                    }
+                }
+            }
+
+            // 4b. Match preferred natural names across any available quality
             for name in preferredEnglishNames {
                 if let matched = genderPool.first(where: { $0.name.lowercased().contains(name) }) {
                     return matched
@@ -299,6 +325,13 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
                 return n.contains("samantha") || n.contains("alex") || n.contains("ava") || n.contains("allison")
             }) {
                 return named
+            }
+        }
+
+        // 5. Fallback pool: prefer guaranteed installed .default quality voices over un-downloaded enhanced/premium
+        if #available(iOS 16.0, *) {
+            if let defaultVoice = genderPool.first(where: { $0.quality == .default }) {
+                return defaultVoice
             }
         }
 
