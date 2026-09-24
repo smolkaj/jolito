@@ -3081,8 +3081,8 @@ kbd {
   margin: 0;
   padding-left: max(8px, env(safe-area-inset-left, 0px));
   padding-right: max(8px, env(safe-area-inset-right, 0px));
-  background: rgba(253, 245, 248, 0.94);
-  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  background: rgba(253, 245, 248, 0.98);
+  background: color-mix(in srgb, var(--paper) 98%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1.5px solid var(--line-subtle);
@@ -3145,6 +3145,12 @@ kbd {
 
 .study-card.has-docked-accents .card-gesture-cue-bar {
   display: none !important;
+}
+
+@media (max-width: 600px) {
+  .study-card.has-docked-accents .answer-accents-container {
+    display: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

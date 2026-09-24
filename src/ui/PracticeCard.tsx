@@ -358,18 +358,6 @@ export function PracticeCard({
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-  useEffect(() => {
-    if (!isDocked || !input.current) return
-    const timer = setTimeout(() => {
-      if (!input.current) return
-      input.current.scrollIntoView({
-        block: 'center',
-        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-      })
-    }, 60)
-    return () => clearTimeout(timer)
-  }, [isDocked, prefersReducedMotion])
-
   const cardRef = useRef<HTMLElement>(null)
   const pointerStartRef = useRef<{
     x: number
