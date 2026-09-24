@@ -10,46 +10,57 @@
   },
   "chapters": [
     {
-      "seconds": 1.986,
+      "seconds": 0,
       "title": "Save something worth remembering"
     },
     {
-      "seconds": 27.357,
+      "seconds": 25.357,
       "title": "Create a free account"
     },
     {
-      "seconds": 54.431,
+      "seconds": 52.431,
       "title": "Build a personal deck"
     },
     {
-      "seconds": 78.958,
+      "seconds": 76.958,
       "title": "Listen, recall, reveal, review"
     },
     {
-      "seconds": 164.092,
+      "seconds": 162.092,
       "title": "Improve a reminder"
     },
     {
-      "seconds": 190.974,
+      "seconds": 188.974,
       "title": "Practice verb forms in context"
     },
     {
-      "seconds": 231.105,
+      "seconds": 229.105,
       "title": "Keep studying offline"
     },
     {
-      "seconds": 274.447,
+      "seconds": 272.447,
       "title": "Sign back in and pick up your deck"
     },
     {
-      "seconds": 309.985,
+      "seconds": 307.985,
       "title": "Delete the disposable demonstration account"
     },
     {
-      "seconds": 332.997,
+      "seconds": 330.997,
       "title": "Walkthrough complete"
     }
   ],
   "accountDeleted": true,
-  "pageErrors": []
+  "pageErrors": [],
+  "presentationEdit": {
+    "trimStartSeconds": 2,
+    "crop": {
+      "x": 0,
+      "y": 56,
+      "width": 880,
+      "height": 1912
+    },
+    "description": "Removed the opening title and added header/footer bands; retained the full app viewport and copied the remaining audio without re-encoding.",
+    "originalMediaCommit": "efaab0dc0adb64b6192183751fec72062e5e2349"
+  }
 }

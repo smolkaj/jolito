@@ -7,10 +7,10 @@ physical device with its original sound.
 
 ## Emulated companion walkthrough
 
-**Completed companion:** [5:36 MP4](media/browser-walkthrough.mp4),
+**Completed companion:** [5:34 MP4](media/browser-walkthrough.mp4),
 [chapter/source record](media/browser-walkthrough.json),
 and [sampled frames](media/browser-walkthrough-contact.jpg). The export is
-880×2032 H.264 with a 48 kHz stereo AAC track (6.1 MB). Media inspection
+880×1912 H.264 with a 48 kHz stereo AAC track. Media inspection
 confirmed non-silent output without clipping; sampled frames include study,
 offline state and completed deletion. Physical-device evidence is still pending.
 
@@ -20,7 +20,11 @@ sounds through PulseAudio, including automatic prompt and answer playback.
 It does not mock authentication, sync, deletion, audio responses or app state.
 Browser network access is disabled during the offline chapter; this is not a
 recording of toggling iOS Airplane Mode. Browser autoplay policy stays at its
-normal setting. The persistent video header identifies the test environment.
+normal setting. Capture provenance is recorded here and in the chapter/source
+manifest. The video shows the full app viewport without added header/footer
+bands; the original two-second title has also been removed. The remaining app
+audio is copied without re-encoding. Keep this browser/local-environment
+disclosure alongside the video in any App Review notes or reply.
 
 The companion follows the story below, adding only **Provecho** and **Para
 llevar, por favor** from the starter pack to keep the restaurant theme focused.

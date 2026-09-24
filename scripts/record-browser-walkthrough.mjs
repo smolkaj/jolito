@@ -93,8 +93,6 @@ const tap = async (locator) => {
 }
 const chapter = async (text) => {
   console.log(text)
-  await fs.writeFile(`${output}/chapter.next.txt`, text)
-  await fs.rename(`${output}/chapter.next.txt`, `${output}/chapter.txt`)
   if (started)
     chapters.push({ seconds: (Date.now() - started) / 1000, title: text })
 }
@@ -164,9 +162,7 @@ async function practice(mode = 'Cards') {
   if (await item.isVisible()) await tap(item)
 }
 try {
-  await page.setContent(
-    '<body style="margin:0;background:#f8f5f3;color:#101815;font-family:system-ui;display:grid;place-content:center;height:100vh;text-align:center"><h1>Jolito</h1><p>A phrase worth remembering</p><p style="font-size:13px">Browser walkthrough · Local test environment</p></body>',
-  )
+  await page.setContent('<body style="margin:0;background:#f8f5f3"></body>')
   await chapter('Launch Jolito')
   const log = createWriteStream(`${output}/capture.log`)
   recording = spawn(
@@ -194,8 +190,6 @@ try {
       'pulse',
       '-i',
       'jolito_record.monitor',
-      '-vf',
-      `pad=iw:ih+120:0:56:color=0xf8f5f3,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='Browser walkthrough | Local test environment':fontcolor=0x303a35:fontsize=23:x=(w-tw)/2:y=17,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:textfile=${output}/chapter.txt:reload=1:fontcolor=0x303a35:fontsize=25:x=(w-tw)/2:y=h-43`,
       '-c:v',
       'libx264',
       '-preset',
@@ -225,7 +219,6 @@ try {
   // Attach a handler immediately; the awaited promise still reports capture failure.
   void recordingDone.catch(() => {})
   started = Date.now()
-  await wait(1800)
   await page.goto(baseURL)
   await chapter('Save something worth remembering')
   await wait(5000)

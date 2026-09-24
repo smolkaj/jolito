@@ -2,13 +2,15 @@ require 'xcodeproj'
 
 # Generate the test harness in CI; the application target stays canonical.
 root = File.expand_path('..', __dir__)
+name = ARGV.fetch(0, 'NativeScreenshots')
+raise 'Unknown capture harness' unless %w[NativeScreenshots NativeWalkthrough].include?(name)
 project = Xcodeproj::Project.open(File.join(root, 'ios/App/App.xcodeproj'))
 app = project.targets.find { |target| target.name == 'App' }
 raise 'App target missing' unless app
-raise 'Screenshot target already exists' if project.targets.any? { |target| target.name == 'NativeScreenshots' }
-target = project.new_target(:ui_test_bundle, 'NativeScreenshots', :ios, '15.0')
+raise 'Capture target already exists' if project.targets.any? { |target| target.name == name }
+target = project.new_target(:ui_test_bundle, name, :ios, '15.0')
 target.add_dependency(app)
-source = project.main_group.new_file(File.join(root, 'scripts/NativeScreenshots.swift'))
+source = project.main_group.new_file(File.join(root, "scripts/#{name}.swift"))
 target.source_build_phase.add_file_reference(source)
 target.build_configurations.each do |config|
   config.build_settings.merge!({
@@ -25,4 +27,4 @@ scheme.add_build_target(app)
 scheme.add_build_target(target)
 scheme.add_test_target(target)
 scheme.set_launch_target(app)
-scheme.save_as(project.path, 'NativeScreenshots', true)
+scheme.save_as(project.path, name, true)
