@@ -88,6 +88,7 @@ final class NativeWalkthrough: XCTestCase {
         for index in 0..<2 {
             let reveal = button("Reveal answer")
             XCTAssertTrue(reveal.waitForExistence(timeout: 20))
+            XCTAssertFalse(button("Reveal answer Enter").exists, "Study must use touch mode without hardware-keyboard hints")
             dismissKeyboard()
             pause(7)
             // Start on the noninteractive prompt area. Up reveals; right grades Good.

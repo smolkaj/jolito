@@ -5,42 +5,6 @@ output=build/native-walkthrough
 mkdir -p "$output"
 device=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries[] | select(.key | endswith("iOS-27-0")) | .value[] | select(.name == "iPhone Air") | .udid' | head -1)
 test -n "$device"
-# Temporary hosted-runner diagnostics; removed before publication.
-xcrun simctl io "$device" --help > "$output/simctl-io.log" 2>&1 || true
-for binary in "$DEVELOPER_DIR/../SharedFrameworks/DeviceKit.framework/DeviceKit" "$DEVELOPER_DIR/../SharedFrameworks/SimulatorKit.framework/SimulatorKit"; do
-  if [ -f "$binary" ]; then strings "$binary" | grep -iE 'keyboard|hardware' >> "$output/keyboard-keys.log" || true; fi
-done
-swiftc scripts/record-native-audio.swift -o build/record-native-audio
-build/record-native-audio "$output" > "$output/audio.log" 2>&1 &
-probe_audio=$!
-sleep 2
-afplay /System/Library/Sounds/Glass.aiff
-sleep 3
-kill -INT "$probe_audio"
-wait "$probe_audio"
-xcrun simctl boot "$device" || true
-xcrun simctl bootstatus "$device" -b
-open -b com.apple.dt.Devices
-sleep 15
-python3 - "$output" <<'PYDIAG'
-from pathlib import Path
-import subprocess, sys
-folder=Path(sys.argv[1])
-commands={
- 'hub-path': ['osascript','-e','POSIX path of (path to application id "com.apple.dt.Devices")'],
- 'processes': ['osascript','-e','tell application "System Events" to get {name, bundle identifier, count of menu bars} of every application process'],
- 'hub-ui': ['osascript','-e','tell application "System Events" to tell (first application process whose bundle identifier is "com.apple.dt.Devices") to get entire contents'],
- 'defaults': ['defaults','-container','com.apple.dt.Devices','read','com.apple.dt.Devices'],
-}
-for name,cmd in commands.items():
- try:
-  result=subprocess.run(cmd,capture_output=True,text=True,timeout=25)
-  (folder/(name+'.log')).write_text(result.stdout+result.stderr)
- except subprocess.TimeoutExpired:
-  (folder/(name+'.log')).write_text('Timed out')
-subprocess.run(['screencapture','-x',str(folder/'host-desktop.png')],timeout=10)
-PYDIAG
-exit 1
 video_pid=
 audio_pid=
 test_pid=
@@ -80,10 +44,9 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   ONLY_ACTIVE_ARCH=YES build-for-testing > "$output/build.log" 2>&1
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
-# Xcode 27 uses Device Hub. Native GCKeyboard owns the app input mode.
-open -b com.apple.dt.Devices
-defaults -container com.apple.dt.Devices read com.apple.dt.Devices > "$output/device-hub-preferences.log" 2>&1 || true
-osascript scripts/configure-native-touch.applescript > "$output/device-hub-touch.log" 2>&1
+# Configure Xcode 27's actual DeviceKit preference. Capture the simulator display
+# directly; opening the desktop Device Hub adds host-control permission dialogs.
+defaults -container com.apple.dt.Devices write com.apple.dt.Devices alwaysSimulateHardwareKeyboard -bool false
 xcrun simctl spawn "$device" log stream --style compact --level error \
   --predicate 'subsystem CONTAINS[c] "speech" OR subsystem CONTAINS[c] "voice"' \
   > "$output/speech.log" 2>&1 &
@@ -94,7 +57,7 @@ build/record-native-audio "$output" > "$output/audio.log" 2>&1 &
 audio_pid=$!
 # Anchor video at recorder readiness; the audio recorder writes its own clock.
 # Monitor concurrently: XCTest must wake the device display and audio session.
-python3 - "$output" "$video_pid" "$audio_pid" <<'PYREADY' &
+python3 - "$output" "$video_pid" <<'PYREADY' &
 from pathlib import Path
 import os
 import sys
