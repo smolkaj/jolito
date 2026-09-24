@@ -85,6 +85,18 @@ done
 SwitchAudioSource -a -f json > "$output/host-audio-devices.json"
 for kind in output input system; do SwitchAudioSource -c -t "$kind"; done > "$output/host-audio-defaults.txt"
 screencapture -x "$output/host-before.png"
+python3 - "$device" "$output" <<'PYAUDIO'
+import json, os, plistlib, sys
+from pathlib import Path
+settings = Path.home() / 'Library/Developer/CoreSimulator/Devices' / sys.argv[1] / 'data/var/run/simulatoraudio/audiosettings.plist'
+original = plistlib.loads(settings.read_bytes())
+(Path(sys.argv[2]) / 'simulator-audio-before.json').write_text(json.dumps(original, indent=2))
+updated = dict(original, sim_output_device_uid='BlackHole2ch_UID')
+temporary = settings.with_suffix('.tmp')
+temporary.write_bytes(plistlib.dumps(updated))
+os.replace(temporary, settings)
+(Path(sys.argv[2]) / 'simulator-audio-after.json').write_text(json.dumps(plistlib.loads(settings.read_bytes()), indent=2))
+PYAUDIO
 xcrun simctl spawn "$device" log stream --style compact --level error \
   --predicate 'subsystem CONTAINS[c] "speech" OR subsystem CONTAINS[c] "voice"' \
   > "$output/speech.log" 2>&1 &

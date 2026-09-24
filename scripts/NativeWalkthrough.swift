@@ -18,8 +18,9 @@ final class NativeWalkthrough: XCTestCase {
         executionTimeAllowance = 300
         continueAfterFailure = false
         app.launch()
+        pause(60)
         tap(button("Cards"))
-        pause(20)
+        pause(60)
         tap(button("Reveal answer"))
         pause(20)
         tap(app.buttons["Play answer audio"].firstMatch)
