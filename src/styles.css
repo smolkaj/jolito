@@ -1467,7 +1467,7 @@ summary:focus-visible,
 .sample-card-es.is-playing {
   box-shadow:
     10px 10px 0 var(--rosa-dark),
-    10px 10px 0 2px var(--ink);
+    10px 10px 0 2px var(--shadow-ink);
 }
 
 /* English Card Theme (Verde Cantera de Oaxaca #b7d3c2 / (183, 211, 194)) */
@@ -1480,7 +1480,7 @@ summary:focus-visible,
 }
 
 .sample-card-en:focus-visible {
-  outline-color: var(--ink);
+  outline-color: var(--line);
 }
 
 .sample-card-en .sample-card-header .sample-badge {
@@ -1517,7 +1517,7 @@ summary:focus-visible,
 .sample-card-en.is-playing {
   box-shadow:
     10px 10px 0 var(--turquesa-dark),
-    10px 10px 0 2px var(--ink);
+    10px 10px 0 2px var(--shadow-ink);
 }
 
 .sample-card.is-playing .sample-illustration {
@@ -4653,7 +4653,7 @@ kbd {
   gap: 22px;
   box-shadow:
     0 12px 36px -4px rgba(18, 24, 21, 0.22),
-    4px 4px 0 var(--ink);
+    4px 4px 0 var(--shadow-ink);
 }
 
 .demo-deck-modal .modal-subtitle {
@@ -7883,13 +7883,25 @@ button:active,
 :root[data-theme='dark'] .sample-card-en {
   background: #1c2b22;
   border-color: var(--turquesa-border);
-  --card-shadow-color: rgba(0, 0, 0, 0.7);
-  --card-shadow-hover: var(--turquesa-deep);
+  --card-shadow-color: var(--turquesa-dark);
+  --card-shadow-hover: var(--turquesa);
 }
 
 :root[data-theme='dark'] .sample-card-en .sample-listen-hint {
   background: var(--card);
   border-color: var(--line);
+}
+
+:root[data-theme='dark'] .demo-deck-modal {
+  background: var(--card);
+  border: 2px solid var(--line);
+  box-shadow:
+    0 16px 40px -4px rgba(0, 0, 0, 0.75),
+    4px 4px 0 var(--shadow-ink);
+}
+
+:root[data-theme='dark'] .demo-deck-modal-backdrop {
+  background: rgba(0, 0, 0, 0.75);
 }
 
 :root[data-theme='dark'] .jolito-core-inner {
@@ -8093,13 +8105,25 @@ button:active,
   :root:not([data-theme='light']) .sample-card-en {
     background: #1c2b22;
     border-color: var(--turquesa-border);
-    --card-shadow-color: rgba(0, 0, 0, 0.7);
-    --card-shadow-hover: var(--turquesa-deep);
+    --card-shadow-color: var(--turquesa-dark);
+    --card-shadow-hover: var(--turquesa);
   }
 
   :root:not([data-theme='light']) .sample-card-en .sample-listen-hint {
     background: var(--card);
     border-color: var(--line);
+  }
+
+  :root:not([data-theme='light']) .demo-deck-modal {
+    background: var(--card);
+    border: 2px solid var(--line);
+    box-shadow:
+      0 16px 40px -4px rgba(0, 0, 0, 0.75),
+      4px 4px 0 var(--shadow-ink);
+  }
+
+  :root:not([data-theme='light']) .demo-deck-modal-backdrop {
+    background: rgba(0, 0, 0, 0.75);
   }
 
   :root:not([data-theme='light']) .jolito-core-inner {
