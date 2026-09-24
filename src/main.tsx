@@ -7,11 +7,13 @@ import { enforceCanonicalHost } from './infrastructure/browser/host'
 import { initializeBrowserServices } from './infrastructure/browser/services'
 import { startOfflineShell } from './infrastructure/browser/offline-shell'
 import { initKeyboardDetection } from './infrastructure/browser/keyboard-detection'
+import { initKeyboardAvoidance } from './infrastructure/browser/keyboard-avoidance'
 
 const isRedirecting = enforceCanonicalHost()
 
 if (!isRedirecting) {
   initKeyboardDetection()
+  initKeyboardAvoidance()
   const root = createRoot(document.getElementById('root')!)
   const start = () => {
     const initialized = initializeBrowserServices()

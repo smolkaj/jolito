@@ -702,4 +702,78 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     })
     expect(grammarHeaderPos).not.toBe('sticky')
   })
+
+  test('preserves input reachability, centers focused fields, and expands bottom clearance when virtual keyboard is active on mobile', async ({
+    page,
+  }) => {
+    // 1. Navigate to card creation on mobile viewport
+    await page.goto('/#/create')
+    await expect(page.locator('.create-page')).toBeVisible()
+
+    // 2. Measure initial layout metrics
+    const initialPadding = await page.evaluate(() => {
+      const shell = document.querySelector('.app-shell')!
+      return parseFloat(window.getComputedStyle(shell).paddingBottom)
+    })
+    const isTabBarVisibleInitially = await page
+      .locator('.mobile-tab-bar')
+      .isVisible()
+    expect(isTabBarVisibleInitially).toBe(true)
+
+    // 3. Focus Additional Context and trigger software keyboard appearance
+    const contextField = page.locator('#context')
+    await contextField.focus()
+
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent('keyboardWillShow', {
+          detail: { keyboardHeight: 336 },
+        }),
+      )
+    })
+
+    // 4. Verify --keyboard-inset and dataset flags
+    const keyboardInset = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue('--keyboard-inset'),
+    )
+    expect(keyboardInset).toBe('336px')
+
+    const isKeyboardOpenClass = await page.evaluate(() =>
+      document.documentElement.classList.contains('is-keyboard-open'),
+    )
+    expect(isKeyboardOpenClass).toBe(true)
+
+    // 5. Verify bottom tab bar is suppressed during active typing
+    await expect(page.locator('.mobile-tab-bar')).not.toBeVisible()
+
+    // 6. Verify .app-shell expanded bottom padding to provide full scroll clearance
+    await page.waitForFunction((expectedMin) => {
+      const shell = document.querySelector('.app-shell')
+      if (!shell) return false
+      const pb = parseFloat(window.getComputedStyle(shell).paddingBottom)
+      return pb >= expectedMin
+    }, initialPadding + 300)
+    const activePadding = await page.evaluate(() => {
+      const shell = document.querySelector('.app-shell')!
+      return parseFloat(window.getComputedStyle(shell).paddingBottom)
+    })
+    expect(activePadding).toBeGreaterThanOrEqual(initialPadding + 300)
+
+    // 7. Verify focused element is fully visible within viewport above keyboard
+    const contextBox = await contextField.boundingBox()
+    expect(contextBox).not.toBeNull()
+    const visibleMaxY = 852 - 336 // screen height - keyboard height = 516px
+    expect(contextBox!.y).toBeLessThan(visibleMaxY)
+
+    // 8. Dismiss keyboard and verify clean restoration
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('keyboardWillHide'))
+    })
+
+    const resetInset = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue('--keyboard-inset'),
+    )
+    expect(resetInset).toBe('0px')
+    await expect(page.locator('.mobile-tab-bar')).toBeVisible()
+  })
 })

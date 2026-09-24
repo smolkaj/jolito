@@ -319,3 +319,69 @@ void test('Capacitor Android configuration matches appId and brand background', 
   )
   assert.match(stringsXml, /<string name="app_name">Jolito<\/string>/)
 })
+
+void test('Universal keyboard avoidance architecture is registered at application root', () => {
+  const mainTsx = readFileSync(
+    new URL('../../src/main.tsx', import.meta.url),
+    'utf8',
+  )
+  assert.match(
+    mainTsx,
+    /import\s*\{\s*initKeyboardAvoidance\s*\}\s*from\s*['"]\.\/infrastructure\/browser\/keyboard-avoidance['"]/,
+    'main.tsx must import initKeyboardAvoidance',
+  )
+  assert.match(
+    mainTsx,
+    /initKeyboardDetection\(\)[\s\S]*?initKeyboardAvoidance\(\)/,
+    'main.tsx must initialize initKeyboardAvoidance on app startup',
+  )
+})
+
+void test('CSS architectural invariants for universal keyboard avoidance and reachability', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // 1. :root declares --keyboard-inset default
+  assert.match(
+    css,
+    /--keyboard-inset:\s*0px;/,
+    ':root must declare --keyboard-inset: 0px',
+  )
+
+  // 2. Base .app-shell incorporates --keyboard-inset in padding-bottom
+  assert.match(
+    css,
+    /\.app-shell\s*\{[\s\S]*?padding-bottom:\s*max\([\s\S]*?var\(--keyboard-inset,\s*0px\)/,
+    'Base .app-shell must include var(--keyboard-inset, 0px) in padding-bottom',
+  )
+
+  // 3. Base .app-shell declares smooth padding-bottom transition
+  assert.match(
+    css,
+    /\.app-shell\s*\{[\s\S]*?transition:\s*padding-bottom\s+240ms\s+cubic-bezier\(0\.16,\s*1,\s*0\.3,\s*1\);/,
+    '.app-shell must declare transition on padding-bottom matching iOS keyboard curve',
+  )
+
+  // 4. Mobile .app-shell (under 680px) incorporates --keyboard-inset
+  assert.match(
+    css,
+    /\.app-shell\s*\{[\s\S]*?68px[\s\S]*?var\(--safe-area-inset-bottom[\s\S]*?var\(--keyboard-inset,\s*0px\)/,
+    'Mobile .app-shell must include var(--keyboard-inset, 0px) to clear bottom tab bar and keyboard',
+  )
+
+  // 5. Mobile tab bar is hidden when software keyboard is open
+  assert.match(
+    css,
+    /(?:html\[data-keyboard-open=['"]true['"]\]\s*\.mobile-tab-bar|\.is-keyboard-open\s*\.mobile-tab-bar)\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    'Mobile tab bar must be suppressed when virtual keyboard is open',
+  )
+
+  // 6. prefers-reduced-motion suppresses .app-shell transitions
+  assert.match(
+    css,
+    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.app-shell[\s\S]*?transition:\s*none\s*!important;/,
+    'prefers-reduced-motion must disable .app-shell transitions',
+  )
+})

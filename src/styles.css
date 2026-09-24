@@ -92,6 +92,8 @@
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  /* Virtual Keyboard Inset (dynamic on mobile native & web) */
+  --keyboard-inset: 0px;
 
   font-family: var(--font-sans);
   color: var(--ink);
@@ -179,11 +181,15 @@ summary:focus-visible,
   min-height: 100dvh;
   padding-top: max(16px, env(safe-area-inset-top));
   padding-right: max(clamp(20px, 5vw, 80px), env(safe-area-inset-right));
-  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  padding-bottom: max(
+    calc(32px + var(--keyboard-inset, 0px)),
+    calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px))
+  );
   padding-left: max(clamp(20px, 5vw, 80px), env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: padding-bottom 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-main {
@@ -3147,7 +3153,10 @@ kbd {
   .app-shell {
     padding-top: max(12px, env(safe-area-inset-top));
     padding-right: max(16px, env(safe-area-inset-right));
-    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    padding-bottom: max(
+      calc(28px + var(--keyboard-inset, 0px)),
+      calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px))
+    );
     padding-left: max(16px, env(safe-area-inset-left));
   }
 
@@ -3361,7 +3370,7 @@ kbd {
 
   .create-layout {
     grid-template-columns: minmax(0, 1fr);
-    margin-block: auto;
+    margin-block: 16px 24px;
   }
 
   .create-layout h1 {
@@ -7160,8 +7169,15 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
   /* Reachability for pages under fixed mobile tab bar */
   .app-shell {
     padding-bottom: calc(
-      68px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+      68px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+        var(--keyboard-inset, 0px)
     );
+  }
+
+  /* Suppress fixed mobile tab bar when virtual software keyboard is open */
+  html[data-keyboard-open='true'] .mobile-tab-bar,
+  .is-keyboard-open .mobile-tab-bar {
+    display: none !important;
   }
 
   /* One intent gets one home: hide duplicate topbar navigation buttons on mobile */
@@ -7205,6 +7221,8 @@ html[data-keyboard='true'] .card-gesture-cue-bar {
     touch-action: pan-y;
   }
 
+  html[data-keyboard-open='true'] .modal-content.modal-sheet,
+  .is-keyboard-open .modal-content.modal-sheet,
   .modal-backdrop.is-keyboard-open .modal-content.modal-sheet {
     padding-bottom: 20px !important;
   }
@@ -7275,6 +7293,7 @@ button:active,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-shell,
   .modal-backdrop,
   .modal-content.modal-sheet {
     animation: none !important;
