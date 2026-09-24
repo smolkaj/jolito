@@ -68,9 +68,6 @@ export function WelcomeView({
 
   const [mascotGreetingOpen, setMascotGreetingOpen] = useState(false)
   const [mascotWiggling, setMascotWiggling] = useState(false)
-  const [mascotAnimVariant, setMascotAnimVariant] = useState<
-    'hop' | 'bob' | 'pulse'
-  >('hop')
   const mascotTimerRef = useRef<number | null>(null)
   const mascotWiggleTimerRef = useRef<number | null>(null)
   const mascotContainerRef = useRef<HTMLDivElement>(null)
@@ -101,33 +98,6 @@ export function WelcomeView({
       mascotBtnRef.current?.focus()
     }
   }, [])
-
-  const triggerMascotAnim = useCallback(
-    (variant: 'hop' | 'bob' | 'pulse' = mascotAnimVariant) => {
-      if (mascotWiggleTimerRef.current !== null) {
-        window.clearTimeout(mascotWiggleTimerRef.current)
-      }
-      setMascotWiggling(false)
-      requestAnimationFrame(() => {
-        setMascotWiggling(true)
-        const duration =
-          variant === 'bob' ? 660 : variant === 'pulse' ? 400 : 540
-        mascotWiggleTimerRef.current = window.setTimeout(() => {
-          setMascotWiggling(false)
-          mascotWiggleTimerRef.current = null
-        }, duration)
-      })
-    },
-    [mascotAnimVariant],
-  )
-
-  const selectAndPlayVariant = useCallback(
-    (variant: 'hop' | 'bob' | 'pulse') => {
-      setMascotAnimVariant(variant)
-      triggerMascotAnim(variant)
-    },
-    [triggerMascotAnim],
-  )
 
   useEffect(() => {
     if (!mascotGreetingOpen) return
@@ -161,24 +131,26 @@ export function WelcomeView({
       return
     }
 
+    if (mascotWiggleTimerRef.current !== null) {
+      window.clearTimeout(mascotWiggleTimerRef.current)
+    }
     if (mascotTimerRef.current !== null) {
       window.clearTimeout(mascotTimerRef.current)
     }
 
-    triggerMascotAnim(mascotAnimVariant)
+    setMascotWiggling(true)
     setMascotGreetingOpen(true)
     onPlayAudio('ajolote', 'es-MX')
+
+    mascotWiggleTimerRef.current = window.setTimeout(() => {
+      setMascotWiggling(false)
+      mascotWiggleTimerRef.current = null
+    }, 520)
 
     mascotTimerRef.current = window.setTimeout(() => {
       closeGreeting(false)
     }, 8000)
-  }, [
-    closeGreeting,
-    mascotAnimVariant,
-    mascotGreetingOpen,
-    onPlayAudio,
-    triggerMascotAnim,
-  ])
+  }, [closeGreeting, mascotGreetingOpen, onPlayAudio])
 
   const playSampleAudio = useCallback(
     (side: 'spanish' | 'english') => {
@@ -250,108 +222,73 @@ export function WelcomeView({
           <div className="welcome-hero-main">
             <div className="hero-copy">
               <div ref={mascotContainerRef} className="welcome-mascot-anchor">
-                <div
-                  className="mascot-anim-switcher"
-                  role="radiogroup"
-                  aria-label="Jolito click animation comparison"
+                <button
+                  ref={mascotBtnRef}
+                  type="button"
+                  className={`welcome-mascot-btn ${mascotWiggling ? 'is-wiggling' : ''}`}
+                  onClick={onMascotClick}
+                  aria-label="Meet Jolito the ajolote (axolotl)"
+                  aria-expanded={mascotGreetingOpen}
                 >
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={mascotAnimVariant === 'hop'}
-                    className={`mascot-anim-pill ${mascotAnimVariant === 'hop' ? 'is-active' : ''}`}
-                    onClick={() => selectAndPlayVariant('hop')}
+                  <img
+                    src={logoUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="welcome-mascot-img"
+                  />
+                </button>
+                {mascotGreetingOpen && (
+                  <div
+                    className="mascot-speech-bubble"
+                    role="status"
+                    aria-live="polite"
+                    onMouseEnter={() => {
+                      if (mascotTimerRef.current !== null) {
+                        window.clearTimeout(mascotTimerRef.current)
+                        mascotTimerRef.current = null
+                      }
+                    }}
+                    onFocus={() => {
+                      if (mascotTimerRef.current !== null) {
+                        window.clearTimeout(mascotTimerRef.current)
+                        mascotTimerRef.current = null
+                      }
+                    }}
                   >
-                    1. Joyful Hop
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={mascotAnimVariant === 'bob'}
-                    className={`mascot-anim-pill ${mascotAnimVariant === 'bob' ? 'is-active' : ''}`}
-                    onClick={() => selectAndPlayVariant('bob')}
-                  >
-                    2. Aquatic Bob
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={mascotAnimVariant === 'pulse'}
-                    className={`mascot-anim-pill ${mascotAnimVariant === 'pulse' ? 'is-active' : ''}`}
-                    onClick={() => selectAndPlayVariant('pulse')}
-                  >
-                    3. Spring Pulse
-                  </button>
-                </div>
-                <div className="welcome-mascot-wrapper">
-                  <button
-                    ref={mascotBtnRef}
-                    type="button"
-                    className={`welcome-mascot-btn ${mascotWiggling ? `anim-${mascotAnimVariant} is-wiggling` : ''}`}
-                    onClick={onMascotClick}
-                    aria-label="Meet Jolito the ajolote (axolotl)"
-                    aria-expanded={mascotGreetingOpen}
-                  >
-                    <img
-                      src={logoUrl}
-                      alt=""
-                      aria-hidden="true"
-                      className="welcome-mascot-img"
-                    />
-                  </button>
-                  {mascotGreetingOpen && (
-                    <div
-                      className="mascot-speech-bubble"
-                      role="status"
-                      aria-live="polite"
-                      onMouseEnter={() => {
-                        if (mascotTimerRef.current !== null) {
-                          window.clearTimeout(mascotTimerRef.current)
-                          mascotTimerRef.current = null
-                        }
+                    <span className="mascot-speech-text">
+                      ¡Hola! I’m Jolito, an <em>ajolote</em> (axolotl).
+                    </span>
+                    <button
+                      type="button"
+                      className="mascot-speech-speak-btn"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onPlayAudio('ajolote', 'es-MX')
                       }}
-                      onFocus={() => {
-                        if (mascotTimerRef.current !== null) {
-                          window.clearTimeout(mascotTimerRef.current)
-                          mascotTimerRef.current = null
-                        }
-                      }}
+                      aria-label="Play pronunciation for ajolote"
                     >
-                      <span className="mascot-speech-text">
-                        ¡Hola! I’m Jolito, an <em>ajolote</em> (axolotl).
-                      </span>
-                      <button
-                        type="button"
-                        className="mascot-speech-speak-btn"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onPlayAudio('ajolote', 'es-MX')
-                        }}
-                        aria-label="Play pronunciation for ajolote"
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="16"
+                        height="16"
+                        aria-hidden="true"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="16"
-                          height="16"
-                          aria-hidden="true"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path
-                            d="M5 9v6h4l5 4V5L9 9H5Z"
-                            fill="currentColor"
-                            stroke="none"
-                          />
-                          <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                          <path d="M18.8 6a8.2 8.2 0 0 1 0 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        <path
+                          d="M5 9v6h4l5 4V5L9 9H5Z"
+                          fill="currentColor"
+                          stroke="none"
+                        />
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                        <path d="M18.8 6a8.2 8.2 0 0 1 0 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
               <h1>
                 <span className="hero-headline-lead">Make the words</span>{' '}
