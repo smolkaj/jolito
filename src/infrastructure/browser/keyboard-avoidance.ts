@@ -340,6 +340,19 @@ export function initKeyboardAvoidance(
     if (Capacitor.isNativePlatform()) return
     const vv = win.visualViewport
     if (!vv) return
+
+    // Guard against pinch-zoom or non-input viewport changes on web:
+    // If no text input is focused, or if the page is pinch-zoomed (scale !== 1),
+    // viewport dimensional changes reflect pinch-zooming rather than virtual keyboard presentation.
+    const isPinchZoomed =
+      typeof vv.scale === 'number' && Math.abs(vv.scale - 1) > 0.05
+    if (!isTextInput(doc.activeElement) || isPinchZoomed) {
+      if (currentKeyboardHeight > 0) {
+        updateInset(0)
+      }
+      return
+    }
+
     const inset = Math.max(
       0,
       Math.round(win.innerHeight - (vv.offsetTop + vv.height)),
