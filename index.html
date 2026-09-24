@@ -1,13 +1,41 @@
 <!doctype html>
-<html lang="en" style="background-color: #fdf5f8; color-scheme: light">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#fdf5f8" />
+    <script>
+      ;(function () {
+        try {
+          var search = window.location.search
+          var hash = window.location.hash
+          var hashSearch = hash.includes('?')
+            ? hash.slice(hash.indexOf('?'))
+            : ''
+          var params = new URLSearchParams(search || hashSearch)
+          var theme = params.get('theme')
+          var activeTheme = null
+          if (theme === 'dark') {
+            activeTheme = 'dark'
+            localStorage.setItem('jolito:theme', 'dark')
+          } else if (theme === 'light') {
+            activeTheme = 'light'
+            localStorage.removeItem('jolito:theme')
+          } else if (localStorage.getItem('jolito:theme') === 'dark') {
+            activeTheme = 'dark'
+          }
+          if (activeTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark')
+            var meta = document.querySelector('meta[name="theme-color"]')
+            if (meta) meta.setAttribute('content', '#0d1310')
+          }
+        } catch (_) {}
+      })()
+    </script>
     <meta
       name="description"
       content="Jolito — Spoken Mexican Spanish flashcards and grammar practice. Master real-world vocabulary with spaced repetition, native audio, and active typed recall."
@@ -217,7 +245,7 @@
     />
     <title>Jolito — Mexican Spanish that sticks</title>
   </head>
-  <body style="background-color: #fdf5f8">
+  <body>
     <div id="root">
       <noscript>
         <div
