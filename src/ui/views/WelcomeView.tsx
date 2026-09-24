@@ -70,9 +70,9 @@ export function WelcomeView({
   const sampleTimerRef = useRef<number | null>(null)
 
   const [mascotGreetingOpen, setMascotGreetingOpen] = useState(false)
-  const [mascotWiggling, setMascotWiggling] = useState(false)
+  const [mascotHopping, setMascotHopping] = useState(false)
   const mascotTimerRef = useRef<number | null>(null)
-  const mascotWiggleTimerRef = useRef<number | null>(null)
+  const mascotHopTimerRef = useRef<number | null>(null)
   const mascotContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -83,8 +83,8 @@ export function WelcomeView({
       if (mascotTimerRef.current !== null) {
         window.clearTimeout(mascotTimerRef.current)
       }
-      if (mascotWiggleTimerRef.current !== null) {
-        window.clearTimeout(mascotWiggleTimerRef.current)
+      if (mascotHopTimerRef.current !== null) {
+        window.clearTimeout(mascotHopTimerRef.current)
       }
     }
   }, [])
@@ -134,20 +134,20 @@ export function WelcomeView({
       return
     }
 
-    if (mascotWiggleTimerRef.current !== null) {
-      window.clearTimeout(mascotWiggleTimerRef.current)
+    if (mascotHopTimerRef.current !== null) {
+      window.clearTimeout(mascotHopTimerRef.current)
     }
     if (mascotTimerRef.current !== null) {
       window.clearTimeout(mascotTimerRef.current)
     }
 
-    setMascotWiggling(true)
+    setMascotHopping(true)
     setMascotGreetingOpen(true)
     onPlayAudio('ajolote', 'es-MX')
 
-    mascotWiggleTimerRef.current = window.setTimeout(() => {
-      setMascotWiggling(false)
-      mascotWiggleTimerRef.current = null
+    mascotHopTimerRef.current = window.setTimeout(() => {
+      setMascotHopping(false)
+      mascotHopTimerRef.current = null
     }, 520)
 
     mascotTimerRef.current = window.setTimeout(() => {
@@ -229,7 +229,7 @@ export function WelcomeView({
                 <button
                   ref={mascotBtnRef}
                   type="button"
-                  className={`welcome-mascot-btn ${mascotWiggling ? 'is-wiggling' : ''}`}
+                  className={`welcome-mascot-btn ${mascotHopping ? 'is-hopping' : ''}`}
                   onClick={onMascotClick}
                   aria-label="Meet Jolito the ajolote (axolotl)"
                   aria-expanded={mascotGreetingOpen}
