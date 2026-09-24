@@ -39,6 +39,7 @@ final class NativeWalkthrough: XCTestCase {
         type("English", "Could you bring me the bill, please?")
         dismissKeyboard()
         pause(3)
+        scrollToSave()
         tap(button("Sign in to save"))
         try signIn(reviewer)
         pause(5)
@@ -107,6 +108,9 @@ final class NativeWalkthrough: XCTestCase {
         let field = app.textFields[label].firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 15))
         field.tap()
+        if let value = field.value as? String, value != field.placeholderValue, !value.isEmpty {
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))
+        }
         field.typeText(text)
         pause(2)
     }
@@ -118,6 +122,7 @@ final class NativeWalkthrough: XCTestCase {
         type("English", english)
         dismissKeyboard()
         pause(3)
+        scrollToSave()
         tap(button("Save card"))
         pause(3)
     }
@@ -125,6 +130,12 @@ final class NativeWalkthrough: XCTestCase {
     private func dismissSuggestions() {
         let dismiss = app.buttons["Dismiss suggestions"]
         if dismiss.waitForExistence(timeout: 2) { dismiss.tap(); pause(1) }
+    }
+
+    private func scrollToSave() {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: 0.72))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)), withVelocity: .slow, thenHoldForDuration: 0.1)
+        pause(2)
     }
 
     private func dismissKeyboard() {
