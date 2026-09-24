@@ -72,6 +72,16 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 test "$keyboard_configured" = true
+# Temporary diagnostics for the simulator-to-host audio route.
+for domain in com.apple.dt.Devices com.apple.dt.DeviceKit; do
+  defaults -container com.apple.dt.Devices read "$domain" > "$output/$domain.log" 2>&1 || true
+done
+for binary in "$DEVELOPER_DIR/../SharedFrameworks/DeviceKit.framework/DeviceKit" "$DEVELOPER_DIR/../SharedFrameworks/SimulatorKit.framework/SimulatorKit"; do
+  if [ -f "$binary" ]; then strings "$binary" | grep -iE 'audio|sound|mute|volume' >> "$output/audio-keys.log" || true; fi
+done
+SwitchAudioSource -a -f json > "$output/host-audio-devices.json"
+for kind in output input system; do SwitchAudioSource -c -t "$kind"; done > "$output/host-audio-defaults.txt"
+screencapture -x "$output/host-before.png"
 xcrun simctl spawn "$device" log stream --style compact --level error \
   --predicate 'subsystem CONTAINS[c] "speech" OR subsystem CONTAINS[c] "voice"' \
   > "$output/speech.log" 2>&1 &
@@ -80,6 +90,8 @@ xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.
 video_pid=$!
 build/record-native-audio "$output" > "$output/audio.log" 2>&1 &
 audio_pid=$!
+sleep 2
+afplay /System/Library/Sounds/Glass.aiff
 # Anchor video at recorder readiness; the audio recorder writes its own clock.
 # Monitor concurrently: XCTest must wake the device display and audio session.
 python3 - "$output" "$video_pid" <<'PYREADY' &
@@ -118,6 +130,7 @@ for attempt in $(seq 1 660); do
 done
 wait "$ready_pid"
 test -s "$output/audio-start.txt"
+screencapture -x "$output/host-after.png"
 cleanup
 video_pid=
 audio_pid=

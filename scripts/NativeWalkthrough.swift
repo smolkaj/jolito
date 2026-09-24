@@ -15,145 +15,15 @@ final class NativeWalkthrough: XCTestCase {
     private enum CaptureError: Error { case response, missingCode, configuration }
 
     func testWalkthrough() throws {
-        executionTimeAllowance = 1200
+        executionTimeAllowance = 300
         continueAfterFailure = false
-        guard let address = ProcessInfo.processInfo.environment["WALKTHROUGH_EMAIL"],
-              let password = ProcessInfo.processInfo.environment["WALKTHROUGH_MAILBOX_PASSWORD"] else {
-            throw CaptureError.configuration
-        }
-        let reviewer = Mailbox(address: address, password: password)
-        guard let deletionAddress = ProcessInfo.processInfo.environment["WALKTHROUGH_DELETE_EMAIL"],
-              let deletionPassword = ProcessInfo.processInfo.environment["WALKTHROUGH_DELETE_PASSWORD"] else {
-            throw CaptureError.configuration
-        }
-        let disposable = Mailbox(address: deletionAddress, password: deletionPassword)
-        print("WALKTHROUGH_HARDWARE_KEYBOARD \(GCKeyboard.coalesced != nil)")
-        XCTAssertNil(GCKeyboard.coalesced, "Capture must start without a connected hardware keyboard")
         app.launch()
-        let create = button("Create a card")
-        XCTAssertTrue(create.waitForExistence(timeout: 90))
-        XCUIDevice.shared.press(.home)
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        pause(3)
-        var launchIcon: XCUIElement?
-        for _ in 0..<3 {
-            launchIcon = springboard.icons.matching(identifier: "Jolito").allElementsBoundByIndex.first {
-                $0.isHittable && $0.frame.width > 0
-            }
-            if launchIcon != nil { break }
-            springboard.swipeLeft(velocity: .slow)
-            pause(2)
-        }
-        guard let icon = launchIcon else {
-            XCTFail("Jolito must be visible on the Home Screen before capture begins")
-            return
-        }
-        print("WALKTHROUGH_START \(Date().timeIntervalSince1970)")
-        pause(3)
-        icon.tap()
-        XCTAssertTrue(create.waitForExistence(timeout: 60))
-        pause(5)
-
-        chapter("Save a restaurant phrase and sign in")
-        tap(create)
-        type("Mexican Spanish", "La cuenta, por favor")
-        dismissSuggestions()
-        type("English", "The bill, please")
-        dismissKeyboard()
-        pause(3)
-        scrollToSave()
-        tap(button("Sign in to save"))
-        try signIn(reviewer)
-        pause(5)
-        if !button("Sign out").exists {
-            // Saving a pending card closes the sheet and focuses the next draft.
-            dismissKeyboard()
-        }
-        closeSheetIfOpen()
-
-        chapter("Build a useful personal deck")
-        createCard("Provecho", "Enjoy your meal")
-        tap(button("Deck"))
-        pause(5)
-        app.swipeUp(velocity: .slow)
-        pause(3)
-        app.swipeDown(velocity: .slow)
-        pause(3)
-
-        print("WALKTHROUGH_HARDWARE_KEYBOARD_AFTER_TYPING \(GCKeyboard.coalesced != nil)")
-        chapter("Listen, recall, reveal and grade with touch gestures")
-        tap(button("Cards"))
-        for index in 0..<2 {
-            let reveal = button("Reveal answer")
-            XCTAssertTrue(reveal.waitForExistence(timeout: 20))
-            XCTAssertFalse(button("Reveal answer Enter").exists, "Study must use touch mode without hardware-keyboard hints")
-            dismissKeyboard()
-            pause(7)
-            // Start on the noninteractive prompt area. Up reveals; right grades Good.
-            let frame = app.frame
-            let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.22))
-            let upwards = origin.withOffset(CGVector(dx: 0, dy: -min(100, frame.height * 0.1)))
-            origin.press(forDuration: 0.08, thenDragTo: upwards, withVelocity: .slow, thenHoldForDuration: 0.15)
-            XCTAssertTrue(button("3 Good").waitForExistence(timeout: 10), "Swipe up must reveal the answer")
-            pause(7)
-            if index == 1 {
-                tap(app.buttons["Play answer audio"].firstMatch)
-                pause(4)
-            }
-            let grading = app.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.25))
-            grading.press(forDuration: 0.08, thenDragTo: grading.withOffset(CGVector(dx: 210, dy: 0)), withVelocity: .slow, thenHoldForDuration: 0.2)
-            XCTAssertTrue(reveal.waitForExistence(timeout: 10), "Swipe right must advance the study session")
-            pause(2)
-        }
-
-        dismissKeyboard()
-        chapter("Practice verb forms in context")
-        tap(button("Grammar"))
-        pause(4)
-        tap(button("Start practice"))
-        for _ in 0..<2 {
-            XCTAssertTrue(button("Reveal answer").waitForExistence(timeout: 20))
-            dismissKeyboard()
-            pause(6)
-            tap(button("Reveal answer"))
-            pause(7)
-            tap(button("3 Good"))
-        }
-
-        dismissKeyboard()
-        chapter("Return to the same account")
-        tap(button("Deck synced with cloud."))
-        tap(button("Sign out"))
-        pause(4)
-        try signIn(reviewer)
-        pause(5)
-        closeSheetIfOpen()
-        tap(button("Deck"))
-        XCTAssertTrue(app.staticTexts["La cuenta, por favor"].firstMatch.waitForExistence(timeout: 15))
-        pause(5)
-        chapter("Create and delete a separate disposable account")
-        tap(button("Deck synced with cloud."))
-        tap(button("Sign out"))
-        try signIn(disposable)
-        pause(5)
-        if !button("Delete cloud account & data").exists {
-            tap(button("Deck synced with cloud."))
-        }
-        tap(button("Delete cloud account & data"))
-        pause(6)
-        let backup = app.switches["Save an offline backup before deleting"].firstMatch
-        if backup.exists { tap(backup) }
-        else { tap(app.checkBoxes["Save an offline backup before deleting"].firstMatch) }
-        let confirmation = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "DELETE")).firstMatch
-        tap(confirmation)
-        typeOnscreen("DELETE")
-        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Permanently deletes your account")).firstMatch.tap()
-        pause(3)
-        tap(button("Yes, delete cloud data"))
-        XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 30))
-        XCTAssertTrue(button("Not signed in.").waitForExistence(timeout: 15))
-        pause(7)
-        print("WALKTHROUGH_END \(Date().timeIntervalSince1970)")
+        tap(button("Practice"))
+        pause(20)
+        tap(button("Reveal answer"))
+        pause(20)
+        tap(app.buttons["Play answer audio"].firstMatch)
+        pause(15)
     }
 
     private func button(_ prefix: String) -> XCUIElement {
