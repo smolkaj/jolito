@@ -122,6 +122,14 @@ void test('SceneDelegate registers AppleSignInPlugin with AuthenticationServices
     /<key>com\.apple\.developer\.applesignin<\/key>\s*<array>\s*<string>Default<\/string>\s*<\/array>/,
   )
   assert.match(pbxproj, /CODE_SIGN_ENTITLEMENTS\s*=\s*App\/App\.entitlements;/)
+
+  const supabaseConfig = readFileSync(
+    new URL('../../supabase/config.toml', import.meta.url),
+    'utf8',
+  )
+  assert.match(supabaseConfig, /\[auth\.external\.apple\]/)
+  assert.match(supabaseConfig, /enabled\s*=\s*true/)
+  assert.match(supabaseConfig, /client_id\s*=\s*"to\.joli\.app"/)
 })
 
 void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for native speech synthesis', () => {
@@ -186,6 +194,56 @@ void test('Capacitor iOS configuration uses contentInset: never to prevent doubl
   // contentInset: 'never' prevents UIKit from dynamic double margins.
   assert.match(indexHtml, /viewport-fit=cover/)
   assert.match(config, /ios:\s*\{[\s\S]*?contentInset:\s*['"]never['"]/)
+})
+
+void test('Form inputs and textareas enforce minimum 16px font-size to prevent iOS WebKit automatic viewport zoom', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // In iOS WebKit (Safari / WKWebView / Capacitor iOS), form inputs with font-size < 16px
+  // trigger an unwanted automatic viewport zoom on focus.
+  // 1. Verify global base rule enforces 16px on inputs, textareas, and selects
+  assert.match(
+    css,
+    /input,\s*\n\s*textarea,\s*\n\s*select\s*\{[\s\S]*?font-size:\s*16px;/,
+    'Base input, textarea, select must declare font-size: 16px to prevent iOS auto-zoom',
+  )
+
+  // 2. Verify additional context textareas declare font-size: 16px
+  assert.match(
+    css,
+    /\.edit-card-form \.field-group textarea#edit-context,\s*\n\s*\.field-group textarea#context\s*\{[\s\S]*?font-size:\s*16px;/,
+    'Additional context textareas (#context, #edit-context) must have font-size: 16px',
+  )
+
+  // 3. Statically audit all CSS rule blocks targeting input, textarea, or select: none may have font-size < 16px
+  const rules = css.match(/[^{}]+{[^{}]+}/g) || []
+  for (const rule of rules) {
+    const [selector, body] = rule.split('{')
+    const sel = selector!.trim()
+    const isFormControl =
+      /(?:^|[\s,>+~])(?:input|textarea|select)\b|\.feedback-textarea\b|\.delete-input\b|\.pill-select\b/.test(
+        sel,
+      ) &&
+      !/(?:checkbox|radio|hidden|\.file-input-label|\.delete-input-label|\.paste-input-btn|\.deck-select-checkbox)/.test(
+        sel,
+      )
+
+    if (isFormControl) {
+      const fsMatch = body!.match(/font-size:\s*([0-9.]+)(px|rem)/)
+      if (fsMatch) {
+        const val = parseFloat(fsMatch[1]!)
+        const unit = fsMatch[2]!
+        const px = unit === 'rem' ? val * 16 : val
+        assert.ok(
+          px >= 16,
+          `Selector "${sel}" declares font-size ${fsMatch[0]}, which is less than 16px and causes iOS WebKit auto-zoom`,
+        )
+      }
+    }
+  }
 })
 
 void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Live Activities', () => {
@@ -268,4 +326,70 @@ void test('Capacitor Android configuration matches appId and brand background', 
     /<string name="package_name">to\.joli\.app<\/string>/,
   )
   assert.match(stringsXml, /<string name="app_name">Jolito<\/string>/)
+})
+
+void test('Universal keyboard avoidance architecture is registered at application root', () => {
+  const mainTsx = readFileSync(
+    new URL('../../src/main.tsx', import.meta.url),
+    'utf8',
+  )
+  assert.match(
+    mainTsx,
+    /import\s*\{\s*initKeyboardAvoidance\s*\}\s*from\s*['"]\.\/infrastructure\/browser\/keyboard-avoidance['"]/,
+    'main.tsx must import initKeyboardAvoidance',
+  )
+  assert.match(
+    mainTsx,
+    /initKeyboardDetection\(\)[\s\S]*?initKeyboardAvoidance\(\)/,
+    'main.tsx must initialize initKeyboardAvoidance on app startup',
+  )
+})
+
+void test('CSS architectural invariants for universal keyboard avoidance and reachability', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // 1. :root declares --keyboard-inset default
+  assert.match(
+    css,
+    /--keyboard-inset:\s*0px;/,
+    ':root must declare --keyboard-inset: 0px',
+  )
+
+  // 2. Base .app-shell incorporates --keyboard-inset in padding-bottom
+  assert.match(
+    css,
+    /\.app-shell\s*\{[\s\S]*?padding-bottom:\s*max\([\s\S]*?var\(--keyboard-inset,\s*0px\)/,
+    'Base .app-shell must include var(--keyboard-inset, 0px) in padding-bottom',
+  )
+
+  // 3. Base .app-shell declares smooth padding-bottom transition
+  assert.match(
+    css,
+    /\.app-shell\s*\{[\s\S]*?transition:\s*padding-bottom\s+240ms\s+cubic-bezier\(0\.16,\s*1,\s*0\.3,\s*1\);/,
+    '.app-shell must declare transition on padding-bottom matching iOS keyboard curve',
+  )
+
+  // 4. Mobile .app-shell (under 680px) incorporates --keyboard-inset
+  assert.match(
+    css,
+    /\.app-shell\s*\{[\s\S]*?68px[\s\S]*?var\(--safe-area-inset-bottom[\s\S]*?var\(--keyboard-inset,\s*0px\)/,
+    'Mobile .app-shell must include var(--keyboard-inset, 0px) to clear bottom tab bar and keyboard',
+  )
+
+  // 5. Mobile tab bar is hidden when software keyboard is open
+  assert.match(
+    css,
+    /(?:html\[data-keyboard-open=['"]true['"]\]\s*\.mobile-tab-bar|\.is-keyboard-open\s*\.mobile-tab-bar)\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    'Mobile tab bar must be suppressed when virtual keyboard is open',
+  )
+
+  // 6. prefers-reduced-motion suppresses .app-shell transitions
+  assert.match(
+    css,
+    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.app-shell[\s\S]*?transition:\s*none\s*!important;/,
+    'prefers-reduced-motion must disable .app-shell transitions',
+  )
 })

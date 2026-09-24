@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStudyCards, type Grade } from '../domain/card'
 import { createGrammarCards } from '../domain/grammar'
 import { cachedSpeechAvailableByLocale } from '../infrastructure/browser/speech-recognition'
+import type { HapticsPlayer } from '../application/ports'
 import { PracticeCard } from './PracticeCard'
 
 function props() {
@@ -197,6 +198,13 @@ function AccentPractice({
   revealed = false,
   accents = true,
   onGrade = vi.fn(),
+  haptics,
+}: {
+  paused?: boolean
+  revealed?: boolean
+  accents?: boolean
+  onGrade?: (grade: Grade) => void
+  haptics?: HapticsPlayer
 }) {
   const [answer, setAnswer] = useState('')
   return (
@@ -208,6 +216,7 @@ function AccentPractice({
       revealed={revealed}
       accents={accents}
       onGrade={onGrade}
+      haptics={haptics}
     />
   )
 }
@@ -215,21 +224,97 @@ function AccentPractice({
 describe('accent keyboard insertion', () => {
   it('inserts all accents and shares selection/caret behavior with pointer insertion', async () => {
     const user = userEvent.setup()
-    render(<AccentPractice />)
+    const trigger = vi.fn()
+    const haptics: HapticsPlayer = {
+      trigger,
+    }
+    render(<AccentPractice haptics={haptics} />)
     const input = screen.getByRole<HTMLInputElement>('textbox')
     await user.keyboard('12345')
     expect(input).toHaveValue('áéíóú')
+    expect(trigger).toHaveBeenCalledWith('selection')
+
+    // Test extended Spanish character set: 6 -> ñ, 7 -> ü, 8 -> ¿, 9 -> ¡
+    await user.keyboard('6789')
+    expect(input).toHaveValue('áéíóúñü¿¡')
+
     input.setSelectionRange(1, 2)
     await user.keyboard('2x')
-    expect(input).toHaveValue('áéxíóú')
+    expect(input).toHaveValue('áéxíóúñü¿¡')
     expect(input.selectionStart).toBe(3)
     input.setSelectionRange(2, 4)
     await user.click(screen.getByRole('button', { name: 'Insert ó' }))
-    expect(input).toHaveValue('áéóóú')
+    expect(input).toHaveValue('áéóóúñü¿¡')
     expect(input).toHaveFocus()
     expect(input.selectionStart).toBe(3)
     await user.keyboard('1')
-    expect(input).toHaveValue('áéóáóú')
+    expect(input).toHaveValue('áéóáóúñü¿¡')
+
+    // Test pointer insertion for ñ, ü, ¿, ¡
+    await user.click(screen.getByRole('button', { name: 'Insert ñ' }))
+    expect(input).toHaveValue('áéóáñóúñü¿¡')
+    await user.click(screen.getByRole('button', { name: 'Insert ¿' }))
+    expect(input).toHaveValue('áéóáñ¿óúñü¿¡')
+
+    // Verify exactly one haptic trigger per action (no double pulses)
+    expect(trigger).toHaveBeenCalledTimes(14)
+  })
+
+  it('docks toolbar above keyboard via jolito:keyboard-change while preserving in-form container layout', () => {
+    const { container } = render(<AccentPractice />)
+    const input = screen.getByRole<HTMLInputElement>('textbox')
+    const card = input.closest<HTMLElement>('.study-card')!
+
+    const inFormContainer = container.querySelector(
+      '.answer-accents-container',
+    )!
+    expect(inFormContainer).toBeInTheDocument()
+    expect(inFormContainer).not.toHaveStyle({ visibility: 'hidden' })
+    expect(card).not.toHaveClass('has-docked-accents')
+
+    // Dispatch keyboard change event indicating keyboard opened
+    fireEvent(
+      window,
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: true, keyboardHeight: 336 },
+      }),
+    )
+
+    // Docked toolbar appears in body via portal
+    const toolbars = screen.getAllByRole('toolbar', { name: 'Spanish accents' })
+    const dockedToolbar = toolbars.find((el) =>
+      el.classList.contains('is-docked'),
+    )
+    expect(dockedToolbar).toBeDefined()
+    expect(dockedToolbar?.style.getPropertyValue('--keyboard-inset')).toBe(
+      '336px',
+    )
+
+    // In-form container is kept in DOM to preserve 0-shift vertical height
+    expect(inFormContainer).toHaveStyle({
+      visibility: 'hidden',
+      pointerEvents: 'none',
+    })
+    expect(inFormContainer).toHaveAttribute('aria-hidden', 'true')
+    expect(card).toHaveClass('has-docked-accents')
+    expect(card.style.getPropertyValue('--keyboard-inset')).toBe('336px')
+
+    // Keyboard closes
+    fireEvent(
+      window,
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: false, keyboardHeight: 0 },
+      }),
+    )
+
+    const remainingToolbars = screen.getAllByRole('toolbar', {
+      name: 'Spanish accents',
+    })
+    expect(
+      remainingToolbars.some((el) => el.classList.contains('is-docked')),
+    ).toBe(false)
+    expect(inFormContainer).not.toHaveStyle({ visibility: 'hidden' })
+    expect(card).not.toHaveClass('has-docked-accents')
   })
 
   it('respects modifiers/composition, pause/resume, reveal grading and teardown', async () => {

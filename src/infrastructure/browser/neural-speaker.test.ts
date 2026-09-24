@@ -290,7 +290,7 @@ describe('LayeredNeuralSpeaker', () => {
     })
   })
 
-  it('awaits in-flight prefetch for non-explicit autoplay with a 500ms grace window', async () => {
+  it('awaits in-flight prefetch for non-explicit autoplay with an 800ms grace window', async () => {
     const awaitAudioSpy = vi
       .spyOn(neuralEngine, 'awaitAudio')
       .mockResolvedValue(true)
@@ -314,7 +314,7 @@ describe('LayeredNeuralSpeaker', () => {
       'palabra rápida',
       'es-MX',
       expect.any(String),
-      500,
+      800,
     )
 
     await Promise.resolve()

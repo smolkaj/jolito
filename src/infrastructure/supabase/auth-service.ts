@@ -830,6 +830,7 @@ export class SupabaseAuthService implements AuthService {
   async signInWithApple(
     identityToken: string,
     nonce?: string,
+    fallbackEmail?: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
     const generation = ++this.generation
     this.inFlightRefresh = null
@@ -885,9 +886,25 @@ export class SupabaseAuthService implements AuthService {
 
       if (!isCurrent()) return stale()
       if (!res.ok) {
+        const errorData = (await res.json().catch(() => ({}))) as {
+          msg?: string
+          error_description?: string
+          message?: string
+          error?: string
+          error_code?: string
+          code?: number
+        }
+        console.error(
+          '[AuthService] Apple Sign-In verification attempt failed:',
+          {
+            status: res.status,
+            errorData,
+          },
+        )
         return {
           success: false,
-          error: 'Apple Sign-In could not be verified with the server.',
+          error:
+            'Apple Sign-In could not be verified with the server. Please try again.',
         }
       }
 
@@ -904,7 +921,7 @@ export class SupabaseAuthService implements AuthService {
       const data = parsed.data
       const user: AuthUser = {
         id: data.user.id,
-        email: data.user.email || '',
+        email: data.user.email || fallbackEmail?.trim() || '',
       }
 
       if (!isCurrent()) return stale()

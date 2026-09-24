@@ -7,8 +7,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
-import { Keyboard, type KeyboardInfo } from '@capacitor/keyboard'
 import type { HapticsPlayer } from '../../application/ports'
 
 export interface ModalSheetProps {
@@ -49,7 +47,6 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
     const [isDragging, setIsDragging] = useState(false)
     const [isClosing, setIsClosing] = useState(false)
     const [hasDragged, setHasDragged] = useState(false)
-    const [keyboardInset, setKeyboardInset] = useState(0)
     const startYRef = useRef<number | null>(null)
     const currentYRef = useRef<number | null>(null)
     const thresholdPassedRef = useRef(false)
@@ -59,118 +56,11 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
     useEffect(() => {
-      if (!isOpen || typeof window === 'undefined') return
-
-      let isMounted = true
-      const handles: PluginListenerHandle[] = []
-
-      const updateViewport = () => {
-        // When running natively inside Capacitor on iOS/Android, native keyboard
-        // events are authoritative and prevent visualViewport jitter.
-        if (Capacitor.isNativePlatform()) return
-        const vv = window.visualViewport
-        if (!vv) return
-        const inset = Math.max(
-          0,
-          window.innerHeight - (vv.offsetTop + vv.height),
-        )
-        setKeyboardInset(inset)
-      }
-
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateViewport)
-        window.visualViewport.addEventListener('scroll', updateViewport)
-        updateViewport()
-      }
-
-      const onKeyboardShow = (
-        info: KeyboardInfo | { keyboardHeight: number },
-      ) => {
-        if (!isMounted) return
-        setKeyboardInset(Math.max(0, info.keyboardHeight))
-      }
-
-      const onKeyboardHide = () => {
-        if (!isMounted) return
-        setKeyboardInset(0)
-      }
-
-      if (Capacitor.isPluginAvailable('Keyboard')) {
-        void Keyboard.addListener('keyboardWillShow', onKeyboardShow)
-          .then((handle) => {
-            if (isMounted) handles.push(handle)
-            else void handle.remove()
-          })
-          .catch(() => {})
-
-        void Keyboard.addListener('keyboardDidShow', onKeyboardShow)
-          .then((handle) => {
-            if (isMounted) handles.push(handle)
-            else void handle.remove()
-          })
-          .catch(() => {})
-
-        void Keyboard.addListener('keyboardWillHide', onKeyboardHide)
-          .then((handle) => {
-            if (isMounted) handles.push(handle)
-            else void handle.remove()
-          })
-          .catch(() => {})
-
-        void Keyboard.addListener('keyboardDidHide', onKeyboardHide)
-          .then((handle) => {
-            if (isMounted) handles.push(handle)
-            else void handle.remove()
-          })
-          .catch(() => {})
-      }
-
-      // Defensive window listeners for Capacitor's triggerWindowJSEvent bridge
-      const handleWindowKeyboardWillShow = (event: Event) => {
-        if (!isMounted) return
-        const custom = event as CustomEvent<{ keyboardHeight?: number }>
-        const height =
-          custom.detail?.keyboardHeight ??
-          (event as unknown as { keyboardHeight?: number }).keyboardHeight ??
-          0
-        if (height > 0) {
-          setKeyboardInset(height)
-        }
-      }
-
-      const handleWindowKeyboardWillHide = () => {
-        if (!isMounted) return
-        setKeyboardInset(0)
-      }
-
-      window.addEventListener('keyboardWillShow', handleWindowKeyboardWillShow)
-      window.addEventListener('keyboardWillHide', handleWindowKeyboardWillHide)
-
-      return () => {
-        isMounted = false
-        window.visualViewport?.removeEventListener('resize', updateViewport)
-        window.visualViewport?.removeEventListener('scroll', updateViewport)
-        window.removeEventListener(
-          'keyboardWillShow',
-          handleWindowKeyboardWillShow,
-        )
-        window.removeEventListener(
-          'keyboardWillHide',
-          handleWindowKeyboardWillHide,
-        )
-        handles.forEach((h) => {
-          void h.remove()
-        })
-      }
-    }, [isOpen])
-
-    useEffect(() => {
       if (!isOpen) {
         setDragOffset(0)
         setIsDragging(false)
         setIsClosing(false)
         setHasDragged(false)
-        setKeyboardInset(0)
         startYRef.current = null
         currentYRef.current = null
         thresholdPassedRef.current = false
@@ -298,18 +188,11 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
 
     return (
       <div
-        className={`modal-backdrop ${backdropClassName} ${keyboardInset > 0 ? 'is-keyboard-open' : ''}`.trim()}
+        className={`modal-backdrop ${backdropClassName}`.trim()}
         onClick={() => {
           if (!isClosing) onClose()
         }}
         role="presentation"
-        style={
-          keyboardInset > 0
-            ? ({
-                '--keyboard-inset': `${keyboardInset}px`,
-              } as React.CSSProperties)
-            : undefined
-        }
       >
         <div
           ref={setMergedRef}

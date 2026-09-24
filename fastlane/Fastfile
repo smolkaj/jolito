@@ -41,7 +41,37 @@ platform :ios do
         certificate = File.join(temp, 'distribution.p12')
         profile_file = File.join(temp, 'distribution.mobileprovision')
         File.binwrite(certificate, Base64.strict_decode64(ENV.fetch('APPLE_CERTIFICATE_P12')))
-        File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
+        if ENV['APPLE_PROVISIONING_PROFILE'] && !ENV['APPLE_PROVISIONING_PROFILE'].strip.empty?
+          File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
+        end
+
+        # Resolve or auto-provision main app profile with Sign In with Apple capability
+        need_app_provision = !File.exist?(profile_file)
+        if File.exist?(profile_file)
+          File.chmod(0600, profile_file)
+          xml_check, check_status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
+          if check_status.success?
+            parsed_check = Plist.parse_xml(xml_check)
+            need_app_provision = parsed_check.dig('Entitlements', 'com.apple.developer.applesignin').nil?
+          else
+            need_app_provision = true
+          end
+        end
+
+        if need_app_provision
+          if ENV['APP_STORE_CONNECT_API_KEY_KEY']
+            provision_app_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-app.ts')
+            if File.exist?(provision_app_script)
+              UI.message('Auto-provisioning Jolito AppStore profile with Sign In with Apple via App Store Connect API...')
+              output, prov_status = Open3.capture2e('node', provision_app_script, '--output', profile_file)
+              UI.message(output) if output && !output.empty?
+              UI.user_error!('Failed to auto-provision app profile') unless prov_status.success?
+            end
+          else
+            UI.user_error!('App Store provisioning profile lacks Sign In with Apple capability (com.apple.developer.applesignin) and cannot be auto-provisioned without App Store Connect API keys')
+          end
+        end
+
         File.chmod(0600, certificate, profile_file)
         xml, status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
         UI.user_error!('Cannot decode provisioning profile') unless status.success?
@@ -159,3 +189,60 @@ platform :ios do
     )
   end
 end
+
+platform :android do
+  desc 'Build release Android App Bundle (AAB)'
+  lane :build do
+    gradle(
+      task: 'bundleRelease',
+      project_dir: 'android/'
+    )
+  end
+
+  desc 'Upload release bundle and metadata to Google Play track (internal, closed, production)'
+  lane :deploy do |options|
+    track = options[:track] || 'internal'
+    build unless options[:skip_build]
+    supply(
+      package_name: ReleaseConfig::SETTINGS.fetch('bundleId'),
+      track: track,
+      aab: File.join(ReleaseConfig::ROOT, 'android/app/build/outputs/bundle/release/app-release.aab'),
+      metadata_path: File.join(ReleaseConfig::ROOT, 'fastlane/metadata/android'),
+      json_key: ENV['SUPPLY_JSON_KEY'],
+      json_key_data: ENV['SUPPLY_JSON_KEY_DATA']
+    )
+  end
+
+  desc 'Upload release bundle to Google Play Internal Testing'
+  lane :internal do |options|
+    deploy(track: 'internal', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload release bundle to Google Play Closed Testing'
+  lane :closed do |options|
+    deploy(track: 'closed', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload release bundle to Google Play Production track'
+  lane :production do |options|
+    deploy(track: 'production', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload release bundle to Google Play Production track (alias for production)'
+  lane :release do |options|
+    deploy(track: 'production', skip_build: options[:skip_build])
+  end
+
+  desc 'Upload Google Play listing metadata and screenshots without a binary'
+  lane :metadata do
+    supply(
+      package_name: ReleaseConfig::SETTINGS.fetch('bundleId'),
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      metadata_path: File.join(ReleaseConfig::ROOT, 'fastlane/metadata/android'),
+      json_key: ENV['SUPPLY_JSON_KEY'],
+      json_key_data: ENV['SUPPLY_JSON_KEY_DATA']
+    )
+  end
+end
+

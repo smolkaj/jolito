@@ -41,3 +41,8 @@ content_path = "./supabase/templates/magic_link.html"
 [auth.email.template.confirmation]
 subject = "Your Jolito verification code is {{ .Token }}"
 content_path = "./supabase/templates/magic_link.html"
+
+[auth.external.apple]
+enabled = true
+client_id = "to.joli.app"
+secret = "placeholder-native-secret"

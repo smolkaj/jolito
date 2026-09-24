@@ -1276,6 +1276,50 @@ describe('SyncModal Live Sync Status Contract', () => {
       requestSpy.mockRestore()
     })
 
+    it('forwards email from Apple credential to signInWithApple when present', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(true)
+      const requestSpy = vi
+        .spyOn(appleAuthModule, 'requestAppleSignIn')
+        .mockResolvedValue({
+          identityToken: 'mock-token',
+          nonce: 'mock-nonce',
+          email: 'first-time@privaterelay.appleid.com',
+        })
+
+      const auth = new MockAuthService()
+      const signInWithAppleMock = vi.spyOn(auth, 'signInWithApple')
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /sign in with apple/i }),
+      )
+      await waitFor(() => {
+        expect(signInWithAppleMock).toHaveBeenCalledWith(
+          'mock-token',
+          'mock-nonce',
+          'first-time@privaterelay.appleid.com',
+        )
+      })
+
+      supportSpy.mockRestore()
+      requestSpy.mockRestore()
+    })
+
     it('displays learner-facing error copy when token retrieval fails', async () => {
       const appleAuthModule =
         await import('../../infrastructure/browser/apple-signin')

@@ -53,9 +53,11 @@ class ReleaseTest < Minitest::Test
   def test_complete_signing_configuration_and_each_missing_field
     env = signing_env
     ReleaseConfig.build!(env)
-    %w[APPLE_TEAM_ID APPLE_CERTIFICATE_P12 APPLE_CERTIFICATE_PASS APPLE_PROVISIONING_PROFILE VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY].each do |key|
+    %w[APPLE_TEAM_ID APPLE_CERTIFICATE_P12 APPLE_CERTIFICATE_PASS VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY].each do |key|
       assert_raises(RuntimeError) { ReleaseConfig.build!(env.reject { |name, _| name == key }) }
     end
+    # Profile is optional when App Store Connect API keys are present (can be auto-provisioned)
+    ReleaseConfig.build!(env.reject { |name, _| name == 'APPLE_PROVISIONING_PROFILE' })
     ['http://localhost', 'https://user:password@example.com', 'https://your-project.supabase.co', 'https://production.supabase.co/path'].each do |url|
       assert_raises(RuntimeError) { ReleaseConfig.build!(env.merge('VITE_SUPABASE_URL' => url)) }
     end
@@ -84,7 +86,11 @@ class ReleaseTest < Minitest::Test
     profile = {
       'UUID' => 'profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
       'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+      'Entitlements' => {
+        'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
+        'com.apple.developer.applesignin' => ['Default'],
+        'get-task-allow' => false
+      }
     }
     # Parse Apple's actual XML date representation instead of a Time-only mock.
     profile = Plist.parse_xml(Plist::Emit.dump(profile))
@@ -95,7 +101,8 @@ class ReleaseTest < Minitest::Test
       profile.merge('ExpirationDate' => Time.now - 1),
       profile.merge('ProvisionedDevices' => ['device']),
       profile.merge('ProvisionsAllDevices' => true),
-      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.other', 'get-task-allow' => false })
+      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.other', 'com.apple.developer.applesignin' => ['Default'], 'get-task-allow' => false }),
+      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false })
     ].each { |invalid| assert_raises(RuntimeError) { ReleaseConfig.profile!(invalid, env) } }
   end
 
@@ -113,14 +120,28 @@ class ReleaseTest < Minitest::Test
     def initialize
       @lanes = {}
       @calls = []
+      @current_platform = nil
       instance_eval(File.read(File.join(ReleaseConfig::ROOT, 'fastlane/Fastfile')), File.join(ReleaseConfig::ROOT, 'fastlane/Fastfile'))
     end
     def default_platform(*) = nil
-    def platform(*) = yield
+    def platform(name)
+      old = @current_platform
+      @current_platform = name.to_sym
+      yield
+    ensure
+      @current_platform = old
+    end
     def desc(*) = nil
-    def lane(name, &block) = @lanes[name] = block
+    def lane(name, &block)
+      @lanes[[@current_platform, name.to_sym]] = block
+      @lanes[name.to_sym] = block if @current_platform == :ios || @current_platform.nil?
+    end
     alias private_lane lane
-    def execute(name, options = {}) = @lanes.fetch(name).call(options)
+    def execute(name, options = {})
+      lane_block = @lanes[[@current_platform, name.to_sym]] || @lanes[name.to_sym]
+      raise "Lane #{name} not found" unless lane_block
+      lane_block.call(options)
+    end
     def connect = @calls << [:connect, {}]
     def upload_to_app_store(options)
       # Validate against the installed Fastlane action, catching obsolete options
@@ -165,7 +186,11 @@ class ReleaseTest < Minitest::Test
     app_profile_xml = Plist::Emit.dump({
       'UUID' => app_uuid, 'TeamIdentifier' => ['ABCDEFGHIJ'],
       'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+      'Entitlements' => {
+        'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
+        'com.apple.developer.applesignin' => ['Default'],
+        'get-task-allow' => false
+      }
     })
     widget_profile_xml = Plist::Emit.dump({
       'UUID' => widget_uuid, 'TeamIdentifier' => ['ABCDEFGHIJ'],
@@ -354,6 +379,142 @@ class ReleaseTest < Minitest::Test
       Open3.stub(:capture2, base_proc) do
         error = assert_raises(StandardError) { harness.execute(:beta) }
         assert_includes error.message, 'JolitoWidgetExtension provisioning profile could not be resolved'
+      end
+    end
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_auto_provisions_app_profile_when_applesignin_missing
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    status = Struct.new(:success?).new(true)
+    old_app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'old-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    new_app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'auto-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => {
+        'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
+        'com.apple.developer.applesignin' => ['Default'],
+        'get-task-allow' => false
+      }
+    })
+    widget_profile_xml = Plist::Emit.dump({
+      'UUID' => 'widget-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app.JolitoWidgetExtension', 'get-task-allow' => false }
+    })
+    provision_called = false
+    base_proc = lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', status]
+      elsif args.any? { |a| a.to_s.include?('widget.mobileprovision') }
+        [widget_profile_xml, status]
+      elsif provision_called
+        [new_app_profile_xml, status]
+      else
+        [old_app_profile_xml, status]
+      end
+    end
+    node_command_args = nil
+    capture2e_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-app.ts') }
+        node_command_args = args
+        provision_called = true
+        output_idx = args.index('--output')
+        if output_idx && args[output_idx + 1]
+          File.binwrite(args[output_idx + 1], 'simulated-app-profile-content')
+        end
+        ['Auto-provisioned app profile', status]
+      else
+        base_proc.call(*args)
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2e, capture2e_proc) do
+      Open3.stub(:capture2, base_proc) do
+        harness.execute(:beta)
+      end
+    end
+    assert node_command_args, 'Expected provision-app.ts to be invoked via node'
+    assert_includes node_command_args, '--output'
+
+    app_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['App'] }
+    assert app_signing, 'Expected update_code_signing_settings for App'
+    assert_equal 'auto-app-profile-id', app_signing[1][:profile_uuid]
+
+    build_call = harness.calls.find { |name, _| name == :build_app }
+    assert_equal 'auto-app-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app']
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_fails_fast_when_app_provisioning_fails
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    failure_status = Struct.new(:success?).new(false)
+    old_app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'old-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    base_proc = lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', failure_status]
+      else
+        [old_app_profile_xml, Struct.new(:success?).new(true)]
+      end
+    end
+    capture2e_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-app.ts') }
+        ['Auto-provisioning failed: 403 Forbidden', failure_status]
+      else
+        base_proc.call(*args)
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2e, capture2e_proc) do
+      Open3.stub(:capture2, base_proc) do
+        error = assert_raises(StandardError) { harness.execute(:beta) }
+        assert_includes error.message, 'Failed to auto-provision app profile'
+      end
+    end
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_fails_fast_when_app_profile_unentitled_and_no_api_key
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    env.delete('APP_STORE_CONNECT_API_KEY_KEY')
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    old_app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'old-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
+    })
+    base_proc = lambda do |*args|
+      [old_app_profile_xml, Struct.new(:success?).new(true)]
+    end
+    harness = SigningHarness.new
+    ReleaseConfig.stub(:build!, nil) do
+      harness.stub(:connect, nil) do
+        Open3.stub(:capture2, base_proc) do
+          error = assert_raises(StandardError) { harness.execute(:beta) }
+          assert_includes error.message, 'lacks Sign In with Apple capability'
+        end
       end
     end
   ensure
