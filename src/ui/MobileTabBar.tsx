@@ -1,21 +1,16 @@
-import type { AuthUser, HapticsPlayer } from '../application/ports'
-import type { SyncStatus } from '../domain/sync'
+import type { HapticsPlayer } from '../application/ports'
 import type { View } from '../navigation'
-import { CloudCheckIcon, SyncSpinnerIcon, UserIcon } from './icons'
 
 export interface MobileTabBarProps {
   currentView: View
-  isSyncOpen: boolean
-  syncStatus: SyncStatus
-  authUser: AuthUser | null
-  onPractice: () => void
+  onCards: () => void
+  onGrammar: () => void
   onNavigateToDeck: () => void
   onNavigateToCreate: () => void
-  onOpenSync: () => void
   haptics?: HapticsPlayer | undefined
 }
 
-export function PracticeTabIcon({ size = 22 }: { size?: number }) {
+export function CardsTabIcon({ size = 22 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -31,6 +26,27 @@ export function PracticeTabIcon({ size = 22 }: { size?: number }) {
       <rect x="3" y="4" width="18" height="15" rx="3" />
       <path d="m9 9 5 3-5 3V9Z" fill="currentColor" stroke="none" />
       <path d="M7 22h10" />
+    </svg>
+  )
+}
+
+export const PracticeTabIcon = CardsTabIcon
+
+export function GrammarTabIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
     </svg>
   )
 }
@@ -76,24 +92,16 @@ export function CreateTabIcon({ size = 22 }: { size?: number }) {
 
 export function MobileTabBar({
   currentView,
-  isSyncOpen,
-  syncStatus,
-  authUser,
-  onPractice,
+  onCards,
+  onGrammar,
   onNavigateToDeck,
   onNavigateToCreate,
-  onOpenSync,
   haptics,
 }: MobileTabBarProps) {
-  const isPracticeActive =
-    !isSyncOpen &&
-    (currentView === 'review' ||
-      currentView === 'welcome' ||
-      currentView === 'grammar' ||
-      currentView === 'complete')
-  const isDeckActive = !isSyncOpen && currentView === 'deck'
-  const isCreateActive = !isSyncOpen && currentView === 'create'
-  const isSyncActive = isSyncOpen
+  const isCardsActive = currentView === 'review' || currentView === 'complete'
+  const isGrammarActive = currentView === 'grammar'
+  const isDeckActive = currentView === 'deck'
+  const isCreateActive = currentView === 'create'
 
   const handleTabClick = (action: () => void) => {
     haptics?.trigger('selection')
@@ -104,15 +112,28 @@ export function MobileTabBar({
     <nav className="mobile-tab-bar" aria-label="Mobile navigation">
       <button
         type="button"
-        aria-current={isPracticeActive ? 'page' : undefined}
-        className={`mobile-tab-btn ${isPracticeActive ? 'is-active' : ''}`}
-        onClick={() => handleTabClick(onPractice)}
-        aria-label="Practice (Study session)"
+        aria-current={isCardsActive ? 'page' : undefined}
+        className={`mobile-tab-btn ${isCardsActive ? 'is-active' : ''}`}
+        onClick={() => handleTabClick(onCards)}
+        aria-label="Cards (Study session)"
       >
         <div className="tab-icon-wrapper">
-          <PracticeTabIcon />
+          <CardsTabIcon />
         </div>
-        <span className="tab-label">Practice</span>
+        <span className="tab-label">Cards</span>
+      </button>
+
+      <button
+        type="button"
+        aria-current={isGrammarActive ? 'page' : undefined}
+        className={`mobile-tab-btn ${isGrammarActive ? 'is-active' : ''}`}
+        onClick={() => handleTabClick(onGrammar)}
+        aria-label="Grammar (Practice grammar)"
+      >
+        <div className="tab-icon-wrapper">
+          <GrammarTabIcon />
+        </div>
+        <span className="tab-label">Grammar</span>
       </button>
 
       <button
@@ -139,28 +160,6 @@ export function MobileTabBar({
           <CreateTabIcon />
         </div>
         <span className="tab-label">Create</span>
-      </button>
-
-      <button
-        type="button"
-        aria-current={isSyncActive ? 'page' : undefined}
-        className={`mobile-tab-btn ${isSyncActive ? 'is-active' : ''}`}
-        onClick={() => handleTabClick(onOpenSync)}
-        aria-label={authUser ? 'Sync' : 'Account'}
-      >
-        <div className="tab-icon-wrapper">
-          {syncStatus === 'syncing' ? (
-            <SyncSpinnerIcon size={22} className="spinning-icon" />
-          ) : authUser ? (
-            <CloudCheckIcon size={22} />
-          ) : (
-            <UserIcon size={22} />
-          )}
-          {authUser && syncStatus !== 'syncing' && (
-            <span className="tab-online-dot" aria-hidden="true" />
-          )}
-        </div>
-        <span className="tab-label">{authUser ? 'Sync' : 'Account'}</span>
       </button>
     </nav>
   )

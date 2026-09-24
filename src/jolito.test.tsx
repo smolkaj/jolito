@@ -61,7 +61,7 @@ beforeEach(() => {
 
 describe('Jolito', () => {
   it.each(['', '#/create', '#/deck'])(
-    'mobile Practice enters and resumes study across navigation and connectivity events from %s',
+    'mobile Cards enters and resumes study across navigation and connectivity events from %s',
     async (hash) => {
       window.location.hash = hash
       const user = userEvent.setup()
@@ -86,7 +86,7 @@ describe('Jolito', () => {
       render(<App services={services} />)
       const mobile = () =>
         within(screen.getByRole('navigation', { name: 'Mobile navigation' }))
-      await user.click(mobile().getByRole('button', { name: /^practice/i }))
+      await user.click(mobile().getByRole('button', { name: /^cards/i }))
       expect(screen.getByRole('heading', { name: 'uno' })).toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: /reveal answer/i }))
       await user.click(screen.getByRole('button', { name: /easy/i }))
@@ -99,16 +99,30 @@ describe('Jolito', () => {
           window.dispatchEvent(new Event('online'))
           await Promise.resolve()
         })
-        await user.click(mobile().getByRole('button', { name: /^practice/i }))
+        await user.click(mobile().getByRole('button', { name: /^cards/i }))
         expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
         expect(
           screen.getByRole('progressbar', { name: /session progress/i }),
         ).toHaveAttribute('aria-valuenow', '33')
-        await user.click(mobile().getByRole('button', { name: /^practice/i }))
+        await user.click(mobile().getByRole('button', { name: /^cards/i }))
         expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
       }
     },
   )
+
+  it('mobile Grammar tab navigates to grammar practice from any screen', async () => {
+    window.location.hash = '#/deck'
+    const user = userEvent.setup()
+    const services = createTestServices()
+    render(<App services={services} />)
+    const mobile = () =>
+      within(screen.getByRole('navigation', { name: 'Mobile navigation' }))
+
+    await user.click(mobile().getByRole('button', { name: /^grammar/i }))
+    expect(
+      screen.getByRole('heading', { name: /^grammar$/i }),
+    ).toBeInTheDocument()
+  })
 
   it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
     const user = userEvent.setup({ delay: null })
@@ -2540,7 +2554,10 @@ describe('Jolito', () => {
       }),
     ).not.toBeInTheDocument()
     expect(
-      within(nav).getByRole('button', { name: /^practice/i }),
+      within(nav).getByRole('button', { name: /^cards/i }),
+    ).toBeInTheDocument()
+    expect(
+      within(nav).getByRole('button', { name: /^grammar/i }),
     ).toBeInTheDocument()
 
     // 1. Create first card
@@ -2567,9 +2584,9 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(contextInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
-    // Practice button remains calm and accessible
+    // Cards button remains calm and accessible
     expect(
-      within(nav).getByRole('button', { name: /^practice/i }),
+      within(nav).getByRole('button', { name: /^cards/i }),
     ).toBeInTheDocument()
 
     // 2. Create second card in batch without needing to re-navigate or re-focus
@@ -2588,7 +2605,7 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
     expect(
-      within(nav).getByRole('button', { name: /^practice/i }),
+      within(nav).getByRole('button', { name: /^cards/i }),
     ).toBeInTheDocument()
 
     // 3. Navigate to review and practice all due cards
@@ -2916,7 +2933,7 @@ describe('Jolito', () => {
 
     // 7. Review button reflects only the 2 user cards
     expect(
-      screen.getAllByRole('button', { name: /^practice/i })[0],
+      screen.getAllByRole('button', { name: /^cards/i })[0],
     ).toBeInTheDocument()
   })
 
@@ -4454,15 +4471,15 @@ describe('Jolito', () => {
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
 
-    // Topbar in deck should have Practice button
-    const [practiceButton] = screen.getAllByRole('button', {
-      name: /^practice/i,
+    // Topbar in deck should have Cards button
+    const [cardsButton] = screen.getAllByRole('button', {
+      name: /^cards/i,
     })
-    expect(practiceButton).toBeDefined()
-    expect(practiceButton!).toBeInTheDocument()
+    expect(cardsButton).toBeDefined()
+    expect(cardsButton!).toBeInTheDocument()
 
-    // Resume review session via Practice button
-    await user.click(practiceButton!)
+    // Resume review session via Cards button
+    await user.click(cardsButton!)
     expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
 
     // Progress bar still reflects completed card in session
@@ -4475,12 +4492,12 @@ describe('Jolito', () => {
       '2 cards remaining',
     )
 
-    // Clicking Practice button while already in review does not reset session or progress
-    const activePracticeButtons = screen.getAllByRole('button', {
-      name: /^practice/i,
+    // Clicking Cards button while already in review does not reset session or progress
+    const activeCardsButtons = screen.getAllByRole('button', {
+      name: /^cards/i,
     })
-    expect(activePracticeButtons.length).toBeGreaterThan(0)
-    for (const btn of activePracticeButtons) {
+    expect(activeCardsButtons.length).toBeGreaterThan(0)
+    for (const btn of activeCardsButtons) {
       await user.click(btn)
       expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
       expect(resumedProgressBar).toHaveAttribute('aria-valuenow', '33')

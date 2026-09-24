@@ -1079,6 +1079,11 @@ function LoadedApp({
     }
   }
 
+  function handleGrammar() {
+    sessionHadErrorRef.current = false
+    navigateTo('grammar')
+  }
+
   function beginReview(cardIds?: string[]) {
     sessionHadErrorRef.current = false
     cancelPendingAudio()
@@ -1349,13 +1354,15 @@ function LoadedApp({
   const renderMobileTabBar = () => (
     <MobileTabBar
       currentView={view}
-      isSyncOpen={isSyncOpen}
-      syncStatus={syncStatus}
-      authUser={authUser}
-      onPractice={() => {
+      onCards={() => {
         if (isSyncOpen) closeSyncModal()
-        if (isPracticeActive) return
+        if (isPracticeActive && !isGrammarActive) return
         handlePractice()
+      }}
+      onGrammar={() => {
+        if (isSyncOpen) closeSyncModal()
+        if (isGrammarActive) return
+        handleGrammar()
       }}
       onNavigateToDeck={() => {
         if (isSyncOpen) closeSyncModal()
@@ -1364,13 +1371,6 @@ function LoadedApp({
       onNavigateToCreate={() => {
         if (isSyncOpen) closeSyncModal()
         navigateTo('create')
-      }}
-      onOpenSync={() => {
-        if (isSyncOpen) {
-          closeSyncModal()
-        } else {
-          openSyncModal()
-        }
       }}
       haptics={services.haptics}
     />
@@ -1429,6 +1429,7 @@ function LoadedApp({
           onGoHome={goHome}
           onNavigateToDeck={() => navigateTo('deck')}
           onPractice={handlePractice}
+          onGrammar={handleGrammar}
           canPractice={queue.length > 0 || dueCount > 0}
           onOpenSync={openSyncModal}
           onEditCard={(card) => setEditingCard(card)}
@@ -1466,6 +1467,7 @@ function LoadedApp({
           onGoHome={goHome}
           onNavigateToCreate={() => navigateTo('create')}
           onPractice={handlePractice}
+          onGrammar={handleGrammar}
           onOpenSync={openSyncModal}
           onOpenFeedback={openFeedbackModal}
           onEditCard={(card) => setEditingCard(card)}
@@ -1502,7 +1504,8 @@ function LoadedApp({
             <Brand onClick={goHome} />
             <DesktopSegmentedNav
               currentView={view}
-              onPractice={isPracticeActive ? () => {} : handlePractice}
+              onCards={view === 'review' ? () => {} : handlePractice}
+              onGrammar={view === 'grammar' ? () => {} : handleGrammar}
               onNavigateToDeck={() => navigateTo('deck')}
               onNavigateToCreate={() => navigateTo('create')}
               haptics={services.haptics}
