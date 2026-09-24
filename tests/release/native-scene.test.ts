@@ -434,4 +434,18 @@ void test('CSS dark mode architectural invariants and contrast tokens', () => {
     /\.connection-pill\.is-synced:hover\s*\{[\s\S]*?background:\s*var\(--turquesa-hover\);/,
     '.connection-pill.is-synced:hover must use var(--turquesa-hover)',
   )
+
+  // 6. Duplicate badges must use semantic tokens to maintain WCAG AAA contrast in dark mode
+  assert.match(
+    css,
+    /\.create-duplicate-badge\s*\{[^}]*background:\s*var\(--cempasuchil-soft\);/,
+    '.create-duplicate-badge must use var(--cempasuchil-soft) to prevent low contrast in dark mode',
+  )
+
+  // 7. Auth banner action buttons must not invert to white background on hover in dark mode
+  assert.doesNotMatch(
+    css,
+    /\.redirect-auth-banner\s+\.banner-action-btn:hover\s*\{[^}]*background:\s*#ffffff;/,
+    '.redirect-auth-banner .banner-action-btn:hover must not use hardcoded #ffffff',
+  )
 })
