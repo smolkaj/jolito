@@ -83,7 +83,8 @@ Commit the verified MP4 and its source/chapter manifest under `docs/media/`.
 
 The metadata lane attaches `docs/media/native-walkthrough.mp4`, uploads the
 canonical six-part notes, and injects private demo-account credentials. The
-replacement workflow validates the exact processed build before withdrawing
+replacement workflow validates private credentials, notes and the movie against
+its SHA-256 capture manifest, then validates the exact processed build before withdrawing
 its predecessor. It reads back the notes, credentials and completed attachment
 before submitting. Check Apple's resulting build and review state afterward.
 

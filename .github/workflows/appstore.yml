@@ -44,6 +44,8 @@ jobs:
           bundler-cache: true
       - run: bundle exec ruby fastlane/release_config.rb api
       - run: npm ci --no-audit
+      - if: inputs.operation == 'metadata' || inputs.operation == 'submit' || inputs.operation == 'replace'
+        run: bundle exec ruby fastlane/release_config.rb review
       - if: inputs.operation == 'configure'
         run: node scripts/app-store.ts --apply
       - if: inputs.operation == 'metadata'

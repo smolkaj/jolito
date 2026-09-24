@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Trim capture setup/teardown and synchronize the original native app audio."""
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -52,6 +53,7 @@ partial.replace(folder / 'native-walkthrough.mp4')
 (folder / 'native-walkthrough.json').write_text(json.dumps({
     'capture': 'iOS Simulator — not a physical-device recording',
     'device': 'iPhone Air', 'operatingSystem': 'iOS 27.0',
+    'sha256': hashlib.sha256((folder / 'native-walkthrough.mp4').read_bytes()).hexdigest(),
     'sourceCommit': source, 'durationSeconds': round(end - start, 2),
     'authentication': 'Real production email-code authentication; dedicated reviewer and disposable deletion accounts',
     'audioPeakDb': float(peak[1]),

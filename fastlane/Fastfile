@@ -174,7 +174,7 @@ platform :ios do
 
   desc 'Upload reviewed listing copy and native screenshots without a binary'
   lane :metadata do
-    review_account = ReleaseConfig.review_account!
+    review_account = ReleaseConfig.review_package!
     connect
     UI.user_error!('Capture and review native screenshots first; see docs/APP_STORE.md') unless File.directory?(File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots/en-US'))
     upload_to_app_store(

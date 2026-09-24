@@ -3,6 +3,7 @@ require 'json'
 require 'openssl'
 require 'uri'
 require 'date'
+require 'digest'
 
 # No credentials are interpolated into validation errors or shell commands.
 module ReleaseConfig
@@ -58,6 +59,21 @@ module ReleaseConfig
     { demo_user: env.fetch('APP_REVIEW_EMAIL'), demo_password: env.fetch('APP_REVIEW_MAILBOX_PASSWORD') }
   end
 
+  # Read-only preflight shared by metadata upload and replacement, before any
+  # App Store mutation. The capture manifest binds the reviewed movie bytes.
+  def self.review_package!(env = ENV, root = ROOT)
+    account = review_account!(env)
+    notes = File.read(File.join(root, 'fastlane/metadata/review_information/notes.txt'), encoding: 'UTF-8')
+    raise 'Review notes must contain 1–4000 characters' unless notes.valid_encoding? && (1..4000).cover?(notes.strip.length)
+    movie = File.binread(File.join(root, 'docs/media/native-walkthrough.mp4'))
+    manifest = JSON.parse(File.read(File.join(root, 'docs/media/native-walkthrough.json')))
+    raise 'Native review movie must be an MP4' unless movie.bytesize > 12 && movie.byteslice(4, 4) == 'ftyp'
+    raise 'Native review movie differs from its capture manifest' unless manifest.is_a?(Hash) && manifest['sha256'] == Digest::SHA256.hexdigest(movie)
+    account
+  rescue Errno::ENOENT, JSON::ParserError
+    raise 'Complete native review movie, manifest and notes are required before upload or replacement'
+  end
+
   def self.build_number!(value)
     raise 'Specify the exact tested build number (1–9999)' unless value.to_s.match?(/\A[1-9]\d{0,3}\z/)
     value.to_s
@@ -80,7 +96,8 @@ if $PROGRAM_NAME == __FILE__
   case ARGV.fetch(0, '')
   when 'build' then ReleaseConfig.build!
   when 'api' then ReleaseConfig.api!
-  else abort 'Usage: ruby fastlane/release_config.rb build|api'
+  when 'review' then ReleaseConfig.review_package!
+  else abort 'Usage: ruby fastlane/release_config.rb build|api|review'
   end
   puts 'Release configuration validated.'
 end
