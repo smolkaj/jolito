@@ -1,0 +1,31 @@
+DRAFT — NOT FOR UPLOAD. Resolve bracketed fields from verified evidence.
+
+Hello App Review Team,
+
+Here is the requested information for Jolito version 1.0, build [BUILD].
+
+1. PHYSICAL-DEVICE RECORDING
+[STABLE VIDEO URL OR ATTACHMENT NAME]
+Recorded on [DEVICE MODEL], [OS VERSION], [DATE]; Software Update checked for the latest public OS. The recording begins with launching Jolito from the Home Screen and retains the app's original audio.
+Chapters: [ACTUAL TIMES: launch, card creation/registration, signed-in study with automatic pronunciation, editing, grammar, offline study, returning login, completed account deletion].
+Device QA: [ACTUAL IPHONE/IPAD MODELS, OS VERSIONS AND RESULTS FOR THIS BUILD].
+Cards are private personal study material. There is no public feed, public sharing or user-to-user interaction, so content reporting/blocking does not apply. Jolito is an upfront paid app (US base price $2.99; Apple sets local equivalents), with no subscriptions, in-app purchases or feature paywalls.
+
+2. PURPOSE AND AUDIENCE
+Jolito helps Mexican Spanish learners, travelers and residents remember useful vocabulary and verb forms. Learners build personal flashcards, hear pronunciation, recall answers, compare them and schedule further practice using spaced repetition.
+
+3. SETUP AND ACCESS
+The starter demo can be tried without an account. Creating a personal deck, importing and synchronizing require free sign-in and an initial internet connection. Subsequent study works offline; offline pronunciation requires installed device voices.
+Reviewer access: [TESTED INDEPENDENT LOGIN METHOD; PUT SECRETS IN PRIVATE REVIEW FIELDS. INCLUDE HOW THE REVIEWER COMPLETES ANY VERIFICATION STEP]. There is one learner account type. Keep the reviewer account separate from the disposable account deleted in the recording.
+Create: Create a card, enter Spanish and English, optionally add context and enable both directions, then Save card. Study: Practice, recall an answer, Reveal answer, then rate it; pronunciation plays automatically. Deck: search/edit cards or add a starter pack. Grammar: Practice menu, Grammar, select a topic and Start practice. Delete account: Account/Sync, Delete cloud account & data, review the warning, type DELETE and confirm. No sample file is needed for these flows.
+
+4. SERVICES AND DATA SOURCES
+Supabase provides authentication, cloud database and synchronization; Apple provides Sign in with Apple. Resend delivers authentication/transactional email. Cloudflare hosts the web/API services and Workers AI for optional example/mnemonic suggestions. The iOS app uses device speech voices for pronunciation; the web app has a separate cloud speech implementation. The bundled offline dictionary uses Wiktionary/Kaikki data; further sources and licenses are listed at https://joli.to/acknowledgements. No advertising or tracking SDKs; first-party aggregate usage telemetry is described in our privacy policy.
+
+5. REGIONS
+There is no intentional regional feature or curriculum variation. The curriculum focuses on Mexican Spanish (es-MX). App Store availability and local purchase prices are managed by Apple; installed voices and access to online services may vary.
+
+6. REGULATION AND RIGHTS
+This is a language-learning app, not a regulated-industry service. Third-party open-source components and dictionary sources are attributed at https://joli.to/acknowledgements; the app repository is Apache-2.0 licensed. [VERIFY AND PROVIDE ANY ADDITIONAL REQUIRED CONTENT-LICENSE DOCUMENTATION; DO NOT CLAIM ALL MATERIAL IS ORIGINAL.]
+
+Contact: Steffen Smolka, steffen.smolka@gmail.com

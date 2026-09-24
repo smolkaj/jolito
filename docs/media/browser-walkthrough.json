@@ -1,0 +1,55 @@
+{
+  "capturedAt": "2026-09-24T14:38:03.125Z",
+  "sourceCommit": "38ed4c498f7997c8063c156e828b868f7161cb44",
+  "capture": "Chromium mobile viewport; local Supabase/Mailpit; web speech; not physical iOS",
+  "playbackSpeed": 1,
+  "viewport": {
+    "width": 440,
+    "height": 956,
+    "scale": 2
+  },
+  "chapters": [
+    {
+      "seconds": 1.986,
+      "title": "Save something worth remembering"
+    },
+    {
+      "seconds": 27.357,
+      "title": "Create a free account"
+    },
+    {
+      "seconds": 54.431,
+      "title": "Build a personal deck"
+    },
+    {
+      "seconds": 78.958,
+      "title": "Listen, recall, reveal, review"
+    },
+    {
+      "seconds": 164.092,
+      "title": "Improve a reminder"
+    },
+    {
+      "seconds": 190.974,
+      "title": "Practice verb forms in context"
+    },
+    {
+      "seconds": 231.105,
+      "title": "Keep studying offline"
+    },
+    {
+      "seconds": 274.447,
+      "title": "Sign back in and pick up your deck"
+    },
+    {
+      "seconds": 309.985,
+      "title": "Delete the disposable demonstration account"
+    },
+    {
+      "seconds": 332.997,
+      "title": "Walkthrough complete"
+    }
+  ],
+  "accountDeleted": true,
+  "pageErrors": []
+}

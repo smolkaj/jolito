@@ -60,6 +60,56 @@ beforeEach(() => {
 })
 
 describe('Jolito', () => {
+  it.each(['', '#/create', '#/deck'])(
+    'mobile Practice enters and resumes study across navigation and connectivity events from %s',
+    async (hash) => {
+      window.location.hash = hash
+      const user = userEvent.setup()
+      const now = 1_700_000_000_000
+      const cards = ['uno', 'dos', 'tres'].flatMap((spanish, index) =>
+        createStudyCards(
+          {
+            spanish,
+            english: `word ${index}`,
+            context: '',
+            bidirectional: false,
+          },
+          `mobile-${index}`,
+          now + index,
+        ),
+      )
+      const services = createTestServices({
+        cards,
+        user: { id: 'mobile-learner', email: 'learner@example.com' },
+      })
+      services.clock.now = () => now + 100
+      render(<App services={services} />)
+      const mobile = () =>
+        within(screen.getByRole('navigation', { name: 'Mobile navigation' }))
+      await user.click(mobile().getByRole('button', { name: /^practice/i }))
+      expect(screen.getByRole('heading', { name: 'uno' })).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: /reveal answer/i }))
+      await user.click(screen.getByRole('button', { name: /easy/i }))
+      expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
+
+      for (const destination of ['Create', 'Deck']) {
+        await user.click(mobile().getByRole('button', { name: destination }))
+        await act(async () => {
+          window.dispatchEvent(new Event('offline'))
+          window.dispatchEvent(new Event('online'))
+          await Promise.resolve()
+        })
+        await user.click(mobile().getByRole('button', { name: /^practice/i }))
+        expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
+        expect(
+          screen.getByRole('progressbar', { name: /session progress/i }),
+        ).toHaveAttribute('aria-valuenow', '33')
+        await user.click(mobile().getByRole('button', { name: /^practice/i }))
+        expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
+      }
+    },
+  )
+
   it('creates asymmetric bidirectional cards and supports a keyboard review flow with injected services', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices({
