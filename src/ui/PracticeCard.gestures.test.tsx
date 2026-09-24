@@ -486,7 +486,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders gestural discoverability cue bar in unrevealed state and unifies cues into rating buttons in revealed state', () => {
+  it('unifies gestural discoverability cues into reveal button in unrevealed state and rating buttons in revealed state', () => {
     const card = mockCards[0]!
 
     // Unrevealed state
@@ -505,9 +505,18 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    const cueBarUnrevealed = container.querySelector('.card-gesture-cue-bar')
-    expect(cueBarUnrevealed).toBeInTheDocument()
-    expect(cueBarUnrevealed).toHaveTextContent('Swipe up to reveal')
+    // Redundant cue bar beneath the card is removed completely
+    expect(
+      container.querySelector('.card-gesture-cue-bar'),
+    ).not.toBeInTheDocument()
+
+    // Reveal button itself renders the upward swipe gesture cue
+    const revealBtn = container.querySelector('.reveal-button')!
+    expect(revealBtn).toBeInTheDocument()
+    expect(revealBtn.querySelector('.reveal-gesture-cue')).toHaveTextContent(
+      '↑',
+    )
+    expect(revealBtn).toHaveTextContent('Reveal answer')
 
     // Revealed state
     rerender(
@@ -525,9 +534,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    // Redundant cue bar beneath the card is removed in revealed state to save space on mobile
-    const cueBarRevealed = container.querySelector('.card-gesture-cue-bar')
-    expect(cueBarRevealed).not.toBeInTheDocument()
+    // Redundant cue bar beneath the card is also removed in revealed state
+    expect(
+      container.querySelector('.card-gesture-cue-bar'),
+    ).not.toBeInTheDocument()
 
     // Instead, the rating buttons themselves render the directional cues
     const againBtn = container.querySelector('.grade-buttons .grade-again')!
@@ -542,7 +552,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     ).toHaveTextContent('→')
   })
 
-  it('transforms cue pill to "Release to reveal" with ready state when pulling up past threshold', () => {
+  it('transforms reveal button to "Release to reveal" with ready state when pulling up past threshold', () => {
     const card = mockCards[0]!
     const { trigger, haptics } = createMockHaptics()
 
@@ -563,9 +573,13 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     )
 
     const studyCard = container.querySelector('.study-card')!
-    const cuePill = container.querySelector('.gesture-cue-pill')!
-    expect(cuePill).toHaveTextContent('Swipe up to reveal')
-    expect(cuePill).not.toHaveClass('is-ready')
+    const revealBtn = container.querySelector('.reveal-button')!
+    const revealCue = container.querySelector(
+      '.reveal-gesture-cue',
+    ) as HTMLElement
+    expect(revealBtn).toHaveTextContent('Reveal answer')
+    expect(revealCue).toHaveTextContent('↑')
+    expect(revealBtn).not.toHaveClass('is-gesture-ready')
 
     // Drag upward past threshold (dy = -60)
     fireEvent.pointerDown(studyCard, {
@@ -580,8 +594,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).toHaveClass('is-ready')
-    expect(cuePill).toHaveTextContent('Release to reveal')
+    expect(revealBtn).toHaveClass('is-gesture-ready')
+    expect(revealBtn).toHaveTextContent('Release to reveal')
+    expect(revealCue).toHaveTextContent('👁️')
+    expect(revealCue.style.transform).toContain('scale(1.2)')
     expect(trigger).toHaveBeenCalledWith('selection')
 
     // Pull back down below threshold (dy = -10) -> reverts ready state
@@ -591,8 +607,9 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).not.toHaveClass('is-ready')
-    expect(cuePill).toHaveTextContent('Swipe up to reveal')
+    expect(revealBtn).not.toHaveClass('is-gesture-ready')
+    expect(revealBtn).toHaveTextContent('Reveal answer')
+    expect(revealCue).toHaveTextContent('↑')
   })
 
   it('does not reveal on horizontal swipe when unrevealed', () => {
@@ -1266,6 +1283,44 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       fireEvent.pointerUp(studyCard, {
         clientX: 250,
         clientY: 200,
+        pointerType: 'touch',
+      })
+
+      // Also verify unrevealed reveal-gesture-cue suppresses translateY transform
+      const { container: unrevealedContainer } = render(
+        <PracticeCard
+          card={card}
+          prompt={<h1>{card.prompt}</h1>}
+          answer=""
+          revealed={false}
+          onAnswerChange={vi.fn()}
+          onReveal={vi.fn()}
+          onGrade={vi.fn()}
+          onPlayAnswer={vi.fn()}
+          paused={false}
+          audioUnavailable={false}
+        />,
+      )
+      const unrevealedCard = unrevealedContainer.querySelector('.study-card')!
+      const upArrow = unrevealedContainer.querySelector(
+        '.reveal-gesture-cue',
+      ) as HTMLElement
+
+      fireEvent.pointerDown(unrevealedCard, {
+        clientX: 200,
+        clientY: 200,
+        button: 0,
+        pointerType: 'touch',
+      })
+      fireEvent.pointerMove(unrevealedCard, {
+        clientX: 200,
+        clientY: 180,
+        pointerType: 'touch',
+      })
+      expect(upArrow.style.transform).toBe('')
+      fireEvent.pointerUp(unrevealedCard, {
+        clientX: 200,
+        clientY: 180,
         pointerType: 'touch',
       })
     } finally {

@@ -839,8 +839,28 @@ export function PracticeCard({
                   {speechError}
                 </p>
               )}
-              <button className="reveal-button" type="submit">
-                Reveal answer <kbd>Enter</kbd>
+              <button
+                className={`reveal-button ${isReadyToReveal ? 'is-gesture-ready' : ''}`.trim()}
+                type="submit"
+              >
+                <span
+                  className={`reveal-gesture-cue ${isReadyToReveal ? 'is-ready' : ''}`.trim()}
+                  style={{
+                    transform:
+                      !prefersReducedMotion && isDragging && dragOffset.y < 0
+                        ? `${isReadyToReveal ? 'scale(1.2) ' : ''}translateY(${Math.max(-6, dragOffset.y * 0.12)}px)`.trim()
+                        : isReadyToReveal
+                          ? 'scale(1.2)'
+                          : undefined,
+                  }}
+                  aria-hidden="true"
+                >
+                  {isReadyToReveal ? '👁️' : '↑'}
+                </span>
+                <span className="reveal-button-label">
+                  {isReadyToReveal ? 'Release to reveal' : 'Reveal answer'}
+                </span>
+                <kbd>Enter</kbd>
               </button>
               <div className="visually-hidden" aria-live="polite">
                 {speechNotice ??
@@ -985,38 +1005,6 @@ export function PracticeCard({
             </>
           )}
         </p>
-        {!revealed && (
-          <div
-            className={`card-gesture-cue-bar ${isDragging ? 'is-dragging' : ''}`.trim()}
-            aria-hidden="true"
-          >
-            <div
-              className={`gesture-cue-pill ${isReadyToReveal ? 'is-ready' : ''}`}
-            >
-              {isReadyToReveal ? (
-                <>
-                  <span className="gesture-cue-icon">👁️</span>
-                  <span className="gesture-cue-text">Release to reveal</span>
-                </>
-              ) : (
-                <>
-                  <span
-                    className="gesture-cue-arrow arrow-up"
-                    style={{
-                      transform:
-                        isDragging && dragOffset.y < 0
-                          ? `translateY(${Math.max(-8, dragOffset.y * 0.12)}px)`
-                          : undefined,
-                    }}
-                  >
-                    ↑
-                  </span>
-                  <span className="gesture-cue-text">Swipe up to reveal</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </section>
     </>
   )

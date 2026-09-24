@@ -2574,6 +2574,10 @@ summary:focus-visible,
   box-shadow: 0 0 0 var(--ink);
 }
 
+.reveal-gesture-cue {
+  display: none;
+}
+
 /* Keyboard Keycap Badges */
 kbd {
   display: inline-flex;
@@ -6868,91 +6872,28 @@ kbd {
     transform: scale(1.2);
   }
 
-  .card-gesture-cue-bar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: min(560px, 100%);
-    margin: 18px auto 0;
-    padding: 0 16px;
-    pointer-events: none;
-    user-select: none;
-    transition: opacity 180ms ease;
-  }
-
-  .card-gesture-cue-bar.is-dragging {
-    opacity: 0.75;
-  }
-
-  .card-gesture-cue-bar.has-active-zone {
-    opacity: 1;
-  }
-
-  .gesture-cue-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 22px;
-    min-height: 44px;
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(18, 24, 21, 0.08);
-    border-radius: 999px;
-    color: var(--ink-soft);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    box-shadow: 0 2px 8px rgba(18, 24, 21, 0.04);
-    transition:
-      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-      background-color 160ms ease,
-      border-color 160ms ease,
-      color 160ms ease,
-      box-shadow 160ms ease;
-  }
-
-  .gesture-cue-pill.is-ready {
-    background: var(--card);
-    border-color: var(--turquesa-dark);
-    color: var(--ink);
-    font-weight: 700;
-    transform: scale(1.06);
-    box-shadow: 0 4px 16px var(--turquesa-glow);
-  }
-
-  .gesture-cue-pill.is-ready .gesture-cue-icon {
-    display: inline-flex;
-    align-items: center;
-    font-size: 18px;
-    line-height: 1;
-    animation: eye-pulse 800ms ease-in-out infinite alternate;
-  }
-
-  @keyframes eye-pulse {
-    0% {
-      transform: scale(1);
-    }
-    100% {
-      transform: scale(1.2);
-    }
-  }
-
-  .gesture-cue-arrow {
+  .reveal-gesture-cue {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 15px;
     font-weight: 800;
     line-height: 1;
+    margin-right: 2px;
+    transition:
+      transform 120ms ease,
+      opacity 120ms ease;
   }
 
-  .gesture-cue-arrow.arrow-up {
-    font-size: 24px;
-    display: inline-block;
-    color: var(--ink-muted);
-    animation: subtle-float-up 2.2s ease-in-out infinite;
+  .reveal-gesture-cue.is-ready {
+    transform: scale(1.2);
+  }
+
+  .reveal-button.is-gesture-ready {
+    background: var(--turquesa-soft);
+    border-color: var(--turquesa-dark);
+    box-shadow: 0 0 16px var(--turquesa-glow);
+    transform: scale(1.04);
   }
 
   .keyboard-hint,
@@ -6988,19 +6929,9 @@ html[data-keyboard='true'] .grade-btn kbd {
   display: inline-flex !important;
 }
 
-html[data-keyboard='true'] .card-gesture-cue-bar,
-html[data-keyboard='true'] .grade-gesture-cue {
+html[data-keyboard='true'] .grade-gesture-cue,
+html[data-keyboard='true'] .reveal-gesture-cue {
   display: none !important;
-}
-
-@keyframes subtle-float-up {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
 }
 
 /* Milestone 2: Mobile Navigation Tab Bar */
