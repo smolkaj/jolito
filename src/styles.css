@@ -8040,11 +8040,6 @@ button:active,
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 }
 
-:root[data-theme='dark'] .welcome-mascot-img,
-:root[data-theme='dark'] .complete-mascot-img {
-  filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.28));
-}
-
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .primary-button {
     color: #ffffff;
@@ -8252,10 +8247,5 @@ button:active,
     color: var(--ink);
     border-color: var(--line);
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
-  }
-
-  :root:not([data-theme='light']) .welcome-mascot-img,
-  :root:not([data-theme='light']) .complete-mascot-img {
-    filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.28));
   }
 }
