@@ -56,6 +56,9 @@ xcrun simctl bootstatus "$device" -b
 for preference in KeyboardAutocorrection KeyboardPrediction KeyboardShowPredictionBar; do
   xcrun simctl spawn "$device" defaults write com.apple.keyboard.preferences "$preference" -bool false
 done
+for tutorial in DidShowContinuousPathIntroduction KeyboardDidShowProductivityTutorial DidShowGestureKeyboardIntroduction UIKeyboardDidShowInternationalInfoIntroduction; do
+  xcrun simctl spawn "$device" defaults write com.apple.keyboard.preferences "$tutorial" -bool true
+done
 # Device Hub routes simulator audio to the host output. Do not use desktop
 # Apple Events: those request host-control permission and block unattended runs.
 open -b com.apple.dt.Devices
