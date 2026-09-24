@@ -1354,7 +1354,7 @@ function LoadedApp({
       authUser={authUser}
       onPractice={() => {
         if (isSyncOpen) closeSyncModal()
-        if (practicing) return
+        if (isPracticeActive) return
         handlePractice()
       }}
       onNavigateToDeck={() => {
@@ -1486,22 +1486,23 @@ function LoadedApp({
   const complete = grammar
     ? grammarPractice.mode === 'complete'
     : view === 'complete' || !currentCard
-  const practicing = isPracticeActive
 
   return (
     <>
       <main
-        className={`app-shell ${complete ? 'complete-page' : practicing ? 'review-page' : 'grammar-page'}`}
+        className={`app-shell ${complete ? 'complete-page' : isPracticeActive ? 'review-page' : 'grammar-page'}`}
       >
         <header className="review-header">
           <nav
             className="topbar"
-            aria-label={practicing ? 'Review navigation' : 'Session navigation'}
+            aria-label={
+              isPracticeActive ? 'Review navigation' : 'Session navigation'
+            }
           >
             <Brand onClick={goHome} />
             <DesktopSegmentedNav
               currentView={view}
-              onPractice={practicing ? () => {} : handlePractice}
+              onPractice={isPracticeActive ? () => {} : handlePractice}
               onNavigateToDeck={() => navigateTo('deck')}
               onNavigateToCreate={() => navigateTo('create')}
               haptics={services.haptics}
@@ -1515,7 +1516,7 @@ function LoadedApp({
                   <span aria-hidden="true">←</span> Grammar
                 </button>
               )}
-              {!practicing && (
+              {!isPracticeActive && (
                 <button
                   type="button"
                   className="text-button topbar-feedback-btn"
@@ -1532,11 +1533,13 @@ function LoadedApp({
               />
             </div>
           </nav>
-          {saveError && !(practicing && !grammar) && !grammarPractice.error && (
-            <p className="storage-save-error" role="alert">
-              {saveError}
-            </p>
-          )}
+          {saveError &&
+            !(isPracticeActive && !grammar) &&
+            !grammarPractice.error && (
+              <p className="storage-save-error" role="alert">
+                {saveError}
+              </p>
+            )}
           <RedirectAuthNotice
             message={accountNotice ?? redirectAuthBanner}
             onDismiss={() => {
@@ -1545,7 +1548,7 @@ function LoadedApp({
             }}
             onCopySessionLink={handleCopySessionLink}
           />
-          {practicing && (
+          {isPracticeActive && (
             <SessionProgress
               percentage={
                 grammar
