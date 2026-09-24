@@ -1827,3 +1827,111 @@ test('renders community stats quietly in welcome hero footer on desktop and hide
   await page.setViewportSize({ width: 320, height: 600 })
   await expect(footerStats).toBeHidden()
 })
+
+test('desktop topbar brand button maintains tight bounding box, proper hover containment, and centered segmented nav', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'jolito-auth-v1',
+      JSON.stringify({
+        token: 'mock-token',
+        refreshToken: 'mock-refresh',
+        expiresAt: Date.now() + 3600000,
+        user: { id: 'usr-1', email: 'nav-test@example.com' },
+      }),
+    )
+  })
+
+  // Test across multiple views: Create, Deck, Study
+  const testRoutes = [
+    { url: '/#/create', pageSelector: '.create-page', hasNav: true },
+    { url: '/#/deck', pageSelector: '.deck-page', hasNav: true },
+    { url: '/#/study', pageSelector: '.review-page', hasNav: true },
+  ]
+
+  for (const { url, pageSelector, hasNav } of testRoutes) {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(url)
+    await expect(page.locator(pageSelector)).toBeVisible()
+
+    const demoDismiss = page.getByRole('button', { name: /explore demo deck/i })
+    if (await demoDismiss.isVisible()) {
+      await demoDismiss.click()
+    }
+
+    const brandBtn = page.locator('button.brand')
+    await expect(brandBtn).toBeVisible()
+
+    const brandBox = await brandBtn.boundingBox()
+    expect(brandBox).not.toBeNull()
+    // Intrinsic brand button width: icon (34px) + gap (12px) + wordmark (~70px) + padding (28px) ~ 144px.
+    // Must strictly be < 200px and NOT stretched across the ~450px left flex half.
+    expect(brandBox!.width).toBeLessThan(180)
+    expect(brandBox!.width).toBeGreaterThan(100)
+
+    if (hasNav) {
+      const topbar = page.locator('.topbar')
+      const topbarBox = await topbar.boundingBox()
+      const nav = page.locator('.desktop-segmented-nav')
+      const navBox = await nav.boundingBox()
+
+      expect(topbarBox).not.toBeNull()
+      expect(navBox).not.toBeNull()
+
+      // The segmented navigation must be centered relative to the topbar
+      const topbarCenter = topbarBox!.x + topbarBox!.width / 2
+      const navCenter = navBox!.x + navBox!.width / 2
+      expect(Math.abs(topbarCenter - navCenter)).toBeLessThanOrEqual(2)
+
+      // Hover test: moving pointer into the empty gap between brand button and segmented nav
+      // must NOT activate hover on the brand button.
+      const gapX = brandBox!.x + brandBox!.width + 40
+      const gapY = brandBox!.y + brandBox!.height / 2
+      expect(gapX).toBeLessThan(navBox!.x)
+
+      // Hover over the brand button itself -> brand is hovered
+      await brandBtn.hover()
+      const isHoveredOnButton = await brandBtn.evaluate((el) =>
+        el.matches(':hover'),
+      )
+      expect(isHoveredOnButton).toBe(true)
+      if (url === '/#/deck') {
+        await page.screenshot({ path: 'test-results/brand-hover-tight.png' })
+      }
+
+      // Move mouse into the dead zone between brand and center nav -> brand is NOT hovered
+      await page.mouse.move(gapX, gapY)
+      const isHoveredInGap = await brandBtn.evaluate((el) =>
+        el.matches(':hover'),
+      )
+      expect(isHoveredInGap).toBe(false)
+      if (url === '/#/deck') {
+        await page.screenshot({ path: 'test-results/brand-gap-unhovered.png' })
+      }
+
+      // Clicking in the dead zone does not trigger navigation
+      await page.mouse.click(gapX, gapY)
+      await expect(page.locator(pageSelector)).toBeVisible()
+    }
+  }
+
+  // Also verify on tablet viewport (768px iPad portrait)
+  await page.setViewportSize({ width: 768, height: 1024 })
+  await page.goto('/#/deck')
+  const brandBtn768 = page.locator('button.brand')
+  const brandBox768 = await brandBtn768.boundingBox()
+  expect(brandBox768).not.toBeNull()
+  expect(brandBox768!.width).toBeLessThan(180)
+
+  const topbar768 = page.locator('.topbar')
+  const topbarBox768 = await topbar768.boundingBox()
+  const nav768 = page.locator('.desktop-segmented-nav')
+  const navBox768 = await nav768.boundingBox()
+  const topbarCenter768 = topbarBox768!.x + topbarBox768!.width / 2
+  const navCenter768 = navBox768!.x + navBox768!.width / 2
+  expect(Math.abs(topbarCenter768 - navCenter768)).toBeLessThanOrEqual(2)
+
+  const audit = await auditAccessibility(page)
+  expect(audit.violations).toEqual([])
+})
