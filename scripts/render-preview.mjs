@@ -233,6 +233,33 @@ await captureScreen(
 await capturePracticeRevealed('dark')
 await capturePracticeRevealed('light')
 
+async function captureDemoDeckModal(theme = 'dark') {
+  const context = await browser.newContext({
+    viewport: { width: 393, height: 852 },
+    deviceScaleFactor: 2,
+    colorScheme: theme,
+  })
+  await context.addInitScript(
+    ({ themeMode }) => {
+      window.localStorage.clear()
+      if (themeMode) {
+        document.documentElement.setAttribute('data-theme', themeMode)
+      }
+    },
+    { themeMode: theme },
+  )
+  const page = await context.newPage()
+  await page.goto(`${baseUrl}/#/deck`)
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(400)
+  const filename = join(outDir, `demo-deck-modal-${theme}-393x852.png`)
+  await page.screenshot({ path: filename, fullPage: false })
+  console.log(`Saved screenshot: ${filename}`)
+  await context.close()
+}
+
+await captureDemoDeckModal('dark')
+
 await browser.close()
 server.close()
 console.log('Done.')
