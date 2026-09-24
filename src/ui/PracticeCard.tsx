@@ -132,10 +132,20 @@ export function PracticeCard({
     }
   }, [])
 
+  const [isListening, setIsListening] = useState(false)
+  const [speechNotice, setSpeechNotice] = useState<string | null>(null)
+  const [speechError, setSpeechError] = useState<string | null>(null)
+  const [usedVoiceInput, setUsedVoiceInput] = useState(false)
+  const [spokenRecallAvailable, setSpokenRecallAvailable] = useState<boolean>(
+    () => cachedSpeechAvailableByLocale.get(answerLang) ?? false,
+  )
+  const recognizer = speechRecognizer ?? defaultSpeechRecognizer
+
   const isDocked = Boolean(
     accents &&
     !revealed &&
     !paused &&
+    !isListening &&
     keyboardState.isOpen &&
     keyboardState.height > 0,
   )
@@ -163,15 +173,6 @@ export function PracticeCard({
     haptics?.trigger('selection')
   }
 
-  const [isListening, setIsListening] = useState(false)
-  const [speechNotice, setSpeechNotice] = useState<string | null>(null)
-  const [speechError, setSpeechError] = useState<string | null>(null)
-  const [usedVoiceInput, setUsedVoiceInput] = useState(false)
-  const [spokenRecallAvailable, setSpokenRecallAvailable] = useState<boolean>(
-    () => cachedSpeechAvailableByLocale.get(answerLang) ?? false,
-  )
-  const recognizer = speechRecognizer ?? defaultSpeechRecognizer
-
   useEffect(() => {
     let active = true
     void Promise.resolve(recognizer.isSupported(answerLang)).then(
@@ -186,13 +187,24 @@ export function PracticeCard({
   }, [recognizer, answerLang])
 
   useEffect(() => {
+    let timer: number | undefined
     if (revealed || paused) {
       if (isListening) {
-        void recognizer.stop()
-        setIsListening(false)
-        setSpeechNotice(null)
+        void recognizer.stop().then(() => {
+          setIsListening(false)
+          setSpeechNotice(null)
+          setSpeechError(null)
+        })
+      } else {
+        timer = window.setTimeout(() => {
+          setSpeechError(null)
+        }, 0)
       }
-      setSpeechError(null)
+    }
+    return () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer)
+      }
     }
   }, [revealed, paused, isListening, recognizer])
 
@@ -804,7 +816,7 @@ export function PracticeCard({
         {!revealed ? (
           <>
             <form
-              className={`answer-form ${accents ? 'has-accents' : ''}`.trim()}
+              className={`answer-form ${accents ? 'has-accents' : ''} ${isListening ? 'is-listening' : ''}`.trim()}
               onSubmit={(event) => {
                 event.preventDefault()
                 if (isListening) {
@@ -889,16 +901,16 @@ export function PracticeCard({
                 <div
                   className="answer-accents-container"
                   style={
-                    isDocked
+                    isDocked || isListening
                       ? { visibility: 'hidden', pointerEvents: 'none' }
                       : undefined
                   }
-                  aria-hidden={isDocked}
+                  aria-hidden={isDocked || isListening}
                 >
                   <AccentToolbar
                     onInsert={insertAccent}
                     isDocked={false}
-                    disabled={paused || isDocked}
+                    disabled={paused || isDocked || isListening}
                   />
                 </div>
               )}

@@ -429,3 +429,37 @@ void test('CSS architectural invariants for universal keyboard avoidance and rea
     'prefers-reduced-motion must disable .app-shell transitions',
   )
 })
+void test('CSS architectural invariants for mobile keyboard accent toolbar accessories', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // 1. On iOS without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /html\[data-platform='ios'\]:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container[\s\S]*?display:\s*none\s*!important;/,
+    'iOS without physical keyboard must suppress in-card accents container',
+  )
+
+  // 2. On Android without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /html\[data-platform='android'\]:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container[\s\S]*?display:\s*none\s*!important;/,
+    'Android without physical keyboard must suppress in-card accents container',
+  )
+
+  // 3. On mobile touch screens without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /@media\s*\(max-width:\s*640px\),\s*\(pointer:\s*coarse\)\s*\{[\s\S]*?html:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    'Mobile touch screens without physical keyboard must suppress in-card accents container',
+  )
+
+  // 4. Composer island geometry is strictly scoped to physical keyboard environments without active listening
+  assert.match(
+    css,
+    /html\[data-keyboard='true'\]\s+\.study-card:not\(\.has-docked-accents\)\s+\.answer-form\.has-accents:not\(\.is-listening\)\s+\.answer-input\s*\{[\s\S]*?border-bottom-left-radius:\s*0;/,
+    'Composer island geometry must be scoped to physical keyboard environments when not listening',
+  )
+})
