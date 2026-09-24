@@ -776,4 +776,49 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     expect(resetInset).toBe('0px')
     await expect(page.locator('.mobile-tab-bar')).toBeVisible()
   })
+
+  test('verifies floating mobile tab bar geometry and captures mobile snapshots', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      document.documentElement.style.setProperty(
+        '--safe-area-inset-top',
+        '59px',
+      )
+      document.documentElement.style.setProperty(
+        '--safe-area-inset-bottom',
+        '34px',
+      )
+    })
+
+    // 1. Welcome view with floating tab bar
+    await page.goto('/')
+    const tabBar = page.locator('.mobile-tab-bar')
+    await expect(tabBar).toBeVisible()
+
+    // Verify floating geometry: detached from bottom edge
+    const tabBox = await tabBar.boundingBox()
+    expect(tabBox).not.toBeNull()
+    expect(tabBox!.y + tabBox!.height).toBeLessThan(852)
+
+    await page.screenshot({ path: 'test-results/mobile-floating-welcome.png' })
+
+    // 2. Deck view with floating tab bar
+    await page.getByRole('button', { name: /^deck$/i }).click()
+    await expect(page.locator('.deck-page')).toBeVisible()
+    const demoDismissBtn = page.getByRole('button', {
+      name: /explore demo deck/i,
+    })
+    if (await demoDismissBtn.isVisible()) {
+      await demoDismissBtn.click()
+    }
+    await expect(tabBar).toBeVisible()
+    await page.screenshot({ path: 'test-results/mobile-floating-deck.png' })
+
+    // 3. Create view with floating tab bar
+    await page.getByRole('button', { name: /^create$/i }).click()
+    await expect(page.locator('.create-page')).toBeVisible()
+    await expect(tabBar).toBeVisible()
+    await page.screenshot({ path: 'test-results/mobile-floating-create.png' })
+  })
 })
