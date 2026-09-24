@@ -52,4 +52,4 @@ jobs:
         run: |
           node scripts/app-store.ts --apply
           bundle exec fastlane ios metadata
-          bundle exec fastlane ios release build_number:"$BUILD_NUMBER"
+          node scripts/app-store.ts --submit "$BUILD_NUMBER"
