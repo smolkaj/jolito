@@ -120,10 +120,10 @@ jobs:
 
   native-walkthrough:
     if: github.event_name == 'workflow_dispatch' && inputs.walkthrough
-    runs-on: macos-15
+    runs-on: xcode-27
     timeout-minutes: 30
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       APP_REVIEW_EMAIL: ${{ secrets.APP_REVIEW_EMAIL }}
@@ -161,6 +161,7 @@ jobs:
             build/native-walkthrough/*.log
             build/native-walkthrough/*.txt
             build/native-walkthrough/*.json
+            build/native-walkthrough/*.png
           retention-days: 14
 
   ios-gate:
