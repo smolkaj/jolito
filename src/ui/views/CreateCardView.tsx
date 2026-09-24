@@ -8,7 +8,11 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { AiAssistant, AuthUser } from '../../application/ports'
+import type {
+  AiAssistant,
+  AuthUser,
+  HapticsPlayer,
+} from '../../application/ports'
 import type { StudyCard } from '../../domain/card'
 import { findDuplicateNoteCards } from '../../domain/duplicate'
 import type { AutocompleteSuggestion, LexiconEntry } from '../../domain/lexicon'
@@ -68,6 +72,7 @@ export interface CreateCardViewProps {
     ): AutocompleteSuggestion[]
   }
   aiAssistant?: AiAssistant | undefined
+  haptics?: HapticsPlayer | undefined
 }
 
 export function CreateCardView({
@@ -95,6 +100,7 @@ export function CreateCardView({
   onPlayAudio,
   assistant,
   aiAssistant,
+  haptics,
 }: CreateCardViewProps) {
   const [spanishInput, setSpanishInput] = useState(pendingCard?.spanish ?? '')
   const [englishInput, setEnglishInput] = useState(pendingCard?.english ?? '')
@@ -649,6 +655,7 @@ export function CreateCardView({
           onPractice={onPractice}
           onNavigateToDeck={onNavigateToDeck}
           onNavigateToCreate={() => {}}
+          haptics={haptics}
         />
         <div className="nav-actions" data-nosnippet>
           <button

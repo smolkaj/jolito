@@ -148,6 +148,7 @@ describe('Jolito', () => {
     ])
     expect(services.mockHaptics.triggered).toEqual([
       'selection',
+      'selection',
       'complete',
       'selection',
       'again',
@@ -4421,6 +4422,17 @@ describe('Jolito', () => {
       'aria-valuetext',
       '2 cards remaining',
     )
+
+    // Clicking Practice button while already in review does not reset session or progress
+    const activePracticeButtons = screen.getAllByRole('button', {
+      name: /^practice$/i,
+    })
+    expect(activePracticeButtons.length).toBeGreaterThan(0)
+    for (const btn of activePracticeButtons) {
+      await user.click(btn)
+      expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
+      expect(resumedProgressBar).toHaveAttribute('aria-valuenow', '33')
+    }
   })
 
   it('preserves re-queued learning step cards when pausing and resuming a study session', async () => {

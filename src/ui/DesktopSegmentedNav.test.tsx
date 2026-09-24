@@ -48,6 +48,80 @@ describe('DesktopSegmentedNav', () => {
     expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
   })
 
+  it('suppresses the due badge in review and complete views to maintain study calmness', () => {
+    const { rerender } = render(
+      <DesktopSegmentedNav
+        currentView="review"
+        dueCount={5}
+        onPractice={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+      />,
+    )
+
+    // In review view: badge is suppressed, label is calm 'Practice'
+    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
+    expect(screen.queryByText('5')).not.toBeInTheDocument()
+
+    // In complete view: badge is suppressed
+    rerender(
+      <DesktopSegmentedNav
+        currentView="complete"
+        dueCount={5}
+        onPractice={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
+    expect(screen.queryByText('5')).not.toBeInTheDocument()
+
+    // In deck view: badge is shown
+    rerender(
+      <DesktopSegmentedNav
+        currentView="deck"
+        dueCount={5}
+        onPractice={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Practice (5 cards due)' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('5')).toBeInTheDocument()
+
+    // In welcome view: badge is shown
+    rerender(
+      <DesktopSegmentedNav
+        currentView="welcome"
+        dueCount={5}
+        onPractice={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Practice (5 cards due)' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('5')).toBeInTheDocument()
+
+    // In create view: badge is shown
+    rerender(
+      <DesktopSegmentedNav
+        currentView="create"
+        dueCount={5}
+        onPractice={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Practice (5 cards due)' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('5')).toBeInTheDocument()
+  })
+
   it('highlights the correct tab based on currentView', () => {
     const { rerender } = render(
       <DesktopSegmentedNav
