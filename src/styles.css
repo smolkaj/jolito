@@ -3425,9 +3425,6 @@ kbd {
 
   .welcome-page {
     --welcome-gutter: 16px;
-    scroll-padding-bottom: calc(
-      88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
-    );
   }
 
   .welcome-intro {
