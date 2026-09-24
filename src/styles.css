@@ -7533,6 +7533,19 @@ html[data-keyboard='true'] .reveal-gesture-cue {
     );
   }
 
+  .app-shell.create-page {
+    padding-bottom: calc(
+      112px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+        var(--keyboard-inset, 0px)
+    );
+  }
+
+  .save-button {
+    scroll-margin-bottom: calc(
+      var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 100px
+    );
+  }
+
   /* Suppress fixed mobile tab bar when virtual software keyboard is open */
   html[data-keyboard-open='true'] .mobile-tab-bar,
   .is-keyboard-open .mobile-tab-bar {
