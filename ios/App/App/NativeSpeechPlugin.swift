@@ -166,14 +166,36 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
 
         // 1. Explicit voice identifier or name match
         if let preferredVoice = preferredVoice, !preferredVoice.isEmpty {
+            let targetLang = String(locale.replacingOccurrences(of: "_", with: "-").lowercased().prefix(2))
+            let langCandidates = candidateVoices.filter {
+                $0.language.replacingOccurrences(of: "_", with: "-").lowercased().hasPrefix(targetLang)
+            }
+            let pool = langCandidates.isEmpty ? candidateVoices : langCandidates
+
+            let sortedPool: [AVSpeechSynthesisVoice]
+            if #available(iOS 16.0, *) {
+                sortedPool = pool.sorted {
+                    let rank: (AVSpeechSynthesisVoiceQuality) -> Int = { q in
+                        switch q {
+                        case .premium: return 2
+                        case .enhanced: return 1
+                        default: return 0
+                        }
+                    }
+                    return rank($0.quality) > rank($1.quality)
+                }
+            } else {
+                sortedPool = pool
+            }
+
             // 1a. Exact identifier match
-            if let matched = candidateVoices.first(where: {
+            if let matched = sortedPool.first(where: {
                 $0.identifier == preferredVoice
             }) {
                 return matched
             }
             // 1b. Exact name match (case-insensitive)
-            if let matched = candidateVoices.first(where: {
+            if let matched = sortedPool.first(where: {
                 $0.name.caseInsensitiveCompare(preferredVoice) == .orderedSame
             }) {
                 return matched
@@ -181,25 +203,25 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             // 1c. Jolito neural persona name hints (e.g. "es-MX-JorgeNeural" -> Jorge, "es-MX-DaliaNeural" -> Paulina)
             let lowerPreferred = preferredVoice.lowercased()
             if lowerPreferred.contains("jorge") {
-                if let jorge = candidateVoices.first(where: {
+                if let jorge = sortedPool.first(where: {
                     $0.name.lowercased().contains("jorge") && $0.language.lowercased().hasPrefix("es")
                 }) {
                     return jorge
                 }
             } else if lowerPreferred.contains("dalia") || lowerPreferred.contains("paulina") {
-                if let paulina = candidateVoices.first(where: {
+                if let paulina = sortedPool.first(where: {
                     $0.name.lowercased().contains("paulina") && $0.language.lowercased().hasPrefix("es")
                 }) {
                     return paulina
                 }
             } else if lowerPreferred.contains("jenny") || lowerPreferred.contains("samantha") {
-                if let samantha = candidateVoices.first(where: {
+                if let samantha = sortedPool.first(where: {
                     $0.name.lowercased().contains("samantha") && $0.language.lowercased().hasPrefix("en")
                 }) {
                     return samantha
                 }
             } else if lowerPreferred.contains("guy") || lowerPreferred.contains("alex") {
-                if let alex = candidateVoices.first(where: {
+                if let alex = sortedPool.first(where: {
                     $0.name.lowercased().contains("alex") && $0.language.lowercased().hasPrefix("en")
                 }) {
                     return alex
