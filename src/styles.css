@@ -2564,7 +2564,7 @@ summary:focus-visible,
 .reveal-button {
   position: absolute;
   right: 8px;
-  top: 26px;
+  top: 50%;
   transform: translateY(-50%);
   max-width: 100%;
   box-sizing: border-box;

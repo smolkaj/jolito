@@ -77,3 +77,96 @@ for (const width of [320, 1280]) {
     ).toHaveValue('12345')
   })
 }
+
+test('reveal button is vertically centered within the answer input field on desktop viewports', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/#/study')
+  await expect(page.getByLabel('Your answer')).toBeVisible()
+
+  const studyMetrics = await page.evaluate(() => {
+    const input = document
+      .querySelector('.answer-input')!
+      .getBoundingClientRect()
+    const reveal = document
+      .querySelector('.reveal-button')!
+      .getBoundingClientRect()
+    return {
+      inputCenterY: input.top + input.height / 2,
+      revealCenterY: reveal.top + reveal.height / 2,
+      topOffset: reveal.top - input.top,
+      bottomOffset: input.bottom - reveal.bottom,
+    }
+  })
+  expect(
+    Math.abs(studyMetrics.inputCenterY - studyMetrics.revealCenterY),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs(studyMetrics.topOffset - studyMetrics.bottomOffset),
+  ).toBeLessThanOrEqual(1)
+
+  // Also verify on grammar cards with accent toolbar
+  await page.goto('/#/grammar')
+  const startBtn = page.getByRole('button', { name: 'Start practice' })
+  if (await startBtn.isVisible()) {
+    await startBtn.click()
+  }
+  await expect(
+    page.getByRole('textbox', { name: 'Your conjugation' }),
+  ).toBeVisible()
+
+  const grammarMetrics = await page.evaluate(() => {
+    const input = document
+      .querySelector('.answer-input')!
+      .getBoundingClientRect()
+    const reveal = document
+      .querySelector('.reveal-button')!
+      .getBoundingClientRect()
+    return {
+      inputCenterY: input.top + input.height / 2,
+      revealCenterY: reveal.top + reveal.height / 2,
+      topOffset: reveal.top - input.top,
+      bottomOffset: input.bottom - reveal.bottom,
+    }
+  })
+  expect(
+    Math.abs(grammarMetrics.inputCenterY - grammarMetrics.revealCenterY),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs(grammarMetrics.topOffset - grammarMetrics.bottomOffset),
+  ).toBeLessThanOrEqual(1)
+})
+
+test('card layout hierarchy places keyboard shortcuts above card management actions', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/#/study')
+  await expect(page.getByLabel('Your answer')).toBeVisible()
+
+  const hierarchy = await page.evaluate(() => {
+    const input = document
+      .querySelector('.answer-input')!
+      .getBoundingClientRect()
+    const kbdHint = document
+      .querySelector('.keyboard-hint')!
+      .getBoundingClientRect()
+    const quickActions = document
+      .querySelector('.study-card-quick-actions')
+      ?.getBoundingClientRect()
+
+    return {
+      inputTop: input.top,
+      kbdHintTop: kbdHint.top,
+      quickActionsTop: quickActions?.top ?? null,
+    }
+  })
+
+  // Keyboard hint is directly below the study interaction
+  expect(hierarchy.kbdHintTop).toBeGreaterThan(hierarchy.inputTop)
+  if (hierarchy.quickActionsTop !== null) {
+    // Quick actions (edit/delete) are placed below the keyboard hints
+    expect(hierarchy.quickActionsTop).toBeGreaterThan(hierarchy.kbdHintTop)
+  }
+})

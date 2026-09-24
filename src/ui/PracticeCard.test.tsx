@@ -549,4 +549,39 @@ describe('accent keyboard insertion', () => {
       screen.queryByText('Voice input unavailable or permission denied'),
     ).not.toBeInTheDocument()
   })
+
+  it('renders accent toolbar outside the answer form and keeps keyboard hints above quick actions', () => {
+    const initial = props()
+    const onDelete = vi.fn()
+    const { container } = render(
+      <PracticeCard
+        {...initial}
+        revealed={false}
+        accents={true}
+        onDelete={onDelete}
+      />,
+    )
+
+    const form = container.querySelector('.answer-form')!
+    const accents = container.querySelector('.answer-accents-container')!
+    const kbdHint = container.querySelector('.keyboard-hint')!
+    const quickActions = container.querySelector('.study-card-quick-actions')!
+
+    expect(form).toBeInTheDocument()
+    expect(accents).toBeInTheDocument()
+    expect(kbdHint).toBeInTheDocument()
+    expect(quickActions).toBeInTheDocument()
+
+    // Accents container must be outside form so form height strictly matches answer input
+    expect(form.contains(accents)).toBe(false)
+
+    // DOM order must place keyboard hints above quick actions
+    const cardChildren = Array.from(
+      container.querySelector('.study-card')!.children,
+    )
+    const kbdHintIndex = cardChildren.indexOf(kbdHint)
+    const quickActionsIndex = cardChildren.indexOf(quickActions)
+    expect(kbdHintIndex).toBeGreaterThan(-1)
+    expect(quickActionsIndex).toBeGreaterThan(kbdHintIndex)
+  })
 })
