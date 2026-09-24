@@ -37,6 +37,8 @@ jobs:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       SUPPLY_JSON_KEY_DATA: ${{ secrets.SUPPLY_JSON_KEY_DATA }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
     steps:
       - uses: actions/checkout@v7
@@ -89,5 +91,5 @@ jobs:
           if [ "${{ inputs.operation }}" = "metadata_only" ]; then
             bundle exec fastlane android metadata
           else
-            bundle exec fastlane android "${{ inputs.track }}" skip_build:true
+            bundle exec fastlane android deploy track:"${{ inputs.track }}" skip_build:true
           fi

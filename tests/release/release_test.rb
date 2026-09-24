@@ -120,14 +120,28 @@ class ReleaseTest < Minitest::Test
     def initialize
       @lanes = {}
       @calls = []
+      @current_platform = nil
       instance_eval(File.read(File.join(ReleaseConfig::ROOT, 'fastlane/Fastfile')), File.join(ReleaseConfig::ROOT, 'fastlane/Fastfile'))
     end
     def default_platform(*) = nil
-    def platform(*) = yield
+    def platform(name)
+      old = @current_platform
+      @current_platform = name.to_sym
+      yield
+    ensure
+      @current_platform = old
+    end
     def desc(*) = nil
-    def lane(name, &block) = @lanes[name] = block
+    def lane(name, &block)
+      @lanes[[@current_platform, name.to_sym]] = block
+      @lanes[name.to_sym] = block if @current_platform == :ios || @current_platform.nil?
+    end
     alias private_lane lane
-    def execute(name, options = {}) = @lanes.fetch(name).call(options)
+    def execute(name, options = {})
+      lane_block = @lanes[[@current_platform, name.to_sym]] || @lanes[name.to_sym]
+      raise "Lane #{name} not found" unless lane_block
+      lane_block.call(options)
+    end
     def connect = @calls << [:connect, {}]
     def upload_to_app_store(options)
       # Validate against the installed Fastlane action, catching obsolete options

@@ -40,8 +40,13 @@ void test('android/app/build.gradle configures release signing and dynamic versi
   )
   assert.match(
     gradle,
-    /versionName System\.getenv\("APP_VERSION"\)/,
-    'versionName must support dynamic APP_VERSION injection',
+    /rootProject\.file\('\.\.\/fastlane\/release\.json'\)/,
+    'build.gradle must reference fastlane/release.json as version fallback source of truth',
+  )
+  assert.match(
+    gradle,
+    /versionName System\.getenv\("APP_VERSION"\)\s*\?:\s*configuredVersion/,
+    'versionName must fall back to configuredVersion from release.json',
   )
 })
 
@@ -92,8 +97,23 @@ void test('fastlane Appfile and Fastfile support Android distribution lanes', ()
   )
   assert.match(
     fastfile,
+    /lane :deploy do/,
+    'Android platform must include :deploy lane',
+  )
+  assert.match(
+    fastfile,
     /lane :internal do/,
     'Android platform must include :internal lane',
+  )
+  assert.match(
+    fastfile,
+    /lane :closed do/,
+    'Android platform must include :closed lane',
+  )
+  assert.match(
+    fastfile,
+    /lane :production do/,
+    'Android platform must include :production lane',
   )
   assert.match(
     fastfile,
@@ -223,6 +243,16 @@ void test('.github/workflows/playstore.yml enforces production safety invariants
   )
   assert.match(
     workflow,
+    /VITE_SUPABASE_URL:\s*\$\{\{\s*vars\.VITE_SUPABASE_URL\s*\}\}/,
+    'Must provide VITE_SUPABASE_URL environment variable',
+  )
+  assert.match(
+    workflow,
+    /VITE_SUPABASE_ANON_KEY:\s*\$\{\{\s*vars\.VITE_SUPABASE_ANON_KEY\s*\}\}/,
+    'Must provide VITE_SUPABASE_ANON_KEY environment variable',
+  )
+  assert.match(
+    workflow,
     /chmod 0600 "\$RUNNER_TEMP\/keystore\/release\.keystore"/,
     'Must restrict permissions on decoded keystore',
   )
@@ -230,5 +260,10 @@ void test('.github/workflows/playstore.yml enforces production safety invariants
     workflow,
     /\.\/gradlew bundleRelease/,
     'Must build production release Android App Bundle (AAB)',
+  )
+  assert.match(
+    workflow,
+    /bundle exec fastlane android deploy track:"\$\{\{\s*inputs\.track\s*\}\}" skip_build:true/,
+    'Must deploy via fastlane android deploy lane with track parameter',
   )
 })
