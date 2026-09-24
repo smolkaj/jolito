@@ -2576,7 +2576,7 @@ summary:focus-visible,
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #fef3c7;
+  background: var(--cempasuchil-soft);
   color: var(--cempasuchil-dark);
   border: 1px solid var(--cempasuchil);
   border-radius: 6px;
@@ -2637,7 +2637,7 @@ summary:focus-visible,
   letter-spacing: 0.03em;
   padding: 1px 5px;
   border-radius: 5px;
-  background: #fef3c7;
+  background: var(--cempasuchil-soft);
   color: var(--cempasuchil-dark);
   border: 1px solid var(--cempasuchil);
   vertical-align: middle;
@@ -3619,7 +3619,7 @@ kbd {
   border: 2px solid var(--line);
   border-radius: 14px;
   color: var(--ink);
-  background: #ffffff;
+  background: var(--card);
   text-align: left;
   transition: all 130ms var(--ease-spring);
 }
@@ -5725,7 +5725,7 @@ kbd {
 
 .redirect-auth-banner .banner-action-btn:hover {
   border-color: var(--line);
-  background: #ffffff;
+  background: var(--paper-subtle);
   box-shadow: var(--shadow-sm);
 }
 
@@ -7407,7 +7407,7 @@ kbd {
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 8px;
-  border-top: 1px solid #f0e6eb;
+  border-top: 1px solid var(--line-subtle);
   margin-top: 8px;
 }
 
@@ -7564,7 +7564,7 @@ kbd {
   display: flex;
   justify-content: flex-end;
   padding-top: 12px;
-  border-top: 1px solid #f0e6eb;
+  border-top: 1px solid var(--line-subtle);
 }
 
 .privacy-done-btn {
