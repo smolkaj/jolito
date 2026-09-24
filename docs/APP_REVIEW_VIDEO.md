@@ -5,6 +5,61 @@ normal speed. This is the private Guideline 2.1 review recording, not a short
 public App Store preview. Capture the submitted native TestFlight build on a
 physical device with its original sound.
 
+## Emulated companion walkthrough
+
+**Completed companion:** [5:36 MP4](media/browser-walkthrough.mp4),
+[chapter/source record](media/browser-walkthrough.json),
+and [sampled frames](media/browser-walkthrough-contact.jpg). The export is
+880×2032 H.264 with a 48 kHz stereo AAC track (6.1 MB). Media inspection
+confirmed non-silent output without clipping; sampled frames include study,
+offline state and completed deletion. Physical-device evidence is still pending.
+
+The companion recording uses the real browser app and a disposable account on local Supabase, with real emailed
+codes delivered to local Mailpit. It captures the app's web speech and feedback
+sounds through PulseAudio, including automatic prompt and answer playback.
+It does not mock authentication, sync, deletion, audio responses or app state.
+Browser network access is disabled during the offline chapter; this is not a
+recording of toggling iOS Airplane Mode. Browser autoplay policy stays at its
+normal setting. The persistent video header identifies the test environment.
+
+The companion follows the story below, adding only **Provecho** and **Para
+llevar, por favor** from the starter pack to keep the restaurant theme focused.
+One use of the brand's Home navigation opens the Grammar chooser; there is no
+mascot interaction or greeting detour.
+
+This recording demonstrates the corrected candidate, not the submitted build
+10: rehearsal found a mobile navigation crash described below. A new native
+build and physical-device QA are needed before claiming Apple's request is
+fulfilled. The six-part response remains an unsubmitted draft.
+
+The versioned capture script is
+[`scripts/record-browser-walkthrough.mjs`](../scripts/record-browser-walkthrough.mjs).
+It requires Linux, FFmpeg, Xvfb, PulseAudio, Playwright Chromium and the local
+Supabase stack (including Mailpit on port 54324). Configure Vite's public
+Supabase URL/key for the local stack in an ignored `.env.local`; never use
+production credentials. The script rejects external auth/database destinations.
+Start a dedicated display and sink, then Vite:
+
+```sh
+Xvfb :94 -screen 0 1100x2200x24 -nolisten tcp
+# In another terminal:
+pulseaudio --start --exit-idle-time=-1
+pactl load-module module-null-sink sink_name=jolito_record
+npm run dev -- --host 127.0.0.1 --port 4189
+# In another terminal, using a fresh disposable local email:
+DEMO_EMAIL=learner@demo.example node scripts/record-browser-walkthrough.mjs
+```
+
+Output goes to ignored `build/walkthrough/`: MP4, chapter/source manifest,
+capture log and a completion screenshot. The script asserts zero page errors,
+checks that the edited card survives sign-out/login, and checks local
+`auth.users` after UI deletion. Failed takes retain a `.partial.mp4` name.
+Review the exported file visually and aurally before publishing; stream
+existence alone does not prove correct sound. The capture geometry assumes
+the configured Chromium window, 2× scale, and a 174-pixel toolbar crop; check
+that all four app edges are intact after browser upgrades. Stop the dedicated
+Vite/Xvfb processes and unload the recording sink when finished.
+
 ## Candidate and outstanding evidence
 
 On September 24, 2026, the [status run](https://github.com/smolkaj/jolito/actions/runs/36009083952)
@@ -142,3 +197,27 @@ missing audio; it cannot prove physical-device provenance or that audible sound
 was emitted by the app. Device capture and human audiovisual review remain
 required. This gap is **not closed** until the evidence is collected and both
 App Store destinations have been checked.
+
+## Navigation defect discovered during rehearsal
+
+Build 10 throws `Cannot access 'practicing' before initialization` when the
+mobile Practice tab is tapped from Welcome, Create or Deck. PR
+[#433](https://github.com/smolkaj/jolito/pull/433) added a guard in that callback
+which references a `const` declared after those views' early returns. The
+callback closes over a binding that never gets initialized on those renders.
+
+The fix uses the existing `isPracticeActive` value, computed before every view
+branch, and removes its redundant late alias. Navigation behavior is otherwise
+unchanged. The regression matrix enters study from all three affected views,
+rates a card, visits Create and Deck while offline/online events fire, and
+resumes through the mobile control without losing progress. Repeated taps in
+the active session remain inert. All three cases fail on the original code
+with the runtime exception and pass after the fix.
+
+The prior tests entered practice through the Welcome CTA or selected the first
+Practice button in a DOM containing both desktop and mobile navigation. They
+tested every Practice button only once already in the review view, where the
+late binding had been initialized. Compilation cannot reject this callback
+closure; the missing boundary was exercising the mobile entry point from the
+other render branches. The new unit contract selects **Mobile navigation**
+explicitly, and the recording script fails on any browser page error.
