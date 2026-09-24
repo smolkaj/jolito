@@ -3433,9 +3433,7 @@ kbd {
 
   .welcome-hero {
     padding-top: 14px;
-    padding-bottom: calc(
-      92px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
-    );
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
   }
 
   .welcome-hero-main {
@@ -3490,9 +3488,7 @@ kbd {
 
   .welcome-why {
     padding-top: max(32px, env(safe-area-inset-top));
-    padding-bottom: calc(
-      92px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
-    );
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
   }
 
   .welcome-mascot-anchor {
