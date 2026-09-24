@@ -53,6 +53,7 @@ export interface CreateCardViewProps {
   onGoHome: () => void
   onNavigateToDeck: () => void
   onPractice: () => void
+  onGrammar: () => void
   canPractice?: boolean
   onOpenSync: () => void
   onEditCard: (card: StudyCard) => void
@@ -91,6 +92,7 @@ export function CreateCardView({
   onGoHome,
   onNavigateToDeck,
   onPractice,
+  onGrammar,
   onOpenSync,
   onEditCard,
   onOpenFeedback,
@@ -649,7 +651,8 @@ export function CreateCardView({
         <Brand onClick={onGoHome} />
         <DesktopSegmentedNav
           currentView="create"
-          onPractice={onPractice}
+          onCards={onPractice}
+          onGrammar={onGrammar}
           onNavigateToDeck={onNavigateToDeck}
           onNavigateToCreate={() => {}}
           haptics={haptics}

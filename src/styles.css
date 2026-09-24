@@ -629,7 +629,7 @@ summary:focus-visible,
   align-items: center;
   gap: 6px;
   height: 32px;
-  padding: 0 14px;
+  padding: 0 12px;
   border-radius: 999px;
   border: none;
   background: transparent;
@@ -667,7 +667,7 @@ summary:focus-visible,
 @media (pointer: coarse) {
   .desktop-segmented-btn {
     min-height: 44px;
-    padding: 0 14px;
+    padding: 0 12px;
     font-size: 14px;
     gap: 7px;
   }
@@ -675,13 +675,17 @@ summary:focus-visible,
 
 @media (max-width: 800px) {
   .topbar {
-    gap: 10px;
+    gap: 8px;
   }
 
   .desktop-segmented-btn {
-    padding: 0 10px;
+    padding: 0 7px;
     font-size: 12px;
-    gap: 5px;
+    gap: 4px;
+  }
+
+  .nav-actions {
+    gap: 8px;
   }
 }
 

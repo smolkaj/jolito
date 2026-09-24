@@ -1,10 +1,16 @@
 import type { HapticsPlayer } from '../application/ports'
 import type { View } from '../navigation'
-import { PracticeTabIcon, DeckTabIcon, CreateTabIcon } from './MobileTabBar'
+import {
+  CardsTabIcon,
+  GrammarTabIcon,
+  DeckTabIcon,
+  CreateTabIcon,
+} from './MobileTabBar'
 
 export interface DesktopSegmentedNavProps {
   currentView: View
-  onPractice: () => void
+  onCards: () => void
+  onGrammar: () => void
   onNavigateToDeck: () => void
   onNavigateToCreate: () => void
   haptics?: HapticsPlayer | undefined
@@ -12,16 +18,14 @@ export interface DesktopSegmentedNavProps {
 
 export function DesktopSegmentedNav({
   currentView,
-  onPractice,
+  onCards,
+  onGrammar,
   onNavigateToDeck,
   onNavigateToCreate,
   haptics,
 }: DesktopSegmentedNavProps) {
-  const isPracticeActive =
-    currentView === 'review' ||
-    currentView === 'welcome' ||
-    currentView === 'grammar' ||
-    currentView === 'complete'
+  const isCardsActive = currentView === 'review' || currentView === 'complete'
+  const isGrammarActive = currentView === 'grammar'
   const isDeckActive = currentView === 'deck'
   const isCreateActive = currentView === 'create'
 
@@ -34,13 +38,24 @@ export function DesktopSegmentedNav({
     <div className="desktop-segmented-nav" role="group" aria-label="Navigation">
       <button
         type="button"
-        aria-current={isPracticeActive ? 'page' : undefined}
-        className={`desktop-segmented-btn ${isPracticeActive ? 'is-active' : ''}`}
-        onClick={() => handleClick(onPractice)}
-        aria-label="Practice (Study session)"
+        aria-current={isCardsActive ? 'page' : undefined}
+        className={`desktop-segmented-btn ${isCardsActive ? 'is-active' : ''}`}
+        onClick={() => handleClick(onCards)}
+        aria-label="Cards (Study session)"
       >
-        <PracticeTabIcon size={16} />
-        <span className="desktop-segmented-label">Practice</span>
+        <CardsTabIcon size={16} />
+        <span className="desktop-segmented-label">Cards</span>
+      </button>
+
+      <button
+        type="button"
+        aria-current={isGrammarActive ? 'page' : undefined}
+        className={`desktop-segmented-btn ${isGrammarActive ? 'is-active' : ''}`}
+        onClick={() => handleClick(onGrammar)}
+        aria-label="Grammar (Practice grammar)"
+      >
+        <GrammarTabIcon size={16} />
+        <span className="desktop-segmented-label">Grammar</span>
       </button>
 
       <button

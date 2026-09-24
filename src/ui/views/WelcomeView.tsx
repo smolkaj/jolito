@@ -188,7 +188,8 @@ export function WelcomeView({
           <Brand />
           <DesktopSegmentedNav
             currentView="welcome"
-            onPractice={onPractice}
+            onCards={onPractice}
+            onGrammar={onNavigateToGrammar}
             onNavigateToDeck={onNavigateToDeck}
             onNavigateToCreate={onNavigateToCreate}
             haptics={haptics}

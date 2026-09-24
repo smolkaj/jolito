@@ -1,6 +1,7 @@
 import { currentDeckJson } from './storage'
 import { expect, test, type Page } from '@playwright/test'
 import { auditAccessibility } from './accessibility'
+import { practiceCards } from './practice'
 import * as fflate from 'fflate'
 import initSqlJs from 'sql.js'
 import * as fs from 'node:fs'
@@ -118,10 +119,7 @@ test('restores deck from backup JSON file and updates local storage', async ({
   expect(stored).toContain('Un boleto de metro')
 
   // Start review with the imported card
-  await page
-    .getByRole('button', { name: /^practice/i })
-    .first()
-    .click()
+  await practiceCards(page)
   await expect(
     page.getByRole('heading', { name: 'Un boleto de metro' }),
   ).toBeVisible()
@@ -153,10 +151,7 @@ test('imports Anki text export deck and updates review cards', async ({
   await expect(page.getByText(/imported 1 card/i)).toBeVisible()
   await page.keyboard.press('Escape')
 
-  await page
-    .getByRole('button', { name: /^practice/i })
-    .first()
-    .click()
+  await practiceCards(page)
   await expect(
     page.getByRole('heading', { name: '¿Dónde está la estación?' }),
   ).toBeVisible()
@@ -231,10 +226,7 @@ test('imports packaged .apkg Anki archive, preserves schedules, and supports ful
   await page.keyboard.press('Escape')
 
   // Start review
-  await page
-    .getByRole('button', { name: /^practice/i })
-    .first()
-    .click()
+  await practiceCards(page)
   await expect(page.getByRole('heading', { name: '¡Qué chido!' })).toBeVisible()
 
   // Enter to reveal answer

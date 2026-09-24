@@ -43,6 +43,7 @@ export interface DeckManagerViewProps {
   onGoHome: () => void
   onNavigateToCreate: () => void
   onPractice: () => void
+  onGrammar: () => void
   onOpenSync: () => void
   onOpenFeedback: () => void
   onEditCard: (card: StudyCard) => void
@@ -75,6 +76,7 @@ export function DeckManagerView({
   onGoHome,
   onNavigateToCreate,
   onPractice,
+  onGrammar,
   onOpenSync,
   onOpenFeedback,
   onEditCard,
@@ -195,7 +197,8 @@ export function DeckManagerView({
           <Brand onClick={onGoHome} />
           <DesktopSegmentedNav
             currentView="deck"
-            onPractice={onPractice}
+            onCards={onPractice}
+            onGrammar={onGrammar}
             onNavigateToDeck={() => {}}
             onNavigateToCreate={onNavigateToCreate}
             haptics={haptics}

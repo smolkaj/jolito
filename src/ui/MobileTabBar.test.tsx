@@ -11,18 +11,15 @@ function createMockHaptics() {
   return { trigger, haptics }
 }
 
-describe('MobileTabBar (Milestone 2)', () => {
+describe('MobileTabBar', () => {
   it('renders all four navigation items with correct accessible labels and roles', () => {
     render(
       <MobileTabBar
         currentView="review"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={vi.fn()}
+        onCards={vi.fn()}
+        onGrammar={vi.fn()}
         onNavigateToDeck={vi.fn()}
         onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
       />,
     )
 
@@ -30,60 +27,87 @@ describe('MobileTabBar (Milestone 2)', () => {
       screen.getByRole('navigation', { name: 'Mobile navigation' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Practice (Study session)' }),
+      screen.getByRole('button', { name: 'Cards (Study session)' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Deck' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
     expect(screen.queryByText(/cards? due/i)).not.toBeInTheDocument()
   })
 
-  it('highlights Practice tab when in review, welcome, grammar, or complete view', () => {
+  it('highlights the correct tab and leaves welcome view inactive', () => {
     const { rerender } = render(
       <MobileTabBar
         currentView="review"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={vi.fn()}
+        onCards={vi.fn()}
+        onGrammar={vi.fn()}
         onNavigateToDeck={vi.fn()}
         onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
       />,
     )
     expect(
-      screen.getByRole('button', { name: 'Practice (Study session)' }),
+      screen.getByRole('button', { name: 'Cards (Study session)' }),
     ).toHaveAttribute('aria-current', 'page')
+    expect(
+      screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
+    ).not.toHaveAttribute('aria-current')
     expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
       'aria-current',
     )
+    expect(screen.getByRole('button', { name: 'Create' })).not.toHaveAttribute(
+      'aria-current',
+    )
 
+    // Switch to grammar
     rerender(
       <MobileTabBar
-        currentView="welcome"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={vi.fn()}
+        currentView="grammar"
+        onCards={vi.fn()}
+        onGrammar={vi.fn()}
         onNavigateToDeck={vi.fn()}
         onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
       />,
     )
     expect(
-      screen.getByRole('button', { name: 'Practice (Study session)' }),
+      screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
     ).toHaveAttribute('aria-current', 'page')
+    expect(
+      screen.getByRole('button', { name: 'Cards (Study session)' }),
+    ).not.toHaveAttribute('aria-current')
 
+    // Switch to welcome (Home): no tab should be active
+    rerender(
+      <MobileTabBar
+        currentView="welcome"
+        onCards={vi.fn()}
+        onGrammar={vi.fn()}
+        onNavigateToDeck={vi.fn()}
+        onNavigateToCreate={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Cards (Study session)' }),
+    ).not.toHaveAttribute('aria-current')
+    expect(
+      screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
+    ).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
+      'aria-current',
+    )
+    expect(screen.getByRole('button', { name: 'Create' })).not.toHaveAttribute(
+      'aria-current',
+    )
+
+    // Switch to deck
     rerender(
       <MobileTabBar
         currentView="deck"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={vi.fn()}
+        onCards={vi.fn()}
+        onGrammar={vi.fn()}
         onNavigateToDeck={vi.fn()}
         onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
       />,
     )
     expect(screen.getByRole('button', { name: 'Deck' })).toHaveAttribute(
@@ -91,67 +115,54 @@ describe('MobileTabBar (Milestone 2)', () => {
       'page',
     )
     expect(
-      screen.getByRole('button', { name: 'Practice (Study session)' }),
+      screen.getByRole('button', { name: 'Cards (Study session)' }),
     ).not.toHaveAttribute('aria-current')
 
+    // Switch to create
     rerender(
       <MobileTabBar
         currentView="create"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={vi.fn()}
+        onCards={vi.fn()}
+        onGrammar={vi.fn()}
         onNavigateToDeck={vi.fn()}
         onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
       />,
     )
     expect(screen.getByRole('button', { name: 'Create' })).toHaveAttribute(
       'aria-current',
       'page',
     )
-
-    rerender(
-      <MobileTabBar
-        currentView="deck"
-        isSyncOpen={true}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={vi.fn()}
-        onNavigateToDeck={vi.fn()}
-        onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
-      />,
-    )
-    expect(screen.getByRole('button', { name: 'Account' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
-      'aria-current',
-    )
   })
 
   it('calls tab click callbacks and triggers haptics', () => {
     const { trigger, haptics } = createMockHaptics()
-    const onPractice = vi.fn()
+    const onCards = vi.fn()
+    const onGrammar = vi.fn()
     const onDeck = vi.fn()
     const onCreate = vi.fn()
-    const onSync = vi.fn()
 
     render(
       <MobileTabBar
         currentView="welcome"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        onPractice={onPractice}
+        onCards={onCards}
+        onGrammar={onGrammar}
         onNavigateToDeck={onDeck}
         onNavigateToCreate={onCreate}
-        onOpenSync={onSync}
         haptics={haptics}
       />,
     )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cards (Study session)' }),
+    )
+    expect(onCards).toHaveBeenCalledTimes(1)
+    expect(trigger).toHaveBeenCalledWith('selection')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
+    )
+    expect(onGrammar).toHaveBeenCalledTimes(1)
+    expect(trigger).toHaveBeenCalledWith('selection')
 
     fireEvent.click(screen.getByRole('button', { name: 'Deck' }))
     expect(onDeck).toHaveBeenCalledTimes(1)
@@ -160,13 +171,5 @@ describe('MobileTabBar (Milestone 2)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     expect(onCreate).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
-    expect(onSync).toHaveBeenCalledTimes(1)
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Practice (Study session)' }),
-    )
-    expect(onPractice).toHaveBeenCalledTimes(1)
   })
 })
