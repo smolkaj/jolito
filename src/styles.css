@@ -739,8 +739,60 @@ summary:focus-visible,
 
 .welcome-mascot-anchor {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
   margin-bottom: 16px;
+}
+
+/* Interactive Preview Switcher */
+.mascot-anim-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  box-shadow: 2px 2px 0 var(--line);
+  border-radius: var(--pill-radius);
+  padding: 3px;
+  margin-bottom: 10px;
+  max-width: 100%;
+}
+
+.mascot-anim-pill {
+  background: none;
+  border: none;
+  border-radius: calc(var(--pill-radius) - 3px);
+  padding: 4px 9px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-secondary, #555);
+  cursor: pointer;
+  transition: all 140ms var(--ease-spring);
+  white-space: nowrap;
+}
+
+.mascot-anim-pill:hover {
+  color: var(--ink);
+  background: var(--paper-subtle, rgba(0, 0, 0, 0.04));
+}
+
+.mascot-anim-pill.is-active {
+  background: var(--ink);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.mascot-anim-pill:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 1px;
+}
+
+.welcome-mascot-wrapper {
+  position: relative;
+  display: inline-block;
 }
 
 .welcome-mascot-btn {
@@ -752,6 +804,7 @@ summary:focus-visible,
   cursor: pointer;
   border-radius: 28px;
   outline: none;
+  transform-origin: 50% 90%;
   transition: transform 140ms var(--ease-spring);
 }
 
@@ -778,28 +831,100 @@ summary:focus-visible,
   pointer-events: none;
 }
 
+/* Variant 1: Tactile Joyful Hop & Greeting Nod (Squash & Stretch) */
+.welcome-mascot-btn.anim-hop,
 .welcome-mascot-btn.is-wiggling {
-  animation: mascot-wiggle 500ms ease;
+  transform-origin: 50% 90%;
+  animation: mascot-hop 520ms cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
-@keyframes mascot-wiggle {
+@keyframes mascot-hop {
   0% {
-    transform: rotate(0deg);
+    transform: translateY(0) scale(1, 1) rotate(0deg);
   }
-  20% {
-    transform: rotate(-7deg) scale(1.05);
+  14% {
+    /* Anticipation squash: press into the floor */
+    transform: translateY(3px) scale(1.08, 0.9) rotate(0deg);
   }
-  40% {
-    transform: rotate(6deg) scale(1.05);
+  36% {
+    /* Buoyant launch upward with vertical stretch & cheerful greeting nod */
+    transform: translateY(-10px) scale(0.93, 1.08) rotate(-4deg);
   }
-  60% {
-    transform: rotate(-3deg) scale(1.02);
+  58% {
+    /* Apex hang & gentle tilt */
+    transform: translateY(-5px) scale(1.02, 0.98) rotate(-1.5deg);
   }
-  80% {
-    transform: rotate(1.5deg) scale(1.01);
+  76% {
+    /* Soft landing compression */
+    transform: translateY(1.5px) scale(1.04, 0.96) rotate(0.5deg);
+  }
+  88% {
+    /* Micro spring overshoot */
+    transform: translateY(-1px) scale(0.99, 1.01) rotate(0deg);
   }
   100% {
-    transform: rotate(0deg) scale(1);
+    transform: translateY(0) scale(1, 1) rotate(0deg);
+  }
+}
+
+/* Variant 2: Buoyant Aquatic Breaching Bob */
+.welcome-mascot-btn.anim-bob {
+  transform-origin: 50% 60%;
+  animation: mascot-bob 640ms cubic-bezier(0.25, 1, 0.35, 1);
+}
+
+@keyframes mascot-bob {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  20% {
+    /* Gentle downward tuck in water column */
+    transform: translateY(2px) scale(0.98, 1.02) rotate(1deg);
+  }
+  48% {
+    /* Fluid, buoyant rise as if surfacing to say ¡Hola! */
+    transform: translateY(-12px) scale(1.05, 1.04) rotate(-2.5deg);
+  }
+  72% {
+    /* Floating crest and slow water drag deceleration */
+    transform: translateY(-4px) scale(1.01, 1.01) rotate(1deg);
+  }
+  88% {
+    /* Settling back to neutral buoyancy */
+    transform: translateY(1px) scale(0.99, 1) rotate(-0.5deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+/* Variant 3: Crisp Tactile Spring Pulse */
+.welcome-mascot-btn.anim-pulse {
+  transform-origin: 50% 50%;
+  animation: mascot-pulse 380ms var(--ease-spring);
+}
+
+@keyframes mascot-pulse {
+  0% {
+    transform: scale(1);
+  }
+  18% {
+    /* Snappy finger compression */
+    transform: scale(0.88);
+  }
+  48% {
+    /* High-tension elastic overshoot */
+    transform: scale(1.12);
+  }
+  72% {
+    /* Snappy rebound */
+    transform: scale(0.97);
+  }
+  88% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -914,7 +1039,10 @@ summary:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .welcome-mascot-btn.is-wiggling {
+  .welcome-mascot-btn.is-wiggling,
+  .welcome-mascot-btn.anim-hop,
+  .welcome-mascot-btn.anim-bob,
+  .welcome-mascot-btn.anim-pulse {
     animation: none;
   }
   .mascot-speech-bubble {
@@ -3504,6 +3632,8 @@ kbd {
   .welcome-mascot-anchor {
     margin: 20px auto 14px;
     display: inline-flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
   }
 
