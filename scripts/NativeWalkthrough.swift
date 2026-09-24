@@ -162,7 +162,6 @@ final class NativeWalkthrough: XCTestCase {
     }
 
     private func createCard(_ spanish: String, _ english: String) {
-        tap(button("Create"))
         type("Mexican Spanish", spanish)
         dismissSuggestions()
         type("English", english)
@@ -171,6 +170,7 @@ final class NativeWalkthrough: XCTestCase {
         scrollToSave()
         tap(button("Save card"))
         pause(3)
+        dismissKeyboard()
     }
 
     private func dismissSuggestions() {
