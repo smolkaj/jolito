@@ -212,6 +212,7 @@ summary:focus-visible,
 }
 
 .brand {
+  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -240,6 +241,105 @@ summary:focus-visible,
 
 .brand:active {
   transform: translateY(1px);
+}
+
+/* Desktop & iPad Top-Centered Segmented Navigation (macOS/iPadOS style) */
+.desktop-segmented-nav {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(18, 24, 21, 0.05);
+  border: 1.5px solid var(--line-subtle, rgba(18, 24, 21, 0.08));
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+  box-shadow: 0 1px 2px rgba(18, 24, 21, 0.02);
+  z-index: 5;
+  margin: 0 auto;
+}
+
+.desktop-segmented-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 100ms var(--ease-spring);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.desktop-segmented-btn:hover:not(.is-active) {
+  color: var(--ink);
+  background: rgba(18, 24, 21, 0.04);
+}
+
+.desktop-segmented-btn:active {
+  transform: scale(0.96);
+}
+
+.desktop-segmented-btn.is-active {
+  background: var(--paper, #ffffff);
+  color: var(--rosa-dark);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(18, 24, 21, 0.08);
+}
+
+.desktop-segmented-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--paper-warm, #fdfaf7);
+  color: var(--rosa-dark);
+  border: 1px solid var(--rosa-dark);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 1px;
+}
+
+/* Touch Differentiation for iPad and Touch Tablets */
+@media (pointer: coarse) {
+  .desktop-segmented-btn {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
+    gap: 7px;
+  }
+
+  .desktop-segmented-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 800px) {
+  .topbar {
+    gap: 10px;
+  }
+
+  .desktop-segmented-btn {
+    padding: 0 10px;
+    font-size: 12px;
+    gap: 5px;
+  }
 }
 
 /* Jolito Brandmark SVG */
@@ -308,8 +408,10 @@ summary:focus-visible,
 }
 
 .nav-actions {
+  flex: 1 1 0;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 16px;
 }
 
@@ -3432,6 +3534,10 @@ kbd {
       calc(env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px))
     );
     padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .desktop-segmented-nav {
+    display: none;
   }
 
   .topbar {

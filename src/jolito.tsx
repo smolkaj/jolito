@@ -82,6 +82,7 @@ import {
 } from './ui/views/CreateCardView'
 import { DeckManagerView } from './ui/views/DeckManagerView'
 import { MobileTabBar } from './ui/MobileTabBar'
+import { DesktopSegmentedNav } from './ui/DesktopSegmentedNav'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -1379,6 +1380,7 @@ function LoadedApp({
     return (
       <>
         <WelcomeView
+          dueCount={dueCount}
           communityStats={communityStats}
           authUser={authUser}
           syncStatus={syncStatus}
@@ -1411,6 +1413,7 @@ function LoadedApp({
     return (
       <>
         <CreateCardView
+          dueCount={dueCount}
           vocabularyCards={vocabularyCards}
           referenceTime={referenceTime}
           saveError={saveError}
@@ -1497,31 +1500,22 @@ function LoadedApp({
             aria-label={practicing ? 'Review navigation' : 'Session navigation'}
           >
             <Brand onClick={goHome} />
+            <DesktopSegmentedNav
+              currentView={view}
+              dueCount={dueCount}
+              onPractice={handlePractice}
+              onNavigateToDeck={() => navigateTo('deck')}
+              onNavigateToCreate={() => navigateTo('create')}
+              haptics={services.haptics}
+            />
             <div className="nav-actions" data-nosnippet>
-              {grammar ? (
-                grammarPractice.mode !== 'choose' && (
-                  <button
-                    className="text-button"
-                    onClick={grammarPractice.choose}
-                  >
-                    <span aria-hidden="true">←</span> Grammar
-                  </button>
-                )
-              ) : (
-                <>
-                  <button
-                    className="text-button topbar-nav-btn"
-                    onClick={() => navigateTo('deck')}
-                  >
-                    Manage deck
-                  </button>
-                  <button
-                    className="text-button topbar-nav-btn"
-                    onClick={() => navigateTo('create')}
-                  >
-                    + New card
-                  </button>
-                </>
+              {grammar && grammarPractice.mode !== 'choose' && (
+                <button
+                  className="text-button"
+                  onClick={grammarPractice.choose}
+                >
+                  <span aria-hidden="true">←</span> Grammar
+                </button>
               )}
               {!practicing && (
                 <button

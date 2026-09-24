@@ -17,6 +17,7 @@ import { AiContextActions } from '../AiContextActions'
 import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
+import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
 import { EnglishBadge, MexicoFlag } from '../icons'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
 import { appendOrReplaceContext, useAiSuggestions } from '../useAiSuggestions'
@@ -32,6 +33,7 @@ export interface CreateCardParams {
 }
 
 export interface CreateCardViewProps {
+  dueCount?: number
   vocabularyCards: StudyCard[]
   referenceTime: number
   saveError: string | null
@@ -48,7 +50,7 @@ export interface CreateCardViewProps {
   onGoHome: () => void
   onNavigateToDeck: () => void
   onPractice: () => void
-  canPractice: boolean
+  canPractice?: boolean
   onOpenSync: () => void
   onEditCard: (card: StudyCard) => void
   onOpenFeedback: () => void
@@ -69,6 +71,7 @@ export interface CreateCardViewProps {
 }
 
 export function CreateCardView({
+  dueCount = 0,
   vocabularyCards,
   referenceTime,
   saveError,
@@ -85,7 +88,6 @@ export function CreateCardView({
   onGoHome,
   onNavigateToDeck,
   onPractice,
-  canPractice,
   onOpenSync,
   onEditCard,
   onOpenFeedback,
@@ -641,18 +643,14 @@ export function CreateCardView({
     <main className="app-shell create-page">
       <nav className="topbar" aria-label="Card creation navigation">
         <Brand onClick={onGoHome} />
+        <DesktopSegmentedNav
+          currentView="create"
+          dueCount={dueCount}
+          onPractice={onPractice}
+          onNavigateToDeck={onNavigateToDeck}
+          onNavigateToCreate={() => {}}
+        />
         <div className="nav-actions" data-nosnippet>
-          <button
-            className="text-button topbar-nav-btn"
-            onClick={onNavigateToDeck}
-          >
-            Manage deck
-          </button>
-          {canPractice && (
-            <button className="text-button topbar-nav-btn" onClick={onPractice}>
-              Practice
-            </button>
-          )}
           <button
             type="button"
             className="text-button topbar-feedback-btn"
