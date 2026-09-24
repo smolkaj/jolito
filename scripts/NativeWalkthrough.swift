@@ -88,6 +88,7 @@ final class NativeWalkthrough: XCTestCase {
             pause(2)
         }
 
+        dismissPracticeKeyboard()
         chapter("Practice verb forms in context")
         tap(button("Grammar"))
         pause(4)
@@ -101,6 +102,7 @@ final class NativeWalkthrough: XCTestCase {
             tap(button("Good"))
         }
 
+        dismissPracticeKeyboard()
         chapter("Return to the same account")
         tap(button("Deck synced with cloud."))
         tap(button("Sign out"))
@@ -124,7 +126,7 @@ final class NativeWalkthrough: XCTestCase {
         let confirmation = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "DELETE")).firstMatch
         tap(confirmation)
         confirmation.typeText("DELETE")
-        app.staticTexts["Cloud sync"].firstMatch.tap()
+        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Permanently deletes your account")).firstMatch.tap()
         pause(3)
         tap(button("Yes, delete cloud data"))
         XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 30))
