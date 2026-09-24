@@ -881,8 +881,7 @@ summary:focus-visible,
   pointer-events: none;
 }
 
-.welcome-mascot-btn.is-wiggling {
-  transform-origin: 50% 90%;
+.welcome-mascot-btn.is-hopping {
   animation: mascot-hop 520ms cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
@@ -1026,7 +1025,7 @@ summary:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .welcome-mascot-btn.is-wiggling {
+  .welcome-mascot-btn.is-hopping {
     animation: none;
   }
   .mascot-speech-bubble {
