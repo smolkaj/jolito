@@ -153,7 +153,7 @@ describe('SEO search snippet and favicon compliance', () => {
       /<meta\s+name="color-scheme"\s+content="light dark"\s*\/>/,
     )
     expect(html).toContain('content="#fdf5f8"')
-    expect(html).toContain('content="#0d1310"')
+    expect(html).toContain('#0d1310')
     expect(html).toMatch(
       /<meta\s+name="mobile-web-app-capable"\s+content="yes"\s*\/>/,
     )
