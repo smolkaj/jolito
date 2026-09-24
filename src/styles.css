@@ -2880,7 +2880,8 @@ kbd {
   line-height: 1.2;
 }
 
-.grade-gesture-cue {
+.grade-gesture-cue,
+.grade-gesture-slot {
   display: none;
 }
 
@@ -3476,6 +3477,13 @@ kbd {
       'again good'
       'hard  easy';
     gap: 10px;
+  }
+
+  /* When a physical keyboard is active on mobile/narrow viewports, restore sequential 1-4 reading & tab order */
+  html[data-keyboard='true'] .grade-buttons {
+    grid-template-areas:
+      'again hard'
+      'good  easy';
   }
 
   .grade-buttons button {
@@ -6845,7 +6853,19 @@ kbd {
   color: var(--cempasuchil);
 }
 
-@media (hover: none) and (pointer: coarse), (max-width: 680px) {
+@media (max-width: 680px) {
+  .grade-gesture-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    flex-shrink: 0;
+  }
+
+  .grade-gesture-slot.trailing {
+    margin-left: auto;
+  }
+
   .grade-gesture-cue {
     display: inline-flex;
     align-items: center;
@@ -6857,14 +6877,6 @@ kbd {
     transition:
       transform 120ms ease,
       opacity 120ms ease;
-  }
-
-  .grade-gesture-cue.cue-again {
-    margin-right: 2px;
-  }
-
-  .grade-gesture-cue.cue-good {
-    margin-left: auto;
   }
 
   .grade-gesture-cue.is-active {
@@ -6892,7 +6904,7 @@ kbd {
     background: var(--turquesa-soft);
     border-color: var(--turquesa-dark);
     box-shadow: 0 0 16px var(--turquesa-glow);
-    transform: translateY(-50%) scale(1.04);
+    transform: scale(1.04);
   }
 
   .keyboard-hint,
@@ -6929,6 +6941,7 @@ html[data-keyboard='true'] .grade-btn kbd {
 }
 
 html[data-keyboard='true'] .grade-gesture-cue,
+html[data-keyboard='true'] .grade-gesture-slot,
 html[data-keyboard='true'] .reveal-gesture-cue {
   display: none !important;
 }

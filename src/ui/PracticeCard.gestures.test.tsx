@@ -1362,6 +1362,16 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     ).toHaveTextContent('→')
     expect(hardBtn.querySelector('.grade-gesture-cue')).not.toBeInTheDocument()
     expect(easyBtn.querySelector('.grade-gesture-cue')).not.toBeInTheDocument()
+
+    // Verify all 4 buttons have leading and trailing slots for vertical typographic alignment
+    for (const btn of [againBtn, goodBtn, hardBtn, easyBtn]) {
+      expect(
+        btn.querySelector('.grade-gesture-slot.leading'),
+      ).toBeInTheDocument()
+      expect(
+        btn.querySelector('.grade-gesture-slot.trailing'),
+      ).toBeInTheDocument()
+    }
   })
 
   it('smoothly settles to rest on swipe up reveal without artificial lift, scale shrink, or dimming', () => {

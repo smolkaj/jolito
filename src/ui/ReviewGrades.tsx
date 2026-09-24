@@ -62,28 +62,30 @@ export function ReviewGrades({
               aria-label={`${index + 1} ${labels[grade]} ${intervalLabel(card, grade)}`}
             >
               <kbd aria-hidden="true">{index + 1}</kbd>
-              {grade === 'again' && (
-                <span
-                  className={`grade-gesture-cue cue-again ${isActive ? 'is-active' : ''}`.trim()}
-                  style={{ transform: arrowAgainTransform }}
-                  aria-hidden="true"
-                >
-                  {isActive ? '↺' : '←'}
-                </span>
-              )}
+              <span className="grade-gesture-slot leading" aria-hidden="true">
+                {grade === 'again' && (
+                  <span
+                    className={`grade-gesture-cue cue-again ${isActive ? 'is-active' : ''}`.trim()}
+                    style={{ transform: arrowAgainTransform }}
+                  >
+                    {isActive ? '↺' : '←'}
+                  </span>
+                )}
+              </span>
               <span className="grade-copy">
                 <strong>{labels[grade]}</strong>
                 <small>{intervalLabel(card, grade)}</small>
               </span>
-              {grade === 'good' && (
-                <span
-                  className={`grade-gesture-cue cue-good ${isActive ? 'is-active' : ''}`.trim()}
-                  style={{ transform: arrowGoodTransform }}
-                  aria-hidden="true"
-                >
-                  {isActive ? '✓' : '→'}
-                </span>
-              )}
+              <span className="grade-gesture-slot trailing" aria-hidden="true">
+                {grade === 'good' && (
+                  <span
+                    className={`grade-gesture-cue cue-good ${isActive ? 'is-active' : ''}`.trim()}
+                    style={{ transform: arrowGoodTransform }}
+                  >
+                    {isActive ? '✓' : '→'}
+                  </span>
+                )}
+              </span>
             </button>
           )
         })}
