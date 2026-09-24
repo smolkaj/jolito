@@ -55,6 +55,7 @@ import { checkOrRequestStoragePersistence } from './infrastructure/browser/stora
 import {
   type View,
   hashForView,
+  hashFromDeepLink,
   isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
@@ -992,11 +993,22 @@ function LoadedApp({
         }
       }
     }
+    const onDeepLink = (event: Event) => {
+      const customEvent = event as CustomEvent<{ url?: string }>
+      const url = customEvent.detail?.url
+      if (!url) return
+      const targetHash = hashFromDeepLink(url)
+      if (!targetHash) return
+      window.location.hash = targetHash
+      onPopState()
+    }
     window.addEventListener('popstate', onPopState)
     window.addEventListener('hashchange', onPopState)
+    window.addEventListener('jolito:deep-link', onDeepLink)
     return () => {
       window.removeEventListener('popstate', onPopState)
       window.removeEventListener('hashchange', onPopState)
+      window.removeEventListener('jolito:deep-link', onDeepLink)
     }
   }, [cancelPendingAudio, resetPromptState, services.clock, startSession])
 
@@ -1240,6 +1252,7 @@ function LoadedApp({
     total: effectiveTotal,
     prompt: cardPrompt,
     title: 'Card Practice',
+    deepLinkUrl: 'jolito://practice/cards',
   })
 
   useEffect(() => {
@@ -1247,6 +1260,9 @@ function LoadedApp({
       total: isGrammarActive ? grammarEffectiveTotal : effectiveTotal,
       prompt: isGrammarActive ? grammarPrompt : cardPrompt,
       title: isGrammarActive ? 'Grammar Practice' : 'Card Practice',
+      deepLinkUrl: isGrammarActive
+        ? 'jolito://practice/grammar'
+        : 'jolito://practice/cards',
     }
   })
 

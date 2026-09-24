@@ -33,6 +33,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
         setupKeyboardMonitoring()
+
+        if let url = connectionOptions.urlContexts.first?.url,
+           let hash = Self.targetHash(for: url) {
+            let scriptSource = "window.location.hash = '\(hash)';"
+            let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+            bridgeVC.webView?.configuration.userContentController.addUserScript(script)
+        }
     }
 
     private func setupKeyboardMonitoring() {
@@ -92,9 +99,34 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
+        if let url = URLContexts.first?.url,
+           let hash = Self.targetHash(for: url) {
+            let escapedUrl = url.absoluteString.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
+            let js = "window.location.hash = '\(hash)'; window.dispatchEvent(new CustomEvent('jolito:deep-link', { detail: { url: '\(escapedUrl)' } }));"
+            bridgeViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)
+        }
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
+    }
+
+    static func targetHash(for url: URL) -> String? {
+        guard url.scheme?.lowercased() == "jolito" else { return nil }
+        let path = (url.host ?? "") + url.path.lowercased()
+        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if trimmed == "practice/grammar" || trimmed == "grammar" {
+            return "#/grammar"
+        }
+        if trimmed == "practice" || trimmed == "practice/cards" || trimmed == "study" || trimmed == "review" {
+            return "#/study"
+        }
+        if trimmed == "deck" || trimmed == "cards" || trimmed == "library" {
+            return "#/deck"
+        }
+        if trimmed == "create" {
+            return "#/create"
+        }
+        return "#/"
     }
 }

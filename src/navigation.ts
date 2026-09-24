@@ -16,6 +16,38 @@ export function viewFromHash(hash: string): View {
   return 'welcome'
 }
 
+export function hashFromDeepLink(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'jolito:') {
+      return null
+    }
+    const path = (parsed.host + parsed.pathname)
+      .toLowerCase()
+      .replace(/\/+$/, '')
+    if (path === 'practice/grammar' || path === 'grammar') {
+      return '#/grammar'
+    }
+    if (
+      path === 'practice' ||
+      path === 'practice/cards' ||
+      path === 'study' ||
+      path === 'review'
+    ) {
+      return '#/study'
+    }
+    if (path === 'deck' || path === 'cards' || path === 'library') {
+      return '#/deck'
+    }
+    if (path === 'create') {
+      return '#/create'
+    }
+    return '#/'
+  } catch {
+    return null
+  }
+}
+
 export function isWhyJolitoHash(hash: string): boolean {
   const clean = hash
     .replace(/^#\/?/, '')

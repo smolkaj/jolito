@@ -12,6 +12,7 @@ public struct PracticeLiveActivityWidget: Widget {
         ActivityConfiguration(for: PracticeActivityAttributes.self) { context in
             // Lock Screen / StandBy presentation
             LockScreenPracticeView(attributes: context.attributes, state: context.state, rosa: rosa)
+                .widgetURL(URL(string: context.attributes.deepLinkUrl))
         } dynamicIsland: { context in
             DynamicIsland {
                 // Expanded Presentation (when long-pressing the Dynamic Island)
@@ -81,6 +82,7 @@ public struct PracticeLiveActivityWidget: Widget {
                 .accessibilityLabel("Jolito session progress")
                 .accessibilityValue("\(context.state.completedCount) of \(context.state.totalCount) completed, \(context.state.progressPercentage) percent")
             }
+            .widgetURL(URL(string: context.attributes.deepLinkUrl))
         }
     }
 }
