@@ -72,6 +72,9 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 test "$keyboard_configured" = true
+for preference in enableAudioOutput enableAudioOutput_iOS; do
+  defaults -container com.apple.dt.Devices write com.apple.dt.Devices "$preference" -bool true
+done
 # Temporary diagnostics for the simulator-to-host audio route.
 for domain in com.apple.dt.Devices com.apple.dt.DeviceKit; do
   defaults -container com.apple.dt.Devices read "$domain" > "$output/$domain.log" 2>&1 || true
@@ -131,6 +134,7 @@ done
 wait "$ready_pid"
 test -s "$output/audio-start.txt"
 screencapture -x "$output/host-after.png"
+log show --last 15m --style compact --info --debug --predicate '(senderImagePath CONTAINS "DeviceKit" OR subsystem CONTAINS "devicekit") AND (eventMessage CONTAINS[c] "audio" OR eventMessage CONTAINS[c] "volume")' > "$output/device-audio.log"
 cleanup
 video_pid=
 audio_pid=

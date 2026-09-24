@@ -18,7 +18,7 @@ final class NativeWalkthrough: XCTestCase {
         executionTimeAllowance = 300
         continueAfterFailure = false
         app.launch()
-        tap(button("Practice"))
+        tap(button("Cards"))
         pause(20)
         tap(button("Reveal answer"))
         pause(20)
