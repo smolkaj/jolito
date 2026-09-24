@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { createPrivateKey, sign } from 'node:crypto'
+import { createHash, createPrivateKey, sign } from 'node:crypto'
 import { z } from 'zod'
 
 const settingsSchema = z.object({
@@ -15,7 +15,8 @@ export const settings = settingsSchema.parse(
     readFileSync(new URL('../fastlane/release.json', import.meta.url), 'utf8'),
   ),
 )
-export const CONTENT_RIGHTS_DECLARATION = 'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+// Open licensing permits use; the bundled dictionary remains third-party content.
+export const CONTENT_RIGHTS_DECLARATION = 'USES_THIRD_PARTY_CONTENT'
 const idSchema = z.object({ type: z.string(), id: z.string().min(1) })
 const resourceSchema = idSchema.extend({
   attributes: z.record(z.string(), z.unknown()).default({}),
@@ -371,6 +372,174 @@ export function validateBuildNumber(buildNumber: string | undefined): string {
   return trimmed
 }
 
+export async function verifyReviewInformation(
+  api: AppleApi,
+  expected: {
+    notes: string
+    email: string
+    password: string
+    fileSize: number
+    checksum: string
+  },
+  pause: () => Promise<void> = () =>
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+) {
+  if (!expected.email || !expected.password)
+    throw new Error('Reviewer credentials are required for verification')
+  const apps = await api.list(`/v1/apps?filter[bundleId]=${settings.bundleId}`)
+  if (apps.length !== 1) throw new Error('Cannot uniquely resolve Jolito')
+  const versions = await api.list(
+    `/v1/apps/${apps[0]!.id}/appStoreVersions?limit=10`,
+  )
+  const version = versions.find(
+    (item) => item.attributes.versionString === settings.version,
+  )
+  if (!version) throw new Error('App Store version missing')
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const response = await api.call(
+      `/v1/appStoreVersions/${version.id}/appStoreReviewDetail?include=appStoreReviewAttachments`,
+    )
+    const detail = resourceSchema.parse(response.data).attributes
+    if (
+      detail.notes !== expected.notes.trim() ||
+      detail.demoAccountRequired !== true ||
+      detail.demoAccountName !== expected.email ||
+      detail.demoAccountPassword !== expected.password
+    ) {
+      throw new Error(
+        'Stored App Review notes or private account credentials do not match the release package',
+      )
+    }
+    const attachment = response.included.find(
+      (item) =>
+        item.type === 'appStoreReviewAttachments' &&
+        item.attributes.fileName === 'native-walkthrough.mp4',
+    )
+    const delivery = z
+      .object({ state: z.string().min(1) })
+      .safeParse(attachment?.attributes.assetDeliveryState)
+    if (!delivery.success || delivery.data.state === 'FAILED')
+      throw new Error(
+        'Native review video attachment is missing or failed delivery',
+      )
+    if (delivery.data.state === 'COMPLETE') {
+      if (
+        attachment?.attributes.fileSize !== expected.fileSize ||
+        attachment.attributes.sourceFileChecksum !== expected.checksum
+      )
+        throw new Error(
+          'Native review video attachment differs from the reviewed file',
+        )
+      console.log(
+        'Verified stored review notes, private account credentials and completed native video attachment.',
+      )
+      return
+    }
+    if (attempt < 59) await pause()
+  }
+  throw new Error('Native review video attachment did not finish processing')
+}
+
+// Explicit replacement is separate from submit: a queued release is never
+// withdrawn merely because a caller asks to submit a different build.
+export async function withdrawForReplacement(
+  api: AppleApi,
+  buildNumber: string,
+  pause: () => Promise<void> = () =>
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+) {
+  const number = validateBuildNumber(buildNumber)
+  const apps = await api.list(`/v1/apps?filter[bundleId]=${settings.bundleId}`)
+  if (apps.length !== 1) throw new Error('Cannot uniquely resolve Jolito')
+  const app = apps[0]!
+  const response = await api.call(
+    `/v1/apps/${app.id}/appStoreVersions?include=build&limit=10`,
+  )
+  const version = z
+    .array(resourceSchema)
+    .parse(response.data)
+    .find((v) => v.attributes.versionString === settings.version)
+  if (!version) throw new Error('App Store version missing')
+  const candidates = await api.call(
+    `/v1/builds?filter[app]=${app.id}&filter[version]=${number}&include=preReleaseVersion&limit=10`,
+  )
+  const builds = z.array(resourceSchema).parse(candidates.data)
+  const build = builds[0]
+  const release =
+    build &&
+    candidates.included.find(
+      (item) => item.id === relatedId(build, 'preReleaseVersion'),
+    )
+  if (
+    builds.length !== 1 ||
+    build?.attributes.processingState !== 'VALID' ||
+    build.attributes.expired !== false ||
+    release?.attributes.version !== settings.version ||
+    release.attributes.platform !== 'IOS'
+  ) {
+    throw new Error(
+      'Replacement requires a processed, unexpired iOS build for the configured version',
+    )
+  }
+  if (
+    idSchema.safeParse(version.relationships.build?.data).data?.id === build.id
+  ) {
+    console.log(`Build ${number} is already selected; no withdrawal needed.`)
+    return
+  }
+  const submissions = await api.list(
+    `/v1/apps/${app.id}/reviewSubmissions?limit=10`,
+  )
+  for (const submission of submissions) {
+    if (
+      ![
+        'WAITING_FOR_REVIEW',
+        'IN_REVIEW',
+        'UNRESOLVED_ISSUES',
+        'CANCELING',
+      ].includes(String(submission.attributes.state))
+    )
+      continue
+    const items = await api.list(`/v1/reviewSubmissions/${submission.id}/items`)
+    if (
+      !items.some(
+        (item) =>
+          idSchema.safeParse(item.relationships.appStoreVersion?.data).data
+            ?.id === version.id,
+      )
+    )
+      continue
+    if (items.length !== 1)
+      throw new Error(
+        'Cannot withdraw a submission containing additional items',
+      )
+    if (submission.attributes.state !== 'CANCELING') {
+      await api.call(`/v1/reviewSubmissions/${submission.id}`, 'PATCH', {
+        data: {
+          type: 'reviewSubmissions',
+          id: submission.id,
+          attributes: { canceled: true },
+        },
+      })
+    }
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const current = resourceSchema.parse(
+        (await api.call(`/v1/reviewSubmissions/${submission.id}`)).data,
+      )
+      if (current.attributes.state === 'COMPLETE') {
+        console.log(
+          `Withdrew previous build; replacement ${number} can now be submitted.`,
+        )
+        return
+      }
+      await pause()
+    }
+    throw new Error(
+      'Apple is still canceling the previous submission; retry replacement after cancellation completes',
+    )
+  }
+}
+
 export async function submitAppStoreVersion(
   api: AppleApi,
   buildNumber: string,
@@ -401,6 +570,15 @@ export async function submitAppStoreVersion(
       : 'UNKNOWN'
 
   if (appStoreState === 'WAITING_FOR_REVIEW' || appStoreState === 'IN_REVIEW') {
+    const selected = idSchema.safeParse(version.relationships.build?.data)
+    const queued =
+      selected.success &&
+      response.included.find((item) => item.id === selected.data.id)
+    if (!queued || queued.attributes.version !== validatedBuildNumber) {
+      throw new Error(
+        'A different build is already queued; use the explicit replacement operation',
+      )
+    }
     console.log(
       `Version ${settings.version} is already in ${appStoreState}. No submission needed.`,
     )
@@ -619,13 +797,41 @@ export function token() {
 if (import.meta.main) {
   try {
     const command = process.argv[2] ?? ''
-    if (!['--apply', '--check', '--status', '--submit'].includes(command))
+    if (
+      ![
+        '--apply',
+        '--check',
+        '--status',
+        '--submit',
+        '--withdraw',
+        '--review-check',
+      ].includes(command)
+    )
       throw new Error(
-        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit <build_number>',
+        'Usage: node scripts/app-store.ts --check|--apply|--status|--review-check|--submit|--withdraw <build_number>',
       )
     const api = new AppleApi(token())
     if (command === '--status') {
       await checkStatus(api)
+    } else if (command === '--review-check') {
+      const movie = readFileSync(
+        new URL('../docs/media/native-walkthrough.mp4', import.meta.url),
+      )
+      await verifyReviewInformation(api, {
+        notes: readFileSync(
+          new URL(
+            '../fastlane/metadata/review_information/notes.txt',
+            import.meta.url,
+          ),
+          'utf8',
+        ),
+        email: process.env.APP_REVIEW_EMAIL ?? '',
+        password: process.env.APP_REVIEW_MAILBOX_PASSWORD ?? '',
+        fileSize: movie.length,
+        checksum: createHash('md5').update(movie).digest('hex'),
+      })
+    } else if (command === '--withdraw') {
+      await withdrawForReplacement(api, validateBuildNumber(process.argv[3]))
     } else if (command === '--submit') {
       const buildNumber = validateBuildNumber(process.argv[3])
       await submitAppStoreVersion(api, buildNumber)

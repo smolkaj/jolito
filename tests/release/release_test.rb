@@ -577,15 +577,73 @@ class ReleaseTest < Minitest::Test
   def test_metadata_lane_validates_native_screenshots_and_uses_deliver_options
     Fastlane::Actions.load_default_actions
     harness = LaneHarness.new
-    harness.execute(:metadata)
+    ReleaseConfig.stub(:review_package!, { demo_user: 'review@example.com', demo_password: 'private-inbox-password' }) do
+      harness.execute(:metadata)
+    end
     assert_equal [:connect, :upload_to_app_store], harness.calls.map(&:first)
     options = harness.calls.last.last
     assert_equal 'to.joli.app', options.fetch(:app_identifier)
     assert_equal '1.0', options.fetch(:app_version)
     assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots'), options.fetch(:screenshots_path)
     assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/metadata'), options.fetch(:metadata_path)
+    assert_equal({ demo_user: 'review@example.com', demo_password: 'private-inbox-password' }, options.fetch(:app_review_information))
+    assert_equal File.join(ReleaseConfig::ROOT, 'docs/media/native-walkthrough.mp4'), options.fetch(:app_review_attachment_file)
     assert options.fetch(:skip_binary_upload)
     refute options.fetch(:submit_for_review)
+  end
+
+  def test_review_upload_requires_independent_account_credentials
+    env = { 'APP_REVIEW_EMAIL' => 'review@example.com', 'APP_REVIEW_MAILBOX_PASSWORD' => 'private-inbox-password' }
+    assert_equal({ demo_user: 'review@example.com', demo_password: 'private-inbox-password' }, ReleaseConfig.review_account!(env))
+    env.keys.each do |key|
+      error = assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.reject { |name, _| name == key }) }
+      refute_includes error.message, 'private-inbox-password'
+      assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.merge(key => ' ')) }
+    end
+    assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.merge('APP_REVIEW_EMAIL' => 'not-email')) }
+    harness = LaneHarness.new
+    ReleaseConfig.stub(:review_package!, -> { raise 'Missing reviewer credentials' }) do
+      assert_raises(RuntimeError) { harness.execute(:metadata) }
+    end
+    assert_empty harness.calls, 'Missing credentials must fail before contacting Apple'
+  end
+
+  def test_review_package_preflight_rejects_incomplete_or_changed_evidence_before_connecting
+    env = { 'APP_REVIEW_EMAIL' => 'review@example.com', 'APP_REVIEW_MAILBOX_PASSWORD' => 'private-inbox-password' }
+    Dir.mktmpdir do |root|
+      notes = File.join(root, 'fastlane/metadata/review_information/notes.txt')
+      movie = File.join(root, 'docs/media/native-walkthrough.mp4')
+      manifest = File.join(root, 'docs/media/native-walkthrough.json')
+      FileUtils.mkdir_p(File.dirname(notes))
+      FileUtils.mkdir_p(File.dirname(movie))
+      files = { notes => 'Complete review notes', movie => "0000ftypisom_movie_bytes" }
+      files[manifest] = JSON.generate({ sha256: Digest::SHA256.hexdigest(files.fetch(movie)) })
+      restore = -> { files.each { |path, bytes| File.binwrite(path, bytes) } }
+      restore.call
+      assert_equal ReleaseConfig.review_account!(env), ReleaseConfig.review_package!(env, root)
+      cases = files.keys.map { |path| -> { File.unlink(path) } } + [
+        -> { File.write(notes, ' ') },
+        -> { File.write(notes, 'x' * 4001) },
+        -> { File.write(movie, 'not a movie') },
+        -> { File.write(movie, files.fetch(movie) + 'changed') },
+        -> { File.write(manifest, '{}') },
+        -> { File.write(manifest, 'invalid json') },
+      ]
+      cases.each do |invalidate|
+        restore.call
+        invalidate.call
+        preflight = ReleaseConfig.method(:review_package!)
+        harness = LaneHarness.new
+        ReleaseConfig.stub(:review_package!, -> { preflight.call(env, root) }) do
+          assert_raises(RuntimeError) { harness.execute(:metadata) }
+        end
+        assert_empty harness.calls, 'Invalid evidence must fail before contacting Apple'
+      end
+      restore.call
+      env.keys.each { |key| assert_raises(RuntimeError) { ReleaseConfig.review_package!(env.reject { |name, _| name == key }, root) } }
+    end
+    workflow = File.read(File.join(ReleaseConfig::ROOT, '.github/workflows/appstore.yml'))
+    assert_operator workflow.index('release_config.rb review'), :<, workflow.index('app-store.ts --withdraw')
   end
 
   def test_review_information_metadata_satisfies_app_store_connect_contract
@@ -603,9 +661,9 @@ class ReleaseTest < Minitest::Test
         assert_match(/\A[^@\s]+@[^@\s]+\.[^@\s]+\z/, content, 'Email address must be a valid email format')
       end
     end
-    # Ensure demo accounts are not enabled by default for anonymous local-first app
-    refute File.exist?(File.join(review_dir, 'demo_user.txt')), 'Anonymous app should not have demo_user.txt'
-    refute File.exist?(File.join(review_dir, 'demo_password.txt')), 'Anonymous app should not have demo_password.txt'
+    # Credentials are required at upload time and must never be committed.
+    refute File.exist?(File.join(review_dir, 'demo_user.txt')), 'Private credentials must not use demo_user.txt'
+    refute File.exist?(File.join(review_dir, 'demo_password.txt')), 'Private credentials must not use demo_password.txt'
   end
 
   def test_invalid_submission_never_contacts_apple

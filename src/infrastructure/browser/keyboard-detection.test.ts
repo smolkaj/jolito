@@ -238,6 +238,53 @@ describe('keyboard-detection', () => {
     cleanup()
   })
 
+  it('keeps native hardware authoritative through typing, disconnect, reconnect and teardown', () => {
+    const { win, doc, storage, nav, root } = createMockEnvironment({
+      isIos: true,
+    })
+    ;(win as unknown as { webkit: unknown }).webkit = {
+      messageHandlers: { jolitoKeyboard: { postMessage: vi.fn() } },
+    }
+    const cleanup = initKeyboardDetection({
+      window: win,
+      document: doc,
+      sessionStorage: storage,
+      navigator: nav,
+    })
+    const hardware = (connected: boolean) =>
+      win.dispatchEvent(
+        new CustomEvent('jolito:hardware-keyboard', { detail: { connected } }),
+      )
+    const typing = () => {
+      for (const init of [
+        { key: 'a', altKey: true },
+        { key: 'Tab' },
+        { key: 'Escape' },
+        { key: 'a' },
+      ]) {
+        win.dispatchEvent(new KeyboardEvent('keydown', init))
+      }
+    }
+    hardware(false)
+    typing()
+    expect(root.dataset.keyboard).toBeUndefined()
+    hardware(true)
+    typing()
+    expect(root.dataset.keyboard).toBe('true')
+    hardware(false)
+    typing()
+    expect(root.dataset.keyboard).toBeUndefined()
+    expect(storage.getItem('jolito:has-keyboard')).toBeNull()
+    hardware(true)
+    expect(root.dataset.keyboard).toBe('true')
+    hardware(false)
+    cleanup()
+    hardware(true)
+    typing()
+    expect(root.dataset.keyboard).toBeUndefined()
+    expect(storage.getItem('jolito:has-keyboard')).toBeNull()
+  })
+
   it('preserves and persists pre-existing dataset.keyboard from native user-script', () => {
     const { win, doc, storage, nav, root } = createMockEnvironment({
       isIos: true,

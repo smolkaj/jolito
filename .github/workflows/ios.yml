@@ -2,6 +2,11 @@ name: iOS Native Build
 
 on:
   workflow_dispatch:
+    inputs:
+      walkthrough:
+        description: 'Capture a native Simulator walkthrough with app audio'
+        type: boolean
+        default: false
   pull_request:
   push:
     branches: [main]
@@ -15,6 +20,15 @@ permissions:
   contents: read
 
 jobs:
+  recording-export:
+    name: Native recording export contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: python3 tests/release/native_walkthrough_test.py
+
   ios-build:
     name: Xcode iOS build
     runs-on: macos-15
@@ -48,7 +62,7 @@ jobs:
   native-screenshots:
     name: Native screenshots (iPhone & iPad)
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && !inputs.walkthrough) ||
       startsWith(github.event.pull_request.title, 'fix-main:') ||
       contains(github.event.pull_request.title, '[test-native]') ||
       contains(github.event.pull_request.labels.*.name, 'test-native')
@@ -113,16 +127,73 @@ jobs:
             build/screenshots-ipad.xcresult
           retention-days: 14
 
+  native-walkthrough:
+    if: github.event_name == 'workflow_dispatch' && inputs.walkthrough
+    concurrency:
+      group: native-review-capture
+      cancel-in-progress: false
+    runs-on: xcode-27
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      APP_REVIEW_EMAIL: ${{ secrets.APP_REVIEW_EMAIL }}
+      APP_REVIEW_MAILBOX_PASSWORD: ${{ secrets.APP_REVIEW_MAILBOX_PASSWORD }}
+      APP_REVIEW_DELETE_EMAIL: ${{ secrets.APP_REVIEW_DELETE_EMAIL }}
+      APP_REVIEW_DELETE_MAILBOX_PASSWORD: ${{ secrets.APP_REVIEW_DELETE_MAILBOX_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: npm ci --no-audit
+      - run: npm run build && npm run cap:sync
+      - run: bundle exec ruby scripts/prepare-native-screenshots.rb NativeWalkthrough
+      - name: Install audio capture tools
+        run: |
+          brew install ffmpeg switchaudio-osx
+          brew install --cask blackhole-2ch
+          sudo killall coreaudiod || true
+          sleep 3
+          SwitchAudioSource -s 'BlackHole 2ch' -t output
+          SwitchAudioSource -s 'BlackHole 2ch' -t system
+          SwitchAudioSource -s 'BlackHole 2ch' -t input
+      - name: Capture actual native UI and speech
+        run: bash scripts/capture-native-walkthrough.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: native-walkthrough-${{ github.sha }}
+          path: |
+            build/native-walkthrough/*.mov
+            build/native-walkthrough/*.mp4
+            build/native-walkthrough/*.wav
+            build/native-walkthrough/*.log
+            build/native-walkthrough/*.txt
+            build/native-walkthrough/*.json
+            build/native-walkthrough/*.png
+          retention-days: 14
+
   ios-gate:
     name: Xcode iOS compilation gate
     runs-on: ubuntu-latest
-    needs: [ios-build, native-screenshots]
+    needs: [ios-build, native-screenshots, native-walkthrough, recording-export]
     if: ${{ always() }}
     steps:
       - name: Require compilation and native lifecycle runs when applicable
         env:
           BUILD_RESULT: ${{ needs.ios-build.result }}
           NATIVE_RESULT: ${{ needs.native-screenshots.result }}
+          WALKTHROUGH_RESULT: ${{ needs.native-walkthrough.result }}
+          EXPORT_RESULT: ${{ needs.recording-export.result }}
         run: |
           test "$BUILD_RESULT" = success
+          test "$EXPORT_RESULT" = success
           test "$NATIVE_RESULT" = success || test "$NATIVE_RESULT" = skipped
+          test "$WALKTHROUGH_RESULT" = success || test "$WALKTHROUGH_RESULT" = skipped

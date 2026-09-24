@@ -10,6 +10,8 @@ import {
   priceSchedule,
   submitAppStoreVersion,
   validateBuildNumber,
+  withdrawForReplacement,
+  verifyReviewInformation,
 } from '../../scripts/app-store.ts'
 
 function record(type: string, id: string, attributes = {}, relationships = {}) {
@@ -273,7 +275,7 @@ void test('apply succeeds idempotently when price schedule already exists (HTTP 
   assert.equal(calls[calls.length - 1]!.method, 'GET')
 })
 
-void test('apply patches contentRightsDeclaration when missing', async () => {
+void test('apply declares licensed third-party dictionary content when missing', async () => {
   const { api, calls } = store({ missingContentRights: true })
   await configureStore(api, true)
   const patch = calls.find((c) => c.method === 'PATCH')
@@ -284,7 +286,7 @@ void test('apply patches contentRightsDeclaration when missing', async () => {
       type: 'apps',
       id: 'app',
       attributes: {
-        contentRightsDeclaration: CONTENT_RIGHTS_DECLARATION,
+        contentRightsDeclaration: 'USES_THIRD_PARTY_CONTENT',
       },
     },
   })
@@ -564,9 +566,10 @@ void test('submitAppStoreVersion reuses existing READY_FOR_REVIEW submission wit
   })
 })
 
-void test('submitAppStoreVersion is a no-op when version is already in WAITING_FOR_REVIEW', async () => {
+void test('submitAppStoreVersion is a no-op when the requested build is already queued', async () => {
   const { api, calls } = store({
     versionState: 'WAITING_FOR_REVIEW',
+    versionBuildNumber: '10',
   })
   await submitAppStoreVersion(api, '10')
   assert.ok(!calls.some((c) => c.method === 'POST'))
@@ -611,4 +614,252 @@ void test('review notes exist and do not exceed App Store Connect 4000 character
     content.length <= 4000,
     `Review notes cannot exceed 4000 characters (found ${content.length})`,
   )
+})
+
+void test('replacement waits for cancellation and preserves unrelated submissions', async () => {
+  let state = 'WAITING_FOR_REVIEW'
+  let polls = 0
+  const writes: string[] = []
+  const api = new AppleApi('token', (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : input)
+    if (init?.method === 'PATCH') {
+      writes.push(url.pathname)
+      state = 'CANCELING'
+      return reply({ data: record('reviewSubmissions', 'current', { state }) })
+    }
+    if (url.pathname === '/v1/apps')
+      return reply({ data: [record('apps', 'app')] })
+    if (url.pathname === '/v1/apps/app/appStoreVersions')
+      return reply({
+        data: [
+          record(
+            'appStoreVersions',
+            'v1',
+            { versionString: '1.0', appStoreState: 'WAITING_FOR_REVIEW' },
+            { build: rel('builds', 'old') },
+          ),
+        ],
+        included: [record('builds', 'old', { version: '10' })],
+      })
+    if (url.pathname === '/v1/builds')
+      return reply({
+        data: [
+          record(
+            'builds',
+            'new',
+            { version: '11', processingState: 'VALID', expired: false },
+            { preReleaseVersion: rel('preReleaseVersions', 'pr') },
+          ),
+        ],
+        included: [
+          record('preReleaseVersions', 'pr', {
+            version: '1.0',
+            platform: 'IOS',
+          }),
+        ],
+      })
+    if (url.pathname === '/v1/apps/app/reviewSubmissions')
+      return reply({
+        data: [
+          record('reviewSubmissions', 'unrelated', {
+            state: 'WAITING_FOR_REVIEW',
+          }),
+          record('reviewSubmissions', 'current', { state }),
+        ],
+      })
+    if (url.pathname.endsWith('/items'))
+      return reply({
+        data: [
+          record(
+            'reviewSubmissionItems',
+            'item',
+            {},
+            {
+              appStoreVersion: rel(
+                'appStoreVersions',
+                url.pathname.includes('current') ? 'v1' : 'other',
+              ),
+            },
+          ),
+        ],
+      })
+    if (url.pathname === '/v1/reviewSubmissions/current') {
+      polls++
+      if (polls === 2) state = 'COMPLETE'
+      return reply({ data: record('reviewSubmissions', 'current', { state }) })
+    }
+    throw new Error('Unexpected request ' + url.pathname)
+  })
+  await withdrawForReplacement(api, '11', async () => {})
+  assert.deepEqual(writes, ['/v1/reviewSubmissions/current'])
+  assert.equal(polls, 2)
+  assert.equal(state, 'COMPLETE')
+})
+
+void test('submission never silently accepts a different queued build', async () => {
+  for (const versionState of ['WAITING_FOR_REVIEW', 'IN_REVIEW']) {
+    const { api, calls } = store({ versionState, versionBuildNumber: '10' })
+    await assert.rejects(submitAppStoreVersion(api, '11'), /different build/)
+    assert.ok(calls.every((call) => call.method === 'GET'))
+    await submitAppStoreVersion(api, '10')
+    assert.ok(calls.every((call) => call.method === 'GET'))
+  }
+})
+
+void test('replacement validates candidate version, platform and processing before any withdrawal', async () => {
+  for (const attributes of [
+    { version: '11', processingState: 'PROCESSING', expired: false },
+    { version: '11', processingState: 'VALID', expired: true },
+    {
+      version: '11',
+      processingState: 'VALID',
+      expired: false,
+      wrongVersion: true,
+    },
+    {
+      version: '11',
+      processingState: 'VALID',
+      expired: false,
+      wrongPlatform: true,
+    },
+  ]) {
+    const writes: string[] = []
+    const api = new AppleApi('token', (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input)
+      if (init?.method && init.method !== 'GET') writes.push(url.pathname)
+      if (url.pathname === '/v1/apps')
+        return reply({ data: [record('apps', 'app')] })
+      if (url.pathname.endsWith('/appStoreVersions'))
+        return reply({
+          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+        })
+      if (url.pathname === '/v1/builds')
+        return reply({
+          data: [
+            record('builds', 'new', attributes, {
+              preReleaseVersion: rel('preReleaseVersions', 'pr'),
+            }),
+          ],
+          included: [
+            record('preReleaseVersions', 'pr', {
+              version: attributes.wrongVersion ? '2.0' : '1.0',
+              platform: attributes.wrongPlatform ? 'MAC_OS' : 'IOS',
+            }),
+          ],
+        })
+      throw new Error('Candidate validation must precede submission changes')
+    })
+    await assert.rejects(
+      withdrawForReplacement(api, '11', async () => {}),
+      /processed, unexpired iOS build/,
+    )
+    assert.deepEqual(writes, [])
+  }
+})
+
+void test('review readback validates private access and complete video without mutating Apple', async () => {
+  const expected = {
+    notes: 'Six-part review notes',
+    email: 'review@example.com',
+    password: 'private',
+    fileSize: 12345,
+    checksum: 'expected-md5',
+  }
+  for (const mismatch of [
+    '',
+    'notes',
+    'demoAccountPassword',
+    'attachment',
+    'checksum',
+  ]) {
+    const api = new AppleApi('token', (input, init) => {
+      assert.equal(init?.method, 'GET')
+      const url = new URL(input instanceof Request ? input.url : input)
+      if (url.pathname === '/v1/apps')
+        return reply({ data: [record('apps', 'app')] })
+      if (url.pathname.endsWith('/appStoreVersions'))
+        return reply({
+          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+        })
+      const attributes = {
+        notes: expected.notes,
+        demoAccountRequired: true,
+        demoAccountName: expected.email,
+        demoAccountPassword: expected.password,
+        ...(mismatch ? { [mismatch]: 'different' } : {}),
+      }
+      return reply({
+        data: record('appStoreReviewDetails', 'detail', attributes),
+        included:
+          mismatch === 'attachment'
+            ? []
+            : [
+                record('appStoreReviewAttachments', 'video', {
+                  fileName: 'native-walkthrough.mp4',
+                  fileSize: 12345,
+                  sourceFileChecksum:
+                    mismatch === 'checksum' ? 'wrong' : 'expected-md5',
+                  assetDeliveryState: { state: 'COMPLETE' },
+                }),
+              ],
+      })
+    })
+    if (mismatch)
+      await assert.rejects(
+        verifyReviewInformation(api, expected),
+        /Stored App Review|video attachment/,
+      )
+    else await verifyReviewInformation(api, expected)
+  }
+})
+
+void test('review readback waits for asynchronous video delivery and bounds failed processing', async () => {
+  const expected = {
+    notes: 'Notes',
+    email: 'review@example.com',
+    password: 'private',
+    fileSize: 10,
+    checksum: 'md5',
+  }
+  for (const outcome of ['COMPLETE', 'FAILED', 'UPLOAD_COMPLETE']) {
+    let reads = 0
+    let waits = 0
+    const api = new AppleApi('token', (input, init) => {
+      assert.equal(init?.method, 'GET')
+      const url = new URL(input instanceof Request ? input.url : input)
+      if (url.pathname === '/v1/apps')
+        return reply({ data: [record('apps', 'app')] })
+      if (url.pathname.endsWith('/appStoreVersions'))
+        return reply({
+          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+        })
+      reads++
+      return reply({
+        data: record('appStoreReviewDetails', 'detail', {
+          notes: expected.notes,
+          demoAccountRequired: true,
+          demoAccountName: expected.email,
+          demoAccountPassword: expected.password,
+        }),
+        included: [
+          record('appStoreReviewAttachments', 'video', {
+            fileName: 'native-walkthrough.mp4',
+            fileSize: expected.fileSize,
+            sourceFileChecksum: expected.checksum,
+            assetDeliveryState: {
+              state: reads < 3 ? 'UPLOAD_COMPLETE' : outcome,
+            },
+          }),
+        ],
+      })
+    })
+    const verification = verifyReviewInformation(api, expected, () => {
+      waits++
+      return Promise.resolve()
+    })
+    if (outcome === 'COMPLETE') await verification
+    else await assert.rejects(verification, /video attachment/)
+    assert.equal(reads, outcome === 'UPLOAD_COMPLETE' ? 60 : 3)
+    assert.equal(waits, reads - 1)
+  }
 })

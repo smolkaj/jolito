@@ -6,7 +6,7 @@ on:
       operation:
         description: 'Configure price/availability, upload metadata/screenshots, check review status, or submit a tested build'
         type: choice
-        options: [configure, metadata, status, submit]
+        options: [configure, metadata, status, submit, replace]
         required: true
       build_number:
         description: 'Exact tested build number from the TestFlight release artifact (submit only)'
@@ -29,6 +29,8 @@ jobs:
       APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
       APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+      APP_REVIEW_EMAIL: ${{ secrets.APP_REVIEW_EMAIL }}
+      APP_REVIEW_MAILBOX_PASSWORD: ${{ secrets.APP_REVIEW_MAILBOX_PASSWORD }}
       BUILD_NUMBER: ${{ inputs.build_number }}
     steps:
       - uses: actions/checkout@v7
@@ -42,14 +44,19 @@ jobs:
           bundler-cache: true
       - run: bundle exec ruby fastlane/release_config.rb api
       - run: npm ci --no-audit
+      - if: inputs.operation == 'metadata' || inputs.operation == 'submit' || inputs.operation == 'replace'
+        run: bundle exec ruby fastlane/release_config.rb review
       - if: inputs.operation == 'configure'
         run: node scripts/app-store.ts --apply
       - if: inputs.operation == 'metadata'
         run: bundle exec fastlane ios metadata
       - if: inputs.operation == 'status'
         run: node scripts/app-store.ts --status
-      - if: inputs.operation == 'submit'
+      - if: inputs.operation == 'replace'
+        run: node scripts/app-store.ts --withdraw "$BUILD_NUMBER"
+      - if: inputs.operation == 'submit' || inputs.operation == 'replace'
         run: |
           node scripts/app-store.ts --apply
           bundle exec fastlane ios metadata
+          node scripts/app-store.ts --review-check
           bundle exec fastlane ios release build_number:"$BUILD_NUMBER"

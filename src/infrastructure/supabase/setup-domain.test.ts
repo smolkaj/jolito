@@ -59,6 +59,7 @@ describe('Domain & Supabase Setup Utilities', () => {
 
       expect(patch.site_url).toBe('https://joli.to')
       expect(patch.mailer_autoconfirm).toBe(false)
+      expect(patch.rate_limit_email_sent).toBe(30)
       expect(patch.uri_allow_list).toContain('https://joli.to/**')
       expect(patch.uri_allow_list).toContain('http://localhost:*/**')
       expect(patch.external_apple_enabled).toBe(true)
@@ -83,6 +84,7 @@ describe('Domain & Supabase Setup Utilities', () => {
         resendApiKey: 're_test_key_123',
       })
 
+      expect(patch.rate_limit_email_sent).toBe(30)
       expect(patch.smtp_host).toBe('smtp.resend.com')
       expect(patch.smtp_port).toBe('587')
       expect(patch.smtp_user).toBe('resend')
@@ -117,7 +119,9 @@ describe('production email verification policy', () => {
   it('applies verified sign-in and the existing code template to both new and returning accounts', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(Response.json({ mailer_autoconfirm: false }))
+      .mockResolvedValue(
+        Response.json({ mailer_autoconfirm: false, rate_limit_email_sent: 30 }),
+      )
     await syncSupabaseAuthConfig({
       SUPABASE_ACCESS_TOKEN: 'test-token',
       SUPABASE_PROJECT_ID: 'testproject',
@@ -129,6 +133,7 @@ describe('production email verification policy', () => {
       unknown
     >
     expect(payload.mailer_autoconfirm).toBe(false)
+    expect(payload.rate_limit_email_sent).toBe(30)
     expect(payload.mailer_templates_confirmation_content).toBe(
       payload.mailer_templates_magic_link_content,
     )
@@ -139,6 +144,24 @@ describe('production email verification policy', () => {
       payload.mailer_subjects_magic_link,
     )
   })
+
+  it.each([2, undefined, 1000])(
+    'rejects unapplied email capacity (%s)',
+    async (capacity) => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        Response.json({
+          mailer_autoconfirm: false,
+          rate_limit_email_sent: capacity,
+        }),
+      )
+      await expect(
+        syncSupabaseAuthConfig({
+          SUPABASE_ACCESS_TOKEN: 'test-token',
+          SUPABASE_PROJECT_ID: 'testproject',
+        }),
+      ).rejects.toThrow()
+    },
+  )
 
   it('stops rollout when the authentication policy cannot be applied', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
