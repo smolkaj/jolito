@@ -25,12 +25,26 @@ audio_offset = start - float((folder / 'audio-start.txt').read_text())
 if min(video_offset, audio_offset) < 0:
     raise SystemExit('Capture began after the walkthrough')
 
+# Simulator emits a frame only when the display changes. Seeking directly to
+# START drops a still Home Screen frame whose timestamp precedes that boundary.
+# Sample the recorded display timeline before trimming so held images survive.
+# First require real source coverage; fps must never conceal a short recording.
+for filename, offset in [('screen.mov', video_offset), ('audio.wav', audio_offset)]:
+    raw = json.loads(subprocess.check_output([
+        'ffprobe', '-v', 'error', '-show_streams', '-of', 'json', str(folder / filename)
+    ]))
+    if any(float(stream.get('start_time', 0)) > offset or
+           float(stream.get('start_time', 0)) + float(stream.get('duration', 0)) < offset + end - start
+           for stream in raw['streams']):
+        raise SystemExit('Source tracks must cover the full walkthrough')
+
 partial = folder / 'native-walkthrough.partial.mp4'
 subprocess.run([
     'ffmpeg', '-hide_banner', '-loglevel', 'warning', '-y',
-    '-ss', str(video_offset), '-i', str(folder / 'screen.mov'),
+    '-i', str(folder / 'screen.mov'),
     '-ss', str(audio_offset), '-i', str(folder / 'audio.wav'),
-    '-t', str(end - start), '-map', '0:v:0', '-map', '1:a:0',
+    '-filter_complex', f'[0:v]fps=30,trim=start={video_offset}:duration={end - start},setpts=PTS-STARTPTS[video]',
+    '-t', str(end - start), '-map', '[video]', '-map', '1:a:0',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(partial),
 ], check=True)
@@ -39,7 +53,8 @@ probe = json.loads(subprocess.check_output([
 ]))
 if {stream['codec_type'] for stream in probe['streams']} != {'audio', 'video'}:
     raise SystemExit('Final recording must contain both audio and video')
-if any(abs(float(stream.get('duration', 0)) - (end - start)) > 1
+if any(float(stream.get('start_time', 0)) > 0.05 or
+       abs(float(stream.get('duration', 0)) - (end - start)) > 1
        for stream in probe['streams']):
     raise SystemExit('Both tracks must cover the full walkthrough; refusing a truncated capture')
 study_start = chapters[2]['seconds']

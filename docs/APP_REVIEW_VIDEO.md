@@ -7,6 +7,24 @@ Credentials belong in private release secrets, never this repository.
 
 ## Native recording
 
+The [11:58 recording](media/native-walkthrough.mp4),
+[capture manifest](media/native-walkthrough.json) and
+[timestamped contact sheet](media/native-walkthrough-contact.jpg) are the release
+package. Source capture: [native run 36058089991](https://github.com/smolkaj/jolito/actions/runs/36058089991),
+commit `f2edd03118cf717464bbdfdb8a120efd8e1d0b20`. Its complete 788-second
+XCTest passed with zero failures. The original exporter rejected its sparse-frame
+trim; the corrected exporter below assembled the same raw recording locally.
+No interactions were recaptured, synthesized or spliced.
+
+Validation on September 24, 2026: both output tracks start at zero and span
+717.76 seconds. Sampled frames cover the whole flow, with full-resolution checks
+of launch, study, login and deletion. Original speech peaks at −12.7 dB.
+Waveform analysis and speech transcription identify “La cuenta, por favor,”
+“The bill, please,” “Provecho,” “Enjoy your meal” (automatic and replay), and
+the grammar prompts/answers. This is signal/transcription verification, not a
+human listening review. Production readback confirms the disposable account
+was deleted and the dedicated reviewer account remains available with its deck.
+
 The native capture uses Apple's **iPhone Air Simulator, iOS 27.0**, running the
 bundled Release app with production Supabase authentication and device speech.
 It retains the native status bar, Dynamic Island mask, screen corners, keyboard
@@ -82,9 +100,13 @@ recorder reports readiness. This avoids the dropped short audio buffers observed
 with FFmpeg's AVFoundation input on the hosted runner.
 [`assemble-native-walkthrough.py`](../scripts/assemble-native-walkthrough.py)
 requires a successful complete take, trims at logged boundaries and muxes AAC
-into the final MP4. It rejects truncated tracks, silent audio and fragmented study audio without a
+into the final MP4. It checks source coverage and samples the original held-frame
+timeline at 30 fps before trimming, preserving the opening and final still images.
+It rejects truncated tracks, silent audio and fragmented study audio without a
 continuous sound interval. Complete, silent, chopped-buffer and truncated
-FFmpeg fixtures verify these gates. Failed takes are diagnostic artifacts, never release videos.
+FFmpeg fixtures verify these gates. The independent recording-export CI job also
+checks fractional cuts inside held frames; that fixture rejects the previous
+seek-before-trim implementation. Failed takes are diagnostic artifacts, never release videos.
 
 Artifacts deliberately exclude generated schemes and `.xcresult` bundles,
 which may contain runner environment values. Before publishing, inspect the
