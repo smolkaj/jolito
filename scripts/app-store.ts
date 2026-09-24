@@ -55,10 +55,17 @@ export class AppleApi {
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     })
-    if (!response.ok)
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(
+          `Apple API ${method} ${url.pathname}: HTTP ${response.status}`,
+        )
+      }
+      const errorText = await response.text().catch(() => '')
       throw new Error(
-        `Apple API ${method} ${url.pathname}: HTTP ${response.status}`,
+        `Apple API ${method} ${url.pathname}: HTTP ${response.status}${errorText ? ` - ${errorText}` : ''}`,
       )
+    }
     if (response.status === 204) return { data: [], included: [] }
     return responseSchema.parse(await response.json())
   }
@@ -338,7 +345,12 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
   if (reviewSubmissions.length > 0) {
     console.log('Review Submissions:')
     for (const s of reviewSubmissions) {
-      console.log(`- Submission ${s.id}: ${s.state}`)
+      const items = await api.list(`/v1/reviewSubmissions/${s.id}/items`)
+      const itemDesc =
+        items.length === 0
+          ? '0 items'
+          : `${items.length} item(s): ${items.map((i) => i.id).join(', ')}`
+      console.log(`- Submission ${s.id}: ${s.state} (${itemDesc})`)
     }
   }
 
@@ -395,6 +407,31 @@ export async function submitAppStoreVersion(
     return
   }
 
+  const builds = await api.list(
+    `/v1/builds?filter[app]=${app.id}&filter[version]=${validatedBuildNumber}&limit=10`,
+  )
+  if (builds.length === 0) {
+    throw new Error(
+      `Build ${validatedBuildNumber} not found for version ${settings.version}`,
+    )
+  }
+  const targetBuild = builds[0]!
+
+  if (targetBuild.attributes.usesNonExemptEncryption !== false) {
+    console.log(
+      `Setting usesNonExemptEncryption: false on build ${validatedBuildNumber} (${targetBuild.id})...`,
+    )
+    await api.call(`/v1/builds/${targetBuild.id}`, 'PATCH', {
+      data: {
+        type: 'builds',
+        id: targetBuild.id,
+        attributes: {
+          usesNonExemptEncryption: false,
+        },
+      },
+    })
+  }
+
   const buildRel = idSchema.safeParse(version.relationships.build?.data)
   const currentBuildResource = buildRel.success
     ? response.included.find(
@@ -425,16 +462,8 @@ export async function submitAppStoreVersion(
       patchData.attributes = { releaseType: 'AFTER_APPROVAL' }
     }
     if (needsBuildPatch) {
-      const builds = await api.list(
-        `/v1/builds?filter[app]=${app.id}&filter[version]=${validatedBuildNumber}&limit=10`,
-      )
-      if (builds.length === 0) {
-        throw new Error(
-          `Build ${validatedBuildNumber} not found for version ${settings.version}`,
-        )
-      }
       patchData.relationships = {
-        build: relation('builds', builds[0]!.id),
+        build: relation('builds', targetBuild.id),
       }
     }
     await api.call(`/v1/appStoreVersions/${version.id}`, 'PATCH', {
@@ -487,18 +516,34 @@ export async function submitAppStoreVersion(
     ).data,
   )
 
-  console.log(
-    `Attaching version ${settings.version} to review submission ${newSubmission.id}...`,
+  const existingItems = await api.list(
+    `/v1/reviewSubmissions/${newSubmission.id}/items`,
   )
-  await api.call('/v1/reviewSubmissionItems', 'POST', {
-    data: {
-      type: 'reviewSubmissionItems',
-      relationships: {
-        reviewSubmission: relation('reviewSubmissions', newSubmission.id),
-        appStoreVersion: relation('appStoreVersions', version.id),
-      },
-    },
+  const alreadyAttached = existingItems.some((item) => {
+    const relVersion = idSchema.safeParse(
+      item.relationships.appStoreVersion?.data,
+    )
+    return relVersion.success && relVersion.data.id === version.id
   })
+
+  if (!alreadyAttached) {
+    console.log(
+      `Attaching version ${settings.version} to review submission ${newSubmission.id}...`,
+    )
+    await api.call('/v1/reviewSubmissionItems', 'POST', {
+      data: {
+        type: 'reviewSubmissionItems',
+        relationships: {
+          reviewSubmission: relation('reviewSubmissions', newSubmission.id),
+          appStoreVersion: relation('appStoreVersions', version.id),
+        },
+      },
+    })
+  } else {
+    console.log(
+      `Version ${settings.version} is already attached to review submission ${newSubmission.id}`,
+    )
+  }
 
   console.log(
     `Submitting review submission ${newSubmission.id} for App Store review...`,

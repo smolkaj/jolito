@@ -84,6 +84,13 @@ function store(
           }),
         })
       }
+      if (url.pathname.startsWith('/v1/builds/')) {
+        return reply({
+          data: record('builds', url.pathname.split('/').pop()!, {
+            usesNonExemptEncryption: false,
+          }),
+        })
+      }
       if (url.pathname.startsWith('/v1/appStoreVersions/')) {
         return reply({
           data: record('appStoreVersions', url.pathname.split('/').pop()!, {
@@ -195,6 +202,9 @@ function store(
           { territory: rel('territories', id) },
         ),
       ),
+    }
+    if (url.pathname.match(/^\/v1\/reviewSubmissions\/[^/]+\/items$/)) {
+      return reply({ data: [] })
     }
     assert.ok(url.pathname in responses, `Unexpected request: ${url}`)
     if (
@@ -408,6 +418,22 @@ void test('submitAppStoreVersion attaches build if needed, cancels stuck submiss
   })
 
   await submitAppStoreVersion(api, '10')
+
+  // Verify export compliance was configured on target build
+  const patchEncryption = calls.find(
+    (c) => c.method === 'PATCH' && c.url.pathname === '/v1/builds/b10',
+  )
+  assert.ok(
+    patchEncryption,
+    'Expected PATCH /v1/builds/b10 to set usesNonExemptEncryption',
+  )
+  assert.deepEqual(JSON.parse(patchEncryption.body!), {
+    data: {
+      type: 'builds',
+      id: 'b10',
+      attributes: { usesNonExemptEncryption: false },
+    },
+  })
 
   // Verify build was attached and releaseType configured via PATCH
   const patchBuild = calls.find(
