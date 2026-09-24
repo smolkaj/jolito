@@ -94,8 +94,10 @@ final class NativeWalkthrough: XCTestCase {
             let prompt = visibleStudyPrompt()
             pause(7)
             // Start on the noninteractive prompt area. Up reveals; right grades Good.
-            let origin = prompt.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
-            let upwards = origin.withOffset(CGVector(dx: 0, dy: -80))
+            let origin = prompt.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
+            // Clear the 50-point reveal threshold while keeping the finger
+            // below the sticky header for the entire gesture, including lift.
+            let upwards = origin.withOffset(CGVector(dx: 0, dy: -55))
             origin.press(forDuration: 0.08, thenDragTo: upwards, withVelocity: .slow, thenHoldForDuration: 0.15)
             XCTAssertTrue(button("3 Good").waitForExistence(timeout: 10), "Swipe up must reveal the answer")
             pause(7)
