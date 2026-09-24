@@ -20,6 +20,8 @@ export function buildSupabaseAuthPatch({
   const patch: Record<string, unknown> = {
     site_url: `https://${domain}`,
     mailer_autoconfirm: false,
+    // Production uses Resend SMTP; do not inherit the built-in two-email quota.
+    rate_limit_email_sent: 30,
     uri_allow_list: `https://${domain}/**,https://*-jolito.smolkaj.workers.dev/**,https://jolito.smolkaj.workers.dev/**,http://localhost:*/**,http://127.0.0.1:*/**`,
     external_apple_enabled: true,
     external_apple_client_id: appleBundleId,
@@ -79,9 +81,10 @@ export async function syncSupabaseAuthConfig(
     throw new Error(
       `Supabase Auth configuration failed (HTTP ${response.status})`,
     )
-  z.object({ mailer_autoconfirm: z.literal(false) }).parse(
-    await response.json(),
-  )
+  z.object({
+    mailer_autoconfirm: z.literal(false),
+    rate_limit_email_sent: z.literal(30),
+  }).parse(await response.json())
 }
 
 if (

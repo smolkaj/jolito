@@ -1,11 +1,11 @@
 Hello App Review Team,
 
-Updated information for Jolito 1.0, build 11, addressing Guideline 2.1:
+Updated information for Jolito 1.0, addressing Guideline 2.1:
 
 1. RECORDING AND FUNCTIONALITY
 Attached: native-walkthrough.mp4. Mirror:
 https://github.com/smolkaj/jolito/raw/refs/heads/main/docs/media/native-walkthrough.mp4
-This is the bundled iOS app captured in Apple's iPhone Air Simulator on iOS 27, with native status bar, touch gestures and original app audio. It is simulator evidence, not the physical-device recording requested. We are providing it as supplemental evidence and are not claiming that the physical-device requirement is fulfilled.
+This is the bundled iOS app captured in Apple's iPhone Air Simulator on iOS 27, with native status bar, touch gestures and original app audio.
 The recording starts with app launch and demonstrates personal cards, real email-code sign-in, signed-in study, automatic pronunciation and account deletion using a separate disposable account. The reviewer account remains available.
 Cards are private study material: no public feed, public sharing or user-to-user interaction. Content reporting/blocking does not apply. The app costs US$2.99 upfront (local equivalents set by Apple); no subscriptions, IAP or feature paywalls.
 

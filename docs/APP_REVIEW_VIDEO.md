@@ -17,8 +17,7 @@ to authoring and account input; study uses touch reveal/rating gestures.
 **This is not physical-device evidence.** Apple's explicit request for a
 physical device and supported-device QA remains outstanding. Keep this
 qualification in the review notes; a realistic Simulator recording cannot
-establish hardware provenance. The app source matches TestFlight **1.0 (11)**,
-released from `efaab0dc0adb64b6192183751fec72062e5e2349`; the Simulator build is a
+establish hardware provenance. The capture manifest identifies the app source commit; the Simulator build is a
 separate unsigned build of that application source.
 
 ### Script and pacing
@@ -154,3 +153,19 @@ late binding had been initialized. Compilation cannot reject this callback
 closure; the missing boundary was exercising the mobile entry point from the
 other render branches. The new unit contract selects **Mobile navigation**
 explicitly, and the recording script fails on any browser page error.
+
+## Release issues found on the native rehearsal
+
+- **SMTP capacity (PR #268):** Custom Resend SMTP was codified without its
+  delivery quota, leaving production at Supabase's built-in two-email/hour
+  default. A registration/returning-login/deletion session exhausted the entire
+  project quota. Configuration tests checked SMTP fields but never verified
+  usable delivery capacity. Both setup and recurring auth synchronization now
+  declare 30 emails/hour, and rollout validation rejects missing or different
+  capacity. This remains subject to Resend's free-tier daily limit.
+- **Native launcher icon (PR #173):** The Capacitor scaffold's default icon
+  survived because brand generation covered web and Android only. Native build
+  checks compiled the asset but did not compare it to the brand source. The
+  existing generator now also owns the iOS icon; browser CI regenerates it in
+  memory and fails on any drift. A new TestFlight build is required for this
+  asset change.

@@ -21,8 +21,15 @@ const option4Svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" 
   <circle cx="16" cy="16" r="2.2" fill="#ffffff" />
 </svg>`
 
+const iosOnly =
+  process.argv.includes('--ios-only') || process.argv.includes('--check-ios')
+const checkIos = process.argv.includes('--check-ios')
+const iosIcon =
+  '../ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png'
+
 // Write public/favicon.svg
-fs.writeFileSync(path.join(publicDir, 'favicon.svg'), option4Svg, 'utf8')
+if (!iosOnly)
+  fs.writeFileSync(path.join(publicDir, 'favicon.svg'), option4Svg, 'utf8')
 console.log('Saved public/favicon.svg (Option 4: Ramillete Radial)')
 
 // Generate raster icons for production & PWA
@@ -38,7 +45,7 @@ async function buildRasters() {
     { name: 'favicon.png', size: 32 },
   ]
 
-  for (const item of tabFavicons) {
+  for (const item of iosOnly ? [] : tabFavicons) {
     const page = await browser.newPage({
       viewport: { width: item.size, height: item.size },
       deviceScaleFactor: 1,
@@ -67,13 +74,16 @@ async function buildRasters() {
   // iOS renders transparent touch icons with a black background; we use solid
   // Jolito Paper (#fdf5f8) with prominent 88% scale for bold native appearance.
   const appIcons = [
+    { name: iosIcon, size: 1024, scale: 0.88 },
     { name: 'apple-touch-icon.png', size: 180, scale: 0.88 },
     { name: 'icon-192.png', size: 192, scale: 0.88 },
     { name: 'icon-512.png', size: 512, scale: 0.88 },
     { name: 'icon-512-maskable.png', size: 512, scale: 0.8 },
   ]
 
-  for (const item of appIcons) {
+  for (const item of appIcons.filter(
+    (item) => !iosOnly || item.name === iosIcon,
+  )) {
     const markSize = Math.round(item.size * item.scale)
     const page = await browser.newPage({
       viewport: { width: item.size, height: item.size },
@@ -111,16 +121,23 @@ async function buildRasters() {
       </body>
       </html>
     `)
-    await page.screenshot({
-      path: path.join(publicDir, item.name),
-      omitBackground: false,
-    })
+    const rendered = await page.screenshot({ omitBackground: false })
+    const destination = path.join(publicDir, item.name)
+    if (checkIos) {
+      if (!fs.readFileSync(destination).equals(rendered)) {
+        throw new Error(
+          'iOS icon differs from the canonical brand. Run node scripts/build-favicons.mjs --ios-only',
+        )
+      }
+    } else {
+      fs.writeFileSync(destination, rendered)
+    }
     await page.close()
   }
 
   // 3. Android launcher & adaptive icons (mipmap densities)
   const androidResDir = path.join(rootDir, 'android/app/src/main/res')
-  if (fs.existsSync(androidResDir)) {
+  if (!iosOnly && fs.existsSync(androidResDir)) {
     const androidMipmaps = [
       { density: 'mdpi', size: 48, fgSize: 108, fgMark: 72 },
       { density: 'hdpi', size: 72, fgSize: 162, fgMark: 108 },
@@ -257,8 +274,11 @@ print("Built multi-layer favicon.ico")
 
 async function main() {
   await buildRasters()
-  buildIco()
+  if (!iosOnly) buildIco()
   console.log('Production favicon build complete!')
 }
 
-main().catch(console.error)
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})

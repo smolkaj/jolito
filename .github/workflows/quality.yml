@@ -60,6 +60,8 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium webkit
+      - if: matrix.shardIndex == 1
+        run: node scripts/build-favicons.mjs --check-ios
       - run: npm run test:e2e -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
