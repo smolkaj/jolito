@@ -539,7 +539,7 @@ for (const topic of ['preterite', 'perfect', 'gerund'] as const) {
     await page.getByRole('textbox').press('Enter')
     await expect.poll(plays).toBeGreaterThan(afterReplay)
     // Interrupt before grading so setup predicts the same already-warmed round.
-    await page.getByRole('button', { name: 'Grammar' }).click()
+    await page.getByRole('button', { name: 'Grammar', exact: true }).click()
     await page.getByRole('button', { name: 'Resume practice' }).click()
     await page.getByRole('button', { name: 'Jolito home' }).click()
     await page

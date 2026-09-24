@@ -113,9 +113,13 @@ export function createBrowserServices(): AppServices {
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
 
-  const speaker: Speaker = Capacitor.isNativePlatform()
+  const fallbackSpeaker: Speaker = Capacitor.isNativePlatform()
     ? new NativeSpeaker()
-    : new LayeredNeuralSpeaker()
+    : new EnhancedBrowserSpeaker()
+
+  const speaker: Speaker = new LayeredNeuralSpeaker({
+    fallbackSpeaker,
+  })
   void speaker.prewarm?.()
 
   const sync = new SupabaseSyncService(auth, undefined, undefined, deviceId)

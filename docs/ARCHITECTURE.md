@@ -82,6 +82,16 @@ Compare corresponding states across modes when changing the shared experience. T
 [practice coherence audit](features/practice-coherence-audit.md) records the deliberate
 content differences and the browser/lifecycle contracts that enforce this boundary.
 
+## Appearance
+
+The device color scheme selects the light or dark token palette in `src/styles.css`.
+CSS and media-qualified browser theme colors apply before JavaScript starts and
+react to system changes without remounting the app, storing preferences, or adding
+listeners. Capacitor keyboard and status-bar styles also follow device appearance.
+Keep component surfaces and interaction states on semantic tokens; verify both
+schemes in `tests/e2e/appearance.spec.ts`, including contrast, keyboard docking, and
+appearance changes during recall and grading.
+
 ## Current and target topology
 
 - React and Vite provide an offline-capable single-page application shell.

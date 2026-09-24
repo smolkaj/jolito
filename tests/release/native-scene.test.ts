@@ -153,6 +153,42 @@ void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for nati
   assert.match(speechPlugin, /utterance\s*===\s*self\.activeUtterance/)
 })
 
+void test('NativeSpeechPlugin filters out Eloquence and legacy novelty robotic synthesizers and prioritizes natural voices', () => {
+  const speechPlugin = readFileSync(
+    new URL('../../ios/App/App/NativeSpeechPlugin.swift', import.meta.url),
+    'utf8',
+  )
+
+  // 1. Robotic and screen-reader synthesizers must be detected and filtered out
+  assert.match(speechPlugin, /func isRoboticOrNoveltyVoice/)
+  assert.match(speechPlugin, /identifier\.contains\("eloquence"\)/)
+  assert.match(
+    speechPlugin,
+    /identifier\.contains\("speech\.synthesis\.voice"\)\s*&&\s*!identifier\.contains\("alex"\)/,
+  )
+  assert.match(speechPlugin, /"eddy",\s*"floyd",\s*"grandpa"/)
+  assert.match(speechPlugin, /"reed",\s*"rocko",\s*"sandy",\s*"shelley"/)
+
+  // 2. Candidate voice pool excludes robotic synthesizers
+  assert.match(
+    speechPlugin,
+    /let naturalVoices\s*=\s*allVoices\.filter\s*\{\s*!self\.isRoboticOrNoveltyVoice\(\$0\)\s*\}/,
+  )
+
+  // 3. Neural persona name hint mappings (Jorge, Paulina/Dalia, Samantha/Jenny, Alex/Guy)
+  assert.match(speechPlugin, /lowerPreferred\.contains\("jorge"\)/)
+  assert.match(
+    speechPlugin,
+    /lowerPreferred\.contains\("dalia"\)\s*\|\|\s*lowerPreferred\.contains\("paulina"\)/,
+  )
+
+  // 4. Preferred natural Spanish voices include Jorge and Paulina
+  assert.match(
+    speechPlugin,
+    /preferredSpanishNames[\s\S]*?jorge[\s\S]*?paulina/,
+  )
+})
+
 void test('SceneDelegate registers SpeechRecognitionPlugin with Speech and AVFoundation for spoken recall', () => {
   const sceneDelegate = readFileSync(
     new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
@@ -391,5 +427,39 @@ void test('CSS architectural invariants for universal keyboard avoidance and rea
     css,
     /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.app-shell[\s\S]*?transition:\s*none\s*!important;/,
     'prefers-reduced-motion must disable .app-shell transitions',
+  )
+})
+void test('CSS architectural invariants for mobile keyboard accent toolbar accessories', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // 1. On iOS without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /html\[data-platform='ios'\]:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container[\s\S]*?display:\s*none\s*!important;/,
+    'iOS without physical keyboard must suppress in-card accents container',
+  )
+
+  // 2. On Android without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /html\[data-platform='android'\]:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container[\s\S]*?display:\s*none\s*!important;/,
+    'Android without physical keyboard must suppress in-card accents container',
+  )
+
+  // 3. On mobile touch screens without physical keyboard, in-card accent toolbar is suppressed
+  assert.match(
+    css,
+    /@media\s*\(max-width:\s*640px\),\s*\(pointer:\s*coarse\)\s*\{[\s\S]*?html:not\(\[data-keyboard='true'\]\)\s*\.answer-accents-container\s*\{[\s\S]*?display:\s*none\s*!important;/,
+    'Mobile touch screens without physical keyboard must suppress in-card accents container',
+  )
+
+  // 4. Composer island geometry is strictly scoped to physical keyboard environments without active listening
+  assert.match(
+    css,
+    /html\[data-keyboard='true'\]\s+\.study-card:not\(\.has-docked-accents\)\s+\.answer-form\.has-accents:not\(\.is-listening\)\s+\.answer-input\s*\{[\s\S]*?border-bottom-left-radius:\s*0;/,
+    'Composer island geometry must be scoped to physical keyboard environments when not listening',
   )
 })

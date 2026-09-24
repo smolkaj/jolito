@@ -1,13 +1,22 @@
 <!doctype html>
-<html lang="en" style="background-color: #fdf5f8; color-scheme: light">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#fdf5f8" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="theme-color"
+      content="#fdf5f8"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#0d1310"
+      media="(prefers-color-scheme: dark)"
+    />
     <meta
       name="description"
       content="Jolito — Spoken Mexican Spanish flashcards and grammar practice. Master real-world vocabulary with spaced repetition, native audio, and active typed recall."
@@ -217,7 +226,7 @@
     />
     <title>Jolito — Mexican Spanish that sticks</title>
   </head>
-  <body style="background-color: #fdf5f8">
+  <body>
     <div id="root">
       <noscript>
         <div
