@@ -480,7 +480,7 @@ export async function submitAppStoreVersion(
   for (const sub of existingSubmissions) {
     const state =
       typeof sub.attributes.state === 'string' ? sub.attributes.state : ''
-    if (state === 'UNRESOLVED_ISSUES' || state === 'READY_FOR_REVIEW') {
+    if (state === 'UNRESOLVED_ISSUES') {
       console.log(
         `Canceling existing review submission ${sub.id} (state: ${state})...`,
       )
@@ -497,27 +497,37 @@ export async function submitAppStoreVersion(
     }
   }
 
-  console.log(
-    `Creating review submission for ${settings.bundleId} (Version ${settings.version})...`,
-  )
-  const newSubmission = resourceSchema.parse(
-    (
-      await api.call('/v1/reviewSubmissions', 'POST', {
-        data: {
-          type: 'reviewSubmissions',
-          attributes: {
-            platform: 'IOS',
-          },
-          relationships: {
-            app: relation('apps', app.id),
-          },
-        },
-      })
-    ).data,
+  let activeSubmission = existingSubmissions.find(
+    (sub) => sub.attributes.state === 'READY_FOR_REVIEW',
   )
 
+  if (activeSubmission) {
+    console.log(
+      `Using existing review submission ${activeSubmission.id} (state: READY_FOR_REVIEW)...`,
+    )
+  } else {
+    console.log(
+      `Creating review submission for ${settings.bundleId} (Version ${settings.version})...`,
+    )
+    activeSubmission = resourceSchema.parse(
+      (
+        await api.call('/v1/reviewSubmissions', 'POST', {
+          data: {
+            type: 'reviewSubmissions',
+            attributes: {
+              platform: 'IOS',
+            },
+            relationships: {
+              app: relation('apps', app.id),
+            },
+          },
+        })
+      ).data,
+    )
+  }
+
   const existingItems = await api.list(
-    `/v1/reviewSubmissions/${newSubmission.id}/items`,
+    `/v1/reviewSubmissions/${activeSubmission.id}/items`,
   )
   const alreadyAttached = existingItems.some((item) => {
     const relVersion = idSchema.safeParse(
@@ -528,32 +538,32 @@ export async function submitAppStoreVersion(
 
   if (!alreadyAttached) {
     console.log(
-      `Attaching version ${settings.version} to review submission ${newSubmission.id}...`,
+      `Attaching version ${settings.version} to review submission ${activeSubmission.id}...`,
     )
     await api.call('/v1/reviewSubmissionItems', 'POST', {
       data: {
         type: 'reviewSubmissionItems',
         relationships: {
-          reviewSubmission: relation('reviewSubmissions', newSubmission.id),
+          reviewSubmission: relation('reviewSubmissions', activeSubmission.id),
           appStoreVersion: relation('appStoreVersions', version.id),
         },
       },
     })
   } else {
     console.log(
-      `Version ${settings.version} is already attached to review submission ${newSubmission.id}`,
+      `Version ${settings.version} is already attached to review submission ${activeSubmission.id}`,
     )
   }
 
   console.log(
-    `Submitting review submission ${newSubmission.id} for App Store review...`,
+    `Submitting review submission ${activeSubmission.id} for App Store review...`,
   )
   const submitted = resourceSchema.parse(
     (
-      await api.call(`/v1/reviewSubmissions/${newSubmission.id}`, 'PATCH', {
+      await api.call(`/v1/reviewSubmissions/${activeSubmission.id}`, 'PATCH', {
         data: {
           type: 'reviewSubmissions',
-          id: newSubmission.id,
+          id: activeSubmission.id,
           attributes: {
             submitted: true,
           },
