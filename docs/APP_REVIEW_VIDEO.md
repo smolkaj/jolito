@@ -75,7 +75,9 @@ recorder reports readiness. This avoids the dropped short audio buffers observed
 with FFmpeg's AVFoundation input on the hosted runner.
 [`assemble-native-walkthrough.py`](../scripts/assemble-native-walkthrough.py)
 requires a successful complete take, trims at logged boundaries and muxes AAC
-into the final MP4. It rejects truncated tracks and silent audio. Failed takes are diagnostic artifacts, never release videos.
+into the final MP4. It rejects truncated tracks, silent audio and fragmented study audio without a
+continuous sound interval. Complete, silent, chopped-buffer and truncated
+FFmpeg fixtures verify these gates. Failed takes are diagnostic artifacts, never release videos.
 
 Artifacts deliberately exclude generated schemes and `.xcresult` bundles,
 which may contain runner environment values. Before publishing, inspect the
