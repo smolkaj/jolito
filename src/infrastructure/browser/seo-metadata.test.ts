@@ -145,7 +145,7 @@ describe('SEO search snippet and favicon compliance', () => {
     expect(swContent).toContain('apple-touch-icon.png')
   })
 
-  it('declares iOS splash screen links with fallback and light color-scheme baseline', () => {
+  it('declares iOS splash screen links with fallback and system color-scheme support', () => {
     const html = readFileSync(indexPath, 'utf-8')
 
     // Root html and meta declare light dark color scheme support

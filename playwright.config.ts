@@ -27,7 +27,7 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      testMatch: 'welcome-scroll.spec.ts',
+      testMatch: ['welcome-scroll.spec.ts', 'appearance.spec.ts'],
       use: { ...devices['iPhone 13'] },
     },
   ],
