@@ -260,6 +260,81 @@ async function captureDemoDeckModal(theme = 'dark') {
 
 await captureDemoDeckModal('dark')
 
+async function captureWhy(
+  theme = 'dark',
+  viewport = { width: 1200, height: 800 },
+) {
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 2,
+    colorScheme: theme,
+  })
+  await context.addInitScript(
+    ({ themeMode }) => {
+      if (themeMode) {
+        document.documentElement.setAttribute('data-theme', themeMode)
+      }
+    },
+    { themeMode: theme },
+  )
+  const page = await context.newPage()
+  await page.goto(`${baseUrl}/#/`)
+  await page.waitForLoadState('networkidle')
+  await page.locator('#why-jolito').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(400)
+  const filename = join(
+    outDir,
+    `why-${theme}-${viewport.width}x${viewport.height}.png`,
+  )
+  await page.screenshot({ path: filename, fullPage: false })
+  console.log(`Saved screenshot: ${filename}`)
+  await context.close()
+}
+
+await captureWhy('dark', { width: 1200, height: 800 })
+await captureWhy('light', { width: 1200, height: 800 })
+async function captureCreateSuggestions(theme = 'dark') {
+  const context = await browser.newContext({
+    viewport: { width: 393, height: 852 },
+    deviceScaleFactor: 2,
+    colorScheme: theme,
+  })
+  await context.addInitScript(
+    ({ session, libs, legacyCards, themeMode }) => {
+      window.localStorage.setItem(
+        'jolito-auth-session-v1',
+        JSON.stringify(session),
+      )
+      window.localStorage.setItem('jolito-libraries-v1', JSON.stringify(libs))
+      window.localStorage.setItem(
+        'jolito-library-v1',
+        JSON.stringify({ version: 1, cards: legacyCards }),
+      )
+      if (themeMode) {
+        document.documentElement.setAttribute('data-theme', themeMode)
+      }
+    },
+    {
+      session: authSession,
+      libs: librariesEnvelope,
+      legacyCards: sampleCards,
+      themeMode: theme,
+    },
+  )
+  const page = await context.newPage()
+  await page.goto(`${baseUrl}/#/create`)
+  await page.waitForLoadState('networkidle')
+  const textarea = page.locator('textarea').first()
+  await textarea.fill('ahorita')
+  await page.waitForTimeout(400)
+  const filename = join(outDir, `create-suggestions-${theme}-393x852.png`)
+  await page.screenshot({ path: filename, fullPage: false })
+  console.log(`Saved screenshot: ${filename}`)
+  await context.close()
+}
+
+await captureCreateSuggestions('dark')
+
 await browser.close()
 server.close()
 console.log('Done.')
