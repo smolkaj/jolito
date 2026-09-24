@@ -85,6 +85,14 @@ export class AppleApi {
   }
 }
 
+// Apple omits relationship linkage unless it is explicitly included. All
+// submission matching must use this query, not treat absent data as no match.
+function reviewItems(api: AppleApi, submissionId: string) {
+  return api.list(
+    `/v1/reviewSubmissions/${submissionId}/items?include=appStoreVersion`,
+  )
+}
+
 export function priceSchedule(appId: string, pricePoint: string) {
   const priceId = '${jolito-base-price}'
   return {
@@ -346,7 +354,7 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
   if (reviewSubmissions.length > 0) {
     console.log('Review Submissions:')
     for (const s of reviewSubmissions) {
-      const items = await api.list(`/v1/reviewSubmissions/${s.id}/items`)
+      const items = await reviewItems(api, s.id)
       const itemDesc =
         items.length === 0
           ? '0 items'
@@ -500,7 +508,7 @@ export async function withdrawForReplacement(
       ].includes(String(submission.attributes.state))
     )
       continue
-    const items = await api.list(`/v1/reviewSubmissions/${submission.id}/items`)
+    const items = await reviewItems(api, submission.id)
     if (
       !items.some(
         (item) =>
@@ -536,6 +544,15 @@ export async function withdrawForReplacement(
     }
     throw new Error(
       'Apple is still canceling the previous submission; retry replacement after cancellation completes',
+    )
+  }
+  if (
+    ['WAITING_FOR_REVIEW', 'IN_REVIEW'].includes(
+      String(version.attributes.appStoreState),
+    )
+  ) {
+    throw new Error(
+      'Queued App Store version could not be matched to a review submission; replacement stopped',
     )
   }
 }
@@ -704,9 +721,7 @@ export async function submitAppStoreVersion(
     )
   }
 
-  const existingItems = await api.list(
-    `/v1/reviewSubmissions/${activeSubmission.id}/items`,
-  )
+  const existingItems = await reviewItems(api, activeSubmission.id)
   const alreadyAttached = existingItems.some((item) => {
     const relVersion = idSchema.safeParse(
       item.relationships.appStoreVersion?.data,

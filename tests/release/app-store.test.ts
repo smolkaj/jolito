@@ -35,6 +35,7 @@ function store(
     versionBuildNumber?: string
     builds?: { id: string; version: string }[]
     reviewSubmissions?: { id: string; state: string }[]
+    attachedVersion?: string
   } = {},
 ) {
   let patchedContentRights = false
@@ -206,7 +207,28 @@ function store(
       ),
     }
     if (url.pathname.match(/^\/v1\/reviewSubmissions\/[^/]+\/items$/)) {
-      return reply({ data: [] })
+      return reply({
+        data: options.attachedVersion
+          ? [
+              record(
+                'reviewSubmissionItems',
+                'attached',
+                {},
+                {
+                  appStoreVersion:
+                    url.searchParams.get('include') === 'appStoreVersion'
+                      ? rel('appStoreVersions', options.attachedVersion)
+                      : {
+                          links: {
+                            related:
+                              'https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/attached/appStoreVersion',
+                          },
+                        },
+                },
+              ),
+            ]
+          : [],
+      })
     }
     assert.ok(url.pathname in responses, `Unexpected request: ${url}`)
     if (
@@ -575,6 +597,22 @@ void test('submitAppStoreVersion is a no-op when the requested build is already 
   assert.ok(!calls.some((c) => c.method === 'POST'))
 })
 
+void test('resuming a draft requests relationship linkage and preserves its existing version item', async () => {
+  const { api, calls } = store({
+    versionState: 'DEVELOPER_REJECTED',
+    versionBuildNumber: '10',
+    reviewSubmissions: [{ id: 'sub-ready', state: 'READY_FOR_REVIEW' }],
+    attachedVersion: 'v1',
+  })
+  await submitAppStoreVersion(api, '10')
+  assert.ok(!calls.some((c) => c.method === 'POST'))
+  assert.ok(
+    calls.some(
+      (c) => c.method === 'PATCH' && c.body?.includes('"submitted":true'),
+    ),
+  )
+})
+
 void test('submitAppStoreVersion rejects when version is missing or target build is not found', async () => {
   await assert.rejects(
     submitAppStoreVersion(store({ emptyVersions: true }).api, '10'),
@@ -617,83 +655,119 @@ void test('review notes exist and do not exceed App Store Connect 4000 character
 })
 
 void test('replacement waits for cancellation and preserves unrelated submissions', async () => {
-  let state = 'WAITING_FOR_REVIEW'
-  let polls = 0
-  const writes: string[] = []
-  const api = new AppleApi('token', (input, init) => {
-    const url = new URL(input instanceof Request ? input.url : input)
-    if (init?.method === 'PATCH') {
-      writes.push(url.pathname)
-      state = 'CANCELING'
-      return reply({ data: record('reviewSubmissions', 'current', { state }) })
-    }
-    if (url.pathname === '/v1/apps')
-      return reply({ data: [record('apps', 'app')] })
-    if (url.pathname === '/v1/apps/app/appStoreVersions')
-      return reply({
-        data: [
-          record(
-            'appStoreVersions',
-            'v1',
-            { versionString: '1.0', appStoreState: 'WAITING_FOR_REVIEW' },
-            { build: rel('builds', 'old') },
-          ),
-        ],
-        included: [record('builds', 'old', { version: '10' })],
-      })
-    if (url.pathname === '/v1/builds')
-      return reply({
-        data: [
-          record(
-            'builds',
-            'new',
-            { version: '11', processingState: 'VALID', expired: false },
-            { preReleaseVersion: rel('preReleaseVersions', 'pr') },
-          ),
-        ],
-        included: [
-          record('preReleaseVersions', 'pr', {
-            version: '1.0',
-            platform: 'IOS',
-          }),
-        ],
-      })
-    if (url.pathname === '/v1/apps/app/reviewSubmissions')
-      return reply({
-        data: [
-          record('reviewSubmissions', 'unrelated', {
-            state: 'WAITING_FOR_REVIEW',
-          }),
-          record('reviewSubmissions', 'current', { state }),
-        ],
-      })
-    if (url.pathname.endsWith('/items'))
-      return reply({
-        data: [
+  for (const scenario of ['complete', 'missing-linkage', 'mixed-items']) {
+    let state = 'WAITING_FOR_REVIEW'
+    let polls = 0
+    const writes: string[] = []
+    const api = new AppleApi('token', (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input)
+      if (init?.method === 'PATCH') {
+        writes.push(url.pathname)
+        state = 'CANCELING'
+        return reply({
+          data: record('reviewSubmissions', 'current', { state }),
+        })
+      }
+      if (url.pathname === '/v1/apps')
+        return reply({ data: [record('apps', 'app')] })
+      if (url.pathname === '/v1/apps/app/appStoreVersions')
+        return reply({
+          data: [
+            record(
+              'appStoreVersions',
+              'v1',
+              { versionString: '1.0', appStoreState: 'WAITING_FOR_REVIEW' },
+              { build: rel('builds', 'old') },
+            ),
+          ],
+          included: [record('builds', 'old', { version: '10' })],
+        })
+      if (url.pathname === '/v1/builds')
+        return reply({
+          data: [
+            record(
+              'builds',
+              'new',
+              { version: '11', processingState: 'VALID', expired: false },
+              { preReleaseVersion: rel('preReleaseVersions', 'pr') },
+            ),
+          ],
+          included: [
+            record('preReleaseVersions', 'pr', {
+              version: '1.0',
+              platform: 'IOS',
+            }),
+          ],
+        })
+      if (url.pathname === '/v1/apps/app/reviewSubmissions')
+        return reply({
+          data: [
+            record('reviewSubmissions', 'unrelated', {
+              state: 'WAITING_FOR_REVIEW',
+            }),
+            record('reviewSubmissions', 'current', { state }),
+          ],
+        })
+      if (url.pathname.endsWith('/items')) {
+        const items = [
           record(
             'reviewSubmissionItems',
             'item',
             {},
             {
-              appStoreVersion: rel(
-                'appStoreVersions',
-                url.pathname.includes('current') ? 'v1' : 'other',
-              ),
+              appStoreVersion:
+                scenario !== 'missing-linkage' &&
+                url.searchParams.get('include') === 'appStoreVersion'
+                  ? rel(
+                      'appStoreVersions',
+                      url.pathname.includes('current') ? 'v1' : 'other',
+                    )
+                  : {
+                      links: {
+                        related:
+                          'https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/item/appStoreVersion',
+                      },
+                    },
             },
           ),
-        ],
-      })
-    if (url.pathname === '/v1/reviewSubmissions/current') {
-      polls++
-      if (polls === 2) state = 'COMPLETE'
-      return reply({ data: record('reviewSubmissions', 'current', { state }) })
+        ]
+        if (scenario === 'mixed-items' && url.pathname.includes('current')) {
+          items.push(
+            record(
+              'reviewSubmissionItems',
+              'event',
+              {},
+              { appStoreVersion: { data: null } },
+            ),
+          )
+        }
+        return reply({ data: items })
+      }
+      if (url.pathname === '/v1/reviewSubmissions/current') {
+        polls++
+        if (polls === 2) state = 'COMPLETE'
+        return reply({
+          data: record('reviewSubmissions', 'current', { state }),
+        })
+      }
+      throw new Error('Unexpected request ' + url.pathname)
+    })
+    if (scenario === 'complete') {
+      await withdrawForReplacement(api, '11', async () => {})
+      assert.deepEqual(writes, ['/v1/reviewSubmissions/current'])
+      assert.equal(polls, 2)
+      assert.equal(state, 'COMPLETE')
+    } else {
+      await assert.rejects(
+        withdrawForReplacement(api, '11', async () => {}),
+        scenario === 'missing-linkage'
+          ? /could not be matched/
+          : /additional items/,
+      )
+      assert.deepEqual(writes, [])
+      assert.equal(polls, 0)
     }
-    throw new Error('Unexpected request ' + url.pathname)
-  })
-  await withdrawForReplacement(api, '11', async () => {})
-  assert.deepEqual(writes, ['/v1/reviewSubmissions/current'])
-  assert.equal(polls, 2)
-  assert.equal(state, 'COMPLETE')
+  }
 })
 
 void test('submission never silently accepts a different queued build', async () => {
