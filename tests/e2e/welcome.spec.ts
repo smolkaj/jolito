@@ -1063,7 +1063,7 @@ for (const vp of viewportOverflowCases) {
         if (await topbarBtn.isVisible()) {
           await topbarBtn.click()
         } else {
-          await page.getByRole('button', { name: /^deck$/i }).click()
+          await page.getByRole('button', { name: /^deck/i }).click()
         }
       } else if (testPage === 'review') {
         await practiceCards(page)
