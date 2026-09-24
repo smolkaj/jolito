@@ -4,7 +4,6 @@ import { PracticeTabIcon, DeckTabIcon, CreateTabIcon } from './MobileTabBar'
 
 export interface DesktopSegmentedNavProps {
   currentView: View
-  dueCount?: number
   onPractice: () => void
   onNavigateToDeck: () => void
   onNavigateToCreate: () => void
@@ -13,7 +12,6 @@ export interface DesktopSegmentedNavProps {
 
 export function DesktopSegmentedNav({
   currentView,
-  dueCount = 0,
   onPractice,
   onNavigateToDeck,
   onNavigateToCreate,
@@ -26,8 +24,6 @@ export function DesktopSegmentedNav({
     currentView === 'complete'
   const isDeckActive = currentView === 'deck'
   const isCreateActive = currentView === 'create'
-  const showDueBadge =
-    dueCount > 0 && currentView !== 'review' && currentView !== 'complete'
 
   const handleClick = (action: () => void) => {
     haptics?.trigger('selection')
@@ -41,21 +37,10 @@ export function DesktopSegmentedNav({
         aria-current={isPracticeActive ? 'page' : undefined}
         className={`desktop-segmented-btn ${isPracticeActive ? 'is-active' : ''}`}
         onClick={() => handleClick(onPractice)}
-        aria-label={
-          showDueBadge ? `Practice (${dueCount} cards due)` : 'Practice'
-        }
+        aria-label="Practice (Study session)"
       >
         <PracticeTabIcon size={16} />
         <span className="desktop-segmented-label">Practice</span>
-        {showDueBadge && (
-          <span
-            className="desktop-segmented-badge"
-            aria-hidden="true"
-            title={`${dueCount} cards due`}
-          >
-            {dueCount > 99 ? '99+' : dueCount}
-          </span>
-        )}
       </button>
 
       <button

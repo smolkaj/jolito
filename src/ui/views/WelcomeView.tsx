@@ -15,7 +15,6 @@ import { PracticeMenu } from '../PracticeMenu'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
 
 export interface WelcomeViewProps {
-  dueCount?: number
   communityStats?: CommunityStats | null | undefined
   authUser: AuthUser | null
   syncStatus: SyncStatus
@@ -42,7 +41,6 @@ export interface WelcomeViewProps {
 }
 
 export function WelcomeView({
-  dueCount = 0,
   communityStats,
   authUser,
   syncStatus,
@@ -190,7 +188,6 @@ export function WelcomeView({
           <Brand />
           <DesktopSegmentedNav
             currentView="welcome"
-            dueCount={dueCount}
             onPractice={onPractice}
             onNavigateToDeck={onNavigateToDeck}
             onNavigateToCreate={onNavigateToCreate}

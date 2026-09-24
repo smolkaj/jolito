@@ -13,13 +13,12 @@ function createMockHaptics() {
 
 describe('MobileTabBar (Milestone 2)', () => {
   it('renders all four navigation items with correct accessible labels and roles', () => {
-    const { rerender } = render(
+    render(
       <MobileTabBar
         currentView="review"
         isSyncOpen={false}
         syncStatus="idle"
         authUser={null}
-        dueCount={5}
         onPractice={vi.fn()}
         onNavigateToDeck={vi.fn()}
         onNavigateToCreate={vi.fn()}
@@ -31,26 +30,12 @@ describe('MobileTabBar (Milestone 2)', () => {
       screen.getByRole('navigation', { name: 'Mobile navigation' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Practice (5 cards due)' }),
+      screen.getByRole('button', { name: 'Practice (Study session)' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Deck' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument()
-
-    rerender(
-      <MobileTabBar
-        currentView="review"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        dueCount={0}
-        onPractice={vi.fn()}
-        onNavigateToDeck={vi.fn()}
-        onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
-      />,
-    )
-    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
+    expect(screen.queryByText(/cards? due/i)).not.toBeInTheDocument()
   })
 
   it('highlights Practice tab when in review, welcome, grammar, or complete view', () => {
@@ -66,10 +51,9 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Practice' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Practice (Study session)' }),
+    ).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
       'aria-current',
     )
@@ -86,10 +70,9 @@ describe('MobileTabBar (Milestone 2)', () => {
         onOpenSync={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Practice' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Practice (Study session)' }),
+    ).toHaveAttribute('aria-current', 'page')
 
     rerender(
       <MobileTabBar
@@ -108,7 +91,7 @@ describe('MobileTabBar (Milestone 2)', () => {
       'page',
     )
     expect(
-      screen.getByRole('button', { name: 'Practice' }),
+      screen.getByRole('button', { name: 'Practice (Study session)' }),
     ).not.toHaveAttribute('aria-current')
 
     rerender(
@@ -181,28 +164,9 @@ describe('MobileTabBar (Milestone 2)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account' }))
     expect(onSync).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Practice' }))
-    expect(onPractice).toHaveBeenCalledTimes(1)
-  })
-
-  it('displays due count badge when cards are due and not currently on practice tab', () => {
-    render(
-      <MobileTabBar
-        currentView="deck"
-        isSyncOpen={false}
-        syncStatus="idle"
-        authUser={null}
-        dueCount={12}
-        onPractice={vi.fn()}
-        onNavigateToDeck={vi.fn()}
-        onNavigateToCreate={vi.fn()}
-        onOpenSync={vi.fn()}
-      />,
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Practice (Study session)' }),
     )
-
-    expect(screen.getByText('12')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Practice (12 cards due)' }),
-    ).toBeInTheDocument()
+    expect(onPractice).toHaveBeenCalledTimes(1)
   })
 })
