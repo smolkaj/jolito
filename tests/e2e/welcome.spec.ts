@@ -859,8 +859,10 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
-  // A new account begins empty; practice appears after the first saved card.
-  await expect(page.getByRole('button', { name: /^practice$/i })).toHaveCount(0)
+  // Segmented navigation is persistent; Practice starts with 0 due cards.
+  const practiceNavBtn = page.getByRole('button', { name: /^practice/i })
+  await expect(practiceNavBtn).toBeVisible()
+  await expect(page.locator('.desktop-segmented-badge')).toHaveCount(0)
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)
@@ -884,7 +886,8 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(spanishInput).toHaveValue('')
   await expect(englishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await expect(practiceNavBtn).toBeVisible()
+  await expect(page.locator('.desktop-segmented-badge')).toHaveText('1')
 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
@@ -899,7 +902,8 @@ test('supports rapid batch card creation while remaining in create view', async 
   ).toBeVisible()
   await expect(spanishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
-  await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
+  await expect(practiceNavBtn).toBeVisible()
+  await expect(page.locator('.desktop-segmented-badge')).toHaveText('2')
 
   // 3. Start review from top navbar
   await practiceCards(page)
@@ -1583,8 +1587,14 @@ test('displays lightweight demo deck modal and demo session complete screen with
   await expect(demoModal).not.toBeVisible()
 
   // Return to Deck Manager after visiting Create -> modal appears again
-  await page.getByRole('button', { name: /\+ new card/i }).click()
-  await page.getByRole('button', { name: /manage deck/i }).click()
+  await page
+    .getByRole('button', { name: /create|\+ new card/i })
+    .first()
+    .click()
+  await page
+    .getByRole('button', { name: /manage deck|deck/i })
+    .first()
+    .click()
   await expect(demoModal).toBeVisible()
   await page.getByRole('button', { name: /explore demo deck/i }).click()
   await expect(demoModal).not.toBeVisible()

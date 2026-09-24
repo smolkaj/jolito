@@ -31,7 +31,7 @@ export interface DeckManagerViewProps {
   referenceTime: number
   saveError: string | null
   deletedCardIds: string[]
-  queue: string[]
+  queue?: string[]
   dueCount: number
   authUser: AuthUser | null
   syncStatus: SyncStatus
@@ -65,7 +65,6 @@ export function DeckManagerView({
   referenceTime,
   saveError,
   deletedCardIds,
-  queue,
   dueCount,
   authUser,
   syncStatus,
@@ -199,7 +198,6 @@ export function DeckManagerView({
           <DesktopSegmentedNav
             currentView="deck"
             dueCount={dueCount}
-            canPractice={queue.length > 0 || (dueCount ?? 0) > 0}
             onPractice={onPractice}
             onNavigateToDeck={() => {}}
             onNavigateToCreate={onNavigateToCreate}

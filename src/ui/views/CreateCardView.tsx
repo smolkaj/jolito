@@ -50,7 +50,7 @@ export interface CreateCardViewProps {
   onGoHome: () => void
   onNavigateToDeck: () => void
   onPractice: () => void
-  canPractice: boolean
+  canPractice?: boolean
   onOpenSync: () => void
   onEditCard: (card: StudyCard) => void
   onOpenFeedback: () => void
@@ -88,7 +88,6 @@ export function CreateCardView({
   onGoHome,
   onNavigateToDeck,
   onPractice,
-  canPractice,
   onOpenSync,
   onEditCard,
   onOpenFeedback,
@@ -647,7 +646,6 @@ export function CreateCardView({
         <DesktopSegmentedNav
           currentView="create"
           dueCount={dueCount}
-          canPractice={canPractice}
           onPractice={onPractice}
           onNavigateToDeck={onNavigateToDeck}
           onNavigateToCreate={() => {}}

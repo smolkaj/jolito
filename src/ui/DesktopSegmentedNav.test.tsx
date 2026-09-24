@@ -24,14 +24,16 @@ describe('DesktopSegmentedNav', () => {
     )
 
     expect(
-      screen.getByRole('navigation', { name: 'Desktop navigation' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Manage deck' }),
+      screen.getByRole('group', { name: 'Navigation' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: '+ New card' }),
+      screen.getByRole('button', { name: 'Practice (5 cards due)' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Deck (Manage deck)' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Create (+ New card)' }),
     ).toBeInTheDocument()
 
     rerender(
@@ -46,29 +48,6 @@ describe('DesktopSegmentedNav', () => {
     expect(screen.getByRole('button', { name: 'Practice' })).toBeInTheDocument()
   })
 
-  it('omits practice button when canPractice is false', () => {
-    render(
-      <DesktopSegmentedNav
-        currentView="create"
-        dueCount={0}
-        canPractice={false}
-        onPractice={vi.fn()}
-        onNavigateToDeck={vi.fn()}
-        onNavigateToCreate={vi.fn()}
-      />,
-    )
-
-    expect(
-      screen.queryByRole('button', { name: /^practice$/i }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Manage deck' }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: '+ New card' }),
-    ).toBeInTheDocument()
-  })
-
   it('highlights the correct tab based on currentView', () => {
     const { rerender } = render(
       <DesktopSegmentedNav
@@ -81,8 +60,10 @@ describe('DesktopSegmentedNav', () => {
     )
 
     const practiceBtn = screen.getByRole('button', { name: 'Practice' })
-    const deckBtn = screen.getByRole('button', { name: 'Manage deck' })
-    const createBtn = screen.getByRole('button', { name: '+ New card' })
+    const deckBtn = screen.getByRole('button', { name: 'Deck (Manage deck)' })
+    const createBtn = screen.getByRole('button', {
+      name: 'Create (+ New card)',
+    })
 
     expect(practiceBtn).toHaveClass('is-active')
     expect(practiceBtn).toHaveAttribute('aria-current', 'page')
@@ -135,14 +116,16 @@ describe('DesktopSegmentedNav', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Practice' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Practice (3 cards due)' }),
+    )
     expect(onPractice).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Manage deck' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Deck (Manage deck)' }))
     expect(onNavigateToDeck).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: '+ New card' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create (+ New card)' }))
     expect(onNavigateToCreate).toHaveBeenCalledTimes(1)
   })
 })

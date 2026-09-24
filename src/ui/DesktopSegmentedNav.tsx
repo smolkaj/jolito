@@ -5,7 +5,6 @@ import { PracticeTabIcon, DeckTabIcon, CreateTabIcon } from './MobileTabBar'
 export interface DesktopSegmentedNavProps {
   currentView: View
   dueCount?: number
-  canPractice?: boolean
   onPractice: () => void
   onNavigateToDeck: () => void
   onNavigateToCreate: () => void
@@ -15,7 +14,6 @@ export interface DesktopSegmentedNavProps {
 export function DesktopSegmentedNav({
   currentView,
   dueCount = 0,
-  canPractice = true,
   onPractice,
   onNavigateToDeck,
   onNavigateToCreate,
@@ -23,6 +21,7 @@ export function DesktopSegmentedNav({
 }: DesktopSegmentedNavProps) {
   const isPracticeActive =
     currentView === 'review' ||
+    currentView === 'welcome' ||
     currentView === 'grammar' ||
     currentView === 'complete'
   const isDeckActive = currentView === 'deck'
@@ -34,41 +33,35 @@ export function DesktopSegmentedNav({
   }
 
   return (
-    <nav className="desktop-segmented-nav" aria-label="Desktop navigation">
-      {canPractice && (
-        <button
-          type="button"
-          aria-current={isPracticeActive ? 'page' : undefined}
-          className={`desktop-segmented-btn ${isPracticeActive ? 'is-active' : ''}`}
-          onClick={() => handleClick(onPractice)}
-          aria-label={
-            currentView === 'welcome'
-              ? dueCount > 0
-                ? `Practice (${dueCount} cards due)`
-                : 'Practice cards'
-              : undefined
-          }
-        >
-          <PracticeTabIcon size={16} />
-          <span className="desktop-segmented-label">Practice</span>
-          {dueCount > 0 && (
-            <span
-              className="desktop-segmented-badge"
-              aria-hidden="true"
-              title={`${dueCount} cards due`}
-            >
-              {dueCount > 99 ? '99+' : dueCount}
-            </span>
-          )}
-        </button>
-      )}
+    <div className="desktop-segmented-nav" role="group" aria-label="Navigation">
+      <button
+        type="button"
+        aria-current={isPracticeActive ? 'page' : undefined}
+        className={`desktop-segmented-btn ${isPracticeActive ? 'is-active' : ''}`}
+        onClick={() => handleClick(onPractice)}
+        aria-label={
+          dueCount > 0 ? `Practice (${dueCount} cards due)` : 'Practice'
+        }
+      >
+        <PracticeTabIcon size={16} />
+        <span className="desktop-segmented-label">Practice</span>
+        {dueCount > 0 && (
+          <span
+            className="desktop-segmented-badge"
+            aria-hidden="true"
+            title={`${dueCount} cards due`}
+          >
+            {dueCount > 99 ? '99+' : dueCount}
+          </span>
+        )}
+      </button>
 
       <button
         type="button"
         aria-current={isDeckActive ? 'page' : undefined}
         className={`desktop-segmented-btn ${isDeckActive ? 'is-active' : ''}`}
         onClick={() => handleClick(onNavigateToDeck)}
-        aria-label="Manage deck"
+        aria-label="Deck (Manage deck)"
       >
         <DeckTabIcon size={16} />
         <span className="desktop-segmented-label">Deck</span>
@@ -79,11 +72,11 @@ export function DesktopSegmentedNav({
         aria-current={isCreateActive ? 'page' : undefined}
         className={`desktop-segmented-btn ${isCreateActive ? 'is-active' : ''}`}
         onClick={() => handleClick(onNavigateToCreate)}
-        aria-label="+ New card"
+        aria-label="Create (+ New card)"
       >
         <CreateTabIcon size={16} />
         <span className="desktop-segmented-label">Create</span>
       </button>
-    </nav>
+    </div>
   )
 }

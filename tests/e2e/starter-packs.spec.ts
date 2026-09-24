@@ -14,7 +14,10 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
   await page.goto('/')
 
   // Navigate to deck manager
-  await page.getByRole('button', { name: /manage deck/i }).click()
+  await page
+    .getByRole('button', { name: /manage deck|deck/i })
+    .first()
+    .click()
   await dismissDemoModal(page)
   await expect(
     page.getByRole('heading', { name: /manage deck/i }),

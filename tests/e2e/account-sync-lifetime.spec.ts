@@ -174,7 +174,10 @@ for (const heldAt of ['response', 'body'] as const) {
     await expect(
       page.getByRole('row', { name: /card: A-private,/i }),
     ).toBeVisible()
-    await page.getByRole('button', { name: '+ New card', exact: true }).click()
+    await page
+      .getByRole('button', { name: /create/i })
+      .first()
+      .click()
     await page
       .getByLabel('Mexican Spanish', { exact: true })
       .fill('Fresh A card')
@@ -209,7 +212,10 @@ for (const heldAt of ['response', 'body'] as const) {
     await expect
       .poll(() => JSON.stringify(pushes[pushes.length - 1]))
       .toContain('Fresh A card')
-    await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
+    await page
+      .getByRole('button', { name: /manage deck|deck/i })
+      .first()
+      .click()
     await expect(
       page.getByRole('row', { name: /card: Fresh A card,/i }),
     ).toBeVisible()

@@ -309,7 +309,10 @@ test('grammar survives offline reload and never leaks into the vocabulary librar
   await page.getByRole('textbox').press('Enter')
   await page.keyboard.press('4')
   await page.getByRole('button', { name: 'Jolito home', exact: true }).click()
-  await page.getByRole('button', { name: 'Manage deck' }).click()
+  await page
+    .getByRole('button', { name: /manage deck|deck/i })
+    .first()
+    .click()
   await expect(page.getByRole('main')).not.toContainText('tener · yo')
   const saved = JSON.parse(await page.evaluate(currentDeckJson)) as {
     version: number
@@ -539,7 +542,10 @@ for (const topic of ['preterite', 'perfect', 'gerund'] as const) {
     await page.getByRole('button', { name: 'Grammar' }).click()
     await page.getByRole('button', { name: 'Resume practice' }).click()
     await page.getByRole('button', { name: 'Jolito home' }).click()
-    await page.getByRole('button', { name: 'Manage deck', exact: true }).click()
+    await page
+      .getByRole('button', { name: /manage deck|deck/i })
+      .first()
+      .click()
     const demo = page.getByRole('button', { name: /explore demo deck/i })
     if (await demo.isVisible()) await demo.click()
     await page.getByRole('checkbox', { name: /select card aguacate/i }).click()

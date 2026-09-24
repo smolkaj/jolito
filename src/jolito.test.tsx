@@ -2484,8 +2484,13 @@ describe('Jolito', () => {
       name: 'Card creation navigation',
     })
     expect(
-      within(nav).queryByRole('button', { name: /^practice$/i }),
+      within(nav).queryByRole('button', {
+        name: /practice \(\d+ cards? due\)/i,
+      }),
     ).not.toBeInTheDocument()
+    expect(
+      within(nav).getByRole('button', { name: /^practice$/i }),
+    ).toBeInTheDocument()
 
     // 1. Create first card
     const spanishInput = screen.getByLabelText(/mexican spanish/i)
@@ -2511,9 +2516,9 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(contextInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
-    // Practice button appears now that due cards exist
+    // Practice button updates with due badge now that due cards exist
     expect(
-      within(nav).getByRole('button', { name: /^practice$/i }),
+      within(nav).getByRole('button', { name: /practice \(1 cards? due\)/i }),
     ).toBeInTheDocument()
 
     // 2. Create second card in batch without needing to re-navigate or re-focus
@@ -2532,7 +2537,7 @@ describe('Jolito', () => {
     expect(englishInput).toHaveValue('')
     expect(spanishInput).toHaveFocus()
     expect(
-      within(nav).getByRole('button', { name: /^practice$/i }),
+      within(nav).getByRole('button', { name: /practice \(2 cards? due\)/i }),
     ).toBeInTheDocument()
 
     // 3. Navigate to review and practice all due cards
@@ -2859,7 +2864,7 @@ describe('Jolito', () => {
 
     // 7. Review button reflects only the 2 user cards
     expect(
-      screen.getAllByRole('button', { name: /^practice$/i })[0],
+      screen.getAllByRole('button', { name: /^practice/i })[0],
     ).toBeInTheDocument()
   })
 
@@ -4398,7 +4403,7 @@ describe('Jolito', () => {
 
     // Topbar in deck should have Practice button
     const [practiceButton] = screen.getAllByRole('button', {
-      name: /^practice$/i,
+      name: /^practice/i,
     })
     expect(practiceButton).toBeDefined()
     expect(practiceButton!).toBeInTheDocument()
