@@ -31,7 +31,9 @@ if name == 'NativeWalkthrough'
   scheme.test_action.should_use_launch_scheme_args_env = false
   scheme.test_action.environment_variables = Xcodeproj::XCScheme::EnvironmentVariables.new([
     { key: 'WALKTHROUGH_EMAIL', value: ENV.fetch('APP_REVIEW_EMAIL') },
-    { key: 'WALKTHROUGH_MAILBOX_PASSWORD', value: ENV.fetch('APP_REVIEW_MAILBOX_PASSWORD') }
+    { key: 'WALKTHROUGH_MAILBOX_PASSWORD', value: ENV.fetch('APP_REVIEW_MAILBOX_PASSWORD') },
+    { key: 'WALKTHROUGH_DELETE_EMAIL', value: ENV.fetch('APP_REVIEW_DELETE_EMAIL') },
+    { key: 'WALKTHROUGH_DELETE_PASSWORD', value: ENV.fetch('APP_REVIEW_DELETE_MAILBOX_PASSWORD') }
   ])
 end
 scheme.save_as(project.path, name, true)

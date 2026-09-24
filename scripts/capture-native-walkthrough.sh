@@ -34,7 +34,6 @@ xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
 # Show the actual Simulator status bar, keyboard and app lifecycle.
 defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
-open -a "$DEVELOPER_DIR/Applications/Simulator.app" --args -CurrentDeviceUDID "$device"
 python3 -c 'import time; print(time.time())' > "$output/video-start.txt"
 xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.mov" > "$output/video.log" 2>&1 &
 video_pid=$!

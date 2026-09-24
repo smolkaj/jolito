@@ -131,6 +131,8 @@ jobs:
       VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       APP_REVIEW_EMAIL: ${{ secrets.APP_REVIEW_EMAIL }}
       APP_REVIEW_MAILBOX_PASSWORD: ${{ secrets.APP_REVIEW_MAILBOX_PASSWORD }}
+      APP_REVIEW_DELETE_EMAIL: ${{ secrets.APP_REVIEW_DELETE_EMAIL }}
+      APP_REVIEW_DELETE_MAILBOX_PASSWORD: ${{ secrets.APP_REVIEW_DELETE_MAILBOX_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

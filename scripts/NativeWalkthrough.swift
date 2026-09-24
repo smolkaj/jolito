@@ -21,6 +21,11 @@ final class NativeWalkthrough: XCTestCase {
             throw CaptureError.configuration
         }
         let reviewer = Mailbox(address: address, password: password)
+        guard let deletionAddress = ProcessInfo.processInfo.environment["WALKTHROUGH_DELETE_EMAIL"],
+              let deletionPassword = ProcessInfo.processInfo.environment["WALKTHROUGH_DELETE_PASSWORD"] else {
+            throw CaptureError.configuration
+        }
+        let disposable = Mailbox(address: deletionAddress, password: deletionPassword)
         app.launch()
         let create = button("Create a card")
         XCTAssertTrue(create.waitForExistence(timeout: 90))
@@ -81,6 +86,22 @@ final class NativeWalkthrough: XCTestCase {
             pause(2)
         }
 
+        chapter("Practice verb forms in context")
+        tap(button("Jolito home"))
+        tap(app.buttons["Practice ▾"].firstMatch)
+        let grammar = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Grammar")).firstMatch
+        tap(grammar)
+        pause(4)
+        tap(button("Start practice"))
+        for _ in 0..<2 {
+            XCTAssertTrue(button("Reveal answer").waitForExistence(timeout: 20))
+            dismissPracticeKeyboard()
+            pause(6)
+            tap(button("Reveal answer"))
+            pause(7)
+            tap(button("Good"))
+        }
+
         chapter("Return to the same account")
         tap(button("Sync"))
         tap(button("Sign out"))
@@ -91,6 +112,25 @@ final class NativeWalkthrough: XCTestCase {
         tap(button("Deck"))
         XCTAssertTrue(app.staticTexts["¿Me trae la cuenta, por favor?"].firstMatch.waitForExistence(timeout: 15))
         pause(5)
+        chapter("Create and delete a separate disposable account")
+        tap(button("Sync"))
+        tap(button("Sign out"))
+        try signIn(disposable)
+        pause(5)
+        tap(button("Delete cloud account & data"))
+        pause(6)
+        let backup = app.switches["Save an offline backup before deleting"].firstMatch
+        if backup.exists { tap(backup) }
+        else { tap(app.checkBoxes["Save an offline backup before deleting"].firstMatch) }
+        let confirmation = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "DELETE")).firstMatch
+        tap(confirmation)
+        confirmation.typeText("DELETE")
+        app.staticTexts["Cloud sync"].firstMatch.tap()
+        pause(3)
+        tap(button("Yes, delete cloud data"))
+        XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.textFields["Email address"].firstMatch.exists)
+        pause(7)
         print("WALKTHROUGH_END \(Date().timeIntervalSince1970)")
     }
 
