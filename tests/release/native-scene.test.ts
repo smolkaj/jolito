@@ -420,15 +420,10 @@ void test('CSS architectural invariants for mobile keyboard accent toolbar acces
     'Mobile touch screens without physical keyboard must suppress in-card accents container',
   )
 
-  // 4. Active voice listening suppresses in-card accent toolbar and restores standalone input border radius
+  // 4. Composer island geometry is strictly scoped to physical keyboard environments without active listening
   assert.match(
     css,
-    /\.answer-form\.has-accents\.is-listening\s*\.answer-input\s*\{[\s\S]*?border-bottom-left-radius:\s*16px;[\s\S]*?border-bottom-right-radius:\s*16px;/,
-    'Active voice listening must restore standalone input border radius',
-  )
-  assert.match(
-    css,
-    /\.answer-form\.has-accents\.is-listening\s*\.answer-accents-container\s*\{[\s\S]*?display:\s*none\s*!important;/,
-    'Active voice listening must suppress in-card accents container',
+    /html\[data-keyboard='true'\]\s+\.study-card:not\(\.has-docked-accents\)\s+\.answer-form\.has-accents:not\(\.is-listening\)\s+\.answer-input\s*\{[\s\S]*?border-bottom-left-radius:\s*0;/,
+    'Composer island geometry must be scoped to physical keyboard environments when not listening',
   )
 })

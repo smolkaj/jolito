@@ -3086,15 +3086,21 @@ textarea::placeholder {
   display: none;
 }
 
-/* Composer Island Unification (when accents toolbar is present) */
-.answer-form.has-accents .answer-input {
+/* Composer Island Unification: only active on desktop/physical keyboards when not voice recording */
+html[data-keyboard='true']
+  .study-card:not(.has-docked-accents)
+  .answer-form.has-accents:not(.is-listening)
+  .answer-input {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   border-bottom: 2.5px solid var(--line-subtle);
   box-shadow: none;
 }
 
-.answer-form.has-accents .answer-accents-container {
+html[data-keyboard='true']
+  .study-card:not(.has-docked-accents)
+  .answer-form.has-accents:not(.is-listening)
+  .answer-accents-container {
   border: 2.5px solid var(--line);
   border-top: none;
   border-bottom-left-radius: 16px;
@@ -3108,26 +3114,19 @@ textarea::placeholder {
   transition: border-color 140ms ease;
 }
 
-.answer-form.has-accents .answer-input:focus {
+html[data-keyboard='true']
+  .study-card:not(.has-docked-accents)
+  .answer-form.has-accents:not(.is-listening)
+  .answer-input:focus {
   border-color: var(--rosa);
   box-shadow: none;
 }
 
-.answer-form.has-accents:focus-within .answer-accents-container {
+html[data-keyboard='true']
+  .study-card:not(.has-docked-accents)
+  .answer-form.has-accents:not(.is-listening):focus-within
+  .answer-accents-container {
   border-color: var(--rosa);
-}
-
-/* When docked above keyboard or active voice listening, restore standalone input border radius */
-.study-card.has-docked-accents .answer-form.has-accents .answer-input,
-.answer-form.has-accents.is-listening .answer-input {
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-  border-bottom: 2.5px solid var(--line);
-  box-shadow: var(--shadow-sm);
-}
-
-.answer-form.has-accents.is-listening .answer-accents-container {
-  display: none !important;
 }
 
 /* Keyboard Keycap Badges */
@@ -7763,28 +7762,9 @@ html[data-platform='android']:not([data-keyboard='true'])
   display: none !important;
 }
 
-html[data-platform='ios']:not([data-keyboard='true'])
-  .answer-form.has-accents
-  .answer-input,
-html[data-platform='android']:not([data-keyboard='true'])
-  .answer-form.has-accents
-  .answer-input {
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-  border-bottom: 2.5px solid var(--line);
-  box-shadow: var(--shadow-sm);
-}
-
 @media (max-width: 640px), (pointer: coarse) {
   html:not([data-keyboard='true']) .answer-accents-container {
     display: none !important;
-  }
-
-  html:not([data-keyboard='true']) .answer-form.has-accents .answer-input {
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-    border-bottom: 2.5px solid var(--line);
-    box-shadow: var(--shadow-sm);
   }
 }
 

@@ -258,6 +258,23 @@ test('mobile practice card on iOS/touch without physical keyboard suppresses in-
   // Reveal button sits directly below input without an empty blank gap
   expect(metrics.revealTop).toBeGreaterThanOrEqual(metrics.inputBottom - 2)
   expect(metrics.revealDirectlyBelow).toBeLessThan(40)
+
+  // Verify focus ring symmetry on mobile touch screens
+  const textbox = page.getByRole('textbox', { name: 'Your conjugation' })
+  await textbox.focus()
+  const focusStyles = await page.evaluate(() => {
+    const input = document.querySelector('.answer-input')!
+    const style = window.getComputedStyle(input)
+    return {
+      borderTopColor: style.borderTopColor,
+      borderBottomColor: style.borderBottomColor,
+      borderBottomLeftRadius: style.borderBottomLeftRadius,
+      borderBottomRightRadius: style.borderBottomRightRadius,
+    }
+  })
+  expect(focusStyles.borderTopColor).toBe(focusStyles.borderBottomColor)
+  expect(focusStyles.borderBottomLeftRadius).toBe('16px')
+  expect(focusStyles.borderBottomRightRadius).toBe('16px')
 })
 
 test('mobile practice card preserves clean layout across keyboard open and voice input transitions', async ({
