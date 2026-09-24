@@ -590,10 +590,14 @@ describe('initKeyboardAvoidance controller lifecycle', () => {
 
     vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false)
 
+    const mockScrollBy = vi.fn()
     const mockWin = {
       innerHeight: 844,
       visualViewport: mockVV,
       document,
+      scrollBy: mockScrollBy,
+      getComputedStyle: vi.fn().mockReturnValue({ overflowY: 'visible' }),
+      matchMedia: vi.fn().mockReturnValue({ matches: false }),
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
@@ -602,6 +606,10 @@ describe('initKeyboardAvoidance controller lifecycle', () => {
         return 1
       }),
     } as unknown as Window
+
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
 
     const controller = initKeyboardAvoidance({
       window: mockWin,
@@ -617,6 +625,7 @@ describe('initKeyboardAvoidance controller lifecycle', () => {
     ).toBe('336px')
 
     // Dismiss keyboard
+    input.blur()
     mockVV.height = 844
     vvListeners['resize']?.forEach((cb) => cb())
 
@@ -626,6 +635,70 @@ describe('initKeyboardAvoidance controller lifecycle', () => {
     ).toBe('0px')
 
     controller.destroy()
+    document.body.removeChild(input)
+  })
+
+  it('ignores visualViewport resize during pinch-zoom or when no text input is focused on mobile web', () => {
+    type Listener = () => void
+    const vvListeners: Record<string, Listener[]> = {}
+    const mockVV = {
+      height: 508,
+      offsetTop: 0,
+      scale: 1,
+      addEventListener: vi.fn((event: string, cb: Listener) => {
+        vvListeners[event] = vvListeners[event] || []
+        vvListeners[event].push(cb)
+      }),
+      removeEventListener: vi.fn(),
+    }
+
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false)
+
+    const mockScrollBy = vi.fn()
+    const mockWin = {
+      innerHeight: 844,
+      visualViewport: mockVV,
+      document,
+      scrollBy: mockScrollBy,
+      getComputedStyle: vi.fn().mockReturnValue({ overflowY: 'visible' }),
+      matchMedia: vi.fn().mockReturnValue({ matches: false }),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      requestAnimationFrame: vi.fn((cb: () => void) => {
+        cb()
+        return 1
+      }),
+    } as unknown as Window
+
+    const controller = initKeyboardAvoidance({
+      window: mockWin,
+      document,
+    })
+
+    // 1. Viewport shrinks without any focused text input (e.g. user pinch-zoomed body or scroll)
+    vvListeners['resize']?.forEach((cb) => cb())
+    expect(controller.getKeyboardHeight()).toBe(0)
+    expect(document.documentElement.dataset.keyboardOpen).toBeUndefined()
+
+    // 2. Focused input, but user pinch-zoomed (scale !== 1)
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+
+    mockVV.scale = 1.5
+    vvListeners['resize']?.forEach((cb) => cb())
+    expect(controller.getKeyboardHeight()).toBe(0)
+    expect(document.documentElement.dataset.keyboardOpen).toBeUndefined()
+
+    // 3. User resets zoom (scale = 1) while focused: keyboard avoidance activates
+    mockVV.scale = 1
+    vvListeners['resize']?.forEach((cb) => cb())
+    expect(controller.getKeyboardHeight()).toBe(336)
+    expect(document.documentElement.dataset.keyboardOpen).toBe('true')
+
+    controller.destroy()
+    document.body.removeChild(input)
   })
 
   it('preserves field-group context when scrolling inputs into view', () => {
