@@ -184,7 +184,10 @@ export function WelcomeView({
         <nav className="topbar" aria-label="Main navigation">
           <Brand />
           <div className="nav-actions" data-nosnippet>
-            <button className="text-button" onClick={onNavigateToDeck}>
+            <button
+              className="text-button topbar-nav-btn"
+              onClick={onNavigateToDeck}
+            >
               Manage deck
             </button>
             <button
