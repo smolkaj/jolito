@@ -486,7 +486,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders subtle gestural discoverability cue bar underneath the card in both unrevealed and revealed states', () => {
+  it('unifies gestural discoverability cues into reveal button in unrevealed state and rating buttons in revealed state', () => {
     const card = mockCards[0]!
 
     // Unrevealed state
@@ -505,9 +505,18 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    const cueBarUnrevealed = container.querySelector('.card-gesture-cue-bar')
-    expect(cueBarUnrevealed).toBeInTheDocument()
-    expect(cueBarUnrevealed).toHaveTextContent('Swipe up to reveal')
+    // Redundant cue bar beneath the card is removed completely
+    expect(
+      container.querySelector('.card-gesture-cue-bar'),
+    ).not.toBeInTheDocument()
+
+    // Reveal button itself renders the upward swipe gesture cue
+    const revealBtn = container.querySelector('.reveal-button')!
+    expect(revealBtn).toBeInTheDocument()
+    expect(revealBtn.querySelector('.reveal-gesture-cue')).toHaveTextContent(
+      '↑',
+    )
+    expect(revealBtn).toHaveTextContent('Reveal answer')
 
     // Revealed state
     rerender(
@@ -525,13 +534,25 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       />,
     )
 
-    const cueBarRevealed = container.querySelector('.card-gesture-cue-bar')
-    expect(cueBarRevealed).toBeInTheDocument()
-    expect(cueBarRevealed).toHaveTextContent('Again')
-    expect(cueBarRevealed).toHaveTextContent('Good')
+    // Redundant cue bar beneath the card is also removed in revealed state
+    expect(
+      container.querySelector('.card-gesture-cue-bar'),
+    ).not.toBeInTheDocument()
+
+    // Instead, the rating buttons themselves render the directional cues
+    const againBtn = container.querySelector('.grade-buttons .grade-again')!
+    const goodBtn = container.querySelector('.grade-buttons .grade-good')!
+    expect(againBtn).toBeInTheDocument()
+    expect(goodBtn).toBeInTheDocument()
+    expect(
+      againBtn.querySelector('.grade-gesture-cue.cue-again'),
+    ).toHaveTextContent('←')
+    expect(
+      goodBtn.querySelector('.grade-gesture-cue.cue-good'),
+    ).toHaveTextContent('→')
   })
 
-  it('transforms cue pill to "Release to reveal" with ready state when pulling up past threshold', () => {
+  it('activates ready state on reveal button while keeping label and arrow calm when pulling up past threshold', () => {
     const card = mockCards[0]!
     const { trigger, haptics } = createMockHaptics()
 
@@ -552,9 +573,13 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     )
 
     const studyCard = container.querySelector('.study-card')!
-    const cuePill = container.querySelector('.gesture-cue-pill')!
-    expect(cuePill).toHaveTextContent('Swipe up to reveal')
-    expect(cuePill).not.toHaveClass('is-ready')
+    const revealBtn = container.querySelector('.reveal-button')!
+    const revealCue = container.querySelector(
+      '.reveal-gesture-cue',
+    ) as HTMLElement
+    expect(revealBtn).toHaveTextContent('Reveal answer')
+    expect(revealCue).toHaveTextContent('↑')
+    expect(revealBtn).not.toHaveClass('is-gesture-ready')
 
     // Drag upward past threshold (dy = -60)
     fireEvent.pointerDown(studyCard, {
@@ -569,8 +594,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).toHaveClass('is-ready')
-    expect(cuePill).toHaveTextContent('Release to reveal')
+    expect(revealBtn).toHaveClass('is-gesture-ready')
+    expect(revealBtn).toHaveTextContent('Reveal answer')
+    expect(revealCue).toHaveTextContent('↑')
+    expect(revealCue.style.transform).toMatch(/^translateY\(-[0-9.]+px\)$/)
     expect(trigger).toHaveBeenCalledWith('selection')
 
     // Pull back down below threshold (dy = -10) -> reverts ready state
@@ -580,8 +607,9 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).not.toHaveClass('is-ready')
-    expect(cuePill).toHaveTextContent('Swipe up to reveal')
+    expect(revealBtn).not.toHaveClass('is-gesture-ready')
+    expect(revealBtn).toHaveTextContent('Reveal answer')
+    expect(revealCue).toHaveTextContent('↑')
   })
 
   it('does not reveal on horizontal swipe when unrevealed', () => {
@@ -1078,7 +1106,7 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     }
   })
 
-  it('provides interactive release feedback in cue pill when crossing horizontal swipe thresholds', () => {
+  it('provides interactive release feedback in grade buttons when crossing horizontal swipe thresholds', () => {
     const card = mockCards[0]!
     const { trigger, haptics } = createMockHaptics()
 
@@ -1099,15 +1127,17 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
     )
 
     const studyCard = container.querySelector('.study-card')!
-    const cueBar = container.querySelector('.card-gesture-cue-bar')!
-    const cuePill = container.querySelector('.gesture-cue-pill')!
-    expect(cuePill).toHaveTextContent('Again')
-    expect(cuePill).toHaveTextContent('Good')
-    expect(cuePill).not.toHaveClass('is-ready-again')
-    expect(cuePill).not.toHaveClass('is-ready-good')
-    expect(cueBar).not.toHaveClass('has-active-zone')
+    const againBtn = container.querySelector('.grade-buttons .grade-again')!
+    const goodBtn = container.querySelector('.grade-buttons .grade-good')!
+    const againCue = againBtn.querySelector('.grade-gesture-cue.cue-again')!
+    const goodCue = goodBtn.querySelector('.grade-gesture-cue.cue-good')!
 
-    // 1. Drag right past threshold (dx = +110)
+    expect(againCue).toHaveTextContent('←')
+    expect(goodCue).toHaveTextContent('→')
+    expect(againBtn).not.toHaveClass('is-gesture-active')
+    expect(goodBtn).not.toHaveClass('is-gesture-active')
+
+    // 1. Drag right past threshold (dx = +110) -> Good
     fireEvent.pointerDown(studyCard, {
       clientX: 200,
       clientY: 200,
@@ -1120,10 +1150,13 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).toHaveClass('is-ready-good')
-    expect(cuePill).toHaveTextContent('Release for Good')
-    expect(cuePill).toHaveTextContent('✓')
-    expect(cueBar).toHaveClass('has-active-zone')
+    expect(goodBtn).toHaveClass('is-gesture-active')
+    const activeGoodCue = goodBtn.querySelector(
+      '.grade-gesture-cue.cue-good',
+    ) as HTMLElement
+    expect(activeGoodCue).toHaveTextContent('✓')
+    expect(activeGoodCue.style.transform).toContain('scale(1.2)')
+    expect(againBtn).not.toHaveClass('is-gesture-active')
     expect(trigger).toHaveBeenCalledWith('selection')
 
     // Drag back below threshold (dx = +40)
@@ -1133,22 +1166,25 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).not.toHaveClass('is-ready-good')
-    expect(cuePill).toHaveTextContent('Again')
-    expect(cuePill).toHaveTextContent('Good')
-    expect(cueBar).not.toHaveClass('has-active-zone')
+    expect(goodBtn).not.toHaveClass('is-gesture-active')
+    expect(
+      goodBtn.querySelector('.grade-gesture-cue.cue-good'),
+    ).toHaveTextContent('→')
 
-    // 2. Drag left past threshold (dx = -110)
+    // 2. Drag left past threshold (dx = -110) -> Again
     fireEvent.pointerMove(studyCard, {
       clientX: 90,
       clientY: 200,
       pointerType: 'touch',
     })
 
-    expect(cuePill).toHaveClass('is-ready-again')
-    expect(cuePill).toHaveTextContent('Release for Again')
-    expect(cuePill).toHaveTextContent('↺')
-    expect(cueBar).toHaveClass('has-active-zone')
+    expect(againBtn).toHaveClass('is-gesture-active')
+    const activeAgainCue = againBtn.querySelector(
+      '.grade-gesture-cue.cue-again',
+    ) as HTMLElement
+    expect(activeAgainCue).toHaveTextContent('↺')
+    expect(activeAgainCue.style.transform).toContain('scale(1.2)')
+    expect(goodBtn).not.toHaveClass('is-gesture-active')
 
     // Drag back to neutral center (dx = 0)
     fireEvent.pointerMove(studyCard, {
@@ -1157,10 +1193,13 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
       pointerType: 'touch',
     })
 
-    expect(cuePill).not.toHaveClass('is-ready-again')
-    expect(cuePill).toHaveTextContent('Again')
-    expect(cuePill).toHaveTextContent('Good')
-    expect(cueBar).not.toHaveClass('has-active-zone')
+    expect(againBtn).not.toHaveClass('is-gesture-active')
+    expect(
+      againBtn.querySelector('.grade-gesture-cue.cue-again'),
+    ).toHaveTextContent('←')
+    expect(
+      goodBtn.querySelector('.grade-gesture-cue.cue-good'),
+    ).toHaveTextContent('→')
 
     fireEvent.pointerUp(studyCard, {
       clientX: 200,
@@ -1208,10 +1247,10 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
 
       const studyCard = container.querySelector('.study-card')!
       const leftArrow = container.querySelector(
-        '.gesture-cue-arrow.arrow-left',
+        '.grade-gesture-cue.cue-again',
       ) as HTMLElement
       const rightArrow = container.querySelector(
-        '.gesture-cue-arrow.arrow-right',
+        '.grade-gesture-cue.cue-good',
       ) as HTMLElement
 
       // Drag left sub-threshold
@@ -1246,12 +1285,92 @@ describe('PracticeCard Gestural Practice Canvas (Milestone 1)', () => {
         clientY: 200,
         pointerType: 'touch',
       })
+
+      // Also verify unrevealed reveal-gesture-cue suppresses translateY transform
+      const { container: unrevealedContainer } = render(
+        <PracticeCard
+          card={card}
+          prompt={<h1>{card.prompt}</h1>}
+          answer=""
+          revealed={false}
+          onAnswerChange={vi.fn()}
+          onReveal={vi.fn()}
+          onGrade={vi.fn()}
+          onPlayAnswer={vi.fn()}
+          paused={false}
+          audioUnavailable={false}
+        />,
+      )
+      const unrevealedCard = unrevealedContainer.querySelector('.study-card')!
+      const upArrow = unrevealedContainer.querySelector(
+        '.reveal-gesture-cue',
+      ) as HTMLElement
+
+      fireEvent.pointerDown(unrevealedCard, {
+        clientX: 200,
+        clientY: 200,
+        button: 0,
+        pointerType: 'touch',
+      })
+      fireEvent.pointerMove(unrevealedCard, {
+        clientX: 200,
+        clientY: 180,
+        pointerType: 'touch',
+      })
+      expect(upArrow.style.transform).toBe('')
+      fireEvent.pointerUp(unrevealedCard, {
+        clientX: 200,
+        clientY: 180,
+        pointerType: 'touch',
+      })
     } finally {
       if (originalMatchMedia) {
         window.matchMedia = originalMatchMedia
       } else {
         delete (window as { matchMedia?: unknown }).matchMedia
       }
+    }
+  })
+
+  it('aligns gesture cues spatially with swipe directions (left for Again, right for Good)', () => {
+    const card = mockCards[0]!
+    const { container } = render(
+      <PracticeCard
+        card={card}
+        prompt={<h1>{card.prompt}</h1>}
+        answer=""
+        revealed={true}
+        onAnswerChange={vi.fn()}
+        onReveal={vi.fn()}
+        onGrade={vi.fn()}
+        onPlayAnswer={vi.fn()}
+        paused={false}
+        audioUnavailable={false}
+      />,
+    )
+
+    const againBtn = container.querySelector('.grade-buttons .grade-again')!
+    const goodBtn = container.querySelector('.grade-buttons .grade-good')!
+    const hardBtn = container.querySelector('.grade-buttons .grade-hard')!
+    const easyBtn = container.querySelector('.grade-buttons .grade-easy')!
+
+    expect(
+      againBtn.querySelector('.grade-gesture-cue.cue-again'),
+    ).toHaveTextContent('←')
+    expect(
+      goodBtn.querySelector('.grade-gesture-cue.cue-good'),
+    ).toHaveTextContent('→')
+    expect(hardBtn.querySelector('.grade-gesture-cue')).not.toBeInTheDocument()
+    expect(easyBtn.querySelector('.grade-gesture-cue')).not.toBeInTheDocument()
+
+    // Verify all 4 buttons have leading and trailing slots for vertical typographic alignment
+    for (const btn of [againBtn, goodBtn, hardBtn, easyBtn]) {
+      expect(
+        btn.querySelector('.grade-gesture-slot.leading'),
+      ).toBeInTheDocument()
+      expect(
+        btn.querySelector('.grade-gesture-slot.trailing'),
+      ).toBeInTheDocument()
     }
   })
 

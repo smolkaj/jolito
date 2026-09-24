@@ -907,8 +907,24 @@ export function PracticeCard({
                   />
                 </div>
               )}
-              <button className="reveal-button" type="submit">
-                Reveal answer <kbd>Enter</kbd>
+              <button
+                className={`reveal-button ${isReadyToReveal ? 'is-gesture-ready' : ''}`.trim()}
+                type="submit"
+              >
+                <span
+                  className="reveal-gesture-cue"
+                  style={{
+                    transform:
+                      prefersReducedMotion || !isDragging || dragOffset.y >= 0
+                        ? undefined
+                        : `translateY(${Math.max(-6, dragOffset.y * 0.12)}px)`,
+                  }}
+                  aria-hidden="true"
+                >
+                  ↑
+                </span>
+                <span className="reveal-button-label">Reveal answer</span>
+                <kbd>Enter</kbd>
               </button>
               <div className="visually-hidden" aria-live="polite">
                 {speechNotice ??
@@ -951,7 +967,13 @@ export function PracticeCard({
                 {children}
               </div>
             </div>
-            <ReviewGrades card={card} onGrade={handleGrade} />
+            <ReviewGrades
+              card={card}
+              onGrade={handleGrade}
+              activeZone={activeZone}
+              dragOffset={dragOffset}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           </div>
         )}
         {(onEdit || onDelete) && (
@@ -1036,96 +1058,6 @@ export function PracticeCard({
             </>
           )}
         </p>
-        <div
-          className={`card-gesture-cue-bar ${isDragging && revealed ? 'is-dragging' : ''} ${activeZone ? 'has-active-zone' : ''}`.trim()}
-          aria-hidden="true"
-        >
-          {!revealed ? (
-            <div
-              className={`gesture-cue-pill ${isReadyToReveal ? 'is-ready' : ''}`}
-            >
-              {isReadyToReveal ? (
-                <>
-                  <span className="gesture-cue-icon">👁️</span>
-                  <span className="gesture-cue-text">Release to reveal</span>
-                </>
-              ) : (
-                <>
-                  <span
-                    className="gesture-cue-arrow arrow-up"
-                    style={{
-                      transform:
-                        isDragging && dragOffset.y < 0
-                          ? `translateY(${Math.max(-8, dragOffset.y * 0.12)}px)`
-                          : undefined,
-                    }}
-                  >
-                    ↑
-                  </span>
-                  <span className="gesture-cue-text">Swipe up to reveal</span>
-                </>
-              )}
-            </div>
-          ) : (
-            <div
-              className={`gesture-cue-pill ${
-                activeZone === 'again'
-                  ? 'is-ready-again'
-                  : activeZone === 'good'
-                    ? 'is-ready-good'
-                    : ''
-              }`}
-            >
-              {activeZone === 'again' ? (
-                <>
-                  <span className="gesture-cue-arrow arrow-left">↺</span>
-                  <span className="gesture-cue-text">Release for Again</span>
-                </>
-              ) : activeZone === 'good' ? (
-                <>
-                  <span className="gesture-cue-text">Release for Good</span>
-                  <span className="gesture-cue-arrow arrow-right">✓</span>
-                </>
-              ) : (
-                <>
-                  <span className="gesture-cue-action">
-                    <span
-                      className="gesture-cue-arrow arrow-left"
-                      style={{
-                        transform:
-                          !prefersReducedMotion &&
-                          isDragging &&
-                          dragOffset.x < 0
-                            ? `translateX(${Math.max(-8, dragOffset.x * 0.08)}px)`
-                            : undefined,
-                      }}
-                    >
-                      ←
-                    </span>
-                    <span className="gesture-cue-text">Again</span>
-                  </span>
-                  <span className="gesture-cue-sep">·</span>
-                  <span className="gesture-cue-action">
-                    <span className="gesture-cue-text">Good</span>
-                    <span
-                      className="gesture-cue-arrow arrow-right"
-                      style={{
-                        transform:
-                          !prefersReducedMotion &&
-                          isDragging &&
-                          dragOffset.x > 0
-                            ? `translateX(${Math.min(8, dragOffset.x * 0.08)}px)`
-                            : undefined,
-                      }}
-                    >
-                      →
-                    </span>
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
       </section>
     </>
   )

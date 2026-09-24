@@ -2593,6 +2593,10 @@ summary:focus-visible,
   box-shadow: 0 0 0 var(--ink);
 }
 
+.reveal-gesture-cue {
+  display: none;
+}
+
 /* Keyboard Keycap Badges */
 kbd {
   display: inline-flex;
@@ -2834,18 +2838,34 @@ kbd {
 .grade-buttons {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas: 'again hard good easy';
   gap: 12px;
   margin-top: 0;
+}
+
+.grade-buttons .grade-again {
+  grid-area: again;
+}
+
+.grade-buttons .grade-hard {
+  grid-area: hard;
+}
+
+.grade-buttons .grade-good {
+  grid-area: good;
+}
+
+.grade-buttons .grade-easy {
+  grid-area: easy;
 }
 
 .grade-buttons button {
   min-width: 0;
   min-height: 44px;
-  padding: 10px 12px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  padding: 8px 12px;
+  display: flex;
   align-items: center;
-  gap: 2px 9px;
+  gap: 8px;
   border: 2px solid var(--line);
   border-radius: 14px;
   color: var(--ink);
@@ -2859,19 +2879,29 @@ kbd {
   box-shadow: 0 0 0 var(--ink);
 }
 
-.grade-buttons kbd {
-  grid-row: span 2;
+.grade-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
-.grade-buttons strong {
+.grade-copy strong {
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.2;
 }
 
-.grade-buttons small {
+.grade-copy small {
   color: var(--ink-muted);
   font-size: 10px;
   font-weight: 600;
+  line-height: 1.2;
+}
+
+.grade-gesture-cue,
+.grade-gesture-slot {
+  display: none;
 }
 
 /* Tactile Chroma-Brutalist Solid Colored Chiclets for 1–4 */
@@ -3648,10 +3678,22 @@ kbd {
 
   .grade-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'again good'
+      'hard  easy';
+    gap: 10px;
+  }
+
+  /* When a physical keyboard is active on mobile/narrow viewports, restore sequential 1-4 reading & tab order */
+  html[data-keyboard='true'] .grade-buttons {
+    grid-template-areas:
+      'again hard'
+      'good  easy';
   }
 
   .grade-buttons button {
-    min-height: 44px;
+    min-height: 48px;
+    padding: 10px 14px;
   }
 
   .keyboard-hint {
@@ -6974,13 +7016,15 @@ kbd {
 }
 
 /* Synchronize bottom grade button active feedback */
-.study-card.zone-again .grade-buttons .grade-again {
+.study-card.zone-again .grade-buttons .grade-again,
+.grade-buttons .grade-again.is-gesture-active {
   transform: scale(1.08);
   box-shadow: 0 0 20px var(--rosa-glow);
   border-color: var(--rosa);
 }
 
-.study-card.zone-good .grade-buttons .grade-good {
+.study-card.zone-good .grade-buttons .grade-good,
+.grade-buttons .grade-good.is-gesture-active {
   transform: scale(1.08);
   box-shadow: 0 0 20px var(--turquesa-glow);
   border-color: var(--turquesa-dark);
@@ -7020,148 +7064,52 @@ kbd {
   color: var(--cempasuchil);
 }
 
-/* Gestural discoverability bar beneath study card */
-.card-gesture-cue-bar {
-  display: none;
-}
-
-@media (hover: none) and (pointer: coarse), (max-width: 680px) {
-  .card-gesture-cue-bar {
+@media (max-width: 680px) {
+  .grade-gesture-slot {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: min(560px, 100%);
-    margin: 18px auto 0;
-    padding: 0 16px;
-    pointer-events: none;
-    user-select: none;
-    transition: opacity 180ms ease;
+    width: 18px;
+    flex-shrink: 0;
   }
 
-  .card-gesture-cue-bar.is-dragging {
-    opacity: 0.75;
+  .grade-gesture-slot.trailing {
+    margin-left: auto;
   }
 
-  .card-gesture-cue-bar.has-active-zone {
-    opacity: 1;
-  }
-
-  .gesture-cue-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 22px;
-    min-height: 44px;
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(18, 24, 21, 0.08);
-    border-radius: 999px;
-    color: var(--ink-soft);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    box-shadow: 0 2px 8px rgba(18, 24, 21, 0.04);
-    transition:
-      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
-      background-color 160ms ease,
-      border-color 160ms ease,
-      color 160ms ease,
-      box-shadow 160ms ease;
-  }
-
-  .gesture-cue-pill.is-ready {
-    background: var(--card);
-    border-color: var(--turquesa-dark);
-    color: var(--ink);
-    font-weight: 700;
-    transform: scale(1.06);
-    box-shadow: 0 4px 16px var(--turquesa-glow);
-  }
-
-  .gesture-cue-pill.is-ready-again {
-    background: var(--card);
-    border-color: var(--rosa-dark);
-    color: var(--rosa-dark);
-    font-weight: 700;
-    transform: scale(1.08);
-    box-shadow:
-      0 4px 20px var(--rosa-glow),
-      0 0 0 1.5px var(--rosa-dark);
-  }
-
-  .gesture-cue-pill.is-ready-again .gesture-cue-arrow {
-    color: var(--rosa-dark);
-  }
-
-  .gesture-cue-pill.is-ready-good {
-    background: var(--card);
-    border-color: var(--turquesa-dark);
-    color: var(--turquesa-dark);
-    font-weight: 700;
-    transform: scale(1.08);
-    box-shadow:
-      0 4px 20px var(--turquesa-glow),
-      0 0 0 1.5px var(--turquesa-dark);
-  }
-
-  .gesture-cue-pill.is-ready-good .gesture-cue-arrow {
-    color: var(--turquesa-dark);
-  }
-
-  .gesture-cue-pill.is-ready .gesture-cue-icon {
-    display: inline-flex;
-    align-items: center;
-    font-size: 18px;
-    line-height: 1;
-    animation: eye-pulse 800ms ease-in-out infinite alternate;
-  }
-
-  @keyframes eye-pulse {
-    0% {
-      transform: scale(1);
-    }
-    100% {
-      transform: scale(1.2);
-    }
-  }
-
-  .gesture-cue-arrow {
+  .grade-gesture-cue {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 15px;
     font-weight: 800;
     line-height: 1;
+    flex-shrink: 0;
+    transition:
+      transform 120ms ease,
+      opacity 120ms ease;
   }
 
-  .gesture-cue-arrow.arrow-up {
-    font-size: 24px;
-    display: inline-block;
-    color: var(--ink-muted);
-    animation: subtle-float-up 2.2s ease-in-out infinite;
+  .grade-gesture-cue.is-active {
+    transform: scale(1.2);
   }
 
-  .gesture-cue-arrow.arrow-left {
-    color: rgba(228, 0, 124, 0.7);
-  }
-
-  .gesture-cue-arrow.arrow-right {
-    color: rgba(13, 122, 104, 0.7);
-  }
-
-  .gesture-cue-action {
+  .reveal-gesture-cue {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1;
+    margin-right: 2px;
+    transition:
+      transform 120ms ease,
+      opacity 120ms ease;
   }
 
-  .gesture-cue-sep {
-    color: var(--line);
-    font-size: 18px;
-    opacity: 0.5;
-    font-weight: 400;
+  .reveal-button.is-gesture-ready {
+    background: var(--turquesa-soft);
+    border-color: var(--turquesa-dark);
   }
 
   .keyboard-hint,
@@ -7208,18 +7156,10 @@ html[data-keyboard='true'] .grade-btn kbd {
   display: inline-flex !important;
 }
 
-html[data-keyboard='true'] .card-gesture-cue-bar {
+html[data-keyboard='true'] .grade-gesture-cue,
+html[data-keyboard='true'] .grade-gesture-slot,
+html[data-keyboard='true'] .reveal-gesture-cue {
   display: none !important;
-}
-
-@keyframes subtle-float-up {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
 }
 
 /* Milestone 2: Mobile Navigation Tab Bar */
@@ -7530,9 +7470,11 @@ button:active,
   .demo-deck-chip:active,
   .mobile-tab-btn:active,
   .gesture-zone-badge,
-  .gesture-cue-pill,
-  .gesture-cue-arrow,
-  .gesture-cue-icon {
+  .grade-gesture-cue,
+  .reveal-gesture-cue,
+  .reveal-button.is-gesture-ready,
+  .grade-buttons .grade-again.is-gesture-active,
+  .grade-buttons .grade-good.is-gesture-active {
     transform: none !important;
     transition: none !important;
     animation: none !important;
