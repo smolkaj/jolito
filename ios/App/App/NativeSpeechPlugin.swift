@@ -138,15 +138,72 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         }
     }
 
+    private func isRoboticOrNoveltyVoice(_ voice: AVSpeechSynthesisVoice) -> Bool {
+        let identifier = voice.identifier.lowercased()
+        // Apple Eloquence synthesizer voices (1990s robotic screen-reader voices added in iOS 16)
+        if identifier.contains("eloquence") {
+            return true
+        }
+        // Legacy novelty synthesizers (Zarvox, Bad News, etc.)
+        if identifier.contains("speech.synthesis.voice") {
+            return true
+        }
+
+        let name = voice.name.lowercased()
+        let roboticNames: Set<String> = [
+            "eddy", "floyd", "grandpa", "grandma", "reed", "rocko", "sandy", "shelley",
+            "bad news", "bahh", "bells", "boing", "bubbles", "cellos", "deranged",
+            "good news", "hysterical", "junior", "pipe organ", "trinoids", "whisper",
+            "wobble", "zarvox", "albert", "fred", "organ", "kathy", "ralph", "bruce", "princess"
+        ]
+        return roboticNames.contains(name)
+    }
+
     private func selectVoice(locale: String, preferredGender: String?, preferredVoice: String?) -> AVSpeechSynthesisVoice? {
         let allVoices = AVSpeechSynthesisVoice.speechVoices()
+        let naturalVoices = allVoices.filter { !self.isRoboticOrNoveltyVoice($0) }
+        let candidateVoices = naturalVoices.isEmpty ? allVoices : naturalVoices
 
-        // 1. Explicit voice identifier match
+        // 1. Explicit voice identifier or name match
         if let preferredVoice = preferredVoice, !preferredVoice.isEmpty {
-            if let matched = allVoices.first(where: {
-                $0.identifier == preferredVoice || $0.name.caseInsensitiveCompare(preferredVoice) == .orderedSame
+            // 1a. Exact identifier match
+            if let matched = candidateVoices.first(where: {
+                $0.identifier == preferredVoice
             }) {
                 return matched
+            }
+            // 1b. Exact name match (case-insensitive)
+            if let matched = candidateVoices.first(where: {
+                $0.name.caseInsensitiveCompare(preferredVoice) == .orderedSame
+            }) {
+                return matched
+            }
+            // 1c. Jolito neural persona name hints (e.g. "es-MX-JorgeNeural" -> Jorge, "es-MX-DaliaNeural" -> Paulina)
+            let lowerPreferred = preferredVoice.lowercased()
+            if lowerPreferred.contains("jorge") {
+                if let jorge = candidateVoices.first(where: {
+                    $0.name.lowercased().contains("jorge") && $0.language.lowercased().hasPrefix("es")
+                }) {
+                    return jorge
+                }
+            } else if lowerPreferred.contains("dalia") || lowerPreferred.contains("paulina") {
+                if let paulina = candidateVoices.first(where: {
+                    $0.name.lowercased().contains("paulina") && $0.language.lowercased().hasPrefix("es")
+                }) {
+                    return paulina
+                }
+            } else if lowerPreferred.contains("jenny") || lowerPreferred.contains("samantha") {
+                if let samantha = candidateVoices.first(where: {
+                    $0.name.lowercased().contains("samantha") && $0.language.lowercased().hasPrefix("en")
+                }) {
+                    return samantha
+                }
+            } else if lowerPreferred.contains("guy") || lowerPreferred.contains("alex") {
+                if let alex = candidateVoices.first(where: {
+                    $0.name.lowercased().contains("alex") && $0.language.lowercased().hasPrefix("en")
+                }) {
+                    return alex
+                }
             }
         }
 
@@ -154,10 +211,10 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         let langPrefix = String(normalizedTarget.prefix(2))
 
         // 2. Filter matching target locale or language prefix
-        let localeMatches = allVoices.filter {
+        let localeMatches = candidateVoices.filter {
             $0.language.replacingOccurrences(of: "_", with: "-").lowercased() == normalizedTarget
         }
-        let langMatches = allVoices.filter {
+        let langMatches = candidateVoices.filter {
             $0.language.replacingOccurrences(of: "_", with: "-").lowercased().hasPrefix(langPrefix)
         }
 
@@ -188,22 +245,40 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
 
         // 5. Prefer natural voices: Mexican names (Paulina, Jorge) for Spanish, natural names (Samantha, Alex, Ava, Allison) for English
         if langPrefix == "es" {
-            if let mexicanNamed = genderPool.first(where: {
-                let name = $0.name.lowercased()
-                return name.contains("paulina") || name.contains("jorge")
+            let preferredSpanishNames = preferredGender == "male"
+                ? ["jorge", "carlos", "diego", "juan", "raul"]
+                : ["paulina", "mónica", "monica", "soledad", "francisca"]
+
+            for name in preferredSpanishNames {
+                if let matched = genderPool.first(where: { $0.name.lowercased().contains(name) }) {
+                    return matched
+                }
+            }
+            if let named = genderPool.first(where: {
+                let n = $0.name.lowercased()
+                return n.contains("paulina") || n.contains("jorge") || n.contains("monica") || n.contains("carlos")
             }) {
-                return mexicanNamed
+                return named
             }
         } else if langPrefix == "en" {
-            if let englishNamed = genderPool.first(where: {
-                let name = $0.name.lowercased()
-                return name.contains("samantha") || name.contains("alex") || name.contains("ava") || name.contains("allison")
+            let preferredEnglishNames = preferredGender == "male"
+                ? ["alex", "tom", "aaron", "allison"]
+                : ["samantha", "ava", "allison", "serena"]
+
+            for name in preferredEnglishNames {
+                if let matched = genderPool.first(where: { $0.name.lowercased().contains(name) }) {
+                    return matched
+                }
+            }
+            if let named = genderPool.first(where: {
+                let n = $0.name.lowercased()
+                return n.contains("samantha") || n.contains("alex") || n.contains("ava") || n.contains("allison")
             }) {
-                return englishNamed
+                return named
             }
         }
 
-        return genderPool.first ?? AVSpeechSynthesisVoice(language: locale)
+        return genderPool.first ?? candidateVoices.first(where: { $0.language.replacingOccurrences(of: "_", with: "-").lowercased().hasPrefix(langPrefix) }) ?? AVSpeechSynthesisVoice(language: locale)
     }
 
     // MARK: - AVSpeechSynthesizerDelegate

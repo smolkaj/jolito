@@ -88,18 +88,19 @@ export class NativeSpeaker implements Speaker {
 
     if (this.isNativeAvailable()) {
       let gender: 'female' | 'male' | undefined = options?.gender
-      if (!gender && options?.voice) {
+      let voiceHint: string | undefined = options?.voice
+      if (!gender && voiceHint) {
         if (
-          options.voice.includes('Jorge') ||
-          options.voice.includes('Guy') ||
-          options.voice.toLowerCase().includes('male')
+          voiceHint.includes('Jorge') ||
+          voiceHint.includes('Guy') ||
+          voiceHint.toLowerCase().includes('male')
         ) {
           gender = 'male'
         } else if (
-          options.voice.includes('Dalia') ||
-          options.voice.includes('Jenny') ||
-          options.voice.includes('Paulina') ||
-          options.voice.toLowerCase().includes('female')
+          voiceHint.includes('Dalia') ||
+          voiceHint.includes('Jenny') ||
+          voiceHint.includes('Paulina') ||
+          voiceHint.toLowerCase().includes('female')
         ) {
           gender = 'female'
         }
@@ -110,13 +111,23 @@ export class NativeSpeaker implements Speaker {
           gender = hashString(seedKey) % 2 === 0 ? 'female' : 'male'
         }
       }
+      if (!voiceHint && gender) {
+        const isSpanish = locale.toLowerCase().startsWith('es')
+        voiceHint = isSpanish
+          ? gender === 'male'
+            ? 'Jorge'
+            : 'Paulina'
+          : gender === 'male'
+            ? 'Alex'
+            : 'Samantha'
+      }
 
       this.plugin
         .speak({
           text,
           locale,
           gender,
-          voice: options?.voice,
+          voice: voiceHint,
         })
         .then((result) => {
           if (this.isDestroyed) return
