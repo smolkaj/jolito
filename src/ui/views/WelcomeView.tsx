@@ -145,7 +145,7 @@ export function WelcomeView({
     mascotWiggleTimerRef.current = window.setTimeout(() => {
       setMascotWiggling(false)
       mascotWiggleTimerRef.current = null
-    }, 600)
+    }, 520)
 
     mascotTimerRef.current = window.setTimeout(() => {
       closeGreeting(false)
