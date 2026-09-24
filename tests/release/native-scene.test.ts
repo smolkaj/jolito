@@ -164,7 +164,7 @@ void test('NativeSpeechPlugin filters out Eloquence and legacy novelty robotic s
   assert.match(speechPlugin, /identifier\.contains\("eloquence"\)/)
   assert.match(
     speechPlugin,
-    /identifier\.contains\("speech\.synthesis\.voice"\)/,
+    /identifier\.contains\("speech\.synthesis\.voice"\)\s*&&\s*!identifier\.contains\("alex"\)/,
   )
   assert.match(speechPlugin, /"eddy",\s*"floyd",\s*"grandpa"/)
   assert.match(speechPlugin, /"reed",\s*"rocko",\s*"sandy",\s*"shelley"/)

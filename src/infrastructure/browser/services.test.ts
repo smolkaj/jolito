@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { createStudyCards } from '../../domain/card'
 import { BrowserDeletionLock, NativeDeletionLock } from './deletion-lock'
 import { Capacitor } from '@capacitor/core'
-import { NativeSpeaker } from './native-speech'
 import { OfflineCardAssistant } from '../../application/card-assistant'
 import { LayeredNeuralSpeaker } from './neural-speaker'
 import {
@@ -83,20 +82,21 @@ describe('createBrowserServices', () => {
     },
   )
 
-  it('uses device speech on native platforms without prewarming network audio', () => {
+  it('uses hybrid layered neural speaker on native platforms with native speech fallback', () => {
     const platform = vi
       .spyOn(Capacitor, 'isNativePlatform')
       .mockReturnValue(true)
-    const prewarm = vi.spyOn(LayeredNeuralSpeaker.prototype, 'prewarm')
+    const prewarm = vi
+      .spyOn(LayeredNeuralSpeaker.prototype, 'prewarm')
+      .mockResolvedValue(true)
     const dictionary = vi
       .spyOn(OfflineCardAssistant.prototype, 'loadDictionary')
       .mockResolvedValue(true)
     const services = createBrowserServices()
     expect(services.deletionLock).toBeInstanceOf(NativeDeletionLock)
-    expect(services.speaker).toBeInstanceOf(NativeSpeaker)
-    expect('prefetch' in services.speaker).toBe(false)
-    expect(prewarm).not.toHaveBeenCalled()
-    ;(services.speaker as NativeSpeaker).destroy()
+    expect(services.speaker).toBeInstanceOf(LayeredNeuralSpeaker)
+    expect(prewarm).toHaveBeenCalledTimes(1)
+    ;(services.speaker as LayeredNeuralSpeaker).destroy()
 
     platform.mockRestore()
     prewarm.mockRestore()

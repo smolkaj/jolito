@@ -145,7 +145,9 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             return true
         }
         // Legacy novelty synthesizers (Zarvox, Bad News, etc.)
-        if identifier.contains("speech.synthesis.voice") {
+        // Note: Apple's natural English voice Alex has identifier "com.apple.speech.synthesis.voice.Alex",
+        // so we must never filter Alex.
+        if identifier.contains("speech.synthesis.voice") && !identifier.contains("alex") {
             return true
         }
 
@@ -284,7 +286,7 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             }
         } else if langPrefix == "en" {
             let preferredEnglishNames = preferredGender == "male"
-                ? ["alex", "tom", "aaron", "allison"]
+                ? ["alex", "tom", "aaron"]
                 : ["samantha", "ava", "allison", "serena"]
 
             for name in preferredEnglishNames {
