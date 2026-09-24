@@ -1710,7 +1710,7 @@ summary:focus-visible,
 }
 
 .sample-card-en:focus-visible {
-  outline-color: var(--line);
+  outline-color: var(--rosa);
 }
 
 .sample-card-en .sample-card-header .sample-badge {
@@ -2180,11 +2180,10 @@ summary:focus-visible,
   font-size: 16px;
 }
 
-.field-group textarea::placeholder,
-.field-group input::placeholder,
-.form-details textarea::placeholder,
-.compact-fields input::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--ink-faint);
+  opacity: 1;
 }
 
 .field-group-relative {
@@ -6464,7 +6463,7 @@ kbd {
 }
 
 .starter-pack-inspect-list:focus-visible {
-  outline: 2px solid var(--line);
+  outline: 2px solid var(--rosa);
   outline-offset: 2px;
 }
 
@@ -6590,7 +6589,7 @@ kbd {
 }
 
 .inspect-item-add-btn:focus-visible {
-  outline: 2px solid var(--line);
+  outline: 2px solid var(--rosa);
   outline-offset: 2px;
 }
 

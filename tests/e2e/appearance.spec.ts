@@ -1,6 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Locator } from '@playwright/test'
 import { createStudyCards } from '../../src/domain/card'
-import { auditAccessibility } from './accessibility'
+import { auditAccessibility, settleAnimations } from './accessibility'
 
 async function expectAppearance(page: Page, scheme: 'light' | 'dark') {
   await expect(page.locator('html')).toHaveCSS('color-scheme', scheme)
@@ -21,19 +21,19 @@ async function expectAppearance(page: Page, scheme: 'light' | 'dark') {
 
 for (const colorScheme of ['light', 'dark'] as const) {
   for (const width of [393, 1280]) {
-    test(`${colorScheme} surfaces remain accessible across learning flows at ${width}px`, async ({
-      page,
-    }, testInfo) => {
-      await page.setViewportSize({ width, height: 852 })
-      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
-      for (const [name, route] of [
-        ['welcome', '/'],
-        ['create', '/#/create'],
-        ['deck-dialog', '/#/deck'],
-        ['grammar', '/#/grammar'],
-        ['practice', '/#/study'],
-      ]) {
-        await page.goto(route!)
+    for (const [name, route] of [
+      ['welcome', '/'],
+      ['create', '/#/create'],
+      ['deck-dialog', '/#/deck'],
+      ['grammar', '/#/grammar'],
+      ['practice', '/#/study'],
+    ] as const) {
+      test(`${colorScheme} ${name} is accessible at ${width}px`, async ({
+        page,
+      }, testInfo) => {
+        await page.setViewportSize({ width, height: 852 })
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
+        await page.goto(route)
         await expect(page.locator('main')).toBeVisible()
         await expectAppearance(page, colorScheme)
         expect((await auditAccessibility(page)).violations).toEqual([])
@@ -76,8 +76,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
             fullPage: true,
           })
         }
-      }
-    })
+      })
+    }
   }
 }
 
@@ -135,9 +135,9 @@ test('device appearance changes round-trip without interrupting recall, grading,
 })
 
 for (const colorScheme of ['light', 'dark'] as const) {
-  test(`${colorScheme} interactive surfaces and dialogs stay legible`, async ({
+  test(`${colorScheme} sample cards and practice menu remain legible on interaction`, async ({
     page,
-  }, testInfo) => {
+  }) => {
     await page.setViewportSize({ width: 1280, height: 852 })
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
     await page.goto('/')
@@ -147,36 +147,30 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }
     await page.getByRole('button', { name: 'Practice', exact: true }).click()
     expect((await auditAccessibility(page)).violations).toEqual([])
-    await page.keyboard.press('Escape')
-    for (const name of [/^feedback$/i, /sign in/i]) {
-      await page.getByRole('button', { name }).click()
-      await expect(page.getByRole('dialog')).toBeVisible()
-      expect((await auditAccessibility(page)).violations).toEqual([])
-      await page.screenshot({
-        path: testInfo.outputPath(
-          name.source.includes('feedback')
-            ? 'feedback-dialog.png'
-            : 'sign-in.png',
-        ),
-        fullPage: true,
-      })
-      await page.keyboard.press('Escape')
-    }
-    await page.goto('/#/deck')
-    await page.getByRole('button', { name: /explore demo deck/i }).click()
-    for (const name of [/starter packs/i, /backup & import/i]) {
-      await page.getByRole('button', { name }).click()
-      await expect(page.getByRole('dialog')).toBeVisible()
-      expect((await auditAccessibility(page)).violations).toEqual([])
-      await page.screenshot({
-        path: testInfo.outputPath(
-          name.source.includes('starter') ? 'starter-packs.png' : 'backup.png',
-        ),
-        fullPage: true,
-      })
-      await page.keyboard.press('Escape')
-    }
   })
+  for (const { name, route, trigger } of [
+    { name: 'feedback', route: '/', trigger: /^feedback$/i },
+    { name: 'sign-in', route: '/', trigger: /sign in/i },
+    { name: 'starter-packs', route: '/#/deck', trigger: /^starter packs$/i },
+    { name: 'backup', route: '/#/deck', trigger: /backup & import/i },
+  ]) {
+    test(`${colorScheme} ${name} dialog remains legible`, async ({
+      page,
+    }, testInfo) => {
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
+      await page.goto(route)
+      if (route === '/#/deck') {
+        await page.getByRole('button', { name: /explore demo deck/i }).click()
+      }
+      await page.getByRole('button', { name: trigger }).click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+      expect((await auditAccessibility(page)).violations).toEqual([])
+      await page.screenshot({
+        path: testInfo.outputPath(`${name}.png`),
+        fullPage: true,
+      })
+    })
+  }
 }
 
 test('dark keyboard toolbar survives open, close, and reopen with readable keys', async ({
@@ -227,3 +221,82 @@ test('the first paint follows device appearance even before JavaScript runs', as
     await context.close()
   }
 })
+
+// Axe does not audit the contrast of CSS focus outlines. Measure the ring
+// against its surrounding opaque surface, rather than against button text.
+async function focusContrast(locator: Locator) {
+  await locator.focus()
+  await settleAnimations(locator.page())
+  return locator.evaluate((element) => {
+    const style = getComputedStyle(element)
+    let surrounding = element.parentElement!
+    while (
+      getComputedStyle(surrounding).backgroundColor === 'rgba(0, 0, 0, 0)'
+    ) {
+      surrounding = surrounding.parentElement!
+    }
+    function luminance(color: string) {
+      const rgb = color
+        .match(/[\d.]+/g)!
+        .slice(0, 3)
+        .map(Number)
+      const linear = rgb.map((channel) => {
+        const value = channel / 255
+        return value <= 0.04045
+          ? value / 12.92
+          : ((value + 0.055) / 1.055) ** 2.4
+      })
+      return linear[0]! * 0.2126 + linear[1]! * 0.7152 + linear[2]! * 0.0722
+    }
+    const ring = luminance(style.outlineColor)
+    const background = luminance(getComputedStyle(surrounding).backgroundColor)
+    return {
+      visible:
+        element.matches(':focus-visible') &&
+        parseFloat(style.outlineWidth) >= 2 &&
+        style.outlineStyle !== 'none',
+      ratio:
+        (Math.max(ring, background) + 0.05) /
+        (Math.min(ring, background) + 0.05),
+    }
+  })
+}
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`${colorScheme} focus indicators contrast with canvas, cards, and dialogs`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1280, height: 852 })
+    await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' })
+    await page.goto('/')
+    await page.keyboard.press('Tab')
+    for (const selector of [
+      '.sample-card-es',
+      '.sample-card-en',
+      '.hero-actions .primary-button',
+    ]) {
+      const focus = await focusContrast(page.locator(selector))
+      expect(focus.visible, selector).toBe(true)
+      expect(focus.ratio, selector).toBeGreaterThanOrEqual(3)
+    }
+    await page.goto('/#/deck')
+    await page.getByRole('button', { name: /explore demo deck/i }).click()
+    await page.getByRole('button', { name: /^starter packs$/i }).click()
+    await page
+      .getByRole('button', { name: /inspect mexican street phrases/i })
+      .click()
+    await page.keyboard.press('Tab')
+    for (const selector of [
+      '.starter-pack-inspect-list',
+      '.inspect-item-add-btn:not(:disabled)',
+    ]) {
+      const focus = await focusContrast(page.locator(selector).first())
+      expect(focus.visible, selector).toBe(true)
+      expect(focus.ratio, selector).toBeGreaterThanOrEqual(3)
+    }
+    await page.screenshot({
+      path: testInfo.outputPath('focused-starter-pack.png'),
+      fullPage: true,
+    })
+  })
+}
