@@ -5,19 +5,19 @@ Thank you for your review and guidance under Guideline 2.1 (Information Needed -
 ================================================================================
 1. SCREEN RECORDING (DEVICE WALKTHROUGH & FLOW DEMONSTRATION)
 ================================================================================
-We have recorded a screen walkthrough on an iOS device viewport (iPhone 16 Pro dimensions) demonstrating the app from a cold launch through all core workflows.
+We have recorded a screen walkthrough on an iOS device viewport (iPhone dimensions, 1:1 edge-to-edge) demonstrating the app from a cold launch through all core workflows.
 
 Video URLs:
-- High-resolution web video: https://litter.catbox.moe/amtqev.webm
-- Alternate permanent mirror: https://joli.to/demo.webm
+- High-resolution web video: https://litter.catbox.moe/lsbinq.webm
+- Permanent production mirror: https://joli.to/demo.webm
 
 Walkthrough Highlights:
 - 00:00 Cold Launch & Welcome: Clean launch into Jolito, showing interactive Mexican Spanish greeting and pronunciation by Jolito the axolotl.
-- 00:05 Account & Sign-In Options: Opening the Account sheet showing Sign in with Apple and passwordless email OTP options.
-- 00:10 Spaced Repetition Practice Drill: Core learning loop—viewing Mexican Spanish prompt, tapping pronunciation audio, flipping card, and rating difficulty ("Good" / "Easy").
-- 00:20 Custom Card Creation: Adding a custom Mexican Spanish flashcard ("¡No manches!"), entering translation, and saving it to the deck.
-- 00:28 Deck Manager: Inspecting the personal deck list and custom vocabulary.
-- 00:33 Account Deletion & Permanent Purge (Guideline 5.1.1(v)): Signed-in user navigates to Account settings, selects "Delete cloud account & data", types "DELETE" into the safety confirmation dialog, and permanently purges the cloud account and synced data immediately in-app.
+- 00:05 Account & Sign-In Flow: Opening the Account sheet showing native "Sign in with Apple" and passwordless email OTP options, entering email (reviewer@apple.com), entering the 6-digit OTP verification code, and successfully signing in.
+- 00:15 Spaced Repetition Practice Drill: Core learning loop—viewing Mexican Spanish prompt, tapping pronunciation audio, flipping card, and rating difficulty ("Good" / "Easy").
+- 00:24 Custom Card Creation: Adding a custom Mexican Spanish flashcard ("¡No manches!"), entering English translation, and saving it to the personal deck.
+- 00:32 Deck Manager: Inspecting the personal deck list with the newly added custom card.
+- 00:38 Account Deletion & Permanent Purge (Guideline 5.1.1(v)): Signed-in user navigates to Account settings, selects "Delete cloud account & data", unchecks backup, types "DELETE" into the safety confirmation dialog, and permanently purges the cloud account and synced data immediately in-app, returning cleanly to local offline mode.
 
 Clarifications on Additional Flow Guidelines:
 - User-Generated Content (UGC): Flashcards in Jolito are strictly private to the individual user for personal study. The app contains no social feeds, public sharing, community decks, or user-to-user interactions. Content reporting and blocking mechanisms are therefore not applicable.
