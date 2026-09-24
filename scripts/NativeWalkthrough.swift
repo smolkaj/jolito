@@ -154,8 +154,10 @@ final class NativeWalkthrough: XCTestCase {
         app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Permanently deletes your account")).firstMatch.tap()
         pause(3)
         tap(button("Yes, delete cloud data"))
-        XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 30))
-        XCTAssertTrue(button("Not signed in.").waitForExistence(timeout: 15))
+        XCTAssertTrue(button("Not signed in.").waitForExistence(timeout: 30))
+        let demoDeck = button("Explore demo deck")
+        if demoDeck.waitForExistence(timeout: 3) { tap(demoDeck) }
+        XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 15))
         pause(7)
         print("WALKTHROUGH_END \(Date().timeIntervalSince1970)")
         // Produce a teardown frame after END so the variable-rate recorder
