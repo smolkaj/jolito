@@ -42,6 +42,17 @@ for (const colorScheme of ['light', 'dark'] as const) {
           fullPage: true,
         })
         if (name === 'create') {
+          const reverse = page.getByRole('checkbox', {
+            name: /practice both directions/i,
+          })
+          await reverse.uncheck()
+          expect((await auditAccessibility(page)).violations).toEqual([])
+          await page.screenshot({
+            path: testInfo.outputPath('one-direction.png'),
+            fullPage: true,
+          })
+          await reverse.check()
+
           await page
             .getByLabel('Mexican Spanish', { exact: true })
             .fill('ahorita')
