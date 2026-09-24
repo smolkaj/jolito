@@ -9,7 +9,7 @@ import sys
 folder = Path(sys.argv[1])
 source = sys.argv[2]
 log = (folder / 'test.log').read_text()
-if '** TEST SUCCEEDED **' not in log:
+if "Test Suite 'All tests' passed" not in log:
     raise SystemExit('Refusing to publish an incomplete walkthrough')
 start = float(re.findall(r'WALKTHROUGH_START ([0-9.]+)', log)[0])
 end = float(re.findall(r'WALKTHROUGH_END ([0-9.]+)', log)[0])

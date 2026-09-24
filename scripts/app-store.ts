@@ -15,7 +15,8 @@ export const settings = settingsSchema.parse(
     readFileSync(new URL('../fastlane/release.json', import.meta.url), 'utf8'),
   ),
 )
-export const CONTENT_RIGHTS_DECLARATION = 'DOES_NOT_USE_THIRD_PARTY_CONTENT'
+// Open licensing permits use; the bundled dictionary remains third-party content.
+export const CONTENT_RIGHTS_DECLARATION = 'USES_THIRD_PARTY_CONTENT'
 const idSchema = z.object({ type: z.string(), id: z.string().min(1) })
 const resourceSchema = idSchema.extend({
   attributes: z.record(z.string(), z.unknown()).default({}),

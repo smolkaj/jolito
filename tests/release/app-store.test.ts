@@ -275,7 +275,7 @@ void test('apply succeeds idempotently when price schedule already exists (HTTP 
   assert.equal(calls[calls.length - 1]!.method, 'GET')
 })
 
-void test('apply patches contentRightsDeclaration when missing', async () => {
+void test('apply declares licensed third-party dictionary content when missing', async () => {
   const { api, calls } = store({ missingContentRights: true })
   await configureStore(api, true)
   const patch = calls.find((c) => c.method === 'PATCH')
@@ -286,7 +286,7 @@ void test('apply patches contentRightsDeclaration when missing', async () => {
       type: 'apps',
       id: 'app',
       attributes: {
-        contentRightsDeclaration: CONTENT_RIGHTS_DECLARATION,
+        contentRightsDeclaration: 'USES_THIRD_PARTY_CONTENT',
       },
     },
   })

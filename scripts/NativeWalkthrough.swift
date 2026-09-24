@@ -48,6 +48,12 @@ final class NativeWalkthrough: XCTestCase {
         tap(button("Sign in to save"))
         try signIn(reviewer)
         pause(5)
+        if !button("Sign out").exists {
+            // Saving a pending card closes the sheet and focuses the next draft.
+            dismissKeyboard()
+            app.swipeDown(velocity: .slow)
+            tap(button("Sync"))
+        }
         closeSheetIfOpen()
 
         chapter("Build a useful personal deck")
@@ -215,7 +221,8 @@ final class NativeWalkthrough: XCTestCase {
         codeField.typeText(code)
         pause(2)
         tap(button("Sign in &"))
-        XCTAssertTrue(button("Sign out").waitForExistence(timeout: 30), "Real account sign-in must complete")
+        let authenticated = app.buttons.matching(NSPredicate(format: "label IN %@", ["Sign out", "Deck synced with cloud. Tap to manage sync."])).firstMatch
+        XCTAssertTrue(authenticated.waitForExistence(timeout: 30), "Real account sign-in and synchronization must complete")
     }
 
     private func deliveredCode(_ mailbox: Mailbox, after: Date) throws -> String {
