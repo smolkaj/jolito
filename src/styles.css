@@ -7185,7 +7185,7 @@ html[data-keyboard='true'] .reveal-gesture-cue {
     padding-left: 0;
     padding-right: 0;
     padding-bottom: calc(
-      56px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+      88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
     );
     box-sizing: border-box;
   }
@@ -7344,7 +7344,7 @@ html[data-keyboard='true'] .reveal-gesture-cue {
   /* Reachability for pages under fixed mobile tab bar */
   .app-shell {
     padding-bottom: calc(
-      68px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+      88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
         var(--keyboard-inset, 0px)
     );
   }

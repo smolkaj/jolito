@@ -375,7 +375,7 @@ void test('CSS architectural invariants for universal keyboard avoidance and rea
   // 4. Mobile .app-shell (under 680px) incorporates --keyboard-inset
   assert.match(
     css,
-    /\.app-shell\s*\{[\s\S]*?68px[\s\S]*?var\(--safe-area-inset-bottom[\s\S]*?var\(--keyboard-inset,\s*0px\)/,
+    /\.app-shell\s*\{[\s\S]*?(?:68|76|88)px[\s\S]*?var\(--safe-area-inset-bottom[\s\S]*?var\(--keyboard-inset,\s*0px\)/,
     'Mobile .app-shell must include var(--keyboard-inset, 0px) to clear bottom tab bar and keyboard',
   )
 
