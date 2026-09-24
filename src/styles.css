@@ -211,8 +211,15 @@ summary:focus-visible,
   padding: 0;
 }
 
-.brand {
+.topbar-brand {
   flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.brand {
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -227,6 +234,8 @@ summary:focus-visible,
   font-weight: var(--brand-weight, 800);
   letter-spacing: -1.2px;
   line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -3565,6 +3574,10 @@ kbd {
 
   .connection-pill {
     flex-shrink: 0;
+  }
+
+  .topbar-brand {
+    flex: 0 0 auto;
   }
 
   .brand {

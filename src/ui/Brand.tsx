@@ -1,6 +1,12 @@
 import { JolitoMark } from './icons'
 
-export function Brand({ onClick }: { onClick?: () => void }) {
+export function Brand({
+  onClick,
+  className,
+}: {
+  onClick?: () => void
+  className?: string
+}) {
   const content = (
     <>
       <JolitoMark className="brand-mark" />
@@ -8,7 +14,7 @@ export function Brand({ onClick }: { onClick?: () => void }) {
     </>
   )
 
-  return onClick ? (
+  const brandElement = onClick ? (
     <button
       className="brand"
       type="button"
@@ -19,5 +25,11 @@ export function Brand({ onClick }: { onClick?: () => void }) {
     </button>
   ) : (
     <div className="brand">{content}</div>
+  )
+
+  return (
+    <div className={`topbar-brand ${className || ''}`.trim()}>
+      {brandElement}
+    </div>
   )
 }
