@@ -25,7 +25,14 @@ cleanup() {
   for pid in "$video_pid" "$audio_pid"; do
     if [ -n "$pid" ]; then kill -KILL "$pid" 2>/dev/null || true; wait "$pid" || true; fi
   done
-  xcrun simctl io "$device" screenshot --mask=black "$output/final-frame.png" 2>/dev/null || true
+  python3 - "$device" "$output/final-frame.png" <<'PYSNAPSHOT'
+import subprocess, sys
+try:
+    subprocess.run(['xcrun', 'simctl', 'io', sys.argv[1], 'screenshot',
+                    '--mask=black', sys.argv[2]], timeout=10, capture_output=True)
+except subprocess.TimeoutExpired:
+    print('Final diagnostic screenshot timed out; continuing cleanup')
+PYSNAPSHOT
   for pid in "$test_pid" "$ready_pid" "$speech_log_pid"; do
     if [ -n "$pid" ]; then
       kill -TERM "$pid" 2>/dev/null || true
@@ -44,9 +51,8 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   ONLY_ACTIVE_ARCH=YES build-for-testing > "$output/build.log" 2>&1
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
-# Configure Xcode 27's actual DeviceKit preference. Capture the simulator display
-# directly; opening the desktop Device Hub adds host-control permission dialogs.
-defaults -container com.apple.dt.Devices write com.apple.dt.Devices alwaysSimulateHardwareKeyboard -bool false
+# Capture the simulator display directly. Desktop Device Hub is unnecessary
+# for XCTest and would connect the host keyboard and request desktop permissions.
 xcrun simctl spawn "$device" log stream --style compact --level error \
   --predicate 'subsystem CONTAINS[c] "speech" OR subsystem CONTAINS[c] "voice"' \
   > "$output/speech.log" 2>&1 &

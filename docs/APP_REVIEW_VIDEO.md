@@ -66,10 +66,9 @@ registration/deletion take; do not delete the persistent reviewer account.
 accessibility elements and touch gestures. Credentials are injected into the
 UI-test runner only. The app target receives no test-account secrets.
 [`capture-native-walkthrough.sh`](../scripts/capture-native-walkthrough.sh)
-captures masked H.264 video and continuous PCM system audio. Xcode 27's
-`alwaysSimulateHardwareKeyboard` preference is disabled before capture, and
-study asserts the absence of keyboard-only reveal hints. The desktop Device Hub
-is not opened; `simctl` captures the device display directly.
+captures masked H.264 video and continuous PCM system audio. Study asserts the absence of keyboard-only reveal hints. The desktop Device Hub
+is not opened; `simctl` captures the device display directly without connecting
+the host keyboard or requesting desktop-control permissions.
 The native audio recorder writes its start clock; video is anchored when its
 recorder reports readiness. This avoids the dropped short audio buffers observed
 with FFmpeg's AVFoundation input on the hosted runner.
