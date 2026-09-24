@@ -37,7 +37,6 @@ export interface CreateCardParams {
 }
 
 export interface CreateCardViewProps {
-  dueCount?: number
   vocabularyCards: StudyCard[]
   referenceTime: number
   saveError: string | null
@@ -76,7 +75,6 @@ export interface CreateCardViewProps {
 }
 
 export function CreateCardView({
-  dueCount = 0,
   vocabularyCards,
   referenceTime,
   saveError,
@@ -651,7 +649,6 @@ export function CreateCardView({
         <Brand onClick={onGoHome} />
         <DesktopSegmentedNav
           currentView="create"
-          dueCount={dueCount}
           onPractice={onPractice}
           onNavigateToDeck={onNavigateToDeck}
           onNavigateToCreate={() => {}}

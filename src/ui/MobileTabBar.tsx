@@ -8,7 +8,6 @@ export interface MobileTabBarProps {
   isSyncOpen: boolean
   syncStatus: SyncStatus
   authUser: AuthUser | null
-  dueCount?: number
   onPractice: () => void
   onNavigateToDeck: () => void
   onNavigateToCreate: () => void
@@ -80,7 +79,6 @@ export function MobileTabBar({
   isSyncOpen,
   syncStatus,
   authUser,
-  dueCount = 0,
   onPractice,
   onNavigateToDeck,
   onNavigateToCreate,
@@ -109,17 +107,10 @@ export function MobileTabBar({
         aria-current={isPracticeActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isPracticeActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onPractice)}
-        aria-label={
-          dueCount > 0 ? `Practice (${dueCount} cards due)` : 'Practice'
-        }
+        aria-label="Practice (Study session)"
       >
         <div className="tab-icon-wrapper">
           <PracticeTabIcon />
-          {dueCount > 0 && !isPracticeActive && (
-            <span className="tab-badge" aria-hidden="true">
-              {dueCount > 99 ? '99+' : dueCount}
-            </span>
-          )}
         </div>
         <span className="tab-label">Practice</span>
       </button>

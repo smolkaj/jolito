@@ -859,10 +859,9 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(
     page.getByRole('heading', { name: 'New flashcard' }),
   ).toBeVisible()
-  // Segmented navigation is persistent; Practice starts with 0 due cards.
+  // Segmented navigation is persistent; Practice button remains calm and accessible
   const practiceNavBtn = page.getByRole('button', { name: /^practice/i })
   await expect(practiceNavBtn).toBeVisible()
-  await expect(page.locator('.desktop-segmented-badge')).toHaveCount(0)
 
   const spanishInput = page.getByRole('combobox', { name: /mexican spanish/i })
   const englishInput = page.getByLabel(/english/i)
@@ -887,7 +886,6 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(englishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
   await expect(practiceNavBtn).toBeVisible()
-  await expect(page.locator('.desktop-segmented-badge')).toHaveText('1')
 
   // 2. Create second card immediately in batch
   await spanishInput.fill('popote')
@@ -903,7 +901,6 @@ test('supports rapid batch card creation while remaining in create view', async 
   await expect(spanishInput).toHaveValue('')
   await expect(spanishInput).toBeFocused()
   await expect(practiceNavBtn).toBeVisible()
-  await expect(page.locator('.desktop-segmented-badge')).toHaveText('2')
 
   // 3. Start review from top navbar
   await practiceCards(page)

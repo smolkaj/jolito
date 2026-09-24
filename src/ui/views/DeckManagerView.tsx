@@ -32,7 +32,6 @@ export interface DeckManagerViewProps {
   saveError: string | null
   deletedCardIds: string[]
   queue?: string[]
-  dueCount: number
   authUser: AuthUser | null
   syncStatus: SyncStatus
   isOnline: boolean
@@ -65,7 +64,6 @@ export function DeckManagerView({
   referenceTime,
   saveError,
   deletedCardIds,
-  dueCount,
   authUser,
   syncStatus,
   isOnline,
@@ -197,7 +195,6 @@ export function DeckManagerView({
           <Brand onClick={onGoHome} />
           <DesktopSegmentedNav
             currentView="deck"
-            dueCount={dueCount}
             onPractice={onPractice}
             onNavigateToDeck={() => {}}
             onNavigateToCreate={onNavigateToCreate}

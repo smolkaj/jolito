@@ -1352,7 +1352,6 @@ function LoadedApp({
       isSyncOpen={isSyncOpen}
       syncStatus={syncStatus}
       authUser={authUser}
-      dueCount={dueCount}
       onPractice={() => {
         if (isSyncOpen) closeSyncModal()
         if (practicing) return
@@ -1381,7 +1380,6 @@ function LoadedApp({
     return (
       <>
         <WelcomeView
-          dueCount={dueCount}
           communityStats={communityStats}
           authUser={authUser}
           syncStatus={syncStatus}
@@ -1415,7 +1413,6 @@ function LoadedApp({
     return (
       <>
         <CreateCardView
-          dueCount={dueCount}
           vocabularyCards={vocabularyCards}
           referenceTime={referenceTime}
           saveError={saveError}
@@ -1458,7 +1455,6 @@ function LoadedApp({
           saveError={saveError}
           deletedCardIds={deletedCardIds}
           queue={queue}
-          dueCount={dueCount}
           authUser={authUser}
           syncStatus={syncStatus}
           isOnline={isOnline}
@@ -1505,7 +1501,6 @@ function LoadedApp({
             <Brand onClick={goHome} />
             <DesktopSegmentedNav
               currentView={view}
-              dueCount={dueCount}
               onPractice={practicing ? () => {} : handlePractice}
               onNavigateToDeck={() => navigateTo('deck')}
               onNavigateToCreate={() => navigateTo('create')}

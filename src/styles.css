@@ -306,23 +306,6 @@ summary:focus-visible,
   box-shadow: 0 1px 4px rgba(18, 24, 21, 0.08);
 }
 
-.desktop-segmented-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--paper-warm, #fdfaf7);
-  color: var(--rosa-dark);
-  border: 1px solid var(--rosa-dark);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  margin-left: 1px;
-}
-
 /* Touch Differentiation for iPad and Touch Tablets */
 @media (pointer: coarse) {
   .desktop-segmented-btn {
@@ -330,12 +313,6 @@ summary:focus-visible,
     padding: 0 14px;
     font-size: 14px;
     gap: 7px;
-  }
-
-  .desktop-segmented-badge {
-    min-width: 18px;
-    height: 18px;
-    font-size: 11px;
   }
 }
 
@@ -7506,24 +7483,6 @@ html[data-keyboard='true'] .reveal-gesture-cue {
     justify-content: center;
     width: 26px;
     height: 26px;
-  }
-
-  .tab-badge {
-    position: absolute;
-    top: -3px;
-    right: -7px;
-    min-width: 15px;
-    height: 15px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: var(--paper-warm, #fdfaf7);
-    color: var(--rosa-dark);
-    border: 1px solid var(--rosa-dark);
-    font-size: 9.5px;
-    font-weight: 600;
-    line-height: 13px;
-    text-align: center;
-    box-shadow: none;
   }
 
   .tab-online-dot {
