@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { createPrivateKey, sign } from 'node:crypto'
 import { z } from 'zod'
 
@@ -371,6 +371,60 @@ export function validateBuildNumber(buildNumber: string | undefined): string {
   return trimmed
 }
 
+export async function verifyReviewInformation(
+  api: AppleApi,
+  expected: {
+    notes: string
+    email: string
+    password: string
+    fileSize: number
+  },
+) {
+  if (!expected.email || !expected.password)
+    throw new Error('Reviewer credentials are required for verification')
+  const apps = await api.list(`/v1/apps?filter[bundleId]=${settings.bundleId}`)
+  if (apps.length !== 1) throw new Error('Cannot uniquely resolve Jolito')
+  const versions = await api.list(
+    `/v1/apps/${apps[0]!.id}/appStoreVersions?limit=10`,
+  )
+  const version = versions.find(
+    (item) => item.attributes.versionString === settings.version,
+  )
+  if (!version) throw new Error('App Store version missing')
+  const response = await api.call(
+    `/v1/appStoreVersions/${version.id}/appStoreReviewDetail?include=appStoreReviewAttachments`,
+  )
+  const detail = resourceSchema.parse(response.data).attributes
+  if (
+    detail.notes !== expected.notes.trim() ||
+    detail.demoAccountRequired !== true ||
+    detail.demoAccountName !== expected.email ||
+    detail.demoAccountPassword !== expected.password
+  ) {
+    throw new Error(
+      'Stored App Review notes or private account credentials do not match the release package',
+    )
+  }
+  const attachment = response.included.find(
+    (item) =>
+      item.type === 'appStoreReviewAttachments' &&
+      item.attributes.fileName === 'native-walkthrough.mp4',
+  )
+  const delivery = z
+    .object({ state: z.literal('COMPLETE') })
+    .safeParse(attachment?.attributes.assetDeliveryState)
+  if (
+    !delivery.success ||
+    attachment?.attributes.fileSize !== expected.fileSize
+  )
+    throw new Error(
+      'Native review video attachment is missing, incomplete or differs in size',
+    )
+  console.log(
+    'Verified stored review notes, private account credentials and completed native video attachment.',
+  )
+}
+
 // Explicit replacement is separate from submit: a queued release is never
 // withdrawn merely because a caller asks to submit a different build.
 export async function withdrawForReplacement(
@@ -729,16 +783,36 @@ if (import.meta.main) {
   try {
     const command = process.argv[2] ?? ''
     if (
-      !['--apply', '--check', '--status', '--submit', '--withdraw'].includes(
-        command,
-      )
+      ![
+        '--apply',
+        '--check',
+        '--status',
+        '--submit',
+        '--withdraw',
+        '--review-check',
+      ].includes(command)
     )
       throw new Error(
-        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit|--withdraw <build_number>',
+        'Usage: node scripts/app-store.ts --check|--apply|--status|--review-check|--submit|--withdraw <build_number>',
       )
     const api = new AppleApi(token())
     if (command === '--status') {
       await checkStatus(api)
+    } else if (command === '--review-check') {
+      await verifyReviewInformation(api, {
+        notes: readFileSync(
+          new URL(
+            '../fastlane/metadata/review_information/notes.txt',
+            import.meta.url,
+          ),
+          'utf8',
+        ),
+        email: process.env.APP_REVIEW_EMAIL ?? '',
+        password: process.env.APP_REVIEW_MAILBOX_PASSWORD ?? '',
+        fileSize: statSync(
+          new URL('../docs/media/native-walkthrough.mp4', import.meta.url),
+        ).size,
+      })
     } else if (command === '--withdraw') {
       await withdrawForReplacement(api, validateBuildNumber(process.argv[3]))
     } else if (command === '--submit') {

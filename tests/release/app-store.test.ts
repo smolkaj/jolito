@@ -11,6 +11,7 @@ import {
   submitAppStoreVersion,
   validateBuildNumber,
   withdrawForReplacement,
+  verifyReviewInformation,
 } from '../../scripts/app-store.ts'
 
 function record(type: string, id: string, attributes = {}, relationships = {}) {
@@ -753,5 +754,52 @@ void test('replacement validates candidate version, platform and processing befo
       /processed, unexpired iOS build/,
     )
     assert.deepEqual(writes, [])
+  }
+})
+
+void test('review readback validates private access and complete video without mutating Apple', async () => {
+  const expected = {
+    notes: 'Six-part review notes',
+    email: 'review@example.com',
+    password: 'private',
+    fileSize: 12345,
+  }
+  for (const mismatch of ['', 'notes', 'demoAccountPassword', 'attachment']) {
+    const api = new AppleApi('token', (input, init) => {
+      assert.equal(init?.method, 'GET')
+      const url = new URL(input instanceof Request ? input.url : input)
+      if (url.pathname === '/v1/apps')
+        return reply({ data: [record('apps', 'app')] })
+      if (url.pathname.endsWith('/appStoreVersions'))
+        return reply({
+          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+        })
+      const attributes = {
+        notes: expected.notes,
+        demoAccountRequired: true,
+        demoAccountName: expected.email,
+        demoAccountPassword: expected.password,
+        ...(mismatch ? { [mismatch]: 'different' } : {}),
+      }
+      return reply({
+        data: record('appStoreReviewDetails', 'detail', attributes),
+        included:
+          mismatch === 'attachment'
+            ? []
+            : [
+                record('appStoreReviewAttachments', 'video', {
+                  fileName: 'native-walkthrough.mp4',
+                  fileSize: 12345,
+                  assetDeliveryState: { state: 'COMPLETE' },
+                }),
+              ],
+      })
+    })
+    if (mismatch)
+      await assert.rejects(
+        verifyReviewInformation(api, expected),
+        /Stored App Review|video attachment/,
+      )
+    else await verifyReviewInformation(api, expected)
   }
 })
