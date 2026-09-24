@@ -393,3 +393,45 @@ void test('CSS architectural invariants for universal keyboard avoidance and rea
     'prefers-reduced-motion must disable .app-shell transitions',
   )
 })
+
+void test('CSS dark mode architectural invariants and contrast tokens', () => {
+  const css = readFileSync(
+    new URL('../../src/styles.css', import.meta.url),
+    'utf8',
+  )
+
+  // 1. Primary button in dark mode must use high-contrast dark text (WCAG AA > 4.5:1)
+  assert.match(
+    css,
+    /:root\[data-theme=['"]dark['"]\]\s*\{[\s\S]*?--btn-primary-color:\s*var\(\s*--paper\s*\);/,
+    ':root[data-theme="dark"] must set --btn-primary-color to var(--paper) for accessible contrast (>5.5:1) on Rosa Mexicano',
+  )
+
+  // 2. Suggestions container must use semantic var(--card) surface rather than hardcoded white
+  assert.match(
+    css,
+    /\.suggestions-container\s*\{[\s\S]*?background:\s*var\(--card\);/,
+    '.suggestions-container must use var(--card) to remain dark-mode compliant',
+  )
+
+  // 3. Grade buttons must not use !important on background so hover states illuminate smoothly
+  assert.doesNotMatch(
+    css,
+    /\.grade-buttons\s+\.grade-again\s*\{[^}]*background:[^;]*!important;/,
+    '.grade-buttons .grade-again must not use !important on background',
+  )
+
+  // 4. Toggle row hover must use semantic paper-deep to prevent light beige flashes
+  assert.match(
+    css,
+    /\.toggle-row:hover\s*\{[\s\S]*?background:\s*var\(--paper-deep\);/,
+    '.toggle-row:hover must use var(--paper-deep)',
+  )
+
+  // 5. Connection pill hovers must use semantic hover tokens
+  assert.match(
+    css,
+    /\.connection-pill\.is-synced:hover\s*\{[\s\S]*?background:\s*var\(--turquesa-hover\);/,
+    '.connection-pill.is-synced:hover must use var(--turquesa-hover)',
+  )
+})
