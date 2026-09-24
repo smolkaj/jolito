@@ -51,6 +51,11 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   ONLY_ACTIVE_ARCH=YES build-for-testing > "$output/build.log" 2>&1
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
+# Keep the author's bilingual phrases literal, as with Auto-Correction disabled
+# in Settings. These are device preferences, not changes to application state.
+for preference in KeyboardAutocorrection KeyboardPrediction KeyboardShowPredictionBar; do
+  xcrun simctl spawn "$device" defaults write com.apple.keyboard.preferences "$preference" -bool false
+done
 # Device Hub routes simulator audio to the host output. Do not use desktop
 # Apple Events: those request host-control permission and block unattended runs.
 open -b com.apple.dt.Devices
@@ -98,12 +103,12 @@ xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -destination "platform=iOS Simulator,id=$device" -configuration Release \
   -derivedDataPath build/WalkthroughDerivedData -resultBundlePath "$output/result.xcresult" \
   -parallel-testing-enabled NO -test-timeouts-enabled YES \
-  -maximum-test-execution-time-allowance 900 CODE_SIGNING_ALLOWED=NO test-without-building \
+  -maximum-test-execution-time-allowance 1200 CODE_SIGNING_ALLOWED=NO test-without-building \
   > >(tee "$output/test.log") 2>&1 &
 test_pid=$!
 # Xcode 27 can hang after XCTest has finished. The suite result is authoritative;
 # stop capture immediately instead of leaving minutes of dead footage at the end.
-for attempt in $(seq 1 600); do
+for attempt in $(seq 1 660); do
   if grep -Eq "Test Suite 'All tests' (passed|failed)" "$output/test.log"; then break; fi
   if ! kill -0 "$test_pid" 2>/dev/null; then break; fi
   sleep 2

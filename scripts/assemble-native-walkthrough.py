@@ -18,7 +18,7 @@ chapters = [
     {'seconds': round(float(time) - start, 2), 'title': title.strip()}
     for time, title in re.findall(r'WALKTHROUGH_CHAPTER ([0-9.]+) ([^\r\n]+)', log)
 ]
-if len(chapters) < 6 or not 180 < end - start < 900:
+if len(chapters) < 6 or not 180 < end - start < 1200:
     raise SystemExit('Walkthrough chapters or duration are incomplete')
 video_offset = start - float((folder / 'video-start.txt').read_text())
 audio_offset = start - float((folder / 'audio-start.txt').read_text())

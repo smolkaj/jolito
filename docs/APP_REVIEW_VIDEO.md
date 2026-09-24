@@ -27,7 +27,7 @@ separate unsigned build of that application source.
    to Create a card, with no mascot greeting detour.
 2. Save **La cuenta, por favor / The bill, please**
    and sign into the dedicated reviewer account with an actual emailed code.
-3. Add **Para llevar, por favor / To go, please** and **Provecho / Enjoy your meal**.
+3. Add **Provecho / Enjoy your meal** while signed in.
    Browse the personal deck with finger scrolling.
 4. Study consecutive cards. Let automatic prompt speech finish, think, swipe up
    to reveal, listen to the answer, then swipe right to grade Good. Replay one
@@ -67,10 +67,12 @@ accessibility elements and touch gestures. Credentials are injected into the
 UI-test runner only. The app target receives no test-account secrets.
 [`capture-native-walkthrough.sh`](../scripts/capture-native-walkthrough.sh)
 captures masked H.264 video and continuous PCM system audio. Device Hub provides the simulator-to-host audio route; no desktop UI scripting
-or Apple Events are used. Text is entered by tapping actual software keys and
-the app's accent toolbar: XCTest's `typeText` attaches a virtual hardware
+or Apple Events are used. Text is entered by tapping actual software keys: XCTest's `typeText` attaches a virtual hardware
 keyboard, so it is unsuitable for a touch-mode recording. Study asserts the
-absence of keyboard-only reveal hints.
+absence of keyboard-only reveal hints. The capture device has keyboard
+autocorrection and prediction disabled so English corrections cannot rewrite
+the Spanish phrases. This uses the same device preferences as
+[Chromium’s Simulator setup](https://chromium.googlesource.com/chromium/src/+/93b31d4424cb0fddb7cb5a901f21eb9859270658/ios/build/bots/scripts/iossim_util.py#797).
 The native audio recorder writes its start clock; video is anchored when its
 recorder reports readiness. This avoids the dropped short audio buffers observed
 with FFmpeg's AVFoundation input on the hosted runner.

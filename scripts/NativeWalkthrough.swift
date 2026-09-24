@@ -1,5 +1,4 @@
 import XCTest
-import AVFoundation
 import GameController
 
 // Drives the bundled iOS app, including its real authentication and native speech.
@@ -16,7 +15,7 @@ final class NativeWalkthrough: XCTestCase {
     private enum CaptureError: Error { case response, missingCode, configuration }
 
     func testWalkthrough() throws {
-        executionTimeAllowance = 900
+        executionTimeAllowance = 1200
         continueAfterFailure = false
         guard let address = ProcessInfo.processInfo.environment["WALKTHROUGH_EMAIL"],
               let password = ProcessInfo.processInfo.environment["WALKTHROUGH_MAILBOX_PASSWORD"] else {
@@ -28,7 +27,6 @@ final class NativeWalkthrough: XCTestCase {
             throw CaptureError.configuration
         }
         let disposable = Mailbox(address: deletionAddress, password: deletionPassword)
-        print("WALKTHROUGH_VOICES \(AVSpeechSynthesisVoice.speechVoices().map { $0.identifier })")
         print("WALKTHROUGH_HARDWARE_KEYBOARD \(GCKeyboard.coalesced != nil)")
         XCTAssertNil(GCKeyboard.coalesced, "Capture must start without a connected hardware keyboard")
         app.launch()
@@ -74,7 +72,6 @@ final class NativeWalkthrough: XCTestCase {
         closeSheetIfOpen()
 
         chapter("Build a useful personal deck")
-        createCard("Para llevar, por favor", "To go, please")
         createCard("Provecho", "Enjoy your meal")
         tap(button("Deck"))
         pause(5)
@@ -228,8 +225,8 @@ final class NativeWalkthrough: XCTestCase {
                 return
             }
             press(point)
-            // A single capital automatically releases Shift after its key tap.
-            if character.isUppercase { keys = targets() }
+            // Capitals release Shift; a space can return punctuation to letters.
+            if character.isUppercase || character == " " { keys = targets() }
             if character == " " { pause(0.2) }
         }
     }
