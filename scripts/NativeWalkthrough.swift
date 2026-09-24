@@ -1,4 +1,6 @@
 import XCTest
+import AVFoundation
+import GameController
 
 // Drives the bundled iOS app, including its real authentication and native speech.
 // Mailbox credentials belong to the UI-test runner only, never the application.
@@ -26,6 +28,8 @@ final class NativeWalkthrough: XCTestCase {
             throw CaptureError.configuration
         }
         let disposable = Mailbox(address: deletionAddress, password: deletionPassword)
+        print("WALKTHROUGH_VOICES \(AVSpeechSynthesisVoice.speechVoices().map { $0.identifier })")
+        print("WALKTHROUGH_HARDWARE_KEYBOARD \(GCKeyboard.coalesced != nil)")
         app.launch()
         let create = button("Create a card")
         XCTAssertTrue(create.waitForExistence(timeout: 90))
@@ -78,6 +82,7 @@ final class NativeWalkthrough: XCTestCase {
         app.swipeDown(velocity: .slow)
         pause(3)
 
+        print("WALKTHROUGH_HARDWARE_KEYBOARD_AFTER_TYPING \(GCKeyboard.coalesced != nil)")
         chapter("Listen, recall, reveal and grade with touch gestures")
         tap(button("Cards"))
         for index in 0..<2 {
@@ -219,6 +224,9 @@ final class NativeWalkthrough: XCTestCase {
     }
 
     private func signIn(_ mailbox: Mailbox) throws {
+        if !app.textFields["Email address"].firstMatch.exists {
+            tap(button("Not signed in."))
+        }
         type("Email address", mailbox.address)
         let sentAfter = Date().addingTimeInterval(-2)
         let saveAndSend = button("Save card & send link")

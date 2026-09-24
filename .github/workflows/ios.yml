@@ -153,6 +153,7 @@ jobs:
           sudo killall coreaudiod || true
           sleep 3
           SwitchAudioSource -s 'BlackHole 2ch' -t output
+          SwitchAudioSource -s 'BlackHole 2ch' -t input
       - name: Capture actual native UI and speech
         run: bash scripts/capture-native-walkthrough.sh
       - uses: actions/upload-artifact@v7
