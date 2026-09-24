@@ -18,7 +18,6 @@ import {
 } from './application/starter-cards'
 import {
   burySiblingCards,
-  isDue,
   localeForAnswer,
   localeForPrompt,
   orderCardsForReview,
@@ -513,9 +512,6 @@ function LoadedApp({
 
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const currentCard = cards.find(({ id }) => id === queue[0])
-  const dueCount = vocabularyCards.filter((card) =>
-    isDue(card, referenceTime),
-  ).length
 
   const paused =
     editingCard !== null ||
@@ -1372,12 +1368,12 @@ function LoadedApp({
       currentView={view}
       onCards={() => {
         if (isSyncOpen) closeSyncModal()
-        if (isPracticeActive && !isGrammarActive) return
+        if (view === 'review') return
         handlePractice()
       }}
       onGrammar={() => {
         if (isSyncOpen) closeSyncModal()
-        if (isGrammarActive) return
+        if (view === 'grammar') return
         handleGrammar()
       }}
       onNavigateToDeck={() => {
@@ -1444,9 +1440,8 @@ function LoadedApp({
           onCopySessionLink={handleCopySessionLink}
           onGoHome={goHome}
           onNavigateToDeck={() => navigateTo('deck')}
-          onPractice={handlePractice}
+          onCards={handlePractice}
           onGrammar={handleGrammar}
-          canPractice={queue.length > 0 || dueCount > 0}
           onOpenSync={openSyncModal}
           onEditCard={(card) => setEditingCard(card)}
           onOpenFeedback={openFeedbackModal}
@@ -1482,7 +1477,7 @@ function LoadedApp({
           onCopySessionLink={handleCopySessionLink}
           onGoHome={goHome}
           onNavigateToCreate={() => navigateTo('create')}
-          onPractice={handlePractice}
+          onCards={handlePractice}
           onGrammar={handleGrammar}
           onOpenSync={openSyncModal}
           onOpenFeedback={openFeedbackModal}

@@ -52,9 +52,8 @@ export interface CreateCardViewProps {
   onCopySessionLink?: (() => Promise<boolean> | boolean) | undefined
   onGoHome: () => void
   onNavigateToDeck: () => void
-  onPractice: () => void
+  onCards: () => void
   onGrammar: () => void
-  canPractice?: boolean
   onOpenSync: () => void
   onEditCard: (card: StudyCard) => void
   onOpenFeedback: () => void
@@ -91,7 +90,7 @@ export function CreateCardView({
   onCopySessionLink,
   onGoHome,
   onNavigateToDeck,
-  onPractice,
+  onCards,
   onGrammar,
   onOpenSync,
   onEditCard,
@@ -651,7 +650,7 @@ export function CreateCardView({
         <Brand onClick={onGoHome} />
         <DesktopSegmentedNav
           currentView="create"
-          onCards={onPractice}
+          onCards={onCards}
           onGrammar={onGrammar}
           onNavigateToDeck={onNavigateToDeck}
           onNavigateToCreate={() => {}}

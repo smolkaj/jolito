@@ -33,9 +33,8 @@ describe('AI Card Suggestions', () => {
         onDismissRedirectBanner={() => {}}
         onGoHome={() => {}}
         onNavigateToDeck={() => {}}
-        onPractice={() => {}}
+        onCards={() => {}}
         onGrammar={() => {}}
-        canPractice={false}
         onOpenSync={() => {}}
         onEditCard={() => {}}
         onOpenFeedback={() => {}}
