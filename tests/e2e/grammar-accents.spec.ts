@@ -10,7 +10,17 @@ for (const width of [320, 1280]) {
     await page.goto('/#/grammar')
     await page.getByRole('button', { name: 'Start practice' }).click()
     const input = page.getByRole('textbox', { name: 'Your conjugation' })
-    for (const [index, letter] of ['á', 'é', 'í', 'ó', 'ú'].entries()) {
+    for (const [index, letter] of [
+      'á',
+      'é',
+      'í',
+      'ó',
+      'ú',
+      'ñ',
+      'ü',
+      '¿',
+      '¡',
+    ].entries()) {
       const button = page.getByRole('button', { name: `Insert ${letter}` })
       await expect(button).toHaveAttribute(
         'aria-keyshortcuts',
@@ -25,6 +35,8 @@ for (const width of [320, 1280]) {
     )
     await page.keyboard.type('2x')
     await expect(input).toHaveValue('áéxíóú')
+    await page.keyboard.type('6789')
+    await expect(input).toHaveValue('áéxñü¿¡íóú')
     await input.fill('hablX')
     await input.evaluate((element: HTMLInputElement) =>
       element.setSelectionRange(4, 5),

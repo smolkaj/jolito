@@ -1629,6 +1629,7 @@ function LoadedApp({
           currentCard && (
             <PracticeCard
               haptics={services.haptics}
+              accents={currentCard.direction !== 'es-en'}
               onStopAudio={cancelPendingAudio}
               error={
                 saveError === STORAGE_SAVE_ERROR
