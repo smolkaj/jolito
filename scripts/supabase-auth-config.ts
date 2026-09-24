@@ -8,17 +8,22 @@ export interface BuildSupabaseAuthPatchOptions {
   domain: string
   resendApiKey?: string | undefined
   magicLinkTemplate?: string | undefined
+  appleBundleId?: string | undefined
 }
 
 export function buildSupabaseAuthPatch({
   domain,
   resendApiKey,
   magicLinkTemplate,
+  appleBundleId = 'to.joli.app',
 }: BuildSupabaseAuthPatchOptions): Record<string, unknown> {
   const patch: Record<string, unknown> = {
     site_url: `https://${domain}`,
     mailer_autoconfirm: false,
     uri_allow_list: `https://${domain}/**,https://*-jolito.smolkaj.workers.dev/**,https://jolito.smolkaj.workers.dev/**,http://localhost:*/**,http://127.0.0.1:*/**`,
+    external_apple_enabled: true,
+    external_apple_client_id: appleBundleId,
+    external_apple_secret: 'placeholder-native-secret',
   }
 
   if (magicLinkTemplate) {

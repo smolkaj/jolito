@@ -122,6 +122,14 @@ void test('SceneDelegate registers AppleSignInPlugin with AuthenticationServices
     /<key>com\.apple\.developer\.applesignin<\/key>\s*<array>\s*<string>Default<\/string>\s*<\/array>/,
   )
   assert.match(pbxproj, /CODE_SIGN_ENTITLEMENTS\s*=\s*App\/App\.entitlements;/)
+
+  const supabaseConfig = readFileSync(
+    new URL('../../supabase/config.toml', import.meta.url),
+    'utf8',
+  )
+  assert.match(supabaseConfig, /\[auth\.external\.apple\]/)
+  assert.match(supabaseConfig, /enabled\s*=\s*true/)
+  assert.match(supabaseConfig, /client_id\s*=\s*"to\.joli\.app"/)
 })
 
 void test('SceneDelegate registers NativeSpeechPlugin with AVFoundation for native speech synthesis', () => {
