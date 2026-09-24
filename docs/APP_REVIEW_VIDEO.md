@@ -129,7 +129,7 @@ recording. The historical reproducible recorder remains
   bundled Wiktionary/Kaikki attribution; the store contract checks that declaration.
 - **Readback:** A successful upload is insufficient evidence. The release check
   compares Apple's stored notes and private credentials, and requires a complete
-  native video attachment of the expected size before submitting.
+  native video attachment with the expected size and checksum before submitting.
 
 ## Navigation defect discovered during rehearsal
 

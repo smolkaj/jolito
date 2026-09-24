@@ -763,8 +763,15 @@ void test('review readback validates private access and complete video without m
     email: 'review@example.com',
     password: 'private',
     fileSize: 12345,
+    checksum: 'expected-md5',
   }
-  for (const mismatch of ['', 'notes', 'demoAccountPassword', 'attachment']) {
+  for (const mismatch of [
+    '',
+    'notes',
+    'demoAccountPassword',
+    'attachment',
+    'checksum',
+  ]) {
     const api = new AppleApi('token', (input, init) => {
       assert.equal(init?.method, 'GET')
       const url = new URL(input instanceof Request ? input.url : input)
@@ -790,6 +797,8 @@ void test('review readback validates private access and complete video without m
                 record('appStoreReviewAttachments', 'video', {
                   fileName: 'native-walkthrough.mp4',
                   fileSize: 12345,
+                  sourceFileChecksum:
+                    mismatch === 'checksum' ? 'wrong' : 'expected-md5',
                   assetDeliveryState: { state: 'COMPLETE' },
                 }),
               ],

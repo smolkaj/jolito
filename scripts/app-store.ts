@@ -1,5 +1,5 @@
-import { readFileSync, statSync } from 'node:fs'
-import { createPrivateKey, sign } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { createHash, createPrivateKey, sign } from 'node:crypto'
 import { z } from 'zod'
 
 const settingsSchema = z.object({
@@ -379,6 +379,7 @@ export async function verifyReviewInformation(
     email: string
     password: string
     fileSize: number
+    checksum: string
   },
 ) {
   if (!expected.email || !expected.password)
@@ -416,10 +417,11 @@ export async function verifyReviewInformation(
     .safeParse(attachment?.attributes.assetDeliveryState)
   if (
     !delivery.success ||
-    attachment?.attributes.fileSize !== expected.fileSize
+    attachment?.attributes.fileSize !== expected.fileSize ||
+    attachment.attributes.sourceFileChecksum !== expected.checksum
   )
     throw new Error(
-      'Native review video attachment is missing, incomplete or differs in size',
+      'Native review video attachment is missing, incomplete or differs from the reviewed file',
     )
   console.log(
     'Verified stored review notes, private account credentials and completed native video attachment.',
@@ -800,6 +802,9 @@ if (import.meta.main) {
     if (command === '--status') {
       await checkStatus(api)
     } else if (command === '--review-check') {
+      const movie = readFileSync(
+        new URL('../docs/media/native-walkthrough.mp4', import.meta.url),
+      )
       await verifyReviewInformation(api, {
         notes: readFileSync(
           new URL(
@@ -810,9 +815,8 @@ if (import.meta.main) {
         ),
         email: process.env.APP_REVIEW_EMAIL ?? '',
         password: process.env.APP_REVIEW_MAILBOX_PASSWORD ?? '',
-        fileSize: statSync(
-          new URL('../docs/media/native-walkthrough.mp4', import.meta.url),
-        ).size,
+        fileSize: movie.length,
+        checksum: createHash('md5').update(movie).digest('hex'),
       })
     } else if (command === '--withdraw') {
       await withdrawForReplacement(api, validateBuildNumber(process.argv[3]))
