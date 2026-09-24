@@ -6980,7 +6980,7 @@ kbd {
   }
 }
 
-/* On iOS/iPadOS without a physical keyboard, hide shortcuts even if a trackpad/mouse is connected */
+/* On iOS/iPadOS/Android without a physical keyboard, hide shortcuts even if a trackpad/mouse is connected */
 html[data-platform='ios']:not([data-keyboard='true']) .keyboard-hint,
 html[data-platform='ios']:not([data-keyboard='true']) .reveal-button kbd,
 html[data-platform='ios']:not([data-keyboard='true'])
@@ -6988,7 +6988,15 @@ html[data-platform='ios']:not([data-keyboard='true'])
   button
   kbd,
 html[data-platform='ios']:not([data-keyboard='true']) .grade-buttons kbd,
-html[data-platform='ios']:not([data-keyboard='true']) .grade-btn kbd {
+html[data-platform='ios']:not([data-keyboard='true']) .grade-btn kbd,
+html[data-platform='android']:not([data-keyboard='true']) .keyboard-hint,
+html[data-platform='android']:not([data-keyboard='true']) .reveal-button kbd,
+html[data-platform='android']:not([data-keyboard='true'])
+  .answer-accents
+  button
+  kbd,
+html[data-platform='android']:not([data-keyboard='true']) .grade-buttons kbd,
+html[data-platform='android']:not([data-keyboard='true']) .grade-btn kbd {
   display: none !important;
 }
 

@@ -1,0 +1,93 @@
+name: Google Play Production Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Build signed bundle only, publish to Google Play track, or upload metadata only'
+        type: choice
+        options: [build_only, publish, metadata_only]
+        default: build_only
+        required: true
+      track:
+        description: 'Google Play release track (internal, closed, production)'
+        type: choice
+        options: [internal, closed, production]
+        default: internal
+        required: true
+      build_number:
+        description: 'Explicit build number code (defaults to run number if unspecified)'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: google-release
+  cancel-in-progress: false
+
+jobs:
+  playstore:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SUPPLY_JSON_KEY_DATA: ${{ secrets.SUPPLY_JSON_KEY_DATA }}
+      BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.10'
+          bundler-cache: true
+      - run: npm ci --no-audit
+
+      - name: Prepare release signing keystore
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/keystore"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore/release.keystore"
+          chmod 0600 "$RUNNER_TEMP/keystore/release.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/keystore/release.keystore" >> "$GITHUB_ENV"
+
+      - if: inputs.operation != 'metadata_only'
+        run: |
+          npm run check
+          npm run cap:sync
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Upload Release AAB Artifact
+        if: inputs.operation != 'metadata_only'
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-release-${{ github.sha }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Deploy to Google Play
+        if: inputs.operation == 'publish' || inputs.operation == 'metadata_only'
+        run: |
+          if [ -z "$SUPPLY_JSON_KEY_DATA" ]; then
+            echo "Error: SUPPLY_JSON_KEY_DATA secret is required to publish to Google Play" >&2
+            exit 1
+          fi
+          if [ "${{ inputs.operation }}" = "metadata_only" ]; then
+            bundle exec fastlane android metadata
+          else
+            bundle exec fastlane android "${{ inputs.track }}" skip_build:true
+          fi
