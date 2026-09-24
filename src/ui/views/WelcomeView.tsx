@@ -9,11 +9,13 @@ import type { SyncStatus } from '../../domain/sync'
 import { isWhyJolitoHash } from '../../navigation'
 import { Brand } from '../Brand'
 import { ConnectionPill } from '../ConnectionPill'
+import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
 import { EnglishBadge, MexicoFlag } from '../icons'
 import { PracticeMenu } from '../PracticeMenu'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
 
 export interface WelcomeViewProps {
+  dueCount?: number
   communityStats?: CommunityStats | null | undefined
   authUser: AuthUser | null
   syncStatus: SyncStatus
@@ -39,6 +41,7 @@ export interface WelcomeViewProps {
 }
 
 export function WelcomeView({
+  dueCount = 0,
   communityStats,
   authUser,
   syncStatus,
@@ -183,13 +186,14 @@ export function WelcomeView({
       <div className="welcome-panel welcome-intro">
         <nav className="topbar" aria-label="Main navigation">
           <Brand />
+          <DesktopSegmentedNav
+            currentView="welcome"
+            dueCount={dueCount}
+            onPractice={onPractice}
+            onNavigateToDeck={onNavigateToDeck}
+            onNavigateToCreate={onNavigateToCreate}
+          />
           <div className="nav-actions" data-nosnippet>
-            <button
-              className="text-button topbar-nav-btn"
-              onClick={onNavigateToDeck}
-            >
-              Manage deck
-            </button>
             <button
               type="button"
               className="text-button topbar-feedback-btn"

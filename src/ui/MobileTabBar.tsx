@@ -16,7 +16,7 @@ export interface MobileTabBarProps {
   haptics?: HapticsPlayer | undefined
 }
 
-function PracticeTabIcon({ size = 22 }: { size?: number }) {
+export function PracticeTabIcon({ size = 22 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -36,7 +36,7 @@ function PracticeTabIcon({ size = 22 }: { size?: number }) {
   )
 }
 
-function DeckTabIcon({ size = 22 }: { size?: number }) {
+export function DeckTabIcon({ size = 22 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -55,7 +55,7 @@ function DeckTabIcon({ size = 22 }: { size?: number }) {
   )
 }
 
-function CreateTabIcon({ size = 22 }: { size?: number }) {
+export function CreateTabIcon({ size = 22 }: { size?: number }) {
   return (
     <svg
       width={size}

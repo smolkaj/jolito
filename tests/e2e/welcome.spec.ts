@@ -562,15 +562,15 @@ test('all pills and badges have consistent heights across views and within the s
   const reviewProgress = await page
     .locator('.review-progress-track')
     .boundingBox()
-  const reviewNewCardBtn = await page
-    .locator('.nav-actions .text-button')
+  const reviewNavBtn = await page
+    .locator('.desktop-segmented-btn')
     .first()
     .boundingBox()
   const reviewSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
   expect(reviewProgress?.height).toBeCloseTo(3, 1)
-  expect(reviewNewCardBtn?.height).toBeCloseTo(32, 1)
+  expect(reviewNavBtn?.height).toBeCloseTo(32, 1)
   expect(reviewSyncPill?.height).toBeCloseTo(32, 1)
 
   // 4. Deck view: header actions, toolbar filter pills, batch actions, and table row pills

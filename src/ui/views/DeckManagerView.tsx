@@ -17,6 +17,7 @@ import type { SyncStatus } from '../../domain/sync'
 import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
+import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
 import { EnglishBadge, MexicoFlag } from '../icons'
 import { DeckBackupModal } from '../modals/DeckBackupModal'
 import { DemoDeckModal } from '../modals/DemoDeckModal'
@@ -195,23 +196,16 @@ export function DeckManagerView({
       <main className="app-shell deck-page">
         <nav className="topbar" aria-label="Deck navigation">
           <Brand onClick={onGoHome} />
+          <DesktopSegmentedNav
+            currentView="deck"
+            dueCount={dueCount}
+            canPractice={queue.length > 0 || (dueCount ?? 0) > 0}
+            onPractice={onPractice}
+            onNavigateToDeck={() => {}}
+            onNavigateToCreate={onNavigateToCreate}
+            haptics={haptics}
+          />
           <div className="nav-actions" data-nosnippet>
-            {vocabularyCards.length > 0 && (
-              <button
-                className="text-button topbar-nav-btn"
-                onClick={onNavigateToCreate}
-              >
-                + New card
-              </button>
-            )}
-            {(queue.length > 0 || dueCount > 0) && (
-              <button
-                className="text-button topbar-nav-btn"
-                onClick={onPractice}
-              >
-                Practice
-              </button>
-            )}
             <button
               type="button"
               className="text-button topbar-feedback-btn"
