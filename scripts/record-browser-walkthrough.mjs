@@ -24,7 +24,6 @@ const browser = await chromium.launch({
     '--force-device-scale-factor=2',
     '--window-position=0,0',
     '--window-size=440,1040',
-    '--autoplay-policy=no-user-gesture-required',
   ],
 })
 const context = await browser.newContext({
@@ -39,8 +38,9 @@ await context.route(/\/(auth|rest)\/v1\//, async (route) => {
       new URL(route.request().url()).hostname,
     )
   ) {
+    pageErrors.push('Refusing account operations against a non-local backend')
     await route.abort()
-    throw Error('Refusing account operations against a non-local backend')
+    return
   }
   await route.continue()
 })
