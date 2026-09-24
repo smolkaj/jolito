@@ -548,17 +548,30 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
-  def test_submission_selects_exact_build_and_never_builds_or_uploads_binary
+  def test_submission_delegates_to_app_store_submit_with_exact_build_number
     Fastlane::Actions.load_default_actions
     harness = LaneHarness.new
-    harness.execute(:release, build_number: '42')
-    assert_equal [:connect, :upload_to_app_store], harness.calls.map(&:first)
-    options = harness.calls.last.last
-    assert_equal '42', options.fetch(:build_number)
-    assert_equal '1.0', options.fetch(:app_version)
-    assert options.fetch(:skip_binary_upload)
-    assert options.fetch(:submit_for_review)
-    assert options.fetch(:automatic_release)
+    captured = []
+    capture_proc = lambda do |*args|
+      captured << args
+      ['submitted', Struct.new(:success?).new(true)]
+    end
+    Open3.stub(:capture2e, capture_proc) do
+      harness.execute(:release, build_number: '42')
+    end
+    assert_equal [:connect], harness.calls.map(&:first)
+    assert_equal 1, captured.length
+    assert_equal 'node', captured[0][0]
+    assert_includes captured[0][1], 'scripts/app-store.ts'
+    assert_equal '--submit', captured[0][2]
+    assert_equal '42', captured[0][3]
+  end
+
+  def test_submission_rejects_invalid_build_numbers
+    Fastlane::Actions.load_default_actions
+    harness = LaneHarness.new
+    assert_raises(StandardError) { harness.execute(:release, build_number: '') }
+    assert_raises(StandardError) { harness.execute(:release, build_number: 'invalid') }
   end
 
   def test_metadata_lane_validates_native_screenshots_and_uses_deliver_options

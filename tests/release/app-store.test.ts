@@ -8,6 +8,8 @@ import {
   configureStore,
   CONTENT_RIGHTS_DECLARATION,
   priceSchedule,
+  submitAppStoreVersion,
+  validateBuildNumber,
 } from '../../scripts/app-store.ts'
 
 function record(type: string, id: string, attributes = {}, relationships = {}) {
@@ -27,6 +29,10 @@ function store(
     emptyVersions?: boolean
     buildMissing?: boolean
     appMissing?: boolean
+    versionState?: string
+    versionBuildNumber?: string
+    builds?: { id: string; version: string }[]
+    reviewSubmissions?: { id: string; state: string }[]
   } = {},
 ) {
   let patchedContentRights = false
@@ -51,9 +57,40 @@ function store(
       ) {
         return Promise.resolve(new Response('Conflict', { status: 409 }))
       }
+      if (url.pathname === '/v1/reviewSubmissions') {
+        return reply({
+          data: record('reviewSubmissions', 'sub-new', {
+            state: 'READY_FOR_REVIEW',
+          }),
+        })
+      }
+      if (url.pathname === '/v1/reviewSubmissionItems') {
+        return reply({ data: record('reviewSubmissionItems', 'item-new') })
+      }
       return reply({ data: record('result', 'saved') })
     }
     if (init?.method === 'PATCH') {
+      if (url.pathname.startsWith('/v1/reviewSubmissions/')) {
+        const bodyObj =
+          typeof init?.body === 'string'
+            ? (JSON.parse(init.body) as {
+                data?: { attributes?: { canceled?: boolean } }
+              })
+            : {}
+        const isCanceled = bodyObj.data?.attributes?.canceled
+        return reply({
+          data: record('reviewSubmissions', url.pathname.split('/').pop()!, {
+            state: isCanceled ? 'COMPLETE' : 'WAITING_FOR_REVIEW',
+          }),
+        })
+      }
+      if (url.pathname.startsWith('/v1/appStoreVersions/')) {
+        return reply({
+          data: record('appStoreVersions', url.pathname.split('/').pop()!, {
+            versionString: '1.0',
+          }),
+        })
+      }
       patchedContentRights = true
       return reply({
         data: record('apps', 'app', {
@@ -68,6 +105,11 @@ function store(
       !(options.missingContentRights && !patchedContentRights)
         ? CONTENT_RIGHTS_DECLARATION
         : undefined
+    const versionState = options.versionState ?? 'WAITING_FOR_REVIEW'
+    const buildId = options.versionBuildNumber
+      ? `b${options.versionBuildNumber}`
+      : 'b4'
+    const buildVer = options.versionBuildNumber ?? '4'
     const responses: Record<string, unknown> = {
       '/v1/apps': options.appMissing
         ? []
@@ -89,11 +131,26 @@ function store(
               'v1',
               {
                 versionString: '1.0',
-                appStoreState: 'WAITING_FOR_REVIEW',
+                appStoreState: versionState,
               },
-              options.buildMissing ? {} : { build: rel('builds', 'b4') },
+              options.buildMissing ? {} : { build: rel('builds', buildId) },
             ),
           ],
+      '/v1/apps/app/reviewSubmissions':
+        options.reviewSubmissions?.map((s) =>
+          record('reviewSubmissions', s.id, { state: s.state }),
+        ) ?? [],
+      '/v1/builds': (
+        options.builds ?? [
+          { id: 'b4', version: '4' },
+          { id: 'b10', version: '10' },
+        ]
+      )
+        .filter((b) => {
+          const filterVer = url.searchParams.get('filter[version]')
+          return !filterVer || b.version === filterVer
+        })
+        .map((b) => record('builds', b.id, { version: b.version })),
       '/v1/territories': [
         record('territories', 'USA'),
         record('territories', 'MEX'),
@@ -146,7 +203,7 @@ function store(
     ) {
       return reply({
         data: responses[url.pathname],
-        included: [record('builds', 'b4', { version: '4' })],
+        included: [record('builds', buildId, { version: buildVer })],
       })
     }
     return reply({ data: responses[url.pathname] })
@@ -288,6 +345,188 @@ void test('checkStatus handles apps with empty versions or missing build attachm
   await assert.rejects(
     checkStatus(store({ appMissing: true }).api),
     /Create the Jolito app record/,
+  )
+})
+
+void test('checkStatus includes review submissions when present', async () => {
+  const status = await checkStatus(
+    store({
+      reviewSubmissions: [
+        { id: 'sub-1', state: 'COMPLETE' },
+        { id: 'sub-2', state: 'WAITING_FOR_REVIEW' },
+      ],
+    }).api,
+  )
+  assert.equal(status.reviewSubmissions.length, 2)
+  assert.deepEqual(status.reviewSubmissions, [
+    { id: 'sub-1', state: 'COMPLETE' },
+    { id: 'sub-2', state: 'WAITING_FOR_REVIEW' },
+  ])
+})
+
+void test('validateBuildNumber accepts valid build numbers and rejects invalid ones', () => {
+  assert.equal(validateBuildNumber('1'), '1')
+  assert.equal(validateBuildNumber('10'), '10')
+  assert.equal(validateBuildNumber('9999'), '9999')
+  assert.equal(validateBuildNumber('  42  '), '42')
+
+  assert.throws(
+    () => validateBuildNumber(''),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('   '),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber(undefined),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('0'),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('10000'),
+    /Specify the exact tested build number/,
+  )
+  assert.throws(
+    () => validateBuildNumber('abc'),
+    /Specify the exact tested build number/,
+  )
+})
+
+void test('submitAppStoreVersion attaches build if needed, cancels stuck submissions, creates new submission, and submits', async () => {
+  const { api, calls } = store({
+    versionState: 'PREPARE_FOR_SUBMISSION',
+    versionBuildNumber: '9',
+    reviewSubmissions: [
+      { id: 'sub-stuck', state: 'UNRESOLVED_ISSUES' },
+      { id: 'sub-ready', state: 'READY_FOR_REVIEW' },
+      { id: 'sub-old', state: 'COMPLETE' },
+    ],
+  })
+
+  await submitAppStoreVersion(api, '10')
+
+  // Verify build was attached and releaseType configured via PATCH
+  const patchBuild = calls.find(
+    (c) => c.method === 'PATCH' && c.url.pathname === '/v1/appStoreVersions/v1',
+  )
+  assert.ok(
+    patchBuild,
+    'Expected PATCH /v1/appStoreVersions/v1 to attach build and configure releaseType',
+  )
+  assert.deepEqual(JSON.parse(patchBuild.body!), {
+    data: {
+      type: 'appStoreVersions',
+      id: 'v1',
+      attributes: {
+        releaseType: 'AFTER_APPROVAL',
+      },
+      relationships: {
+        build: { data: { type: 'builds', id: 'b10' } },
+      },
+    },
+  })
+
+  // Verify stuck submissions were canceled
+  const patchCancelStuck = calls.find(
+    (c) =>
+      c.method === 'PATCH' &&
+      c.url.pathname === '/v1/reviewSubmissions/sub-stuck',
+  )
+  assert.ok(
+    patchCancelStuck,
+    'Expected PATCH to cancel UNRESOLVED_ISSUES submission',
+  )
+  assert.deepEqual(JSON.parse(patchCancelStuck.body!), {
+    data: {
+      type: 'reviewSubmissions',
+      id: 'sub-stuck',
+      attributes: { canceled: true },
+    },
+  })
+
+  const patchCancelReady = calls.find(
+    (c) =>
+      c.method === 'PATCH' &&
+      c.url.pathname === '/v1/reviewSubmissions/sub-ready',
+  )
+  assert.ok(
+    patchCancelReady,
+    'Expected PATCH to cancel READY_FOR_REVIEW submission',
+  )
+  assert.deepEqual(JSON.parse(patchCancelReady.body!), {
+    data: {
+      type: 'reviewSubmissions',
+      id: 'sub-ready',
+      attributes: { canceled: true },
+    },
+  })
+
+  // Verify new review submission created
+  const postSub = calls.find(
+    (c) => c.method === 'POST' && c.url.pathname === '/v1/reviewSubmissions',
+  )
+  assert.ok(postSub, 'Expected POST /v1/reviewSubmissions')
+
+  // Verify item added
+  const postItem = calls.find(
+    (c) =>
+      c.method === 'POST' && c.url.pathname === '/v1/reviewSubmissionItems',
+  )
+  assert.ok(postItem, 'Expected POST /v1/reviewSubmissionItems')
+
+  // Verify submission submitted
+  const patchSubmit = calls.find(
+    (c) =>
+      c.method === 'PATCH' &&
+      c.url.pathname === '/v1/reviewSubmissions/sub-new',
+  )
+  assert.ok(patchSubmit, 'Expected PATCH /v1/reviewSubmissions/sub-new')
+  assert.deepEqual(JSON.parse(patchSubmit.body!), {
+    data: {
+      type: 'reviewSubmissions',
+      id: 'sub-new',
+      attributes: { submitted: true },
+    },
+  })
+})
+
+void test('submitAppStoreVersion is a no-op when version is already in WAITING_FOR_REVIEW', async () => {
+  const { api, calls } = store({
+    versionState: 'WAITING_FOR_REVIEW',
+  })
+  await submitAppStoreVersion(api, '10')
+  assert.ok(!calls.some((c) => c.method === 'POST'))
+})
+
+void test('submitAppStoreVersion rejects when version is missing or target build is not found', async () => {
+  await assert.rejects(
+    submitAppStoreVersion(store({ emptyVersions: true }).api, '10'),
+    /App Store version 1\.0 not found/,
+  )
+
+  await assert.rejects(
+    submitAppStoreVersion(
+      store({
+        versionState: 'PREPARE_FOR_SUBMISSION',
+        builds: [],
+      }).api,
+      '999',
+    ),
+    /Build 999 not found/,
+  )
+
+  await assert.rejects(
+    submitAppStoreVersion(store().api, ''),
+    /Specify the exact tested build number/,
+  )
+
+  await assert.rejects(
+    submitAppStoreVersion(store().api, 'invalid'),
+    /Specify the exact tested build number/,
   )
 })
 

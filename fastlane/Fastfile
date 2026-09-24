@@ -166,13 +166,10 @@ platform :ios do
   lane :release do |options|
     number = ReleaseConfig.build_number!(options[:build_number])
     connect
-    upload_to_app_store(
-      app_identifier: ReleaseConfig::SETTINGS.fetch('bundleId'),
-      app_version: ReleaseConfig::SETTINGS.fetch('version'), build_number: number,
-      skip_binary_upload: true, skip_metadata: true, skip_screenshots: true,
-      submit_for_review: true, automatic_release: true,
-      precheck_include_in_app_purchases: false, force: true
-    )
+    script = File.join(ReleaseConfig::ROOT, 'scripts/app-store.ts')
+    output, status = Open3.capture2e('node', script, '--submit', number)
+    UI.message(output) if output && !output.empty?
+    UI.user_error!("Failed to submit App Store build #{number}") unless status.success?
   end
 
   desc 'Upload reviewed listing copy and native screenshots without a binary'

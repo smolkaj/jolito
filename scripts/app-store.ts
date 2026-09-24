@@ -263,11 +263,17 @@ export interface AppStoreVersionSummary {
   buildNumber?: string | undefined
 }
 
+export interface ReviewSubmissionSummary {
+  id: string
+  state: string
+}
+
 export interface AppStoreStatus {
   appId: string
   bundleId: string
   name?: string | undefined
   versions: AppStoreVersionSummary[]
+  reviewSubmissions: ReviewSubmissionSummary[]
 }
 
 export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
@@ -306,6 +312,17 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
     return { versionString, state, buildNumber }
   })
 
+  const submissionsData = await api.list(
+    `/v1/apps/${app.id}/reviewSubmissions?limit=10`,
+  )
+  const reviewSubmissions: ReviewSubmissionSummary[] = submissionsData.map(
+    (s) => ({
+      id: s.id,
+      state:
+        typeof s.attributes.state === 'string' ? s.attributes.state : 'UNKNOWN',
+    }),
+  )
+
   console.log(
     `App: ${name ?? settings.bundleId} (${settings.bundleId}, ID: ${app.id})`,
   )
@@ -318,12 +335,195 @@ export async function checkStatus(api: AppleApi): Promise<AppStoreStatus> {
     }
   }
 
+  if (reviewSubmissions.length > 0) {
+    console.log('Review Submissions:')
+    for (const s of reviewSubmissions) {
+      console.log(`- Submission ${s.id}: ${s.state}`)
+    }
+  }
+
   return {
     appId: app.id,
     bundleId: settings.bundleId,
     name,
     versions,
+    reviewSubmissions,
   }
+}
+
+export function validateBuildNumber(buildNumber: string | undefined): string {
+  const trimmed = buildNumber?.trim() ?? ''
+  if (!/^[1-9]\d{0,3}$/.test(trimmed)) {
+    throw new Error('Specify the exact tested build number (1–9999)')
+  }
+  return trimmed
+}
+
+export async function submitAppStoreVersion(
+  api: AppleApi,
+  buildNumber: string,
+) {
+  const validatedBuildNumber = validateBuildNumber(buildNumber)
+
+  const apps = await api.list(
+    `/v1/apps?filter[bundleId]=${settings.bundleId}&fields[apps]=bundleId,name`,
+  )
+  if (apps.length !== 1)
+    throw new Error('Create the Jolito app record in App Store Connect first')
+  const app = apps[0]!
+
+  const response = await api.call(
+    `/v1/apps/${app.id}/appStoreVersions?include=build&limit=10`,
+  )
+  const versionsData = z.array(resourceSchema).parse(response.data)
+  const version = versionsData.find(
+    (v) => v.attributes.versionString === settings.version,
+  )
+  if (!version) {
+    throw new Error(`App Store version ${settings.version} not found`)
+  }
+
+  const appStoreState =
+    typeof version.attributes.appStoreState === 'string'
+      ? version.attributes.appStoreState
+      : 'UNKNOWN'
+
+  if (appStoreState === 'WAITING_FOR_REVIEW' || appStoreState === 'IN_REVIEW') {
+    console.log(
+      `Version ${settings.version} is already in ${appStoreState}. No submission needed.`,
+    )
+    return
+  }
+
+  const buildRel = idSchema.safeParse(version.relationships.build?.data)
+  const currentBuildResource = buildRel.success
+    ? response.included.find(
+        (r) => r.type === 'builds' && r.id === buildRel.data.id,
+      )
+    : undefined
+  const currentBuildNumber =
+    currentBuildResource &&
+    typeof currentBuildResource.attributes.version === 'string'
+      ? currentBuildResource.attributes.version
+      : undefined
+
+  const needsBuildPatch = currentBuildNumber !== validatedBuildNumber
+  const needsReleaseTypePatch =
+    version.attributes.releaseType !== 'AFTER_APPROVAL'
+
+  if (needsBuildPatch || needsReleaseTypePatch) {
+    const patchData: {
+      type: 'appStoreVersions'
+      id: string
+      attributes?: { releaseType: string }
+      relationships?: { build: { data: { type: string; id: string } } }
+    } = {
+      type: 'appStoreVersions',
+      id: version.id,
+    }
+    if (needsReleaseTypePatch) {
+      patchData.attributes = { releaseType: 'AFTER_APPROVAL' }
+    }
+    if (needsBuildPatch) {
+      const builds = await api.list(
+        `/v1/builds?filter[app]=${app.id}&filter[version]=${validatedBuildNumber}&limit=10`,
+      )
+      if (builds.length === 0) {
+        throw new Error(
+          `Build ${validatedBuildNumber} not found for version ${settings.version}`,
+        )
+      }
+      patchData.relationships = {
+        build: relation('builds', builds[0]!.id),
+      }
+    }
+    await api.call(`/v1/appStoreVersions/${version.id}`, 'PATCH', {
+      data: patchData,
+    })
+    console.log(
+      `Updated version ${settings.version}: build=${validatedBuildNumber}, releaseType=AFTER_APPROVAL`,
+    )
+  }
+
+  const existingSubmissions = await api.list(
+    `/v1/apps/${app.id}/reviewSubmissions?limit=10`,
+  )
+  for (const sub of existingSubmissions) {
+    const state =
+      typeof sub.attributes.state === 'string' ? sub.attributes.state : ''
+    if (state === 'UNRESOLVED_ISSUES' || state === 'READY_FOR_REVIEW') {
+      console.log(
+        `Canceling existing review submission ${sub.id} (state: ${state})...`,
+      )
+      await api.call(`/v1/reviewSubmissions/${sub.id}`, 'PATCH', {
+        data: {
+          type: 'reviewSubmissions',
+          id: sub.id,
+          attributes: {
+            canceled: true,
+          },
+        },
+      })
+      console.log(`Canceled review submission ${sub.id}`)
+    }
+  }
+
+  console.log(
+    `Creating review submission for ${settings.bundleId} (Version ${settings.version})...`,
+  )
+  const newSubmission = resourceSchema.parse(
+    (
+      await api.call('/v1/reviewSubmissions', 'POST', {
+        data: {
+          type: 'reviewSubmissions',
+          attributes: {
+            platform: 'IOS',
+          },
+          relationships: {
+            app: relation('apps', app.id),
+          },
+        },
+      })
+    ).data,
+  )
+
+  console.log(
+    `Attaching version ${settings.version} to review submission ${newSubmission.id}...`,
+  )
+  await api.call('/v1/reviewSubmissionItems', 'POST', {
+    data: {
+      type: 'reviewSubmissionItems',
+      relationships: {
+        reviewSubmission: relation('reviewSubmissions', newSubmission.id),
+        appStoreVersion: relation('appStoreVersions', version.id),
+      },
+    },
+  })
+
+  console.log(
+    `Submitting review submission ${newSubmission.id} for App Store review...`,
+  )
+  const submitted = resourceSchema.parse(
+    (
+      await api.call(`/v1/reviewSubmissions/${newSubmission.id}`, 'PATCH', {
+        data: {
+          type: 'reviewSubmissions',
+          id: newSubmission.id,
+          attributes: {
+            submitted: true,
+          },
+        },
+      })
+    ).data,
+  )
+
+  const finalState =
+    typeof submitted.attributes.state === 'string'
+      ? submitted.attributes.state
+      : 'WAITING_FOR_REVIEW'
+  console.log(
+    `Successfully submitted Version ${settings.version} for review: state=${finalState}`,
+  )
 }
 
 export function token() {
@@ -364,13 +564,16 @@ export function token() {
 if (import.meta.main) {
   try {
     const command = process.argv[2] ?? ''
-    if (!['--apply', '--check', '--status'].includes(command))
+    if (!['--apply', '--check', '--status', '--submit'].includes(command))
       throw new Error(
-        'Usage: node scripts/app-store.ts --check|--apply|--status',
+        'Usage: node scripts/app-store.ts --check|--apply|--status|--submit <build_number>',
       )
     const api = new AppleApi(token())
     if (command === '--status') {
       await checkStatus(api)
+    } else if (command === '--submit') {
+      const buildNumber = validateBuildNumber(process.argv[3])
+      await submitAppStoreVersion(api, buildNumber)
     } else {
       await configureStore(api, command === '--apply')
     }
