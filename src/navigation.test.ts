@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   hashForView,
+  hashFromDeepLink,
   isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
@@ -83,5 +84,22 @@ describe('navigation', () => {
     expect(isFeedbackHash('')).toBe(false)
     expect(isFeedbackHash('#/create')).toBe(false)
     expect(isFeedbackHash('#privacy')).toBe(false)
+  })
+
+  it('maps jolito:// deep links to canonical url hashes', () => {
+    expect(hashFromDeepLink('jolito://practice')).toBe('#/study')
+    expect(hashFromDeepLink('jolito://practice/cards')).toBe('#/study')
+    expect(hashFromDeepLink('jolito://practice/grammar')).toBe('#/grammar')
+    expect(hashFromDeepLink('jolito://study')).toBe('#/study')
+    expect(hashFromDeepLink('jolito://review')).toBe('#/study')
+    expect(hashFromDeepLink('jolito://grammar')).toBe('#/grammar')
+    expect(hashFromDeepLink('jolito://deck')).toBe('#/deck')
+    expect(hashFromDeepLink('jolito://cards')).toBe('#/deck')
+    expect(hashFromDeepLink('jolito://library')).toBe('#/deck')
+    expect(hashFromDeepLink('jolito://create')).toBe('#/create')
+    expect(hashFromDeepLink('jolito://home')).toBe('#/')
+    expect(hashFromDeepLink('jolito://')).toBe('#/')
+    expect(hashFromDeepLink('https://example.com/practice')).toBeNull()
+    expect(hashFromDeepLink('invalid-url')).toBeNull()
   })
 })

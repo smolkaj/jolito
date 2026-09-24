@@ -1,4 +1,8 @@
-import { practiceCards } from './test/practice'
+import {
+  practiceCards,
+  navigateToDeck,
+  navigateToCreate,
+} from './test/practice'
 import {
   act,
   fireEvent,
@@ -10,6 +14,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
+import { practiceActivity } from './ui/native-live-activity'
 import { createStudyCards, type StudyCard } from './domain/card'
 import { createCards } from './application/create-cards'
 import { starterCards } from './application/starter-cards'
@@ -92,7 +97,7 @@ describe('Jolito', () => {
       await user.click(screen.getByRole('button', { name: /easy/i }))
       expect(screen.getByRole('heading', { name: 'dos' })).toBeInTheDocument()
 
-      for (const destination of ['Create', 'Deck']) {
+      for (const destination of [/^create/i, /^deck/i]) {
         await user.click(mobile().getByRole('button', { name: destination }))
         await act(async () => {
           window.dispatchEvent(new Event('offline'))
@@ -667,6 +672,115 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toHaveAttribute('aria-valuetext', '3 cards remaining')
+  })
+
+  it('jumps straight into practice mode via jolito:deep-link runtime event', () => {
+    const services = createTestServices()
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: /make the words you meet stick/i }),
+    ).toBeInTheDocument()
+
+    // Dispatch runtime deep-link event from native
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:deep-link', {
+          detail: { url: 'jolito://practice/cards' },
+        }),
+      )
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toBeInTheDocument()
+  })
+
+  it('jumps straight into grammar practice via jolito:deep-link runtime event', () => {
+    const services = createTestServices()
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:deep-link', {
+          detail: { url: 'jolito://practice/grammar' },
+        }),
+      )
+    })
+
+    expect(
+      screen.getByRole('button', { name: /start practice/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', {
+        name: /grammar \(practice grammar\)/i,
+      })[0]!,
+    ).toHaveClass('is-active')
+  })
+
+  it('cold boots directly into review mode when launched via jolito://practice/cards (injected hash #/study)', () => {
+    const services = createTestServices()
+    window.location.hash = '#/study'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'aguacate' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('progressbar', { name: 'Session progress' }),
+    ).toBeInTheDocument()
+  })
+
+  it('cold boots directly into grammar practice when launched via jolito://practice/grammar (injected hash #/grammar)', () => {
+    const services = createTestServices()
+    window.location.hash = '#/grammar'
+    render(<App services={services} />)
+
+    expect(
+      screen.getByRole('button', { name: /start practice/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', {
+        name: /grammar \(practice grammar\)/i,
+      })[0]!,
+    ).toHaveClass('is-active')
+  })
+
+  it('configures Live Activity with context-specific deepLinkUrl when practicing cards or grammar', async () => {
+    const user = userEvent.setup({ delay: null })
+    const services = createTestServices()
+    const startSpy = vi.spyOn(practiceActivity, 'start')
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    await practiceCards(user)
+
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Card Practice',
+        deepLinkUrl: 'jolito://practice/cards',
+      }),
+    )
+
+    // Switch to grammar and start grammar practice
+    await user.click(
+      screen.getAllByRole('button', {
+        name: /grammar \(practice grammar\)/i,
+      })[0]!,
+    )
+    await user.click(screen.getByRole('button', { name: /start practice/i }))
+
+    expect(startSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Grammar Practice',
+        deepLinkUrl: 'jolito://practice/grammar',
+      }),
+    )
   })
 
   it('suggests Mexican Spanish expressions and auto-fills translation without populating context on selection', async () => {
@@ -1316,7 +1430,7 @@ describe('Jolito', () => {
     expect(studyAnswerInput).toHaveAttribute('autocapitalize', 'none')
 
     // 3. Check edit card modal fields
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     const deckSearchInput = screen.getByLabelText(/search cards in deck/i)
     expect(deckSearchInput).toHaveAttribute('autocapitalize', 'none')
 
@@ -1345,7 +1459,7 @@ describe('Jolito', () => {
     const services = createTestServices({ cards })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     await user.click(screen.getByRole('row', { name: /card: el aguacate/i }))
 
     const promptInput = screen.getByLabelText<HTMLTextAreaElement>(
@@ -1504,7 +1618,7 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
@@ -1531,7 +1645,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Open Backup & Import modal
     await user.click(screen.getByRole('button', { name: /backup & import/i }))
@@ -1587,7 +1701,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Open Backup & Import modal
     await user.click(screen.getByRole('button', { name: /backup & import/i }))
@@ -1649,7 +1763,7 @@ describe('Jolito', () => {
 
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Open Backup & Import modal
     await user.click(screen.getByRole('button', { name: /backup & import/i }))
@@ -1693,7 +1807,7 @@ describe('Jolito', () => {
     })
     const parseSpy = vi.spyOn(ankiParser, 'parseAnkiDeck')
     render(<App services={services} />)
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     await user.click(screen.getByRole('button', { name: /backup & import/i }))
     await user.click(screen.getByLabelText(/merge/i))
     const syncResult = deferred<SyncResult>()
@@ -1741,7 +1855,7 @@ describe('Jolito', () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()
     render(<App services={services} />)
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     await user.click(screen.getByRole('button', { name: /backup & import/i }))
     const firstRead = deferred<ArrayBuffer>()
     const firstFile = new File(['old'], 'old.tsv', { type: 'text/plain' })
@@ -1797,7 +1911,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Open Backup & Import modal
     await user.click(screen.getByRole('button', { name: /backup & import/i }))
@@ -2132,7 +2246,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Navigate to deck manager
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
 
     // Select and delete "zapato" card
@@ -2230,7 +2344,7 @@ describe('Jolito', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
 
     // Navigate to deck manager
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Card 1 was deleted on remote, so it must not be in local deck
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
@@ -3001,7 +3115,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     // Navigate to Deck Manager
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
@@ -3141,7 +3255,7 @@ describe('Jolito', () => {
     const services = createTestServices({ cards: customCards })
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     const sortSelect = screen.getByRole('combobox', { name: /sort cards/i })
     expect(sortSelect).toHaveValue('created-desc')
@@ -3206,7 +3320,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Click card row directly to edit "aguacate"
     await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
@@ -3257,7 +3371,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     await user.click(screen.getByRole('row', { name: /card: aguacate,/i }))
 
     expect(
@@ -3300,7 +3414,7 @@ describe('Jolito', () => {
     services.cards.save([cardWithHistory])
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Initially shows Mastered state pill in filter and Due in 14d chip in table
     expect(
@@ -3385,7 +3499,7 @@ describe('Jolito', () => {
     services.cards.save([cardWithHistory])
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     await user.click(screen.getByRole('row', { name: /card: platicar,/i }))
 
     const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
@@ -3408,7 +3522,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Select checkbox on "aguacate" card
     const checkbox = screen.getByRole('checkbox', {
@@ -3457,7 +3571,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Select 2 cards
     await user.click(
@@ -3493,7 +3607,7 @@ describe('Jolito', () => {
     const services = createTestServices()
     render(<App services={services} />)
 
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
     expect(rows).toHaveLength(6)
@@ -3811,7 +3925,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // 2. Check Deck Manager as guest -> DemoDeckModal is open
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     expect(
       screen.getByRole('dialog', { name: /^demo deck$/i }),
     ).toBeInTheDocument()
@@ -3826,8 +3940,8 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // 4. Navigating away and returning to Deck Manager re-shows the modal
-    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToCreate(user)
+    await navigateToDeck(user)
     expect(
       screen.getByRole('dialog', { name: /^demo deck$/i }),
     ).toBeInTheDocument()
@@ -3845,8 +3959,8 @@ describe('Jolito', () => {
     ).not.toBeInTheDocument()
 
     // 6. Return to Create and back to Deck to re-trigger modal and test sign in
-    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToCreate(user)
+    await navigateToDeck(user)
     expect(
       screen.getByRole('dialog', { name: /^demo deck$/i }),
     ).toBeInTheDocument()
@@ -3921,7 +4035,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // 3. Deck Manager does not display demo modal for authenticated user
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     expect(
       screen.queryByRole('dialog', { name: /^demo deck$/i }),
     ).not.toBeInTheDocument()
@@ -4026,8 +4140,8 @@ describe('Jolito', () => {
     expect(shortHeading).not.toHaveClass('is-medium')
 
     // 2. Create view preview scaling
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
-    await user.click(screen.getByRole('button', { name: /\+ new card/i }))
+    await navigateToDeck(user)
+    await navigateToCreate(user)
 
     const spanishTextarea = screen.getByLabelText(/mexican spanish/i)
     await user.type(spanishTextarea, 'Hola')
@@ -4125,7 +4239,7 @@ describe('Jolito', () => {
       })
       render(<App services={services} />)
 
-      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+      await navigateToDeck(user)
 
       // Click row for 'chela' to edit
       const chelaRow = screen.getByLabelText(/card: chela/i)
@@ -4190,7 +4304,7 @@ describe('Jolito', () => {
       })
       render(<App services={services} />)
 
-      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+      await navigateToDeck(user)
 
       // Verify Duplicates (2) pill exists
       const duplicatesPill = screen.getByRole('button', {
@@ -4466,7 +4580,7 @@ describe('Jolito', () => {
     expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
 
     // Navigate to deck
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
@@ -4567,7 +4681,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // Navigate away to deck and resume
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     await practiceCards(user)
 
     // Finish card B
@@ -4755,7 +4869,7 @@ describe('Jolito', () => {
     ).toBeInTheDocument()
 
     // Navigate to deck
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
 
     // Edit the card in deck view
     await user.click(
@@ -4864,7 +4978,7 @@ describe('Jolito', () => {
     expect(progressBar).toHaveAttribute('aria-valuetext', '2 cards remaining')
 
     // Navigate to deck and delete card-3 (which is in the queue)
-    await user.click(screen.getByRole('button', { name: /manage deck/i }))
+    await navigateToDeck(user)
     const card3Checkbox = screen.getByRole('checkbox', {
       name: /select card card-3/i,
     })
@@ -6122,7 +6236,7 @@ describe('Jolito', () => {
       render(<App services={services} />)
 
       // 1. Navigate to deck manager
-      await user.click(screen.getByRole('button', { name: /manage deck/i }))
+      await navigateToDeck(user)
 
       // 2. Dismiss guest demo deck modal if open
       const exploreDemoBtn = screen.queryByRole('button', {

@@ -42,7 +42,7 @@ export interface DeckManagerViewProps {
   onCopySessionLink?: (() => Promise<boolean> | boolean) | undefined
   onGoHome: () => void
   onNavigateToCreate: () => void
-  onPractice: () => void
+  onCards: () => void
   onGrammar: () => void
   onOpenSync: () => void
   onOpenFeedback: () => void
@@ -75,7 +75,7 @@ export function DeckManagerView({
   onCopySessionLink,
   onGoHome,
   onNavigateToCreate,
-  onPractice,
+  onCards,
   onGrammar,
   onOpenSync,
   onOpenFeedback,
@@ -197,7 +197,7 @@ export function DeckManagerView({
           <Brand onClick={onGoHome} />
           <DesktopSegmentedNav
             currentView="deck"
-            onCards={onPractice}
+            onCards={onCards}
             onGrammar={onGrammar}
             onNavigateToDeck={() => {}}
             onNavigateToCreate={onNavigateToCreate}

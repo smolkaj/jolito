@@ -804,7 +804,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.screenshot({ path: 'test-results/mobile-floating-welcome.png' })
 
     // 2. Deck view with floating tab bar
-    await page.getByRole('button', { name: /^deck$/i }).click()
+    await page.getByRole('button', { name: /^deck/i }).click()
     await expect(page.locator('.deck-page')).toBeVisible()
     const demoDismissBtn = page.getByRole('button', {
       name: /explore demo deck/i,
@@ -822,7 +822,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await page.screenshot({ path: 'test-results/mobile-floating-deck.png' })
 
     // 3. Create view with floating tab bar
-    await page.getByRole('button', { name: /^create$/i }).click()
+    await page.getByRole('button', { name: /^create/i }).click()
     await expect(page.locator('.create-page')).toBeVisible()
     await expect(tabBar).toBeVisible()
     await page.screenshot({ path: 'test-results/mobile-floating-create.png' })

@@ -32,8 +32,12 @@ describe('MobileTabBar', () => {
     expect(
       screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Deck' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Deck (Manage deck)' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Create (+ New card)' }),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/cards? due/i)).not.toBeInTheDocument()
   })
 
@@ -53,12 +57,12 @@ describe('MobileTabBar', () => {
     expect(
       screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
     ).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
-      'aria-current',
-    )
-    expect(screen.getByRole('button', { name: 'Create' })).not.toHaveAttribute(
-      'aria-current',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Deck (Manage deck)' }),
+    ).not.toHaveAttribute('aria-current')
+    expect(
+      screen.getByRole('button', { name: 'Create (+ New card)' }),
+    ).not.toHaveAttribute('aria-current')
 
     // Switch to grammar
     rerender(
@@ -93,12 +97,12 @@ describe('MobileTabBar', () => {
     expect(
       screen.getByRole('button', { name: 'Grammar (Practice grammar)' }),
     ).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('button', { name: 'Deck' })).not.toHaveAttribute(
-      'aria-current',
-    )
-    expect(screen.getByRole('button', { name: 'Create' })).not.toHaveAttribute(
-      'aria-current',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Deck (Manage deck)' }),
+    ).not.toHaveAttribute('aria-current')
+    expect(
+      screen.getByRole('button', { name: 'Create (+ New card)' }),
+    ).not.toHaveAttribute('aria-current')
 
     // Switch to deck
     rerender(
@@ -110,10 +114,9 @@ describe('MobileTabBar', () => {
         onNavigateToCreate={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Deck' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Deck (Manage deck)' }),
+    ).toHaveAttribute('aria-current', 'page')
     expect(
       screen.getByRole('button', { name: 'Cards (Study session)' }),
     ).not.toHaveAttribute('aria-current')
@@ -128,10 +131,9 @@ describe('MobileTabBar', () => {
         onNavigateToCreate={vi.fn()}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Create' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Create (+ New card)' }),
+    ).toHaveAttribute('aria-current', 'page')
   })
 
   it('calls tab click callbacks and triggers haptics', () => {
@@ -164,11 +166,11 @@ describe('MobileTabBar', () => {
     expect(onGrammar).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Deck' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Deck (Manage deck)' }))
     expect(onDeck).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create (+ New card)' }))
     expect(onCreate).toHaveBeenCalledTimes(1)
     expect(trigger).toHaveBeenCalledWith('selection')
   })

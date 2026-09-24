@@ -314,3 +314,69 @@ for (const colorScheme of ['light', 'dark'] as const) {
     })
   })
 }
+
+for (const width of [393, 1280]) {
+  test(`family illustration preserves opaque anatomy and transparent surroundings at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 852 })
+    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
+    await page.goto('/#why-jolito')
+    const family = page.locator('.why-family-img')
+    await family.scrollIntoViewIfNeeded()
+    await family.evaluate((image: HTMLImageElement) => image.decode())
+
+    // Check the decoded asset, not just its DOM presence or accessible name.
+    // All white anatomy must be painted; only the surrounding gaps are clear.
+    const regions = await family.evaluate((image: HTMLImageElement) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const context = canvas.getContext('2d')!
+      context.drawImage(image, 0, 0)
+      return [
+        { name: 'father head', x: 360, y: 240, opaque: true },
+        { name: 'mother head', x: 1030, y: 270, opaque: true },
+        { name: 'father torso', x: 330, y: 490, opaque: true },
+        { name: 'mother torso', x: 1050, y: 490, opaque: true },
+        { name: 'father front leg', x: 300, y: 700, opaque: true },
+        { name: 'father rear leg', x: 420, y: 690, opaque: true },
+        { name: 'mother front leg', x: 1090, y: 700, opaque: true },
+        { name: 'mother rear leg', x: 970, y: 700, opaque: true },
+        { name: 'father tail', x: 200, y: 698, opaque: true },
+        { name: 'outside family', x: 10, y: 10, opaque: false },
+        { name: 'between heads', x: 700, y: 100, opaque: false },
+        { name: 'between legs', x: 370, y: 700, opaque: false },
+      ].map(({ name, x, y, opaque }) => ({
+        name,
+        opaque,
+        pixels: Array.from(
+          context.getImageData(
+            Math.round((x / 1396) * canvas.width) - 2,
+            Math.round((y / 788) * canvas.height) - 2,
+            5,
+            5,
+          ).data,
+        ),
+      }))
+    })
+    for (const { name, opaque, pixels } of regions) {
+      for (let i = 0; i < pixels.length; i += 4) {
+        expect(pixels[i + 3], `${name} alpha`).toBe(opaque ? 255 : 0)
+        if (opaque) {
+          for (const channel of pixels.slice(i, i + 3)) {
+            expect(channel, `${name} white fill`).toBeGreaterThan(235)
+          }
+        }
+      }
+    }
+    for (const colorScheme of ['light', 'dark', 'light'] as const) {
+      await page.emulateMedia({ colorScheme })
+      await expectAppearance(page, colorScheme)
+      await expect(family).toBeInViewport()
+      await page.locator('#why-jolito').screenshot({
+        path: testInfo.outputPath(`family-${colorScheme}.png`),
+      })
+    }
+  })
+}

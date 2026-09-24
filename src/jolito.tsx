@@ -18,7 +18,6 @@ import {
 } from './application/starter-cards'
 import {
   burySiblingCards,
-  isDue,
   localeForAnswer,
   localeForPrompt,
   orderCardsForReview,
@@ -55,6 +54,7 @@ import { checkOrRequestStoragePersistence } from './infrastructure/browser/stora
 import {
   type View,
   hashForView,
+  hashFromDeepLink,
   isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
@@ -512,9 +512,6 @@ function LoadedApp({
 
   const [referenceTime, setReferenceTime] = useState(() => services.clock.now())
   const currentCard = cards.find(({ id }) => id === queue[0])
-  const dueCount = vocabularyCards.filter((card) =>
-    isDue(card, referenceTime),
-  ).length
 
   const paused =
     editingCard !== null ||
@@ -992,11 +989,22 @@ function LoadedApp({
         }
       }
     }
+    const onDeepLink = (event: Event) => {
+      const customEvent = event as CustomEvent<{ url?: string }>
+      const url = customEvent.detail?.url
+      if (!url) return
+      const targetHash = hashFromDeepLink(url)
+      if (!targetHash) return
+      window.location.hash = targetHash
+      onPopState()
+    }
     window.addEventListener('popstate', onPopState)
     window.addEventListener('hashchange', onPopState)
+    window.addEventListener('jolito:deep-link', onDeepLink)
     return () => {
       window.removeEventListener('popstate', onPopState)
       window.removeEventListener('hashchange', onPopState)
+      window.removeEventListener('jolito:deep-link', onDeepLink)
     }
   }, [cancelPendingAudio, resetPromptState, services.clock, startSession])
 
@@ -1240,6 +1248,7 @@ function LoadedApp({
     total: effectiveTotal,
     prompt: cardPrompt,
     title: 'Card Practice',
+    deepLinkUrl: 'jolito://practice/cards',
   })
 
   useEffect(() => {
@@ -1247,6 +1256,9 @@ function LoadedApp({
       total: isGrammarActive ? grammarEffectiveTotal : effectiveTotal,
       prompt: isGrammarActive ? grammarPrompt : cardPrompt,
       title: isGrammarActive ? 'Grammar Practice' : 'Card Practice',
+      deepLinkUrl: isGrammarActive
+        ? 'jolito://practice/grammar'
+        : 'jolito://practice/cards',
     }
   })
 
@@ -1356,12 +1368,12 @@ function LoadedApp({
       currentView={view}
       onCards={() => {
         if (isSyncOpen) closeSyncModal()
-        if (isPracticeActive && !isGrammarActive) return
+        if (view === 'review') return
         handlePractice()
       }}
       onGrammar={() => {
         if (isSyncOpen) closeSyncModal()
-        if (isGrammarActive) return
+        if (view === 'grammar') return
         handleGrammar()
       }}
       onNavigateToDeck={() => {
@@ -1428,9 +1440,8 @@ function LoadedApp({
           onCopySessionLink={handleCopySessionLink}
           onGoHome={goHome}
           onNavigateToDeck={() => navigateTo('deck')}
-          onPractice={handlePractice}
+          onCards={handlePractice}
           onGrammar={handleGrammar}
-          canPractice={queue.length > 0 || dueCount > 0}
           onOpenSync={openSyncModal}
           onEditCard={(card) => setEditingCard(card)}
           onOpenFeedback={openFeedbackModal}
@@ -1466,7 +1477,7 @@ function LoadedApp({
           onCopySessionLink={handleCopySessionLink}
           onGoHome={goHome}
           onNavigateToCreate={() => navigateTo('create')}
-          onPractice={handlePractice}
+          onCards={handlePractice}
           onGrammar={handleGrammar}
           onOpenSync={openSyncModal}
           onOpenFeedback={openFeedbackModal}

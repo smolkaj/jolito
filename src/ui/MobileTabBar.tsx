@@ -30,8 +30,6 @@ export function CardsTabIcon({ size = 22 }: { size?: number }) {
   )
 }
 
-export const PracticeTabIcon = CardsTabIcon
-
 export function GrammarTabIcon({ size = 22 }: { size?: number }) {
   return (
     <svg
@@ -141,7 +139,7 @@ export function MobileTabBar({
         aria-current={isDeckActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isDeckActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onNavigateToDeck)}
-        aria-label="Deck"
+        aria-label="Deck (Manage deck)"
       >
         <div className="tab-icon-wrapper">
           <DeckTabIcon />
@@ -154,7 +152,7 @@ export function MobileTabBar({
         aria-current={isCreateActive ? 'page' : undefined}
         className={`mobile-tab-btn ${isCreateActive ? 'is-active' : ''}`}
         onClick={() => handleTabClick(onNavigateToCreate)}
-        aria-label="Create"
+        aria-label="Create (+ New card)"
       >
         <div className="tab-icon-wrapper">
           <CreateTabIcon />

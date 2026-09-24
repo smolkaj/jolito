@@ -26,8 +26,10 @@ public struct PracticeActivityAttributes: ActivityAttributes {
     }
 
     public var sessionTitle: String
+    public var deepLinkUrl: String
 
-    public init(sessionTitle: String = "Practice") {
+    public init(sessionTitle: String = "Practice", deepLinkUrl: String = "jolito://practice/cards") {
         self.sessionTitle = sessionTitle
+        self.deepLinkUrl = deepLinkUrl
     }
 }

@@ -187,6 +187,49 @@ void test('NativeSpeechPlugin filters out Eloquence and legacy novelty robotic s
     speechPlugin,
     /preferredSpanishNames[\s\S]*?jorge[\s\S]*?paulina/,
   )
+
+  // 5. NativeSpeechPlugin configures and activates AVAudioSession for playback in silent mode
+  assert.match(
+    speechPlugin,
+    /let audioSession = AVAudioSession\.sharedInstance\(\)/,
+  )
+  assert.match(
+    speechPlugin,
+    /try audioSession\.setCategory\(\.playback, mode: \.spokenAudio, options: \[\.mixWithOthers\]\)/,
+  )
+  assert.match(speechPlugin, /try audioSession\.setActive\(true\)/)
+  assert.match(speechPlugin, /synthesizer\.usesApplicationAudioSession = true/)
+
+  // 6. Installed default compact voices are prioritized over un-downloaded premium/enhanced voices
+  assert.match(speechPlugin, /case \.default:\s*return 2/)
+  assert.match(
+    speechPlugin,
+    /\$0\.name\.lowercased\(\)\.contains\(name\)\s*&&\s*\$0\.quality == \.default/,
+  )
+})
+
+void test('Sound player and services preserve native AVAudioSession and route native speech directly', () => {
+  const soundSource = readFileSync(
+    new URL('../../src/infrastructure/browser/sound.ts', import.meta.url),
+    'utf8',
+  )
+  const servicesSource = readFileSync(
+    new URL('../../src/infrastructure/browser/services.ts', import.meta.url),
+    'utf8',
+  )
+
+  // 1. sound.ts guards configureAudioSessionCategory to prevent downgrading native AVAudioSession to ambient
+  assert.match(soundSource, /if\s*\(Capacitor\.isNativePlatform\(\)\)\s*return/)
+
+  // 2. services.ts instantiates NativeSpeaker directly on native platforms without network prewarming
+  assert.match(
+    servicesSource,
+    /const speaker:\s*Speaker\s*=\s*Capacitor\.isNativePlatform\(\)\s*\?\s*new NativeSpeaker\(\)\s*:\s*new LayeredNeuralSpeaker\(\)/,
+  )
+  assert.match(
+    servicesSource,
+    /if\s*\(!Capacitor\.isNativePlatform\(\)\)\s*\{\s*void speaker\.prewarm\?\.()/,
+  )
 })
 
 void test('SceneDelegate registers SpeechRecognitionPlugin with Speech and AVFoundation for spoken recall', () => {
@@ -282,7 +325,7 @@ void test('Form inputs and textareas enforce minimum 16px font-size to prevent i
   }
 })
 
-void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Live Activities', () => {
+void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Live Activities and jolito URL scheme', () => {
   const sceneDelegate = readFileSync(
     new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
     'utf8',
@@ -291,12 +334,62 @@ void test('SceneDelegate registers LiveActivityPlugin and Info.plist supports Li
     new URL('../../ios/App/App/Info.plist', import.meta.url),
     'utf8',
   )
+  const widget = readFileSync(
+    new URL(
+      '../../ios/App/JolitoWidgetExtension/PracticeLiveActivityWidget.swift',
+      import.meta.url,
+    ),
+    'utf8',
+  )
+  const attributes = readFileSync(
+    new URL(
+      '../../ios/App/App/PracticeActivityAttributes.swift',
+      import.meta.url,
+    ),
+    'utf8',
+  )
+  const plugin = readFileSync(
+    new URL('../../ios/App/App/LiveActivityPlugin.swift', import.meta.url),
+    'utf8',
+  )
 
+  // 1. Plugin registration and Info.plist Live Activities support
   assert.match(
     sceneDelegate,
     /bridge\?\.registerPluginInstance\(LiveActivityPlugin\(\)\)/,
   )
   assert.match(plist, /<key>NSSupportsLiveActivities<\/key>\s*<true\/>/)
+
+  // 2. Info.plist registers jolito URL scheme
+  assert.match(
+    plist,
+    /<key>CFBundleURLTypes<\/key>[\s\S]*?<string>jolito<\/string>/,
+  )
+
+  // 3. SceneDelegate handles cold-boot deep links at document start and runtime deep link events
+  assert.match(
+    sceneDelegate,
+    /connectionOptions\.urlContexts\.first\?\.url[\s\S]*?WKUserScript[\s\S]*?\.atDocumentStart/,
+  )
+  assert.match(
+    sceneDelegate,
+    /openURLContexts[\s\S]*?window\.location\.hash[\s\S]*?jolito:deep-link/,
+  )
+  assert.match(sceneDelegate, /static func targetHash\(for url: URL\)/)
+
+  // 4. Widget attaches widgetURL to both lock screen and dynamic island
+  assert.match(
+    widget,
+    /\.widgetURL\(URL\(string:\s*context\.attributes\.deepLinkUrl\)\)/,
+  )
+  assert.match(attributes, /public var deepLinkUrl:\s*String/)
+
+  // 5. Native plugin configures deepLinkUrl
+  assert.match(plugin, /call\.getString\("deepLinkUrl"\)/)
+  assert.match(
+    plugin,
+    /PracticeActivityAttributes\(sessionTitle:\s*title,\s*deepLinkUrl:\s*deepLinkUrl\)/,
+  )
 })
 
 void test('SceneDelegate registers ShareFilePlugin with UIActivityViewController for native file sharing', () => {

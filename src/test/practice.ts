@@ -53,3 +53,27 @@ export async function practiceGrammar(
   await user.click(entry)
   await user.click(await screen.findByRole('menuitem', { name: 'Grammar' }))
 }
+
+export async function navigateToDeck(user: ReturnType<typeof userEvent.setup>) {
+  const deckButtons = screen.queryAllByRole('button', { name: /^deck/i })
+  if (deckButtons.length > 0) {
+    await user.click(deckButtons[0]!)
+    return
+  }
+  const manageButtons = screen.getAllByRole('button', { name: /manage deck/i })
+  if (manageButtons.length === 0) throw new Error('Deck button not found')
+  await user.click(manageButtons[0]!)
+}
+
+export async function navigateToCreate(
+  user: ReturnType<typeof userEvent.setup>,
+) {
+  const createButtons = screen.queryAllByRole('button', { name: /^create/i })
+  if (createButtons.length > 0) {
+    await user.click(createButtons[0]!)
+    return
+  }
+  const newCardButtons = screen.getAllByRole('button', { name: /\+ new card/i })
+  if (newCardButtons.length === 0) throw new Error('Create button not found')
+  await user.click(newCardButtons[0]!)
+}
