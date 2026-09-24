@@ -37,6 +37,7 @@ cleanup() {
   # The hosted runner disposes the device. Do not block export on Xcode teardown.
 }
 trap cleanup EXIT
+swiftc scripts/record-native-audio.swift -o build/record-native-audio
 xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -destination "platform=iOS Simulator,id=$device" -configuration Release \
   -derivedDataPath build/WalkthroughDerivedData CODE_SIGNING_ALLOWED=NO \
@@ -53,7 +54,6 @@ xcrun simctl spawn "$device" log stream --style compact --level error \
 speech_log_pid=$!
 xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.mov" > "$output/video.log" 2>&1 &
 video_pid=$!
-swiftc scripts/record-native-audio.swift -o build/record-native-audio
 build/record-native-audio "$output" > "$output/audio.log" 2>&1 &
 audio_pid=$!
 # Anchor video at recorder readiness; the audio recorder writes its own clock.
