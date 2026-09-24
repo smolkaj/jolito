@@ -148,11 +148,12 @@ describe('SEO search snippet and favicon compliance', () => {
   it('declares iOS splash screen links with fallback and light color-scheme baseline', () => {
     const html = readFileSync(indexPath, 'utf-8')
 
-    // Root html and meta must enforce light color scheme and Jolito paper background
-    expect(html).toContain(
-      'style="background-color: #fdf5f8; color-scheme: light"',
+    // Root html and meta declare light dark color scheme support
+    expect(html).toMatch(
+      /<meta\s+name="color-scheme"\s+content="light dark"\s*\/>/,
     )
-    expect(html).toMatch(/<meta\s+name="color-scheme"\s+content="light"\s*\/>/)
+    expect(html).toContain('content="#fdf5f8"')
+    expect(html).toContain('#0d1310')
     expect(html).toMatch(
       /<meta\s+name="mobile-web-app-capable"\s+content="yes"\s*\/>/,
     )

@@ -26,6 +26,7 @@
     "query:telemetry": "node scripts/query-telemetry.ts",
     "build": "node scripts/generate-privacy-html.ts && vite build",
     "preview": "vite preview",
+    "preview:render": "node scripts/render-preview.mjs",
     "ingest:dict": "python3 scripts/ingest-wiktionary.py",
     "setup:domain": "node scripts/setup-domain.ts",
     "deploy:signup-alerts": "node scripts/deploy-signup-alerts.ts",
