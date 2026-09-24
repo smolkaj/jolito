@@ -171,3 +171,11 @@ explicitly, and the recording script fails on any browser page error.
   existing generator now also owns the iOS icon; browser CI regenerates it in
   memory and fails on any drift. A new TestFlight build is required for this
   asset change.
+- **Touch-mode authority (PR #375):** Native hardware detection and the browser
+  keydown heuristic both wrote keyboard presence. Synthesized text-entry events
+  could override iOS's no-keyboard state and expose shortcut hints. Earlier tests
+  exercised hardware events and browser typing separately. Native builds now use
+  only the hardware bridge; a lifecycle contract interleaves typing with absent,
+  connected, disconnected and reconnected hardware states, then verifies that
+  neither event source changes state after teardown. The contract fails before
+  the fix and passes afterward.

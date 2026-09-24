@@ -90,7 +90,7 @@ final class NativeWalkthrough: XCTestCase {
             let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.22))
             let upwards = origin.withOffset(CGVector(dx: 0, dy: -min(100, frame.height * 0.1)))
             origin.press(forDuration: 0.08, thenDragTo: upwards, withVelocity: .slow, thenHoldForDuration: 0.15)
-            XCTAssertTrue(button("Good").waitForExistence(timeout: 10), "Swipe up must reveal the answer")
+            XCTAssertTrue(button("3 Good").waitForExistence(timeout: 10), "Swipe up must reveal the answer")
             pause(7)
             if index == 1 {
                 tap(app.buttons["Play answer audio"].firstMatch)
@@ -113,7 +113,7 @@ final class NativeWalkthrough: XCTestCase {
             pause(6)
             tap(button("Reveal answer"))
             pause(7)
-            tap(button("Good"))
+            tap(button("3 Good"))
         }
 
         dismissKeyboard()

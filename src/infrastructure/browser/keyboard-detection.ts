@@ -147,7 +147,11 @@ export function initKeyboardDetection(
       setKeyboard(true)
     }
   }
-  win.addEventListener('keydown', onKeyDown, { capture: true, passive: true })
+  // Native GCKeyboard remains authoritative; synthesized text-entry events
+  // must not override a hardware disconnect or enable keyboard-only controls.
+  if (!hasNativeBridge) {
+    win.addEventListener('keydown', onKeyDown, { capture: true, passive: true })
+  }
 
   return () => {
     win.removeEventListener('jolito:hardware-keyboard', onHardwareKeyboard)
