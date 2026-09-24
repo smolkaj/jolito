@@ -8,16 +8,25 @@ test -n "$device"
 video_pid=
 audio_pid=
 cleanup() {
-  if [ -n "$video_pid" ]; then kill -INT "$video_pid" 2>/dev/null || true; wait "$video_pid" || true; fi
-  if [ -n "$audio_pid" ]; then kill -INT "$audio_pid" 2>/dev/null || true; wait "$audio_pid" || true; fi
+  for pid in "$video_pid" "$audio_pid"; do
+    if [ -n "$pid" ]; then kill -INT "$pid" 2>/dev/null || true; fi
+  done
+  sleep 3
+  for pid in "$video_pid" "$audio_pid"; do
+    if [ -n "$pid" ]; then kill -TERM "$pid" 2>/dev/null || true; fi
+  done
+  sleep 1
+  for pid in "$video_pid" "$audio_pid"; do
+    if [ -n "$pid" ]; then kill -KILL "$pid" 2>/dev/null || true; wait "$pid" || true; fi
+  done
   xcrun simctl shutdown "$device" 2>/dev/null || true
 }
 trap cleanup EXIT
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b
 # Show the actual Simulator status bar, keyboard and app lifecycle.
-open -a Simulator --args -CurrentDeviceUDID "$device"
 defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+open -a Simulator --args -CurrentDeviceUDID "$device"
 xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -destination "platform=iOS Simulator,id=$device" -configuration Release \
   -derivedDataPath build/WalkthroughDerivedData CODE_SIGNING_ALLOWED=NO \
@@ -34,7 +43,8 @@ kill -0 "$audio_pid"
 xcodebuild -project ios/App/App.xcodeproj -scheme NativeWalkthrough \
   -destination "platform=iOS Simulator,id=$device" -configuration Release \
   -derivedDataPath build/WalkthroughDerivedData -resultBundlePath "$output/result.xcresult" \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test-without-building \
+  -parallel-testing-enabled NO -test-timeouts-enabled YES \
+  -maximum-test-execution-time-allowance 900 CODE_SIGNING_ALLOWED=NO test-without-building \
   > "$output/test.log" 2>&1
 cleanup
 video_pid=
