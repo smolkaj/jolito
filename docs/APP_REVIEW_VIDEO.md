@@ -66,8 +66,10 @@ registration/deletion take; do not delete the persistent reviewer account.
 accessibility elements and touch gestures. Credentials are injected into the
 UI-test runner only. The app target receives no test-account secrets.
 [`capture-native-walkthrough.sh`](../scripts/capture-native-walkthrough.sh)
-captures masked H.264 video and continuous PCM system audio. Device Hub provides the simulator-to-host audio route; no desktop UI scripting
-or Apple Events are used. Text is entered by tapping actual software keys: XCTest's `typeText` attaches a virtual hardware
+captures masked H.264 video and continuous PCM system audio. The Simulator’s
+own output-device UID is routed to BlackHole, preserving device volume and
+ringer state. The Mac’s default output alone does not configure that route.
+Capture runs without Device Hub, desktop UI scripting or Apple Events. Text is entered by tapping actual software keys: XCTest's `typeText` attaches a virtual hardware
 keyboard, so it is unsuitable for a touch-mode recording. Study asserts the
 absence of keyboard-only reveal hints. The capture device has keyboard
 autocorrection and prediction disabled so English corrections cannot rewrite

@@ -59,43 +59,21 @@ done
 for tutorial in DidShowContinuousPathIntroduction KeyboardDidShowProductivityTutorial DidShowGestureKeyboardIntroduction UIKeyboardDidShowInternationalInfoIntroduction; do
   xcrun simctl spawn "$device" defaults write com.apple.keyboard.preferences "$tutorial" -bool true
 done
-# Device Hub routes simulator audio to the host output. Do not use desktop
-# Apple Events: those request host-control permission and block unattended runs.
-open -b com.apple.dt.Devices
-# The sandbox container is created on first launch; wait for that initialization.
-keyboard_configured=false
-for attempt in $(seq 1 30); do
-  if defaults -container com.apple.dt.Devices write com.apple.dt.Devices alwaysSimulateHardwareKeyboard -bool false 2>/dev/null; then
-    keyboard_configured=true
-    break
-  fi
-  sleep 1
-done
-test "$keyboard_configured" = true
-for preference in enableAudioOutput enableAudioOutput_iOS; do
-  defaults -container com.apple.dt.Devices write com.apple.dt.Devices "$preference" -bool true
-done
-# Temporary diagnostics for the simulator-to-host audio route.
-for domain in com.apple.dt.Devices com.apple.dt.DeviceKit; do
-  defaults -container com.apple.dt.Devices read "$domain" > "$output/$domain.log" 2>&1 || true
-done
-for binary in "$DEVELOPER_DIR/../SharedFrameworks/DeviceKit.framework/DeviceKit" "$DEVELOPER_DIR/../SharedFrameworks/SimulatorKit.framework/SimulatorKit"; do
-  if [ -f "$binary" ]; then strings "$binary" | grep -iE 'audio|sound|mute|volume' >> "$output/audio-keys.log" || true; fi
-done
-SwitchAudioSource -a -f json > "$output/host-audio-devices.json"
-for kind in output input system; do SwitchAudioSource -c -t "$kind"; done > "$output/host-audio-defaults.txt"
-screencapture -x "$output/host-before.png"
+# Simulator apps use their own output UID, independent of the Mac's default.
+# Set only that route; preserve the device's volume and ringer state.
 python3 - "$device" "$output" <<'PYAUDIO'
 import json, os, plistlib, sys
 from pathlib import Path
 settings = Path.home() / 'Library/Developer/CoreSimulator/Devices' / sys.argv[1] / 'data/var/run/simulatoraudio/audiosettings.plist'
 original = plistlib.loads(settings.read_bytes())
-(Path(sys.argv[2]) / 'simulator-audio-before.json').write_text(json.dumps(original, indent=2))
 updated = dict(original, sim_output_device_uid='BlackHole2ch_UID')
 temporary = settings.with_suffix('.tmp')
 temporary.write_bytes(plistlib.dumps(updated))
 os.replace(temporary, settings)
-(Path(sys.argv[2]) / 'simulator-audio-after.json').write_text(json.dumps(plistlib.loads(settings.read_bytes()), indent=2))
+actual = plistlib.loads(settings.read_bytes())
+if actual != updated or actual.get('sim_volume', 0) <= 0:
+    raise SystemExit('Simulator audio route or volume is not ready')
+(Path(sys.argv[2]) / 'audio-route.json').write_text(json.dumps(actual, indent=2))
 PYAUDIO
 xcrun simctl spawn "$device" log stream --style compact --level error \
   --predicate 'subsystem CONTAINS[c] "speech" OR subsystem CONTAINS[c] "voice"' \
@@ -105,8 +83,6 @@ xcrun simctl io "$device" recordVideo --codec=h264 --mask=black "$output/screen.
 video_pid=$!
 build/record-native-audio "$output" > "$output/audio.log" 2>&1 &
 audio_pid=$!
-sleep 2
-afplay /System/Library/Sounds/Glass.aiff
 # Anchor video at recorder readiness; the audio recorder writes its own clock.
 # Monitor concurrently: XCTest must wake the device display and audio session.
 python3 - "$output" "$video_pid" <<'PYREADY' &
@@ -145,8 +121,6 @@ for attempt in $(seq 1 660); do
 done
 wait "$ready_pid"
 test -s "$output/audio-start.txt"
-screencapture -x "$output/host-after.png"
-log show --last 15m --style compact --info --debug --predicate '(senderImagePath CONTAINS "DeviceKit" OR subsystem CONTAINS "devicekit") AND (eventMessage CONTAINS[c] "audio" OR eventMessage CONTAINS[c] "volume")' > "$output/device-audio.log"
 cleanup
 video_pid=
 audio_pid=
