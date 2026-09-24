@@ -31,11 +31,20 @@ final class NativeWalkthrough: XCTestCase {
         XCTAssertTrue(create.waitForExistence(timeout: 90))
         XCUIDevice.shared.press(.home)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let icon = springboard.icons["Jolito"].firstMatch
-        let homeReady = XCTNSPredicateExpectation(
-            predicate: NSPredicate { _, _ in icon.isHittable && icon.frame.width > 0 }, object: nil
-        )
-        XCTAssertEqual(XCTWaiter.wait(for: [homeReady], timeout: 20), .completed)
+        pause(3)
+        var launchIcon: XCUIElement?
+        for _ in 0..<3 {
+            launchIcon = springboard.icons.matching(identifier: "Jolito").allElementsBoundByIndex.first {
+                $0.isHittable && $0.frame.width > 0
+            }
+            if launchIcon != nil { break }
+            springboard.swipeLeft(velocity: .slow)
+            pause(2)
+        }
+        guard let icon = launchIcon else {
+            XCTFail("Jolito must be visible on the Home Screen before capture begins")
+            return
+        }
         print("WALKTHROUGH_START \(Date().timeIntervalSince1970)")
         pause(3)
         icon.tap()
