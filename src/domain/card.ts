@@ -5,6 +5,12 @@ import {
   grammarTopics,
   type GrammarTopic,
 } from './grammar-catalog'
+import {
+  scheduleFsrsReview,
+  nextFsrsIntervalDays,
+  intervalLabel as fsrsIntervalLabel,
+  shouldRequeueInSession as fsrsShouldRequeueInSession,
+} from './scheduler'
 
 export const grades = ['again', 'hard', 'good', 'easy'] as const
 export const directions = ['es-en', 'en-es'] as const
@@ -46,6 +52,9 @@ export const reviewScheduleSchema = z.preprocess(
     reviews: z.number().int().nonnegative(),
     lapses: z.number().int().nonnegative(),
     lastReviewedAt: scheduleTimestampSchema.optional(),
+    stability: z.number().nonnegative().optional(),
+    difficulty: z.number().min(0).max(10).optional(),
+    learningSteps: z.number().int().nonnegative().optional(),
   }),
 )
 
@@ -168,7 +177,6 @@ export type UpdateCardParams = z.infer<typeof updateCardSchema>
 
 export const DAY = 24 * 60 * 60 * 1000
 export const MINUTE = 60 * 1000
-const MIN_EASE_FACTOR = 1.3
 const INITIAL_EASE_FACTOR = 2.5
 
 const sceneMatchers: ReadonlyArray<[Scene, RegExp]> = [
@@ -253,51 +261,13 @@ export function createStudyCards(
 export function nextIntervalDays(
   schedule: ReviewSchedule,
   grade: Grade,
+  now?: number,
 ): number {
-  if (grade === 'again') return 0
-
-  if (schedule.state === 'new') {
-    if (grade === 'easy') return 4
-    return 0 // Learning steps (<1m, <6m, <10m) are in-session
-  }
-
-  if (schedule.state === 'learning') {
-    switch (grade) {
-      case 'hard':
-        return 0 // Repeats 10m learning step in-session
-      case 'good':
-        return 1 // Graduates with 1-day interval
-      case 'easy':
-        return 4 // Graduates with 4-day easy interval
-    }
-  }
-
-  if (schedule.state === 'relearning') {
-    switch (grade) {
-      case 'hard':
-        return 1
-      case 'good':
-        return 1
-      case 'easy':
-        return Math.max(4, Math.round(schedule.intervalDays * 1.5))
-    }
-  }
-
-  // Graduated review state (Anki SM-2)
-  const interval = schedule.intervalDays
-  const ease = schedule.easeFactor
-  switch (grade) {
-    case 'hard':
-      return Math.max(interval + 1, Math.round(interval * 1.2))
-    case 'good':
-      return Math.max(interval + 1, Math.round(interval * ease))
-    case 'easy':
-      return Math.max(interval + 2, Math.round(interval * ease * 1.3))
-  }
+  return nextFsrsIntervalDays(schedule, grade, now)
 }
 
 export function shouldRequeueInSession(schedule: ReviewSchedule): boolean {
-  return schedule.state === 'learning' || schedule.state === 'relearning'
+  return fsrsShouldRequeueInSession(schedule)
 }
 
 export function scheduleReview(
@@ -305,122 +275,9 @@ export function scheduleReview(
   grade: Grade,
   now: number,
 ): StudyCard {
-  const current = card.schedule
-  const reviews = current.reviews + 1
-
-  let updatedSchedule: ReviewSchedule
-
-  if (grade === 'again') {
-    const isLapse = current.state === 'review'
-    const lapses = current.lapses + (isLapse ? 1 : 0)
-    const easeFactor = isLapse
-      ? Math.max(MIN_EASE_FACTOR, +(current.easeFactor - 0.2).toFixed(2))
-      : current.easeFactor
-
-    updatedSchedule = {
-      state:
-        isLapse || current.state === 'relearning' ? 'relearning' : 'learning',
-      dueAt: now + (isLapse ? 10 * MINUTE : 1 * MINUTE),
-      intervalDays: 0,
-      easeFactor,
-      reviews,
-      lapses,
-      lastReviewedAt: now,
-    }
-  } else if (current.state === 'new') {
-    if (grade === 'hard') {
-      updatedSchedule = {
-        state: 'learning',
-        dueAt: now + 6 * MINUTE,
-        intervalDays: 0,
-        easeFactor: current.easeFactor,
-        reviews,
-        lapses: current.lapses,
-        lastReviewedAt: now,
-      }
-    } else if (grade === 'good') {
-      updatedSchedule = {
-        state: 'learning',
-        dueAt: now + 10 * MINUTE,
-        intervalDays: 0,
-        easeFactor: current.easeFactor,
-        reviews,
-        lapses: current.lapses,
-        lastReviewedAt: now,
-      }
-    } else {
-      // grade === 'easy'
-      updatedSchedule = {
-        state: 'review',
-        dueAt: now + 4 * DAY,
-        intervalDays: 4,
-        easeFactor: current.easeFactor,
-        reviews,
-        lapses: current.lapses,
-        lastReviewedAt: now,
-      }
-    }
-  } else if (current.state === 'learning') {
-    if (grade === 'hard') {
-      updatedSchedule = {
-        state: 'learning',
-        dueAt: now + 10 * MINUTE,
-        intervalDays: 0,
-        easeFactor: current.easeFactor,
-        reviews,
-        lapses: current.lapses,
-        lastReviewedAt: now,
-      }
-    } else {
-      const intervalDays = nextIntervalDays(current, grade)
-      updatedSchedule = {
-        state: 'review',
-        dueAt: now + intervalDays * DAY,
-        intervalDays,
-        easeFactor: current.easeFactor,
-        reviews,
-        lapses: current.lapses,
-        lastReviewedAt: now,
-      }
-    }
-  } else if (current.state === 'relearning') {
-    const intervalDays = nextIntervalDays(current, grade)
-    updatedSchedule = {
-      state: 'review',
-      dueAt: now + intervalDays * DAY,
-      intervalDays,
-      easeFactor: current.easeFactor,
-      reviews,
-      lapses: current.lapses,
-      lastReviewedAt: now,
-    }
-  } else {
-    // Graduated review card updates (SM-2)
-    let easeFactor = current.easeFactor
-    if (grade === 'hard') {
-      easeFactor = Math.max(
-        MIN_EASE_FACTOR,
-        +(current.easeFactor - 0.15).toFixed(2),
-      )
-    } else if (grade === 'easy') {
-      easeFactor = +(current.easeFactor + 0.15).toFixed(2)
-    }
-
-    const intervalDays = nextIntervalDays(current, grade)
-    updatedSchedule = {
-      state: 'review',
-      dueAt: now + intervalDays * DAY,
-      intervalDays,
-      easeFactor,
-      reviews,
-      lapses: current.lapses,
-      lastReviewedAt: now,
-    }
-  }
-
   return {
     ...card,
-    schedule: updatedSchedule,
+    schedule: scheduleFsrsReview(card.schedule, grade, now),
   }
 }
 
@@ -567,52 +424,12 @@ export function orderCardsForReview(
   return ordered
 }
 
-export function intervalLabel(card: StudyCard, grade: Grade): string {
-  const schedule = card.schedule
-  if (schedule.state === 'new') {
-    switch (grade) {
-      case 'again':
-        return '< 1 min'
-      case 'hard':
-        return '< 6 min'
-      case 'good':
-        return '< 10 min'
-      case 'easy':
-        return '4 days'
-    }
-  }
-
-  if (schedule.state === 'learning') {
-    switch (grade) {
-      case 'again':
-        return '< 1 min'
-      case 'hard':
-        return '< 10 min'
-      case 'good':
-        return '1 day'
-      case 'easy':
-        return '4 days'
-    }
-  }
-
-  if (schedule.state === 'relearning') {
-    switch (grade) {
-      case 'again':
-        return '< 10 min'
-      case 'hard':
-        return '1 day'
-      case 'good':
-        return '1 day'
-      case 'easy': {
-        const days = nextIntervalDays(schedule, 'easy')
-        return `${days} days`
-      }
-    }
-  }
-
-  if (grade === 'again') return '< 10 min'
-  const days = nextIntervalDays(schedule, grade)
-  return days === 1 ? '1 day' : `${days} days`
+export function intervalLabel(
+  card: StudyCard,
+  grade: Grade,
+  now?: number,
+): string {
+  return fsrsIntervalLabel(card, grade, now)
 }
 
 export function resetCardProgress(card: StudyCard, now: number): StudyCard {
