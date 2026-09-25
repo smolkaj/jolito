@@ -81,6 +81,14 @@ test.describe('Headless Native Capacitor Bridge', () => {
     await expect(goodBtn).toBeVisible()
     await goodBtn.click()
 
+    // Assert updatePractice was called with updated counts
+    await expect
+      .poll(async () => {
+        const calls = await getNativeBridgeCalls(page, 'LiveActivity')
+        return calls.some((c) => c.method === 'updatePractice')
+      })
+      .toBe(true)
+
     // 3. Exit practice session by clicking Jolito home brand button
     const homeBtn = page.getByRole('button', { name: /jolito home/i })
     await expect(homeBtn).toBeVisible()

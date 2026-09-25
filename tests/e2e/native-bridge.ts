@@ -88,7 +88,7 @@ export async function installMockNativeBridge(
         ;(window as unknown as { androidBridge?: unknown }).androidBridge = {}
       }
 
-      // 2. Setup call recording ring buffer
+      // 2. Setup call recording log
       const recordedCalls: MockNativeCall[] = []
       ;(
         window as unknown as { __nativeBridgeCalls: MockNativeCall[] }
@@ -189,10 +189,13 @@ export async function installMockNativeBridge(
 
         if (plugin === 'SpeechRecognition') {
           if (method === 'isAvailable') {
-            return Promise.resolve({ available: true })
+            return Promise.resolve({
+              available: true,
+              supportsOnDevice: true,
+            })
           }
           if (method === 'requestPermissions') {
-            return Promise.resolve({ speech: 'granted' })
+            return Promise.resolve({ granted: true })
           }
           if (method === 'start') {
             return Promise.resolve({ started: true })
