@@ -37,25 +37,219 @@ describe('AccentToolbar', () => {
     expect(onInsert).toHaveBeenCalledTimes(1)
   })
 
-  it('triggers instant onInsert on touch pointerdown and prevents default blur', () => {
+  it('triggers onInsert on clean touch tap (pointerdown followed by pointerup) and prevents default blur', () => {
     const onInsert = vi.fn()
-    render(<AccentToolbar onInsert={onInsert} />)
+    render(<AccentToolbar onInsert={onInsert} isDocked={true} />)
 
     const btn = screen.getByRole('button', { name: 'Insert ñ' })
     const pointerDownEvent = new PointerEvent('pointerdown', {
       bubbles: true,
       cancelable: true,
       pointerType: 'touch',
+      pointerId: 1,
+      clientX: 50,
+      clientY: 50,
     })
     const preventDefaultSpy = vi.spyOn(pointerDownEvent, 'preventDefault')
     btn.dispatchEvent(pointerDownEvent)
 
+    // Touch down must prevent default blur to keep software keyboard active
     expect(preventDefaultSpy).toHaveBeenCalled()
+    // Touch down must NOT prematurely insert character before gesture intent is known
+    expect(onInsert).not.toHaveBeenCalled()
+
+    // Clean tap releases at same position without dragging
+    const pointerUpEvent = new PointerEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 1,
+      clientX: 51,
+      clientY: 51,
+    })
+    btn.dispatchEvent(pointerUpEvent)
+
     expect(onInsert).toHaveBeenCalledWith('ñ')
     expect(onInsert).toHaveBeenCalledTimes(1)
 
     // Deduplicate trailing synthetic click
     fireEvent.click(btn)
+    expect(onInsert).toHaveBeenCalledTimes(1)
+  })
+
+  it('suppresses onInsert when a touch gesture is a horizontal or vertical drag', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} />)
+
+    const btn = screen.getByRole('button', { name: 'Insert ¿' })
+
+    // 1. Horizontal drag (e.g. scrolling the toolbar)
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 2,
+        clientX: 100,
+        clientY: 50,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 2,
+        clientX: 125,
+        clientY: 50,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 2,
+        clientX: 125,
+        clientY: 50,
+      }),
+    )
+
+    expect(onInsert).not.toHaveBeenCalled()
+
+    // 2. Vertical drag (e.g. card swipe up)
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 3,
+        clientX: 100,
+        clientY: 50,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 3,
+        clientX: 100,
+        clientY: 20,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 3,
+        clientX: 100,
+        clientY: 20,
+      }),
+    )
+
+    expect(onInsert).not.toHaveBeenCalled()
+  })
+
+  it('cancels touch insertion on pointercancel', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} />)
+
+    const btn = screen.getByRole('button', { name: 'Insert á' })
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 4,
+        clientX: 40,
+        clientY: 40,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointercancel', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 4,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 4,
+        clientX: 40,
+        clientY: 40,
+      }),
+    )
+
+    expect(onInsert).not.toHaveBeenCalled()
+  })
+
+  it('supports subsequent clean taps after an interrupted drag gesture', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} />)
+
+    const btn = screen.getByRole('button', { name: 'Insert é' })
+
+    // Interrupted drag gesture
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 5,
+        clientX: 10,
+        clientY: 10,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 5,
+        clientX: 40,
+        clientY: 10,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 5,
+        clientX: 40,
+        clientY: 10,
+      }),
+    )
+    expect(onInsert).not.toHaveBeenCalled()
+
+    // Subsequent intentional tap
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 6,
+        clientX: 10,
+        clientY: 10,
+      }),
+    )
+    btn.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 6,
+        clientX: 10,
+        clientY: 10,
+      }),
+    )
+    expect(onInsert).toHaveBeenCalledWith('é')
     expect(onInsert).toHaveBeenCalledTimes(1)
   })
 
@@ -86,5 +280,97 @@ describe('AccentToolbar', () => {
     const toolbar = screen.getByRole('toolbar', { name: 'Spanish accents' })
     expect(toolbar).toHaveClass('is-docked')
     expect(toolbar).toHaveStyle({ '--keyboard-inset': '290px' })
+  })
+
+  it('supports rapid overlapping two-thumb typing without dropping keypresses', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} isDocked={true} />)
+
+    const btnA = screen.getByRole('button', { name: 'Insert á' })
+    const btnE = screen.getByRole('button', { name: 'Insert é' })
+
+    // Thumb 1 lands on 'á'
+    btnA.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 20,
+        clientX: 20,
+        clientY: 20,
+      }),
+    )
+
+    // Thumb 2 lands on 'é' while Thumb 1 is still touching glass
+    btnE.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 21,
+        clientX: 60,
+        clientY: 20,
+      }),
+    )
+
+    // Thumb 1 lifts up
+    btnA.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 20,
+        clientX: 22,
+        clientY: 21,
+      }),
+    )
+    expect(onInsert).toHaveBeenCalledWith('á')
+
+    // Thumb 2 lifts up
+    btnE.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 21,
+        clientX: 61,
+        clientY: 20,
+      }),
+    )
+    expect(onInsert).toHaveBeenCalledWith('é')
+    expect(onInsert).toHaveBeenCalledTimes(2)
+  })
+
+  it('gates pointerdown preventDefault strictly to docked toolbar, leaving inline mode unprevented for natural scrolling', () => {
+    const onInsert = vi.fn()
+
+    // 1. Inline toolbar does not call preventDefault on pointerdown
+    const { unmount } = render(
+      <AccentToolbar onInsert={onInsert} isDocked={false} />,
+    )
+    const inlineBtn = screen.getByRole('button', { name: 'Insert í' })
+    const inlinePointerDown = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 30,
+    })
+    const inlineSpy = vi.spyOn(inlinePointerDown, 'preventDefault')
+    inlineBtn.dispatchEvent(inlinePointerDown)
+    expect(inlineSpy).not.toHaveBeenCalled()
+    unmount()
+
+    // 2. Docked toolbar calls preventDefault on pointerdown
+    render(<AccentToolbar onInsert={onInsert} isDocked={true} />)
+    const dockedBtn = screen.getByRole('button', { name: 'Insert í' })
+    const dockedPointerDown = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 31,
+    })
+    const dockedSpy = vi.spyOn(dockedPointerDown, 'preventDefault')
+    dockedBtn.dispatchEvent(dockedPointerDown)
+    expect(dockedSpy).toHaveBeenCalled()
   })
 })

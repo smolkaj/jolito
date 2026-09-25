@@ -3583,7 +3583,8 @@ kbd {
 .accent-toolbar-scroll {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: safe center;
+  gap: clamp(3px, 1.2vw, 6px);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -3653,30 +3654,8 @@ kbd {
   color: var(--ink-muted);
 }
 
-@media (max-width: 479px) {
-  .accent-toolbar-scroll {
-    mask-image: linear-gradient(
-      to right,
-      black calc(100% - 24px),
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      black calc(100% - 24px),
-      transparent 100%
-    );
-  }
-}
-
-@media (min-width: 540px) {
-  .accent-toolbar-scroll {
-    justify-content: safe center;
-  }
-}
-
 @media (min-width: 601px) {
   .accent-toolbar-scroll {
-    justify-content: safe center;
     gap: 6px;
   }
 }
@@ -3689,8 +3668,8 @@ kbd {
   bottom: var(--keyboard-inset, 0px);
   z-index: 900;
   margin: 0;
-  padding-left: max(8px, env(safe-area-inset-left, 0px));
-  padding-right: max(8px, env(safe-area-inset-right, 0px));
+  padding-left: max(6px, env(safe-area-inset-left, 0px));
+  padding-right: max(6px, env(safe-area-inset-right, 0px));
   background: color-mix(in srgb, var(--paper) 98%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -3714,19 +3693,23 @@ kbd {
 .answer-accents.is-docked .accent-toolbar-scroll {
   display: flex;
   align-items: center;
-  gap: 6px;
-  max-width: 100%;
+  justify-content: safe center;
+  gap: clamp(3px, 1.2vw, 6px);
+  max-width: 480px;
+  width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 2px 8px;
+  padding: 2px 6px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .answer-accents.is-docked .accent-toolbar-btn {
-  flex: 0 0 44px;
-  min-width: 44px;
-  width: 44px;
+  flex: 1 1 0px;
+  min-width: 0;
+  max-width: 44px;
+  width: 100%;
   height: 44px;
   border: 2px solid var(--control-line);
   border-radius: 7px;

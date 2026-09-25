@@ -556,4 +556,21 @@ void test('CSS architectural invariants for mobile keyboard accent toolbar acces
     /html\[data-keyboard='true'\]\s+\.study-card:not\(\.has-docked-accents\)\s+\.answer-form\.has-accents:not\(\.is-listening\)\s+\.answer-input\s*\{[\s\S]*?border-bottom-left-radius:\s*0;/,
     'Composer island geometry must be scoped to physical keyboard environments when not listening',
   )
+
+  // 5. Docked accent toolbar buttons must flex with min-width: 0 to fit all 9 characters without horizontal scrolling
+  assert.match(
+    css,
+    /\.accent-toolbar-btn\s*\{[\s\S]*?flex:\s*0\s+0\s+44px;[\s\S]*?min-width:\s*44px;/,
+    'Base inline accent toolbar buttons must preserve standard 44px touch targets',
+  )
+  assert.match(
+    css,
+    /\.answer-accents\.is-docked\s+\.accent-toolbar-btn\s*\{[\s\S]*?flex:\s*1\s+1\s+0px;[\s\S]*?min-width:\s*0;/,
+    'Docked mobile keyboard accent toolbar buttons must flex down with min-width: 0',
+  )
+  assert.doesNotMatch(
+    css,
+    /\.accent-toolbar-scroll\s*\{[\s\S]*?mask-image:/,
+    'Accent toolbar scroll container must not mask or clip characters on compact viewports',
+  )
 })

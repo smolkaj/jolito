@@ -21,7 +21,20 @@ export function AccentToolbar({
   disabled = false,
   className = '',
 }: AccentToolbarProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const lastTouchTimestampRef = useRef(0)
+  const touchesRef = useRef<
+    Map<
+      number,
+      {
+        startX: number
+        startY: number
+        lastX: number
+        char: string
+        isDrag: boolean
+      }
+    >
+  >(new Map())
 
   const handleInsert = (char: string) => {
     if (disabled) return
@@ -34,11 +47,103 @@ export function AccentToolbar({
   ) => {
     if (disabled) return
     if (e.pointerType === 'touch') {
-      // In iOS WebKit, preventDefault on touch pointerdown keeps the virtual keyboard
-      // active and prevents blurring the active input element.
-      e.preventDefault()
+      // In mobile WebKit/Blink, preventDefault on touch pointerdown keeps the virtual keyboard
+      // active and prevents blurring the active input element when docked. In inline card viewports,
+      // leave default unprevented to preserve native vertical touch scrolling.
+      if (isDocked) {
+        e.preventDefault()
+      }
+      touchesRef.current.set(e.pointerId, {
+        startX: e.clientX,
+        startY: e.clientY,
+        lastX: e.clientX,
+        char,
+        isDrag: false,
+      })
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // Safe fallback when pointer capture unsupported
+      }
+    }
+  }
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const state = touchesRef.current.get(e.pointerId)
+    if (!state || e.pointerType !== 'touch') {
+      return
+    }
+
+    const dx = e.clientX - state.startX
+    const dy = e.clientY - state.startY
+
+    // Normal thumb contacts drift 8-12px during fast typing. Use a 14px slop threshold
+    // and release pointer capture upon drag recognition so the button does not stick pressed.
+    if (!state.isDrag && Math.hypot(dx, dy) >= 14) {
+      state.isDrag = true
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    if (state.isDrag && scrollContainerRef.current) {
+      const deltaX = e.clientX - state.lastX
+      scrollContainerRef.current.scrollLeft -= deltaX
+    }
+    state.lastX = e.clientX
+  }
+
+  const handlePointerUp = (
+    e: ReactPointerEvent<HTMLButtonElement>,
+    char: string,
+  ) => {
+    const state = touchesRef.current.get(e.pointerId)
+    if (e.pointerType === 'touch' && state) {
+      touchesRef.current.delete(e.pointerId)
       lastTouchTimestampRef.current = e.timeStamp
-      handleInsert(char)
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // Safe fallback
+      }
+
+      if (!disabled && state.char === char) {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const releasedInside =
+          e.clientX >= rect.left - 4 &&
+          e.clientX <= rect.right + 4 &&
+          e.clientY >= rect.top - 4 &&
+          e.clientY <= rect.bottom + 4
+
+        // If liftoff occurred within button bounds or within slop, confirm intentional tap
+        if (
+          (releasedInside && !state.isDrag) ||
+          (!state.isDrag &&
+            Math.hypot(e.clientX - state.startX, e.clientY - state.startY) < 14)
+        ) {
+          handleInsert(char)
+        }
+      }
+    }
+  }
+
+  const handlePointerCancel = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === 'touch') {
+      touchesRef.current.delete(e.pointerId)
+      lastTouchTimestampRef.current = e.timeStamp
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // Safe fallback
+      }
     }
   }
 
@@ -52,7 +157,7 @@ export function AccentToolbar({
 
   const handleClick = (e: ReactMouseEvent<HTMLButtonElement>, char: string) => {
     if (disabled) return
-    // Deduplicate trailing synthetic click events generated after touch pointerdown
+    // Deduplicate trailing synthetic click events generated after touch gestures
     if (
       lastTouchTimestampRef.current > 0 &&
       e.timeStamp - lastTouchTimestampRef.current < 400
@@ -76,7 +181,7 @@ export function AccentToolbar({
       className={`answer-accents ${isDocked ? 'is-docked' : ''} ${className}`.trim()}
       style={dockedStyle}
     >
-      <div className="accent-toolbar-scroll">
+      <div ref={scrollContainerRef} className="accent-toolbar-scroll">
         {SPANISH_ACCENT_CHARACTERS.map((char, index) => {
           const shortcut = String(index + 1)
           return (
@@ -89,6 +194,9 @@ export function AccentToolbar({
               title={`Insert ${char} (${shortcut} while typing)`}
               disabled={disabled}
               onPointerDown={(e) => handlePointerDown(e, char)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={(e) => handlePointerUp(e, char)}
+              onPointerCancel={handlePointerCancel}
               onMouseDown={handleMouseDown}
               onClick={(e) => handleClick(e, char)}
             >
