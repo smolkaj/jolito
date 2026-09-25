@@ -126,12 +126,14 @@ export interface MemoryIndicatorsProps {
   schedule: ReviewSchedule
   className?: string
   compact?: boolean
+  ariaHidden?: boolean
 }
 
 export function MemoryIndicators({
   schedule,
   className = '',
   compact = false,
+  ariaHidden = false,
 }: MemoryIndicatorsProps) {
   const indicators = cardMemoryIndicators(schedule)
 
@@ -142,11 +144,13 @@ export function MemoryIndicators({
       <ProgressBubbles
         level={indicators.progress}
         ariaLabel={`${indicators.progressLabel} – ${indicators.progressDescription}`}
+        ariaHidden={ariaHidden}
       />
       <ChiliMeter
         level={indicators.difficulty}
         ariaLabel={`${indicators.difficultyLabel} – ${indicators.difficultyDescription}`}
         hideWhenZero={compact}
+        ariaHidden={ariaHidden}
       />
     </div>
   )

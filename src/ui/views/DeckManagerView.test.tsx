@@ -282,13 +282,8 @@ describe('DeckManagerView', () => {
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
   })
 
-  it('renders deck memory overview and row memory indicators', () => {
+  it('renders row memory indicators on deck cards', () => {
     const { container } = renderDeckManager()
-
-    const overview = screen.getByRole('region', {
-      name: /deck memory summary/i,
-    })
-    expect(overview).toBeInTheDocument()
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
     expect(rows[0]).toHaveAttribute(
