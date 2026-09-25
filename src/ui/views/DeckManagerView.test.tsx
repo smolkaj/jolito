@@ -222,11 +222,41 @@ describe('DeckManagerView', () => {
     )
   })
 
-  it('renders authentic MexicoFlag and EnglishBadge for direction cues', () => {
+  it('renders authentic MexicoFlag and EnglishBadge for direction cues including mobile inline cues', () => {
     const { container } = renderDeckManager()
 
     expect(container.querySelector('.flag-mx')).toBeInTheDocument()
     expect(container.querySelector('.language-icon')).toBeInTheDocument()
+
+    const mobileCues = container.querySelectorAll('.deck-mobile-dir-cue')
+    expect(mobileCues).toHaveLength(3)
+    expect(mobileCues[0]).toHaveAttribute(
+      'title',
+      'Mexican Spanish Prompt → English Answer',
+    )
+    expect(mobileCues[2]).toHaveAttribute(
+      'title',
+      'English Prompt → Mexican Spanish Answer',
+    )
+  })
+
+  it('renders sort options matching SORT_ORDER_LABELS as single source of truth', () => {
+    renderDeckManager()
+
+    const select = screen.getByRole('combobox', { name: /sort cards/i })
+    const options = Array.from(select.querySelectorAll('option')).map(
+      (opt) => ({
+        value: opt.value,
+        label: opt.textContent,
+      }),
+    )
+
+    expect(options).toEqual([
+      { value: 'created-desc', label: 'Newest first' },
+      { value: 'created-asc', label: 'Oldest first' },
+      { value: 'alpha-asc', label: 'Alphabetical (A–Z)' },
+      { value: 'alpha-desc', label: 'Alphabetical (Z–A)' },
+    ])
   })
 
   it('renders clean empty state with clear filters button when search has no matches', async () => {
