@@ -611,3 +611,41 @@ export function SearchIcon({
     </svg>
   )
 }
+
+export function ChiliIcon({
+  className = '',
+  size = 14,
+  filled = true,
+  ariaHidden = true,
+}: {
+  className?: string
+  size?: number
+  filled?: boolean
+  ariaHidden?: boolean
+}) {
+  return (
+    <svg
+      className={`icon-chili ${filled ? 'is-filled' : 'is-empty'} ${className}`.trim()}
+      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      aria-hidden={ariaHidden}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M10 3.8C10.8 2.6 12 1.8 13.5 1.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.8 4.2C7.5 4 4.8 5.6 3.8 8.8C2.6 12.2 4.2 14.6 4.8 14.6C5.3 14.6 6.5 13.2 8.2 11.2C10.4 8.6 11.2 6.5 9.8 4.2Z"
+        fill={filled ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth={filled ? '0.4' : '1.2'}
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}

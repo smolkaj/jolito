@@ -6119,6 +6119,8 @@ kbd {
 .deck-card-row .col-status {
   display: flex;
   align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 @media (max-width: 860px) {
@@ -6216,7 +6218,10 @@ kbd {
     grid-area: status;
     align-self: center;
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    justify-content: center;
   }
 
   .deck-card-row .deck-phrase-text {
@@ -8269,4 +8274,199 @@ button:active,
   .study-card {
     transition: none !important;
   }
+}
+
+/* ==========================================================================
+   Memory Progress & Chili Difficulty Indicators
+   ========================================================================== */
+
+.progress-bubbles {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1;
+  color: var(--verde);
+}
+
+.progress-bubbles .bubble-dot.is-filled {
+  color: var(--verde);
+}
+
+.progress-bubbles .bubble-dot.is-empty {
+  color: var(--line-subtle);
+  stroke: var(--ink-faint);
+}
+
+.chili-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.chili-meter .icon-chili.is-filled {
+  color: var(--tezontle);
+}
+
+.chili-meter .icon-chili.is-empty {
+  color: var(--line-subtle);
+}
+
+.chili-meter .icon-chili.is-dimmed {
+  opacity: 0.32;
+  color: var(--ink-faint);
+}
+
+.memory-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-indicators.is-compact {
+  gap: 5px;
+}
+
+/* Deck Overview Memory Banner */
+.deck-memory-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  background: var(--card);
+  border: 1.5px solid var(--line-subtle);
+  border-radius: var(--pill-radius);
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.deck-memory-stat-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.deck-memory-stat-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+
+.deck-memory-stat-items {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.deck-memory-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.deck-memory-stat-item strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.deck-memory-stat-item.is-spicy {
+  color: var(--tezontle-dark);
+}
+
+/* Edit Card Memory Panel */
+.edit-card-memory-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--paper-subtle);
+  border: 1.5px solid var(--line-subtle);
+  border-radius: 12px;
+}
+
+.edit-card-memory-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-card-memory-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.edit-card-memory-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-card-memory-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 640px) {
+  .deck-memory-overview {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .deck-memory-stat-group {
+    gap: 8px;
+  }
+
+  .deck-memory-stat-items {
+    gap: 10px;
+  }
+
+  .edit-card-memory-panel {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Session Complete Memory Summary */
+.complete-memory-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.complete-memory-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--pill-radius);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.complete-memory-pill strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.complete-memory-pill.is-spicy {
+  color: var(--tezontle-dark);
 }

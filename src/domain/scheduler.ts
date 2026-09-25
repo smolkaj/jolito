@@ -169,3 +169,130 @@ export function intervalLabel(
 export function shouldRequeueInSession(schedule: ReviewSchedule): boolean {
   return schedule.state === 'learning' || schedule.state === 'relearning'
 }
+
+export type MemoryProgressLevel = 0 | 1 | 2 | 3
+export type MemoryDifficultyLevel = 0 | 1 | 2 | 3
+
+export interface CardMemoryIndicators {
+  progress: MemoryProgressLevel
+  difficulty: MemoryDifficultyLevel
+  progressLabel: string
+  difficultyLabel: string
+}
+
+export interface DeckMemorySummary {
+  total: number
+  progress: Record<MemoryProgressLevel, number>
+  difficulty: Record<MemoryDifficultyLevel, number>
+  mastered: number
+  solid: number
+  learning: number
+  newCards: number
+  spicyCards: number
+}
+
+/**
+ * Maps FSRS stability (memory half-life in days) to a 0–3 bubble progress level.
+ * 0: Unstudied / new (0 bubbles)
+ * 1: Fragile / early learning (1 bubble, stability < 7 days)
+ * 2: Solid / reliable recall (2 bubbles, 7 <= stability < 30 days)
+ * 3: Mastered / second nature (3 bubbles, stability >= 30 days)
+ */
+export function cardProgressLevel(
+  schedule: ReviewSchedule,
+): MemoryProgressLevel {
+  if (schedule.state === 'new' || schedule.reviews === 0) return 0
+  const { stability } = estimateFsrsParameters(schedule)
+  if (stability <= 0) return 0
+  if (stability < 7) return 1
+  if (stability < 30) return 2
+  return 3
+}
+
+/**
+ * Maps FSRS difficulty (inherent friction 1.0–10.0) to a 0–3 chili spice level.
+ * 0: Unstudied or effortless cognates (0 chilies / no heat, D < 3.0)
+ * 1: Mild heat (1 chili, 3.0 <= D < 5.0)
+ * 2: Medium heat (2 chilies, 5.0 <= D < 7.5)
+ * 3: Hot / ¡aguas! (3 chilies, D >= 7.5)
+ */
+export function cardDifficultyLevel(
+  schedule: ReviewSchedule,
+): MemoryDifficultyLevel {
+  if (schedule.state === 'new' || schedule.reviews === 0) return 0
+  const { difficulty } = estimateFsrsParameters(schedule)
+  if (difficulty < 3.0) return 0
+  if (difficulty < 5.0) return 1
+  if (difficulty < 7.5) return 2
+  return 3
+}
+
+/**
+ * Computes the unified memory indicators and accessible labels for a card.
+ */
+export function cardMemoryIndicators(
+  schedule: ReviewSchedule,
+): CardMemoryIndicators {
+  const progress = cardProgressLevel(schedule)
+  const difficulty = cardDifficultyLevel(schedule)
+
+  const progressLabel = `Progress: ${progress} of 3 bubbles`
+
+  let difficultyLabel: string
+  if (schedule.state === 'new' || schedule.reviews === 0) {
+    difficultyLabel = 'Difficulty: unrated (0 chilies)'
+  } else if (difficulty === 0) {
+    difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
+  } else if (difficulty === 1) {
+    difficultyLabel = 'Difficulty: 1 of 3 chilies (mild heat)'
+  } else if (difficulty === 2) {
+    difficultyLabel = 'Difficulty: 2 of 3 chilies (medium heat)'
+  } else {
+    difficultyLabel = 'Difficulty: 3 of 3 chilies (hot)'
+  }
+
+  return {
+    progress,
+    difficulty,
+    progressLabel,
+    difficultyLabel,
+  }
+}
+
+/**
+ * Aggregates memory progress and difficulty distribution across an entire card collection.
+ */
+export function summarizeDeckMemory(
+  cards: Array<{ schedule: ReviewSchedule }>,
+): DeckMemorySummary {
+  const progress: Record<MemoryProgressLevel, number> = {
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+  }
+  const difficulty: Record<MemoryDifficultyLevel, number> = {
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+  }
+
+  for (const card of cards) {
+    const p = cardProgressLevel(card.schedule)
+    const d = cardDifficultyLevel(card.schedule)
+    progress[p]++
+    difficulty[d]++
+  }
+
+  return {
+    total: cards.length,
+    progress,
+    difficulty,
+    mastered: progress[3],
+    solid: progress[2],
+    learning: progress[1],
+    newCards: progress[0],
+    spicyCards: difficulty[3],
+  }
+}

@@ -204,6 +204,7 @@ describe('Jolito', () => {
 
     expect(screen.getByRole('heading', { name: '¡Hecho!' })).toBeInTheDocument()
     expect(screen.getByText('1 card practiced.')).toBeInTheDocument()
+    expect(document.querySelector('.complete-memory-summary')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-frame')).toBeInTheDocument()
     expect(document.querySelector('.complete-mascot-img')).toBeInTheDocument()
 

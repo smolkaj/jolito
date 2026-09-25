@@ -4,7 +4,11 @@ import type {
   HapticsPlayer,
   SpeakerOptions,
 } from '../../application/ports'
-import type { StudyCard, UpdateCardParams } from '../../domain/card'
+import {
+  type StudyCard,
+  type UpdateCardParams,
+  cardMemoryIndicators,
+} from '../../domain/card'
 import { findDuplicateCards } from '../../domain/duplicate'
 import { MexicoFlag, EnglishBadge } from '../icons'
 import { AudioButton } from '../AudioButton'
@@ -12,6 +16,7 @@ import { AiContextActions } from '../AiContextActions'
 import { appendOrReplaceContext, useAiSuggestions } from '../useAiSuggestions'
 import { handleFocusSelect } from '../utils'
 import { shouldAutoFocusOnMount } from '../../infrastructure/browser/environment'
+import { ChiliMeter, ProgressBubbles } from '../MemoryIndicators'
 import { ModalSheet } from './ModalSheet'
 
 function EditCardModalInner({
@@ -121,6 +126,10 @@ function EditCardModalInner({
   const currentCard = cards.find((current) => current.id === card.id)
   const isAlreadyNew =
     currentCard?.schedule.state === 'new' && currentCard.schedule.reviews === 0
+  const indicators = useMemo(
+    () => (currentCard ? cardMemoryIndicators(currentCard.schedule) : null),
+    [currentCard],
+  )
 
   const duplicateConflict = useMemo(() => {
     const matches = findDuplicateCards(cards, {
@@ -317,6 +326,32 @@ function EditCardModalInner({
             }}
           />
         </div>
+
+        {indicators && (
+          <div
+            className="edit-card-memory-panel"
+            aria-label="Card memory state"
+          >
+            <div className="edit-card-memory-row">
+              <span className="edit-card-memory-label">Progress</span>
+              <div className="edit-card-memory-value">
+                <ProgressBubbles level={indicators.progress} size={28} />
+                <span className="edit-card-memory-hint">
+                  {indicators.progressLabel}
+                </span>
+              </div>
+            </div>
+            <div className="edit-card-memory-row">
+              <span className="edit-card-memory-label">Difficulty</span>
+              <div className="edit-card-memory-value">
+                <ChiliMeter level={indicators.difficulty} size={15} />
+                <span className="edit-card-memory-hint">
+                  {indicators.difficultyLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <label
           className={`toggle-row edit-card-toggle-row ${!currentCard || isAlreadyNew ? 'disabled' : ''}`}

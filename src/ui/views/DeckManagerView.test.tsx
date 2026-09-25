@@ -281,4 +281,24 @@ describe('DeckManagerView', () => {
 
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
   })
+
+  it('renders deck memory overview and row memory indicators', () => {
+    const { container } = renderDeckManager()
+
+    const overview = screen.getByRole('region', {
+      name: /deck memory summary/i,
+    })
+    expect(overview).toBeInTheDocument()
+
+    const rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(rows[0]).toHaveAttribute(
+      'aria-label',
+      expect.stringMatching(/progress: \d of 3 bubbles/i),
+    )
+    expect(rows[0]).toHaveAttribute(
+      'aria-label',
+      expect.stringMatching(/difficulty:/i),
+    )
+    expect(container.querySelectorAll('.memory-indicators')).toHaveLength(3)
+  })
 })

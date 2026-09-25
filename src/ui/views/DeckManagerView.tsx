@@ -10,7 +10,11 @@ import {
   getDeckStats,
 } from '../../application/deck-management'
 import type { AuthUser, HapticsPlayer } from '../../application/ports'
-import type { StudyCard } from '../../domain/card'
+import {
+  type StudyCard,
+  cardMemoryIndicators,
+  summarizeDeckMemory,
+} from '../../domain/card'
 import { getDuplicateGroups } from '../../domain/duplicate'
 import type { StarterPack } from '../../domain/starter-decks'
 import type { SyncStatus } from '../../domain/sync'
@@ -19,6 +23,11 @@ import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
 import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
 import { EnglishBadge, MexicoFlag, SearchIcon, TrashIcon } from '../icons'
+import {
+  ChiliMeter,
+  MemoryIndicators,
+  ProgressBubbles,
+} from '../MemoryIndicators'
 import { DeckBackupModal } from '../modals/DeckBackupModal'
 import { DemoDeckModal } from '../modals/DemoDeckModal'
 import { StarterPacksModal } from '../modals/StarterPacksModal'
@@ -133,6 +142,11 @@ export function DeckManagerView({
   const deckStats = useMemo(
     () => getDeckStats(vocabularyCards, referenceTime),
     [vocabularyCards, referenceTime],
+  )
+
+  const memorySummary = useMemo(
+    () => summarizeDeckMemory(vocabularyCards),
+    [vocabularyCards],
   )
 
   const filteredDeckCards = useMemo(
@@ -259,6 +273,62 @@ export function DeckManagerView({
               </button>
             </div>
           </header>
+
+          {vocabularyCards.length > 0 && (
+            <section
+              className="deck-memory-overview"
+              aria-label="Deck memory summary"
+            >
+              <div className="deck-memory-stat-group">
+                <span className="deck-memory-stat-title">Progress</span>
+                <div className="deck-memory-stat-items">
+                  <span
+                    className="deck-memory-stat-item"
+                    title={`${memorySummary.mastered} mastered cards (stability 30+ days)`}
+                  >
+                    <ProgressBubbles level={3} size={22} />
+                    <strong>{memorySummary.mastered}</strong>
+                  </span>
+                  <span
+                    className="deck-memory-stat-item"
+                    title={`${memorySummary.solid} solid cards (stability 7–30 days)`}
+                  >
+                    <ProgressBubbles level={2} size={22} />
+                    <strong>{memorySummary.solid}</strong>
+                  </span>
+                  <span
+                    className="deck-memory-stat-item"
+                    title={`${memorySummary.learning} learning cards (stability < 7 days)`}
+                  >
+                    <ProgressBubbles level={1} size={22} />
+                    <strong>{memorySummary.learning}</strong>
+                  </span>
+                  <span
+                    className="deck-memory-stat-item"
+                    title={`${memorySummary.newCards} unstudied cards`}
+                  >
+                    <ProgressBubbles level={0} size={22} />
+                    <strong>{memorySummary.newCards}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {memorySummary.spicyCards > 0 && (
+                <div className="deck-memory-stat-group is-difficulty">
+                  <span className="deck-memory-stat-title">Spicy cards</span>
+                  <div className="deck-memory-stat-items">
+                    <span
+                      className="deck-memory-stat-item is-spicy"
+                      title={`${memorySummary.spicyCards} high friction cards (difficulty >= 7.5)`}
+                    >
+                      <ChiliMeter level={3} size={13} />
+                      <strong>{memorySummary.spicyCards}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="deck-toolbar">
             <div className="deck-search-wrap">
@@ -534,6 +604,7 @@ export function DeckManagerView({
 
               {filteredDeckCards.map((card) => {
                 const scheduleBadge = getCardScheduleBadge(card, referenceTime)
+                const indicators = cardMemoryIndicators(card.schedule)
                 const isEsToEn = card.direction === 'es-en'
 
                 return (
@@ -543,7 +614,7 @@ export function DeckManagerView({
                     role="row"
                     tabIndex={0}
                     aria-selected={activeSelectedCardIds.has(card.id)}
-                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. Click or press Enter to edit, Space to select.`}
+                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. ${indicators.progressLabel}, ${indicators.difficultyLabel}. Click or press Enter to edit, Space to select.`}
                     title="Click or press Enter to edit card"
                     onClick={() => onEditCard(card)}
                     onKeyDown={(e) => handleRowKeyDown(e, card)}
@@ -616,6 +687,7 @@ export function DeckManagerView({
                       >
                         {scheduleBadge.label}
                       </span>
+                      <MemoryIndicators schedule={card.schedule} compact />
                     </div>
                   </div>
                 )
