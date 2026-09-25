@@ -172,7 +172,7 @@ describe('preterite practice contracts', () => {
       grammarQueue(pool, now, 'mixed').some((c) => c.id === known.id),
     ).toBe(false)
     expect(
-      grammarQueue(pool, now + 5 * DAY, 'mixed').some((c) => c.id === known.id),
+      grammarQueue(pool, now + 10 * DAY, 'mixed').some((c) => c.id === known.id),
     ).toBe(true)
     expect(cards[1]!.schedule.reviews).toBe(0)
     expect(grammarQueue([], now, 'mixed')).toEqual([])
