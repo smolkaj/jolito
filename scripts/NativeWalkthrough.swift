@@ -153,6 +153,7 @@ final class NativeWalkthrough: XCTestCase {
         let confirmation = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "DELETE")).firstMatch
         tap(confirmation)
         typeOnscreen("DELETE")
+        XCTAssertEqual(confirmation.value as? String, "DELETE")
         app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Permanently deletes your account")).firstMatch.tap()
         pause(1)
         tap(button("Yes, delete cloud data"))
@@ -218,6 +219,12 @@ final class NativeWalkthrough: XCTestCase {
             wait(for: [finished], timeout: Double(points.count) * 0.2 + 5)
         }
         let started = Date()
+        let capsLocked = text.count > 1 && text.allSatisfy { $0.isUppercase }
+        if capsLocked {
+            // A person uses Caps Lock for an all-capital confirmation. Rapid
+            // alternating Shift/letter touches can be interpreted as one chord.
+            keyboard.keys["shift"].doubleTap()
+        }
         var keys = targets()
         var uppercase = keys["A"] != nil
         var pending: [CGPoint] = []
@@ -256,7 +263,7 @@ final class NativeWalkthrough: XCTestCase {
                 uppercase.toggle()
             }
             pending.append(point)
-            if character.isLetter { uppercase = false }
+            if character.isLetter && !capsLocked { uppercase = false }
             // Space on the symbols layout can switch back to letters. Resolve
             // that actual geometry change only after its touches have finished.
             if character == " " && keys["a"] == nil && keys["A"] == nil {
