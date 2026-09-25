@@ -1294,11 +1294,34 @@ export class LayeredNeuralSpeaker implements Speaker {
       }
     }
 
-    // 2. Auto-Play (explicit: false): Zero network wait invariant.
-    // If not in memory cache, failover immediately (0ms) to fallback speaker
-    // and queue background fetch so the next review has neural audio.
-    if (!options?.explicit) {
-      if (!this.neuralEngine.isAudioInFlight(cleanText, normLocale, voice)) {
+    // 2. Resolve cached status and in-flight prefetch
+    const isDiskCached = this.neuralEngine.hasDiskAudio(
+      cleanText,
+      normLocale,
+      voice,
+    )
+    const isInFlight = this.neuralEngine.isAudioInFlight(
+      cleanText,
+      normLocale,
+      voice,
+    )
+    const isExplicit = Boolean(options?.explicit)
+    const isOffline =
+      typeof navigator !== 'undefined' &&
+      'onLine' in navigator &&
+      navigator.onLine === false
+
+    // Explicit requests offline degrade immediately to local fallback
+    if (isExplicit && isOffline) {
+      return this.speakFallback(cleanText, normLocale, fallbackOptions)
+    }
+
+    // 3. Await prefetch, disk hydration, or explicit cloud fetch
+    if (isInFlight || isDiskCached || isExplicit) {
+      if (isExplicit) {
+        this.neuralEngine.preactivateContext(true)
+      }
+      if (!isInFlight) {
         void this.neuralEngine
           .fetchAndCacheAudio(cleanText, normLocale, {
             voice,
@@ -1307,92 +1330,88 @@ export class LayeredNeuralSpeaker implements Speaker {
           .catch(() => {})
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
-      return this.speakFallback(cleanText, normLocale, fallbackOptions)
-    }
 
-    // 3. Explicit User Tap (explicit: true):
-    // The learner deliberately tapped "Speak". If offline, failover immediately.
-    // If online, fetch cloud voice with a bounded 1.0s timeout ceiling, falling back to native OS speech.
-    const isOffline =
-      typeof navigator !== 'undefined' &&
-      'onLine' in navigator &&
-      navigator.onLine === false
+      const graceTimeout = isExplicit ? 1000 : isDiskCached ? 150 : 500
 
-    if (isOffline) {
-      return this.speakFallback(cleanText, normLocale, fallbackOptions)
-    }
-
-    this.neuralEngine.preactivateContext(true)
-
-    const isInFlight = this.neuralEngine.isAudioInFlight(
-      cleanText,
-      normLocale,
-      voice,
-    )
-    if (!isInFlight) {
       void this.neuralEngine
-        .fetchAndCacheAudio(cleanText, normLocale, {
-          voice,
-          cardSeed: options?.cardSeed,
-        })
-        .catch(() => {})
-      this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
-    }
-
-    const explicitCeilingMs = 1000
-
-    void this.neuralEngine
-      .awaitAudio(cleanText, normLocale, voice, explicitCeilingMs)
-      .then((ready) => {
-        if (this.speakGeneration !== currentGen) {
-          return
-        }
-        if (ready) {
-          const played = this.neuralEngine.playAudio(
-            cleanText,
-            normLocale,
-            voice,
-            options,
-          )
-          if (!played) {
+        .awaitAudio(cleanText, normLocale, voice, graceTimeout)
+        .then((ready) => {
+          if (this.speakGeneration !== currentGen) {
+            return
+          }
+          if (ready) {
+            const played = this.neuralEngine.playAudio(
+              cleanText,
+              normLocale,
+              voice,
+              options,
+            )
+            if (!played) {
+              const fallbackPlayed = this.speakFallback(
+                cleanText,
+                normLocale,
+                fallbackOptions,
+              )
+              if (!fallbackPlayed) {
+                if (isExplicit) {
+                  configureAudioSessionCategory('ambient')
+                }
+                options?.onEnded?.()
+              }
+            }
+          } else {
             const fallbackPlayed = this.speakFallback(
               cleanText,
               normLocale,
               fallbackOptions,
             )
             if (!fallbackPlayed) {
-              configureAudioSessionCategory('ambient')
+              if (isExplicit) {
+                configureAudioSessionCategory('ambient')
+              }
               options?.onEnded?.()
             }
           }
-        } else {
+        })
+        .catch(() => {
+          if (this.speakGeneration !== currentGen) {
+            return
+          }
           const fallbackPlayed = this.speakFallback(
             cleanText,
             normLocale,
             fallbackOptions,
           )
           if (!fallbackPlayed) {
-            configureAudioSessionCategory('ambient')
+            if (isExplicit) {
+              configureAudioSessionCategory('ambient')
+            }
             options?.onEnded?.()
           }
-        }
-      })
-      .catch(() => {
-        if (this.speakGeneration !== currentGen) {
-          return
-        }
-        const fallbackPlayed = this.speakFallback(
-          cleanText,
-          normLocale,
-          fallbackOptions,
-        )
-        if (!fallbackPlayed) {
-          configureAudioSessionCategory('ambient')
-          options?.onEnded?.()
-        }
-      })
+        })
+      return true
+    }
 
-    return true
+    // 4. Cold Auto-Play (not in memory, not in disk cache, not in flight):
+    // Zero network wait invariant. Fire background prefetch for subsequent reviews
+    // and failover immediately (0ms) to fallback speaker synchronously.
+    void this.neuralEngine
+      .fetchAndCacheAudio(cleanText, normLocale, {
+        voice,
+        cardSeed: options?.cardSeed,
+      })
+      .catch(() => {})
+    this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
+
+    const fallbackPlayed = this.speakFallback(
+      cleanText,
+      normLocale,
+      fallbackOptions,
+    )
+    if (!fallbackPlayed) {
+      options?.onEnded?.()
+    }
+    return fallbackPlayed
   }
 
   private prehydrateAlternateVoice(

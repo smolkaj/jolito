@@ -205,21 +205,24 @@ describe('LayeredNeuralSpeaker', () => {
     expect(call1?.[1]).toBe('es-MX')
   })
 
-  it('immediately falls back to native speech for Card 0 auto-play with 0ms wait when not in memory cache', () => {
+  it('immediately falls back to native speech for auto-play with 0ms wait when not cached and not in flight', () => {
     vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
-    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'hasDiskAudio').mockReturnValue(false)
     const playSpy = vi.spyOn(neuralEngine, 'playAudio')
+    const awaitSpy = vi.spyOn(neuralEngine, 'awaitAudio')
 
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
       fallbackSpeaker,
     })
 
-    // Auto-play for Card 0 starts while prefetch is in flight
+    // Auto-play starts when uncached and not in flight
     const played = speaker.speak('primer tarjeta', 'es-MX', {
       cardSeed: 'card-1',
     })
     expect(played).toBe(true)
+    expect(awaitSpy).not.toHaveBeenCalled()
     // Fallback speaker MUST be called immediately with zero network delay
     expect(fallbackSpeakSpy).toHaveBeenCalledWith(
       'primer tarjeta',
@@ -251,10 +254,47 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
-  it('immediately fails over to fallback speaker on non-explicit autoplay when uncached with zero wait', () => {
-    const awaitAudioSpy = vi.spyOn(neuralEngine, 'awaitAudio')
+  it('awaits in-flight prefetch for auto-play with a 500ms grace window', async () => {
+    const awaitAudioSpy = vi
+      .spyOn(neuralEngine, 'awaitAudio')
+      .mockResolvedValue(true)
     vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
     vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
+    const playAudioSpy = vi
+      .spyOn(neuralEngine, 'playAudio')
+      .mockReturnValue(true)
+
+    const speaker = new LayeredNeuralSpeaker({
+      neuralEngine,
+      fallbackSpeaker,
+    })
+
+    const played = speaker.speak('palabra en vuelo', 'es-MX', {
+      cardSeed: 'card-1',
+      explicit: false,
+    })
+    expect(played).toBe(true)
+    expect(awaitAudioSpy).toHaveBeenCalledWith(
+      'palabra en vuelo',
+      'es-MX',
+      'es-MX-JorgeNeural',
+      500,
+    )
+    await Promise.resolve()
+    expect(playAudioSpy).toHaveBeenCalledWith(
+      'palabra en vuelo',
+      'es-MX',
+      'es-MX-JorgeNeural',
+      expect.anything(),
+    )
+    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+  })
+
+  it('immediately fails over to fallback speaker on non-explicit autoplay when uncached and not in flight with zero wait', () => {
+    const awaitAudioSpy = vi.spyOn(neuralEngine, 'awaitAudio')
+    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
+    vi.spyOn(neuralEngine, 'hasDiskAudio').mockReturnValue(false)
 
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
