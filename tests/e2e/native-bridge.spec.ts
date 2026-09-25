@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { auditAccessibility } from './accessibility'
 import {
   installMockNativeBridge,
   getNativeBridgeCalls,
@@ -25,10 +26,43 @@ test.describe('Headless Native Capacitor Bridge', () => {
     await expect(syncButton).toBeVisible()
     await syncButton.click()
 
-    // On native iOS, the Apple Sign-In button must be rendered
+    // Email input and Send sign-in link button appear before Apple Sign-In
+    const emailInput = page.getByLabel(/email address/i)
+    const sendButton = page.getByRole('button', { name: /send sign-in link/i })
+    await expect(emailInput).toBeVisible()
+    await expect(sendButton).toBeVisible()
+
+    // On native iOS, the secondary Apple Sign-In button must be rendered below email
     const appleButton = page.locator('.apple-signin-button')
     await expect(appleButton).toBeVisible()
     await expect(appleButton).toHaveText(/sign in with apple/i)
+    await expect(appleButton).toHaveClass(/secondary-button/)
+
+    const sendBox = await sendButton.boundingBox()
+    const appleBox = await appleButton.boundingBox()
+    expect(sendBox).not.toBeNull()
+    expect(appleBox).not.toBeNull()
+    expect(sendBox!.y + sendBox!.height).toBeLessThan(appleBox!.y)
+
+    // Capture screenshot of the modal with secondary Apple Sign-In in light mode
+    await page.locator('.modal-content.sync-modal').screenshot({
+      path: 'test-results/sync-modal-apple-secondary-light.png',
+    })
+
+    // Verify zero WCAG accessibility violations in light mode
+    const results = await auditAccessibility(page)
+    expect(results.violations).toEqual([])
+
+    // Verify dark mode appearance and accessibility
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await page.locator('.modal-content.sync-modal').screenshot({
+      path: 'test-results/sync-modal-apple-secondary-dark.png',
+    })
+    const darkResults = await auditAccessibility(page)
+    expect(darkResults.violations).toEqual([])
+
+    // Restore light mode
+    await page.emulateMedia({ colorScheme: 'light' })
 
     // Clicking Apple Sign-In invokes the native plugin
     await appleButton.click()
