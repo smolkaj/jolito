@@ -149,55 +149,82 @@ test('gracefully falls back to speech synthesis when TTS network fails or offlin
   expect(calls[0]?.text).toBe('aguacate')
 })
 
-test('never falls back to robotic speech synthesis when editing a card mid-practice and resuming review', async ({
+test('edited prompts speak immediately while prefetch is pending and late failures cannot replay after leaving study', async ({
   page,
 }) => {
   await page.addInitScript(() => {
     window.__speechSynthesisCalls = []
-    if (window.speechSynthesis) {
-      const orig = window.speechSynthesis.speak.bind(window.speechSynthesis)
-      window.speechSynthesis.speak = function (
-        utterance: SpeechSynthesisUtterance,
-      ) {
-        window.__speechSynthesisCalls?.push({
-          text: utterance.text,
-          lang: utterance.lang,
-        })
-        return orig(utterance)
-      }
+    const original = window.speechSynthesis.speak.bind(window.speechSynthesis)
+    window.speechSynthesis.speak = (utterance) => {
+      window.__speechSynthesisCalls?.push({
+        text: utterance.text,
+        lang: utterance.lang,
+      })
+      original(utterance)
     }
   })
 
-  // Verify prefetch and autoplay without artificial route delay
+  const phrases = ['el ajolote nuevo', 'la cuenta pendiente']
+  let releasePrefetch!: () => void
+  const pending = new Promise<void>((resolve) => {
+    releasePrefetch = resolve
+  })
+  const requested = new Set<string>()
+  const finished = new Set<string>()
+  await page.route('**/api/tts*', async (route) => {
+    const phrase = new URL(route.request().url()).searchParams.get('text') ?? ''
+    if (!phrases.includes(phrase)) return route.continue()
+    requested.add(phrase)
+    await pending
+    await route.abort('failed')
+    finished.add(phrase)
+  })
 
   await page.goto('/')
-
-  // Start review
-  const practiceBtn = page.getByRole('button', { name: /^practice$/i })
-  await expect(practiceBtn).toBeVisible()
   await practiceCards(page)
+  await expect(page.getByRole('button', { name: /edit card/i })).toBeVisible()
+  await page.evaluate(() => {
+    window.__speechSynthesisCalls = []
+  })
 
-  // Wait for card to mount
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-
-  // Open in-study edit modal
-  const editBtn = page.getByRole('button', { name: /edit card/i })
-  await expect(editBtn).toBeVisible()
-  await editBtn.click()
-
-  // Modify prompt to a brand new phrase
-  const promptInput = page.getByLabel(/mexican spanish \(prompt\)/i)
-  await expect(promptInput).toBeVisible()
-  await promptInput.fill('el ajolote nuevo')
-
-  // Save changes
-  const saveBtn = page.getByRole('button', { name: /save changes/i })
-  await saveBtn.click()
-
-  // Wait for modal to dismiss and autoplay to fire for the edited prompt
-  await page.waitForTimeout(600)
-
-  // Verify speech synthesis was never called
-  const calls = await page.evaluate(() => window.__speechSynthesisCalls ?? [])
-  expect(calls).toEqual([])
+  try {
+    for (const [index, phrase] of phrases.entries()) {
+      await page.getByRole('button', { name: /edit card/i }).click()
+      await page.getByLabel(/mexican spanish \(prompt\)/i).fill(phrase)
+      await page.getByRole('button', { name: /save changes/i }).click()
+      // Deliberately keep cloud requests unresolved: auto-play must use the
+      // current device voice instead of depending on a lucky prefetch race.
+      await expect.poll(() => requested.has(phrase)).toBe(true)
+      await expect
+        .poll(() => page.evaluate(() => window.__speechSynthesisCalls))
+        .toEqual(
+          phrases.slice(0, index + 1).map((text) => ({ text, lang: 'es-MX' })),
+        )
+      expect(finished.size).toBe(0)
+    }
+    await page
+      .getByRole('button', { name: /^Deck\b/i })
+      .first()
+      .click()
+    await expect(
+      page.getByRole('heading', { name: /manage deck/i }),
+    ).toBeVisible()
+    const before = await page.evaluate(() => window.__speechSynthesisCalls)
+    releasePrefetch()
+    await expect.poll(() => finished.size).toBe(phrases.length)
+    // Drain browser delivery/render turns after both network failures. Neither
+    // the superseded prompt nor the ended study session may speak again.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+        }),
+    )
+    expect(await page.evaluate(() => window.__speechSynthesisCalls)).toEqual(
+      before,
+    )
+  } finally {
+    releasePrefetch()
+    await page.unrouteAll({ behavior: 'wait' })
+  }
 })
