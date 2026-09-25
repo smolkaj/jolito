@@ -39,7 +39,7 @@ describe('AccentToolbar', () => {
 
   it('triggers onInsert on clean touch tap (pointerdown followed by pointerup) and prevents default blur', () => {
     const onInsert = vi.fn()
-    render(<AccentToolbar onInsert={onInsert} />)
+    render(<AccentToolbar onInsert={onInsert} isDocked={true} />)
 
     const btn = screen.getByRole('button', { name: 'Insert ñ' })
     const pointerDownEvent = new PointerEvent('pointerdown', {
@@ -280,5 +280,97 @@ describe('AccentToolbar', () => {
     const toolbar = screen.getByRole('toolbar', { name: 'Spanish accents' })
     expect(toolbar).toHaveClass('is-docked')
     expect(toolbar).toHaveStyle({ '--keyboard-inset': '290px' })
+  })
+
+  it('supports rapid overlapping two-thumb typing without dropping keypresses', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} isDocked={true} />)
+
+    const btnA = screen.getByRole('button', { name: 'Insert á' })
+    const btnE = screen.getByRole('button', { name: 'Insert é' })
+
+    // Thumb 1 lands on 'á'
+    btnA.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 20,
+        clientX: 20,
+        clientY: 20,
+      }),
+    )
+
+    // Thumb 2 lands on 'é' while Thumb 1 is still touching glass
+    btnE.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 21,
+        clientX: 60,
+        clientY: 20,
+      }),
+    )
+
+    // Thumb 1 lifts up
+    btnA.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 20,
+        clientX: 22,
+        clientY: 21,
+      }),
+    )
+    expect(onInsert).toHaveBeenCalledWith('á')
+
+    // Thumb 2 lifts up
+    btnE.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 21,
+        clientX: 61,
+        clientY: 20,
+      }),
+    )
+    expect(onInsert).toHaveBeenCalledWith('é')
+    expect(onInsert).toHaveBeenCalledTimes(2)
+  })
+
+  it('gates pointerdown preventDefault strictly to docked toolbar, leaving inline mode unprevented for natural scrolling', () => {
+    const onInsert = vi.fn()
+
+    // 1. Inline toolbar does not call preventDefault on pointerdown
+    const { unmount } = render(
+      <AccentToolbar onInsert={onInsert} isDocked={false} />,
+    )
+    const inlineBtn = screen.getByRole('button', { name: 'Insert í' })
+    const inlinePointerDown = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 30,
+    })
+    const inlineSpy = vi.spyOn(inlinePointerDown, 'preventDefault')
+    inlineBtn.dispatchEvent(inlinePointerDown)
+    expect(inlineSpy).not.toHaveBeenCalled()
+    unmount()
+
+    // 2. Docked toolbar calls preventDefault on pointerdown
+    render(<AccentToolbar onInsert={onInsert} isDocked={true} />)
+    const dockedBtn = screen.getByRole('button', { name: 'Insert í' })
+    const dockedPointerDown = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 31,
+    })
+    const dockedSpy = vi.spyOn(dockedPointerDown, 'preventDefault')
+    dockedBtn.dispatchEvent(dockedPointerDown)
+    expect(dockedSpy).toHaveBeenCalled()
   })
 })
