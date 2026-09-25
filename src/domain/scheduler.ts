@@ -178,6 +178,8 @@ export interface CardMemoryIndicators {
   difficulty: MemoryDifficultyLevel
   progressLabel: string
   difficultyLabel: string
+  progressDescription: string
+  difficultyDescription: string
 }
 
 export interface DeckMemorySummary {
@@ -227,6 +229,21 @@ export function cardDifficultyLevel(
   return 3
 }
 
+const PROGRESS_DESCRIPTIONS: Readonly<Record<MemoryProgressLevel, string>> = {
+  0: 'New (unstudied)',
+  1: 'Learning (fragile recall, < 7d)',
+  2: 'Solid (reliable recall, 7–30d)',
+  3: 'Mastered (second nature, 30d+)',
+}
+
+const DIFFICULTY_DESCRIPTIONS: Readonly<Record<MemoryDifficultyLevel, string>> =
+  {
+    0: 'No heat (effortless / unrated)',
+    1: 'Mild heat (low friction)',
+    2: 'Medium heat (standard)',
+    3: 'Hot / ¡aguas! (high friction)',
+  }
+
 /**
  * Computes the unified memory indicators and accessible labels for a card.
  */
@@ -237,6 +254,7 @@ export function cardMemoryIndicators(
   const difficulty = cardDifficultyLevel(schedule)
 
   const progressLabel = `Progress: ${progress} of 3 bubbles`
+  const progressDescription = PROGRESS_DESCRIPTIONS[progress]
 
   let difficultyLabel: string
   if (schedule.state === 'new' || schedule.reviews === 0) {
@@ -250,12 +268,15 @@ export function cardMemoryIndicators(
   } else {
     difficultyLabel = 'Difficulty: 3 of 3 chilies (hot)'
   }
+  const difficultyDescription = DIFFICULTY_DESCRIPTIONS[difficulty]
 
   return {
     progress,
     difficulty,
     progressLabel,
     difficultyLabel,
+    progressDescription,
+    difficultyDescription,
   }
 }
 

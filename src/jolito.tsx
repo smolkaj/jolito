@@ -24,7 +24,6 @@ import {
   scheduleReview,
   updateStudyCard,
   deleteStudyCard,
-  summarizeDeckMemory,
   DEFAULT_STUDY_BATCH_SIZE,
   type Grade,
   type StudyCard,
@@ -84,7 +83,6 @@ import {
 import { DeckManagerView } from './ui/views/DeckManagerView'
 import { MobileTabBar } from './ui/MobileTabBar'
 import { DesktopSegmentedNav } from './ui/DesktopSegmentedNav'
-import { ChiliMeter, ProgressBubbles } from './ui/MemoryIndicators'
 
 function getActiveAudioItems(
   cards: StudyCard[],
@@ -415,10 +413,6 @@ function LoadedApp({
   const vocabularyCards = useMemo(
     () => cards.filter((card) => !isGrammarCard(card)),
     [cards],
-  )
-  const memorySummary = useMemo(
-    () => summarizeDeckMemory(vocabularyCards),
-    [vocabularyCards],
   )
   const [view, setView] = useState<View>(initialResolved.view)
   const [communityStats, setCommunityStats] = useState<CommunityStats | null>(
@@ -1628,33 +1622,6 @@ function LoadedApp({
             }
             onHome={goHome}
           >
-            {practicedCount > 0 && vocabularyCards.length > 0 && (
-              <div
-                className="complete-memory-summary"
-                aria-label="Deck memory progress"
-              >
-                <div className="complete-memory-pill">
-                  <ProgressBubbles level={3} size={20} />
-                  <span>
-                    <strong>{memorySummary.mastered}</strong> mastered
-                  </span>
-                </div>
-                <div className="complete-memory-pill">
-                  <ProgressBubbles level={2} size={20} />
-                  <span>
-                    <strong>{memorySummary.solid}</strong> solid
-                  </span>
-                </div>
-                {memorySummary.spicyCards > 0 && (
-                  <div className="complete-memory-pill is-spicy">
-                    <ChiliMeter level={3} size={12} />
-                    <span>
-                      <strong>{memorySummary.spicyCards}</strong> spicy
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
             {!authUser && (
               <p className="complete-subtext">
                 <button

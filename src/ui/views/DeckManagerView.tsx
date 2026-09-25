@@ -284,30 +284,38 @@ export function DeckManagerView({
                 <div className="deck-memory-stat-items">
                   <span
                     className="deck-memory-stat-item"
+                    aria-label={`${memorySummary.mastered} mastered cards`}
                     title={`${memorySummary.mastered} mastered cards (stability 30+ days)`}
                   >
-                    <ProgressBubbles level={3} size={22} />
+                    <ProgressBubbles level={3} size={20} ariaHidden={true} />
+                    <span className="deck-memory-stat-label">Mastered</span>
                     <strong>{memorySummary.mastered}</strong>
                   </span>
                   <span
                     className="deck-memory-stat-item"
+                    aria-label={`${memorySummary.solid} solid cards`}
                     title={`${memorySummary.solid} solid cards (stability 7–30 days)`}
                   >
-                    <ProgressBubbles level={2} size={22} />
+                    <ProgressBubbles level={2} size={20} ariaHidden={true} />
+                    <span className="deck-memory-stat-label">Solid</span>
                     <strong>{memorySummary.solid}</strong>
                   </span>
                   <span
                     className="deck-memory-stat-item"
+                    aria-label={`${memorySummary.learning} learning cards`}
                     title={`${memorySummary.learning} learning cards (stability < 7 days)`}
                   >
-                    <ProgressBubbles level={1} size={22} />
+                    <ProgressBubbles level={1} size={20} ariaHidden={true} />
+                    <span className="deck-memory-stat-label">Learning</span>
                     <strong>{memorySummary.learning}</strong>
                   </span>
                   <span
                     className="deck-memory-stat-item"
+                    aria-label={`${memorySummary.newCards} unstudied cards`}
                     title={`${memorySummary.newCards} unstudied cards`}
                   >
-                    <ProgressBubbles level={0} size={22} />
+                    <ProgressBubbles level={0} size={20} ariaHidden={true} />
+                    <span className="deck-memory-stat-label">New</span>
                     <strong>{memorySummary.newCards}</strong>
                   </span>
                 </div>
@@ -319,9 +327,11 @@ export function DeckManagerView({
                   <div className="deck-memory-stat-items">
                     <span
                       className="deck-memory-stat-item is-spicy"
+                      aria-label={`${memorySummary.spicyCards} spicy cards`}
                       title={`${memorySummary.spicyCards} high friction cards (difficulty >= 7.5)`}
                     >
-                      <ChiliMeter level={3} size={13} />
+                      <ChiliMeter level={3} size={13} ariaHidden={true} />
+                      <span className="deck-memory-stat-label">Spicy</span>
                       <strong>{memorySummary.spicyCards}</strong>
                     </span>
                   </div>

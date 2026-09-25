@@ -6,6 +6,7 @@ export interface ProgressBubblesProps {
   size?: number
   className?: string
   ariaLabel?: string
+  ariaHidden?: boolean
 }
 
 export function ProgressBubbles({
@@ -13,6 +14,7 @@ export function ProgressBubbles({
   size = 28,
   className = '',
   ariaLabel,
+  ariaHidden = false,
 }: ProgressBubblesProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
   const label = ariaLabel ?? `Progress: ${safeLevel} of 3 bubbles`
@@ -20,8 +22,9 @@ export function ProgressBubbles({
   return (
     <span
       className={`progress-bubbles level-${safeLevel} ${className}`.trim()}
-      role="img"
-      aria-label={label}
+      role={ariaHidden ? undefined : 'img'}
+      aria-label={ariaHidden ? undefined : label}
+      aria-hidden={ariaHidden ? true : undefined}
       title={label}
     >
       <svg
@@ -68,6 +71,8 @@ export interface ChiliMeterProps {
   size?: number
   className?: string
   ariaLabel?: string
+  ariaHidden?: boolean
+  hideWhenZero?: boolean
 }
 
 export function ChiliMeter({
@@ -75,8 +80,15 @@ export function ChiliMeter({
   size = 13,
   className = '',
   ariaLabel,
+  ariaHidden = false,
+  hideWhenZero = false,
 }: ChiliMeterProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
+
+  if (hideWhenZero && safeLevel === 0) {
+    return null
+  }
+
   const label =
     ariaLabel ??
     (safeLevel === 0
@@ -86,8 +98,9 @@ export function ChiliMeter({
   return (
     <span
       className={`chili-meter level-${safeLevel} ${className}`.trim()}
-      role="img"
-      aria-label={label}
+      role={ariaHidden ? undefined : 'img'}
+      aria-label={ariaHidden ? undefined : label}
+      aria-hidden={ariaHidden ? true : undefined}
       title={label}
     >
       <ChiliIcon
@@ -133,6 +146,7 @@ export function MemoryIndicators({
       <ChiliMeter
         level={indicators.difficulty}
         ariaLabel={indicators.difficultyLabel}
+        hideWhenZero={compact}
       />
     </div>
   )

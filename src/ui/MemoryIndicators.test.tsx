@@ -35,6 +35,16 @@ describe('ProgressBubbles', () => {
     const filledCircles = container.querySelectorAll('.bubble-dot.is-filled')
     expect(filledCircles.length).toBe(3)
   })
+
+  it('supports ariaHidden to suppress accessible name for decorative usage', () => {
+    const { container } = render(
+      <ProgressBubbles level={2} ariaHidden={true} />,
+    )
+    const span = container.querySelector('.progress-bubbles')
+    expect(span).toHaveAttribute('aria-hidden', 'true')
+    expect(span).not.toHaveAttribute('role')
+    expect(span).not.toHaveAttribute('aria-label')
+  })
 })
 
 describe('ChiliMeter', () => {
@@ -68,6 +78,24 @@ describe('ChiliMeter', () => {
     const filledSvgs = container.querySelectorAll('svg.icon-chili.is-filled')
     expect(filledSvgs.length).toBe(3)
   })
+
+  it('hides completely when level is 0 and hideWhenZero is true', () => {
+    const { container } = render(<ChiliMeter level={0} hideWhenZero={true} />)
+    expect(container.querySelector('.chili-meter')).toBeNull()
+  })
+
+  it('still renders when level is > 0 even if hideWhenZero is true', () => {
+    const { container } = render(<ChiliMeter level={1} hideWhenZero={true} />)
+    expect(container.querySelector('.chili-meter')).toBeInTheDocument()
+  })
+
+  it('supports ariaHidden to suppress accessible name for decorative usage', () => {
+    const { container } = render(<ChiliMeter level={2} ariaHidden={true} />)
+    const span = container.querySelector('.chili-meter')
+    expect(span).toHaveAttribute('aria-hidden', 'true')
+    expect(span).not.toHaveAttribute('role')
+    expect(span).not.toHaveAttribute('aria-label')
+  })
 })
 
 describe('MemoryIndicators', () => {
@@ -90,5 +118,23 @@ describe('MemoryIndicators', () => {
       container.querySelector('.progress-bubbles.level-2'),
     ).toBeInTheDocument()
     expect(container.querySelector('.chili-meter.level-3')).toBeInTheDocument()
+  })
+
+  it('hides chilies in compact row mode when card difficulty is 0', () => {
+    const sched: ReviewSchedule = {
+      state: 'new',
+      dueAt: Date.now(),
+      intervalDays: 0,
+      easeFactor: 2.5,
+      reviews: 0,
+      lapses: 0,
+      stability: 0,
+      difficulty: 0,
+    }
+    const { container } = render(
+      <MemoryIndicators schedule={sched} compact={true} />,
+    )
+    expect(container.querySelector('.progress-bubbles')).toBeInTheDocument()
+    expect(container.querySelector('.chili-meter')).toBeNull()
   })
 })

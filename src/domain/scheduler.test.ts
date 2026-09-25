@@ -419,6 +419,8 @@ describe('scheduler (FSRS domain adapter)', () => {
         difficulty: 3,
         progressLabel: 'Progress: 2 of 3 bubbles',
         difficultyLabel: 'Difficulty: 3 of 3 chilies (hot)',
+        progressDescription: 'Solid (reliable recall, 7–30d)',
+        difficultyDescription: 'Hot / ¡aguas! (high friction)',
       })
     })
 
@@ -437,6 +439,8 @@ describe('scheduler (FSRS domain adapter)', () => {
         difficulty: 0,
         progressLabel: 'Progress: 0 of 3 bubbles',
         difficultyLabel: 'Difficulty: unrated (0 chilies)',
+        progressDescription: 'New (unstudied)',
+        difficultyDescription: 'No heat (effortless / unrated)',
       })
     })
   })

@@ -335,18 +335,26 @@ function EditCardModalInner({
             <div className="edit-card-memory-row">
               <span className="edit-card-memory-label">Progress</span>
               <div className="edit-card-memory-value">
-                <ProgressBubbles level={indicators.progress} size={28} />
+                <ProgressBubbles
+                  level={indicators.progress}
+                  size={28}
+                  ariaHidden={true}
+                />
                 <span className="edit-card-memory-hint">
-                  {indicators.progressLabel}
+                  {indicators.progressDescription}
                 </span>
               </div>
             </div>
             <div className="edit-card-memory-row">
               <span className="edit-card-memory-label">Difficulty</span>
               <div className="edit-card-memory-value">
-                <ChiliMeter level={indicators.difficulty} size={15} />
+                <ChiliMeter
+                  level={indicators.difficulty}
+                  size={15}
+                  ariaHidden={true}
+                />
                 <span className="edit-card-memory-hint">
-                  {indicators.difficultyLabel}
+                  {indicators.difficultyDescription}
                 </span>
               </div>
             </div>
