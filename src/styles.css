@@ -5905,6 +5905,42 @@ kbd {
 }
 
 .pill-select {
+  display: inline-flex;
+  align-items: center;
+  height: var(--pill-height);
+  min-height: var(--pill-height);
+  max-height: var(--pill-height);
+  box-sizing: border-box;
+  padding: 0 30px 0 12px;
+  border: 1.5px solid var(--line-subtle);
+  border-radius: var(--pill-radius);
+  background-color: var(--card);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+  appearance: none;
+  background-image: var(--select-chevron-url);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: all 150ms ease;
+}
+
+.pill-select:hover {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.pill-select:focus-visible {
+  outline: none;
+  border-color: var(--rosa);
+  box-shadow: 0 0 0 2px var(--rosa-glow);
+}
+
+.deck-sort-native-select {
   position: absolute;
   inset: 0;
   width: 100%;

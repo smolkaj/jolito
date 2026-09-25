@@ -368,7 +368,10 @@ export function DeckManagerView({
               ) : (
                 vocabularyCards.length > 0 && (
                   <div className="deck-sort-wrap">
-                    <label htmlFor="pill-select" className="deck-sort-label">
+                    <label
+                      htmlFor="deck-sort-order"
+                      className="deck-sort-label"
+                    >
                       Sort
                     </label>
                     <div className="deck-sort-select-wrap">
@@ -376,8 +379,8 @@ export function DeckManagerView({
                         {SORT_ORDER_LABELS[deckSortOrder]}
                       </span>
                       <select
-                        id="pill-select"
-                        className="pill-select"
+                        id="deck-sort-order"
+                        className="deck-sort-native-select"
                         value={deckSortOrder}
                         onChange={(e) =>
                           setDeckSortOrder(e.target.value as DeckSortOrder)
