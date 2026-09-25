@@ -4,6 +4,6 @@
 // Only linked into the generated UI-test runner, never the shipped app.
 NS_ASSUME_NONNULL_BEGIN
 @interface NativeTouch : NSObject
-+ (BOOL)tapPoints:(NSArray<NSValue *> *)points error:(NSError **)error;
++ (void)tapPoints:(NSArray<NSValue *> *)points completion:(void (^)(NSError * _Nullable))completion;
 @end
 NS_ASSUME_NONNULL_END

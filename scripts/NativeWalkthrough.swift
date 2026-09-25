@@ -210,8 +210,12 @@ final class NativeWalkthrough: XCTestCase {
             return result
         }
         func press(_ points: [CGPoint]) {
-            do { try NativeTouch.tapPoints(points.map { NSValue(cgPoint: $0) }) }
-            catch { XCTFail("Software keyboard touch synthesis failed: \(error)") }
+            let finished = expectation(description: "Software keyboard touches completed")
+            NativeTouch.tapPoints(points.map { NSValue(cgPoint: $0) }) { error in
+                XCTAssertNil(error, "Software keyboard touch synthesis must succeed")
+                finished.fulfill()
+            }
+            wait(for: [finished], timeout: Double(points.count) * 0.2 + 5)
         }
         let started = Date()
         var keys = targets()
