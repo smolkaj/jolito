@@ -113,12 +113,21 @@ export function createBrowserServices(): AppServices {
   const assistant = new OfflineCardAssistant()
   void assistant.loadDictionary()
 
-  const speaker: Speaker = Capacitor.isNativePlatform()
+  const fallbackSpeaker: Speaker = Capacitor.isNativePlatform()
     ? new NativeSpeaker()
-    : new LayeredNeuralSpeaker()
-  if (!Capacitor.isNativePlatform()) {
-    void speaker.prewarm?.()
-  }
+    : new EnhancedBrowserSpeaker()
+  const rawApiUrl = (import.meta.env as Record<string, unknown> | undefined)
+    ?.VITE_TTS_API_URL
+  const apiBaseUrl = Capacitor.isNativePlatform()
+    ? typeof rawApiUrl === 'string' && rawApiUrl.length > 0
+      ? rawApiUrl
+      : 'https://joli.to'
+    : undefined
+  const speaker = new LayeredNeuralSpeaker({
+    fallbackSpeaker,
+    apiBaseUrl,
+  })
+  void speaker.prewarm?.()
 
   const sync = new SupabaseSyncService(auth, undefined, undefined, deviceId)
   const feedback = new SupabaseFeedbackService(

@@ -20,20 +20,20 @@ void test('native scenes leave window creation to the scene delegate', () => {
   assert.ok(keys.includes('UILaunchStoryboardName'))
 })
 
-void test('AppDelegate configures AVAudioSession with playback and mixWithOthers for language learning speech in silent mode', () => {
+void test('AppDelegate configures AVAudioSession with ambient category and mixWithOthers for silent mode respect', () => {
   const appDelegate = readFileSync(
     new URL('../../ios/App/App/AppDelegate.swift', import.meta.url),
     'utf8',
   )
 
-  // Explicit pronunciation audio must play in silent mode without pausing background audio (e.g. podcasts/music)
+  // Default audio session must be ambient so auto-play and earcons respect the hardware silent switch
   assert.match(
     appDelegate,
-    /audioSession\.setCategory\(\.playback,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
+    /audioSession\.setCategory\(\.ambient,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
   )
   assert.match(
     appDelegate,
-    /applicationWillEnterForeground[\s\S]*?audioSession\.setCategory\(\.playback,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
+    /applicationWillEnterForeground[\s\S]*?audioSession\.setCategory\(\.ambient,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
   )
 })
 
@@ -188,14 +188,18 @@ void test('NativeSpeechPlugin filters out Eloquence and legacy novelty robotic s
     /preferredSpanishNames[\s\S]*?jorge[\s\S]*?paulina/,
   )
 
-  // 5. NativeSpeechPlugin configures and activates AVAudioSession for playback in silent mode
+  // 5. NativeSpeechPlugin configures AVAudioSession based on explicit user intent and restores ambient
   assert.match(
     speechPlugin,
     /let audioSession = AVAudioSession\.sharedInstance\(\)/,
   )
   assert.match(
     speechPlugin,
-    /try audioSession\.setCategory\(\.playback, mode: \.spokenAudio, options: \[\.mixWithOthers\]\)/,
+    /let category:\s*AVAudioSession\.Category\s*=\s*explicit\s*\?\s*\.playback\s*:\s*\.ambient/,
+  )
+  assert.match(
+    speechPlugin,
+    /try audioSession\.setCategory\(category,\s*mode:\s*\.spokenAudio,\s*options:\s*\[\.mixWithOthers\]\)/,
   )
   assert.match(speechPlugin, /try audioSession\.setActive\(true\)/)
   assert.match(speechPlugin, /synthesizer\.usesApplicationAudioSession = true/)
@@ -208,28 +212,25 @@ void test('NativeSpeechPlugin filters out Eloquence and legacy novelty robotic s
   )
 })
 
-void test('Sound player and services preserve native AVAudioSession and route native speech directly', () => {
-  const soundSource = readFileSync(
-    new URL('../../src/infrastructure/browser/sound.ts', import.meta.url),
-    'utf8',
-  )
+void test('Services configure LayeredNeuralSpeaker with NativeSpeaker fallback and remote API base on native shells', () => {
   const servicesSource = readFileSync(
     new URL('../../src/infrastructure/browser/services.ts', import.meta.url),
     'utf8',
   )
 
-  // 1. sound.ts guards configureAudioSessionCategory to prevent downgrading native AVAudioSession to ambient
-  assert.match(soundSource, /if\s*\(Capacitor\.isNativePlatform\(\)\)\s*return/)
-
-  // 2. services.ts instantiates NativeSpeaker directly on native platforms without network prewarming
   assert.match(
     servicesSource,
-    /const speaker:\s*Speaker\s*=\s*Capacitor\.isNativePlatform\(\)\s*\?\s*new NativeSpeaker\(\)\s*:\s*new LayeredNeuralSpeaker\(\)/,
+    /const fallbackSpeaker:\s*Speaker\s*=\s*Capacitor\.isNativePlatform\(\)\s*\?\s*new NativeSpeaker\(\)\s*:\s*new EnhancedBrowserSpeaker\(\)/,
   )
   assert.match(
     servicesSource,
-    /if\s*\(!Capacitor\.isNativePlatform\(\)\)\s*\{\s*void speaker\.prewarm\?\.()/,
+    /const apiBaseUrl\s*=\s*Capacitor\.isNativePlatform\(\)[\s\S]*?'https:\/\/joli\.to'[\s\S]*?:\s*undefined/,
   )
+  assert.match(
+    servicesSource,
+    /new LayeredNeuralSpeaker\(\{[\s\S]*?fallbackSpeaker,[\s\S]*?apiBaseUrl,[\s\S]*?\}\)/,
+  )
+  assert.match(servicesSource, /void speaker\.prewarm\?\.()/)
 })
 
 void test('SceneDelegate registers SpeechRecognitionPlugin with Speech and AVFoundation for spoken recall', () => {

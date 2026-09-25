@@ -6,10 +6,10 @@ import AVFoundation
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Configure AVAudioSession for language learning: play pronunciation audio even if the physical silent switch is engaged, mixing with background audio
+        // Configure AVAudioSession default category to ambient: respects hardware silent switch while mixing with background audio
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.mixWithOthers])
+            try audioSession.setCategory(.ambient, mode: .spokenAudio, options: [.mixWithOthers])
             try audioSession.setActive(true)
         } catch {
             print("Failed to configure AVAudioSession category: \(error)")
@@ -26,10 +26,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Reactivate audio session when returning to foreground
+        // Restore AVAudioSession default ambient category when returning to foreground
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.mixWithOthers])
+            try audioSession.setCategory(.ambient, mode: .spokenAudio, options: [.mixWithOthers])
             try audioSession.setActive(true)
         } catch {
             print("Failed to reactivate AVAudioSession: \(error)")

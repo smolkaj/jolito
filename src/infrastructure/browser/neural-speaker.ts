@@ -50,7 +50,11 @@ export const STARTER_PHRASES: Array<{
 export function getAudioUrl(
   text: string,
   locale: string,
-  options?: { cardSeed?: string | undefined; voice?: string | undefined },
+  options?: {
+    cardSeed?: string | undefined
+    voice?: string | undefined
+    apiBaseUrl?: string | undefined
+  },
 ): string {
   const normLocale = normalizeLocale(locale)
   const voice =
@@ -60,7 +64,8 @@ export function getAudioUrl(
     locale: normLocale,
     voice,
   })
-  return `/api/tts?${params.toString()}`
+  const base = options?.apiBaseUrl ? options.apiBaseUrl.replace(/\/+$/, '') : ''
+  return `${base}/api/tts?${params.toString()}`
 }
 
 export class LruAudioCache {
@@ -134,13 +139,16 @@ export class NeuralVoiceEngine {
   private cleanupGestureListeners: (() => void) | null = null
   private cleanupLifecycleListeners: (() => void) | null = null
   private readonly idleDelayMs: number
+  private readonly apiBaseUrl?: string | undefined
 
   constructor(
     maxMemoryBuffers = 200,
     idleDelayMs = DEFAULT_AUDIO_IDLE_DELAY_MS,
+    options?: { apiBaseUrl?: string | undefined },
   ) {
     this.audioCache = new LruAudioCache(maxMemoryBuffers)
     this.idleDelayMs = idleDelayMs
+    this.apiBaseUrl = options?.apiBaseUrl
     void this.getCache()
     this.installUnlockListeners()
     this.installLifecycleListeners()
@@ -866,7 +874,10 @@ export class NeuralVoiceEngine {
     if (existing) return existing
 
     const fetchPromise = (async () => {
-      const url = getAudioUrl(cleanText, normLocale, { voice })
+      const url = getAudioUrl(cleanText, normLocale, {
+        voice,
+        apiBaseUrl: this.apiBaseUrl,
+      })
       const cache = await this.getCache()
       const requireDecode = options?.requireDecode ?? true
 
@@ -1166,13 +1177,18 @@ export class LayeredNeuralSpeaker implements Speaker {
   private speakGeneration = 0
 
   constructor(options?: {
-    neuralEngine?: NeuralVoiceEngine
-    fallbackSpeaker?: Speaker
-    maxMemoryBuffers?: number
+    neuralEngine?: NeuralVoiceEngine | undefined
+    fallbackSpeaker?: Speaker | undefined
+    maxMemoryBuffers?: number | undefined
+    apiBaseUrl?: string | undefined
   }) {
     this.neuralEngine =
       options?.neuralEngine ??
-      new NeuralVoiceEngine(options?.maxMemoryBuffers ?? 200)
+      new NeuralVoiceEngine(
+        options?.maxMemoryBuffers ?? 200,
+        DEFAULT_AUDIO_IDLE_DELAY_MS,
+        { apiBaseUrl: options?.apiBaseUrl },
+      )
     this.fallbackSpeaker =
       options?.fallbackSpeaker ?? new EnhancedBrowserSpeaker()
   }
@@ -1261,7 +1277,7 @@ export class LayeredNeuralSpeaker implements Speaker {
       voice,
     }
 
-    // 1. If audio is already cached in memory, play immediately
+    // 1. If audio is already cached in memory, play immediately (0ms wait)
     if (this.neuralEngine.hasAudio(cleanText, normLocale, voice)) {
       this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       try {
@@ -1273,13 +1289,12 @@ export class LayeredNeuralSpeaker implements Speaker {
         )
         if (played) return true
       } catch {
-        // Fall back seamlessly to browser speech synthesis
+        // Fall back seamlessly to fallback speech synthesis
         return this.speakFallback(cleanText, normLocale, fallbackOptions)
       }
     }
 
-    // 2. If an audio prefetch is in flight, or if it is already cached on disk (CacheStorage),
-    // allow a brief grace window to play neural voice rather than prematurely falling back to robotic speech
+    // 2. Resolve cached status and in-flight prefetch
     const isDiskCached = this.neuralEngine.hasDiskAudio(
       cleanText,
       normLocale,
@@ -1290,27 +1305,33 @@ export class LayeredNeuralSpeaker implements Speaker {
       normLocale,
       voice,
     )
-    const isExplicitOnline =
-      Boolean(options?.explicit) &&
-      (typeof navigator === 'undefined' || navigator.onLine !== false)
+    const isExplicit = Boolean(options?.explicit)
+    const isOffline =
+      typeof navigator !== 'undefined' &&
+      'onLine' in navigator &&
+      navigator.onLine === false
 
-    if (isInFlight || isDiskCached || isExplicitOnline) {
-      if (options?.explicit) {
+    // Explicit requests offline degrade immediately to local fallback
+    if (isExplicit && isOffline) {
+      return this.speakFallback(cleanText, normLocale, fallbackOptions)
+    }
+
+    // 3. Await prefetch, disk hydration, or explicit cloud fetch
+    if (isInFlight || isDiskCached || isExplicit) {
+      if (isExplicit) {
         this.neuralEngine.preactivateContext(true)
       }
       if (!isInFlight) {
-        // Trigger hydration from disk/network into memory
         void this.neuralEngine
           .fetchAndCacheAudio(cleanText, normLocale, {
             voice,
             cardSeed: options?.cardSeed,
           })
           .catch(() => {})
-
         this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
       }
 
-      const graceTimeout = options?.explicit ? 1500 : isDiskCached ? 150 : 800
+      const graceTimeout = isExplicit ? 1000 : isDiskCached ? 150 : 500
 
       void this.neuralEngine
         .awaitAudio(cleanText, normLocale, voice, graceTimeout)
@@ -1332,7 +1353,7 @@ export class LayeredNeuralSpeaker implements Speaker {
                 fallbackOptions,
               )
               if (!fallbackPlayed) {
-                if (options?.explicit) {
+                if (isExplicit) {
                   configureAudioSessionCategory('ambient')
                 }
                 options?.onEnded?.()
@@ -1345,7 +1366,7 @@ export class LayeredNeuralSpeaker implements Speaker {
               fallbackOptions,
             )
             if (!fallbackPlayed) {
-              if (options?.explicit) {
+              if (isExplicit) {
                 configureAudioSessionCategory('ambient')
               }
               options?.onEnded?.()
@@ -1362,7 +1383,7 @@ export class LayeredNeuralSpeaker implements Speaker {
             fallbackOptions,
           )
           if (!fallbackPlayed) {
-            if (options?.explicit) {
+            if (isExplicit) {
               configureAudioSessionCategory('ambient')
             }
             options?.onEnded?.()
@@ -1371,14 +1392,15 @@ export class LayeredNeuralSpeaker implements Speaker {
       return true
     }
 
-    // Fire background fetch for subsequent plays and speak via fallback synchronously
+    // 4. Cold Auto-Play (not in memory, not in disk cache, not in flight):
+    // Zero network wait invariant. Fire background prefetch for subsequent reviews
+    // and failover immediately (0ms) to fallback speaker synchronously.
     void this.neuralEngine
       .fetchAndCacheAudio(cleanText, normLocale, {
         voice,
         cardSeed: options?.cardSeed,
       })
       .catch(() => {})
-
     this.prehydrateAlternateVoice(cleanText, normLocale, voice, options)
 
     const fallbackPlayed = this.speakFallback(
