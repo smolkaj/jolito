@@ -387,10 +387,16 @@ export function DeckManagerView({
                         }
                         aria-label="Sort cards"
                       >
-                        <option value="created-desc">Newest first</option>
-                        <option value="created-asc">Oldest first</option>
-                        <option value="alpha-asc">Alphabetical (A–Z)</option>
-                        <option value="alpha-desc">Alphabetical (Z–A)</option>
+                        {(
+                          Object.entries(SORT_ORDER_LABELS) as [
+                            DeckSortOrder,
+                            string,
+                          ][]
+                        ).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -578,6 +584,17 @@ export function DeckManagerView({
                       </span>
                     </div>
                     <div className="col-phrase col-prompt" role="cell">
+                      <span
+                        className="deck-mobile-dir-cue"
+                        aria-hidden="true"
+                        title={
+                          isEsToEn
+                            ? 'Mexican Spanish Prompt → English Answer'
+                            : 'English Prompt → Mexican Spanish Answer'
+                        }
+                      >
+                        {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}
+                      </span>
                       <span className="deck-phrase-text">{card.prompt}</span>
                       {duplicateCardIds.has(card.id) && (
                         <span

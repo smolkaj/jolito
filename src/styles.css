@@ -6102,6 +6102,10 @@ kbd {
   vertical-align: middle;
 }
 
+.deck-mobile-dir-cue {
+  display: none;
+}
+
 .deck-card-row .col-phrase {
   display: flex;
   align-items: center;
@@ -6192,7 +6196,21 @@ kbd {
   }
 
   .deck-card-row .col-dir {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .deck-mobile-dir-cue {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
   }
 
   .deck-card-row .col-prompt {
