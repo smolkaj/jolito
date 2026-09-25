@@ -7,11 +7,7 @@ import {
   type FSRS,
   type Grade as FsrsGrade,
 } from 'ts-fsrs'
-import type {
-  Grade,
-  ReviewSchedule,
-  StudyCard,
-} from './card'
+import type { Grade, ReviewSchedule, StudyCard } from './card'
 
 export const DAY = 24 * 60 * 60 * 1000
 export const MINUTE = 60 * 1000
@@ -53,9 +49,7 @@ export function estimateFsrsParameters(schedule: ReviewSchedule): {
     (isReviewed ? Math.max(0.1, schedule.intervalDays) : 0)
   const difficulty =
     schedule.difficulty ??
-    (isReviewed
-      ? Math.max(1, Math.min(10, 11 - 2 * schedule.easeFactor))
-      : 0)
+    (isReviewed ? Math.max(1, Math.min(10, 11 - 2 * schedule.easeFactor)) : 0)
   return { stability, difficulty }
 }
 
@@ -70,8 +64,7 @@ export function toFsrsCard(schedule: ReviewSchedule, now: number): CardInput {
     ? Math.max(0, Math.floor((now - schedule.lastReviewedAt) / DAY))
     : 0
 
-  const learningSteps =
-    schedule.state === 'learning' ? 1 : (schedule.learningSteps ?? 0)
+  const learningSteps = schedule.learningSteps ?? 0
 
   const card: CardInput = {
     due: new Date(schedule.dueAt),
@@ -136,7 +129,7 @@ export function nextFsrsIntervalDays(
   now?: number,
   scheduler: FSRS = defaultFsrs,
 ): number {
-  const effectiveNow = now ?? (schedule.dueAt > 0 ? schedule.dueAt : Date.now())
+  const effectiveNow = now ?? Date.now()
   const fsrsCard = toFsrsCard(schedule, effectiveNow)
   const rating = gradeToFsrs[grade]
   const preview = scheduler.repeat(fsrsCard, new Date(effectiveNow))[rating]
@@ -153,7 +146,7 @@ export function intervalLabel(
   scheduler: FSRS = defaultFsrs,
 ): string {
   const schedule = card.schedule
-  const effectiveNow = now ?? (schedule.dueAt > 0 ? schedule.dueAt : Date.now())
+  const effectiveNow = now ?? Date.now()
   const fsrsCard = toFsrsCard(schedule, effectiveNow)
   const rating = gradeToFsrs[grade]
   const preview = scheduler.repeat(fsrsCard, new Date(effectiveNow))[rating]

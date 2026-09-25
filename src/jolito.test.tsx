@@ -2585,7 +2585,11 @@ describe('Jolito', () => {
     expect(progress).toHaveAttribute('aria-valuetext', '1 card remaining')
     expect(bar).toHaveStyle({ width: '67%' })
 
-    // Card 1 retry: pass with Good (3) -> graduates learning card (3/3 completed = 100%)
+    // Card 1 retry step 1: pass with Good (3) -> advances to 10m learning step
+    await user.keyboard('{Enter}')
+    await user.keyboard('3')
+
+    // Card 1 retry step 2: pass with Good (3) -> graduates learning card (3/3 completed = 100%)
     await user.keyboard('{Enter}')
     await user.keyboard('3')
 

@@ -52,8 +52,8 @@ export const reviewScheduleSchema = z.preprocess(
     reviews: z.number().int().nonnegative(),
     lapses: z.number().int().nonnegative(),
     lastReviewedAt: scheduleTimestampSchema.optional(),
-    stability: z.number().optional(),
-    difficulty: z.number().optional(),
+    stability: z.number().nonnegative().optional(),
+    difficulty: z.number().min(0).max(10).optional(),
     learningSteps: z.number().int().nonnegative().optional(),
   }),
 )

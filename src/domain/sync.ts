@@ -101,6 +101,7 @@ function compareSchedules(
     compare(a.dueAt, b.dueAt) ||
     compare(a.intervalDays, b.intervalDays) ||
     compare(a.stability ?? 0, b.stability ?? 0) ||
+    compare(a.difficulty ?? 0, b.difficulty ?? 0) ||
     compare(a.easeFactor, b.easeFactor)
   )
 }
