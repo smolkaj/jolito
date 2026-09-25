@@ -43,6 +43,37 @@ const authSessionResponseSchema = z.object({
   }),
 })
 
+export function normalizeAuthTransportError(error: unknown): string {
+  if (
+    error instanceof Error ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'message' in error &&
+      typeof error.message === 'string')
+  ) {
+    const errObj = error as { name?: string; message: string }
+    if (
+      errObj.message === 'Request timed out. Please try again.' ||
+      errObj.message === 'Request was interrupted. Please try again.'
+    ) {
+      return errObj.message
+    }
+    const msg = errObj.message.toLowerCase()
+    if (errObj.name === 'AbortError' || msg.includes('abort')) {
+      return 'Sign-in was interrupted. Please try again.'
+    }
+    if (
+      msg.includes('failed to fetch') ||
+      msg.includes('networkerror') ||
+      msg.includes('load failed') ||
+      msg.includes('network error')
+    ) {
+      return 'Unable to connect to sign-in service. Please check your connection and try again.'
+    }
+  }
+  return 'Sign-in failed. Please try again.'
+}
+
 export class SessionStorageError extends Error {
   constructor() {
     super(
@@ -868,57 +899,69 @@ export class SupabaseAuthService implements AuthService {
     }
 
     try {
-      const res = await withRequestDeadline(async (signal) =>
-        fetch(`${this.supabaseUrl}/auth/v1/token?grant_type=id_token`, {
-          method: 'POST',
-          headers: {
-            apikey: this.supabaseAnonKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            provider: 'apple',
-            id_token: identityToken,
-            ...(nonce ? { nonce } : {}),
-          }),
-          signal,
-        }),
-      )
-
-      if (!isCurrent()) return stale()
-      if (!res.ok) {
-        const errorData = (await res.json().catch(() => ({}))) as {
-          msg?: string
-          error_description?: string
-          message?: string
-          error?: string
-          error_code?: string
-          code?: number
-        }
-        console.error(
-          '[AuthService] Apple Sign-In verification attempt failed:',
+      const outcome = await withRequestDeadline(async (signal) => {
+        const res = await fetch(
+          `${this.supabaseUrl}/auth/v1/token?grant_type=id_token`,
           {
-            status: res.status,
-            errorData,
+            method: 'POST',
+            headers: {
+              apikey: this.supabaseAnonKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              provider: 'apple',
+              id_token: identityToken,
+              ...(nonce ? { nonce } : {}),
+            }),
+            signal,
           },
         )
-        return {
-          success: false,
-          error:
-            'Apple Sign-In could not be verified with the server. Please try again.',
-        }
-      }
 
-      const rawJson: unknown = await res.json()
-      if (!isCurrent()) return stale()
-      const parsed = authSessionResponseSchema.safeParse(rawJson)
-      if (!parsed.success) {
-        return {
-          success: false,
-          error: 'Invalid response from authentication server.',
+        if (signal.aborted || !isCurrent()) return null
+        if (!res.ok) {
+          const errorData = (await res.json().catch(() => ({}))) as {
+            msg?: string
+            error_description?: string
+            message?: string
+            error?: string
+            error_code?: string
+            code?: number
+          }
+          console.error(
+            '[AuthService] Apple Sign-In verification attempt failed:',
+            {
+              status: res.status,
+              errorData,
+            },
+          )
+          return {
+            success: false as const,
+            error:
+              'Apple Sign-In could not be verified with the server. Please try again.',
+          }
         }
-      }
 
-      const data = parsed.data
+        const rawJson: unknown = await res.json()
+        if (signal.aborted || !isCurrent()) return null
+        const parsed = authSessionResponseSchema.safeParse(rawJson)
+        if (!parsed.success) {
+          return {
+            success: false as const,
+            error:
+              'Invalid response from authentication server. Please try again.',
+          }
+        }
+
+        return {
+          success: true as const,
+          data: parsed.data,
+        }
+      })
+
+      if (!isCurrent() || outcome === null) return stale()
+      if (!outcome.success) return outcome
+
+      const data = outcome.data
       const user: AuthUser = {
         id: data.user.id,
         email: data.user.email || fallbackEmail?.trim() || '',
@@ -938,12 +981,13 @@ export class SupabaseAuthService implements AuthService {
         : { success: false, error: new SessionStorageError().message }
     } catch (error) {
       if (!isCurrent()) return stale()
+      console.error(
+        '[AuthService] Unexpected error during Apple Sign-In verification:',
+        error,
+      )
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Sign-in failed. Please try again.',
+        error: normalizeAuthTransportError(error),
       }
     }
   }

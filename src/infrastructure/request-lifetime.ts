@@ -1,4 +1,13 @@
-/** Bound credential, response and body waits with APIs supported by native iOS. */
+/**
+ * Bounds credential, response, and body wait times within a deterministic deadline.
+ *
+ * IMPORTANT CONTRACT:
+ * The entire request lifecycle—including reading and decoding the response body
+ * (e.g. `await res.json()` or `await res.text()`)—MUST occur inside the `operation` callback.
+ * `withRequestDeadline` unconditionally aborts its internal AbortController in its `finally`
+ * block when `operation` resolves. Consuming a response body outside this callback will fail
+ * with an AbortError / "Fetch is aborted".
+ */
 export async function withRequestDeadline<T>(
   operation: (signal: AbortSignal) => Promise<T>,
   parentSignal?: AbortSignal,
