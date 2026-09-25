@@ -827,4 +827,35 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(tabBar).toBeVisible()
     await page.screenshot({ path: 'test-results/mobile-floating-create.png' })
   })
+
+  test('dismisses modal sheet on mobile when dragging down from modal header', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+
+    // Open feedback modal
+    await page.getByRole('button', { name: /^feedback$/i }).click()
+    const feedbackModal = page.locator('.feedback-modal')
+    await expect(feedbackModal).toBeVisible()
+
+    const title = page.getByRole('heading', { name: /share feedback/i })
+    await expect(title).toBeVisible()
+    // Hovering waits for the slide-up CSS animation to settle
+    await title.hover()
+
+    const box = await title.boundingBox()
+    expect(box).not.toBeNull()
+    const startX = box!.x + box!.width / 2
+    const startY = box!.y + box!.height / 2
+
+    // Drag down 120px (past 85px dismiss threshold)
+    await page.mouse.move(startX, startY)
+    await page.mouse.down()
+    await page.mouse.move(startX, startY + 120, { steps: 5 })
+    await page.mouse.up()
+
+    // Sheet should smoothly dismiss
+    await expect(feedbackModal).not.toBeVisible()
+  })
 })

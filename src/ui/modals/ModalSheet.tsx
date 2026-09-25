@@ -83,6 +83,32 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
 
     const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
       if (isClosing || startYRef.current !== null || e.button !== 0) return
+
+      const target = e.target as HTMLElement | null
+      if (!target) return
+
+      // Ignore if interacting with interactive controls (buttons, links, inputs)
+      if (
+        target.closest('button, a, input, textarea, select, [role="button"]')
+      ) {
+        return
+      }
+
+      const isGrabber = Boolean(target.closest('.sheet-grabber-zone'))
+      const isHeader = Boolean(target.closest('.modal-header'))
+
+      if (!isGrabber && !isHeader) {
+        return
+      }
+
+      // Dragging on header is only enabled for mobile bottom sheets, not desktop dialogs
+      if (isHeader && !isGrabber) {
+        const isDesktop =
+          typeof window !== 'undefined' &&
+          window.matchMedia?.('(min-width: 681px)').matches
+        if (isDesktop) return
+      }
+
       if (
         typeof document !== 'undefined' &&
         document.activeElement &&
@@ -203,16 +229,13 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
           aria-label={ariaLabel}
           aria-describedby={ariaDescribedBy}
           onClick={(e) => e.stopPropagation()}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
           style={sheetStyle}
         >
-          <div
-            className="sheet-grabber-zone"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            aria-hidden="true"
-          >
+          <div className="sheet-grabber-zone" aria-hidden="true">
             <div className="sheet-grabber-bar" />
           </div>
           {children}
