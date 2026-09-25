@@ -223,7 +223,7 @@ final class NativeWalkthrough: XCTestCase {
         if capsLocked {
             // A person uses Caps Lock for an all-capital confirmation. Rapid
             // alternating Shift/letter touches can be interpreted as one chord.
-            keyboard.keys["shift"].doubleTap()
+            keyboard.buttons["shift"].doubleTap()
         }
         var keys = targets()
         var uppercase = keys["A"] != nil
