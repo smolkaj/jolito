@@ -182,17 +182,6 @@ export interface CardMemoryIndicators {
   difficultyDescription: string
 }
 
-export interface DeckMemorySummary {
-  total: number
-  progress: Record<MemoryProgressLevel, number>
-  difficulty: Record<MemoryDifficultyLevel, number>
-  mastered: number
-  solid: number
-  learning: number
-  newCards: number
-  spicyCards: number
-}
-
 /**
  * Maps FSRS stability (memory half-life in days) to a 0–3 bubble progress level.
  * 0: Unstudied / new (0 bubbles)
@@ -277,43 +266,5 @@ export function cardMemoryIndicators(
     difficultyLabel,
     progressDescription,
     difficultyDescription,
-  }
-}
-
-/**
- * Aggregates memory progress and difficulty distribution across an entire card collection.
- */
-export function summarizeDeckMemory(
-  cards: Array<{ schedule: ReviewSchedule }>,
-): DeckMemorySummary {
-  const progress: Record<MemoryProgressLevel, number> = {
-    0: 0,
-    1: 0,
-    2: 0,
-    3: 0,
-  }
-  const difficulty: Record<MemoryDifficultyLevel, number> = {
-    0: 0,
-    1: 0,
-    2: 0,
-    3: 0,
-  }
-
-  for (const card of cards) {
-    const p = cardProgressLevel(card.schedule)
-    const d = cardDifficultyLevel(card.schedule)
-    progress[p]++
-    difficulty[d]++
-  }
-
-  return {
-    total: cards.length,
-    progress,
-    difficulty,
-    mastered: progress[3],
-    solid: progress[2],
-    learning: progress[1],
-    newCards: progress[0],
-    spicyCards: difficulty[3],
   }
 }

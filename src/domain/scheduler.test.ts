@@ -11,7 +11,6 @@ import {
   cardProgressLevel,
   cardDifficultyLevel,
   cardMemoryIndicators,
-  summarizeDeckMemory,
 } from './scheduler'
 import {
   createStudyCards,
@@ -442,69 +441,6 @@ describe('scheduler (FSRS domain adapter)', () => {
         progressDescription: 'New (unstudied)',
         difficultyDescription: 'No heat (effortless / unrated)',
       })
-    })
-  })
-
-  describe('summarizeDeckMemory', () => {
-    it('aggregates memory progress and difficulty counts across cards', () => {
-      const cards: Array<{ schedule: ReviewSchedule }> = [
-        {
-          schedule: {
-            state: 'new',
-            dueAt: now,
-            intervalDays: 0,
-            easeFactor: 2.5,
-            reviews: 0,
-            lapses: 0,
-          },
-        },
-        {
-          schedule: {
-            state: 'learning',
-            dueAt: now,
-            intervalDays: 2,
-            easeFactor: 2.5,
-            reviews: 1,
-            lapses: 0,
-            stability: 2.0,
-            difficulty: 4.0,
-          },
-        },
-        {
-          schedule: {
-            state: 'review',
-            dueAt: now,
-            intervalDays: 14,
-            easeFactor: 2.5,
-            reviews: 4,
-            lapses: 0,
-            stability: 15.0,
-            difficulty: 6.0,
-          },
-        },
-        {
-          schedule: {
-            state: 'review',
-            dueAt: now,
-            intervalDays: 45,
-            easeFactor: 2.0,
-            reviews: 10,
-            lapses: 1,
-            stability: 50.0,
-            difficulty: 8.5,
-          },
-        },
-      ]
-
-      const summary = summarizeDeckMemory(cards)
-      expect(summary.total).toBe(4)
-      expect(summary.newCards).toBe(1)
-      expect(summary.learning).toBe(1)
-      expect(summary.solid).toBe(1)
-      expect(summary.mastered).toBe(1)
-      expect(summary.spicyCards).toBe(1)
-      expect(summary.progress).toEqual({ 0: 1, 1: 1, 2: 1, 3: 1 })
-      expect(summary.difficulty).toEqual({ 0: 1, 1: 1, 2: 1, 3: 1 })
     })
   })
 })

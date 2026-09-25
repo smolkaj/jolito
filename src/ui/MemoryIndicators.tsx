@@ -7,6 +7,7 @@ export interface ProgressBubblesProps {
   className?: string
   ariaLabel?: string
   ariaHidden?: boolean
+  title?: string
 }
 
 export function ProgressBubbles({
@@ -15,9 +16,12 @@ export function ProgressBubbles({
   className = '',
   ariaLabel,
   ariaHidden = false,
+  title,
 }: ProgressBubblesProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
   const label = ariaLabel ?? `Progress: ${safeLevel} of 3 bubbles`
+  const resolvedTitle =
+    title !== undefined ? title : ariaHidden ? undefined : label
 
   return (
     <span
@@ -25,7 +29,7 @@ export function ProgressBubbles({
       role={ariaHidden ? undefined : 'img'}
       aria-label={ariaHidden ? undefined : label}
       aria-hidden={ariaHidden ? true : undefined}
-      title={ariaHidden ? undefined : label}
+      title={resolvedTitle}
     >
       <svg
         viewBox="0 0 29 9"
@@ -73,6 +77,7 @@ export interface ChiliMeterProps {
   ariaLabel?: string
   ariaHidden?: boolean
   hideWhenZero?: boolean
+  title?: string
 }
 
 export function ChiliMeter({
@@ -82,6 +87,7 @@ export function ChiliMeter({
   ariaLabel,
   ariaHidden = false,
   hideWhenZero = false,
+  title,
 }: ChiliMeterProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
 
@@ -94,6 +100,8 @@ export function ChiliMeter({
     (safeLevel === 0
       ? 'Difficulty: 0 of 3 chilies (no heat)'
       : `Difficulty: ${safeLevel} of 3 chilies`)
+  const resolvedTitle =
+    title !== undefined ? title : ariaHidden ? undefined : label
 
   return (
     <span
@@ -101,7 +109,7 @@ export function ChiliMeter({
       role={ariaHidden ? undefined : 'img'}
       aria-label={ariaHidden ? undefined : label}
       aria-hidden={ariaHidden ? true : undefined}
-      title={ariaHidden ? undefined : label}
+      title={resolvedTitle}
     >
       <ChiliIcon
         size={size}
@@ -144,11 +152,13 @@ export function MemoryIndicators({
       <ProgressBubbles
         level={indicators.progress}
         ariaLabel={`${indicators.progressLabel} – ${indicators.progressDescription}`}
+        title={`${indicators.progressLabel} – ${indicators.progressDescription}`}
         ariaHidden={ariaHidden}
       />
       <ChiliMeter
         level={indicators.difficulty}
         ariaLabel={`${indicators.difficultyLabel} – ${indicators.difficultyDescription}`}
+        title={`${indicators.difficultyLabel} – ${indicators.difficultyDescription}`}
         hideWhenZero={compact}
         ariaHidden={ariaHidden}
       />

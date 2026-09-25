@@ -504,9 +504,7 @@ export {
   cardProgressLevel,
   cardDifficultyLevel,
   cardMemoryIndicators,
-  summarizeDeckMemory,
   type MemoryProgressLevel,
   type MemoryDifficultyLevel,
   type CardMemoryIndicators,
-  type DeckMemorySummary,
 } from './scheduler'
