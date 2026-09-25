@@ -8042,6 +8042,26 @@ html[data-keyboard='true'] .reveal-gesture-cue {
     background: var(--line-subtle);
   }
 
+  .modal-sheet .modal-header {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .modal-content.modal-sheet.is-dragging-sheet .modal-header {
+    cursor: grabbing;
+  }
+
+  .modal-sheet .modal-header button,
+  .modal-sheet .modal-header a,
+  .modal-sheet .modal-header input {
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: auto;
+    -webkit-user-select: auto;
+  }
+
   .modal-sheet .modal-close {
     display: none;
   }

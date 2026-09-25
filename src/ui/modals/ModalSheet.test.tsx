@@ -345,4 +345,188 @@ describe('ModalSheet Bottom Sheet (Milestone 2)', () => {
       /\.modal-backdrop,\s*\.modal-content\.modal-sheet\s*\{[^}]*transition:\s*none\s*!important;/s,
     )
   })
+
+  it('animates downward and calls onClose when dragged from modal-header on mobile', () => {
+    vi.useFakeTimers()
+    const onClose = vi.fn()
+    const { trigger, haptics } = createMockHaptics()
+
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={onClose} haptics={haptics}>
+        <div className="modal-header">
+          <div className="modal-header-copy">
+            <h2 id="feedback-title">Share feedback</h2>
+            <p className="modal-subtitle">Your note helps us improve Jolito.</p>
+          </div>
+        </div>
+      </ModalSheet>,
+    )
+
+    const header = container.querySelector('.modal-header')!
+    const sheet = container.querySelector('.modal-sheet')!
+
+    fireEvent.pointerDown(header, { clientY: 100, button: 0 })
+    fireEvent.pointerMove(header, { clientY: 210 })
+
+    expect(trigger).toHaveBeenCalledWith('selection')
+
+    fireEvent.pointerUp(header, { clientY: 210 })
+    expect(sheet).toHaveClass('is-closing-sheet')
+    expect(onClose).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(240)
+    expect(onClose).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('springs back to position when dragged from modal-header below threshold', () => {
+    const onClose = vi.fn()
+    const haptics = createMockHaptics()
+
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={onClose} haptics={haptics}>
+        <div className="modal-header">
+          <h2>Share feedback</h2>
+        </div>
+      </ModalSheet>,
+    )
+
+    const title = screen.getByRole('heading', { name: 'Share feedback' })
+    const sheet = container.querySelector('.modal-sheet')!
+
+    fireEvent.pointerDown(title, { clientY: 100, button: 0 })
+    fireEvent.pointerMove(title, { clientY: 140 })
+    fireEvent.pointerUp(title, { clientY: 140 })
+
+    expect(onClose).not.toHaveBeenCalled()
+    expect(sheet).toHaveStyle({ transform: 'translateY(0px)' })
+  })
+
+  it('allows button clicks inside modal-header without triggering drag dismissal', () => {
+    const onBack = vi.fn()
+    const onClose = vi.fn()
+
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={onClose}>
+        <div className="modal-header">
+          <button type="button" onClick={onBack}>
+            ← All packs
+          </button>
+          <h2>Starter Pack</h2>
+        </div>
+      </ModalSheet>,
+    )
+
+    const button = screen.getByRole('button', { name: '← All packs' })
+    const sheet = container.querySelector('.modal-sheet')!
+
+    fireEvent.pointerDown(button, { clientY: 100, button: 0 })
+    fireEvent.pointerMove(button, { clientY: 250 })
+    fireEvent.pointerUp(button, { clientY: 250 })
+    fireEvent.click(button)
+
+    expect(onBack).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(sheet).not.toHaveClass('is-closing-sheet')
+  })
+
+  it('ignores dragging from modal-header when on desktop viewport (min-width: 681px)', () => {
+    const onClose = vi.fn()
+    const originalMatchMedia =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia.bind(window)
+        : undefined
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string): MediaQueryList => ({
+        matches: query.includes('min-width: 681px'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    try {
+      const { container } = render(
+        <ModalSheet isOpen={true} onClose={onClose}>
+          <div className="modal-header">
+            <h2>Desktop Dialog Header</h2>
+          </div>
+        </ModalSheet>,
+      )
+
+      const header = container.querySelector('.modal-header')!
+      const sheet = container.querySelector('.modal-sheet')!
+
+      fireEvent.pointerDown(header, { clientY: 100, button: 0 })
+      fireEvent.pointerMove(header, { clientY: 250 })
+      fireEvent.pointerUp(header, { clientY: 250 })
+
+      expect(sheet).not.toHaveClass('is-closing-sheet')
+      expect(onClose).not.toHaveBeenCalled()
+    } finally {
+      if (originalMatchMedia) {
+        window.matchMedia = originalMatchMedia
+      } else {
+        delete (window as { matchMedia?: unknown }).matchMedia
+      }
+    }
+  })
+
+  it('blurs active element to dismiss software keyboard when user touches modal-header', () => {
+    const { container } = render(
+      <ModalSheet isOpen={true} onClose={vi.fn()}>
+        <div className="modal-header">
+          <h2>Share feedback</h2>
+        </div>
+        <input data-testid="active-field" />
+      </ModalSheet>,
+    )
+
+    const input = screen.getByTestId('active-field')
+    input.focus()
+    expect(document.activeElement).toBe(input)
+
+    const header = container.querySelector('.modal-header')!
+    fireEvent.pointerDown(header, { clientY: 100, button: 0 })
+
+    expect(document.activeElement).not.toBe(input)
+  })
+
+  it('enforces architectural invariant that modal-sheet modal-header has touch-action none on mobile viewports', () => {
+    const cssContent = readFileSync(
+      resolve(process.cwd(), 'src/styles.css'),
+      'utf-8',
+    )
+    const milestone2Marker =
+      '/* Milestone 2: Draggable Bottom Sheets for Modals */'
+    const milestone2Index = cssContent.indexOf(milestone2Marker)
+    expect(milestone2Index).toBeGreaterThan(-1)
+
+    const milestone2Section = cssContent.slice(milestone2Index)
+    const mediaStartIndex = milestone2Section.indexOf(
+      '@media (max-width: 680px)',
+    )
+    expect(mediaStartIndex).toBeGreaterThan(-1)
+
+    const milestone3Marker = '/* Milestone 3: Touch Feedback'
+    const mediaEndIndex = milestone2Section.indexOf(milestone3Marker)
+    const sheetMediaBlock = milestone2Section.slice(
+      mediaStartIndex,
+      mediaEndIndex,
+    )
+
+    // Verify .modal-sheet .modal-header has touch-action: none and cursor: grab
+    expect(sheetMediaBlock).toMatch(
+      /\.modal-sheet\s+\.modal-header\s*\{[^}]*touch-action:\s*none;/s,
+    )
+    expect(sheetMediaBlock).toMatch(
+      /\.modal-sheet\s+\.modal-header\s*\{[^}]*cursor:\s*grab;/s,
+    )
+  })
 })
