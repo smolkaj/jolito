@@ -6128,7 +6128,11 @@ kbd {
 
   .deck-card-row .col-select {
     grid-area: select;
-    align-self: center;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
 
   .deck-card-row .col-dir {

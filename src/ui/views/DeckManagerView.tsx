@@ -441,7 +441,7 @@ export function DeckManagerView({
               aria-label="Deck cards"
             >
               <div className="deck-list-table-header" role="row">
-                <div className="col-select" role="columnheader">
+                <label className="col-select" role="columnheader">
                   <input
                     type="checkbox"
                     className="deck-select-checkbox"
@@ -463,7 +463,7 @@ export function DeckManagerView({
                       isAllSelected ? 'Deselect all cards' : 'Select all cards'
                     }
                   />
-                </div>
+                </label>
                 <div className="col-dir" role="columnheader">
                   Direction
                 </div>
@@ -527,7 +527,7 @@ export function DeckManagerView({
                     onClick={() => onEditCard(card)}
                     onKeyDown={(e) => handleRowKeyDown(e, card)}
                   >
-                    <div
+                    <label
                       className="col-select"
                       role="cell"
                       onClick={(e) => e.stopPropagation()}
@@ -548,7 +548,7 @@ export function DeckManagerView({
                         onClick={(e) => e.stopPropagation()}
                         aria-label={`Select card ${card.prompt}`}
                       />
-                    </div>
+                    </label>
                     <div className="col-dir" role="cell">
                       <span
                         className="deck-direction-badge"

@@ -80,7 +80,9 @@ for (const viewport of [
       )
       await page.goto('/#/deck')
       await expect(
-        page.getByRole('cell', { name: 'Un boleto de metro', exact: true }),
+        page
+          .getByRole('row', { name: /Card: Un boleto de metro/i })
+          .getByRole('cell', { name: 'Un boleto de metro', exact: true }),
       ).toBeVisible()
     })
   })
