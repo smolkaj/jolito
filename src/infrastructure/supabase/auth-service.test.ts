@@ -290,11 +290,47 @@ describe('SupabaseAuthService', () => {
 
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockRejectedValue(new Error('Connection failed')),
+      vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
     )
     const failRes = await service.sendMagicLink('hello@example.com')
     expect(failRes.success).toBe(false)
-    expect(failRes.error).toBe('Connection failed')
+    expect(failRes.error).toBe(
+      'Unable to connect to sign-in service. Please check your connection and try again.',
+    )
+  })
+
+  it('normalizes timeouts and aborts when sending magic link', async () => {
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    // Abort
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockRejectedValue(
+          new DOMException('The user aborted a request.', 'AbortError'),
+        ),
+    )
+    const abortRes = await service.sendMagicLink('test@example.com')
+    expect(abortRes.success).toBe(false)
+    expect(abortRes.error).toBe('Sign-in was interrupted. Please try again.')
+
+    // Timeout
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => new Promise(() => {})),
+    )
+    const pending = service.sendMagicLink('test@example.com')
+    await vi.advanceTimersByTimeAsync(10_000)
+    const timeoutRes = await pending
+    expect(timeoutRes.success).toBe(false)
+    expect(timeoutRes.error).toBe('Request timed out. Please try again.')
+    vi.useRealTimers()
   })
 
   it('verifies OTP token and saves new session', async () => {
@@ -676,6 +712,86 @@ describe('SupabaseAuthService', () => {
     expect(res.error).toContain(
       'This webpage link has no session tokens. Tap the link in your email, then tap "Copy sign-in link" in Jolito’s top banner',
     )
+  })
+
+  it('normalizes network disconnects and interruptions during 6-digit OTP verification', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    // Network disconnect
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    )
+    const netRes = await service.verifyOtp('test@example.com', '123456')
+    expect(netRes.success).toBe(false)
+    expect(netRes.error).toBe(
+      'Unable to connect to sign-in service. Please check your connection and try again.',
+    )
+
+    // Abort
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockRejectedValue(
+          new DOMException('The user aborted a request.', 'AbortError'),
+        ),
+    )
+    const abortRes = await service.verifyOtp('test@example.com', '123456')
+    expect(abortRes.success).toBe(false)
+    expect(abortRes.error).toBe('Sign-in was interrupted. Please try again.')
+    consoleSpy.mockRestore()
+  })
+
+  it('normalizes network disconnects during token_hash verification', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    // Network disconnect with token_hash URL
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    )
+    const netRes = await service.verifyOtp(
+      '',
+      'https://joli.to/#token_hash=' + 'a'.repeat(64),
+    )
+    expect(netRes.success).toBe(false)
+    expect(netRes.error).toBe(
+      'Unable to connect to sign-in service. Please check your connection and try again.',
+    )
+    consoleSpy.mockRestore()
+  })
+
+  it('normalizes timeouts during OTP verification', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const service = new SupabaseAuthService(
+      'https://example.supabase.co',
+      'anon-key',
+      fakeStorage,
+    )
+
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => new Promise(() => {})),
+    )
+    const pending = service.verifyOtp('test@example.com', '123456')
+    await vi.advanceTimersByTimeAsync(10_000)
+    const timeoutRes = await pending
+    expect(timeoutRes.success).toBe(false)
+    expect(timeoutRes.error).toBe('Request timed out. Please try again.')
+    vi.useRealTimers()
+    consoleSpy.mockRestore()
   })
 
   it('exports session link for PWA transfer when authenticated', () => {
