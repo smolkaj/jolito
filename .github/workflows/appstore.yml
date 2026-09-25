@@ -49,7 +49,9 @@ jobs:
       - if: inputs.operation == 'configure'
         run: node scripts/app-store.ts --apply
       - if: inputs.operation == 'metadata'
-        run: bundle exec fastlane ios metadata
+        run: |
+          bundle exec fastlane ios metadata
+          node scripts/app-store.ts --review-check
       - if: inputs.operation == 'status'
         run: node scripts/app-store.ts --status
       - if: inputs.operation == 'replace'
