@@ -21,6 +21,13 @@ target.build_configurations.each do |config|
     'TARGETED_DEVICE_FAMILY' => '1,2'
   })
 end
+if name == 'NativeWalkthrough'
+  touch = project.main_group.new_file(File.join(root, 'scripts/NativeTouch.m'))
+  target.source_build_phase.add_file_reference(touch)
+  target.build_configurations.each do |config|
+    config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = File.join(root, 'scripts/NativeTouch.h')
+  end
+end
 project.save
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(app)
