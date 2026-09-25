@@ -230,15 +230,15 @@ describe('DeckManagerView', () => {
 
     const mobileCues = container.querySelectorAll('.deck-mobile-dir-cue')
     expect(mobileCues).toHaveLength(3)
-    expect(mobileCues[0]).toHaveAttribute('role', 'img')
+    expect(mobileCues[0]).toHaveAttribute('aria-hidden', 'true')
     expect(mobileCues[0]).toHaveAttribute(
-      'aria-label',
-      'Mexican Spanish to English',
+      'title',
+      'Mexican Spanish Prompt → English Answer',
     )
-    expect(mobileCues[2]).toHaveAttribute('role', 'img')
+    expect(mobileCues[2]).toHaveAttribute('aria-hidden', 'true')
     expect(mobileCues[2]).toHaveAttribute(
-      'aria-label',
-      'English to Mexican Spanish',
+      'title',
+      'English Prompt → Mexican Spanish Answer',
     )
   })
 

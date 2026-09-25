@@ -586,11 +586,11 @@ export function DeckManagerView({
                     <div className="col-phrase col-prompt" role="cell">
                       <span
                         className="deck-mobile-dir-cue"
-                        role="img"
-                        aria-label={
+                        aria-hidden="true"
+                        title={
                           isEsToEn
-                            ? 'Mexican Spanish to English'
-                            : 'English to Mexican Spanish'
+                            ? 'Mexican Spanish Prompt → English Answer'
+                            : 'English Prompt → Mexican Spanish Answer'
                         }
                       >
                         {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}
