@@ -370,6 +370,62 @@ for (const width of [393, 1280]) {
         }
       }
     }
+    // Any enclosed transparent component inside either tail is missing paint.
+    // Flood the full alpha plane so this catches whole holes, not sample points.
+    const tailHoles = await family.evaluate((image: HTMLImageElement) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      const context = canvas.getContext('2d')!
+      context.drawImage(image, 0, 0)
+      const { width, height } = canvas
+      const pixels = context.getImageData(0, 0, width, height).data
+      const visited = new Uint8Array(width * height)
+      const holes: { x: number; y: number; pixels: number }[] = []
+      for (let start = 0; start < visited.length; start++) {
+        if (visited[start] || pixels[start * 4 + 3] === 255) continue
+        const component = [start]
+        visited[start] = 1
+        let minX = width
+        let maxX = 0
+        let minY = height
+        let maxY = 0
+        for (let i = 0; i < component.length; i++) {
+          const index = component[i]
+          const x = index % width
+          const y = Math.floor(index / width)
+          minX = Math.min(minX, x)
+          maxX = Math.max(maxX, x)
+          minY = Math.min(minY, y)
+          maxY = Math.max(maxY, y)
+          for (const [nx, ny] of [
+            [x - 1, y],
+            [x + 1, y],
+            [x, y - 1],
+            [x, y + 1],
+          ]) {
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+            const next = ny * width + nx
+            if (!visited[next] && pixels[next * 4 + 3] < 255) {
+              visited[next] = 1
+              component.push(next)
+            }
+          }
+        }
+        const insideTail =
+          minY > height * 0.72 &&
+          maxY < height * 0.92 &&
+          ((minX > 0 && maxX < width * 0.28) ||
+            (minX > width * 0.79 && maxX < width - 1))
+        if (insideTail)
+          holes.push({ x: minX, y: minY, pixels: component.length })
+      }
+      return holes
+    })
+    expect(
+      tailHoles,
+      'tails must contain no enclosed transparent regions',
+    ).toEqual([])
     for (const colorScheme of ['light', 'dark', 'light'] as const) {
       await page.emulateMedia({ colorScheme })
       await expectAppearance(page, colorScheme)
