@@ -557,16 +557,16 @@ void test('CSS architectural invariants for mobile keyboard accent toolbar acces
     'Composer island geometry must be scoped to physical keyboard environments when not listening',
   )
 
-  // 5. Accent toolbar buttons must remain flexible with min-width: 0 to fit all 9 characters without horizontal scrolling
+  // 5. Docked accent toolbar buttons must flex with min-width: 0 to fit all 9 characters without horizontal scrolling
   assert.match(
     css,
-    /\.accent-toolbar-btn\s*\{[\s\S]*?flex:\s*1\s+1\s+0px;[\s\S]*?min-width:\s*0;/,
-    'Accent toolbar buttons must flex down with min-width: 0',
+    /\.accent-toolbar-btn\s*\{[\s\S]*?flex:\s*0\s+0\s+44px;[\s\S]*?min-width:\s*44px;/,
+    'Base inline accent toolbar buttons must preserve standard 44px touch targets',
   )
   assert.match(
     css,
     /\.answer-accents\.is-docked\s+\.accent-toolbar-btn\s*\{[\s\S]*?flex:\s*1\s+1\s+0px;[\s\S]*?min-width:\s*0;/,
-    'Docked accent toolbar buttons must flex down with min-width: 0',
+    'Docked mobile keyboard accent toolbar buttons must flex down with min-width: 0',
   )
   assert.doesNotMatch(
     css,

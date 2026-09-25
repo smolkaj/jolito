@@ -93,6 +93,7 @@ export function AccentToolbar({
     const state = touchStateRef.current
     if (e.pointerType === 'touch' && state && e.pointerId === state.pointerId) {
       touchStateRef.current = null
+      lastTouchTimestampRef.current = e.timeStamp
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
@@ -102,7 +103,6 @@ export function AccentToolbar({
       }
 
       if (!state.isDrag && state.char === char && !disabled) {
-        lastTouchTimestampRef.current = e.timeStamp
         handleInsert(char)
       }
     }
@@ -112,6 +112,7 @@ export function AccentToolbar({
     const state = touchStateRef.current
     if (e.pointerType === 'touch' && state && e.pointerId === state.pointerId) {
       touchStateRef.current = null
+      lastTouchTimestampRef.current = e.timeStamp
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
