@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { installMockNativeBridge, getNativeBridgeCalls } from './native-bridge'
+import {
+  installMockNativeBridge,
+  getNativeBridgeCalls,
+  emitNativeBridgeEvent,
+  getNativeBridgeListeners,
+} from './native-bridge'
 import { practiceCards } from './practice'
 
 test.describe('Headless Native Capacitor Bridge', () => {
@@ -81,13 +86,33 @@ test.describe('Headless Native Capacitor Bridge', () => {
     await expect(goodBtn).toBeVisible()
     await goodBtn.click()
 
-    // Assert updatePractice was called with updated counts
+    // Assert updatePractice was called with updated card prompt
     await expect
       .poll(async () => {
         const calls = await getNativeBridgeCalls(page, 'LiveActivity')
-        return calls.some((c) => c.method === 'updatePractice')
+        return calls.some(
+          (c) =>
+            c.method === 'updatePractice' &&
+            (c.args as Record<string, unknown> | undefined)?.prompt ===
+              'qué padre',
+        )
       })
       .toBe(true)
+
+    const updateCalls = (
+      await getNativeBridgeCalls(page, 'LiveActivity')
+    ).filter((c) => c.method === 'updatePractice')
+    expect(updateCalls.length).toBeGreaterThan(0)
+    const latestUpdate = updateCalls[updateCalls.length - 1]
+    expect(latestUpdate).toBeDefined()
+    const updateArgs = latestUpdate!.args as {
+      total: number
+      remaining: number
+      completed: number
+      prompt: string
+    }
+    expect(updateArgs.total).toBe(3)
+    expect(updateArgs.prompt).toBe('qué padre')
 
     // 3. Exit practice session by clicking Jolito home brand button
     const homeBtn = page.getByRole('button', { name: /jolito home/i })
@@ -101,6 +126,73 @@ test.describe('Headless Native Capacitor Bridge', () => {
         return calls.some((c) => c.method === 'endPractice')
       })
       .toBe(true)
+  })
+
+  test('streams speech recognition transcription and manages listener lifecycle', async ({
+    page,
+  }) => {
+    await installMockNativeBridge(page, { platform: 'ios' })
+    await page.goto('/')
+
+    await practiceCards(page)
+
+    // On native iOS, the spoken recall mic button must be rendered
+    const micButton = page.locator('.speech-recall-btn')
+    await expect(micButton).toBeVisible()
+    await expect(micButton).toHaveAttribute('aria-label', /start voice input/i)
+
+    // Click microphone to begin voice input
+    await micButton.click()
+
+    // Button transitions to listening state
+    await expect(micButton).toHaveClass(/is-listening/)
+    await expect(micButton).toHaveAttribute('aria-label', /stop voice input/i)
+
+    // Verify listeners are registered on the native bridge for SpeechRecognition
+    await expect
+      .poll(async () => {
+        const listeners = await getNativeBridgeListeners(
+          page,
+          'SpeechRecognition',
+        )
+        return (
+          listeners.some((l) => l.eventName === 'transcription') &&
+          listeners.some((l) => l.eventName === 'speechEnd')
+        )
+      })
+      .toBe(true)
+
+    // Simulate streaming native transcription result
+    const answerInput = page.getByLabel(/your answer/i)
+    await emitNativeBridgeEvent(page, 'SpeechRecognition', 'transcription', {
+      text: 'aguacate',
+      isFinal: true,
+    })
+
+    // Assert answer input updated with normalized transcription
+    await expect(answerInput).toHaveValue('aguacate')
+
+    // Simulate speechEnd from native audio engine
+    await emitNativeBridgeEvent(page, 'SpeechRecognition', 'speechEnd')
+
+    // Verify listening state has ended and listeners are cleaned up
+    await expect(micButton).not.toHaveClass(/is-listening/)
+    await expect
+      .poll(async () => {
+        const listeners = await getNativeBridgeListeners(
+          page,
+          'SpeechRecognition',
+        )
+        return listeners.length
+      })
+      .toBe(0)
+
+    // Verify call sequence recorded by native bridge
+    const calls = await getNativeBridgeCalls(page, 'SpeechRecognition')
+    expect(calls.some((c) => c.method === 'requestPermissions')).toBe(true)
+    expect(calls.some((c) => c.method === 'addListener')).toBe(true)
+    expect(calls.some((c) => c.method === 'start')).toBe(true)
+    expect(calls.some((c) => c.method === 'removeListener')).toBe(true)
   })
 
   test('routes pronunciation audio directly through NativeSpeech on native platforms', async ({

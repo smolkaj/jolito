@@ -7,6 +7,12 @@ export interface MockNativeCall {
   timestamp: number
 }
 
+export interface MockNativeListener {
+  id: string
+  plugin: string
+  eventName: string
+}
+
 export interface MockNativeBridgeOptions {
   platform?: 'ios' | 'android'
   appleSignInResult?: {
@@ -31,8 +37,9 @@ export interface MockNativeBridgeOptions {
 
 /**
  * Installs a spec-compliant headless mock Capacitor bridge in the browser page context.
- * Enables testing iOS/Android native plugins (AppleSignIn, NativeSpeech, LiveActivity, AppReview)
- * in standard WebKit/Chromium Playwright tests without requiring emulators or native builds.
+ * Enables testing iOS/Android native plugins (AppleSignIn, NativeSpeech, SpeechRecognition,
+ * LiveActivity, AppReview, Keyboard, ShareFile) in standard WebKit/Chromium Playwright tests
+ * without requiring emulators or native builds.
  */
 export async function installMockNativeBridge(
   page: Page,
@@ -88,11 +95,20 @@ export async function installMockNativeBridge(
         ;(window as unknown as { androidBridge?: unknown }).androidBridge = {}
       }
 
-      // 2. Setup call recording log
+      // 2. Setup call recording log and listener registry
       const recordedCalls: MockNativeCall[] = []
       ;(
         window as unknown as { __nativeBridgeCalls: MockNativeCall[] }
       ).__nativeBridgeCalls = recordedCalls
+
+      interface InternalListener {
+        id: string
+        plugin: string
+        eventName: string
+        callback: (data: unknown, error?: unknown) => void
+      }
+      const listenersById = new Map<string, InternalListener>()
+      let nextCallbackId = 1
 
       // 3. Configure Capacitor global and PluginHeaders before plugins register
       interface CapGlobal {
@@ -105,15 +121,37 @@ export async function installMockNativeBridge(
           method: string,
           args: unknown,
         ) => Promise<unknown>
+        nativeCallback?: (
+          plugin: string,
+          method: string,
+          options?: unknown,
+          callback?: (data: unknown, error?: unknown) => void,
+        ) => string
+        fromNative?: (result: {
+          callbackId?: string
+          data?: unknown
+          success?: boolean
+          error?: unknown
+          save?: boolean
+        }) => void
       }
 
       const cap = ((window as unknown as { Capacitor?: CapGlobal }).Capacitor =
         (window as unknown as { Capacitor?: CapGlobal }).Capacitor ?? {})
 
+      const commonListenerMethods = [
+        { name: 'addListener', rtype: 'callback' },
+        { name: 'removeListener', rtype: 'callback' },
+        { name: 'removeAllListeners', rtype: 'promise' },
+      ]
+
       cap.PluginHeaders = [
         {
           name: 'AppleSignIn',
-          methods: [{ name: 'signIn', rtype: 'promise' }],
+          methods: [
+            { name: 'signIn', rtype: 'promise' },
+            ...commonListenerMethods,
+          ],
         },
         {
           name: 'NativeSpeech',
@@ -122,6 +160,7 @@ export async function installMockNativeBridge(
             { name: 'speak', rtype: 'promise' },
             { name: 'stop', rtype: 'promise' },
             { name: 'getVoices', rtype: 'promise' },
+            ...commonListenerMethods,
           ],
         },
         {
@@ -131,6 +170,7 @@ export async function installMockNativeBridge(
             { name: 'requestPermissions', rtype: 'promise' },
             { name: 'start', rtype: 'promise' },
             { name: 'stop', rtype: 'promise' },
+            ...commonListenerMethods,
           ],
         },
         {
@@ -139,17 +179,81 @@ export async function installMockNativeBridge(
             { name: 'startPractice', rtype: 'promise' },
             { name: 'updatePractice', rtype: 'promise' },
             { name: 'endPractice', rtype: 'promise' },
+            ...commonListenerMethods,
           ],
         },
         {
           name: 'AppReview',
-          methods: [{ name: 'requestReview', rtype: 'promise' }],
+          methods: [
+            { name: 'requestReview', rtype: 'promise' },
+            ...commonListenerMethods,
+          ],
         },
         {
           name: 'ShareFile',
-          methods: [{ name: 'shareFile', rtype: 'promise' }],
+          methods: [
+            { name: 'shareFile', rtype: 'promise' },
+            ...commonListenerMethods,
+          ],
+        },
+        {
+          name: 'Keyboard',
+          methods: [
+            ...commonListenerMethods,
+            { name: 'show', rtype: 'promise' },
+            { name: 'hide', rtype: 'promise' },
+            { name: 'setAccessoryBarVisible', rtype: 'promise' },
+            { name: 'setStyle', rtype: 'promise' },
+            { name: 'setResizeMode', rtype: 'promise' },
+            { name: 'getResizeMode', rtype: 'promise' },
+          ],
         },
       ]
+
+      cap.nativeCallback = (
+        plugin: string,
+        method: string,
+        options?: unknown,
+        callback?: (data: unknown, error?: unknown) => void,
+      ): string => {
+        let cb = callback
+        let opts = options as Record<string, unknown> | undefined
+        if (typeof opts === 'function') {
+          cb = opts
+          opts = undefined
+        }
+
+        recordedCalls.push({
+          plugin,
+          method,
+          args: opts,
+          timestamp: Date.now(),
+        })
+
+        if (method === 'addListener') {
+          const eventName = (opts?.eventName as string) ?? ''
+          const callbackId = String(nextCallbackId++)
+          if (typeof cb === 'function') {
+            listenersById.set(callbackId, {
+              id: callbackId,
+              plugin,
+              eventName,
+              callback: cb,
+            })
+          }
+          return callbackId
+        }
+
+        if (method === 'removeListener') {
+          const callbackId = opts?.callbackId as string | undefined
+          if (callbackId && listenersById.has(callbackId)) {
+            listenersById.delete(callbackId)
+          }
+          return callbackId ?? ''
+        }
+
+        return ''
+      }
 
       cap.nativePromise = (
         plugin: string,
@@ -162,6 +266,15 @@ export async function installMockNativeBridge(
           args,
           timestamp: Date.now(),
         })
+
+        if (method === 'removeAllListeners') {
+          for (const [id, listener] of listenersById.entries()) {
+            if (listener.plugin === plugin) {
+              listenersById.delete(id)
+            }
+          }
+          return Promise.resolve()
+        }
 
         if (plugin === 'AppleSignIn') {
           if (method === 'signIn') {
@@ -236,6 +349,73 @@ export async function installMockNativeBridge(
 
         return Promise.resolve({})
       }
+
+      cap.fromNative = (result: {
+        callbackId?: string
+        data?: unknown
+        success?: boolean
+        error?: unknown
+        save?: boolean
+      }) => {
+        if (!result || !result.callbackId) return
+        const listener = listenersById.get(result.callbackId)
+        if (!listener) return
+        if (result.success !== false) {
+          listener.callback(result.data)
+        } else {
+          listener.callback(null, result.error)
+        }
+        if (result.save === false) {
+          listenersById.delete(result.callbackId)
+        }
+      }
+
+      ;(
+        window as unknown as {
+          __emitNativeBridgeEvent: (
+            plugin: string,
+            eventName: string,
+            data?: unknown,
+          ) => number
+        }
+      ).__emitNativeBridgeEvent = (
+        plugin: string,
+        eventName: string,
+        data?: unknown,
+      ): number => {
+        let count = 0
+        for (const listener of listenersById.values()) {
+          if (listener.plugin === plugin && listener.eventName === eventName) {
+            count++
+            try {
+              listener.callback(data)
+            } catch (err) {
+              console.error('Error in mock native listener callback:', err)
+            }
+          }
+        }
+        return count
+      }
+
+      ;(
+        window as unknown as {
+          __getNativeBridgeListeners: (plugin?: string) => MockNativeListener[]
+        }
+      ).__getNativeBridgeListeners = (
+        plugin?: string,
+      ): MockNativeListener[] => {
+        const result: MockNativeListener[] = []
+        for (const listener of listenersById.values()) {
+          if (!plugin || listener.plugin === plugin) {
+            result.push({
+              id: listener.id,
+              plugin: listener.plugin,
+              eventName: listener.eventName,
+            })
+          }
+        }
+        return result
+      }
     },
     { platform, appleSignInResult, nativeVoices },
   )
@@ -259,4 +439,48 @@ export async function getNativeBridgeCalls(
     return calls.filter((c) => c.plugin === pluginName)
   }
   return calls
+}
+
+/**
+ * Emits an event from the mock native bridge to all active listeners.
+ * Returns the number of listeners that received the event.
+ */
+export async function emitNativeBridgeEvent(
+  page: Page,
+  pluginName: string,
+  eventName: string,
+  data?: unknown,
+): Promise<number> {
+  return await page.evaluate(
+    ({ pluginName, eventName, data }) => {
+      const emit = (
+        window as unknown as {
+          __emitNativeBridgeEvent?: (
+            plugin: string,
+            event: string,
+            data?: unknown,
+          ) => number
+        }
+      ).__emitNativeBridgeEvent
+      return emit ? emit(pluginName, eventName, data) : 0
+    },
+    { pluginName, eventName, data },
+  )
+}
+
+/**
+ * Returns all active listeners currently registered on the mock native bridge.
+ */
+export async function getNativeBridgeListeners(
+  page: Page,
+  pluginName?: string,
+): Promise<MockNativeListener[]> {
+  return await page.evaluate((pluginName) => {
+    const getListeners = (
+      window as unknown as {
+        __getNativeBridgeListeners?: (plugin?: string) => MockNativeListener[]
+      }
+    ).__getNativeBridgeListeners
+    return getListeners ? getListeners(pluginName) : []
+  }, pluginName)
 }
