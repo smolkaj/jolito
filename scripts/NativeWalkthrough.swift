@@ -219,6 +219,7 @@ final class NativeWalkthrough: XCTestCase {
         }
         let started = Date()
         var keys = targets()
+        var uppercase = keys["A"] != nil
         var pending: [CGPoint] = []
         func flush() {
             if !pending.isEmpty { press(pending); pending.removeAll() }
@@ -226,32 +227,42 @@ final class NativeWalkthrough: XCTestCase {
         for character in text {
             let value = String(character)
             let identifier = character == " " ? "space" : value
-            if keys[identifier] == nil {
+            let opposite = character.isUppercase ? value.lowercased() : value.uppercased()
+            func keyPoint() -> CGPoint? {
+                keys[identifier] ?? (character.isLetter ? keys[opposite] : nil)
+            }
+            if keyPoint() == nil {
                 flush()
-                let opposite = value == value.uppercased() ? value.lowercased() : value.uppercased()
-                let toggle = opposite != value && keys[opposite] != nil ? "shift" : "more"
-                guard let point = keys[toggle] else {
+                guard let point = keys["more"] else {
                     XCTFail("The software keyboard must expose its layout switch")
                     return
                 }
                 press([point])
                 keys = targets()
-                if keys[identifier] == nil, opposite != value, keys[opposite] != nil,
-                   let shift = keys["shift"] {
-                    press([shift])
-                    keys = targets()
-                }
+                uppercase = keys["A"] != nil
             }
-            guard let point = keys[identifier] else {
+            guard let point = keyPoint() else {
                 XCTFail("The software keyboard must expose the requested key")
                 return
             }
+            // Shift changes labels, not key positions. Include it in the same
+            // touch sequence instead of synchronizing every capital or word.
+            if character.isLetter && uppercase != character.isUppercase {
+                guard let shift = keys["shift"] else {
+                    XCTFail("The software keyboard must expose Shift")
+                    return
+                }
+                pending.append(shift)
+                uppercase.toggle()
+            }
             pending.append(point)
-            // A capital releases Shift; space can return symbols to letters.
-            // Batch only while the resolved layout is unchanged.
-            if character.isUppercase || character == " " {
+            if character.isLetter { uppercase = false }
+            // Space on the symbols layout can switch back to letters. Resolve
+            // that actual geometry change only after its touches have finished.
+            if character == " " && keys["a"] == nil && keys["A"] == nil {
                 flush()
                 keys = targets()
+                uppercase = keys["A"] != nil
             }
         }
         flush()
