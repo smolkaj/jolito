@@ -540,40 +540,43 @@ export class SupabaseAuthService implements AuthService {
         typeof window !== 'undefined' ? window.location : undefined,
       )
 
-      const res = await fetch(`${this.supabaseUrl}/auth/v1/otp`, {
-        method: 'POST',
-        headers: {
-          apikey: this.supabaseAnonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: cleanEmail,
-          create_user: true,
-          email_redirect_to: redirectUrl,
-        }),
-      })
-
-      if (!res.ok) {
-        const errorData = (await res.json().catch(() => ({}))) as {
-          msg?: string
-          error_description?: string
-          message?: string
-        }
-        console.error('[AuthService] Magic link request failed:', {
-          status: res.status,
-          errorData,
+      return await withRequestDeadline(async (signal) => {
+        const res = await fetch(`${this.supabaseUrl}/auth/v1/otp`, {
+          method: 'POST',
+          signal,
+          headers: {
+            apikey: this.supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: cleanEmail,
+            create_user: true,
+            email_redirect_to: redirectUrl,
+          }),
         })
-        return {
-          success: false,
-          error:
-            errorData.msg ||
-            errorData.error_description ||
-            errorData.message ||
-            'Failed to send sign-in link.',
-        }
-      }
 
-      return { success: true }
+        if (!res.ok) {
+          const errorData = (await res.json().catch(() => ({}))) as {
+            msg?: string
+            error_description?: string
+            message?: string
+          }
+          console.error('[AuthService] Magic link request failed:', {
+            status: res.status,
+            errorData,
+          })
+          return {
+            success: false,
+            error:
+              errorData.msg ||
+              errorData.error_description ||
+              errorData.message ||
+              'Failed to send sign-in link.',
+          }
+        }
+
+        return { success: true }
+      }, this.lifetime.signal)
     } catch (err) {
       console.error(
         '[AuthService] Unexpected error requesting magic link:',
@@ -581,8 +584,7 @@ export class SupabaseAuthService implements AuthService {
       )
       return {
         success: false,
-        error:
-          err instanceof Error ? err.message : 'Network error during sign in.',
+        error: normalizeAuthTransportError(err),
       }
     }
   }
@@ -710,38 +712,89 @@ export class SupabaseAuthService implements AuthService {
       }
     }
 
-    // 3. If candidate is a token_hash (from email link or hash token), verify via token_hash
-    if (candidateType || candidateToken.length > 20) {
-      const hashTypes = Array.from(
-        new Set([
-          candidateType,
-          'magiclink',
-          'email',
-          'signup',
-          'recovery',
-          'invite',
-        ]),
-      ).filter((t): t is string => Boolean(t))
+    try {
+      return await withRequestDeadline(async (signal) => {
+        // 3. If candidate is a token_hash (from email link or hash token), verify via token_hash
+        if (candidateType || candidateToken.length > 20) {
+          const hashTypes = Array.from(
+            new Set([
+              candidateType,
+              'magiclink',
+              'email',
+              'signup',
+              'recovery',
+              'invite',
+            ]),
+          ).filter((t): t is string => Boolean(t))
 
-      for (const otpType of hashTypes) {
-        if (!isCurrent()) return stale()
-        try {
+          for (const otpType of hashTypes) {
+            if (signal.aborted || !isCurrent()) return stale()
+            const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
+              method: 'POST',
+              signal,
+              headers: {
+                apikey: this.supabaseAnonKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                token_hash: candidateToken,
+                type: otpType,
+              }),
+            })
+
+            if (signal.aborted || !isCurrent()) return stale()
+            if (res.ok) {
+              const rawJson: unknown = await res.json()
+              if (signal.aborted || !isCurrent()) return stale()
+              const parsed = authSessionResponseSchema.safeParse(rawJson)
+              if (parsed.success) {
+                const data = parsed.data
+                const user: AuthUser = {
+                  id: data.user.id,
+                  email: data.user.email || cleanEmail,
+                }
+
+                const saved = this.saveSession({
+                  accessToken: data.access_token,
+                  refreshToken: data.refresh_token,
+                  expiresAt: Date.now() + data.expires_in * 1000,
+                  user,
+                })
+
+                return saved
+                  ? { success: true }
+                  : { success: false, error: new SessionStorageError().message }
+              }
+            }
+          }
+        }
+
+        // 4. Verification attempt for OTP codes (or fallback if token_hash verification didn't match)
+        const types = Array.from(
+          new Set([candidateType, 'email', 'signup', 'magiclink']),
+        ).filter((t): t is string => Boolean(t))
+        let lastError = 'Invalid or expired sign-in link.'
+
+        for (const otpType of types) {
+          if (signal.aborted || !isCurrent()) return stale()
           const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
             method: 'POST',
+            signal,
             headers: {
               apikey: this.supabaseAnonKey,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              token_hash: candidateToken,
+              email: cleanEmail,
+              token: candidateToken,
               type: otpType,
             }),
           })
 
-          if (!isCurrent()) return stale()
+          if (signal.aborted || !isCurrent()) return stale()
           if (res.ok) {
             const rawJson: unknown = await res.json()
-            if (!isCurrent()) return stale()
+            if (signal.aborted || !isCurrent()) return stale()
             const parsed = authSessionResponseSchema.safeParse(rawJson)
             if (parsed.success) {
               const data = parsed.data
@@ -762,99 +815,46 @@ export class SupabaseAuthService implements AuthService {
                 : { success: false, error: new SessionStorageError().message }
             }
           }
-        } catch {
-          // Continue to next type
-        }
-      }
-    }
 
-    // 4. Verification attempt for OTP codes (or fallback if token_hash verification didn't match)
-    const types = Array.from(
-      new Set([candidateType, 'email', 'signup', 'magiclink']),
-    ).filter((t): t is string => Boolean(t))
-    let lastError = 'Invalid or expired sign-in link.'
-
-    for (const otpType of types) {
-      if (!isCurrent()) return stale()
-      try {
-        const res = await fetch(`${this.supabaseUrl}/auth/v1/verify`, {
-          method: 'POST',
-          headers: {
-            apikey: this.supabaseAnonKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: cleanEmail,
-            token: candidateToken,
+          const errorData = (await res.json().catch(() => ({}))) as {
+            msg?: string
+            error_description?: string
+            message?: string
+          }
+          console.error('[AuthService] OTP verification attempt failed:', {
+            status: res.status,
             type: otpType,
-          }),
-        })
+            errorData,
+          })
+          const rawError =
+            errorData.msg ||
+            errorData.error_description ||
+            errorData.message ||
+            lastError
 
-        if (!isCurrent()) return stale()
-        if (res.ok) {
-          const rawJson: unknown = await res.json()
-          if (!isCurrent()) return stale()
-          const parsed = authSessionResponseSchema.safeParse(rawJson)
-          if (parsed.success) {
-            const data = parsed.data
-            const user: AuthUser = {
-              id: data.user.id,
-              email: data.user.email || cleanEmail,
-            }
-
-            const saved = this.saveSession({
-              accessToken: data.access_token,
-              refreshToken: data.refresh_token,
-              expiresAt: Date.now() + data.expires_in * 1000,
-              user,
-            })
-
-            return saved
-              ? { success: true }
-              : { success: false, error: new SessionStorageError().message }
+          if (/expired|invalid/i.test(rawError)) {
+            lastError =
+              'Invalid or expired link. Tap the link in your email, then tap "Copy sign-in link" in Jolito’s top banner.'
+          } else {
+            lastError = rawError
           }
         }
 
-        const errorData = (await res.json().catch(() => ({}))) as {
-          msg?: string
-          error_description?: string
-          message?: string
-        }
-        console.error('[AuthService] OTP verification attempt failed:', {
-          status: res.status,
-          type: otpType,
-          errorData,
-        })
-        const rawError =
-          errorData.msg ||
-          errorData.error_description ||
-          errorData.message ||
-          lastError
-
-        if (/expired|invalid/i.test(rawError)) {
-          lastError =
-            'Invalid or expired link. Tap the link in your email, then tap "Copy sign-in link" in Jolito’s top banner.'
-        } else {
-          lastError = rawError
-        }
-      } catch (err) {
-        console.error(
-          '[AuthService] Unexpected error during OTP verification:',
-          err,
-        )
         return {
           success: false,
-          error:
-            err instanceof Error
-              ? err.message
-              : 'Network error during verification.',
+          error: lastError,
         }
+      }, this.lifetime.signal)
+    } catch (err) {
+      if (!isCurrent()) return stale()
+      console.error(
+        '[AuthService] Unexpected error during OTP verification:',
+        err,
+      )
+      return {
+        success: false,
+        error: normalizeAuthTransportError(err),
       }
-    }
-
-    return {
-      success: false,
-      error: lastError,
     }
   }
 
@@ -956,7 +956,7 @@ export class SupabaseAuthService implements AuthService {
           success: true as const,
           data: parsed.data,
         }
-      })
+      }, this.lifetime.signal)
 
       if (!isCurrent() || outcome === null) return stale()
       if (!outcome.success) return outcome
