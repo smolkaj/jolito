@@ -18,7 +18,7 @@ import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
 import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
-import { EnglishBadge, MexicoFlag } from '../icons'
+import { EnglishBadge, MexicoFlag, SearchIcon, TrashIcon } from '../icons'
 import { DeckBackupModal } from '../modals/DeckBackupModal'
 import { DemoDeckModal } from '../modals/DemoDeckModal'
 import { StarterPacksModal } from '../modals/StarterPacksModal'
@@ -255,9 +255,7 @@ export function DeckManagerView({
 
           <div className="deck-toolbar">
             <div className="deck-search-wrap">
-              <span className="deck-search-icon" aria-hidden="true">
-                🔍
-              </span>
+              <SearchIcon className="deck-search-icon" size={16} />
               <input
                 type="search"
                 className="deck-search-input"
@@ -349,7 +347,8 @@ export function DeckManagerView({
                       )
                     }
                   >
-                    🗑️ Delete selected ({activeSelectedCardIds.size})
+                    <TrashIcon size={14} />
+                    <span>Delete selected ({activeSelectedCardIds.size})</span>
                   </button>
                   <button
                     type="button"
