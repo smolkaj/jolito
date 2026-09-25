@@ -35,6 +35,17 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      '@typescript-eslint/no-use-before-define': [
+        'error',
+        {
+          functions: false,
+          classes: true,
+          variables: true,
+          enums: true,
+          typedefs: false,
+          ignoreTypeReferences: true,
+        },
+      ],
     },
   },
   {
