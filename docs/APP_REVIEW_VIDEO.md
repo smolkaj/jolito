@@ -7,23 +7,28 @@ Credentials belong in private release secrets, never this repository.
 
 ## Native recording
 
-The [11:58 recording](media/native-walkthrough.mp4),
+The [5:23 recording](media/native-walkthrough.mp4),
 [capture manifest](media/native-walkthrough.json) and
 [timestamped contact sheet](media/native-walkthrough-contact.jpg) are the release
-package. Source capture: [native run 36058089991](https://github.com/smolkaj/jolito/actions/runs/36058089991),
-commit `f2edd03118cf717464bbdfdb8a120efd8e1d0b20`. Its complete 788-second
-XCTest passed with zero failures. The original exporter rejected its sparse-frame
-trim; the corrected exporter below assembled the same raw recording locally.
-No interactions were recaptured, synthesized or spliced.
+package. Source capture: [native run 36100386827](https://github.com/smolkaj/jolito/actions/runs/36100386827),
+commit `1638a21d7b88a8a6c47b8fe8d072f0d7e3eddec0`. The complete 355-second
+XCTest and original-audio export passed. All interactions were newly captured;
+only setup/teardown were trimmed. No timeline speed changes, splices, or replaced
+speech were used.
 
-Validation on September 24, 2026: both output tracks start at zero and span
-717.76 seconds. Sampled frames cover the whole flow, with full-resolution checks
-of launch, study, login and deletion. Original speech peaks at −12.7 dB.
-Waveform analysis and speech transcription identify “La cuenta, por favor,”
-“The bill, please,” “Provecho,” “Enjoy your meal” (automatic and replay), and
-the grammar prompts/answers. This is signal/transcription verification, not a
-human listening review. Production readback confirms the disposable account
-was deleted and the dedicated reviewer account remains available with its deck.
+Validation on September 25, 2026 (UTC): both output tracks start at zero and span
+322.81 seconds, compared with the previous 717.76-second take (55% shorter).
+Authored phrase typing takes 0.74–3.14 seconds; reviewer email entry takes about
+5.2 seconds. Native touch-mode assertions and reveal/grade gestures pass, as do
+exact authored text, return login, exact DELETE confirmation and account deletion.
+Sampled frames cover the full flow, with full-resolution launch, study and deletion
+checks. Original speech peaks at −12.6 dB, with a 2.666-second continuous study sound
+interval. Spanish/English transcription identifies the restaurant phrases,
+automatic and replayed English answers, and the grammar forms “hablamos” and “fue.”
+This is signal/transcription verification, not a human listening review. Production
+readback confirms the disposable account was deleted and the reviewer remains
+available with its personal deck. Failed rehearsals were not exported as release
+videos.
 
 The native capture uses Apple's **iPhone Air Simulator, iOS 27.0**, running the
 bundled Release app with production Supabase authentication and device speech.
@@ -59,8 +64,15 @@ separate unsigned build of that application source.
    and confirm deletion. Hold the actual signed-out success state. Preserve
    the reviewer account for Apple.
 
-The manifest records measured chapter times. Pauses leave time to read and hear
-the actual app. Capture setup and teardown are trimmed; interactions are not
+The manifest records measured chapter times. Listening and warning-reading pauses
+remain deliberate; routine navigation holds are 0.4–1.5 seconds. Software keys use
+real touch-down/up events spaced 0.20 seconds apart, batched only while the
+keyboard layout is unchanged. The runner waits for each sequence's completion
+before resolving a new layout or checking the resulting text. Swift's public
+XCTest tap method otherwise adds accessibility/idle synchronization to every key.
+The capture asserts a per-field typing budget, exact authored text, completed
+sign-ins, successful gestures, and touch-mode study controls. No video time
+remapping is applied. Capture setup and teardown are trimmed; interactions are not
 sped up or replaced. The account inbox is powered by [Mail.tm](https://mail.tm/en/)
 using its [documented API](https://docs.mail.tm/), exclusively in the test runner.
 
@@ -87,10 +99,16 @@ UI-test runner only. The app target receives no test-account secrets.
 captures masked H.264 video and continuous PCM system audio. The Simulator’s
 own output-device UID is routed to BlackHole, preserving device volume and
 ringer state. The Mac’s default output alone does not configure that route.
-Device Hub’s keyboard setting is initialized to touch mode before capture;
+Simulator's hardware-keyboard setting is disabled, and Device Hub's touch setting
+is saved before restarting that runner's Device Hub instance. This makes the
+initial connection use the saved setting rather than first-launch defaults;
 otherwise Xcode can attach a virtual hardware keyboard during typing. No desktop
 UI scripting or Apple Events are used. Text is entered by tapping actual software keys: XCTest's `typeText` attaches a virtual hardware
-keyboard, so it is unsuitable for a touch-mode recording. Study asserts the
+keyboard, so it is unsuitable for a touch-mode recording. `NativeTouch.m` uses
+XCTest event synthesis, following Appium/WebDriverAgent's event-synthesizer path;
+it is compiled only into the generated UI-test runner, never the shipped app.
+There is no slower fallback: unavailable or failed synthesis fails the take.
+Study asserts the
 absence of keyboard-only reveal hints. The capture device has keyboard
 autocorrection and prediction disabled so English corrections cannot rewrite
 the Spanish phrases. This uses the same device preferences as
@@ -215,3 +233,21 @@ explicitly, and the recording script fails on any browser page error.
   connected, disconnected and reconnected hardware states, then verifies that
   neither event source changes state after teardown. The contract fails before
   the fix and passes afterward.
+
+## Pacing regression in the first native package
+
+PR #442's capture entered software keys individually through XCTest, which added
+an idle/accessibility round trip to each tap. Its fixed post-tap holds and slow
+swipes further compounded the delay. The successful flow, audio and export gates
+proved completeness but had no timing contract, so an unnaturally slow recording
+passed. The revised harness batches genuine key touches at a five-character-per-
+second cadence, waits for completion across keyboard-layout changes, and asserts
+an elapsed typing budget for every input kind (phrases, email, OTP and deletion).
+The first rehearsal exposed an asynchronous synthesis return: an immediate value
+assertion saw an unfinished word, while the failure snapshot contained the full
+correct phrase. Waiting on the event-synthesizer completion fixes that boundary;
+extra sleeps or editing the video timeline would conceal it instead.
+The all-capital deletion confirmation uses the onscreen Caps Lock double-tap;
+rapid alternating Shift/letter touches were interpreted as a chord and produced
+“Delete.” Exact confirmation text is asserted before enabling deletion. The
+harness retains its touch-mode and actual deletion-result assertions.

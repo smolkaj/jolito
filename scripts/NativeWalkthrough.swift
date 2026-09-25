@@ -37,25 +37,25 @@ final class NativeWalkthrough: XCTestCase {
         XCTAssertTrue(create.waitForExistence(timeout: 90))
         XCUIDevice.shared.press(.home)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        pause(3)
+        pause(1)
         var launchIcon: XCUIElement?
         for _ in 0..<3 {
             launchIcon = springboard.icons.matching(identifier: "Jolito").allElementsBoundByIndex.first {
                 $0.isHittable && $0.frame.width > 0
             }
             if launchIcon != nil { break }
-            springboard.swipeLeft(velocity: .slow)
-            pause(2)
+            springboard.swipeLeft(velocity: .default)
+            pause(0.4)
         }
         guard let icon = launchIcon else {
             XCTFail("Jolito must be visible on the Home Screen before capture begins")
             return
         }
         print("WALKTHROUGH_START \(Date().timeIntervalSince1970)")
-        pause(3)
+        pause(1)
         icon.tap()
         XCTAssertTrue(create.waitForExistence(timeout: 60))
-        pause(5)
+        pause(1.5)
 
         chapter("Save a restaurant phrase and sign in")
         tap(create)
@@ -63,11 +63,11 @@ final class NativeWalkthrough: XCTestCase {
         dismissSuggestions()
         type("English", "The bill, please")
         dismissKeyboard()
-        pause(3)
+        pause(1)
         scrollToSave()
         tap(button("Sign in to save"))
         try signIn(reviewer)
-        pause(5)
+        pause(1.5)
         if !button("Sign out").exists {
             // Saving a pending card closes the sheet and focuses the next draft.
             dismissKeyboard()
@@ -77,11 +77,11 @@ final class NativeWalkthrough: XCTestCase {
         chapter("Build a useful personal deck")
         createCard("Provecho", "Enjoy your meal")
         tap(button("Deck"))
-        pause(5)
-        app.swipeUp(velocity: .slow)
-        pause(3)
-        app.swipeDown(velocity: .slow)
-        pause(3)
+        pause(1.5)
+        app.swipeUp(velocity: .default)
+        pause(1)
+        app.swipeDown(velocity: .default)
+        pause(1)
 
         print("WALKTHROUGH_HARDWARE_KEYBOARD_AFTER_TYPING \(GCKeyboard.coalesced != nil)")
         chapter("Listen, recall, reveal and grade with touch gestures")
@@ -92,36 +92,36 @@ final class NativeWalkthrough: XCTestCase {
             XCTAssertFalse(button("Reveal answer Enter").exists, "Study must use touch mode without hardware-keyboard hints")
             dismissKeyboard()
             let prompt = visibleStudyPrompt()
-            pause(7)
+            pause(4)
             // Start on the noninteractive prompt area. Up reveals; right grades Good.
             let origin = prompt.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
             // Clear the 50-point reveal threshold while keeping the finger
             // below the sticky header for the entire gesture, including lift.
             let upwards = origin.withOffset(CGVector(dx: 0, dy: -55))
-            origin.press(forDuration: 0.08, thenDragTo: upwards, withVelocity: .slow, thenHoldForDuration: 0.15)
+            origin.press(forDuration: 0.08, thenDragTo: upwards, withVelocity: .fast, thenHoldForDuration: 0)
             XCTAssertTrue(button("3 Good").waitForExistence(timeout: 10), "Swipe up must reveal the answer")
-            pause(7)
+            pause(4)
             if index == 1 {
                 tap(app.buttons["Play answer audio"].firstMatch)
-                pause(4)
+                pause(2)
             }
             let grading = visibleStudyPrompt().coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5))
-            grading.press(forDuration: 0.08, thenDragTo: grading.withOffset(CGVector(dx: 210, dy: 0)), withVelocity: .slow, thenHoldForDuration: 0.2)
+            grading.press(forDuration: 0.08, thenDragTo: grading.withOffset(CGVector(dx: 210, dy: 0)), withVelocity: .fast, thenHoldForDuration: 0)
             XCTAssertTrue(reveal.waitForExistence(timeout: 10), "Swipe right must advance the study session")
-            pause(2)
+            pause(0.4)
         }
 
         dismissKeyboard()
         chapter("Practice verb forms in context")
         tap(button("Grammar"))
-        pause(4)
+        pause(2)
         tap(button("Start practice"))
         for _ in 0..<2 {
             XCTAssertTrue(button("Reveal answer").waitForExistence(timeout: 20))
             dismissKeyboard()
-            pause(6)
+            pause(4)
             tap(button("Reveal answer"))
-            pause(7)
+            pause(4)
             tap(button("3 Good"))
         }
 
@@ -129,43 +129,44 @@ final class NativeWalkthrough: XCTestCase {
         chapter("Return to the same account")
         tap(button("Deck synced with cloud."))
         tap(button("Sign out"))
-        pause(4)
+        pause(2)
         try signIn(reviewer)
-        pause(5)
+        pause(1.5)
         closeSheetIfOpen()
         tap(button("Deck"))
         XCTAssertTrue(app.staticTexts["La cuenta, por favor"].firstMatch.waitForExistence(timeout: 15))
-        pause(5)
+        pause(1.5)
         chapter("Create and delete a separate disposable account")
         tap(button("Deck synced with cloud."))
         tap(button("Sign out"))
-        pause(4)
+        pause(2)
         try signIn(disposable)
-        pause(5)
+        pause(1.5)
         if !button("Delete cloud account & data").exists {
             tap(button("Deck synced with cloud."))
         }
         tap(button("Delete cloud account & data"))
-        pause(6)
+        pause(4)
         let backup = app.switches["Save an offline backup before deleting"].firstMatch
         if backup.exists { tap(backup) }
         else { tap(app.checkBoxes["Save an offline backup before deleting"].firstMatch) }
         let confirmation = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "DELETE")).firstMatch
         tap(confirmation)
         typeOnscreen("DELETE")
+        XCTAssertEqual(confirmation.value as? String, "DELETE")
         app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Permanently deletes your account")).firstMatch.tap()
-        pause(3)
+        pause(1)
         tap(button("Yes, delete cloud data"))
         XCTAssertTrue(button("Not signed in.").waitForExistence(timeout: 30))
         let demoDeck = button("Explore demo deck")
         if demoDeck.waitForExistence(timeout: 3) { tap(demoDeck) }
         XCTAssertTrue(app.staticTexts["Cloud account and backup data deleted."].firstMatch.waitForExistence(timeout: 15))
-        pause(7)
+        pause(4)
         print("WALKTHROUGH_END \(Date().timeIntervalSince1970)")
         // Produce a teardown frame after END so the variable-rate recorder
         // retains the full final success-state hold. Export trims this away.
         XCUIDevice.shared.press(.home)
-        pause(2)
+        pause(0.4)
     }
 
     private func button(_ prefix: String) -> XCUIElement {
@@ -175,7 +176,7 @@ final class NativeWalkthrough: XCTestCase {
     private func tap(_ element: XCUIElement) {
         XCTAssertTrue(element.waitForExistence(timeout: 20))
         element.tap()
-        pause(2)
+        pause(0.4)
     }
 
     private func type(_ label: String, _ text: String) {
@@ -187,7 +188,7 @@ final class NativeWalkthrough: XCTestCase {
         }
         typeOnscreen(text)
         XCTAssertEqual(field.value as? String, text, "Onscreen typing must preserve the intended phrase")
-        pause(2)
+        pause(0.4)
     }
 
     private func typeOnscreen(_ text: String) {
@@ -209,38 +210,74 @@ final class NativeWalkthrough: XCTestCase {
             visit(snapshot)
             return result
         }
-        func press(_ point: CGPoint) {
-            app.coordinate(withNormalizedOffset: .zero)
-                .withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+        func press(_ points: [CGPoint]) {
+            let finished = expectation(description: "Software keyboard touches completed")
+            NativeTouch.tapPoints(points.map { NSValue(cgPoint: $0) }) { error in
+                XCTAssertNil(error, "Software keyboard touch synthesis must succeed")
+                finished.fulfill()
+            }
+            wait(for: [finished], timeout: Double(points.count) * 0.2 + 5)
+        }
+        let started = Date()
+        let capsLocked = text.count > 1 && text.allSatisfy { $0.isUppercase }
+        if capsLocked {
+            // A person uses Caps Lock for an all-capital confirmation. Rapid
+            // alternating Shift/letter touches can be interpreted as one chord.
+            keyboard.buttons["shift"].doubleTap()
         }
         var keys = targets()
+        var uppercase = keys["A"] != nil
+        var pending: [CGPoint] = []
+        func flush() {
+            if !pending.isEmpty { press(pending); pending.removeAll() }
+        }
         for character in text {
             let value = String(character)
             let identifier = character == " " ? "space" : value
-            if keys[identifier] == nil {
-                let opposite = value == value.uppercased() ? value.lowercased() : value.uppercased()
-                let toggle = opposite != value && keys[opposite] != nil ? "shift" : "more"
-                guard let point = keys[toggle] else {
+            let opposite = character.isUppercase ? value.lowercased() : value.uppercased()
+            func keyPoint() -> CGPoint? {
+                keys[identifier] ?? (character.isLetter ? keys[opposite] : nil)
+            }
+            if keyPoint() == nil {
+                flush()
+                guard let point = keys["more"] else {
                     XCTFail("The software keyboard must expose its layout switch")
                     return
                 }
-                press(point)
+                press([point])
                 keys = targets()
-                if keys[identifier] == nil, opposite != value, keys[opposite] != nil,
-                   let shift = keys["shift"] {
-                    press(shift)
-                    keys = targets()
-                }
+                uppercase = keys["A"] != nil
             }
-            guard let point = keys[identifier] else {
+            guard let point = keyPoint() else {
                 XCTFail("The software keyboard must expose the requested key")
                 return
             }
-            press(point)
-            // Capitals release Shift; a space can return punctuation to letters.
-            if character.isUppercase || character == " " { keys = targets() }
-            if character == " " { pause(0.2) }
+            // Shift changes labels, not key positions. Include it in the same
+            // touch sequence instead of synchronizing every capital or word.
+            if character.isLetter && uppercase != character.isUppercase {
+                guard let shift = keys["shift"] else {
+                    XCTFail("The software keyboard must expose Shift")
+                    return
+                }
+                pending.append(shift)
+                uppercase.toggle()
+            }
+            pending.append(point)
+            if character.isLetter && !capsLocked { uppercase = false }
+            // Space on the symbols layout can switch back to letters. Resolve
+            // that actual geometry change only after its touches have finished.
+            if character == " " && keys["a"] == nil && keys["A"] == nil {
+                flush()
+                keys = targets()
+                uppercase = keys["A"] != nil
+            }
         }
+        flush()
+        let elapsed = Date().timeIntervalSince(started)
+        // Log only timing/count, never mailbox credentials or login codes.
+        print("WALKTHROUGH_TYPING \(text.count) \(elapsed)")
+        XCTAssertLessThan(elapsed, Double(text.count) * 0.5 + 2,
+                          "Typing must not regress to XCTest's per-key idle waits")
     }
 
     private func createCard(_ spanish: String, _ english: String) {
@@ -248,10 +285,10 @@ final class NativeWalkthrough: XCTestCase {
         dismissSuggestions()
         type("English", english)
         dismissKeyboard()
-        pause(3)
+        pause(1)
         scrollToSave()
         tap(button("Save card"))
-        pause(3)
+        pause(1)
         dismissKeyboard()
     }
 
@@ -262,8 +299,8 @@ final class NativeWalkthrough: XCTestCase {
 
     private func scrollToSave() {
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: 0.72))
-        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)), withVelocity: .slow, thenHoldForDuration: 0.1)
-        pause(2)
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)), withVelocity: .fast, thenHoldForDuration: 0)
+        pause(0.4)
     }
 
     private func dismissKeyboard() {
@@ -275,7 +312,7 @@ final class NativeWalkthrough: XCTestCase {
             predicate: NSPredicate { _, _ in !self.app.keyboards.firstMatch.exists }, object: nil
         )
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: 10), .completed)
-        pause(2)
+        pause(0.4)
     }
 
     private func visibleStudyPrompt() -> XCUIElement {
@@ -290,8 +327,8 @@ final class NativeWalkthrough: XCTestCase {
         for _ in 0..<2 {
             if prompt.frame.minY > header.frame.maxY + 8 { break }
             let margin = app.coordinate(withNormalizedOffset: CGVector(dx: 0.015, dy: 0.3))
-            margin.press(forDuration: 0.05, thenDragTo: margin.withOffset(CGVector(dx: 0, dy: 300)), withVelocity: .slow, thenHoldForDuration: 0.1)
-            pause(2)
+            margin.press(forDuration: 0.05, thenDragTo: margin.withOffset(CGVector(dx: 0, dy: 300)), withVelocity: .fast, thenHoldForDuration: 0)
+            pause(0.4)
         }
         XCTAssertGreaterThan(prompt.frame.minY, header.frame.maxY + 8, "The entire prompt must be visible before demonstrating gestures")
         return prompt
@@ -317,7 +354,7 @@ final class NativeWalkthrough: XCTestCase {
         let code = try deliveredCode(mailbox, after: sentAfter)
         codeField.tap()
         typeOnscreen(code)
-        pause(2)
+        pause(0.4)
         tap(button("Sign in &"))
         let authenticated = app.buttons.matching(NSPredicate(format: "label IN %@", ["Sign out", "Deck synced with cloud. Tap to manage sync."])).firstMatch
         XCTAssertTrue(authenticated.waitForExistence(timeout: 30), "Real account sign-in and synchronization must complete")
@@ -336,7 +373,7 @@ final class NativeWalkthrough: XCTestCase {
                     return String(message.subject[range])
                 }
             }
-            pause(3)
+            pause(1)
         }
         throw CaptureError.missingCode
     }

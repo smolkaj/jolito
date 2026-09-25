@@ -72,6 +72,12 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 test "$keyboard_configured" = true
+# Device Hub may have read its default before the container existed. Restart
+# this runner's instance so its first device connection uses the saved setting.
+swift -e 'import AppKit; NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Devices").forEach { _ = $0.forceTerminate() }'
+defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
+open -b com.apple.dt.Devices
+sleep 2
 # Simulator apps use their own output UID, independent of the Mac's default.
 # Set only that route; preserve the device's volume and ringer state.
 python3 - "$device" "$output" <<'PYAUDIO'

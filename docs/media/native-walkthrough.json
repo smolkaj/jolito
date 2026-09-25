@@ -2,38 +2,38 @@
   "capture": "iOS Simulator \u2014 not a physical-device recording",
   "device": "iPhone Air",
   "operatingSystem": "iOS 27.0",
-  "sha256": "a2d3e51b4bc00fb72615c29722d3323bd5d63053be48058606e099dde76da39a",
-  "sourceCommit": "f2edd03118cf717464bbdfdb8a120efd8e1d0b20",
-  "durationSeconds": 717.76,
+  "sha256": "7c659d89d073cf1633500369a6558822c6f237e0fb11ea04297ed4236e737cf6",
+  "sourceCommit": "1638a21d7b88a8a6c47b8fe8d072f0d7e3eddec0",
+  "durationSeconds": 322.81,
   "authentication": "Real production email-code authentication; dedicated reviewer and disposable deletion accounts",
-  "audioPeakDb": -12.7,
-  "longestStudySoundSeconds": 1.961,
+  "audioPeakDb": -12.6,
+  "longestStudySoundSeconds": 2.666,
   "audio": "Original Simulator system audio via BlackHole; no voiceover or replacement speech",
   "launch": "Home Screen icon tap, resuming the warmed app",
   "presentation": "Native device mask; setup/teardown trimmed; no added titles, borders or pointer overlays",
   "chapters": [
     {
-      "seconds": 13.06,
+      "seconds": 4.85,
       "title": "Save a restaurant phrase and sign in"
     },
     {
-      "seconds": 174.61,
+      "seconds": 70.11,
       "title": "Build a useful personal deck"
     },
     {
-      "seconds": 286.55,
+      "seconds": 100.14,
       "title": "Listen, recall, reveal and grade with touch gestures"
     },
     {
-      "seconds": 420.38,
+      "seconds": 179.95,
       "title": "Practice verb forms in context"
     },
     {
-      "seconds": 498.53,
+      "seconds": 223.34,
       "title": "Return to the same account"
     },
     {
-      "seconds": 590.72,
+      "seconds": 262.23,
       "title": "Create and delete a separate disposable account"
     }
   ]
