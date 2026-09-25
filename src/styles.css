@@ -2414,11 +2414,11 @@ textarea::placeholder {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 5px;
   background: var(--cempasuchil-soft);
   color: var(--cempasuchil-dark);
@@ -5856,11 +5856,11 @@ kbd {
 }
 
 .deck-sort-label {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   color: var(--ink-muted);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 .pill-select {
@@ -5874,10 +5874,12 @@ kbd {
   border: 1.5px solid var(--line-subtle);
   border-radius: var(--pill-radius);
   background-color: var(--card);
+  font-family: inherit;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.2px;
   line-height: 1;
-  color: var(--ink);
+  color: var(--ink-soft);
   cursor: pointer;
   appearance: none;
   background-image: var(--select-chevron-url);
@@ -5927,7 +5929,7 @@ kbd {
 
 .deck-sort-icon {
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
   color: var(--rosa);
 }
