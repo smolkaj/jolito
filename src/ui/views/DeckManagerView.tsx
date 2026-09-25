@@ -18,12 +18,19 @@ import { Brand } from '../Brand'
 import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
 import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
-import { EnglishBadge, MexicoFlag } from '../icons'
+import { EnglishBadge, MexicoFlag, SearchIcon, TrashIcon } from '../icons'
 import { DeckBackupModal } from '../modals/DeckBackupModal'
 import { DemoDeckModal } from '../modals/DemoDeckModal'
 import { StarterPacksModal } from '../modals/StarterPacksModal'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
 import { handleFocusSelect } from '../utils'
+
+const SORT_ORDER_LABELS: Record<DeckSortOrder, string> = {
+  'created-desc': 'Newest first',
+  'created-asc': 'Oldest first',
+  'alpha-asc': 'Alphabetical (A–Z)',
+  'alpha-desc': 'Alphabetical (Z–A)',
+}
 
 export interface DeckManagerViewProps {
   cards: StudyCard[]
@@ -255,9 +262,7 @@ export function DeckManagerView({
 
           <div className="deck-toolbar">
             <div className="deck-search-wrap">
-              <span className="deck-search-icon" aria-hidden="true">
-                🔍
-              </span>
+              <SearchIcon className="deck-search-icon" size={16} />
               <input
                 type="search"
                 className="deck-search-input"
@@ -349,7 +354,8 @@ export function DeckManagerView({
                       )
                     }
                   >
-                    🗑️ Delete selected ({activeSelectedCardIds.size})
+                    <TrashIcon size={14} />
+                    <span>Delete selected ({activeSelectedCardIds.size})</span>
                   </button>
                   <button
                     type="button"
@@ -362,23 +368,31 @@ export function DeckManagerView({
               ) : (
                 vocabularyCards.length > 0 && (
                   <div className="deck-sort-wrap">
-                    <label htmlFor="pill-select" className="deck-sort-label">
+                    <label
+                      htmlFor="deck-sort-order"
+                      className="deck-sort-label"
+                    >
                       Sort
                     </label>
-                    <select
-                      id="pill-select"
-                      className="pill-select"
-                      value={deckSortOrder}
-                      onChange={(e) =>
-                        setDeckSortOrder(e.target.value as DeckSortOrder)
-                      }
-                      aria-label="Sort cards"
-                    >
-                      <option value="created-desc">Newest first</option>
-                      <option value="created-asc">Oldest first</option>
-                      <option value="alpha-asc">Alphabetical (A–Z)</option>
-                      <option value="alpha-desc">Alphabetical (Z–A)</option>
-                    </select>
+                    <div className="deck-sort-select-wrap">
+                      <span className="deck-sort-pill" aria-hidden="true">
+                        {SORT_ORDER_LABELS[deckSortOrder]}
+                      </span>
+                      <select
+                        id="deck-sort-order"
+                        className="deck-sort-native-select"
+                        value={deckSortOrder}
+                        onChange={(e) =>
+                          setDeckSortOrder(e.target.value as DeckSortOrder)
+                        }
+                        aria-label="Sort cards"
+                      >
+                        <option value="created-desc">Newest first</option>
+                        <option value="created-asc">Oldest first</option>
+                        <option value="alpha-asc">Alphabetical (A–Z)</option>
+                        <option value="alpha-desc">Alphabetical (Z–A)</option>
+                      </select>
+                    </div>
                   </div>
                 )
               )}
@@ -442,7 +456,7 @@ export function DeckManagerView({
               aria-label="Deck cards"
             >
               <div className="deck-list-table-header" role="row">
-                <div className="col-select" role="columnheader">
+                <label className="col-select" role="columnheader">
                   <input
                     type="checkbox"
                     className="deck-select-checkbox"
@@ -464,7 +478,7 @@ export function DeckManagerView({
                       isAllSelected ? 'Deselect all cards' : 'Select all cards'
                     }
                   />
-                </div>
+                </label>
                 <div className="col-dir" role="columnheader">
                   Direction
                 </div>
@@ -528,7 +542,7 @@ export function DeckManagerView({
                     onClick={() => onEditCard(card)}
                     onKeyDown={(e) => handleRowKeyDown(e, card)}
                   >
-                    <div
+                    <label
                       className="col-select"
                       role="cell"
                       onClick={(e) => e.stopPropagation()}
@@ -549,7 +563,7 @@ export function DeckManagerView({
                         onClick={(e) => e.stopPropagation()}
                         aria-label={`Select card ${card.prompt}`}
                       />
-                    </div>
+                    </label>
                     <div className="col-dir" role="cell">
                       <span
                         className="deck-direction-badge"
