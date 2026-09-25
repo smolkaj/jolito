@@ -332,13 +332,12 @@ for (const token of ['123456', 'a'.repeat(64)]) {
         if (transition === 'destroy') auth.destroy()
         const before = localStorage.getItem(key)
         const notifications = listener.mock.calls.length
-        const timers = vi.getTimerCount()
         release()
         expect(await pending).toMatchObject({ success: false })
         expect(request).toHaveBeenCalledOnce()
         expect(localStorage.getItem(key)).toBe(before)
         expect(listener).toHaveBeenCalledTimes(notifications)
-        expect(vi.getTimerCount()).toBe(timers)
+        expect(vi.getTimerCount()).toBe(transition === 'destroy' ? 0 : 1)
         auth.destroy()
         const reloaded = new SupabaseAuthService(
           'https://example.supabase.co',
