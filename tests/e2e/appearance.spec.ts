@@ -391,7 +391,7 @@ for (const width of [393, 1280]) {
         let minY = height
         let maxY = 0
         for (let i = 0; i < component.length; i++) {
-          const index = component[i]
+          const index = component[i]!
           const x = index % width
           const y = Math.floor(index / width)
           minX = Math.min(minX, x)
@@ -403,10 +403,10 @@ for (const width of [393, 1280]) {
             [x + 1, y],
             [x, y - 1],
             [x, y + 1],
-          ]) {
+          ] as const) {
             if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
             const next = ny * width + nx
-            if (!visited[next] && pixels[next * 4 + 3] < 255) {
+            if (!visited[next] && pixels[next * 4 + 3]! < 255) {
               visited[next] = 1
               component.push(next)
             }
