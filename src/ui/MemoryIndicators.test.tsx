@@ -36,7 +36,7 @@ describe('ProgressBubbles', () => {
     expect(filledCircles.length).toBe(3)
   })
 
-  it('supports ariaHidden to suppress accessible name for decorative usage', () => {
+  it('supports ariaHidden to suppress accessible name and title for decorative usage', () => {
     const { container } = render(
       <ProgressBubbles level={2} ariaHidden={true} />,
     )
@@ -44,6 +44,7 @@ describe('ProgressBubbles', () => {
     expect(span).toHaveAttribute('aria-hidden', 'true')
     expect(span).not.toHaveAttribute('role')
     expect(span).not.toHaveAttribute('aria-label')
+    expect(span).not.toHaveAttribute('title')
   })
 })
 
@@ -89,12 +90,13 @@ describe('ChiliMeter', () => {
     expect(container.querySelector('.chili-meter')).toBeInTheDocument()
   })
 
-  it('supports ariaHidden to suppress accessible name for decorative usage', () => {
+  it('supports ariaHidden to suppress accessible name and title for decorative usage', () => {
     const { container } = render(<ChiliMeter level={2} ariaHidden={true} />)
     const span = container.querySelector('.chili-meter')
     expect(span).toHaveAttribute('aria-hidden', 'true')
     expect(span).not.toHaveAttribute('role')
     expect(span).not.toHaveAttribute('aria-label')
+    expect(span).not.toHaveAttribute('title')
   })
 })
 

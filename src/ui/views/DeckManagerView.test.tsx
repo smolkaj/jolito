@@ -130,7 +130,7 @@ describe('DeckManagerView', () => {
       screen.getByRole('button', { name: /unstudied \(1\)/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /mastered \(1\)/i }),
+      screen.getByRole('button', { name: /graduated \(1\)/i }),
     ).toBeInTheDocument()
 
     // Table rows
@@ -170,8 +170,8 @@ describe('DeckManagerView', () => {
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
     expect(screen.getByText('No manches')).toBeInTheDocument()
 
-    // Mastered
-    await user.click(screen.getByRole('button', { name: /mastered \(1\)/i }))
+    // Graduated
+    await user.click(screen.getByRole('button', { name: /graduated \(1\)/i }))
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
     expect(screen.getByText('Watermelon')).toBeInTheDocument()
   })

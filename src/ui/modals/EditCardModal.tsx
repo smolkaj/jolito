@@ -329,6 +329,7 @@ function EditCardModalInner({
 
         {indicators && (
           <div
+            role="group"
             className="edit-card-memory-panel"
             aria-label="Card memory state"
           >

@@ -25,7 +25,7 @@ export function ProgressBubbles({
       role={ariaHidden ? undefined : 'img'}
       aria-label={ariaHidden ? undefined : label}
       aria-hidden={ariaHidden ? true : undefined}
-      title={label}
+      title={ariaHidden ? undefined : label}
     >
       <svg
         viewBox="0 0 29 9"
@@ -101,7 +101,7 @@ export function ChiliMeter({
       role={ariaHidden ? undefined : 'img'}
       aria-label={ariaHidden ? undefined : label}
       aria-hidden={ariaHidden ? true : undefined}
-      title={label}
+      title={ariaHidden ? undefined : label}
     >
       <ChiliIcon
         size={size}
@@ -141,11 +141,11 @@ export function MemoryIndicators({
     >
       <ProgressBubbles
         level={indicators.progress}
-        ariaLabel={indicators.progressLabel}
+        ariaLabel={`${indicators.progressLabel} – ${indicators.progressDescription}`}
       />
       <ChiliMeter
         level={indicators.difficulty}
-        ariaLabel={indicators.difficultyLabel}
+        ariaLabel={`${indicators.difficultyLabel} – ${indicators.difficultyDescription}`}
         hideWhenZero={compact}
       />
     </div>

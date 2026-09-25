@@ -404,7 +404,7 @@ export function DeckManagerView({
                   aria-pressed={deckFilterState === 'review'}
                   title="Graduated cards scheduled for long-term memory retention (1+ days)"
                 >
-                  Mastered ({deckStats.reviewCount})
+                  Graduated ({deckStats.reviewCount})
                 </button>
                 {((deckStats.duplicatesCount ?? 0) > 0 ||
                   deckFilterState === 'duplicates') && (
@@ -493,7 +493,7 @@ export function DeckManagerView({
                   ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                   : vocabularyCards.length === 0
                     ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                    : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
+                    : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'graduated', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
               </p>
               {vocabularyCards.length === 0 ? (
                 <div className="deck-empty-actions">

@@ -3144,7 +3144,7 @@ describe('Jolito', () => {
       'Cards you are currently acquiring in short repetition steps',
     )
     expect(
-      screen.getByRole('button', { name: /mastered \(0\)/i }),
+      screen.getByRole('button', { name: /graduated \(0\)/i }),
     ).toHaveAttribute(
       'title',
       'Graduated cards scheduled for long-term memory retention (1+ days)',
@@ -3165,8 +3165,8 @@ describe('Jolito', () => {
     await user.clear(searchInput)
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(6)
 
-    // Filter by state pill "Mastered" (0 cards in review/mastered state initially)
-    await user.click(screen.getByRole('button', { name: /mastered \(0\)/i }))
+    // Filter by state pill "Graduated" (0 cards in review/graduated state initially)
+    await user.click(screen.getByRole('button', { name: /graduated \(0\)/i }))
     expect(screen.queryAllByRole('row', { name: /card:/i })).toHaveLength(0)
     expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
 
@@ -3420,9 +3420,9 @@ describe('Jolito', () => {
 
     await navigateToDeck(user)
 
-    // Initially shows Mastered state pill in filter and Due in 14d chip in table
+    // Initially shows Graduated state pill in filter and Due in 14d chip in table
     expect(
-      screen.getByRole('button', { name: /mastered \(1\)/i }),
+      screen.getByRole('button', { name: /graduated \(1\)/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Due in 14d')).toBeInTheDocument()
 
@@ -3454,12 +3454,12 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: /edit flashcard/i }),
     ).not.toBeInTheDocument()
 
-    // Filter pills reflect Unstudied (1) and Mastered (0)
+    // Filter pills reflect Unstudied (1) and Graduated (0)
     expect(
       screen.getByRole('button', { name: /unstudied \(1\)/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /mastered \(0\)/i }),
+      screen.getByRole('button', { name: /graduated \(0\)/i }),
     ).toBeInTheDocument()
 
     // Saved card in storage has reset schedule
