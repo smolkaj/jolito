@@ -32,20 +32,32 @@ This ADR documents the provider boundaries, licensing considerations, terms of s
 
 ## Decision
 
-1. **Multi-Tiered Hybrid Audio Architecture:**
-   - **Tier 1 (Edge Neural Audio):** Request neural Mexican Spanish audio via `/api/tts` using studio-quality voice personas.
-   - **Tier 2 (Aggressive Local Caching):** Persist synthesized audio in IndexedDB (`CardRepository` / disk cache) and the browser Cache Storage API. Cards are synthesized at most once per session or device; repeated study reviews never hit external network endpoints.
-   - **Tier 3 (Deterministic Native Fallback):** If `/api/tts` is offline, network-constrained, rate-limited, or returns non-200, [`SpeechSynthesisSpeaker`](../../src/infrastructure/browser/speech.ts) immediately and silently takes over using the local device's native Mexican Spanish voice. The learner's practice session is never blocked or interrupted.
+1. **Multi-Tiered Hybrid Audio Architecture Across All Platforms (Web & Native iOS):**
+   - **Tier 1 (Edge Neural Audio):** Request neural Mexican Spanish audio via `/api/tts` using studio-quality voice personas (`es-MX-DaliaNeural`, `es-MX-JorgeNeural`). On native iOS shells (`capacitor://localhost`), the client resolves the full production origin (`https://joli.to/api/tts`).
+   - **Tier 2 (Aggressive Local Caching):** Persist synthesized audio in the browser Cache Storage API (`window.caches`) and in-memory LRU audio buffer cache (`LruAudioCache`). Upcoming cards are eagerly prefetched in the background. Once prefetched or played, audio is stored offline on disk and never hits network endpoints again.
+   - **Tier 3 (Deterministic Native OS Fallback):** If cloud neural audio is unavailable, offline, or times out, playback immediately and seamlessly falls back to the native operating system speech engine:
+     - On **iOS (Capacitor)**: [`NativeSpeaker`](../../src/infrastructure/browser/native-speech.ts) via `NativeSpeechPlugin.swift` (`AVSpeechSynthesizer`).
+     - On **Web**: [`EnhancedBrowserSpeaker`](../../src/infrastructure/browser/speech.ts) via W3C Web Speech API (`window.speechSynthesis`).
 
-2. **Commercial & App Store Roadmap:**
+2. **Auto-Play vs. Explicit Request Invariants:**
+   - **Auto-Play (`explicit: false`):** Pronunciation triggered automatically during card transitions or answer reveals.
+     - **Zero Network Delay:** Auto-play must never block or wait on network requests. If audio is cached in memory, play neural audio immediately (0ms). If uncached, failover immediately (0ms) to the Tier 2 native voice. Upcoming cards are queued for background prefetch for subsequent reviews.
+     - **Silent Mode Respect:** Category is `ambient`. When the learner's phone is set to silent/mute, auto-play stays completely silent so study in public/quiet spaces is unobtrusive.
+   - **Explicit Playback (`explicit: true`):** Pronunciation triggered intentionally by a learner tapping the speaker button.
+     - **High Quality Guarantee:** If cached, play immediately (0ms). If uncached and offline (`navigator.onLine === false`), immediately failover to Tier 2 native voice. If uncached and online, fetch cloud neural voice with a bounded 1.0s timeout ceiling, falling back to Tier 2 on timeout or failure.
+     - **Silent Mode Override:** Category switches to `playback` (audible in silent mode) during pronunciation, then restores `ambient` when playback completes.
+
+3. **Audio Session Lifecycle & Hardware Mute Switch Contracts:**
+   - Default/idle state is `ambient` (`AVAudioSession.Category.ambient` on iOS, `navigator.audioSession.type = 'ambient'` on WebKit).
+   - Earcons and sound effects always play under `ambient` and respect device mute.
+   - Explicit pronunciation switches to `playback` for the duration of the utterance, restoring `ambient` upon completion (`onended` / `didFinish` / `stop`).
+
+4. **Commercial & App Store Roadmap:**
    - The edge endpoint in `src/worker/tts-route.ts` is structured so that adding an `AZURE_SPEECH_KEY` secret transparently routes through the official Azure Cognitive Services Speech endpoint (staying within the F0 500,000 char/month free tier).
-   - On native iOS builds via Capacitor, the service factory selects device speech directly, without constructing or prewarming the network speech adapter. Installed device voices determine native pronunciation quality and offline availability; the web audio cache is not used on iOS.
-
-3. **Public Acknowledgement:**
-   - Jolito transparently acknowledges Microsoft Speech and browser speech engines in the public Acknowledgements disclosure, giving credit for the neural voice models without claiming official endorsement.
 
 ## Consequences
 
-- **High Fidelity at Zero Cost:** Learners enjoy natural, regional CDMX audio without violating the $0.00 operating cost invariant.
-- **Resilience:** The app cannot be bricked by external API changes or network outages; native speech fallback guarantees continuous offline study.
-- **Clean Upgrade Path:** Upgrading to an authenticated Azure Speech key requires only backend environment variable configuration with zero client-side refactoring.
+- **High Fidelity Across All Platforms:** Learners enjoy natural, regional CDMX audio on both web and native iOS without violating the $0.00 operating cost invariant.
+- **Immediate Responsiveness:** Review card flipping is never blocked by network latency; auto-play has zero wait.
+- **Predictable Silent Mode:** Auto-play stays silent in quiet environments when muted; explicit speaker taps always play out loud.
+- **Offline Resilience:** The app operates 100% offline via local disk cache and native device synthesis fallback.

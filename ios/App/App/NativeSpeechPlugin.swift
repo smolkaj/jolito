@@ -98,15 +98,17 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
         let pitch = call.getFloat("pitch") ?? 1.0
         let gender = call.getString("gender")
         let voiceIdentifier = call.getString("voice")
+        let explicit = call.getBool("explicit") ?? false
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            // Ensure AVAudioSession is active and configured for playback
-            // so pronunciation audio plays clearly even when the physical silent switch is engaged
+            // Configure audio session category based on explicit user intent:
+            // Explicit clicks override silent mode (.playback); auto-play respects silent mode (.ambient)
             do {
                 let audioSession = AVAudioSession.sharedInstance()
-                try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.mixWithOthers])
+                let category: AVAudioSession.Category = explicit ? .playback : .ambient
+                try audioSession.setCategory(category, mode: .spokenAudio, options: [.mixWithOthers])
                 try audioSession.setActive(true)
             } catch {
                 // Non-fatal: continue synthesis attempt
@@ -148,6 +150,10 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
                 self.activeUtterance = nil
                 prevCall.resolve(["completed": false, "interrupted": true])
             }
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.ambient, mode: .spokenAudio, options: [.mixWithOthers])
+            } catch {}
             call.resolve(["stopped": true])
         }
     }
@@ -346,6 +352,10 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             guard utterance === self.activeUtterance, let call = self.activeCall else { return }
             self.activeCall = nil
             self.activeUtterance = nil
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.ambient, mode: .spokenAudio, options: [.mixWithOthers])
+            } catch {}
             call.resolve(["completed": true, "interrupted": false])
         }
     }
@@ -356,6 +366,10 @@ public class NativeSpeechPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesize
             guard utterance === self.activeUtterance, let call = self.activeCall else { return }
             self.activeCall = nil
             self.activeUtterance = nil
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.ambient, mode: .spokenAudio, options: [.mixWithOthers])
+            } catch {}
             call.resolve(["completed": false, "interrupted": true])
         }
     }

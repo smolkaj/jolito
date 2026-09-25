@@ -81,6 +81,7 @@ describe('NativeSpeaker', () => {
       locale: 'es-MX',
       gender: 'female',
       voice: 'Paulina',
+      explicit: undefined,
     })
 
     // Wait for promise resolution
@@ -89,6 +90,26 @@ describe('NativeSpeaker', () => {
 
     speaker.stop()
     expect(mockPlugin.stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards explicit flag to native plugin for silent switch control', () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+    vi.spyOn(Capacitor, 'isPluginAvailable').mockReturnValue(true)
+
+    const speaker = new NativeSpeaker(
+      mockFallback as unknown as Speaker,
+      mockPlugin as unknown as NativeSpeechPluginInterface,
+    )
+
+    speaker.speak('test auto', 'es-MX', { explicit: false })
+    expect(mockPlugin.speak).toHaveBeenCalledWith(
+      expect.objectContaining({ explicit: false }),
+    )
+
+    speaker.speak('test explicit', 'es-MX', { explicit: true })
+    expect(mockPlugin.speak).toHaveBeenCalledWith(
+      expect.objectContaining({ explicit: true }),
+    )
   })
 
   it('infers male gender for Jorge or Guy voice hints', () => {

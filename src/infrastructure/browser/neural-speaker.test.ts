@@ -205,18 +205,10 @@ describe('LayeredNeuralSpeaker', () => {
     expect(call1?.[1]).toBe('es-MX')
   })
 
-  it('awaits in-flight prefetch for Card 0 and plays neural audio instead of falling back to robotic speech', async () => {
-    let resolveInFlight: (value: boolean) => void = () => {}
-    const inFlightPromise = new Promise<boolean>((resolve) => {
-      resolveInFlight = resolve
-    })
-
+  it('immediately falls back to native speech for Card 0 auto-play with 0ms wait when not in memory cache', () => {
     vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
     vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
-    vi.spyOn(neuralEngine, 'awaitAudio').mockImplementation(
-      () => inFlightPromise,
-    )
-    const playSpy = vi.spyOn(neuralEngine, 'playAudio').mockReturnValue(true)
+    const playSpy = vi.spyOn(neuralEngine, 'playAudio')
 
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
@@ -228,21 +220,13 @@ describe('LayeredNeuralSpeaker', () => {
       cardSeed: 'card-1',
     })
     expect(played).toBe(true)
-    // Fallback speaker must NOT be called immediately
-    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
-
-    // Now in-flight prefetch completes
-    resolveInFlight(true)
-    await inFlightPromise
-
-    // Neural audio plays smoothly
-    expect(playSpy).toHaveBeenCalledWith(
+    // Fallback speaker MUST be called immediately with zero network delay
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith(
       'primer tarjeta',
       'es-MX',
-      expect.any(String),
-      expect.anything(),
+      expect.objectContaining({ cardSeed: 'card-1' }),
     )
-    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
+    expect(playSpy).not.toHaveBeenCalled()
   })
 
   it('plays neural audio for starter words like aguacate when in memory cache', () => {
@@ -267,38 +251,10 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
-  it('falls back to speech synthesis if in-flight prefetch times out after 200ms', async () => {
+  it('immediately fails over to fallback speaker on non-explicit autoplay when uncached with zero wait', () => {
+    const awaitAudioSpy = vi.spyOn(neuralEngine, 'awaitAudio')
     vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
     vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
-    vi.spyOn(neuralEngine, 'awaitAudio').mockResolvedValue(false)
-
-    const speaker = new LayeredNeuralSpeaker({
-      neuralEngine,
-      fallbackSpeaker,
-    })
-
-    const played = speaker.speak('palabra lenta', 'es-MX', {
-      cardSeed: 'card-1',
-    })
-    expect(played).toBe(true)
-
-    // Flush microtasks
-    await Promise.resolve()
-    expect(fallbackSpeakSpy).toHaveBeenCalledWith('palabra lenta', 'es-MX', {
-      cardSeed: 'card-1',
-      voice: anyVoice,
-    })
-  })
-
-  it('awaits in-flight prefetch for non-explicit autoplay with an 800ms grace window', async () => {
-    const awaitAudioSpy = vi
-      .spyOn(neuralEngine, 'awaitAudio')
-      .mockResolvedValue(true)
-    vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(false)
-    vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(true)
-    const playAudioSpy = vi
-      .spyOn(neuralEngine, 'playAudio')
-      .mockReturnValue(true)
 
     const speaker = new LayeredNeuralSpeaker({
       neuralEngine,
@@ -310,24 +266,15 @@ describe('LayeredNeuralSpeaker', () => {
       explicit: false,
     })
     expect(played).toBe(true)
-    expect(awaitAudioSpy).toHaveBeenCalledWith(
+    expect(awaitAudioSpy).not.toHaveBeenCalled()
+    expect(fallbackSpeakSpy).toHaveBeenCalledWith(
       'palabra rápida',
       'es-MX',
-      expect.any(String),
-      800,
-    )
-
-    await Promise.resolve()
-    expect(playAudioSpy).toHaveBeenCalledWith(
-      'palabra rápida',
-      'es-MX',
-      expect.any(String),
       expect.objectContaining({ explicit: false }),
     )
-    expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
-  it('awaits in-flight prefetch for explicit user clicks with a 1500ms grace window', async () => {
+  it('awaits in-flight prefetch for explicit user clicks with a 1000ms grace window', async () => {
     const awaitAudioSpy = vi
       .spyOn(neuralEngine, 'awaitAudio')
       .mockResolvedValue(true)
@@ -351,7 +298,7 @@ describe('LayeredNeuralSpeaker', () => {
       'aguacate',
       'es-MX',
       expect.any(String),
-      1500,
+      1000,
     )
 
     await Promise.resolve()
@@ -396,7 +343,7 @@ describe('LayeredNeuralSpeaker', () => {
       'palabra nueva',
       'es-MX',
       expect.any(String),
-      1500,
+      1000,
     )
 
     await Promise.resolve()
@@ -409,7 +356,7 @@ describe('LayeredNeuralSpeaker', () => {
     expect(fallbackSpeakSpy).not.toHaveBeenCalled()
   })
 
-  it('prioritizes explicit grace timeout (1500ms) over disk-cache timeout (150ms) on explicit clicks', async () => {
+  it('uses bounded explicit timeout ceiling (1000ms) on explicit clicks', async () => {
     const awaitAudioSpy = vi
       .spyOn(neuralEngine, 'awaitAudio')
       .mockResolvedValue(true)
@@ -434,7 +381,7 @@ describe('LayeredNeuralSpeaker', () => {
       'aguacate',
       'es-MX',
       expect.any(String),
-      1500,
+      1000,
     )
 
     await Promise.resolve()
@@ -466,12 +413,12 @@ describe('LayeredNeuralSpeaker', () => {
     })
 
     // 1. First speak starts awaiting in-flight audio for card-1
-    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1' })
+    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1', explicit: true })
 
     // 2. User rapidly navigates or speaks prompt 2 (superseding action)
     vi.spyOn(neuralEngine, 'hasAudio').mockReturnValue(true)
     vi.spyOn(neuralEngine, 'isAudioInFlight').mockReturnValue(false)
-    speaker.speak('prompt 2', 'es-MX', { cardSeed: 'card-2' })
+    speaker.speak('prompt 2', 'es-MX', { cardSeed: 'card-2', explicit: true })
 
     // 3. Earlier awaitAudio completes with ready = true
     resolveAwaitAudio(true)
@@ -512,7 +459,7 @@ describe('LayeredNeuralSpeaker', () => {
     })
 
     // 1. Speak starts awaiting in-flight audio
-    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1' })
+    speaker.speak('prompt 1', 'es-MX', { cardSeed: 'card-1', explicit: true })
 
     // 2. User reveals or grades card, calling speaker.stop()
     speaker.stop()
@@ -606,6 +553,7 @@ describe('LayeredNeuralSpeaker', () => {
 
     const played = speaker.speak('en_disco', 'es-MX', {
       voice: 'es-MX-DaliaNeural',
+      explicit: true,
     })
     expect(played).toBe(true)
 
@@ -634,13 +582,14 @@ describe('LayeredNeuralSpeaker', () => {
       fallbackSpeaker,
     })
 
-    const played = speaker.speak('timeout_disk', 'es-MX')
+    const played = speaker.speak('timeout_disk', 'es-MX', { explicit: true })
     expect(played).toBe(true)
 
     await new Promise((resolve) => setTimeout(resolve, 10))
 
     expect(fallbackSpeakSpy).toHaveBeenCalledWith('timeout_disk', 'es-MX', {
       voice: anyVoice,
+      explicit: true,
     })
   })
 
@@ -2494,6 +2443,65 @@ describe('Audio lifecycle and idle suspension in NeuralVoiceEngine and LayeredNe
       // Obsolete Phrase 1 must NOT invoke onEnded or clobber Phrase 2's playback category
       expect(onEndedFirst).not.toHaveBeenCalled()
       expect(mockAudioSession.type).toBe('playback')
+      localEngine.destroy()
+    })
+  })
+
+  describe('Principled audio architecture contracts', () => {
+    it('uses apiBaseUrl for remote audio URLs on native shells', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        clone: () => ({ ok: true }),
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+      })
+
+      const engine = new NeuralVoiceEngine(200, 3000, {
+        apiBaseUrl: 'https://joli.to',
+      })
+
+      await engine.fetchAndCacheAudio('hola mundo', 'es-MX', mockFetch)
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringMatching(/^https:\/\/joli\.to\/api\/tts\?/),
+      )
+      engine.destroy()
+    })
+
+    it('immediately falls back on explicit user clicks when offline without awaiting network', () => {
+      const originalOnLine: boolean = navigator.onLine
+      Object.defineProperty(navigator, 'onLine', {
+        value: false,
+        configurable: true,
+      })
+
+      const localEngine = new NeuralVoiceEngine()
+      const fallbackSpeak = vi.fn(() => true)
+      const localFallback: Speaker = {
+        supported: () => true,
+        speak: fallbackSpeak,
+      }
+      const awaitSpy = vi.spyOn(localEngine, 'awaitAudio')
+      vi.spyOn(localEngine, 'hasAudio').mockReturnValue(false)
+
+      const speaker = new LayeredNeuralSpeaker({
+        neuralEngine: localEngine,
+        fallbackSpeaker: localFallback,
+      })
+
+      const played = speaker.speak('palabra offline', 'es-MX', {
+        explicit: true,
+      })
+      expect(played).toBe(true)
+      expect(awaitSpy).not.toHaveBeenCalled()
+      expect(fallbackSpeak).toHaveBeenCalledWith(
+        'palabra offline',
+        'es-MX',
+        expect.objectContaining({ explicit: true }),
+      )
+
+      Object.defineProperty(navigator, 'onLine', {
+        value: originalOnLine,
+        configurable: true,
+      })
       localEngine.destroy()
     })
   })

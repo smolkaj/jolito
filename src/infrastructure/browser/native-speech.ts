@@ -20,6 +20,7 @@ export interface NativeSpeechPluginInterface {
     pitch?: number | undefined
     gender?: 'female' | 'male' | undefined
     voice?: string | undefined
+    explicit?: boolean | undefined
   }): Promise<{ completed: boolean; interrupted: boolean }>
   stop(): Promise<{ stopped: boolean }>
   getVoices(): Promise<{ voices: NativeVoice[] }>
@@ -117,6 +118,7 @@ export class NativeSpeaker implements Speaker {
           locale,
           gender,
           voice: options?.voice,
+          explicit: options?.explicit,
         })
         .then((result) => {
           if (this.isDestroyed) return
