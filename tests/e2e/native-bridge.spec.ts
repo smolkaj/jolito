@@ -81,11 +81,16 @@ test.describe('Headless Native Capacitor Bridge', () => {
     await expect(goodBtn).toBeVisible()
     await goodBtn.click()
 
-    // Assert updatePractice was called with updated counts
+    // 3. Exit practice session by clicking Jolito home brand button
+    const homeBtn = page.getByRole('button', { name: /jolito home/i })
+    await expect(homeBtn).toBeVisible()
+    await homeBtn.click()
+
+    // Assert endPractice was invoked
     await expect
       .poll(async () => {
         const calls = await getNativeBridgeCalls(page, 'LiveActivity')
-        return calls.some((c) => c.method === 'updatePractice')
+        return calls.some((c) => c.method === 'endPractice')
       })
       .toBe(true)
   })
@@ -94,30 +99,75 @@ test.describe('Headless Native Capacitor Bridge', () => {
     page,
   }) => {
     await installMockNativeBridge(page, { platform: 'ios' })
+    // Route cloud TTS endpoint to abort so LayeredNeuralSpeaker falls back to NativeSpeech
+    await page.route(
+      (url) => url.href.includes('/api/tts'),
+      (route) => route.abort('failed'),
+    )
     await page.goto('/')
+
+    // Set offline before starting practice session so voice engine cleanly uses native fallback
+    await page.context().setOffline(true)
 
     await practiceCards(page)
 
-    // Click audio replay button
+    // Click prompt audio button directly on prompt card
     const audioBtn = page.getByRole('button', {
-      name: /listen to pronunciation/i,
+      name: /play prompt audio/i,
     })
-    if (await audioBtn.isVisible()) {
-      await audioBtn.click()
+    await expect(audioBtn).toBeVisible()
+    await audioBtn.click()
 
-      await expect
-        .poll(async () => {
-          const calls = await getNativeBridgeCalls(page, 'NativeSpeech')
-          return calls.some((c) => c.method === 'speak')
-        })
-        .toBe(true)
+    await expect
+      .poll(async () => {
+        const calls = await getNativeBridgeCalls(page, 'NativeSpeech')
+        return calls.some((c) => c.method === 'speak')
+      })
+      .toBe(true)
 
-      const speakCall = (await getNativeBridgeCalls(page, 'NativeSpeech')).find(
-        (c) => c.method === 'speak',
+    const speakCall = (await getNativeBridgeCalls(page, 'NativeSpeech')).find(
+      (c) => c.method === 'speak',
+    )
+    expect(speakCall).toBeDefined()
+    const speakArgs = speakCall!.args as { text: string; locale?: string }
+    expect(speakArgs.text.length).toBeGreaterThan(0)
+  })
+
+  test('triggers native AppReview prompt upon reaching milestone session completion', async ({
+    page,
+  }) => {
+    await installMockNativeBridge(page, { platform: 'ios' })
+
+    // Seed state: completedSessionsCount = 2, totalCardsReviewed = 27 (3 cards away from 30 milestone)
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'jolito-app-review-v1',
+        JSON.stringify({
+          completedSessionsCount: 2,
+          totalCardsReviewed: 27,
+          lastPromptedAt: null,
+        }),
       )
-      expect(speakCall).toBeDefined()
-      const speakArgs = speakCall!.args as { text: string; locale?: string }
-      expect(speakArgs.text.length).toBeGreaterThan(0)
+    })
+
+    await page.goto('/')
+    await practiceCards(page)
+
+    // Complete the 3-card starter demo session (Enter to reveal, 4 for Easy rating)
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('Enter')
+      await page.keyboard.press('4')
     }
+
+    // Completes demo session
+    await expect(page.getByText('DEMO SESSION COMPLETE')).toBeVisible()
+
+    // Assert AppReview.requestReview was called upon reaching milestone
+    await expect
+      .poll(async () => {
+        const calls = await getNativeBridgeCalls(page, 'AppReview')
+        return calls.some((c) => c.method === 'requestReview')
+      })
+      .toBe(true)
   })
 })

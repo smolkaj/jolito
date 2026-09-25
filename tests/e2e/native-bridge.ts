@@ -13,6 +13,7 @@ export interface MockNativeBridgeOptions {
     user?: string
     identityToken?: string
     authorizationCode?: string
+    nonce?: string
     email?: string | null
     givenName?: string | null
     familyName?: string | null
@@ -42,6 +43,7 @@ export async function installMockNativeBridge(
     user: 'test-apple-user-id',
     identityToken: 'mock-apple-identity-token',
     authorizationCode: 'mock-auth-code',
+    nonce: 'mock-apple-nonce',
     email: 'learner@example.com',
     givenName: 'Test',
     familyName: 'Learner',
@@ -123,6 +125,15 @@ export async function installMockNativeBridge(
           ],
         },
         {
+          name: 'SpeechRecognition',
+          methods: [
+            { name: 'isAvailable', rtype: 'promise' },
+            { name: 'requestPermissions', rtype: 'promise' },
+            { name: 'start', rtype: 'promise' },
+            { name: 'stop', rtype: 'promise' },
+          ],
+        },
+        {
           name: 'LiveActivity',
           methods: [
             { name: 'startPractice', rtype: 'promise' },
@@ -133,6 +144,10 @@ export async function installMockNativeBridge(
         {
           name: 'AppReview',
           methods: [{ name: 'requestReview', rtype: 'promise' }],
+        },
+        {
+          name: 'ShareFile',
+          methods: [{ name: 'shareFile', rtype: 'promise' }],
         },
       ]
 
@@ -172,10 +187,26 @@ export async function installMockNativeBridge(
           }
         }
 
+        if (plugin === 'SpeechRecognition') {
+          if (method === 'isAvailable') {
+            return Promise.resolve({ available: true })
+          }
+          if (method === 'requestPermissions') {
+            return Promise.resolve({ speech: 'granted' })
+          }
+          if (method === 'start') {
+            return Promise.resolve({ started: true })
+          }
+          if (method === 'stop') {
+            return Promise.resolve({ stopped: true })
+          }
+        }
+
         if (plugin === 'LiveActivity') {
           if (method === 'startPractice') {
             return Promise.resolve({
               supported: true,
+              enabled: true,
               started: true,
               id: 'mock-activity-123',
             })
@@ -190,6 +221,12 @@ export async function installMockNativeBridge(
 
         if (plugin === 'AppReview') {
           if (method === 'requestReview') {
+            return Promise.resolve({ requested: true })
+          }
+        }
+
+        if (plugin === 'ShareFile') {
+          if (method === 'shareFile') {
             return Promise.resolve({ completed: true })
           }
         }
