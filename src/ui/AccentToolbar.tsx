@@ -21,7 +21,16 @@ export function AccentToolbar({
   disabled = false,
   className = '',
 }: AccentToolbarProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const lastTouchTimestampRef = useRef(0)
+  const touchStateRef = useRef<{
+    startX: number
+    startY: number
+    lastX: number
+    pointerId: number
+    char: string
+    isDrag: boolean
+  } | null>(null)
 
   const handleInsert = (char: string) => {
     if (disabled) return
@@ -37,8 +46,79 @@ export function AccentToolbar({
       // In iOS WebKit, preventDefault on touch pointerdown keeps the virtual keyboard
       // active and prevents blurring the active input element.
       e.preventDefault()
-      lastTouchTimestampRef.current = e.timeStamp
-      handleInsert(char)
+      touchStateRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        lastX: e.clientX,
+        pointerId: e.pointerId,
+        char,
+        isDrag: false,
+      }
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // Safe fallback when pointer capture unsupported
+      }
+    }
+  }
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const state = touchStateRef.current
+    if (
+      !state ||
+      e.pointerType !== 'touch' ||
+      e.pointerId !== state.pointerId
+    ) {
+      return
+    }
+
+    const dx = e.clientX - state.startX
+    const dy = e.clientY - state.startY
+
+    if (!state.isDrag && Math.hypot(dx, dy) >= 8) {
+      state.isDrag = true
+    }
+
+    if (state.isDrag && scrollContainerRef.current) {
+      const deltaX = e.clientX - state.lastX
+      scrollContainerRef.current.scrollLeft -= deltaX
+    }
+    state.lastX = e.clientX
+  }
+
+  const handlePointerUp = (
+    e: ReactPointerEvent<HTMLButtonElement>,
+    char: string,
+  ) => {
+    const state = touchStateRef.current
+    if (e.pointerType === 'touch' && state && e.pointerId === state.pointerId) {
+      touchStateRef.current = null
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // Safe fallback
+      }
+
+      if (!state.isDrag && state.char === char && !disabled) {
+        lastTouchTimestampRef.current = e.timeStamp
+        handleInsert(char)
+      }
+    }
+  }
+
+  const handlePointerCancel = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    const state = touchStateRef.current
+    if (e.pointerType === 'touch' && state && e.pointerId === state.pointerId) {
+      touchStateRef.current = null
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // Safe fallback
+      }
     }
   }
 
@@ -52,7 +132,7 @@ export function AccentToolbar({
 
   const handleClick = (e: ReactMouseEvent<HTMLButtonElement>, char: string) => {
     if (disabled) return
-    // Deduplicate trailing synthetic click events generated after touch pointerdown
+    // Deduplicate trailing synthetic click events generated after touch gestures
     if (
       lastTouchTimestampRef.current > 0 &&
       e.timeStamp - lastTouchTimestampRef.current < 400
@@ -76,7 +156,7 @@ export function AccentToolbar({
       className={`answer-accents ${isDocked ? 'is-docked' : ''} ${className}`.trim()}
       style={dockedStyle}
     >
-      <div className="accent-toolbar-scroll">
+      <div ref={scrollContainerRef} className="accent-toolbar-scroll">
         {SPANISH_ACCENT_CHARACTERS.map((char, index) => {
           const shortcut = String(index + 1)
           return (
@@ -89,6 +169,9 @@ export function AccentToolbar({
               title={`Insert ${char} (${shortcut} while typing)`}
               disabled={disabled}
               onPointerDown={(e) => handlePointerDown(e, char)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={(e) => handlePointerUp(e, char)}
+              onPointerCancel={handlePointerCancel}
               onMouseDown={handleMouseDown}
               onClick={(e) => handleClick(e, char)}
             >

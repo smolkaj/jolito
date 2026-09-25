@@ -346,3 +346,152 @@ test('mobile practice card preserves clean layout across keyboard open and voice
   expect(metrics.gap).toBeGreaterThanOrEqual(-2)
   expect(metrics.gap).toBeLessThan(40)
 })
+
+for (const width of [375, 390]) {
+  test(`mobile docked accent toolbar fits all 9 characters without horizontal scrolling at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'userAgent', {
+        value:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        configurable: true,
+      })
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        value: 5,
+        configurable: true,
+      })
+    })
+    await page.goto('/#/grammar')
+    const startBtn = page.getByRole('button', { name: 'Start practice' })
+    if (await startBtn.isVisible()) {
+      await startBtn.click()
+    }
+
+    // Simulate virtual keyboard open
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:keyboard-change', {
+          detail: { isOpen: true, keyboardHeight: 300 },
+        }),
+      )
+    })
+
+    const dockedToolbar = page.locator('.answer-accents.is-docked')
+    await expect(dockedToolbar).toBeVisible()
+
+    // Verify zero horizontal scrolling required: scrollWidth fits in clientWidth
+    const scrollMetrics = await dockedToolbar
+      .locator('.accent-toolbar-scroll')
+      .evaluate((element) => ({
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }))
+    expect(scrollMetrics.scrollWidth).toBeLessThanOrEqual(
+      scrollMetrics.clientWidth + 1,
+    )
+
+    // Verify all 9 characters are within viewport bounds
+    const characters = ['á', 'é', 'í', 'ó', 'ú', 'ñ', 'ü', '¿', '¡']
+    for (const char of characters) {
+      const btn = dockedToolbar.getByRole('button', { name: `Insert ${char}` })
+      await expect(btn).toBeVisible()
+      const box = await btn.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1)
+    }
+
+    await page.screenshot({
+      path: `test-results/mobile-docked-accents-${width}.png`,
+    })
+  })
+}
+
+test('mobile docked accent toolbar touch dragging does not insert characters, while clean tap inserts with input focus', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    })
+  })
+  await page.goto('/#/grammar')
+  const startBtn = page.getByRole('button', { name: 'Start practice' })
+  if (await startBtn.isVisible()) {
+    await startBtn.click()
+  }
+
+  const input = page.getByRole('textbox', { name: 'Your conjugation' })
+  await input.focus()
+
+  // Open docked toolbar
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent('jolito:keyboard-change', {
+        detail: { isOpen: true, keyboardHeight: 300 },
+      }),
+    )
+  })
+
+  const dockedToolbar = page.locator('.answer-accents.is-docked')
+  await expect(dockedToolbar).toBeVisible()
+
+  // 1. Perform a touch drag gesture across the accent toolbar buttons
+  const firstButton = dockedToolbar.getByRole('button', { name: 'Insert á' })
+  const firstBox = (await firstButton.boundingBox())!
+
+  // Dispatch a simulated touch drag: pointerdown -> pointermove -> pointerup
+  await firstButton.dispatchEvent('pointerdown', {
+    pointerId: 10,
+    pointerType: 'touch',
+    clientX: firstBox.x + 10,
+    clientY: firstBox.y + 10,
+  })
+  await firstButton.dispatchEvent('pointermove', {
+    pointerId: 10,
+    pointerType: 'touch',
+    clientX: firstBox.x + 80,
+    clientY: firstBox.y + 10,
+  })
+  await firstButton.dispatchEvent('pointerup', {
+    pointerId: 10,
+    pointerType: 'touch',
+    clientX: firstBox.x + 80,
+    clientY: firstBox.y + 10,
+  })
+
+  // Verify dragging DID NOT insert any characters!
+  await expect(input).toHaveValue('')
+
+  // 2. Perform a clean touch tap on button "¿"
+  const invertQuestionBtn = dockedToolbar.getByRole('button', {
+    name: 'Insert ¿',
+  })
+  const invertBox = (await invertQuestionBtn.boundingBox())!
+
+  await invertQuestionBtn.dispatchEvent('pointerdown', {
+    pointerId: 11,
+    pointerType: 'touch',
+    clientX: invertBox.x + 10,
+    clientY: invertBox.y + 10,
+  })
+  await invertQuestionBtn.dispatchEvent('pointerup', {
+    pointerId: 11,
+    pointerType: 'touch',
+    clientX: invertBox.x + 11,
+    clientY: invertBox.y + 10,
+  })
+
+  // Clean tap inserts the character and retains focus!
+  await expect(input).toHaveValue('¿')
+  await expect(input).toBeFocused()
+})
