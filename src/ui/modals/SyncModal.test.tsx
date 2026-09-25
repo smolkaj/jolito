@@ -1359,6 +1359,53 @@ describe('SyncModal Live Sync Status Contract', () => {
       requestSpy.mockRestore()
     })
 
+    it('displays error message when signInWithApple returns failure', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(true)
+      const requestSpy = vi
+        .spyOn(appleAuthModule, 'requestAppleSignIn')
+        .mockResolvedValue({
+          identityToken: 'mock-valid-id-token',
+        })
+
+      const auth = new MockAuthService()
+      const signInSpy = vi.spyOn(auth, 'signInWithApple').mockResolvedValue({
+        success: false,
+        error:
+          'Unable to connect to sign-in service. Please check your connection and try again.',
+      })
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const appleBtn = screen.getByRole('button', {
+        name: /sign in with apple/i,
+      })
+      fireEvent.click(appleBtn)
+
+      expect(
+        await screen.findByText(
+          'Unable to connect to sign-in service. Please check your connection and try again.',
+        ),
+      ).toBeInTheDocument()
+
+      supportSpy.mockRestore()
+      requestSpy.mockRestore()
+      signInSpy.mockRestore()
+    })
+
     it('does not render Sign in with Apple button when auth service does not support it', async () => {
       const appleAuthModule =
         await import('../../infrastructure/browser/apple-signin')

@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SupabaseAuthService } from './auth-service'
+import {
+  normalizeAuthTransportError,
+  SupabaseAuthService,
+} from './auth-service'
 
 describe('SupabaseAuthService', () => {
   let mockStorage: Record<string, string> = {}
@@ -1248,21 +1251,45 @@ describe('SupabaseAuthService', () => {
   })
 
   describe('signInWithApple', () => {
-    it('authenticates user and saves session on valid Apple token', async () => {
+    function createAbortSensitiveResponse(
+      body: unknown,
+      signal?: AbortSignal,
+      init: { ok?: boolean; status?: number } = {},
+    ) {
+      return {
+        ok:
+          init.ok ??
+          ((init.status ?? 200) >= 200 && (init.status ?? 200) < 300),
+        status: init.status ?? 200,
+        json: () => {
+          if (signal?.aborted) {
+            return Promise.reject(new TypeError('Fetch is aborted'))
+          }
+          return Promise.resolve(body)
+        },
+      }
+    }
+
+    it('authenticates user and saves session on valid Apple token with abort-sensitive response', async () => {
       delete mockStorage['jolito-auth-session-v1']
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'apple-access-jwt',
-            refresh_token: 'apple-refresh-token',
-            expires_in: 3600,
-            user: {
-              id: 'apple-user-123',
-              email: 'apple.learner@privaterelay.appleid.com',
-            },
-          }),
-      })
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: unknown, init?: RequestInit) =>
+          Promise.resolve(
+            createAbortSensitiveResponse(
+              {
+                access_token: 'apple-access-jwt',
+                refresh_token: 'apple-refresh-token',
+                expires_in: 3600,
+                user: {
+                  id: 'apple-user-123',
+                  email: 'apple.learner@privaterelay.appleid.com',
+                },
+              },
+              init?.signal as AbortSignal | undefined,
+            ),
+          ),
+        )
       vi.stubGlobal('fetch', fetchSpy)
 
       const service = new SupabaseAuthService(
@@ -1299,19 +1326,24 @@ describe('SupabaseAuthService', () => {
 
     it('forwards raw nonce to Supabase auth payload when provided', async () => {
       delete mockStorage['jolito-auth-session-v1']
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'apple-access-jwt',
-            refresh_token: 'apple-refresh-token',
-            expires_in: 3600,
-            user: {
-              id: 'apple-user-456',
-              email: 'apple.learner@privaterelay.appleid.com',
-            },
-          }),
-      })
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: unknown, init?: RequestInit) =>
+          Promise.resolve(
+            createAbortSensitiveResponse(
+              {
+                access_token: 'apple-access-jwt',
+                refresh_token: 'apple-refresh-token',
+                expires_in: 3600,
+                user: {
+                  id: 'apple-user-456',
+                  email: 'apple.learner@privaterelay.appleid.com',
+                },
+              },
+              init?.signal as AbortSignal | undefined,
+            ),
+          ),
+        )
       vi.stubGlobal('fetch', fetchSpy)
 
       const service = new SupabaseAuthService(
@@ -1341,19 +1373,24 @@ describe('SupabaseAuthService', () => {
 
     it('falls back to fallbackEmail when user email is absent in server response', async () => {
       delete mockStorage['jolito-auth-session-v1']
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'apple-access-jwt',
-            refresh_token: 'apple-refresh-token',
-            expires_in: 3600,
-            user: {
-              id: 'apple-user-789',
-              email: '',
-            },
-          }),
-      })
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: unknown, init?: RequestInit) =>
+          Promise.resolve(
+            createAbortSensitiveResponse(
+              {
+                access_token: 'apple-access-jwt',
+                refresh_token: 'apple-refresh-token',
+                expires_in: 3600,
+                user: {
+                  id: 'apple-user-789',
+                  email: '',
+                },
+              },
+              init?.signal as AbortSignal | undefined,
+            ),
+          ),
+        )
       vi.stubGlobal('fetch', fetchSpy)
 
       const service = new SupabaseAuthService(
@@ -1374,16 +1411,21 @@ describe('SupabaseAuthService', () => {
 
     it('logs detailed diagnostics and returns calm error copy when provider is disabled on server', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            code: 400,
-            error_code: 'provider_disabled',
-            msg: 'Provider (issuer "https://appleid.apple.com") is not enabled',
-          }),
-      })
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: unknown, init?: RequestInit) =>
+          Promise.resolve(
+            createAbortSensitiveResponse(
+              {
+                code: 400,
+                error_code: 'provider_disabled',
+                msg: 'Provider (issuer "https://appleid.apple.com") is not enabled',
+              },
+              init?.signal as AbortSignal | undefined,
+              { ok: false, status: 400 },
+            ),
+          ),
+        )
       vi.stubGlobal('fetch', fetchSpy)
 
       const service = new SupabaseAuthService(
@@ -1413,15 +1455,20 @@ describe('SupabaseAuthService', () => {
 
     it('logs detailed error_description from server while returning calm error copy to learner', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: () =>
-          Promise.resolve({
-            error: 'invalid request',
-            error_description: 'Bad ID token',
-          }),
-      })
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: unknown, init?: RequestInit) =>
+          Promise.resolve(
+            createAbortSensitiveResponse(
+              {
+                error: 'invalid request',
+                error_description: 'Bad ID token',
+              },
+              init?.signal as AbortSignal | undefined,
+              { ok: false, status: 400 },
+            ),
+          ),
+        )
       vi.stubGlobal('fetch', fetchSpy)
 
       const service = new SupabaseAuthService(
@@ -1469,6 +1516,100 @@ describe('SupabaseAuthService', () => {
       )
       consoleSpy.mockRestore()
       service.destroy()
+    })
+
+    it('normalizes abort and interruptions into actionable calm error copy instead of raw exception', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const fetchSpy = vi
+        .fn()
+        .mockRejectedValue(new TypeError('Fetch is aborted'))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const res = await service.signInWithApple('valid-token')
+      expect(res.success).toBe(false)
+      expect(res.error).toBe('Sign-in was interrupted. Please try again.')
+      expect(res.error).not.toContain('Fetch is aborted')
+      consoleSpy.mockRestore()
+      service.destroy()
+    })
+
+    it('normalizes network disconnects into actionable connection guidance', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const fetchSpy = vi
+        .fn()
+        .mockRejectedValue(new TypeError('Failed to fetch'))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const res = await service.signInWithApple('valid-token')
+      expect(res.success).toBe(false)
+      expect(res.error).toBe(
+        'Unable to connect to sign-in service. Please check your connection and try again.',
+      )
+      consoleSpy.mockRestore()
+      service.destroy()
+    })
+  })
+
+  describe('normalizeAuthTransportError', () => {
+    it('preserves structured request deadline messages', () => {
+      expect(
+        normalizeAuthTransportError(
+          new Error('Request timed out. Please try again.'),
+        ),
+      ).toBe('Request timed out. Please try again.')
+      expect(
+        normalizeAuthTransportError(
+          new Error('Request was interrupted. Please try again.'),
+        ),
+      ).toBe('Request was interrupted. Please try again.')
+    })
+
+    it('translates DOMException AbortError and abort message substrings', () => {
+      expect(
+        normalizeAuthTransportError(
+          new DOMException('The user aborted a request.', 'AbortError'),
+        ),
+      ).toBe('Sign-in was interrupted. Please try again.')
+      expect(
+        normalizeAuthTransportError(new TypeError('Fetch is aborted')),
+      ).toBe('Sign-in was interrupted. Please try again.')
+    })
+
+    it('translates common browser fetch failures into actionable connection guidance', () => {
+      expect(
+        normalizeAuthTransportError(new TypeError('Failed to fetch')),
+      ).toBe(
+        'Unable to connect to sign-in service. Please check your connection and try again.',
+      )
+      expect(normalizeAuthTransportError(new TypeError('Load failed'))).toBe(
+        'Unable to connect to sign-in service. Please check your connection and try again.',
+      )
+      expect(
+        normalizeAuthTransportError(
+          new TypeError('NetworkError when attempting to fetch resource'),
+        ),
+      ).toBe(
+        'Unable to connect to sign-in service. Please check your connection and try again.',
+      )
+    })
+
+    it('falls back to calm sign-in failure message for unknown errors', () => {
+      expect(normalizeAuthTransportError(new Error('SyntaxError'))).toBe(
+        'Sign-in failed. Please try again.',
+      )
+      expect(normalizeAuthTransportError(null)).toBe(
+        'Sign-in failed. Please try again.',
+      )
     })
   })
 })
