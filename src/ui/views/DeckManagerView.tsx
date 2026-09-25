@@ -25,6 +25,13 @@ import { StarterPacksModal } from '../modals/StarterPacksModal'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
 import { handleFocusSelect } from '../utils'
 
+const SORT_ORDER_LABELS: Record<DeckSortOrder, string> = {
+  'created-desc': 'Newest first',
+  'created-asc': 'Oldest first',
+  'alpha-asc': 'Alphabetical (A–Z)',
+  'alpha-desc': 'Alphabetical (Z–A)',
+}
+
 export interface DeckManagerViewProps {
   cards: StudyCard[]
   vocabularyCards: StudyCard[]
@@ -364,20 +371,25 @@ export function DeckManagerView({
                     <label htmlFor="pill-select" className="deck-sort-label">
                       Sort
                     </label>
-                    <select
-                      id="pill-select"
-                      className="pill-select"
-                      value={deckSortOrder}
-                      onChange={(e) =>
-                        setDeckSortOrder(e.target.value as DeckSortOrder)
-                      }
-                      aria-label="Sort cards"
-                    >
-                      <option value="created-desc">Newest first</option>
-                      <option value="created-asc">Oldest first</option>
-                      <option value="alpha-asc">Alphabetical (A–Z)</option>
-                      <option value="alpha-desc">Alphabetical (Z–A)</option>
-                    </select>
+                    <div className="deck-sort-select-wrap">
+                      <span className="deck-sort-pill" aria-hidden="true">
+                        {SORT_ORDER_LABELS[deckSortOrder]}
+                      </span>
+                      <select
+                        id="pill-select"
+                        className="pill-select"
+                        value={deckSortOrder}
+                        onChange={(e) =>
+                          setDeckSortOrder(e.target.value as DeckSortOrder)
+                        }
+                        aria-label="Sort cards"
+                      >
+                        <option value="created-desc">Newest first</option>
+                        <option value="created-asc">Oldest first</option>
+                        <option value="alpha-asc">Alphabetical (A–Z)</option>
+                        <option value="alpha-desc">Alphabetical (Z–A)</option>
+                      </select>
+                    </div>
                   </div>
                 )
               )}
