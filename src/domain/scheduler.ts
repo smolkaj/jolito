@@ -170,28 +170,29 @@ export function shouldRequeueInSession(schedule: ReviewSchedule): boolean {
   return schedule.state === 'learning' || schedule.state === 'relearning'
 }
 
-export type MemoryProgressLevel = 0 | 1 | 2 | 3
+export type MemoryMasteryLevel = 0 | 1 | 2 | 3
+export type MemoryProgressLevel = MemoryMasteryLevel
 export type MemoryDifficultyLevel = 0 | 1 | 2 | 3
 
 export interface CardMemoryIndicators {
+  mastery: MemoryMasteryLevel
   progress: MemoryProgressLevel
   difficulty: MemoryDifficultyLevel
+  masteryLabel: string
   progressLabel: string
   difficultyLabel: string
-  progressDescription: string
-  difficultyDescription: string
 }
 
 /**
- * Maps FSRS stability (memory half-life in days) to a 0–3 bubble progress level.
+ * Maps FSRS stability (memory half-life in days) to a 0–3 bubble mastery level.
  * 0: Unstudied / new (0 bubbles)
- * 1: Fragile / early learning (1 bubble, stability < 7 days)
- * 2: Solid / reliable recall (2 bubbles, 7 <= stability < 30 days)
- * 3: Mastered / second nature (3 bubbles, stability >= 30 days)
+ * 1: Learning (1 bubble)
+ * 2: Solid recall (2 bubbles)
+ * 3: Mastered (3 bubbles)
  */
-export function cardProgressLevel(
+export function cardMasteryLevel(
   schedule: ReviewSchedule,
-): MemoryProgressLevel {
+): MemoryMasteryLevel {
   if (schedule.state === 'new' || schedule.reviews === 0) return 0
   const { stability } = estimateFsrsParameters(schedule)
   if (stability <= 0) return 0
@@ -199,6 +200,8 @@ export function cardProgressLevel(
   if (stability < 30) return 2
   return 3
 }
+
+export const cardProgressLevel = cardMasteryLevel
 
 /**
  * Maps FSRS difficulty (inherent friction 1.0–10.0) to a 0–3 chili spice level.
@@ -218,36 +221,21 @@ export function cardDifficultyLevel(
   return 3
 }
 
-const PROGRESS_DESCRIPTIONS: Readonly<Record<MemoryProgressLevel, string>> = {
-  0: 'New (unstudied)',
-  1: 'Learning (fragile recall, < 7d)',
-  2: 'Solid (reliable recall, 7–30d)',
-  3: 'Mastered (second nature, 30d+)',
-}
-
-const DIFFICULTY_DESCRIPTIONS: Readonly<Record<MemoryDifficultyLevel, string>> =
-  {
-    0: 'No heat (effortless / unrated)',
-    1: 'Mild heat (low friction)',
-    2: 'Medium heat (standard)',
-    3: 'Hot / ¡aguas! (high friction)',
-  }
-
 /**
  * Computes the unified memory indicators and accessible labels for a card.
  */
 export function cardMemoryIndicators(
   schedule: ReviewSchedule,
 ): CardMemoryIndicators {
-  const progress = cardProgressLevel(schedule)
+  const mastery = cardMasteryLevel(schedule)
   const difficulty = cardDifficultyLevel(schedule)
 
-  const progressLabel = `Progress: ${progress} of 3 bubbles`
-  const progressDescription = PROGRESS_DESCRIPTIONS[progress]
+  const masteryLabel = `Mastery: ${mastery} of 3 bubbles`
+  const progressLabel = masteryLabel
 
   let difficultyLabel: string
   if (schedule.state === 'new' || schedule.reviews === 0) {
-    difficultyLabel = 'Difficulty: unrated (0 chilies)'
+    difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
   } else if (difficulty === 0) {
     difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
   } else if (difficulty === 1) {
@@ -257,14 +245,13 @@ export function cardMemoryIndicators(
   } else {
     difficultyLabel = 'Difficulty: 3 of 3 chilies (hot)'
   }
-  const difficultyDescription = DIFFICULTY_DESCRIPTIONS[difficulty]
 
   return {
-    progress,
+    mastery,
+    progress: mastery,
     difficulty,
+    masteryLabel,
     progressLabel,
     difficultyLabel,
-    progressDescription,
-    difficultyDescription,
   }
 }

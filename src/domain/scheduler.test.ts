@@ -414,12 +414,12 @@ describe('scheduler (FSRS domain adapter)', () => {
       }
       const indicators = cardMemoryIndicators(card)
       expect(indicators).toEqual({
+        mastery: 2,
         progress: 2,
         difficulty: 3,
-        progressLabel: 'Progress: 2 of 3 bubbles',
+        masteryLabel: 'Mastery: 2 of 3 bubbles',
+        progressLabel: 'Mastery: 2 of 3 bubbles',
         difficultyLabel: 'Difficulty: 3 of 3 chilies (hot)',
-        progressDescription: 'Solid (reliable recall, 7–30d)',
-        difficultyDescription: 'Hot / ¡aguas! (high friction)',
       })
     })
 
@@ -434,12 +434,12 @@ describe('scheduler (FSRS domain adapter)', () => {
       }
       const indicators = cardMemoryIndicators(newCard)
       expect(indicators).toEqual({
+        mastery: 0,
         progress: 0,
         difficulty: 0,
-        progressLabel: 'Progress: 0 of 3 bubbles',
-        difficultyLabel: 'Difficulty: unrated (0 chilies)',
-        progressDescription: 'New (unstudied)',
-        difficultyDescription: 'No heat (effortless / unrated)',
+        masteryLabel: 'Mastery: 0 of 3 bubbles',
+        progressLabel: 'Mastery: 0 of 3 bubbles',
+        difficultyLabel: 'Difficulty: 0 of 3 chilies (no heat)',
       })
     })
   })

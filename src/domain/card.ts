@@ -501,9 +501,11 @@ export function localeForAnswer(card: Pick<StudyCard, 'direction'>): string {
 }
 
 export {
+  cardMasteryLevel,
   cardProgressLevel,
   cardDifficultyLevel,
   cardMemoryIndicators,
+  type MemoryMasteryLevel,
   type MemoryProgressLevel,
   type MemoryDifficultyLevel,
   type CardMemoryIndicators,

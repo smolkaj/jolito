@@ -1,11 +1,23 @@
-import { isDue, type StudyCard } from '../domain/card'
+import {
+  cardDifficultyLevel,
+  cardMasteryLevel,
+  isDue,
+  type StudyCard,
+} from '../domain/card'
 import { getDuplicateGroups } from '../domain/duplicate'
 
 export type DeckFilterState =
   'all' | 'due' | 'new' | 'learning' | 'review' | 'duplicates'
 
 export type DeckSortOrder =
-  'created-desc' | 'created-asc' | 'alpha-asc' | 'alpha-desc'
+  | 'created-desc'
+  | 'created-asc'
+  | 'alpha-asc'
+  | 'alpha-desc'
+  | 'difficulty-desc'
+  | 'difficulty-asc'
+  | 'mastery-desc'
+  | 'mastery-asc'
 
 export interface FilterDeckOptions {
   query?: string
@@ -121,6 +133,40 @@ export function sortDeckCards(
           return left.direction === 'es-en' ? -1 : 1
         }
         return left.id.localeCompare(right.id)
+      }
+      case 'difficulty-desc': {
+        const diff =
+          cardDifficultyLevel(right.schedule) -
+          cardDifficultyLevel(left.schedule)
+        if (diff !== 0) return diff
+        const createdDiff = right.createdAt - left.createdAt
+        if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'difficulty-asc': {
+        const diff =
+          cardDifficultyLevel(left.schedule) -
+          cardDifficultyLevel(right.schedule)
+        if (diff !== 0) return diff
+        const createdDiff = right.createdAt - left.createdAt
+        if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'mastery-desc': {
+        const diff =
+          cardMasteryLevel(right.schedule) - cardMasteryLevel(left.schedule)
+        if (diff !== 0) return diff
+        const createdDiff = right.createdAt - left.createdAt
+        if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'mastery-asc': {
+        const diff =
+          cardMasteryLevel(left.schedule) - cardMasteryLevel(right.schedule)
+        if (diff !== 0) return diff
+        const createdDiff = right.createdAt - left.createdAt
+        if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
       }
     }
   })

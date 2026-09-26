@@ -5986,8 +5986,8 @@ kbd {
 .deck-list-table-header {
   display: grid;
   grid-template-columns:
-    36px minmax(110px, 125px) minmax(160px, 1fr) minmax(160px, 1fr)
-    minmax(140px, 165px);
+    36px minmax(95px, 110px) minmax(140px, 1.2fr) minmax(140px, 1fr)
+    minmax(85px, 95px) minmax(75px, 85px) minmax(80px, 90px);
   align-items: center;
   gap: 14px;
   padding: 10px 16px;
@@ -6003,8 +6003,8 @@ kbd {
 .deck-card-row {
   display: grid;
   grid-template-columns:
-    36px minmax(110px, 125px) minmax(160px, 1fr) minmax(160px, 1fr)
-    minmax(140px, 165px);
+    36px minmax(95px, 110px) minmax(140px, 1.2fr) minmax(140px, 1fr)
+    minmax(85px, 95px) minmax(75px, 85px) minmax(80px, 90px);
   align-items: center;
   gap: 14px;
   padding: 10px 16px;
@@ -6116,28 +6116,32 @@ kbd {
   text-overflow: ellipsis;
 }
 
-.deck-card-row .col-status {
+.deck-card-row .col-difficulty,
+.deck-list-table-header .col-difficulty {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
+}
+
+.deck-card-row .col-mastery,
+.deck-list-table-header .col-mastery {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.deck-card-row .col-status,
+.deck-list-table-header .col-status {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 680px) {
   .deck-list-table-header {
     display: none;
   }
 
-  .deck-card-row {
-    grid-template-columns:
-      32px minmax(95px, 110px) minmax(0, 1fr) minmax(0, 1fr)
-      auto;
-    gap: 10px;
-    padding: 10px 14px;
-  }
-}
-
-@media (max-width: 640px) {
   .deck-filter-pills {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -6160,11 +6164,11 @@ kbd {
 
   .deck-card-row {
     display: grid;
-    grid-template-columns: 28px 1fr auto;
+    grid-template-columns: 28px 1fr auto auto;
     grid-template-areas:
-      'select prompt status'
-      'select answer status';
-    column-gap: 10px;
+      'select prompt prompt status'
+      'select answer difficulty mastery';
+    column-gap: 8px;
     row-gap: 4px;
     padding: 10px 14px;
     min-height: 56px;
@@ -6214,14 +6218,26 @@ kbd {
     min-width: 0;
   }
 
+  .deck-card-row .col-difficulty {
+    grid-area: difficulty;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .deck-card-row .col-mastery {
+    grid-area: mastery;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
   .deck-card-row .col-status {
     grid-area: status;
     align-self: center;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    justify-content: center;
+    align-items: center;
+    justify-content: flex-end;
   }
 
   .deck-card-row .deck-phrase-text {

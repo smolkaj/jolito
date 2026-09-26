@@ -1,7 +1,7 @@
 import { type ReviewSchedule, cardMemoryIndicators } from '../domain/card'
 import { ChiliIcon } from './icons'
 
-export interface ProgressBubblesProps {
+export interface MasteryBubblesProps {
   level: 0 | 1 | 2 | 3
   size?: number
   className?: string
@@ -10,16 +10,18 @@ export interface ProgressBubblesProps {
   title?: string
 }
 
-export function ProgressBubbles({
+export type ProgressBubblesProps = MasteryBubblesProps
+
+export function MasteryBubbles({
   level,
   size = 28,
   className = '',
   ariaLabel,
   ariaHidden = false,
   title,
-}: ProgressBubblesProps) {
+}: MasteryBubblesProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
-  const label = ariaLabel ?? `Progress: ${safeLevel} of 3 bubbles`
+  const label = ariaLabel ?? `Mastery: ${safeLevel} of 3 bubbles`
   const resolvedTitle =
     title !== undefined ? title : ariaHidden ? undefined : label
 
@@ -70,6 +72,8 @@ export function ProgressBubbles({
   )
 }
 
+export const ProgressBubbles = MasteryBubbles
+
 export interface ChiliMeterProps {
   level: 0 | 1 | 2 | 3
   size?: number
@@ -86,14 +90,9 @@ export function ChiliMeter({
   className = '',
   ariaLabel,
   ariaHidden = false,
-  hideWhenZero = false,
   title,
 }: ChiliMeterProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
-
-  if (hideWhenZero && safeLevel === 0) {
-    return null
-  }
 
   const label =
     ariaLabel ??
@@ -149,17 +148,16 @@ export function MemoryIndicators({
     <div
       className={`memory-indicators ${compact ? 'is-compact' : ''} ${className}`.trim()}
     >
-      <ProgressBubbles
-        level={indicators.progress}
-        ariaLabel={`${indicators.progressLabel} – ${indicators.progressDescription}`}
-        title={`${indicators.progressLabel} – ${indicators.progressDescription}`}
-        ariaHidden={ariaHidden}
-      />
       <ChiliMeter
         level={indicators.difficulty}
-        ariaLabel={`${indicators.difficultyLabel} – ${indicators.difficultyDescription}`}
-        title={`${indicators.difficultyLabel} – ${indicators.difficultyDescription}`}
-        hideWhenZero={compact}
+        ariaLabel={indicators.difficultyLabel}
+        title={indicators.difficultyLabel}
+        ariaHidden={ariaHidden}
+      />
+      <MasteryBubbles
+        level={indicators.mastery}
+        ariaLabel={indicators.masteryLabel}
+        title={indicators.masteryLabel}
         ariaHidden={ariaHidden}
       />
     </div>

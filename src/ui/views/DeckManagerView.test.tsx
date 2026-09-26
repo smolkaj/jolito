@@ -258,6 +258,10 @@ describe('DeckManagerView', () => {
       { value: 'created-asc', label: 'Oldest first' },
       { value: 'alpha-asc', label: 'Alphabetical (A–Z)' },
       { value: 'alpha-desc', label: 'Alphabetical (Z–A)' },
+      { value: 'difficulty-desc', label: 'Spiciest first' },
+      { value: 'difficulty-asc', label: 'Mildest first' },
+      { value: 'mastery-desc', label: 'Highest mastery' },
+      { value: 'mastery-asc', label: 'Lowest mastery' },
     ])
   })
 
@@ -282,18 +286,19 @@ describe('DeckManagerView', () => {
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
   })
 
-  it('renders row memory indicators on deck cards', () => {
+  it('renders row memory indicators on deck cards in dedicated columns', () => {
     const { container } = renderDeckManager()
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
     expect(rows[0]).toHaveAttribute(
       'aria-label',
-      expect.stringMatching(/progress: \d of 3 bubbles/i),
+      expect.stringMatching(/mastery: \d of 3 bubbles/i),
     )
     expect(rows[0]).toHaveAttribute(
       'aria-label',
-      expect.stringMatching(/difficulty:/i),
+      expect.stringMatching(/difficulty: \d of 3 chilies/i),
     )
-    expect(container.querySelectorAll('.memory-indicators')).toHaveLength(3)
+    expect(container.querySelectorAll('.col-difficulty .chili-meter')).toHaveLength(3)
+    expect(container.querySelectorAll('.col-mastery .progress-bubbles')).toHaveLength(3)
   })
 })

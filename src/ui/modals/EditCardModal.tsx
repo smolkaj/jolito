@@ -16,7 +16,7 @@ import { AiContextActions } from '../AiContextActions'
 import { appendOrReplaceContext, useAiSuggestions } from '../useAiSuggestions'
 import { handleFocusSelect } from '../utils'
 import { shouldAutoFocusOnMount } from '../../infrastructure/browser/environment'
-import { ChiliMeter, ProgressBubbles } from '../MemoryIndicators'
+import { ChiliMeter, MasteryBubbles } from '../MemoryIndicators'
 import { ModalSheet } from './ModalSheet'
 
 function EditCardModalInner({
@@ -334,30 +334,28 @@ function EditCardModalInner({
             aria-label="Card memory state"
           >
             <div className="edit-card-memory-row">
-              <span className="edit-card-memory-label">Progress</span>
+              <span className="edit-card-memory-label">Difficulty</span>
               <div className="edit-card-memory-value">
-                <ProgressBubbles
-                  level={indicators.progress}
-                  size={28}
+                <ChiliMeter
+                  level={indicators.difficulty}
+                  size={15}
                   ariaHidden={true}
                 />
                 <span className="edit-card-memory-hint">
-                  {indicators.progressDescription}
+                  {indicators.difficultyLabel}
                 </span>
               </div>
             </div>
             <div className="edit-card-memory-row">
-              <span className="edit-card-memory-label">Difficulty</span>
+              <span className="edit-card-memory-label">Mastery</span>
               <div className="edit-card-memory-value">
-                {indicators.difficulty > 0 && (
-                  <ChiliMeter
-                    level={indicators.difficulty}
-                    size={15}
-                    ariaHidden={true}
-                  />
-                )}
+                <MasteryBubbles
+                  level={indicators.mastery}
+                  size={28}
+                  ariaHidden={true}
+                />
                 <span className="edit-card-memory-hint">
-                  {indicators.difficultyDescription}
+                  {indicators.masteryLabel}
                 </span>
               </div>
             </div>
