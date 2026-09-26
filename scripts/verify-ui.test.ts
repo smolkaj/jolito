@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   parseCliArgs,
@@ -7,6 +8,7 @@ import {
   uploadToLitterbox,
   formatMarkdownReport,
   createPreviewServer,
+  findOrStartServer,
   isServerReachable,
   DEFAULT_ROUTES,
   VIEWPORTS,
@@ -270,26 +272,49 @@ describe('verify-ui script', () => {
       expect(report).toContain(
         '- **Mobile (390x844 (@2x), Dark)**:\n  ![Home • Mobile • Dark](/app/.screenshots/home-mobile-dark.png)',
       )
+      expect(report).toContain('Some preview links refer to local files')
     })
   })
 
   describe('Preview Server & Reachability', () => {
-    it('spins up programmatic Vite preview server and shuts down cleanly', async () => {
-      const server = await createPreviewServer(process.cwd(), 0)
-      expect(server.port).toBeGreaterThan(0)
-      expect(server.baseUrl).toBe(`http://127.0.0.1:${server.port}`)
+    it('spins up programmatic Vite preview server and shuts down cleanly in isolated fixture', async () => {
+      const tempDir = mkdtempSync(join(tmpdir(), 'vite-preview-test-'))
+      const distDir = join(tempDir, 'dist')
+      mkdirSync(distDir, { recursive: true })
+      writeFileSync(
+        join(distDir, 'index.html'),
+        '<!doctype html><html><head><title>Preview Test</title></head><body><h1>Hello</h1></body></html>',
+      )
 
-      // Root path serves index.html
-      const rootRes = await fetch(server.baseUrl)
-      expect(rootRes.status).toBe(200)
-      expect(await rootRes.text()).toContain('<!doctype html>')
+      try {
+        const server = await createPreviewServer(tempDir, 0)
+        expect(server.port).toBeGreaterThan(0)
+        expect(server.baseUrl).toBe(`http://127.0.0.1:${server.port}`)
 
-      // Reachability check
-      expect(await isServerReachable(server.baseUrl)).toBe(true)
+        // Root path serves index.html
+        const rootRes = await fetch(server.baseUrl)
+        expect(rootRes.status).toBe(200)
+        expect(await rootRes.text()).toContain('<!doctype html>')
 
-      // Teardown
-      await server.close()
-      expect(await isServerReachable(server.baseUrl)).toBe(false)
+        // Reachability check
+        expect(await isServerReachable(server.baseUrl)).toBe(true)
+
+        // Teardown
+        await server.close()
+        expect(await isServerReachable(server.baseUrl)).toBe(false)
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true })
+      }
+    })
+
+    it('returns target URL directly when url option is provided to findOrStartServer', async () => {
+      const server = await findOrStartServer({
+        url: 'https://custom-preview.workers.dev/',
+        build: false,
+        rootDir: process.cwd(),
+      })
+      expect(server.baseUrl).toBe('https://custom-preview.workers.dev')
+      expect(server.close).toBeUndefined()
     })
   })
 

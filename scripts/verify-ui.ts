@@ -367,6 +367,15 @@ export function formatMarkdownReport(
     previews.push('')
   }
 
+  const hasLocalFallback = results.some((r) => !r.url.startsWith('http'))
+  const notes = hasLocalFallback
+    ? [
+        '> [!NOTE]',
+        '> Some preview links refer to local files (offline or upload skipped). Local file paths do not render directly inside GitHub PR comments.',
+        '',
+      ]
+    : []
+
   return [
     '### Visual Verification Previews',
     '',
@@ -376,6 +385,7 @@ export function formatMarkdownReport(
     '### Direct Image Previews',
     '',
     ...previews,
+    ...notes,
   ].join('\n')
 }
 
@@ -442,39 +452,22 @@ export async function findOrStartServer(options: {
     return { baseUrl: options.url.replace(/\/+$/, '') }
   }
 
-  // Check running dev or preview servers
-  if (await isServerReachable('http://localhost:5173')) {
-    console.log('Reusing existing Vite dev server at http://localhost:5173')
-    return { baseUrl: 'http://localhost:5173' }
-  }
-
-  if (await isServerReachable('http://127.0.0.1:5173')) {
-    console.log('Reusing existing Vite dev server at http://127.0.0.1:5173')
-    return { baseUrl: 'http://127.0.0.1:5173' }
-  }
-
-  if (await isServerReachable('http://localhost:4173')) {
-    console.log('Reusing existing preview server at http://localhost:4173')
-    return { baseUrl: 'http://localhost:4173' }
-  }
-
-  if (await isServerReachable('http://127.0.0.1:4173')) {
-    console.log('Reusing existing preview server at http://127.0.0.1:4173')
-    return { baseUrl: 'http://127.0.0.1:4173' }
-  }
-
   const distDir = join(options.rootDir, 'dist')
   const indexHtml = join(distDir, 'index.html')
 
   if (options.build || !existsSync(indexHtml)) {
     console.log('Building dist prior to visual verification...')
-    execSync(
-      'VITE_SUPABASE_URL=https://mock.supabase.co VITE_SUPABASE_ANON_KEY=mock-key npm run build',
-      {
-        cwd: options.rootDir,
-        stdio: 'inherit',
+    execSync('npm run build', {
+      cwd: options.rootDir,
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        VITE_SUPABASE_URL:
+          process.env.VITE_SUPABASE_URL || 'https://mock.supabase.co',
+        VITE_SUPABASE_ANON_KEY:
+          process.env.VITE_SUPABASE_ANON_KEY || 'mock-key',
       },
-    )
+    })
   }
 
   console.log('Starting Vite preview server on ephemeral port...')
