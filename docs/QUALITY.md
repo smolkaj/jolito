@@ -55,8 +55,12 @@ Documentation is part of the deliverable:
 ## Quality commands
 
 ```sh
-npm run check            # formatting, linting, types, unit coverage, production build
-npm run test:e2e         # browser and mobile touch smoke tests
+npm run check            # formatting, linting, types, unit coverage, invariant AST, production build
+npm run test:e2e:smoke   # fast (~2.8s) local browser smoke test for core journeys
+npm run test:e2e         # complete browser and mobile touch smoke test suite
+npm run verify:ui        # automated multi-viewport/theme screenshot capture & Litterbox upload
+npm run preview:wait     # synchronize and health-check live Cloudflare preview deployment
+npm run agent:worktree   # manage isolated worktree lifecycles and garbage collection
 npm run test:db          # pgTAP tests for database migrations, schemas, and RLS policies
 npm run lint:db          # lint database schema for typing and syntax errors
 npm run test:integration # live integration tests against local Supabase REST/Auth API
