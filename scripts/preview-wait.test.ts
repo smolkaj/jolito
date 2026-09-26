@@ -21,9 +21,11 @@ describe('normalizeBranchName', () => {
     expect(normalizeBranchName('feat//sub__dir')).toBe('feat-sub-dir')
   })
 
-  it('strips characters not allowed in DNS subdomains', () => {
-    expect(normalizeBranchName('branch#name!@$%^&*()')).toBe('branchname')
-    expect(normalizeBranchName('user.name/branch')).toBe('username-branch')
+  it('replaces dots, slashes, and non-alphanumerics with hyphens in Cloudflare preview subdomains', () => {
+    expect(normalizeBranchName('branch#name!@$%^&*()')).toBe('branch-name')
+    expect(normalizeBranchName('user.name/branch')).toBe('user-name-branch')
+    expect(normalizeBranchName('fix/v1.2')).toBe('fix-v1-2')
+    expect(normalizeBranchName('release.2.0_hotfix')).toBe('release-2-0-hotfix')
   })
 
   it('truncates branch prefix to 56 characters so prefix-jolito is within 63 char DNS limit', () => {
@@ -71,6 +73,17 @@ describe('resolvePreviewUrl', () => {
     expect(
       resolvePreviewUrl('agy-preview-wait-jolito.smolkaj.workers.dev'),
     ).toBe('https://agy-preview-wait-jolito.smolkaj.workers.dev')
+    expect(resolvePreviewUrl('joli.to')).toBe('https://joli.to')
+    expect(resolvePreviewUrl('localhost:3000')).toBe('http://localhost:3000')
+  })
+
+  it('correctly normalizes branch names containing dots and slashes instead of treating as domains', () => {
+    expect(resolvePreviewUrl('user.name/branch')).toBe(
+      'https://user-name-branch-jolito.smolkaj.workers.dev',
+    )
+    expect(resolvePreviewUrl('fix/v1.2')).toBe(
+      'https://fix-v1-2-jolito.smolkaj.workers.dev',
+    )
   })
 
   it('derives from environment variable when input omitted', () => {
@@ -397,6 +410,12 @@ describe('parseCliArgs', () => {
     )
     expect(() => parseCliArgs(['--timeout=foo'])).toThrow(
       'Invalid value for --timeout',
+    )
+  })
+
+  it('throws on unknown CLI options', () => {
+    expect(() => parseCliArgs(['--unknown-flag'])).toThrow(
+      'Unknown option: --unknown-flag',
     )
   })
 })

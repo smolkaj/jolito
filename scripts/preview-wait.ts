@@ -25,9 +25,7 @@ export function normalizeBranchName(branch: string): string {
   let normalized = branch
     .trim()
     .toLowerCase()
-    .replace(/[/_]+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
   if (!normalized) {
@@ -88,8 +86,17 @@ export function resolvePreviewUrl(
     return url.toString().replace(/\/$/, '')
   }
 
-  if (target.includes('.')) {
-    return `https://${target.replace(/\/$/, '')}`
+  // Bare domains (without protocol) ending in known suffixes or localhost
+  const isBareDomain =
+    !target.includes('/') &&
+    (target.endsWith('.workers.dev') ||
+      target.endsWith('joli.to') ||
+      target.endsWith(domainSuffix) ||
+      target.startsWith('localhost'))
+
+  if (isBareDomain) {
+    const protocol = target.startsWith('localhost') ? 'http://' : 'https://'
+    return `${protocol}${target.replace(/\/$/, '')}`
   }
 
   const normalized = normalizeBranchName(target)
@@ -322,7 +329,9 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
         throw new Error(`Invalid value for --timeout: ${val}`)
       }
       timeoutSeconds = Number(val)
-    } else if (!arg.startsWith('-')) {
+    } else if (arg.startsWith('-')) {
+      throw new Error(`Unknown option: ${arg}`)
+    } else {
       if (!target) {
         target = arg
       }
