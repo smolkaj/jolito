@@ -261,11 +261,52 @@ describe('DeckManagerView', () => {
       { value: 'created-asc', label: 'Oldest first' },
       { value: 'alpha-asc', label: 'Alphabetical (A–Z)' },
       { value: 'alpha-desc', label: 'Alphabetical (Z–A)' },
+      { value: 'answer-asc', label: 'Answer (A–Z)' },
+      { value: 'answer-desc', label: 'Answer (Z–A)' },
+      { value: 'direction-asc', label: 'ES → EN first' },
+      { value: 'direction-desc', label: 'EN → ES first' },
       { value: 'difficulty-desc', label: 'Spiciest first' },
       { value: 'difficulty-asc', label: 'Mildest first' },
       { value: 'mastery-desc', label: 'Highest mastery' },
       { value: 'mastery-asc', label: 'Lowest mastery' },
+      { value: 'status-asc', label: 'Due first' },
+      { value: 'status-desc', label: 'Due last' },
     ])
+  })
+
+  it('cycles Direction, Answer, and Status column headers through ascending, descending, and reset', async () => {
+    const user = userEvent.setup()
+    renderDeckManager()
+
+    const sortSelect = screen.getByRole('combobox', { name: /sort cards/i })
+    expect(sortSelect).toHaveValue('created-desc')
+
+    // 1. Direction header
+    const dirBtn = screen.getByRole('button', { name: /sort by direction/i })
+    await user.click(dirBtn)
+    expect(sortSelect).toHaveValue('direction-asc')
+    await user.click(dirBtn)
+    expect(sortSelect).toHaveValue('direction-desc')
+    await user.click(dirBtn)
+    expect(sortSelect).toHaveValue('created-desc')
+
+    // 2. Answer header
+    const answerBtn = screen.getByRole('button', { name: /sort by answer/i })
+    await user.click(answerBtn)
+    expect(sortSelect).toHaveValue('answer-asc')
+    await user.click(answerBtn)
+    expect(sortSelect).toHaveValue('answer-desc')
+    await user.click(answerBtn)
+    expect(sortSelect).toHaveValue('created-desc')
+
+    // 3. Status header
+    const statusBtn = screen.getByRole('button', { name: /sort by status/i })
+    await user.click(statusBtn)
+    expect(sortSelect).toHaveValue('status-asc')
+    await user.click(statusBtn)
+    expect(sortSelect).toHaveValue('status-desc')
+    await user.click(statusBtn)
+    expect(sortSelect).toHaveValue('created-desc')
   })
 
   it('renders clean empty state with clear filters button when search has no matches', async () => {

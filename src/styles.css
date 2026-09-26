@@ -6030,7 +6030,8 @@ kbd {
   justify-content: center;
 }
 
-.deck-card-row .col-dir {
+.deck-card-row .col-dir,
+.deck-list-table-header .col-dir {
   display: flex;
   align-items: center;
 }
@@ -6066,7 +6067,8 @@ kbd {
   display: none;
 }
 
-.deck-card-row .col-phrase {
+.deck-card-row .col-phrase,
+.deck-list-table-header .col-phrase {
   display: flex;
   align-items: center;
   gap: 6px;
