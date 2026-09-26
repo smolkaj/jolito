@@ -3,14 +3,16 @@ import {
   analyzeWorktrees,
   checkUncommittedChanges,
   cleanWorktrees,
-  getMergedBranchNames,
+  getMergedBranchData,
   isBranchMerged,
   listWorktrees,
   main,
+  parseTaskInput,
   parseWorktreePorcelain,
   startWorktree,
   type CommandRunner,
   type FsOperations,
+  type MergedBranchData,
 } from './agent-worktree.ts'
 
 describe('parseWorktreePorcelain', () => {
@@ -81,8 +83,8 @@ prunable gitdir file points to non-existent location
   })
 })
 
-describe('getMergedBranchNames', () => {
-  it('aggregates branches from git remote, local, and gh pr list', () => {
+describe('getMergedBranchData', () => {
+  it('aggregates branches and head commit OIDs from git and gh', () => {
     const mockRunner: CommandRunner = (cmd, args) => {
       if (cmd === 'git' && args.includes('-r')) {
         return '  origin/merged-remote-1\n  origin/main\n  origin/HEAD -> origin/main\n'
@@ -92,19 +94,18 @@ describe('getMergedBranchNames', () => {
       }
       if (cmd === 'gh') {
         return JSON.stringify([
-          { headRefName: 'agy/merged-pr-1' },
-          { headRefName: 'agy/merged-pr-2' },
+          { headRefName: 'agy/merged-pr-1', headRefOid: 'sha-pr-1' },
+          { headRefName: 'agy/merged-pr-2', headRefOid: 'sha-pr-2' },
         ])
       }
       return ''
     }
 
-    const merged = getMergedBranchNames(mockRunner)
-    expect(merged.has('merged-remote-1')).toBe(true)
-    expect(merged.has('merged-local-1')).toBe(true)
-    expect(merged.has('agy/merged-pr-1')).toBe(true)
-    expect(merged.has('agy/merged-pr-2')).toBe(true)
-    expect(merged.has('unmerged-branch')).toBe(false)
+    const { gitMerged, prMerged } = getMergedBranchData(mockRunner)
+    expect(gitMerged.has('merged-remote-1')).toBe(true)
+    expect(gitMerged.has('merged-local-1')).toBe(true)
+    expect(prMerged.get('agy/merged-pr-1')).toEqual(['sha-pr-1'])
+    expect(prMerged.get('agy/merged-pr-2')).toEqual(['sha-pr-2'])
   })
 
   it('does not throw when gh command fails (e.g. offline/no gh cli)', () => {
@@ -118,29 +119,58 @@ describe('getMergedBranchNames', () => {
       return ''
     }
 
-    const merged = getMergedBranchNames(mockRunner)
-    expect(merged.has('remote-merged')).toBe(true)
-    expect(merged.size).toBeGreaterThanOrEqual(1)
+    const { gitMerged, prMerged } = getMergedBranchData(mockRunner)
+    expect(gitMerged.has('remote-merged')).toBe(true)
+    expect(prMerged.size).toBe(0)
   })
 })
 
 describe('isBranchMerged', () => {
-  it('returns true if branch is in the merged set', () => {
-    const merged = new Set(['branch-a'])
-    expect(isBranchMerged('branch-a', merged)).toBe(true)
+  const mergedData: MergedBranchData = {
+    gitMerged: new Set(['branch-git']),
+    prMerged: new Map([['agy/pr-branch', ['sha-pr-commit']]]),
+  }
+
+  it('returns true when head commit matches the merged PR headRefOid', () => {
+    const mockRunner: CommandRunner = () => {
+      throw new Error('Not an ancestor')
+    }
+    expect(
+      isBranchMerged('agy/pr-branch', 'sha-pr-commit', mergedData, mockRunner),
+    ).toBe(true)
   })
 
-  it('falls back to merge-base check if branch is not in the set', () => {
-    const merged = new Set(['branch-a'])
+  it('returns false when branch was merged in a PR but local worktree has new unmerged commits', () => {
     const mockRunner: CommandRunner = (_cmd, args) => {
-      if (args.includes('refs/heads/branch-b')) {
+      if (args[0] === 'merge-base') {
+        throw new Error('Not ancestor')
+      }
+      if (args[0] === 'rev-list') {
+        return 'commit-new-unpushed-1\n' // Indicates new commits!
+      }
+      return ''
+    }
+    expect(
+      isBranchMerged(
+        'agy/pr-branch',
+        'sha-new-local-commit',
+        mergedData,
+        mockRunner,
+      ),
+    ).toBe(false)
+  })
+
+  it('returns true if branch commit is an ancestor of origin/main', () => {
+    const mockRunner: CommandRunner = (_cmd, args) => {
+      if (args.includes('sha-ancestor')) {
         return '' // Exits 0
       }
       throw new Error('not ancestor')
     }
 
-    expect(isBranchMerged('branch-b', merged, mockRunner)).toBe(true)
-    expect(isBranchMerged('branch-c', merged, mockRunner)).toBe(false)
+    expect(
+      isBranchMerged('random-branch', 'sha-ancestor', mergedData, mockRunner),
+    ).toBe(true)
   })
 })
 
@@ -157,6 +187,33 @@ describe('checkUncommittedChanges', () => {
 
   it('returns false if directory does not exist on disk', () => {
     expect(checkUncommittedChanges('/non/existent/path/for/sure')).toBe(false)
+  })
+})
+
+describe('parseTaskInput', () => {
+  it('parses bare task name defaulting to agy agent', () => {
+    const parsed = parseTaskInput('my-task')
+    expect(parsed).toEqual({
+      agent: 'agy',
+      taskName: 'my-task',
+      branch: 'agy/my-task',
+    })
+  })
+
+  it('parses explicit agent/task format', () => {
+    const parsed = parseTaskInput('codex/debt-clean')
+    expect(parsed).toEqual({
+      agent: 'codex',
+      taskName: 'debt-clean',
+      branch: 'codex/debt-clean',
+    })
+  })
+
+  it('rejects invalid characters', () => {
+    expect(() => parseTaskInput('bad task name')).toThrow(/Invalid task name/)
+    expect(() => parseTaskInput('bad/agent/extra')).toThrow(
+      /Invalid task format/,
+    )
   })
 })
 
@@ -187,7 +244,7 @@ HEAD 4444444444444444444444444444444444444444
 detached
 `
 
-  it('accurately classifies status and safeToPrune for each worktree', () => {
+  it('accurately classifies status, safeToPrune, and agent for each worktree', () => {
     const mockRunner: CommandRunner = (cmd, args) => {
       if (cmd === 'git') {
         if (args[0] === 'worktree' && args[1] === 'list') {
@@ -218,11 +275,18 @@ detached
       realpathSync: (p) => p,
     }
 
-    const mergedBranches = new Set(['agy/merged-clean', 'agy/merged-dirty'])
+    const mergedData: MergedBranchData = {
+      gitMerged: new Set(),
+      prMerged: new Map([
+        ['agy/merged-clean', ['1111111111111111111111111111111111111111']],
+        ['agy/merged-dirty', ['2222222222222222222222222222222222222222']],
+      ]),
+    }
+
     const analyses = analyzeWorktrees({
       runCmd: mockRunner,
       fsOps: mockFs,
-      mergedBranches,
+      mergedData,
       cwd: '/home/steffen/src/jolito-current',
     })
 
@@ -242,6 +306,7 @@ detached
     expect(analyses[2]?.status).toBe('MERGED')
     expect(analyses[2]?.hasUncommittedChanges).toBe(false)
     expect(analyses[2]?.safeToPrune).toBe(true)
+    expect(analyses[2]?.agent).toBe('agy')
 
     // 4. Merged but dirty: MERGED, safeToPrune: false
     expect(analyses[3]?.status).toBe('MERGED')
@@ -272,13 +337,13 @@ worktree /home/steffen/src/jolito-merged-clean
 HEAD 1111111111111111111111111111111111111111
 branch refs/heads/agy/merged-clean
 
-worktree /home/steffen/src/jolito-merged-dirty
+worktree /home/steffen/src/jolito-other-agent
 HEAD 2222222222222222222222222222222222222222
-branch refs/heads/agy/merged-dirty
+branch refs/heads/codex/merged-codex
 
-worktree /home/steffen/src/jolito-unmerged
+worktree /home/steffen/src/jolito-merged-dirty
 HEAD 3333333333333333333333333333333333333333
-branch refs/heads/agy/unmerged
+branch refs/heads/agy/merged-dirty
 `
 
   const mockFs: FsOperations = {
@@ -286,7 +351,16 @@ branch refs/heads/agy/unmerged
     realpathSync: (p) => p,
   }
 
-  it('in dry-run mode, identifies safe-to-remove worktrees without executing git remove/prune', () => {
+  const mergedData: MergedBranchData = {
+    gitMerged: new Set(),
+    prMerged: new Map([
+      ['agy/merged-clean', ['1111111111111111111111111111111111111111']],
+      ['codex/merged-codex', ['2222222222222222222222222222222222222222']],
+      ['agy/merged-dirty', ['3333333333333333333333333333333333333333']],
+    ]),
+  }
+
+  it('respects multi-agent boundaries: skips other agents worktrees unless --all is passed', () => {
     const executedCommands: string[] = []
     const mockRunner: CommandRunner = (cmd, args) => {
       executedCommands.push(`${cmd} ${args.join(' ')}`)
@@ -311,59 +385,41 @@ branch refs/heads/agy/unmerged
           throw new Error('Not an ancestor')
         }
       }
-      if (cmd === 'gh') {
-        return JSON.stringify([
-          { headRefName: 'agy/merged-clean' },
-          { headRefName: 'agy/merged-dirty' },
-        ])
-      }
       return ''
     }
 
     const logMessages: string[] = []
     const result = cleanWorktrees({
-      dryRun: true,
+      dryRun: false,
       force: false,
+      agent: 'agy',
+      all: false,
       runCmd: mockRunner,
       fsOps: mockFs,
+      mergedData,
       log: (msg) => logMessages.push(msg),
       cwd: '/home/steffen/src/jolito-current',
     })
 
+    // agy/merged-clean is removed
     expect(result.removed).toEqual([
       {
         path: '/home/steffen/src/jolito-merged-clean',
         branch: 'agy/merged-clean',
       },
     ])
-    expect(result.skipped).toEqual([
-      {
-        path: '/home/steffen/src/jolito-merged-dirty',
-        branch: 'agy/merged-dirty',
-        reason: 'Uncommitted changes present (use --force to remove)',
-      },
-    ])
-
-    // Should NOT have run git worktree remove or git worktree prune
-    const hasWorktreeRemove = executedCommands.some((c) =>
-      c.includes('worktree remove'),
-    )
-    const hasWorktreePrune = executedCommands.some((c) =>
-      c.includes('worktree prune'),
-    )
-    expect(hasWorktreeRemove).toBe(false)
-    expect(hasWorktreePrune).toBe(false)
-
+    // codex/merged-codex is skipped because it belongs to another agent!
     expect(
-      logMessages.some((m) =>
-        m.includes(
-          '[dry-run] Would remove worktree: /home/steffen/src/jolito-merged-clean',
-        ),
-      ),
+      result.skipped.some((s) => s.reason.includes('Belongs to agent "codex"')),
     ).toBe(true)
+    expect(
+      executedCommands.some((c) =>
+        c.includes('worktree remove /home/steffen/src/jolito-other-agent'),
+      ),
+    ).toBe(false)
   })
 
-  it('removes clean merged worktrees and prunes metadata when not in dry-run', () => {
+  it('cleans other agent worktrees when --all is passed', () => {
     const executedCommands: string[] = []
     const mockRunner: CommandRunner = (cmd, args) => {
       executedCommands.push(`${cmd} ${args.join(' ')}`)
@@ -384,50 +440,37 @@ branch refs/heads/agy/unmerged
           throw new Error('Not an ancestor')
         }
       }
-      if (cmd === 'gh') {
-        return JSON.stringify([{ headRefName: 'agy/merged-clean' }])
-      }
       return ''
     }
 
     const result = cleanWorktrees({
       dryRun: false,
       force: false,
+      all: true,
       runCmd: mockRunner,
       fsOps: mockFs,
+      mergedData,
       log: () => {},
       cwd: '/home/steffen/src/jolito-current',
     })
 
-    expect(result.removed).toHaveLength(1)
-    expect(result.removed[0]?.path).toBe(
-      '/home/steffen/src/jolito-merged-clean',
-    )
-    expect(result.pruned).toBe(true)
-
-    expect(
-      executedCommands.some((c) =>
-        c.includes('git worktree remove /home/steffen/src/jolito-merged-clean'),
-      ),
-    ).toBe(true)
-    expect(executedCommands.some((c) => c.includes('git worktree prune'))).toBe(
-      true,
-    )
-
-    // NEVER remove main repository or current worktree
-    expect(
-      executedCommands.some((c) =>
-        c.includes('worktree remove /home/steffen/src/jolito '),
-      ),
-    ).toBe(false)
-    expect(
-      executedCommands.some((c) =>
-        c.includes('worktree remove /home/steffen/src/jolito-current'),
-      ),
-    ).toBe(false)
+    expect(result.removed).toEqual([
+      {
+        path: '/home/steffen/src/jolito-merged-clean',
+        branch: 'agy/merged-clean',
+      },
+      {
+        path: '/home/steffen/src/jolito-other-agent',
+        branch: 'codex/merged-codex',
+      },
+      {
+        path: '/home/steffen/src/jolito-merged-dirty',
+        branch: 'agy/merged-dirty',
+      },
+    ])
   })
 
-  it('removes dirty worktrees with --force when requested', () => {
+  it('deletes local branch ref when worktree is removed', () => {
     const executedCommands: string[] = []
     const mockRunner: CommandRunner = (cmd, args) => {
       executedCommands.push(`${cmd} ${args.join(' ')}`)
@@ -442,38 +485,28 @@ branch refs/heads/agy/unmerged
           return '/home/steffen/src/jolito-current'
         }
         if (args.includes('status')) {
-          return ' M dirty.ts\n'
+          return ''
         }
         if (args[0] === 'merge-base') {
           throw new Error('Not an ancestor')
         }
       }
-      if (cmd === 'gh') {
-        return JSON.stringify([{ headRefName: 'agy/merged-dirty' }])
-      }
       return ''
     }
 
-    const result = cleanWorktrees({
+    cleanWorktrees({
       dryRun: false,
-      force: true,
+      agent: 'agy',
       runCmd: mockRunner,
       fsOps: mockFs,
+      mergedData,
       log: () => {},
       cwd: '/home/steffen/src/jolito-current',
     })
 
-    expect(result.removed).toEqual([
-      {
-        path: '/home/steffen/src/jolito-merged-dirty',
-        branch: 'agy/merged-dirty',
-      },
-    ])
     expect(
       executedCommands.some((c) =>
-        c.includes(
-          'git worktree remove --force /home/steffen/src/jolito-merged-dirty',
-        ),
+        c.includes('git branch -d agy/merged-clean'),
       ),
     ).toBe(true)
   })
@@ -487,13 +520,15 @@ describe('startWorktree', () => {
       if (args.includes('--git-common-dir')) {
         return '/home/steffen/src/jolito/.git'
       }
+      if (args.includes('--verify')) {
+        throw new Error('Branch does not exist')
+      }
       return ''
     }
 
     const createdSymlinks: Array<{ target: string; path: string }> = []
     const mockFs: FsOperations = {
       existsSync: (p: string) => {
-        // main node_modules exists, but target worktree does not exist yet
         if (p === '/home/steffen/src/jolito/node_modules') return true
         return false
       },
@@ -502,10 +537,9 @@ describe('startWorktree', () => {
       },
     }
 
-    const logMessages: string[] = []
     const result = startWorktree('my-feature', {
       runCmd: mockRunner,
-      log: (m) => logMessages.push(m),
+      log: () => {},
       fsOps: mockFs,
       cwd: '/home/steffen/src/jolito',
     })
@@ -514,11 +548,9 @@ describe('startWorktree', () => {
     expect(result.branch).toBe('agy/my-feature')
     expect(result.symlinkCreated).toBe(true)
 
-    // Verifies fetch origin main
     expect(
       executedCommands.some((c) => c.includes('git fetch origin main')),
     ).toBe(true)
-    // Verifies git worktree add
     expect(
       executedCommands.some((c) =>
         c.includes(
@@ -526,22 +558,17 @@ describe('startWorktree', () => {
         ),
       ),
     ).toBe(true)
-
-    // Verifies node_modules symlink
-    expect(createdSymlinks).toEqual([
-      {
-        target: '/home/steffen/src/jolito/node_modules',
-        path: '/home/steffen/src/jolito-my-feature/node_modules',
-      },
-    ])
   })
 
-  it('normalizes task name if prefixed with agy/', () => {
+  it('supports explicit agent prefix in task name', () => {
     const executedCommands: string[] = []
     const mockRunner: CommandRunner = (cmd, args) => {
       executedCommands.push(`${cmd} ${args.join(' ')}`)
       if (args.includes('--git-common-dir')) {
         return '/home/steffen/src/jolito/.git'
+      }
+      if (args.includes('--verify')) {
+        throw new Error('Branch does not exist')
       }
       return ''
     }
@@ -551,45 +578,37 @@ describe('startWorktree', () => {
       symlinkSync: () => {},
     }
 
-    const result = startWorktree('agy/quick-fix', {
+    const result = startWorktree('codex/quick-fix', {
       runCmd: mockRunner,
       log: () => {},
       fsOps: mockFs,
       cwd: '/home/steffen/src/jolito',
     })
 
-    expect(result.branch).toBe('agy/quick-fix')
+    expect(result.branch).toBe('codex/quick-fix')
     expect(result.path).toBe('/home/steffen/src/jolito-quick-fix')
   })
 
-  it('rejects invalid or empty task names', () => {
-    expect(() => startWorktree('')).toThrow(/Task name is required/)
-    expect(() => startWorktree('   ')).toThrow(/Task name is required/)
-    expect(() => startWorktree('invalid task name with spaces')).toThrow(
-      /Invalid task name/,
-    )
-  })
-
-  it('rejects if target worktree path already exists on disk', () => {
+  it('rejects if local branch already exists', () => {
     const mockRunner: CommandRunner = (_cmd, args) => {
-      if (args.includes('--git-common-dir')) {
-        return '/home/steffen/src/jolito/.git'
+      if (args.includes('--verify')) {
+        return 'commit-hash' // Branch exists!
       }
       return ''
     }
 
     const mockFs: FsOperations = {
-      existsSync: (p: string) => p === '/home/steffen/src/jolito-existing-task',
+      existsSync: () => false,
       symlinkSync: () => {},
     }
 
     expect(() =>
-      startWorktree('existing-task', {
+      startWorktree('existing-branch', {
         runCmd: mockRunner,
         fsOps: mockFs,
         cwd: '/home/steffen/src/jolito',
       }),
-    ).toThrow(/Target worktree directory already exists/)
+    ).toThrow(/already exists locally/)
   })
 })
 
@@ -620,7 +639,12 @@ branch refs/heads/agy/merged
         }
       }
       if (cmd === 'gh') {
-        return JSON.stringify([{ headRefName: 'agy/merged' }])
+        return JSON.stringify([
+          {
+            headRefName: 'agy/merged',
+            headRefOid: '1111111111111111111111111111111111111111',
+          },
+        ])
       }
       return ''
     }

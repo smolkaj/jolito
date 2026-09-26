@@ -31,6 +31,7 @@ export interface WorktreeAnalysis extends WorktreeInfo {
   status: WorktreeMergedStatus
   safeToPrune: boolean
   hasUncommittedChanges: boolean
+  agent?: string | undefined
 }
 
 export interface CleanResult {
@@ -70,6 +71,11 @@ export const defaultRunCmd: CommandRunner = (cmd, args, options = {}) => {
     stdio: ['ignore', 'pipe', 'pipe'],
     timeout: options.timeout ?? 60_000,
   })
+}
+
+export interface MergedBranchData {
+  gitMerged: Set<string>
+  prMerged: Map<string, string[]>
 }
 
 export function parseWorktreePorcelain(output: string): RawWorktreeRecord[] {
@@ -141,11 +147,12 @@ export function parseWorktreePorcelain(output: string): RawWorktreeRecord[] {
   return records
 }
 
-export function getMergedBranchNames(
+export function getMergedBranchData(
   runCmd: CommandRunner = defaultRunCmd,
   cwd?: string,
-): Set<string> {
-  const merged = new Set<string>()
+): MergedBranchData {
+  const gitMerged = new Set<string>()
+  const prMerged = new Map<string, string[]>()
 
   // 1. Remote branches merged into origin/main
   try {
@@ -159,7 +166,7 @@ export function getMergedBranchNames(
       if (!trimmed) continue
       const branchName = trimmed.replace(/^origin\//, '')
       if (branchName && branchName !== 'HEAD' && !branchName.includes('->')) {
-        merged.add(branchName)
+        gitMerged.add(branchName)
       }
     }
   } catch {
@@ -174,14 +181,14 @@ export function getMergedBranchNames(
     for (const line of localOutput.split('\n')) {
       const trimmed = line.replace(/^[*+\s]+/, '').trim()
       if (trimmed && trimmed !== 'HEAD' && !trimmed.includes('->')) {
-        merged.add(trimmed)
+        gitMerged.add(trimmed)
       }
     }
   } catch {
     // git branch --merged may fail if origin/main ref does not exist
   }
 
-  // 3. Merged PRs on GitHub
+  // 3. Merged PRs on GitHub with their merged head commit OIDs
   try {
     const ghOutput = runCmd(
       'gh',
@@ -191,45 +198,83 @@ export function getMergedBranchNames(
         '--state',
         'merged',
         '--json',
-        'headRefName',
+        'headRefName,headRefOid',
         '--limit',
         '1000',
       ],
       { cwd },
     )
-    const prs = JSON.parse(ghOutput) as Array<{ headRefName?: string }>
+    const prs = JSON.parse(ghOutput) as Array<{
+      headRefName?: string
+      headRefOid?: string
+    }>
     for (const pr of prs) {
-      if (pr.headRefName) {
-        merged.add(pr.headRefName)
+      if (pr.headRefName && pr.headRefOid) {
+        const existing = prMerged.get(pr.headRefName) ?? []
+        existing.push(pr.headRefOid)
+        prMerged.set(pr.headRefName, existing)
       }
     }
   } catch {
     // gh may fail if offline or not logged in; local git merged checks provide baseline
   }
 
-  return merged
+  return { gitMerged, prMerged }
 }
 
 export function isBranchMerged(
   branch: string,
-  mergedBranches: Set<string>,
+  headCommit: string,
+  mergedData: MergedBranchData,
   runCmd: CommandRunner = defaultRunCmd,
   cwd?: string,
 ): boolean {
-  if (mergedBranches.has(branch)) {
-    return true
-  }
-
-  // Fallback ancestor check against origin/main
+  // 1. Direct git ancestor check (fast-forward or already in origin/main)
   try {
-    runCmd(
-      'git',
-      ['merge-base', '--is-ancestor', `refs/heads/${branch}`, 'origin/main'],
-      { cwd },
-    )
+    runCmd('git', ['merge-base', '--is-ancestor', headCommit, 'origin/main'], {
+      cwd,
+    })
     return true
   } catch {
-    // Not an ancestor or branch does not exist locally
+    // Not an ancestor of origin/main
+  }
+
+  // 2. Git merged branch list check: verify headCommit has no unmerged commits beyond origin/main
+  if (mergedData.gitMerged.has(branch)) {
+    try {
+      const unmergedCommits = runCmd(
+        'git',
+        ['rev-list', `origin/main..${headCommit}`],
+        { cwd },
+      )
+      if (!unmergedCommits.trim()) {
+        return true
+      }
+    } catch {
+      // Fall through to PR check
+    }
+  }
+
+  // 3. GitHub merged PR check: verify headCommit is contained in the PR's merged head
+  const prHeadOids = mergedData.prMerged.get(branch)
+  if (prHeadOids && prHeadOids.length > 0) {
+    for (const prHeadOid of prHeadOids) {
+      if (headCommit === prHeadOid) {
+        return true
+      }
+      try {
+        const unmergedCommits = runCmd(
+          'git',
+          ['rev-list', `${prHeadOid}..${headCommit}`],
+          { cwd },
+        )
+        if (!unmergedCommits.trim()) {
+          return true
+        }
+      } catch {
+        // Check next PR head OID
+      }
+    }
   }
 
   return false
@@ -317,12 +362,41 @@ export function getCurrentWorktreePath(
   return resolve(cwd ?? process.cwd())
 }
 
+export function getWorktreeAgent(
+  branch: string | undefined,
+): string | undefined {
+  if (!branch) return undefined
+  const slashIdx = branch.indexOf('/')
+  if (slashIdx > 0) {
+    return branch.slice(0, slashIdx)
+  }
+  return undefined
+}
+
+export function detectCurrentAgent(
+  currentWorktreePath: string,
+  records: RawWorktreeRecord[],
+  defaultAgent = 'agy',
+): string {
+  if (process.env.AGENT_ID) {
+    return process.env.AGENT_ID
+  }
+  const currentRecord = records.find(
+    (r) => resolve(r.path) === resolve(currentWorktreePath),
+  )
+  if (currentRecord?.branch) {
+    const agent = getWorktreeAgent(currentRecord.branch)
+    if (agent) return agent
+  }
+  return defaultAgent
+}
+
 export function analyzeWorktrees(
   options: {
     cwd?: string | undefined
     runCmd?: CommandRunner | undefined
     fsOps?: FsOperations | undefined
-    mergedBranches?: Set<string> | undefined
+    mergedData?: MergedBranchData | undefined
   } = {},
 ): WorktreeAnalysis[] {
   const runCmd = options.runCmd ?? defaultRunCmd
@@ -334,17 +408,16 @@ export function analyzeWorktrees(
 
   const mainRepoPath = getMainRepoPath(runCmd, options.cwd)
   const currentWorktreePath = getCurrentWorktreePath(runCmd, options.cwd)
-  const mergedBranches =
-    options.mergedBranches ?? getMergedBranchNames(runCmd, options.cwd)
+  const mergedData =
+    options.mergedData ?? getMergedBranchData(runCmd, options.cwd)
 
   return records.map((record, index) => {
     const resolvedPath = resolve(record.path)
     const isMainRepo =
-      index === 0 ||
-      isSamePath(resolvedPath, mainRepoPath, fsOps) ||
-      resolvedPath === '/home/steffen/src/jolito'
+      index === 0 || isSamePath(resolvedPath, mainRepoPath, fsOps)
 
     const isCurrent = isSamePath(resolvedPath, currentWorktreePath, fsOps)
+    const agent = getWorktreeAgent(record.branch)
 
     let status: WorktreeMergedStatus
     if (isMainRepo || isCurrent) {
@@ -352,7 +425,13 @@ export function analyzeWorktrees(
     } else if (record.detached || !record.branch) {
       status = 'DETACHED'
     } else if (
-      isBranchMerged(record.branch, mergedBranches, runCmd, options.cwd)
+      isBranchMerged(
+        record.branch,
+        record.head,
+        mergedData,
+        runCmd,
+        options.cwd,
+      )
     ) {
       status = 'MERGED'
     } else {
@@ -373,6 +452,7 @@ export function analyzeWorktrees(
       status,
       safeToPrune,
       hasUncommittedChanges: hasChanges,
+      agent,
     }
   })
 }
@@ -410,20 +490,32 @@ export function cleanWorktrees(
     cwd?: string | undefined
     dryRun?: boolean | undefined
     force?: boolean | undefined
+    agent?: string | undefined
+    all?: boolean | undefined
+    deleteBranch?: boolean | undefined
     runCmd?: CommandRunner | undefined
     fsOps?: FsOperations | undefined
-    mergedBranches?: Set<string> | undefined
+    mergedData?: MergedBranchData | undefined
     log?: ((msg: string) => void) | undefined
   } = {},
 ): CleanResult {
   const runCmd = options.runCmd ?? defaultRunCmd
   const fsOps = options.fsOps ?? defaultFsOps
   const log = options.log ?? console.log
+  const currentWorktreePath = getCurrentWorktreePath(runCmd, options.cwd)
+
+  const wtOutput = runCmd('git', ['worktree', 'list', '--porcelain'], {
+    cwd: options.cwd,
+  })
+  const records = parseWorktreePorcelain(wtOutput)
+  const activeAgent =
+    options.agent ?? detectCurrentAgent(currentWorktreePath, records)
+
   const analyses = analyzeWorktrees({
     cwd: options.cwd,
     runCmd,
     fsOps,
-    mergedBranches: options.mergedBranches,
+    mergedData: options.mergedData,
   })
 
   const removed: Array<{ path: string; branch?: string | undefined }> = []
@@ -444,6 +536,19 @@ export function cleanWorktrees(
     }
 
     if (wt.status !== 'MERGED') {
+      continue
+    }
+
+    // Check multi-agent ownership: AGENTS.md invariant "Never touch another agent's worktree"
+    if (!options.all && wt.agent && wt.agent !== activeAgent) {
+      skipped.push({
+        path: wt.path,
+        branch: wt.branch,
+        reason: `Belongs to agent "${wt.agent}" (use --all or --agent ${wt.agent} to clean)`,
+      })
+      log(
+        `Skipping worktree belonging to agent "${wt.agent}": ${wt.path} (${wt.branch ?? 'detached'})`,
+      )
       continue
     }
 
@@ -468,6 +573,9 @@ export function cleanWorktrees(
       log(
         `[dry-run] Would remove worktree: ${wt.path} (${wt.branch ?? 'detached'})${forceNote}`,
       )
+      if (wt.branch && (options.deleteBranch ?? true)) {
+        log(`[dry-run] Would delete local branch: ${wt.branch}`)
+      }
     } else {
       try {
         const removeArgs = ['worktree', 'remove']
@@ -478,6 +586,21 @@ export function cleanWorktrees(
         runCmd('git', removeArgs, { cwd: options.cwd })
         removed.push({ path: wt.path, branch: wt.branch })
         log(`Removed worktree: ${wt.path} (${wt.branch ?? 'detached'})`)
+
+        // Also clean up local branch ref if requested (default true)
+        if (wt.branch && (options.deleteBranch ?? true)) {
+          try {
+            const branchArgs = [
+              'branch',
+              options.force ? '-D' : '-d',
+              wt.branch,
+            ]
+            runCmd('git', branchArgs, { cwd: options.cwd })
+            log(`Deleted local branch: ${wt.branch}`)
+          } catch {
+            // Branch deletion is best-effort (e.g. if already deleted or ref mismatch)
+          }
+        }
       } catch (error) {
         skipped.push({
           path: wt.path,
@@ -509,10 +632,47 @@ export function cleanWorktrees(
   return { removed, skipped, pruned }
 }
 
+export function parseTaskInput(
+  input: string,
+  defaultAgent = 'agy',
+): { agent: string; taskName: string; branch: string } {
+  const trimmed = input.trim()
+  const parts = trimmed.split('/')
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    const [agent, taskName] = parts
+    if (
+      !/^[a-zA-Z0-9._-]+$/.test(agent) ||
+      !/^[a-zA-Z0-9._-]+$/.test(taskName)
+    ) {
+      throw new Error(
+        `Invalid agent or task name "${input}". Use alphanumeric characters, dashes, underscores, and dots.`,
+      )
+    }
+    return { agent, taskName, branch: `${agent}/${taskName}` }
+  } else if (parts.length === 1 && parts[0]) {
+    const taskName = parts[0]
+    if (!/^[a-zA-Z0-9._-]+$/.test(taskName)) {
+      throw new Error(
+        `Invalid task name "${input}". Use alphanumeric characters, dashes, underscores, and dots.`,
+      )
+    }
+    return {
+      agent: defaultAgent,
+      taskName,
+      branch: `${defaultAgent}/${taskName}`,
+    }
+  } else {
+    throw new Error(
+      `Invalid task format "${input}". Expected "<task>" or "<agent>/<task>".`,
+    )
+  }
+}
+
 export function startWorktree(
-  taskName: string,
+  taskInput: string,
   options: {
     cwd?: string | undefined
+    agent?: string | undefined
     runCmd?: CommandRunner | undefined
     log?: ((msg: string) => void) | undefined
     fsOps?: FsOperations | undefined
@@ -522,26 +682,38 @@ export function startWorktree(
   const log = options.log ?? console.log
   const fsOps = options.fsOps ?? defaultFsOps
 
-  if (!taskName || typeof taskName !== 'string' || !taskName.trim()) {
+  if (!taskInput || typeof taskInput !== 'string' || !taskInput.trim()) {
     throw new Error(
       'Task name is required. Usage: agent-worktree start <task-name>',
     )
   }
 
-  const trimmed = taskName.trim()
-  const taskSuffix = trimmed.replace(/^agy\//, '')
-  if (!taskSuffix || !/^[a-zA-Z0-9._-]+$/.test(taskSuffix)) {
-    throw new Error(
-      `Invalid task name "${taskName}". Task name must contain only alphanumeric characters, dashes, underscores, and dots.`,
-    )
-  }
+  const defaultAgent = options.agent ?? process.env.AGENT_ID ?? 'agy'
+  const { branch, taskName } = parseTaskInput(taskInput, defaultAgent)
 
-  const branch = `agy/${taskSuffix}`
   const mainRepoPath = getMainRepoPath(runCmd, options.cwd)
-  const targetPath = resolve(mainRepoPath, '..', `jolito-${taskSuffix}`)
+  const targetPath = resolve(mainRepoPath, '..', `jolito-${taskName}`)
 
   if (fsOps.existsSync(targetPath)) {
     throw new Error(`Target worktree directory already exists: ${targetPath}`)
+  }
+
+  // Check if branch already exists locally
+  try {
+    runCmd('git', ['rev-parse', '--verify', `refs/heads/${branch}`], {
+      cwd: options.cwd,
+    })
+    throw new Error(
+      `Branch "${branch}" already exists locally. Delete it with "git branch -d ${branch}" or pick another task name.`,
+    )
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('already exists locally')
+    ) {
+      throw error
+    }
+    // Branch does not exist, which is expected
   }
 
   // 1. Fetch latest origin/main
@@ -619,10 +791,16 @@ export function main(
     case 'clean': {
       const dryRun = rest.includes('--dry-run')
       const force = rest.includes('--force')
+      const all = rest.includes('--all')
+      const agentIdx = rest.indexOf('--agent')
+      const agent = agentIdx !== -1 ? rest[agentIdx + 1] : undefined
+
       cleanWorktrees({
         cwd: options.cwd,
         dryRun,
         force,
+        all,
+        agent,
         runCmd: options.runCmd,
         fsOps: options.fsOps,
         log,
@@ -655,11 +833,13 @@ export function main(
 Usage: agent-worktree <command> [options]
 
 Commands:
-  list                  List all worktrees with their merge and prune status
-  clean                 Remove merged worktrees and prune metadata
-    --dry-run           Show what would be removed without deleting
-    --force             Remove worktrees even if they contain uncommitted changes
-  start <task-name>     Create a new worktree branched from origin/main with symlinked node_modules
+  list                              List all worktrees with their merge and prune status
+  clean                             Remove merged worktrees and prune metadata
+    --dry-run                       Show what would be removed without deleting
+    --force                         Remove worktrees even if they contain uncommitted changes
+    --agent <id>                    Clean worktrees for specific agent (default: active agent)
+    --all                           Clean merged worktrees across all agents
+  start <task-name|agent/task>      Create a new worktree branched from origin/main with symlinked node_modules
       `.trim(),
       )
       if (!command) {
