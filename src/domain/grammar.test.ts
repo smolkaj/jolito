@@ -491,8 +491,9 @@ describe('preterite practice contracts', () => {
         'essential',
       )
       expect(indicators.mastery).toBe(1) // stability 2.0 is level 1
-      expect(indicators.difficulty).toBe(3) // 8.2 >= 7.5 => 3 chilies
-      expect(indicators.difficultyLabel).toBe('Difficulty: 3 of 3 chilies')
+      expect(indicators.difficultyLabel).toBe(
+        'Difficulty: 3 of 3 chilies (hot)',
+      )
     })
 
     it('computes mixed / all patterns across all families in a topic', () => {

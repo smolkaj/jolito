@@ -504,6 +504,8 @@ export {
   cardMasteryLevel,
   cardProgressLevel,
   cardDifficultyLevel,
+  cardDifficultyLabel,
+  cardMasteryLabel,
   cardMemoryIndicators,
   estimateFsrsParameters,
   type MemoryMasteryLevel,

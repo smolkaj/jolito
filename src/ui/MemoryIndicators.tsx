@@ -1,4 +1,9 @@
-import { type ReviewSchedule, cardMemoryIndicators } from '../domain/card'
+import {
+  type ReviewSchedule,
+  cardMemoryIndicators,
+  cardDifficultyLabel,
+  cardMasteryLabel,
+} from '../domain/card'
 import { ChiliIcon } from './icons'
 
 export interface MasteryBubblesProps {
@@ -21,7 +26,8 @@ export function MasteryBubbles({
   title,
 }: MasteryBubblesProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
-  const label = ariaLabel ?? `Mastery: ${safeLevel} of 3 bubbles`
+  const label = ariaLabel ?? cardMasteryLabel(safeLevel)
+
   const resolvedTitle =
     title !== undefined ? title : ariaHidden ? undefined : label
 
@@ -94,11 +100,7 @@ export function ChiliMeter({
 }: ChiliMeterProps) {
   const safeLevel = Math.max(0, Math.min(3, level)) as 0 | 1 | 2 | 3
 
-  const label =
-    ariaLabel ??
-    (safeLevel === 0
-      ? 'Difficulty: 0 of 3 chilies (no heat)'
-      : `Difficulty: ${safeLevel} of 3 chilies`)
+  const label = ariaLabel ?? cardDifficultyLabel(safeLevel)
   const resolvedTitle =
     title !== undefined ? title : ariaHidden ? undefined : label
 

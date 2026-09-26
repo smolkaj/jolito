@@ -137,7 +137,6 @@ export function GrammarPractice({
           <legend className="sr-only">Patterns</legend>
           <label
             className={`flat-choice grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
-            aria-label={`All patterns. ${mixedIndicators.difficultyLabel}, ${mixedIndicators.masteryLabel}.`}
           >
             <div className="grammar-choice-primary">
               <input
@@ -148,6 +147,10 @@ export function GrammarPractice({
               />
               <span className="grammar-choice-content">
                 <strong>All patterns</strong>
+                <span className="sr-only">
+                  . {mixedIndicators.difficultyLabel},{' '}
+                  {mixedIndicators.masteryLabel}.
+                </span>
               </span>
             </div>
             <div className="grammar-choice-indicators" aria-hidden="true">
@@ -155,24 +158,23 @@ export function GrammarPractice({
                 level={mixedIndicators.difficulty}
                 size={14}
                 ariaHidden
+                title={mixedIndicators.difficultyLabel}
               />
               <MasteryBubbles
                 level={mixedIndicators.mastery}
                 size={24}
                 ariaHidden
+                title={mixedIndicators.masteryLabel}
               />
             </div>
           </label>
           <div className="grammar-families">
             {content.families.map((family) => {
-              const indicators =
-                familyIndicators[family.id] ??
-                grammarFamilyIndicators(practice.available, topic, family.id)
+              const indicators = familyIndicators[family.id]!
               return (
                 <label
                   key={family.id}
                   className={`flat-choice ${focus === family.id ? 'is-selected' : ''}`}
-                  aria-label={`${family.title}, ${family.example}. ${indicators.difficultyLabel}, ${indicators.masteryLabel}.`}
                 >
                   <input
                     type="radio"
@@ -183,6 +185,9 @@ export function GrammarPractice({
                   <span className="grammar-choice-content">
                     <strong>{family.title}</strong>
                     <small lang="es">{family.example}</small>
+                    <span className="sr-only">
+                      . {indicators.difficultyLabel}, {indicators.masteryLabel}.
+                    </span>
                     <div
                       className="grammar-choice-indicators"
                       aria-hidden="true"
@@ -191,11 +196,13 @@ export function GrammarPractice({
                         level={indicators.difficulty}
                         size={14}
                         ariaHidden
+                        title={indicators.difficultyLabel}
                       />
                       <MasteryBubbles
                         level={indicators.mastery}
                         size={24}
                         ariaHidden
+                        title={indicators.masteryLabel}
                       />
                     </div>
                   </span>

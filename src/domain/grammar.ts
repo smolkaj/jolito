@@ -2,6 +2,8 @@ import {
   createNewReviewSchedule,
   isDue,
   cardProgressLevel,
+  cardDifficultyLabel,
+  cardMasteryLabel,
   estimateFsrsParameters,
   type StudyCard,
   type MemoryMasteryLevel,
@@ -227,8 +229,8 @@ export function grammarFamilyIndicators(
     return {
       mastery: 0,
       difficulty: 0,
-      masteryLabel: 'Mastery: 0 of 3 bubbles',
-      difficultyLabel: 'Difficulty: 0 of 3 chilies (no heat)',
+      masteryLabel: cardMasteryLabel(0),
+      difficultyLabel: cardDifficultyLabel(0),
       totalForms: 0,
       practicedForms: 0,
     }
@@ -261,11 +263,8 @@ export function grammarFamilyIndicators(
     else if (avgDifficulty >= 3.0) difficulty = 1
   }
 
-  const masteryLabel = `Mastery: ${mastery} of 3 bubbles`
-  const difficultyLabel =
-    difficulty === 0
-      ? 'Difficulty: 0 of 3 chilies (no heat)'
-      : `Difficulty: ${difficulty} of 3 chilies`
+  const masteryLabel = cardMasteryLabel(mastery)
+  const difficultyLabel = cardDifficultyLabel(difficulty)
 
   return {
     mastery,

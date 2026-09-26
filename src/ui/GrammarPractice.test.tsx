@@ -570,13 +570,13 @@ describe('grammar practice in Jolito', () => {
     expect(indicators.length).toBeGreaterThan(0)
 
     const allPatternsRadio = screen.getByRole('radio', {
-      name: /all patterns/i,
+      name: /all patterns\. difficulty: 0 of 3 chilies \(no heat\), mastery: 0 of 3 bubbles\./i,
     })
     expect(allPatternsRadio).toBeInTheDocument()
-    const label = allPatternsRadio.closest('label')
-    expect(label).toHaveAttribute('aria-label')
-    expect(label?.getAttribute('aria-label')).toMatch(
-      /All patterns\. Difficulty: 0 of 3 chilies \(no heat\), Mastery: 0 of 3 bubbles\./,
-    )
+
+    const regularRadio = screen.getByRole('radio', {
+      name: /regular endings.*difficulty: 0 of 3 chilies \(no heat\), mastery: 0 of 3 bubbles\./i,
+    })
+    expect(regularRadio).toBeInTheDocument()
   })
 })

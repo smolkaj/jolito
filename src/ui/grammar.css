@@ -88,6 +88,14 @@
 }
 .grammar-families .flat-choice {
   align-items: flex-start;
+  height: 100%;
+}
+.grammar-families .grammar-choice-content {
+  height: 100%;
+}
+.grammar-families .grammar-choice-indicators {
+  margin-top: auto;
+  padding-top: 6px;
 }
 .grammar-families .flat-choice input {
   margin-top: 3px;
@@ -157,6 +165,10 @@
   .grammar-choice-indicators {
     gap: 6px;
     margin-top: 4px;
+  }
+  .grammar-families .grammar-choice-indicators {
+    margin-top: auto;
+    padding-top: 4px;
   }
   .grammar-focus strong {
     font-size: 14px;
