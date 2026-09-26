@@ -169,3 +169,85 @@ export function intervalLabel(
 export function shouldRequeueInSession(schedule: ReviewSchedule): boolean {
   return schedule.state === 'learning' || schedule.state === 'relearning'
 }
+
+export type MemoryMasteryLevel = 0 | 1 | 2 | 3
+export type MemoryProgressLevel = MemoryMasteryLevel
+export type MemoryDifficultyLevel = 0 | 1 | 2 | 3
+
+export interface CardMemoryIndicators {
+  mastery: MemoryMasteryLevel
+  progress: MemoryProgressLevel
+  difficulty: MemoryDifficultyLevel
+  masteryLabel: string
+  progressLabel: string
+  difficultyLabel: string
+}
+
+/**
+ * Maps FSRS stability (memory half-life in days) to a 0–3 bubble mastery level.
+ * 0: Unstudied / new (0 bubbles)
+ * 1: Learning (1 bubble)
+ * 2: Solid recall (2 bubbles)
+ * 3: Mastered (3 bubbles)
+ */
+export function cardMasteryLevel(schedule: ReviewSchedule): MemoryMasteryLevel {
+  if (schedule.state === 'new' || schedule.reviews === 0) return 0
+  const { stability } = estimateFsrsParameters(schedule)
+  if (stability <= 0) return 0
+  if (stability < 7) return 1
+  if (stability < 30) return 2
+  return 3
+}
+
+export const cardProgressLevel = cardMasteryLevel
+
+/**
+ * Maps FSRS difficulty (inherent friction 1.0–10.0) to a 0–3 chili spice level.
+ * 0: Unstudied or effortless cognates (0 chilies / no heat, D < 3.0)
+ * 1: Mild heat (1 chili, 3.0 <= D < 5.0)
+ * 2: Medium heat (2 chilies, 5.0 <= D < 7.5)
+ * 3: Hot / ¡aguas! (3 chilies, D >= 7.5)
+ */
+export function cardDifficultyLevel(
+  schedule: ReviewSchedule,
+): MemoryDifficultyLevel {
+  if (schedule.state === 'new' || schedule.reviews === 0) return 0
+  const { difficulty } = estimateFsrsParameters(schedule)
+  if (difficulty < 3.0) return 0
+  if (difficulty < 5.0) return 1
+  if (difficulty < 7.5) return 2
+  return 3
+}
+
+/**
+ * Computes the unified memory indicators and accessible labels for a card.
+ */
+export function cardMemoryIndicators(
+  schedule: ReviewSchedule,
+): CardMemoryIndicators {
+  const mastery = cardMasteryLevel(schedule)
+  const difficulty = cardDifficultyLevel(schedule)
+
+  const masteryLabel = `Mastery: ${mastery} of 3 bubbles`
+  const progressLabel = masteryLabel
+
+  let difficultyLabel: string
+  if (difficulty === 0) {
+    difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
+  } else if (difficulty === 1) {
+    difficultyLabel = 'Difficulty: 1 of 3 chilies (mild heat)'
+  } else if (difficulty === 2) {
+    difficultyLabel = 'Difficulty: 2 of 3 chilies (medium heat)'
+  } else {
+    difficultyLabel = 'Difficulty: 3 of 3 chilies (hot)'
+  }
+
+  return {
+    mastery,
+    progress: mastery,
+    difficulty,
+    masteryLabel,
+    progressLabel,
+    difficultyLabel,
+  }
+}

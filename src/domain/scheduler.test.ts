@@ -8,6 +8,9 @@ import {
   estimateFsrsParameters,
   toFsrsCard,
   fromFsrsCard,
+  cardProgressLevel,
+  cardDifficultyLevel,
+  cardMemoryIndicators,
 } from './scheduler'
 import {
   createStudyCards,
@@ -275,6 +278,169 @@ describe('scheduler (FSRS domain adapter)', () => {
         inputSched.easeFactor,
       )
       expect(roundtrip).toEqual(inputSched)
+    })
+  })
+
+  describe('cardProgressLevel', () => {
+    it('returns 0 for brand new or unreviewed cards', () => {
+      const newCard: ReviewSchedule = {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      }
+      expect(cardProgressLevel(newCard)).toBe(0)
+    })
+
+    it('returns 1 for fragile early learning cards with stability < 7 days', () => {
+      const fragileCard: ReviewSchedule = {
+        state: 'learning',
+        dueAt: now,
+        intervalDays: 2,
+        easeFactor: 2.5,
+        reviews: 1,
+        lapses: 0,
+        stability: 3.5,
+      }
+      expect(cardProgressLevel(fragileCard)).toBe(1)
+    })
+
+    it('returns 2 for solid cards with 7 <= stability < 30 days', () => {
+      const solidCard: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 14,
+        easeFactor: 2.5,
+        reviews: 4,
+        lapses: 0,
+        stability: 14.2,
+      }
+      expect(cardProgressLevel(solidCard)).toBe(2)
+    })
+
+    it('returns 3 for mastered cards with stability >= 30 days', () => {
+      const masteredCard: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 45,
+        easeFactor: 2.5,
+        reviews: 8,
+        lapses: 0,
+        stability: 45.0,
+      }
+      expect(cardProgressLevel(masteredCard)).toBe(3)
+    })
+  })
+
+  describe('cardDifficultyLevel', () => {
+    it('returns 0 for unreviewed cards', () => {
+      const newCard: ReviewSchedule = {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      }
+      expect(cardDifficultyLevel(newCard)).toBe(0)
+    })
+
+    it('returns 0 for effortless cognates with difficulty < 3.0', () => {
+      const easyCard: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 10,
+        easeFactor: 2.5,
+        reviews: 2,
+        lapses: 0,
+        difficulty: 2.2,
+      }
+      expect(cardDifficultyLevel(easyCard)).toBe(0)
+    })
+
+    it('returns 1 for mild cards with 3.0 <= difficulty < 5.0', () => {
+      const mildCard: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 10,
+        easeFactor: 2.5,
+        reviews: 2,
+        lapses: 0,
+        difficulty: 4.1,
+      }
+      expect(cardDifficultyLevel(mildCard)).toBe(1)
+    })
+
+    it('returns 2 for medium heat cards with 5.0 <= difficulty < 7.5', () => {
+      const mediumCard: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 10,
+        easeFactor: 2.5,
+        reviews: 2,
+        lapses: 0,
+        difficulty: 6.2,
+      }
+      expect(cardDifficultyLevel(mediumCard)).toBe(2)
+    })
+
+    it('returns 3 for spicy / hot cards with difficulty >= 7.5', () => {
+      const spicyCard: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 3,
+        easeFactor: 1.8,
+        reviews: 6,
+        lapses: 2,
+        difficulty: 8.4,
+      }
+      expect(cardDifficultyLevel(spicyCard)).toBe(3)
+    })
+  })
+
+  describe('cardMemoryIndicators', () => {
+    it('returns unified indicators and accessible labels', () => {
+      const card: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 14,
+        easeFactor: 2.5,
+        reviews: 4,
+        lapses: 0,
+        stability: 18.5,
+        difficulty: 8.0,
+      }
+      const indicators = cardMemoryIndicators(card)
+      expect(indicators).toEqual({
+        mastery: 2,
+        progress: 2,
+        difficulty: 3,
+        masteryLabel: 'Mastery: 2 of 3 bubbles',
+        progressLabel: 'Mastery: 2 of 3 bubbles',
+        difficultyLabel: 'Difficulty: 3 of 3 chilies (hot)',
+      })
+    })
+
+    it('labels unrated cards appropriately', () => {
+      const newCard: ReviewSchedule = {
+        state: 'new',
+        dueAt: now,
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reviews: 0,
+        lapses: 0,
+      }
+      const indicators = cardMemoryIndicators(newCard)
+      expect(indicators).toEqual({
+        mastery: 0,
+        progress: 0,
+        difficulty: 0,
+        masteryLabel: 'Mastery: 0 of 3 bubbles',
+        progressLabel: 'Mastery: 0 of 3 bubbles',
+        difficultyLabel: 'Difficulty: 0 of 3 chilies (no heat)',
+      })
     })
   })
 })

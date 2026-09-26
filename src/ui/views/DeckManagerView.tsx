@@ -10,7 +10,7 @@ import {
   getDeckStats,
 } from '../../application/deck-management'
 import type { AuthUser, HapticsPlayer } from '../../application/ports'
-import type { StudyCard } from '../../domain/card'
+import { type StudyCard, cardMemoryIndicators } from '../../domain/card'
 import { getDuplicateGroups } from '../../domain/duplicate'
 import type { StarterPack } from '../../domain/starter-decks'
 import type { SyncStatus } from '../../domain/sync'
@@ -19,6 +19,7 @@ import { getCardScheduleBadge } from '../card-badge'
 import { ConnectionPill } from '../ConnectionPill'
 import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
 import { EnglishBadge, MexicoFlag, SearchIcon, TrashIcon } from '../icons'
+import { ChiliMeter, MasteryBubbles } from '../MemoryIndicators'
 import { DeckBackupModal } from '../modals/DeckBackupModal'
 import { DemoDeckModal } from '../modals/DemoDeckModal'
 import { StarterPacksModal } from '../modals/StarterPacksModal'
@@ -30,6 +31,10 @@ const SORT_ORDER_LABELS: Record<DeckSortOrder, string> = {
   'created-asc': 'Oldest first',
   'alpha-asc': 'Alphabetical (A–Z)',
   'alpha-desc': 'Alphabetical (Z–A)',
+  'difficulty-desc': 'Spiciest first',
+  'difficulty-asc': 'Mildest first',
+  'mastery-desc': 'Highest mastery',
+  'mastery-asc': 'Lowest mastery',
 }
 
 export interface DeckManagerViewProps {
@@ -324,7 +329,7 @@ export function DeckManagerView({
                   aria-pressed={deckFilterState === 'review'}
                   title="Graduated cards scheduled for long-term memory retention (1+ days)"
                 >
-                  Mastered ({deckStats.reviewCount})
+                  Graduated ({deckStats.reviewCount})
                 </button>
                 {((deckStats.duplicatesCount ?? 0) > 0 ||
                   deckFilterState === 'duplicates') && (
@@ -413,7 +418,7 @@ export function DeckManagerView({
                   ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                   : vocabularyCards.length === 0
                     ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                    : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'mastered', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
+                    : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'graduated', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
               </p>
               {vocabularyCards.length === 0 ? (
                 <div className="deck-empty-actions">
@@ -527,6 +532,79 @@ export function DeckManagerView({
                 <div className="col-phrase col-answer" role="columnheader">
                   Answer
                 </div>
+                <div
+                  className="col-difficulty"
+                  role="columnheader"
+                  aria-sort={
+                    deckSortOrder === 'difficulty-desc'
+                      ? 'descending'
+                      : deckSortOrder === 'difficulty-asc'
+                        ? 'ascending'
+                        : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    className="deck-sort-header-btn"
+                    onClick={() => {
+                      setDeckSortOrder((current) => {
+                        if (current === 'difficulty-desc')
+                          return 'difficulty-asc'
+                        if (current === 'difficulty-asc') return 'created-desc'
+                        return 'difficulty-desc'
+                      })
+                    }}
+                    aria-label="Sort by difficulty"
+                  >
+                    <span>Difficulty</span>
+                    {deckSortOrder === 'difficulty-desc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↓
+                      </span>
+                    )}
+                    {deckSortOrder === 'difficulty-asc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↑
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <div
+                  className="col-mastery"
+                  role="columnheader"
+                  aria-sort={
+                    deckSortOrder === 'mastery-desc'
+                      ? 'descending'
+                      : deckSortOrder === 'mastery-asc'
+                        ? 'ascending'
+                        : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    className="deck-sort-header-btn"
+                    onClick={() => {
+                      setDeckSortOrder((current) => {
+                        if (current === 'mastery-desc') return 'mastery-asc'
+                        if (current === 'mastery-asc') return 'created-desc'
+                        return 'mastery-desc'
+                      })
+                    }}
+                    aria-label="Sort by mastery"
+                  >
+                    <span>Mastery</span>
+                    {deckSortOrder === 'mastery-desc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↓
+                      </span>
+                    )}
+                    {deckSortOrder === 'mastery-asc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↑
+                      </span>
+                    )}
+                  </button>
+                </div>
                 <div className="col-status" role="columnheader">
                   Status
                 </div>
@@ -534,6 +612,7 @@ export function DeckManagerView({
 
               {filteredDeckCards.map((card) => {
                 const scheduleBadge = getCardScheduleBadge(card, referenceTime)
+                const indicators = cardMemoryIndicators(card.schedule)
                 const isEsToEn = card.direction === 'es-en'
 
                 return (
@@ -543,7 +622,7 @@ export function DeckManagerView({
                     role="row"
                     tabIndex={0}
                     aria-selected={activeSelectedCardIds.has(card.id)}
-                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. Click or press Enter to edit, Space to select.`}
+                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. ${indicators.difficultyLabel}, ${indicators.masteryLabel}. Click or press Enter to edit, Space to select.`}
                     title="Click or press Enter to edit card"
                     onClick={() => onEditCard(card)}
                     onKeyDown={(e) => handleRowKeyDown(e, card)}
@@ -608,6 +687,22 @@ export function DeckManagerView({
                     </div>
                     <div className="col-phrase col-answer" role="cell">
                       <span className="deck-answer-text">{card.answer}</span>
+                    </div>
+
+                    <div className="col-difficulty" role="cell">
+                      <ChiliMeter
+                        level={indicators.difficulty}
+                        ariaHidden
+                        title={indicators.difficultyLabel}
+                      />
+                    </div>
+
+                    <div className="col-mastery" role="cell">
+                      <MasteryBubbles
+                        level={indicators.mastery}
+                        ariaHidden
+                        title={indicators.masteryLabel}
+                      />
                     </div>
 
                     <div className="col-status" role="cell">
