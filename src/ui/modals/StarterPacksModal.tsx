@@ -3,16 +3,25 @@ import type { HapticsPlayer } from '../../application/ports'
 import { filterOutStarterCards } from '../../application/starter-cards'
 import type { StudyCard } from '../../domain/card'
 import { normalizeCardKey } from '../../domain/duplicate'
-import { starterPacks, type StarterPack } from '../../domain/starter-decks'
+import {
+  getStarterNoteCardsInDeck,
+  getStarterPackCardsInDeck,
+  starterPacks,
+  type StarterPack,
+} from '../../domain/starter-decks'
 import { ModalSheet } from './ModalSheet'
 
 export interface StarterPacksModalProps {
   isOpen: boolean
   onClose: () => void
-  saveErrorMessage?: string | null
+  saveErrorMessage?: string | null | undefined
   cards: StudyCard[]
   onAddPack: (pack: StarterPack) => boolean | void
-  onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
+  onAddNote?:
+    ((pack: StarterPack, noteIndex: number) => boolean | void) | undefined
+  onRemovePack?: ((pack: StarterPack) => boolean | void) | undefined
+  onRemoveNote?:
+    ((pack: StarterPack, noteIndex: number) => boolean | void) | undefined
   haptics?: HapticsPlayer | undefined
 }
 
@@ -22,15 +31,10 @@ function StarterPacksModalInner({
   cards,
   onAddPack,
   onAddNote,
+  onRemovePack,
+  onRemoveNote,
   haptics,
-}: {
-  onClose: () => void
-  saveErrorMessage?: string | null
-  cards: StudyCard[]
-  onAddPack: (pack: StarterPack) => boolean | void
-  onAddNote?: (pack: StarterPack, noteIndex: number) => boolean | void
-  haptics?: HapticsPlayer | undefined
-}) {
+}: StarterPacksModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -41,6 +45,9 @@ function StarterPacksModalInner({
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
   const [addingPackId, setAddingPackId] = useState<string | null>(null)
+  const [confirmingRemovePackId, setConfirmingRemovePackId] = useState<
+    string | null
+  >(null)
 
   function isElementVisible(el: HTMLElement): boolean {
     if (typeof el.checkVisibility === 'function') {
@@ -104,6 +111,10 @@ function StarterPacksModalInner({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (confirmingRemovePackId !== null) {
+          setConfirmingRemovePackId(null)
+          return
+        }
         if (inspectingPackId !== null) {
           setInspectingPackId(null)
           return
@@ -151,7 +162,7 @@ function StarterPacksModalInner({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, inspectingPackId])
+  }, [onClose, inspectingPackId, confirmingRemovePackId])
 
   const existingKeys = useMemo(() => {
     const set = new Set<string>()
@@ -192,6 +203,21 @@ function StarterPacksModalInner({
   const handleAddNote = (originalIndex: number) => {
     if (!inspectingPack || !onAddNote) return
     const saved = onAddNote(inspectingPack, originalIndex)
+    setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
+  }
+
+  const handleRemovePack = (pack: StarterPack) => {
+    if (!onRemovePack) return
+    haptics?.trigger('again')
+    const saved = onRemovePack(pack)
+    setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
+    setConfirmingRemovePackId(null)
+  }
+
+  const handleRemoveNote = (originalIndex: number) => {
+    if (!inspectingPack || !onRemoveNote) return
+    haptics?.trigger('again')
+    const saved = onRemoveNote(inspectingPack, originalIndex)
     setSaveError((attempt) => (saved === false ? attempt + 1 : 0))
   }
 
@@ -261,6 +287,11 @@ function StarterPacksModalInner({
             ).length
             const remainingCount = packCards.length - existingCount
             const isAllAdded = remainingCount === 0
+            const inspectDeckCards = getStarterPackCardsInDeck(
+              cards,
+              inspectingPack.id,
+            )
+            const inspectDeckCount = inspectDeckCards.length
 
             return (
               <div className="starter-pack-inspect-toolbar">
@@ -274,33 +305,84 @@ function StarterPacksModalInner({
                   </p>
                 </div>
                 <div className="starter-pack-inspect-actions">
-                  {isAllAdded ? (
-                    <button
-                      type="button"
-                      className="secondary-button starter-pack-btn is-complete"
-                      disabled
-                      aria-label={`${inspectingPack.title} is already added to your deck`}
-                    >
-                      ✓ In your deck
-                    </button>
+                  {confirmingRemovePackId === inspectingPack.id ? (
+                    <div className="starter-pack-confirm-wrap">
+                      <span className="starter-pack-confirm-text">
+                        Remove {inspectDeckCount}{' '}
+                        {inspectDeckCount === 1 ? 'card' : 'cards'} from deck?
+                      </span>
+                      <button
+                        type="button"
+                        className="danger-button starter-pack-btn is-confirm"
+                        onClick={() => handleRemovePack(inspectingPack)}
+                        aria-label={`Confirm remove ${inspectingPack.title} from deck`}
+                      >
+                        Confirm remove
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button starter-pack-btn"
+                        onClick={() => setConfirmingRemovePackId(null)}
+                        aria-label="Cancel removing pack"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : isAllAdded ? (
+                    <>
+                      <button
+                        type="button"
+                        className="secondary-button starter-pack-btn is-complete"
+                        disabled
+                        aria-label={`${inspectingPack.title} is already added to your deck`}
+                      >
+                        ✓ In your deck
+                      </button>
+                      {onRemovePack && inspectDeckCount > 0 && (
+                        <button
+                          type="button"
+                          className="danger-button starter-pack-btn is-remove"
+                          onClick={() =>
+                            setConfirmingRemovePackId(inspectingPack.id)
+                          }
+                          aria-label={`Remove ${inspectingPack.title} from deck`}
+                        >
+                          Remove pack
+                        </button>
+                      )}
+                    </>
                   ) : (
-                    <button
-                      type="button"
-                      className="primary-button starter-pack-btn"
-                      disabled={addingPackId === inspectingPack.id}
-                      onClick={() => handleAdd(inspectingPack)}
-                      aria-label={
-                        existingCount > 0
-                          ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${inspectingPack.title}`
-                          : `Add ${inspectingPack.title} (${inspectingPack.cardCount} cards)`
-                      }
-                    >
-                      {addingPackId === inspectingPack.id
-                        ? 'Adding…'
-                        : existingCount > 0
-                          ? `Add remaining (+${remainingCount})`
-                          : `Add pack (+${inspectingPack.cardCount})`}
-                    </button>
+                    <>
+                      {onRemovePack && inspectDeckCount > 0 && (
+                        <button
+                          type="button"
+                          className="danger-button starter-pack-btn is-remove"
+                          onClick={() =>
+                            setConfirmingRemovePackId(inspectingPack.id)
+                          }
+                          aria-label={`Remove ${inspectingPack.title} from deck`}
+                        >
+                          Remove added
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="primary-button starter-pack-btn"
+                        disabled={addingPackId === inspectingPack.id}
+                        onClick={() => handleAdd(inspectingPack)}
+                        aria-label={
+                          existingCount > 0
+                            ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${inspectingPack.title}`
+                            : `Add ${inspectingPack.title} (${inspectingPack.cardCount} cards)`
+                        }
+                      >
+                        {addingPackId === inspectingPack.id
+                          ? 'Adding…'
+                          : existingCount > 0
+                            ? `Add remaining (+${remainingCount})`
+                            : `Add pack (+${inspectingPack.cardCount})`}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -325,6 +407,12 @@ function StarterPacksModalInner({
                 ? hasEsEn && hasEnEs
                 : hasEsEn
               const isPartiallyInDeck = !isFullyInDeck && (hasEsEn || hasEnEs)
+              const noteDeckCards = getStarterNoteCardsInDeck(
+                cards,
+                inspectingPack.id,
+                originalIndex,
+              )
+              const hasNoteDeckCards = noteDeckCards.length > 0
 
               return (
                 <div
@@ -350,26 +438,52 @@ function StarterPacksModalInner({
                   </div>
                   <div className="inspect-item-badge-wrap">
                     {isFullyInDeck ? (
-                      <span
-                        className="inspect-badge in-deck"
-                        title="Both cards are in your deck"
-                      >
-                        ✓ In deck
-                      </span>
+                      <div className="inspect-item-in-deck-actions">
+                        <span
+                          className="inspect-badge in-deck"
+                          title="Both cards are in your deck"
+                        >
+                          ✓ In deck
+                        </span>
+                        {onRemoveNote && hasNoteDeckCards && (
+                          <button
+                            type="button"
+                            className="inspect-item-remove-btn"
+                            onClick={() => handleRemoveNote(originalIndex)}
+                            aria-label={`Remove ${note.spanish} from deck`}
+                            title="Remove from your deck"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     ) : isPartiallyInDeck ? (
-                      <button
-                        type="button"
-                        className="inspect-item-add-btn is-partial"
-                        onClick={() => handleAddNote(originalIndex)}
-                        aria-label={
-                          hasEsEn
-                            ? `Add reverse card for ${note.spanish}`
-                            : `Add missing card for ${note.spanish}`
-                        }
-                        title="Add missing reciprocal card to your deck"
-                      >
-                        {hasEsEn ? '+ Add reverse' : '+ Add missing'}
-                      </button>
+                      <div className="inspect-item-in-deck-actions">
+                        <button
+                          type="button"
+                          className="inspect-item-add-btn is-partial"
+                          onClick={() => handleAddNote(originalIndex)}
+                          aria-label={
+                            hasEsEn
+                              ? `Add reverse card for ${note.spanish}`
+                              : `Add missing card for ${note.spanish}`
+                          }
+                          title="Add missing reciprocal card to your deck"
+                        >
+                          {hasEsEn ? '+ Add reverse' : '+ Add missing'}
+                        </button>
+                        {onRemoveNote && hasNoteDeckCards && (
+                          <button
+                            type="button"
+                            className="inspect-item-remove-btn"
+                            onClick={() => handleRemoveNote(originalIndex)}
+                            aria-label={`Remove ${note.spanish} from deck`}
+                            title="Remove from your deck"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -414,6 +528,8 @@ function StarterPacksModalInner({
               ).length
               const remainingCount = packCards.length - existingCount
               const isAllAdded = remainingCount === 0
+              const packDeckCards = getStarterPackCardsInDeck(cards, pack.id)
+              const deckCardCount = packDeckCards.length
 
               return (
                 <div
@@ -450,38 +566,93 @@ function StarterPacksModalInner({
                     </button>
 
                     <div className="starter-pack-action-right">
-                      {existingCount > 0 && !isAllAdded && (
-                        <span className="starter-pack-conflict-info">
-                          {existingCount} of {pack.cardCount} cards in deck
-                        </span>
-                      )}
-                      {isAllAdded ? (
-                        <button
-                          type="button"
-                          className="secondary-button starter-pack-btn is-complete"
-                          disabled
-                          aria-label={`${pack.title} is already added to your deck`}
-                        >
-                          ✓ In your deck
-                        </button>
+                      {confirmingRemovePackId === pack.id ? (
+                        <div className="starter-pack-confirm-wrap">
+                          <span className="starter-pack-confirm-text">
+                            Remove {deckCardCount}{' '}
+                            {deckCardCount === 1 ? 'card' : 'cards'}?
+                          </span>
+                          <button
+                            type="button"
+                            className="danger-button starter-pack-btn is-confirm"
+                            onClick={() => handleRemovePack(pack)}
+                            aria-label={`Confirm remove ${pack.title} from deck`}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button starter-pack-btn"
+                            onClick={() => setConfirmingRemovePackId(null)}
+                            aria-label={`Cancel removing ${pack.title}`}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       ) : (
-                        <button
-                          type="button"
-                          className="primary-button starter-pack-btn"
-                          disabled={addingPackId === pack.id}
-                          onClick={() => handleAdd(pack)}
-                          aria-label={
-                            existingCount > 0
-                              ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${pack.title}`
-                              : `Add ${pack.title} (${pack.cardCount} cards)`
-                          }
-                        >
-                          {addingPackId === pack.id
-                            ? 'Adding…'
-                            : existingCount > 0
-                              ? `Add remaining (+${remainingCount})`
-                              : `Add pack (+${pack.cardCount})`}
-                        </button>
+                        <>
+                          {existingCount > 0 && !isAllAdded && (
+                            <span className="starter-pack-conflict-info">
+                              {existingCount} of {pack.cardCount} cards in deck
+                            </span>
+                          )}
+                          {isAllAdded ? (
+                            <>
+                              <button
+                                type="button"
+                                className="secondary-button starter-pack-btn is-complete"
+                                disabled
+                                aria-label={`${pack.title} is already added to your deck`}
+                              >
+                                ✓ In your deck
+                              </button>
+                              {onRemovePack && deckCardCount > 0 && (
+                                <button
+                                  type="button"
+                                  className="danger-button starter-pack-btn is-remove"
+                                  onClick={() =>
+                                    setConfirmingRemovePackId(pack.id)
+                                  }
+                                  aria-label={`Remove ${pack.title} from deck`}
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {onRemovePack && deckCardCount > 0 && (
+                                <button
+                                  type="button"
+                                  className="danger-button starter-pack-btn is-remove"
+                                  onClick={() =>
+                                    setConfirmingRemovePackId(pack.id)
+                                  }
+                                  aria-label={`Remove ${pack.title} from deck`}
+                                >
+                                  Remove
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="primary-button starter-pack-btn"
+                                disabled={addingPackId === pack.id}
+                                onClick={() => handleAdd(pack)}
+                                aria-label={
+                                  existingCount > 0
+                                    ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${pack.title}`
+                                    : `Add ${pack.title} (${pack.cardCount} cards)`
+                                }
+                              >
+                                {addingPackId === pack.id
+                                  ? 'Adding…'
+                                  : existingCount > 0
+                                    ? `Add remaining (+${remainingCount})`
+                                    : `Add pack (+${pack.cardCount})`}
+                              </button>
+                            </>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

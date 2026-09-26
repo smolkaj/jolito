@@ -3114,3 +3114,32 @@ export const starterPacks: StarterPack[] = starterPackSeeds.map((seed) => {
 export function findStarterPack(id: string): StarterPack | undefined {
   return starterPacks.find((p) => p.id === id)
 }
+
+export function getStarterPackIdFromNoteId(noteId: string): string | null {
+  const match = noteId.match(/^curated-(.+)-\d{3}$/)
+  return match ? match[1]! : null
+}
+
+export function getStarterPackForCard(
+  card: StudyCard,
+): StarterPack | undefined {
+  const packId = getStarterPackIdFromNoteId(card.noteId)
+  return packId ? findStarterPack(packId) : undefined
+}
+
+export function getStarterPackCardsInDeck(
+  cards: StudyCard[],
+  packId: string,
+): StudyCard[] {
+  const prefix = `curated-${packId}-`
+  return cards.filter((c) => c.noteId.startsWith(prefix))
+}
+
+export function getStarterNoteCardsInDeck(
+  cards: StudyCard[],
+  packId: string,
+  noteIndex: number,
+): StudyCard[] {
+  const noteId = `curated-${packId}-${String(noteIndex + 1).padStart(3, '0')}`
+  return cards.filter((c) => c.noteId === noteId)
+}

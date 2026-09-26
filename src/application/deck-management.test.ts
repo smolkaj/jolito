@@ -186,6 +186,36 @@ describe('deck-management', () => {
       expect(result.map((c) => c.prompt)).toEqual(['chido'])
     })
 
+    it('filters by starter pack title, badge, or subtitle', () => {
+      const streetCard = {
+        ...cards[0]!,
+        id: 'curated-mexican-street-phrases-001:es-en',
+        noteId: 'curated-mexican-street-phrases-001',
+        prompt: 'test phrase',
+        answer: 'test answer',
+        context: 'simple context',
+      }
+      const testCards = [...cards, streetCard]
+
+      // Search by pack title
+      const byTitle = filterDeckCards(testCards, {
+        query: 'Mexican Street Phrases',
+        now,
+      })
+      expect(byTitle.map((c) => c.id)).toEqual([streetCard.id])
+
+      // Search by badge
+      const byBadge = filterDeckCards(testCards, { query: 'CDMX', now })
+      expect(byBadge.map((c) => c.id)).toEqual([streetCard.id])
+
+      // Search by subtitle
+      const bySubtitle = filterDeckCards(testCards, {
+        query: 'Spoken CDMX',
+        now,
+      })
+      expect(bySubtitle.map((c) => c.id)).toEqual([streetCard.id])
+    })
+
     it('combines text search with state filter', () => {
       const result = filterDeckCards(cards, {
         query: 'cool',

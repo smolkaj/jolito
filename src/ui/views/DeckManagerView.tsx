@@ -67,6 +67,8 @@ export interface DeckManagerViewProps {
   ) => boolean | void
   onAddStarterPack: (pack: StarterPack) => boolean | void
   onAddStarterNote: (pack: StarterPack, noteIndex: number) => boolean | void
+  onRemoveStarterPack?: (pack: StarterPack) => boolean | void
+  onRemoveStarterNote?: (pack: StarterPack, noteIndex: number) => boolean | void
   clock: { now(): number }
   haptics?: HapticsPlayer | undefined
 }
@@ -96,6 +98,8 @@ export function DeckManagerView({
   onUpdateCards,
   onAddStarterPack,
   onAddStarterNote,
+  onRemoveStarterPack,
+  onRemoveStarterNote,
   clock,
   haptics,
 }: DeckManagerViewProps) {
@@ -271,7 +275,7 @@ export function DeckManagerView({
               <input
                 type="search"
                 className="deck-search-input"
-                placeholder="Search cards by Spanish, English, or notes…"
+                placeholder="Search cards by Spanish, English, notes, or pack…"
                 value={deckSearchQuery}
                 onChange={(e) => setDeckSearchQuery(e.target.value)}
                 onFocus={handleFocusSelect}
@@ -726,6 +730,8 @@ export function DeckManagerView({
         cards={cards}
         onAddPack={onAddStarterPack}
         onAddNote={onAddStarterNote}
+        onRemovePack={onRemoveStarterPack}
+        onRemoveNote={onRemoveStarterNote}
         haptics={haptics}
       />
 

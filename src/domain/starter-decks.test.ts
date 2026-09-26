@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { findStarterPack, starterPacks } from './starter-decks'
+import {
+  findStarterPack,
+  getStarterNoteCardsInDeck,
+  getStarterPackCardsInDeck,
+  getStarterPackForCard,
+  getStarterPackIdFromNoteId,
+  starterPacks,
+} from './starter-decks'
 
 describe('starterPacks', () => {
   it('defines 10 distinct curated starter packs', () => {
@@ -279,5 +286,63 @@ describe('starterPacks', () => {
       const overlap = [...founderSpanish].filter((w) => otherSpanish.has(w))
       expect(overlap).toEqual([])
     }
+  })
+
+  it('extracts pack id from note id and finds starter pack for cards', () => {
+    expect(
+      getStarterPackIdFromNoteId('curated-mexican-street-phrases-001'),
+    ).toBe('mexican-street-phrases')
+    expect(getStarterPackIdFromNoteId('curated-common-verbs-1-042')).toBe(
+      'common-verbs-1',
+    )
+    expect(getStarterPackIdFromNoteId('starter-aguacate')).toBeNull()
+    expect(getStarterPackIdFromNoteId('custom-note-123')).toBeNull()
+
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const cards = streetPack.createCards(0)
+    expect(getStarterPackForCard(cards[0]!)).toBe(streetPack)
+
+    // Non-curated card returns undefined
+    const customCard = {
+      ...cards[0]!,
+      noteId: 'custom-note',
+      id: 'custom-card',
+    }
+    expect(getStarterPackForCard(customCard)).toBeUndefined()
+  })
+
+  it('filters pack and note cards from deck collection', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const verbPack = findStarterPack('common-verbs-1')!
+    const streetCards = streetPack.createCards(0)
+    const verbCards = verbPack.createCards(0)
+    const allCards = [...streetCards, ...verbCards]
+
+    const inDeckStreet = getStarterPackCardsInDeck(
+      allCards,
+      'mexican-street-phrases',
+    )
+    expect(inDeckStreet).toHaveLength(streetCards.length)
+    expect(
+      inDeckStreet.every((c) =>
+        c.noteId.startsWith('curated-mexican-street-phrases-'),
+      ),
+    ).toBe(true)
+
+    const noteCards = getStarterNoteCardsInDeck(
+      allCards,
+      'mexican-street-phrases',
+      0,
+    )
+    expect(noteCards).toHaveLength(2)
+    expect(
+      noteCards.every((c) => c.noteId === 'curated-mexican-street-phrases-001'),
+    ).toBe(true)
+
+    // Non-existent pack returns empty
+    expect(getStarterPackCardsInDeck(allCards, 'unknown-pack')).toEqual([])
+    expect(
+      getStarterNoteCardsInDeck(allCards, 'mexican-street-phrases', 999),
+    ).toEqual([])
   })
 })

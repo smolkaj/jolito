@@ -6286,6 +6286,134 @@ describe('Jolito', () => {
       expect(screen.getAllByText('¿Mande?').length).toBeGreaterThanOrEqual(1)
     })
 
+    it('allows removing an added starter pack with confirmation and tombstoning deleted cards', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      // 1. Navigate to deck manager
+      await navigateToDeck(user)
+
+      // 2. Dismiss guest demo deck modal if open
+      const exploreDemoBtn = screen.queryByRole('button', {
+        name: /explore demo deck/i,
+      })
+      if (exploreDemoBtn) {
+        await user.click(exploreDemoBtn)
+      }
+
+      // 3. Open Starter packs modal
+      await user.click(
+        screen.getByRole('button', {
+          name: /^starter packs$/i,
+        }),
+      )
+
+      // 4. Add Mexican Street Phrases (72 cards)
+      await user.click(
+        screen.getByRole('button', {
+          name: /^add mexican street phrases/i,
+        }),
+      )
+
+      // Button shows it's added and Remove button is visible
+      expect(
+        screen.getByRole('button', {
+          name: /mexican street phrases is already added to your deck/i,
+        }),
+      ).toBeDisabled()
+      const removeBtn = screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      })
+      expect(removeBtn).toBeInTheDocument()
+
+      // 5. Click Remove -> inline confirmation appears
+      await user.click(removeBtn)
+      expect(screen.getByText(/Remove 72 cards\?/i)).toBeInTheDocument()
+
+      // 6. Confirm removal
+      await user.click(
+        screen.getByRole('button', {
+          name: /Confirm remove Mexican Street Phrases from deck/i,
+        }),
+      )
+
+      // 7. Pack returns to Add state
+      expect(
+        screen.getByRole('button', {
+          name: /^add mexican street phrases/i,
+        }),
+      ).toBeInTheDocument()
+
+      // 8. Close modal
+      await user.click(screen.getByLabelText('Close dialog'))
+
+      // 9. Street phrase cards are gone from deck manager
+      expect(screen.queryByText('¿Mande?')).toBeNull()
+
+      // 10. Tombstones are properly registered in repository
+      expect(services.cards.getDeletedCardIds().length).toBeGreaterThanOrEqual(
+        72,
+      )
+    })
+
+    it('allows removing an individual note from an added starter pack in inspect view', async () => {
+      const user = userEvent.setup()
+      const services = createTestServices()
+      render(<App services={services} />)
+
+      // 1. Navigate to deck manager
+      await navigateToDeck(user)
+
+      // 2. Dismiss guest demo deck modal if open
+      const exploreDemoBtn = screen.queryByRole('button', {
+        name: /explore demo deck/i,
+      })
+      if (exploreDemoBtn) {
+        await user.click(exploreDemoBtn)
+      }
+
+      // 3. Open Starter packs modal
+      await user.click(
+        screen.getByRole('button', {
+          name: /^starter packs$/i,
+        }),
+      )
+
+      // 4. Add Mexican Street Phrases
+      await user.click(
+        screen.getByRole('button', {
+          name: /^add mexican street phrases/i,
+        }),
+      )
+
+      // 5. Inspect pack
+      await user.click(
+        screen.getByRole('button', {
+          name: /Inspect Mexican Street Phrases cards/i,
+        }),
+      )
+
+      // 6. ¿Mande? has a Remove button
+      const removeMandeBtn = screen.getByRole('button', {
+        name: /Remove ¿Mande\? from deck/i,
+      })
+      await user.click(removeMandeBtn)
+
+      // 7. ¿Mande? changes to "+ Add"
+      expect(
+        screen.getByRole('button', {
+          name: /Add ¿Mande\? to deck/i,
+        }),
+      ).toBeInTheDocument()
+
+      // 8. Close modal
+      await user.click(screen.getByLabelText('Close dialog'))
+
+      // 9. ¿Mande? is gone from deck ledger
+      expect(screen.queryByText('¿Mande?')).toBeNull()
+    })
+
     it('preserves active study session queue and in-flight card across concurrent background interruptions and lifecycle events', async () => {
       const user = userEvent.setup()
       const services = createTestServices()

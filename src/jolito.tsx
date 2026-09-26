@@ -44,7 +44,11 @@ import { StorageRecovery } from './ui/StorageRecovery'
 import { GrammarPractice } from './ui/GrammarPractice'
 import { useStudySession } from './ui/useStudySession'
 import { cardReviewSeed, useStudyAudio } from './ui/useStudyAudio'
-import type { StarterPack } from './domain/starter-decks'
+import {
+  type StarterPack,
+  getStarterPackCardsInDeck,
+  getStarterNoteCardsInDeck,
+} from './domain/starter-decks'
 import type { SyncStatus } from './domain/sync'
 import { mergeStudyCardsSemantic } from './domain/card-merge'
 import { isIOS, isStandalone } from './infrastructure/browser/environment'
@@ -714,8 +718,8 @@ function LoadedApp({
     [onUpdateCards, services.clock, services.speaker],
   )
 
-  const handleConfirmDelete = useCallback(
-    (cardsToDelete: StudyCard[]) => {
+  const handleDeleteCards = useCallback(
+    (cardsToDelete: StudyCard[]): boolean => {
       const idsToDelete = new Set(cardsToDelete.map((c) => c.id))
       let updatedCards = cardsRef.current
       for (const id of idsToDelete) {
@@ -724,10 +728,39 @@ function LoadedApp({
       const updatedDeletedIds = Array.from(
         new Set([...deletedCardIdsRef.current, ...idsToDelete]),
       )
-      if (!onUpdateCards(updatedCards, true, updatedDeletedIds)) return
-      setDeletingCards(null)
+      return Boolean(onUpdateCards(updatedCards, true, updatedDeletedIds))
     },
     [onUpdateCards],
+  )
+
+  const handleConfirmDelete = useCallback(
+    (cardsToDelete: StudyCard[]) => {
+      if (!handleDeleteCards(cardsToDelete)) return
+      setDeletingCards(null)
+    },
+    [handleDeleteCards],
+  )
+
+  const handleRemoveStarterPack = useCallback(
+    (pack: StarterPack) => {
+      const packCards = getStarterPackCardsInDeck(cardsRef.current, pack.id)
+      if (packCards.length === 0) return true
+      return handleDeleteCards(packCards)
+    },
+    [handleDeleteCards],
+  )
+
+  const handleRemoveStarterNote = useCallback(
+    (pack: StarterPack, noteIndex: number) => {
+      const noteCards = getStarterNoteCardsInDeck(
+        cardsRef.current,
+        pack.id,
+        noteIndex,
+      )
+      if (noteCards.length === 0) return true
+      return handleDeleteCards(noteCards)
+    },
+    [handleDeleteCards],
   )
 
   const nextBatchCount = useMemo(
@@ -1486,6 +1519,8 @@ function LoadedApp({
           onUpdateCards={onUpdateCards}
           onAddStarterPack={handleAddStarterPack}
           onAddStarterNote={handleAddStarterNote}
+          onRemoveStarterPack={handleRemoveStarterPack}
+          onRemoveStarterNote={handleRemoveStarterNote}
           clock={services.clock}
           haptics={services.haptics}
         />

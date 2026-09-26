@@ -6504,6 +6504,49 @@ kbd {
   cursor: default;
 }
 
+.starter-pack-btn.is-remove {
+  background: var(--paper);
+  border: 1.5px solid var(--line-subtle);
+  color: var(--rosa-dark);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 12px;
+}
+
+.starter-pack-btn.is-remove:hover {
+  background: var(--rosa-soft);
+  border-color: var(--rosa);
+  color: var(--rosa);
+  transform: translateY(-1px);
+}
+
+.starter-pack-btn.is-confirm {
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-color);
+  border: 1.5px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 0 12px;
+}
+
+.starter-pack-btn.is-confirm:hover {
+  background: var(--btn-danger-hover-bg);
+  transform: translateY(-1px);
+}
+
+.starter-pack-confirm-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.starter-pack-confirm-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rosa-dark);
+}
+
 /* Pack Inspection Drill-Down View */
 .starter-pack-inspect-header {
   display: flex;
@@ -6744,6 +6787,46 @@ kbd {
   background: var(--cempasuchil);
   border-color: var(--cempasuchil-dark);
   color: #121815;
+}
+
+.inspect-item-in-deck-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspect-item-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-subtle);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 120ms ease;
+}
+
+.inspect-item-remove-btn:hover {
+  background: var(--rosa-soft);
+  border-color: var(--rosa);
+  color: var(--rosa);
+  transform: translateY(-1px);
+}
+
+.inspect-item-remove-btn:active {
+  transform: translateY(0);
+}
+
+.inspect-item-remove-btn:focus-visible {
+  outline: 2px solid var(--rosa);
+  outline-offset: 2px;
 }
 
 .edit-card-form {
