@@ -48,7 +48,7 @@ describe('ChiliIcon', () => {
     )
     const filledSvg = filledContainer.querySelector('svg')
     expect(filledSvg).toBeInTheDocument()
-    expect(filledSvg?.getAttribute('viewBox')).toBe('0 0 16 16')
+    expect(filledSvg?.getAttribute('viewBox')).toBe('0 0 36 36')
     expect(filledSvg?.getAttribute('width')).toBe('14')
     expect(filledSvg?.getAttribute('height')).toBe('14')
     expect(filledSvg?.getAttribute('aria-hidden')).toBe('true')

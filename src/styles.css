@@ -6164,20 +6164,21 @@ kbd {
 
   .deck-card-row {
     display: grid;
-    grid-template-columns: 28px 1fr auto auto;
+    grid-template-columns: 28px auto auto auto 1fr;
     grid-template-areas:
-      'select prompt prompt status'
-      'select answer difficulty mastery';
-    column-gap: 8px;
-    row-gap: 4px;
-    padding: 10px 14px;
-    min-height: 56px;
+      'select prompt prompt prompt prompt'
+      'select answer answer answer answer'
+      'select status difficulty mastery .';
+    column-gap: 10px;
+    row-gap: 6px;
+    padding: 12px 14px;
+    min-height: 68px;
     align-items: center;
   }
 
   .deck-card-row .col-select {
     grid-area: select;
-    align-self: stretch;
+    align-self: center;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6222,14 +6223,14 @@ kbd {
     grid-area: difficulty;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .deck-card-row .col-mastery {
     grid-area: mastery;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .deck-card-row .col-status {
@@ -6237,7 +6238,7 @@ kbd {
     align-self: center;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 
   .deck-card-row .deck-phrase-text {
@@ -8316,22 +8317,34 @@ button:active,
 .chili-meter {
   display: inline-flex;
   align-items: center;
-  gap: 1.5px;
+  gap: 2.5px;
   vertical-align: middle;
   line-height: 1;
 }
 
-.chili-meter .icon-chili.is-filled {
-  color: var(--tezontle);
+.icon-chili {
+  display: inline-block;
+  vertical-align: middle;
 }
 
-.chili-meter .icon-chili.is-empty {
-  color: var(--line-subtle);
+.icon-chili.is-filled .chili-pod {
+  fill: var(--tezontle);
 }
 
-.chili-meter .icon-chili.is-dimmed {
-  opacity: 0.32;
-  color: var(--ink-faint);
+.icon-chili.is-filled .chili-stem {
+  fill: var(--verde);
+}
+
+.icon-chili.is-empty .chili-pod,
+.icon-chili.is-empty .chili-stem {
+  fill: var(--paper-subtle);
+  stroke: var(--ink-faint);
+  stroke-width: 1.2px;
+  stroke-linejoin: round;
+}
+
+.icon-chili.is-dimmed {
+  opacity: 0.35;
 }
 
 .memory-indicators {
@@ -8348,8 +8361,8 @@ button:active,
 .edit-card-memory-panel {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 16px;
+  padding: 10px 16px;
   background: var(--paper-subtle);
   border: 1.5px solid var(--line-subtle);
   border-radius: 12px;
@@ -8358,7 +8371,7 @@ button:active,
 .edit-card-memory-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .edit-card-memory-label {
@@ -8372,18 +8385,4 @@ button:active,
 .edit-card-memory-value {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.edit-card-memory-hint {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-soft);
-}
-
-@media (max-width: 640px) {
-  .edit-card-memory-panel {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
 }

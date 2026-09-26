@@ -86,7 +86,7 @@ export interface ChiliMeterProps {
 
 export function ChiliMeter({
   level,
-  size = 13,
+  size = 15,
   className = '',
   ariaLabel,
   ariaHidden = false,
