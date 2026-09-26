@@ -298,7 +298,11 @@ describe('DeckManagerView', () => {
       'aria-label',
       expect.stringMatching(/difficulty: \d of 3 chilies/i),
     )
-    expect(container.querySelectorAll('.col-difficulty .chili-meter')).toHaveLength(3)
-    expect(container.querySelectorAll('.col-mastery .progress-bubbles')).toHaveLength(3)
+    expect(
+      container.querySelectorAll('.col-difficulty .chili-meter'),
+    ).toHaveLength(3)
+    expect(
+      container.querySelectorAll('.col-mastery .progress-bubbles'),
+    ).toHaveLength(3)
   })
 })

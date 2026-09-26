@@ -323,10 +323,18 @@ describe('deck-management', () => {
       const cardsToSort = [mildCard, hotCard, mediumCard]
 
       const spiciestFirst = sortDeckCards(cardsToSort, 'difficulty-desc')
-      expect(spiciestFirst.map((c) => c.prompt)).toEqual(['zapato', 'bueno', 'árbol'])
+      expect(spiciestFirst.map((c) => c.prompt)).toEqual([
+        'zapato',
+        'bueno',
+        'árbol',
+      ])
 
       const mildestFirst = sortDeckCards(cardsToSort, 'difficulty-asc')
-      expect(mildestFirst.map((c) => c.prompt)).toEqual(['árbol', 'bueno', 'zapato'])
+      expect(mildestFirst.map((c) => c.prompt)).toEqual([
+        'árbol',
+        'bueno',
+        'zapato',
+      ])
     })
 
     it('sorts by mastery descending (highest first) and ascending (lowest first)', () => {
@@ -367,10 +375,75 @@ describe('deck-management', () => {
       const cardsToSort = [learningCard, newCard, masteredCard]
 
       const highestFirst = sortDeckCards(cardsToSort, 'mastery-desc')
-      expect(highestFirst.map((c) => c.prompt)).toEqual(['zapato', 'bueno', 'árbol'])
+      expect(highestFirst.map((c) => c.prompt)).toEqual([
+        'zapato',
+        'bueno',
+        'árbol',
+      ])
 
       const lowestFirst = sortDeckCards(cardsToSort, 'mastery-asc')
-      expect(lowestFirst.map((c) => c.prompt)).toEqual(['árbol', 'bueno', 'zapato'])
+      expect(lowestFirst.map((c) => c.prompt)).toEqual([
+        'árbol',
+        'bueno',
+        'zapato',
+      ])
+    })
+
+    it('breaks ties on difficulty and mastery sorting by createdAt then prompt', () => {
+      const cardA: StudyCard = {
+        ...testCards[0]!,
+        id: 'c-a',
+        prompt: 'árbol',
+        createdAt: 200,
+        schedule: {
+          ...testCards[0]!.schedule,
+          state: 'review',
+          reviews: 2,
+          difficulty: 5.0,
+          stability: 10.0,
+        },
+      }
+      const cardB: StudyCard = {
+        ...testCards[1]!,
+        id: 'c-b',
+        prompt: 'bueno',
+        createdAt: 100,
+        schedule: {
+          ...testCards[1]!.schedule,
+          state: 'review',
+          reviews: 2,
+          difficulty: 5.0,
+          stability: 10.0,
+        },
+      }
+      const cardC: StudyCard = {
+        ...testCards[2]!,
+        id: 'c-c',
+        prompt: 'zapato',
+        createdAt: 100,
+        schedule: {
+          ...testCards[2]!.schedule,
+          state: 'review',
+          reviews: 2,
+          difficulty: 5.0,
+          stability: 10.0,
+        },
+      }
+
+      const sameMetrics = [cardC, cardB, cardA]
+
+      expect(
+        sortDeckCards(sameMetrics, 'difficulty-desc').map((c) => c.prompt),
+      ).toEqual(['árbol', 'bueno', 'zapato'])
+      expect(
+        sortDeckCards(sameMetrics, 'difficulty-asc').map((c) => c.prompt),
+      ).toEqual(['árbol', 'bueno', 'zapato'])
+      expect(
+        sortDeckCards(sameMetrics, 'mastery-desc').map((c) => c.prompt),
+      ).toEqual(['árbol', 'bueno', 'zapato'])
+      expect(
+        sortDeckCards(sameMetrics, 'mastery-asc').map((c) => c.prompt),
+      ).toEqual(['árbol', 'bueno', 'zapato'])
     })
 
     it('orders bidirectional card pairs es-en before en-es on same creation time or prompt', () => {

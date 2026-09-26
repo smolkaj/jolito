@@ -548,7 +548,8 @@ export function DeckManagerView({
                     className="deck-sort-header-btn"
                     onClick={() => {
                       setDeckSortOrder((current) => {
-                        if (current === 'difficulty-desc') return 'difficulty-asc'
+                        if (current === 'difficulty-desc')
+                          return 'difficulty-asc'
                         if (current === 'difficulty-asc') return 'created-desc'
                         return 'difficulty-desc'
                       })

@@ -190,9 +190,7 @@ export interface CardMemoryIndicators {
  * 2: Solid recall (2 bubbles)
  * 3: Mastered (3 bubbles)
  */
-export function cardMasteryLevel(
-  schedule: ReviewSchedule,
-): MemoryMasteryLevel {
+export function cardMasteryLevel(schedule: ReviewSchedule): MemoryMasteryLevel {
   if (schedule.state === 'new' || schedule.reviews === 0) return 0
   const { stability } = estimateFsrsParameters(schedule)
   if (stability <= 0) return 0
@@ -234,9 +232,7 @@ export function cardMemoryIndicators(
   const progressLabel = masteryLabel
 
   let difficultyLabel: string
-  if (schedule.state === 'new' || schedule.reviews === 0) {
-    difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
-  } else if (difficulty === 0) {
+  if (difficulty === 0) {
     difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
   } else if (difficulty === 1) {
     difficultyLabel = 'Difficulty: 1 of 3 chilies (mild heat)'
