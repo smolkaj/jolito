@@ -156,13 +156,11 @@ export function GrammarPractice({
             <div className="grammar-choice-indicators" aria-hidden="true">
               <ChiliMeter
                 level={mixedIndicators.difficulty}
-                size={14}
                 ariaHidden
                 title={mixedIndicators.difficultyLabel}
               />
               <MasteryBubbles
                 level={mixedIndicators.mastery}
-                size={24}
                 ariaHidden
                 title={mixedIndicators.masteryLabel}
               />
@@ -194,13 +192,11 @@ export function GrammarPractice({
                     >
                       <ChiliMeter
                         level={indicators.difficulty}
-                        size={14}
                         ariaHidden
                         title={indicators.difficultyLabel}
                       />
                       <MasteryBubbles
                         level={indicators.mastery}
-                        size={24}
                         ariaHidden
                         title={indicators.masteryLabel}
                       />

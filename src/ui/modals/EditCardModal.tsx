@@ -338,7 +338,6 @@ function EditCardModalInner({
               <div className="edit-card-memory-value">
                 <ChiliMeter
                   level={indicators.difficulty}
-                  size={15}
                   ariaLabel={indicators.difficultyLabel}
                 />
               </div>
@@ -348,7 +347,6 @@ function EditCardModalInner({
               <div className="edit-card-memory-value">
                 <MasteryBubbles
                   level={indicators.mastery}
-                  size={28}
                   ariaLabel={indicators.masteryLabel}
                 />
               </div>

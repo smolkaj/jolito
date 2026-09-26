@@ -19,7 +19,7 @@ export type ProgressBubblesProps = MasteryBubblesProps
 
 export function MasteryBubbles({
   level,
-  size = 28,
+  size = 42,
   className = '',
   ariaLabel,
   ariaHidden = false,
@@ -40,38 +40,38 @@ export function MasteryBubbles({
       title={resolvedTitle}
     >
       <svg
-        viewBox="0 0 29 9"
+        viewBox="0 0 42 13"
         width={size}
-        height={Math.round((size * 9) / 29)}
+        height={Math.round((size * 13) / 42)}
         aria-hidden="true"
         xmlns="http://www.w3.org/2000/svg"
       >
         <circle
-          cx="4.5"
-          cy="4.5"
-          r="3.5"
+          cx="7"
+          cy="6.5"
+          r="4.25"
           className={`bubble-dot ${safeLevel >= 1 ? 'is-filled' : 'is-empty'}`}
           fill={safeLevel >= 1 ? 'currentColor' : 'none'}
           stroke="currentColor"
-          strokeWidth="1.2"
+          strokeWidth="1.3"
         />
         <circle
-          cx="14.5"
-          cy="4.5"
-          r="3.5"
+          cx="21"
+          cy="6.5"
+          r="4.25"
           className={`bubble-dot ${safeLevel >= 2 ? 'is-filled' : 'is-empty'}`}
           fill={safeLevel >= 2 ? 'currentColor' : 'none'}
           stroke="currentColor"
-          strokeWidth="1.2"
+          strokeWidth="1.3"
         />
         <circle
-          cx="24.5"
-          cy="4.5"
-          r="3.5"
+          cx="35"
+          cy="6.5"
+          r="4.25"
           className={`bubble-dot ${safeLevel >= 3 ? 'is-filled' : 'is-empty'}`}
           fill={safeLevel >= 3 ? 'currentColor' : 'none'}
           stroke="currentColor"
-          strokeWidth="1.2"
+          strokeWidth="1.3"
         />
       </svg>
     </span>
@@ -92,7 +92,7 @@ export interface ChiliMeterProps {
 
 export function ChiliMeter({
   level,
-  size = 15,
+  size = 13,
   className = '',
   ariaLabel,
   ariaHidden = false,
