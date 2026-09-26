@@ -589,16 +589,34 @@ export function cleanWorktrees(
 
         // Also clean up local branch ref if requested (default true)
         if (wt.branch && (options.deleteBranch ?? true)) {
+          let branchExists = false
           try {
-            const branchArgs = [
-              'branch',
-              options.force ? '-D' : '-d',
-              wt.branch,
-            ]
-            runCmd('git', branchArgs, { cwd: options.cwd })
-            log(`Deleted local branch: ${wt.branch}`)
+            runCmd(
+              'git',
+              ['rev-parse', '--verify', `refs/heads/${wt.branch}`],
+              { cwd: options.cwd },
+            )
+            branchExists = true
           } catch {
-            // Branch deletion is best-effort (e.g. if already deleted or ref mismatch)
+            branchExists = false
+          }
+
+          if (branchExists) {
+            try {
+              runCmd('git', ['branch', '-d', wt.branch], { cwd: options.cwd })
+              log(`Deleted local branch: ${wt.branch}`)
+            } catch {
+              // Squash-merged branches fail git branch -d because squash-merging creates a new mainline commit.
+              // Since wt.status is verified MERGED, safely force-delete with -D.
+              try {
+                runCmd('git', ['branch', '-D', wt.branch], { cwd: options.cwd })
+                log(`Deleted squash-merged local branch: ${wt.branch}`)
+              } catch (dErr) {
+                log(
+                  `Warning: Failed to delete local branch "${wt.branch}": ${dErr instanceof Error ? dErr.message : String(dErr)}`,
+                )
+              }
+            }
           }
         }
       } catch (error) {
@@ -704,7 +722,7 @@ export function startWorktree(
       cwd: options.cwd,
     })
     throw new Error(
-      `Branch "${branch}" already exists locally. Delete it with "git branch -d ${branch}" or pick another task name.`,
+      `Branch "${branch}" already exists locally. Delete it with "git branch -D ${branch}" or pick another task name.`,
     )
   } catch (error) {
     if (

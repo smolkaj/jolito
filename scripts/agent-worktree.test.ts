@@ -510,6 +510,63 @@ branch refs/heads/agy/merged-dirty
       ),
     ).toBe(true)
   })
+
+  it('falls back to git branch -D when squash-merged branch deletion is rejected by git branch -d', () => {
+    const executedCommands: string[] = []
+    const mockRunner: CommandRunner = (cmd, args) => {
+      executedCommands.push(`${cmd} ${args.join(' ')}`)
+      if (cmd === 'git') {
+        if (args[0] === 'worktree' && args[1] === 'list') {
+          return samplePorcelain
+        }
+        if (args.includes('--git-common-dir')) {
+          return '/home/steffen/src/jolito/.git'
+        }
+        if (args.includes('--show-toplevel')) {
+          return '/home/steffen/src/jolito-current'
+        }
+        if (args.includes('status')) {
+          return ''
+        }
+        if (args[0] === 'merge-base') {
+          throw new Error('Not an ancestor')
+        }
+        if (args[0] === 'branch' && args[1] === '-d') {
+          throw new Error('error: The branch is not fully merged')
+        }
+      }
+      return ''
+    }
+
+    const logMessages: string[] = []
+    cleanWorktrees({
+      dryRun: false,
+      agent: 'agy',
+      runCmd: mockRunner,
+      fsOps: mockFs,
+      mergedData,
+      log: (msg) => logMessages.push(msg),
+      cwd: '/home/steffen/src/jolito-current',
+    })
+
+    // git branch -d was attempted first
+    expect(
+      executedCommands.some((c) =>
+        c.includes('git branch -d agy/merged-clean'),
+      ),
+    ).toBe(true)
+    // and then git branch -D was successfully executed
+    expect(
+      executedCommands.some((c) =>
+        c.includes('git branch -D agy/merged-clean'),
+      ),
+    ).toBe(true)
+    expect(
+      logMessages.some((m) =>
+        m.includes('Deleted squash-merged local branch: agy/merged-clean'),
+      ),
+    ).toBe(true)
+  })
 })
 
 describe('startWorktree', () => {
