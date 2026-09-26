@@ -413,7 +413,16 @@ test('accent taps preserve the active input and selection across practice turns'
   }
 })
 
-for (const topic of ['present', 'preterite', 'perfect', 'gerund'] as const) {
+for (const topic of [
+  'present',
+  'preterite',
+  'imperfect',
+  'perfect',
+  'future',
+  'conditional',
+  'subjunctive',
+  'gerund',
+] as const) {
   test(`${topic} prepares neural voices for both contexts and retains them across interruption and offline recall`, async ({
     page,
     context,
