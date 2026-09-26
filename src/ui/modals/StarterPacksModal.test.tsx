@@ -380,4 +380,171 @@ describe('StarterPacksModal', () => {
       }),
     ).toHaveTextContent('+ Add missing')
   })
+
+  it('allows removing an added pack with confirmation from the main list', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    const onRemovePack = vi.fn()
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={allStreetCards}
+        onAddPack={vi.fn()}
+        onRemovePack={onRemovePack}
+      />,
+    )
+
+    // Remove button should be visible when pack is in deck
+    const removeBtn = screen.getByRole('button', {
+      name: /Remove Mexican Street Phrases from deck/i,
+    })
+    expect(removeBtn).toBeInTheDocument()
+
+    // Clicking Remove prompts for confirmation and focuses Cancel
+    fireEvent.click(removeBtn)
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+
+    // Confirm button executes onRemovePack
+    const confirmBtn = screen.getByRole('button', {
+      name: /Confirm remove Mexican Street Phrases from deck/i,
+    })
+    fireEvent.click(confirmBtn)
+    expect(onRemovePack).toHaveBeenCalledTimes(1)
+    expect(onRemovePack).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+    )
+  })
+
+  it('allows cancelling pack removal confirmation via Cancel button or Escape key and restores focus', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    const onRemovePack = vi.fn()
+    const onClose = vi.fn()
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={onClose}
+        cards={allStreetCards}
+        onAddPack={vi.fn()}
+        onRemovePack={onRemovePack}
+      />,
+    )
+
+    const removeBtn = screen.getByRole('button', {
+      name: /Remove Mexican Street Phrases from deck/i,
+    })
+    fireEvent.click(removeBtn)
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+
+    // Cancel button is focused on open
+    const cancelBtn = screen.getByRole('button', {
+      name: /Cancel removing Mexican Street Phrases/i,
+    })
+    expect(document.activeElement).toBe(cancelBtn)
+
+    // Cancel button resets confirmation and restores focus to Remove button
+    fireEvent.click(cancelBtn)
+    expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
+    expect(onRemovePack).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      }),
+    )
+
+    // Escape key resets confirmation and restores focus to Remove button
+    const removeBtnAgain = screen.getByRole('button', {
+      name: /Remove Mexican Street Phrases from deck/i,
+    })
+    fireEvent.click(removeBtnAgain)
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      }),
+    )
+  })
+
+  it('allows removing a pack from within the inspect toolbar', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    const onRemovePack = vi.fn()
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={allStreetCards}
+        onAddPack={vi.fn()}
+        onRemovePack={onRemovePack}
+      />,
+    )
+
+    // Drill down into inspect view
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+
+    // Click "Remove pack" in inspect toolbar
+    const removeToolbarBtn = screen.getByRole('button', {
+      name: /Remove Mexican Street Phrases from deck/i,
+    })
+    fireEvent.click(removeToolbarBtn)
+
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+
+    // Confirm removal
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Confirm remove Mexican Street Phrases from deck/i,
+      }),
+    )
+    expect(onRemovePack).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+    )
+  })
+
+  it('allows removing an individual note card from the inspect list', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    const onRemoveNote = vi.fn()
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={allStreetCards}
+        onAddPack={vi.fn()}
+        onRemoveNote={onRemoveNote}
+      />,
+    )
+
+    // Drill down into inspect view
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+
+    // ¿Mande? is note index 0 and has a Remove button
+    const removeMandeBtn = screen.getByRole('button', {
+      name: /Remove ¿Mande\? from deck/i,
+    })
+    expect(removeMandeBtn).toBeInTheDocument()
+    fireEvent.click(removeMandeBtn)
+
+    expect(onRemoveNote).toHaveBeenCalledTimes(1)
+    expect(onRemoveNote).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+      0,
+    )
+  })
 })

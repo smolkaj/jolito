@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { StudyCard } from '../../domain/card'
+import { findStarterPack } from '../../domain/starter-decks'
 import { DeckManagerView, type DeckManagerViewProps } from './DeckManagerView'
 
 function createSampleCard(overrides: Partial<StudyCard> = {}): StudyCard {
@@ -98,6 +99,8 @@ function renderDeckManager(overrides: Partial<DeckManagerViewProps> = {}) {
     onUpdateCards: vi.fn(),
     onAddStarterPack: vi.fn(),
     onAddStarterNote: vi.fn(),
+    onRemoveStarterPack: vi.fn(),
+    onRemoveStarterNote: vi.fn(),
     clock: { now: () => 1000 },
     ...overrides,
   }
@@ -304,5 +307,43 @@ describe('DeckManagerView', () => {
     expect(
       container.querySelectorAll('.col-mastery .progress-bubbles'),
     ).toHaveLength(3)
+  })
+
+  it('supports opening starter packs modal and removing an added pack with confirmation', async () => {
+    const user = userEvent.setup()
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const streetCards = streetPack.createCards(0)
+    const onRemoveStarterPack = vi.fn()
+
+    renderDeckManager({
+      cards: streetCards,
+      vocabularyCards: streetCards,
+      onRemoveStarterPack,
+    })
+
+    // Open starter packs modal
+    const starterPacksBtn = screen.getByRole('button', {
+      name: /^starter packs$/i,
+    })
+    await user.click(starterPacksBtn)
+
+    expect(screen.getByText('Curated starter packs')).toBeInTheDocument()
+
+    // Find Remove button for Mexican Street Phrases
+    const removeBtn = screen.getByRole('button', {
+      name: /Remove Mexican Street Phrases from deck/i,
+    })
+    await user.click(removeBtn)
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+
+    // Confirm removal
+    const confirmBtn = screen.getByRole('button', {
+      name: /Confirm remove Mexican Street Phrases from deck/i,
+    })
+    await user.click(confirmBtn)
+
+    expect(onRemoveStarterPack).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+    )
   })
 })

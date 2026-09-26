@@ -5,6 +5,7 @@ import {
   type StudyCard,
 } from '../domain/card'
 import { getDuplicateGroups } from '../domain/duplicate'
+import { getStarterPackForCard } from '../domain/starter-decks'
 
 export type DeckFilterState =
   'all' | 'due' | 'new' | 'learning' | 'review' | 'duplicates'
@@ -220,7 +221,13 @@ export function filterDeckCards(
       const matchPrompt = card.prompt.toLowerCase().includes(normalizedQuery)
       const matchAnswer = card.answer.toLowerCase().includes(normalizedQuery)
       const matchContext = card.context.toLowerCase().includes(normalizedQuery)
-      if (!matchPrompt && !matchAnswer && !matchContext) {
+      const pack = getStarterPackForCard(card)
+      const matchPack =
+        pack !== undefined &&
+        (pack.title.toLowerCase().includes(normalizedQuery) ||
+          pack.badge.toLowerCase().includes(normalizedQuery) ||
+          pack.subtitle.toLowerCase().includes(normalizedQuery))
+      if (!matchPrompt && !matchAnswer && !matchContext && !matchPack) {
         return false
       }
     }
