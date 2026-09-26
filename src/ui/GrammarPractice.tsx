@@ -1,6 +1,12 @@
+import { useMemo } from 'react'
 import type { AppServices } from '../application/ports'
 import { type Grade } from '../domain/card'
-import { grammarContext, grammarQueue } from '../domain/grammar'
+import {
+  grammarContext,
+  grammarQueue,
+  grammarFamilyIndicators,
+  type GrammarMemoryIndicators,
+} from '../domain/grammar'
 import {
   grammarTopics,
   grammarVerb,
@@ -12,6 +18,7 @@ import { useStudyAudio } from './useStudyAudio'
 import { PracticeCard } from './PracticeCard'
 import { SessionComplete } from './SessionComplete'
 import { AudioButton } from './AudioButton'
+import { ChiliMeter, MasteryBubbles } from './MemoryIndicators'
 import './grammar.css'
 
 export function GrammarPractice({
@@ -83,6 +90,24 @@ export function GrammarPractice({
           day: 'numeric',
         }).format(nextDue)
       : null
+
+  const mixedIndicators = useMemo(
+    () => grammarFamilyIndicators(practice.available, topic, 'mixed'),
+    [practice.available, topic],
+  )
+
+  const familyIndicators = useMemo(() => {
+    const result: Record<string, GrammarMemoryIndicators> = {}
+    for (const family of content.families) {
+      result[family.id] = grammarFamilyIndicators(
+        practice.available,
+        topic,
+        family.id,
+      )
+    }
+    return result
+  }, [content.families, practice.available, topic])
+
   if (mode === 'choose')
     return (
       <section className="grammar-home" aria-labelledby="grammar-title">
@@ -113,34 +138,77 @@ export function GrammarPractice({
           <label
             className={`flat-choice grammar-mixed ${focus === 'mixed' ? 'is-selected' : ''}`}
           >
-            <input
-              type="radio"
-              name="grammar-focus"
-              checked={focus === 'mixed'}
-              onChange={() => practice.setFocus('mixed')}
-            />
-            <span>
-              <strong>All patterns</strong>
-            </span>
+            <div className="grammar-choice-primary">
+              <input
+                type="radio"
+                name="grammar-focus"
+                checked={focus === 'mixed'}
+                onChange={() => practice.setFocus('mixed')}
+              />
+              <span className="grammar-choice-content">
+                <strong>All patterns</strong>
+                <span className="sr-only">
+                  . {mixedIndicators.difficultyLabel},{' '}
+                  {mixedIndicators.masteryLabel}.
+                </span>
+              </span>
+            </div>
+            <div className="grammar-choice-indicators" aria-hidden="true">
+              <ChiliMeter
+                level={mixedIndicators.difficulty}
+                size={14}
+                ariaHidden
+                title={mixedIndicators.difficultyLabel}
+              />
+              <MasteryBubbles
+                level={mixedIndicators.mastery}
+                size={24}
+                ariaHidden
+                title={mixedIndicators.masteryLabel}
+              />
+            </div>
           </label>
           <div className="grammar-families">
-            {content.families.map((family) => (
-              <label
-                key={family.id}
-                className={`flat-choice ${focus === family.id ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="grammar-focus"
-                  checked={focus === family.id}
-                  onChange={() => practice.setFocus(family.id)}
-                />
-                <span>
-                  <strong>{family.title}</strong>
-                  <small lang="es">{family.example}</small>
-                </span>
-              </label>
-            ))}
+            {content.families.map((family) => {
+              const indicators = familyIndicators[family.id]!
+              return (
+                <label
+                  key={family.id}
+                  className={`flat-choice ${focus === family.id ? 'is-selected' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="grammar-focus"
+                    checked={focus === family.id}
+                    onChange={() => practice.setFocus(family.id)}
+                  />
+                  <span className="grammar-choice-content">
+                    <strong>{family.title}</strong>
+                    <small lang="es">{family.example}</small>
+                    <span className="sr-only">
+                      . {indicators.difficultyLabel}, {indicators.masteryLabel}.
+                    </span>
+                    <div
+                      className="grammar-choice-indicators"
+                      aria-hidden="true"
+                    >
+                      <ChiliMeter
+                        level={indicators.difficulty}
+                        size={14}
+                        ariaHidden
+                        title={indicators.difficultyLabel}
+                      />
+                      <MasteryBubbles
+                        level={indicators.mastery}
+                        size={24}
+                        ariaHidden
+                        title={indicators.masteryLabel}
+                      />
+                    </div>
+                  </span>
+                </label>
+              )
+            })}
           </div>
         </fieldset>
         <div className="grammar-start-row">

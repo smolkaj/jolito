@@ -219,6 +219,17 @@ export function cardDifficultyLevel(
   return 3
 }
 
+export function cardDifficultyLabel(difficulty: MemoryDifficultyLevel): string {
+  if (difficulty === 0) return 'Difficulty: 0 of 3 chilies (no heat)'
+  if (difficulty === 1) return 'Difficulty: 1 of 3 chilies (mild heat)'
+  if (difficulty === 2) return 'Difficulty: 2 of 3 chilies (medium heat)'
+  return 'Difficulty: 3 of 3 chilies (hot)'
+}
+
+export function cardMasteryLabel(mastery: MemoryMasteryLevel): string {
+  return `Mastery: ${mastery} of 3 bubbles`
+}
+
 /**
  * Computes the unified memory indicators and accessible labels for a card.
  */
@@ -228,19 +239,9 @@ export function cardMemoryIndicators(
   const mastery = cardMasteryLevel(schedule)
   const difficulty = cardDifficultyLevel(schedule)
 
-  const masteryLabel = `Mastery: ${mastery} of 3 bubbles`
+  const masteryLabel = cardMasteryLabel(mastery)
   const progressLabel = masteryLabel
-
-  let difficultyLabel: string
-  if (difficulty === 0) {
-    difficultyLabel = 'Difficulty: 0 of 3 chilies (no heat)'
-  } else if (difficulty === 1) {
-    difficultyLabel = 'Difficulty: 1 of 3 chilies (mild heat)'
-  } else if (difficulty === 2) {
-    difficultyLabel = 'Difficulty: 2 of 3 chilies (medium heat)'
-  } else {
-    difficultyLabel = 'Difficulty: 3 of 3 chilies (hot)'
-  }
+  const difficultyLabel = cardDifficultyLabel(difficulty)
 
   return {
     mastery,

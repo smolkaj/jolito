@@ -3128,9 +3128,7 @@ describe('Jolito', () => {
       'title',
       'All cards in your deck',
     )
-    expect(
-      screen.getByRole('button', { name: /due now \(6\)/i }),
-    ).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^due \(6\)/i })).toHaveAttribute(
       'title',
       'Cards ready to practice right now (unstudied cards + due reviews)',
     )

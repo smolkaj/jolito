@@ -10,7 +10,7 @@ export function getCardScheduleBadge(
   now: number,
 ): CardScheduleBadge {
   if (isDue(card, now)) {
-    return { label: 'Due now', type: 'due' }
+    return { label: 'Due', type: 'due' }
   }
   const state = card.schedule.state
   if (state === 'new') {

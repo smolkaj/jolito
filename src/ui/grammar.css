@@ -54,11 +54,51 @@
   color: var(--ink-soft);
   margin-top: 4px;
 }
+.grammar-mixed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.grammar-choice-primary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.grammar-choice-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.grammar-choice-indicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.grammar-mixed .grammar-choice-indicators {
+  margin-top: 0;
+}
 .grammar-families {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 12px;
+}
+.grammar-families .flat-choice {
+  align-items: flex-start;
+  height: 100%;
+}
+.grammar-families .grammar-choice-content {
+  height: 100%;
+}
+.grammar-families .grammar-choice-indicators {
+  margin-top: auto;
+  padding-top: 6px;
+}
+.grammar-families .flat-choice input {
+  margin-top: 3px;
 }
 .grammar-start-row {
   display: flex;
@@ -118,6 +158,17 @@
   .grammar-focus label {
     padding: 12px 10px;
     gap: 8px;
+  }
+  .grammar-choice-primary {
+    gap: 8px;
+  }
+  .grammar-choice-indicators {
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .grammar-families .grammar-choice-indicators {
+    margin-top: auto;
+    padding-top: 4px;
   }
   .grammar-focus strong {
     font-size: 14px;

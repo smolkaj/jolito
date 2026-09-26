@@ -67,7 +67,10 @@ describe('ChiliMeter', () => {
   it('renders 2 filled chilies and 1 dimmed empty chili for medium difficulty', () => {
     const { container } = render(<ChiliMeter level={2} />)
     const span = container.querySelector('.chili-meter')
-    expect(span).toHaveAttribute('aria-label', 'Difficulty: 2 of 3 chilies')
+    expect(span).toHaveAttribute(
+      'aria-label',
+      'Difficulty: 2 of 3 chilies (medium heat)',
+    )
     const filledSvgs = container.querySelectorAll('svg.icon-chili.is-filled')
     expect(filledSvgs.length).toBe(2)
     const emptySvgs = container.querySelectorAll('svg.icon-chili.is-empty')

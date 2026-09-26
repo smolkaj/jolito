@@ -1,4 +1,14 @@
-import { createNewReviewSchedule, isDue, type StudyCard } from './card'
+import {
+  createNewReviewSchedule,
+  isDue,
+  cardProgressLevel,
+  cardDifficultyLabel,
+  cardMasteryLabel,
+  estimateFsrsParameters,
+  type StudyCard,
+  type MemoryMasteryLevel,
+  type MemoryDifficultyLevel,
+} from './card'
 import { grammarPeople, preteriteVerbs } from './grammar-content'
 import {
   grammarCardId,
@@ -184,4 +194,84 @@ export function grammarQueue(
     }
   }
   return selected
+}
+
+export interface GrammarMemoryIndicators {
+  mastery: MemoryMasteryLevel
+  difficulty: MemoryDifficultyLevel
+  masteryLabel: string
+  difficultyLabel: string
+  totalForms: number
+  practicedForms: number
+}
+
+/**
+ * Computes aggregated memory mastery and difficulty indicators for a grammar topic
+ * or specific pattern family within that topic.
+ */
+export function grammarFamilyIndicators(
+  cards: StudyCard[],
+  topic: GrammarTopic,
+  familyId?: string,
+): GrammarMemoryIndicators {
+  const eligible = cards
+    .filter(isGrammarCard)
+    .filter(
+      (c) =>
+        c.grammar.topic === topic &&
+        (!familyId ||
+          familyId === 'mixed' ||
+          grammarVerb(c.grammar.topic, c.grammar.verb)?.family === familyId),
+    )
+
+  const totalForms = eligible.length
+  if (totalForms === 0) {
+    return {
+      mastery: 0,
+      difficulty: 0,
+      masteryLabel: cardMasteryLabel(0),
+      difficultyLabel: cardDifficultyLabel(0),
+      totalForms: 0,
+      practicedForms: 0,
+    }
+  }
+
+  // Mastery is based on average stability level across all forms in the family
+  const totalMasteryScore = eligible.reduce(
+    (sum, c) => sum + cardProgressLevel(c.schedule),
+    0,
+  )
+  const avgMastery = totalMasteryScore / totalForms
+  let mastery: MemoryMasteryLevel = 0
+  if (avgMastery >= 2.5) mastery = 3
+  else if (avgMastery >= 1.5) mastery = 2
+  else if (avgMastery >= 0.5) mastery = 1
+
+  // Difficulty is based on average difficulty of practiced forms
+  const practicedCards = eligible.filter((c) => c.schedule.reviews > 0)
+  const practicedForms = practicedCards.length
+
+  let difficulty: MemoryDifficultyLevel = 0
+  if (practicedForms > 0) {
+    const totalDifficulty = practicedCards.reduce(
+      (sum, c) => sum + estimateFsrsParameters(c.schedule).difficulty,
+      0,
+    )
+    const avgDifficulty = totalDifficulty / practicedForms
+    if (avgDifficulty >= 7.5) difficulty = 3
+    else if (avgDifficulty >= 5.0) difficulty = 2
+    else if (avgDifficulty >= 3.0) difficulty = 1
+  }
+
+  const masteryLabel = cardMasteryLabel(mastery)
+  const difficultyLabel = cardDifficultyLabel(difficulty)
+
+  return {
+    mastery,
+    difficulty,
+    masteryLabel,
+    difficultyLabel,
+    totalForms,
+    practicedForms,
+  }
 }
