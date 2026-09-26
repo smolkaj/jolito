@@ -1,6 +1,10 @@
+import { z } from 'zod'
 import { Capacitor } from '@capacitor/core'
 import type { TelemetryService } from '../../application/ports.ts'
-import type { EngagementTier } from '../../domain/telemetry.ts'
+import {
+  type EngagementTier,
+  engagementTierSchema,
+} from '../../domain/telemetry.ts'
 import {
   detectBrowser,
   detectDeviceType,
@@ -20,11 +24,13 @@ export interface TelemetryServiceConfig {
   windowObj?: Window | null
 }
 
-interface StoredTelemetryState {
-  date: string
-  tier: EngagementTier
-  reviews: number
-}
+const storedTelemetryStateSchema = z.object({
+  date: z.string(),
+  tier: engagementTierSchema,
+  reviews: z.number(),
+})
+
+type StoredTelemetryState = z.infer<typeof storedTelemetryStateSchema>
 
 const STORAGE_KEY = 'jolito:telemetry:v1'
 
@@ -229,14 +235,11 @@ export class ClientTelemetryService implements TelemetryService {
         this.cachedState = null
         return null
       }
-      const parsed = JSON.parse(raw) as StoredTelemetryState
-      if (
-        typeof parsed?.date === 'string' &&
-        typeof parsed?.tier === 'string' &&
-        typeof parsed?.reviews === 'number'
-      ) {
-        this.cachedState = parsed
-        return parsed
+      const parsed: unknown = JSON.parse(raw)
+      const validated = storedTelemetryStateSchema.safeParse(parsed)
+      if (validated.success) {
+        this.cachedState = validated.data
+        return validated.data
       }
       this.cachedState = null
       return null

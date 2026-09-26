@@ -335,7 +335,7 @@ export class NeuralVoiceEngine {
         }
         return this.offlineContext
       } catch {
-        // Fallback
+        // Safe fallback to null if OfflineAudioContext construction throws
       }
     }
 

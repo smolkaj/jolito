@@ -607,7 +607,7 @@ export function PracticeCard({
       try {
         cardRef.current.releasePointerCapture(event.pointerId)
       } catch {
-        // Ignore
+        // Safe fallback when pointer capture unsupported or already released
       }
     }
 

@@ -1,4 +1,5 @@
 import * as fflate from 'fflate'
+import { z } from 'zod'
 import {
   chooseScene,
   studyCardSchema,
@@ -12,6 +13,14 @@ import {
   type ParseAnkiResult,
 } from '../../domain/anki-import'
 import { getSqlJs } from './anki-sql'
+
+const ankiDecksSchema = z.record(
+  z.string(),
+  z.object({
+    name: z.string().optional(),
+    id: z.number().optional(),
+  }),
+)
 
 export async function parseAnkiPackage(
   buffer: Uint8Array | ArrayBuffer,
@@ -60,23 +69,23 @@ export async function parseAnkiPackage(
           crt = colRow[0]
         }
         if (typeof colRow[1] === 'string') {
-          const decks = JSON.parse(colRow[1]) as Record<
-            string,
-            { name?: string; id?: number }
-          >
-          for (const d of Object.values(decks)) {
-            if (d.name && d.name !== 'Default') {
-              deckName = d.name
-              break
+          const parsed: unknown = JSON.parse(colRow[1])
+          const parsedDecks = ankiDecksSchema.safeParse(parsed)
+          if (parsedDecks.success) {
+            for (const d of Object.values(parsedDecks.data)) {
+              if (d.name && d.name !== 'Default') {
+                deckName = d.name
+                break
+              }
             }
-          }
-          if (!deckName && decks['1']?.name) {
-            deckName = decks['1'].name
+            if (!deckName && parsedDecks.data['1']?.name) {
+              deckName = parsedDecks.data['1'].name
+            }
           }
         }
       }
     } catch {
-      // Fallback
+      // Safe fallback to default deck name if collection metadata is unreadable
     }
 
     const cardsRes = db.exec(`
