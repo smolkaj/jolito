@@ -5,9 +5,13 @@ context, with enough variation and delayed recall to make it dependable.
 Home offers Create a card and Practice on one row. Practice opens a compact menu
 with Cards first and Grammar second; grammar never enters card queues or counts.
 
-Grammar now also supports [presente](practice-present.md),
-[pretérito perfecto](practice-perfecto.md), and [gerundio](practice-gerund.md),
-using the same practice flow with independent schedules.
+Grammar now supports [presente](practice-present.md),
+[pretérito imperfecto](practice-tenses.md#pretérito-imperfecto),
+[pretérito perfecto](practice-perfecto.md),
+[futuro simple](practice-tenses.md#futuro-simple),
+[condicional simple](practice-tenses.md#condicional-simple),
+[presente de subjuntivo](practice-tenses.md#presente-de-subjuntivo), and
+[gerundio](practice-gerund.md), using the same practice flow with independent schedules.
 
 ## Learning experience
 

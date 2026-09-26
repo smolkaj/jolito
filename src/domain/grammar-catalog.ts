@@ -1,6 +1,10 @@
 import { presentFamilies, presentVerbs } from './grammar-present'
 import { preteriteFamilies, preteriteVerbs } from './grammar-content'
+import { imperfectFamilies, imperfectVerbs } from './grammar-imperfect'
 import { perfectFamilies, perfectVerbs } from './grammar-perfect'
+import { futureFamilies, futureVerbs } from './grammar-future'
+import { conditionalFamilies, conditionalVerbs } from './grammar-conditional'
+import { subjunctiveFamilies, subjunctiveVerbs } from './grammar-subjunctive'
 import { gerundFamilies, gerundVerbs } from './grammar-gerund'
 import type { GrammarVerb } from './grammar-catalog-types'
 
@@ -17,11 +21,35 @@ export const grammarTopics = {
     families: preteriteFamilies,
     verbs: preteriteVerbs,
   },
+  imperfect: {
+    title: 'Pretérito imperfecto',
+    description: 'Spanish imperfect past',
+    families: imperfectFamilies,
+    verbs: imperfectVerbs,
+  },
   perfect: {
     title: 'Pretérito perfecto',
     description: 'Spanish present perfect',
     families: perfectFamilies,
     verbs: perfectVerbs,
+  },
+  future: {
+    title: 'Futuro simple',
+    description: 'Spanish simple future',
+    families: futureFamilies,
+    verbs: futureVerbs,
+  },
+  conditional: {
+    title: 'Condicional simple',
+    description: 'Spanish conditional',
+    families: conditionalFamilies,
+    verbs: conditionalVerbs,
+  },
+  subjunctive: {
+    title: 'Presente de subjuntivo',
+    description: 'Spanish present subjunctive',
+    families: subjunctiveFamilies,
+    verbs: subjunctiveVerbs,
   },
   gerund: {
     title: 'Gerundio',

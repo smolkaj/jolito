@@ -3,7 +3,16 @@ import { createGrammarCards, grammarContext } from './grammar'
 import { grammarVerb } from './grammar-catalog'
 
 describe('authored English verb alignment', () => {
-  it.each(['present', 'preterite', 'perfect', 'gerund'] as const)(
+  it.each([
+    'present',
+    'preterite',
+    'imperfect',
+    'perfect',
+    'future',
+    'conditional',
+    'subjunctive',
+    'gerund',
+  ] as const)(
     'resolves every %s person and context into clean text with explicit verb spans',
     (topic) => {
       for (const card of createGrammarCards(0, topic)) {
@@ -50,6 +59,18 @@ describe('authored English verb alignment', () => {
     ['preterite', 'poner', 0, 0, ['I', 'set']],
     ['preterite', 'ser', 2, 0, ['was']],
     ['preterite', 'ser', 2, 1, ['You', 'were']],
+    ['imperfect', 'hablar', 0, 0, ['talked']],
+    ['imperfect', 'hablar', 0, 1, ['I', 'spoke']],
+    ['imperfect', 'ser', 2, 0, ['was']],
+    ['imperfect', 'ser', 2, 1, ['you', 'were']],
+    ['future', 'hablar', 0, 0, ['I', 'will speak']],
+    ['future', 'tener', 2, 0, ['will have']],
+    ['conditional', 'hablar', 0, 0, ['I', 'would speak']],
+    ['conditional', 'tener', 2, 0, ['would have']],
+    ['subjunctive', 'hablar', 0, 0, ['I', 'speak']],
+    ['subjunctive', 'hablar', 2, 1, ['you', 'speak']],
+    ['subjunctive', 'ser', 0, 0, ['I', 'am']],
+    ['subjunctive', 'ser', 2, 0, ['is']],
     ['perfect', 'hablar', 2, 0, ['has talked']],
     ['perfect', 'hablar', 2, 1, ['You', 'have', 'talked']],
     ['perfect', 'terminar', 0, 0, ['I', 'have', 'finished']],
