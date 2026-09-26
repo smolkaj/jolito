@@ -8414,14 +8414,10 @@ button:active,
 
 .icon-chili.is-empty .chili-pod,
 .icon-chili.is-empty .chili-stem {
-  fill: var(--paper-subtle);
+  fill: none;
   stroke: var(--ink-faint);
-  stroke-width: 1.2px;
+  stroke-width: 1.3px;
   stroke-linejoin: round;
-}
-
-.icon-chili.is-dimmed {
-  opacity: 0.35;
 }
 
 .memory-indicators {

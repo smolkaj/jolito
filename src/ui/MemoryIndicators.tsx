@@ -112,21 +112,9 @@ export function ChiliMeter({
       aria-hidden={ariaHidden ? true : undefined}
       title={resolvedTitle}
     >
-      <ChiliIcon
-        size={size}
-        filled={safeLevel >= 1}
-        className={safeLevel < 1 ? 'is-dimmed' : ''}
-      />
-      <ChiliIcon
-        size={size}
-        filled={safeLevel >= 2}
-        className={safeLevel < 2 ? 'is-dimmed' : ''}
-      />
-      <ChiliIcon
-        size={size}
-        filled={safeLevel >= 3}
-        className={safeLevel < 3 ? 'is-dimmed' : ''}
-      />
+      <ChiliIcon size={size} filled={safeLevel >= 1} />
+      <ChiliIcon size={size} filled={safeLevel >= 2} />
+      <ChiliIcon size={size} filled={safeLevel >= 3} />
     </span>
   )
 }
