@@ -6328,6 +6328,7 @@ kbd {
     box-shadow 0.15s ease,
     border-color 0.15s ease;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .starter-pack-card:hover {
@@ -6336,6 +6337,11 @@ kbd {
     3px 3px 0 var(--line),
     5px 5px 0 var(--paper-subtle),
     7px 7px 0 var(--line-subtle);
+}
+
+.starter-pack-card:active:not(:has(button:active)) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--line);
 }
 
 /* Distinct color-coded physical pack spines */
@@ -6367,6 +6373,18 @@ kbd {
   box-shadow: none;
   transform: none;
   opacity: 0.88;
+}
+
+.starter-pack-card.is-added:hover {
+  opacity: 1;
+  border-color: var(--line);
+  transform: translate(-1px, -1px);
+  box-shadow: 2px 2px 0 var(--line-subtle);
+}
+
+.starter-pack-card.is-added:active:not(:has(button:active)) {
+  transform: none;
+  box-shadow: none;
 }
 
 .starter-pack-head {
@@ -6487,6 +6505,7 @@ kbd {
   font-size: 12px;
   font-weight: 600;
   color: var(--ink-soft);
+  cursor: default;
 }
 
 .starter-pack-btn {
@@ -6557,6 +6576,7 @@ kbd {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  cursor: default;
 }
 
 .starter-pack-confirm-text {
