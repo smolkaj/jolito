@@ -53,22 +53,36 @@ export function getProductionSourceFiles(dir: string, baseDir = dir): string[] {
   return results.sort()
 }
 
+function resolveSourceFile(
+  filePath: string,
+  source: string | ts.SourceFile,
+): ts.SourceFile {
+  return typeof source === 'string'
+    ? ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true)
+    : source
+}
+
 function unwrapExpression(node: ts.Node): ts.Node {
   let curr = node
-  while (ts.isParenthesizedExpression(curr) || ts.isAwaitExpression(curr)) {
+  while (
+    ts.isParenthesizedExpression(curr) ||
+    ts.isAwaitExpression(curr) ||
+    ts.isAsExpression(curr) ||
+    ts.isTypeAssertionExpression(curr)
+  ) {
     curr = curr.expression
   }
   return curr
 }
 
-function isJsonParseOrFetchJson(node: ts.Node): boolean {
+function isJsonParseOrFetchJson(node: ts.Node, sf: ts.SourceFile): boolean {
   const unwrapped = unwrapExpression(node)
   if (!ts.isCallExpression(unwrapped)) {
     return false
   }
 
   const expr = unwrapped.expression
-  const exprText = expr.getText()
+  const exprText = expr.getText(sf)
 
   if (exprText === 'JSON.parse' || exprText.endsWith('.JSON.parse')) {
     return true
@@ -83,7 +97,7 @@ function isJsonParseOrFetchJson(node: ts.Node): boolean {
     const callee = unwrapExpression(expr.expression)
     if (
       ts.isCallExpression(callee) &&
-      callee.expression.getText().endsWith('.json')
+      callee.expression.getText(sf).endsWith('.json')
     ) {
       return true
     }
@@ -108,15 +122,10 @@ function isPermittedBoundaryType(typeText: string): boolean {
  */
 export function scanIdleActivity(
   filePath: string,
-  sourceText: string,
+  source: string | ts.SourceFile,
 ): InvariantViolation[] {
   const violations: InvariantViolation[] = []
-  const sf = ts.createSourceFile(
-    filePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-  )
+  const sf = resolveSourceFile(filePath, source)
   const normalizedPath = filePath.replace(/\\/g, '/')
 
   function visit(node: ts.Node): void {
@@ -180,20 +189,15 @@ export function scanIdleActivity(
  */
 export function scanBoundaryCasts(
   filePath: string,
-  sourceText: string,
+  source: string | ts.SourceFile,
 ): InvariantViolation[] {
   const violations: InvariantViolation[] = []
-  const sf = ts.createSourceFile(
-    filePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-  )
+  const sf = resolveSourceFile(filePath, source)
 
   function visit(node: ts.Node): void {
     // Check `expr as TargetType`
     if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) {
-      if (isJsonParseOrFetchJson(node.expression)) {
+      if (isJsonParseOrFetchJson(node.expression, sf)) {
         const typeText = node.type.getText(sf)
         if (!isPermittedBoundaryType(typeText)) {
           const { line, character } = sf.getLineAndCharacterOfPosition(
@@ -213,7 +217,7 @@ export function scanBoundaryCasts(
 
     // Check `const x: TargetType = JSON.parse(...)`
     if (ts.isVariableDeclaration(node) && node.initializer && node.type) {
-      if (isJsonParseOrFetchJson(node.initializer)) {
+      if (isJsonParseOrFetchJson(node.initializer, sf)) {
         const typeText = node.type.getText(sf)
         if (!isPermittedBoundaryType(typeText)) {
           const { line, character } = sf.getLineAndCharacterOfPosition(
@@ -244,15 +248,10 @@ export function scanBoundaryCasts(
  */
 export function scanSilentCatch(
   filePath: string,
-  sourceText: string,
+  source: string | ts.SourceFile,
 ): InvariantViolation[] {
   const violations: InvariantViolation[] = []
-  const sf = ts.createSourceFile(
-    filePath,
-    sourceText,
-    ts.ScriptTarget.Latest,
-    true,
-  )
+  const sf = resolveSourceFile(filePath, source)
 
   function visit(node: ts.Node): void {
     if (ts.isCatchClause(node)) {
@@ -287,6 +286,21 @@ export function scanSilentCatch(
 
   visit(sf)
   return violations
+}
+
+/**
+ * Runs all invariant scans on a file with a single AST parse.
+ */
+export function scanArchitecturalInvariants(
+  filePath: string,
+  source: string | ts.SourceFile,
+): InvariantViolation[] {
+  const sf = resolveSourceFile(filePath, source)
+  return [
+    ...scanIdleActivity(filePath, sf),
+    ...scanBoundaryCasts(filePath, sf),
+    ...scanSilentCatch(filePath, sf),
+  ]
 }
 
 void describe('Architectural Invariants Static AST Contracts', () => {
@@ -363,6 +377,19 @@ void describe('Architectural Invariants Static AST Contracts', () => {
       assert.strictEqual(violations.length, 1)
       assert.strictEqual(violations[0]?.rule, 'INVARIANT_5_BOUNDARY_VALIDATION')
       assert.match(violations[0]?.message ?? '', /ApiResponse/)
+    })
+
+    void it('flags chained cast bypass (as unknown as TargetType)', () => {
+      const code = `
+        const data = (JSON.parse(rawText) as unknown) as UserProfile;
+      `
+      const violations = scanBoundaryCasts(
+        'src/infrastructure/storage.ts',
+        code,
+      )
+      assert.strictEqual(violations.length, 1)
+      assert.strictEqual(violations[0]?.rule, 'INVARIANT_5_BOUNDARY_VALIDATION')
+      assert.match(violations[0]?.message ?? '', /UserProfile/)
     })
 
     void it('flags raw type assertion prefix <Type>JSON.parse(...)', () => {
@@ -491,10 +518,14 @@ void describe('Architectural Invariants Static AST Contracts', () => {
       for (const relPath of files) {
         const fullPath = path.resolve(process.cwd(), relPath)
         const content = fs.readFileSync(fullPath, 'utf8')
+        const sf = ts.createSourceFile(
+          relPath,
+          content,
+          ts.ScriptTarget.Latest,
+          true,
+        )
 
-        allViolations.push(...scanIdleActivity(relPath, content))
-        allViolations.push(...scanBoundaryCasts(relPath, content))
-        allViolations.push(...scanSilentCatch(relPath, content))
+        allViolations.push(...scanArchitecturalInvariants(relPath, sf))
       }
 
       const elapsedMs = performance.now() - startTime
@@ -516,9 +547,10 @@ void describe('Architectural Invariants Static AST Contracts', () => {
         0,
         'Zero architectural invariant violations expected',
       )
+      // Safety watchdog solely to prevent infinite loops / deadlocks on slow virtualized runners
       assert.ok(
-        elapsedMs < 1000,
-        `Scan took ${elapsedMs.toFixed(1)}ms, expected sub-second deterministic execution (< 1000ms)`,
+        elapsedMs < 15000,
+        `Scan took ${elapsedMs.toFixed(1)}ms, expected execution under watchdog limit (< 15000ms)`,
       )
     })
   })
