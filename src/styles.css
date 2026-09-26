@@ -5529,7 +5529,7 @@ kbd {
 
 /* Deck Manager Layout */
 .deck-page {
-  gap: 28px;
+  gap: 20px;
 }
 
 .deck-layout {
@@ -5537,14 +5537,14 @@ kbd {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .deck-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -5654,7 +5654,7 @@ kbd {
 .deck-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .deck-search-wrap {
@@ -5928,6 +5928,7 @@ kbd {
   letter-spacing: inherit;
   color: inherit;
   cursor: pointer;
+  white-space: nowrap;
   transition: color 120ms ease;
 }
 
@@ -5957,17 +5958,19 @@ kbd {
   border-radius: 16px;
   background: var(--card);
   box-shadow: var(--shadow-sm);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .deck-list-table-header {
   display: grid;
   grid-template-columns:
-    36px minmax(95px, 110px) minmax(140px, 1.2fr) minmax(140px, 1fr)
-    minmax(85px, 95px) minmax(85px, 95px) minmax(80px, 90px);
+    32px minmax(76px, 90px) minmax(110px, 1.25fr) minmax(110px, 1fr)
+    minmax(72px, 80px) minmax(72px, 80px) minmax(64px, 74px);
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px;
+  gap: 10px;
+  padding: 8px 14px;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -5975,17 +5978,18 @@ kbd {
   color: var(--ink-muted);
   background: var(--paper-subtle);
   border-bottom: 2px solid var(--line);
+  min-width: 624px;
 }
 
 .deck-card-row {
   display: grid;
   grid-template-columns:
-    36px minmax(95px, 110px) minmax(140px, 1.2fr) minmax(140px, 1fr)
-    minmax(85px, 95px) minmax(85px, 95px) minmax(80px, 90px);
+    32px minmax(76px, 90px) minmax(110px, 1.25fr) minmax(110px, 1fr)
+    minmax(72px, 80px) minmax(72px, 80px) minmax(64px, 74px);
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px;
-  min-height: 52px;
+  gap: 10px;
+  padding: 8px 14px;
+  min-height: 44px;
   border: none;
   border-bottom: 1px solid var(--line-light);
   border-radius: 0;
@@ -5995,6 +5999,7 @@ kbd {
   transition:
     background 120ms ease,
     border-color 120ms ease;
+  min-width: 624px;
 }
 
 .deck-card-row:last-child {
@@ -6139,9 +6144,11 @@ kbd {
 
   .deck-cards-list.is-compact {
     border-radius: 14px;
+    overflow-x: visible;
   }
 
   .deck-card-row {
+    min-width: 0;
     display: grid;
     grid-template-columns: 28px auto auto auto 1fr;
     grid-template-areas:

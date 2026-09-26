@@ -43,6 +43,16 @@ const SORT_ORDER_LABELS: Record<DeckSortOrder, string> = {
   'status-desc': 'Due last',
 }
 
+function cycleSortOrder(
+  current: DeckSortOrder,
+  primary: DeckSortOrder,
+  secondary: DeckSortOrder,
+): DeckSortOrder {
+  if (current === primary) return secondary
+  if (current === secondary) return 'created-desc'
+  return primary
+}
+
 export interface DeckManagerViewProps {
   cards: StudyCard[]
   vocabularyCards: StudyCard[]
@@ -514,13 +524,11 @@ export function DeckManagerView({
                   <button
                     type="button"
                     className="deck-sort-header-btn"
-                    onClick={() => {
-                      setDeckSortOrder((current) => {
-                        if (current === 'direction-asc') return 'direction-desc'
-                        if (current === 'direction-desc') return 'created-desc'
-                        return 'direction-asc'
-                      })
-                    }}
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'direction-asc', 'direction-desc'),
+                      )
+                    }
                     aria-label="Sort by direction"
                   >
                     <span>Direction</span>
@@ -550,13 +558,11 @@ export function DeckManagerView({
                   <button
                     type="button"
                     className="deck-sort-header-btn"
-                    onClick={() => {
-                      setDeckSortOrder((current) => {
-                        if (current === 'alpha-asc') return 'alpha-desc'
-                        if (current === 'alpha-desc') return 'created-desc'
-                        return 'alpha-asc'
-                      })
-                    }}
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'alpha-asc', 'alpha-desc'),
+                      )
+                    }
                     aria-label="Sort by prompt"
                   >
                     <span>Prompt</span>
@@ -586,13 +592,11 @@ export function DeckManagerView({
                   <button
                     type="button"
                     className="deck-sort-header-btn"
-                    onClick={() => {
-                      setDeckSortOrder((current) => {
-                        if (current === 'answer-asc') return 'answer-desc'
-                        if (current === 'answer-desc') return 'created-desc'
-                        return 'answer-asc'
-                      })
-                    }}
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'answer-asc', 'answer-desc'),
+                      )
+                    }
                     aria-label="Sort by answer"
                   >
                     <span>Answer</span>
@@ -622,14 +626,11 @@ export function DeckManagerView({
                   <button
                     type="button"
                     className="deck-sort-header-btn"
-                    onClick={() => {
-                      setDeckSortOrder((current) => {
-                        if (current === 'difficulty-desc')
-                          return 'difficulty-asc'
-                        if (current === 'difficulty-asc') return 'created-desc'
-                        return 'difficulty-desc'
-                      })
-                    }}
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'difficulty-desc', 'difficulty-asc'),
+                      )
+                    }
                     aria-label="Sort by difficulty"
                   >
                     <span>Difficulty</span>
@@ -659,13 +660,11 @@ export function DeckManagerView({
                   <button
                     type="button"
                     className="deck-sort-header-btn"
-                    onClick={() => {
-                      setDeckSortOrder((current) => {
-                        if (current === 'mastery-desc') return 'mastery-asc'
-                        if (current === 'mastery-asc') return 'created-desc'
-                        return 'mastery-desc'
-                      })
-                    }}
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'mastery-desc', 'mastery-asc'),
+                      )
+                    }
                     aria-label="Sort by mastery"
                   >
                     <span>Mastery</span>
@@ -695,13 +694,11 @@ export function DeckManagerView({
                   <button
                     type="button"
                     className="deck-sort-header-btn"
-                    onClick={() => {
-                      setDeckSortOrder((current) => {
-                        if (current === 'status-asc') return 'status-desc'
-                        if (current === 'status-desc') return 'created-desc'
-                        return 'status-asc'
-                      })
-                    }}
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'status-asc', 'status-desc'),
+                      )
+                    }
                     aria-label="Sort by status"
                   >
                     <span>Status</span>
