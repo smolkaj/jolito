@@ -6329,7 +6329,9 @@ describe('Jolito', () => {
 
       // 5. Click Remove -> inline confirmation appears
       await user.click(removeBtn)
-      expect(screen.getByText(/Remove 72 cards\?/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/Remove 72 cards from deck\?/i),
+      ).toBeInTheDocument()
 
       // 6. Confirm removal
       await user.click(

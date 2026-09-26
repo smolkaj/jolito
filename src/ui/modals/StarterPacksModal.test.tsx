@@ -402,9 +402,9 @@ describe('StarterPacksModal', () => {
     })
     expect(removeBtn).toBeInTheDocument()
 
-    // Clicking Remove prompts for confirmation
+    // Clicking Remove prompts for confirmation and focuses Cancel
     fireEvent.click(removeBtn)
-    expect(screen.getByText(/Remove 72 cards\?/i)).toBeInTheDocument()
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
 
     // Confirm button executes onRemovePack
     const confirmBtn = screen.getByRole('button', {
@@ -417,7 +417,7 @@ describe('StarterPacksModal', () => {
     )
   })
 
-  it('allows cancelling pack removal confirmation via Cancel button or Escape key', () => {
+  it('allows cancelling pack removal confirmation via Cancel button or Escape key and restores focus', () => {
     const streetPack = findStarterPack('mexican-street-phrases')!
     const allStreetCards = streetPack.createCards(0)
     const onRemovePack = vi.fn()
@@ -437,26 +437,38 @@ describe('StarterPacksModal', () => {
       name: /Remove Mexican Street Phrases from deck/i,
     })
     fireEvent.click(removeBtn)
-    expect(screen.getByText(/Remove 72 cards\?/i)).toBeInTheDocument()
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
 
-    // Cancel button resets confirmation
+    // Cancel button is focused on open
     const cancelBtn = screen.getByRole('button', {
       name: /Cancel removing Mexican Street Phrases/i,
     })
-    fireEvent.click(cancelBtn)
-    expect(screen.queryByText(/Remove 72 cards\?/i)).toBeNull()
-    expect(onRemovePack).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(cancelBtn)
 
-    // Escape key resets confirmation without closing modal
-    fireEvent.click(
+    // Cancel button resets confirmation and restores focus to Remove button
+    fireEvent.click(cancelBtn)
+    expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
+    expect(onRemovePack).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(
       screen.getByRole('button', {
         name: /Remove Mexican Street Phrases from deck/i,
       }),
     )
-    expect(screen.getByText(/Remove 72 cards\?/i)).toBeInTheDocument()
+
+    // Escape key resets confirmation and restores focus to Remove button
+    const removeBtnAgain = screen.getByRole('button', {
+      name: /Remove Mexican Street Phrases from deck/i,
+    })
+    fireEvent.click(removeBtnAgain)
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
     fireEvent.keyDown(window, { key: 'Escape' })
-    expect(screen.queryByText(/Remove 72 cards\?/i)).toBeNull()
+    expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
     expect(onClose).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      }),
+    )
   })
 
   it('allows removing a pack from within the inspect toolbar', () => {

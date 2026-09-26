@@ -6507,17 +6507,22 @@ kbd {
 .starter-pack-btn.is-remove {
   background: var(--paper);
   border: 1.5px solid var(--line-subtle);
-  color: var(--rosa-dark);
+  color: var(--tezontle-dark);
   font-size: 12.5px;
   font-weight: 600;
   padding: 0 12px;
 }
 
 .starter-pack-btn.is-remove:hover {
-  background: var(--rosa-soft);
-  border-color: var(--rosa);
-  color: var(--rosa);
+  background: var(--tezontle-soft);
+  border-color: var(--tezontle);
+  color: var(--tezontle-dark);
   transform: translateY(-1px);
+}
+
+.starter-pack-btn.is-remove:focus-visible {
+  outline: 2px solid var(--tezontle);
+  outline-offset: 2px;
 }
 
 .starter-pack-btn.is-confirm {
@@ -6526,12 +6531,23 @@ kbd {
   border: 1.5px solid var(--line);
   font-size: 12.5px;
   font-weight: 700;
-  padding: 0 12px;
+  padding: 0 14px;
 }
 
 .starter-pack-btn.is-confirm:hover {
   background: var(--btn-danger-hover-bg);
   transform: translateY(-1px);
+}
+
+.starter-pack-btn.is-confirm:focus-visible {
+  outline: 2px solid var(--tezontle);
+  outline-offset: 2px;
+}
+
+.starter-pack-btn.is-cancel {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 14px;
 }
 
 .starter-pack-confirm-wrap {
@@ -6544,7 +6560,7 @@ kbd {
 .starter-pack-confirm-text {
   font-size: 12px;
   font-weight: 700;
-  color: var(--rosa-dark);
+  color: var(--tezontle-dark);
 }
 
 /* Pack Inspection Drill-Down View */
@@ -6799,24 +6815,25 @@ kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  height: 24px;
-  min-height: 24px;
-  padding: 0 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 10px;
   border-radius: 999px;
-  border: 1px solid var(--line-subtle);
+  border: 1.5px solid var(--line-subtle);
   background: var(--paper);
   color: var(--ink-soft);
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: none;
   transition: all 120ms ease;
 }
 
 .inspect-item-remove-btn:hover {
-  background: var(--rosa-soft);
-  border-color: var(--rosa);
-  color: var(--rosa);
+  background: var(--tezontle-soft);
+  border-color: var(--tezontle);
+  color: var(--tezontle-dark);
   transform: translateY(-1px);
 }
 
@@ -6825,7 +6842,7 @@ kbd {
 }
 
 .inspect-item-remove-btn:focus-visible {
-  outline: 2px solid var(--rosa);
+  outline: 2px solid var(--tezontle);
   outline-offset: 2px;
 }
 

@@ -334,8 +334,7 @@ describe('DeckManagerView', () => {
       name: /Remove Mexican Street Phrases from deck/i,
     })
     await user.click(removeBtn)
-
-    expect(screen.getByText(/Remove 72 cards\?/i)).toBeInTheDocument()
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
 
     // Confirm removal
     const confirmBtn = screen.getByRole('button', {

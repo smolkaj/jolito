@@ -42,6 +42,8 @@ function StarterPacksModalInner({
   const lastInspectedPackIdRef = useRef<string | null>(null)
   const saveErrorRef = useRef<HTMLParagraphElement>(null)
   const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const confirmCancelBtnRef = useRef<HTMLButtonElement | null>(null)
+  const lastConfirmingRemovePackIdRef = useRef<string | null>(null)
 
   const [inspectingPackId, setInspectingPackId] = useState<string | null>(null)
   const [addingPackId, setAddingPackId] = useState<string | null>(null)
@@ -107,6 +109,19 @@ function StarterPacksModalInner({
       lastInspectedPackIdRef.current = null
     }
   }, [inspectingPackId])
+
+  useEffect(() => {
+    if (confirmingRemovePackId) {
+      confirmCancelBtnRef.current?.focus()
+    } else if (lastConfirmingRemovePackIdRef.current) {
+      const targetId = lastConfirmingRemovePackIdRef.current
+      const removeBtn = modalRef.current?.querySelector<HTMLButtonElement>(
+        `[data-remove-pack-id="${targetId}"]`,
+      )
+      removeBtn?.focus()
+      lastConfirmingRemovePackIdRef.current = null
+    }
+  }, [confirmingRemovePackId])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -312,76 +327,67 @@ function StarterPacksModalInner({
                         {inspectDeckCount === 1 ? 'card' : 'cards'} from deck?
                       </span>
                       <button
+                        ref={confirmCancelBtnRef}
                         type="button"
-                        className="danger-button starter-pack-btn is-confirm"
-                        onClick={() => handleRemovePack(inspectingPack)}
-                        aria-label={`Confirm remove ${inspectingPack.title} from deck`}
-                      >
-                        Confirm remove
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary-button starter-pack-btn"
+                        className="secondary-button starter-pack-btn is-cancel"
                         onClick={() => setConfirmingRemovePackId(null)}
                         aria-label="Cancel removing pack"
                       >
                         Cancel
                       </button>
-                    </div>
-                  ) : isAllAdded ? (
-                    <>
                       <button
                         type="button"
-                        className="secondary-button starter-pack-btn is-complete"
-                        disabled
-                        aria-label={`${inspectingPack.title} is already added to your deck`}
+                        className="danger-button starter-pack-btn is-confirm"
+                        onClick={() => handleRemovePack(inspectingPack)}
+                        aria-label={`Confirm remove ${inspectingPack.title} from deck`}
                       >
-                        ✓ In your deck
+                        Confirm
                       </button>
-                      {onRemovePack && inspectDeckCount > 0 && (
-                        <button
-                          type="button"
-                          className="danger-button starter-pack-btn is-remove"
-                          onClick={() =>
-                            setConfirmingRemovePackId(inspectingPack.id)
-                          }
-                          aria-label={`Remove ${inspectingPack.title} from deck`}
-                        >
-                          Remove pack
-                        </button>
-                      )}
-                    </>
+                    </div>
                   ) : (
                     <>
                       {onRemovePack && inspectDeckCount > 0 && (
                         <button
                           type="button"
-                          className="danger-button starter-pack-btn is-remove"
-                          onClick={() =>
+                          data-remove-pack-id={`inspect-${inspectingPack.id}`}
+                          className="secondary-button starter-pack-btn is-remove"
+                          onClick={() => {
+                            lastConfirmingRemovePackIdRef.current = `inspect-${inspectingPack.id}`
                             setConfirmingRemovePackId(inspectingPack.id)
-                          }
+                          }}
                           aria-label={`Remove ${inspectingPack.title} from deck`}
                         >
-                          Remove added
+                          Remove pack
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="primary-button starter-pack-btn"
-                        disabled={addingPackId === inspectingPack.id}
-                        onClick={() => handleAdd(inspectingPack)}
-                        aria-label={
-                          existingCount > 0
-                            ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${inspectingPack.title}`
-                            : `Add ${inspectingPack.title} (${inspectingPack.cardCount} cards)`
-                        }
-                      >
-                        {addingPackId === inspectingPack.id
-                          ? 'Adding…'
-                          : existingCount > 0
-                            ? `Add remaining (+${remainingCount})`
-                            : `Add pack (+${inspectingPack.cardCount})`}
-                      </button>
+                      {isAllAdded ? (
+                        <button
+                          type="button"
+                          className="secondary-button starter-pack-btn is-complete"
+                          disabled
+                          aria-label={`${inspectingPack.title} is already added to your deck`}
+                        >
+                          ✓ In your deck
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="primary-button starter-pack-btn"
+                          disabled={addingPackId === inspectingPack.id}
+                          onClick={() => handleAdd(inspectingPack)}
+                          aria-label={
+                            existingCount > 0
+                              ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${inspectingPack.title}`
+                              : `Add ${inspectingPack.title} (${inspectingPack.cardCount} cards)`
+                          }
+                        >
+                          {addingPackId === inspectingPack.id
+                            ? 'Adding…'
+                            : existingCount > 0
+                              ? `Add remaining (+${remainingCount})`
+                              : `Add pack (+${inspectingPack.cardCount})`}
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -570,8 +576,17 @@ function StarterPacksModalInner({
                         <div className="starter-pack-confirm-wrap">
                           <span className="starter-pack-confirm-text">
                             Remove {deckCardCount}{' '}
-                            {deckCardCount === 1 ? 'card' : 'cards'}?
+                            {deckCardCount === 1 ? 'card' : 'cards'} from deck?
                           </span>
+                          <button
+                            ref={confirmCancelBtnRef}
+                            type="button"
+                            className="secondary-button starter-pack-btn is-cancel"
+                            onClick={() => setConfirmingRemovePackId(null)}
+                            aria-label={`Cancel removing ${pack.title}`}
+                          >
+                            Cancel
+                          </button>
                           <button
                             type="button"
                             className="danger-button starter-pack-btn is-confirm"
@@ -579,14 +594,6 @@ function StarterPacksModalInner({
                             aria-label={`Confirm remove ${pack.title} from deck`}
                           >
                             Confirm
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary-button starter-pack-btn"
-                            onClick={() => setConfirmingRemovePackId(null)}
-                            aria-label={`Cancel removing ${pack.title}`}
-                          >
-                            Cancel
                           </button>
                         </div>
                       ) : (
@@ -596,61 +603,47 @@ function StarterPacksModalInner({
                               {existingCount} of {pack.cardCount} cards in deck
                             </span>
                           )}
+                          {onRemovePack && deckCardCount > 0 && (
+                            <button
+                              type="button"
+                              data-remove-pack-id={pack.id}
+                              className="secondary-button starter-pack-btn is-remove"
+                              onClick={() => {
+                                lastConfirmingRemovePackIdRef.current = pack.id
+                                setConfirmingRemovePackId(pack.id)
+                              }}
+                              aria-label={`Remove ${pack.title} from deck`}
+                            >
+                              Remove
+                            </button>
+                          )}
                           {isAllAdded ? (
-                            <>
-                              <button
-                                type="button"
-                                className="secondary-button starter-pack-btn is-complete"
-                                disabled
-                                aria-label={`${pack.title} is already added to your deck`}
-                              >
-                                ✓ In your deck
-                              </button>
-                              {onRemovePack && deckCardCount > 0 && (
-                                <button
-                                  type="button"
-                                  className="danger-button starter-pack-btn is-remove"
-                                  onClick={() =>
-                                    setConfirmingRemovePackId(pack.id)
-                                  }
-                                  aria-label={`Remove ${pack.title} from deck`}
-                                >
-                                  Remove
-                                </button>
-                              )}
-                            </>
+                            <button
+                              type="button"
+                              className="secondary-button starter-pack-btn is-complete"
+                              disabled
+                              aria-label={`${pack.title} is already added to your deck`}
+                            >
+                              ✓ In your deck
+                            </button>
                           ) : (
-                            <>
-                              {onRemovePack && deckCardCount > 0 && (
-                                <button
-                                  type="button"
-                                  className="danger-button starter-pack-btn is-remove"
-                                  onClick={() =>
-                                    setConfirmingRemovePackId(pack.id)
-                                  }
-                                  aria-label={`Remove ${pack.title} from deck`}
-                                >
-                                  Remove
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className="primary-button starter-pack-btn"
-                                disabled={addingPackId === pack.id}
-                                onClick={() => handleAdd(pack)}
-                                aria-label={
-                                  existingCount > 0
-                                    ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${pack.title}`
-                                    : `Add ${pack.title} (${pack.cardCount} cards)`
-                                }
-                              >
-                                {addingPackId === pack.id
-                                  ? 'Adding…'
-                                  : existingCount > 0
-                                    ? `Add remaining (+${remainingCount})`
-                                    : `Add pack (+${pack.cardCount})`}
-                              </button>
-                            </>
+                            <button
+                              type="button"
+                              className="primary-button starter-pack-btn"
+                              disabled={addingPackId === pack.id}
+                              onClick={() => handleAdd(pack)}
+                              aria-label={
+                                existingCount > 0
+                                  ? `Add remaining ${remainingCount} ${remainingCount === 1 ? 'card' : 'cards'} from ${pack.title}`
+                                  : `Add ${pack.title} (${pack.cardCount} cards)`
+                              }
+                            >
+                              {addingPackId === pack.id
+                                ? 'Adding…'
+                                : existingCount > 0
+                                  ? `Add remaining (+${remainingCount})`
+                                  : `Add pack (+${pack.cardCount})`}
+                            </button>
                           )}
                         </>
                       )}
