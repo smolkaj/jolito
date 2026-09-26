@@ -1,21 +1,28 @@
 # Working concurrently
 
-The repository root is a read-only checkout. Work exclusively in isolated Git worktrees:
+The repository root is a read-only checkout. Work exclusively in isolated Git worktrees using the automated lifecycle manager:
 
 ```sh
-git switch main && git pull --ff-only origin main
-git worktree add -b <agent>/<task> ../jolito-<task> origin/main
+# Create a clean worktree branched from latest origin/main with symlinked node_modules:
+npm run agent:worktree -- start <task>
 
-# Clean up after merging.
-git worktree remove ../jolito-<task> && git worktree prune
+# Inspect active worktrees and merge status:
+npm run agent:worktree -- list
+
+# Safely clean up merged worktrees after landing:
+npm run agent:worktree -- clean
 ```
 
-- `<agent>` is your short ID (e.g. `agy`, `codex`, `claude`); `<task>` is short yet descriptive.
-- Never touch another agent's worktree. Clean up only your own worktrees after merging.
+- `<agent>` is your short ID (e.g. `agy`, `codex`, `claude`); `<task>` is short yet descriptive. `agent:worktree start` automatically prefixes the branch with your active agent ID (`process.env.AGENT_ID || 'agy'`).
+- Never touch another agent's worktree. `agent:worktree clean` automatically respects agent boundaries and only removes worktrees belonging to the active agent.
 - One branch and PR per task.
 - Never push directly to `main`; always open an upstream PR.
 - Open PRs proactively and early; share them with the user for review.
-- Always proactively provide the live branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
+- Always proactively synchronize on the live Cloudflare branch preview with:
+  ```sh
+  npm run preview:wait
+  ```
+  and provide the live preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and PR link when reporting progress or requesting review.
 - Never merge PRs without explicit user approval.
 - Once explicitly approved by the user and having passed the independent review loop, enqueue the PR for serialized landing:
   ```sh
@@ -29,7 +36,30 @@ git worktree remove ../jolito-<task> && git worktree prune
 
 - The user connects remotely over `ghostty` + `mosh` + `zellij`.
 - Because `mosh` synchronizes character cells and drops terminal graphics protocols (Kitty / Sixel), terminal `chafa` previews render via Unicode character glyphs with low resolution (insufficient for fine typography). Do not provide terminal `chafa` preview commands.
-- For UI inspections and visual verification, provide the live Cloudflare branch preview URL (`https://<branch-name>-jolito.smolkaj.workers.dev`) and GitHub PR image diffs/attachments. If sharing preview captures before opening a PR, upload rendered preview images to a viewable web host with at least 24–72h persistence (e.g. Litterbox 72h: `curl -s -F "reqtype=fileupload" -F "time=72h" -F "fileToUpload=@<path>" https://litterbox.catbox.moe/resources/internals/api.php`) so the user can inspect high-resolution visuals directly in the browser.
+- For UI inspections and visual verification, use the automated visual verification tool:
+  ```sh
+  npm run verify:ui
+  # Or targeted: npm run verify:ui -- --route /deck --theme dark
+  ```
+  This boots an ephemeral Vite preview server on an isolated port (`port: 0`), captures mobile (`390x844 @2x`) and desktop (`1280x800`) across light and dark modes with mock authentication and safe areas, uploads captures to Litterbox (72h retention), and formats a ready-to-paste markdown preview table and direct image diffs.
+- Before sharing preview links, synchronize on the live Cloudflare branch preview with:
+  ```sh
+  npm run preview:wait
+  ```
+  which automatically derives the branch subdomain, polls with exponential backoff, and confirms HTTP 200 and valid application markup before you post.
+
+# Fast local iteration & smoke testing
+
+- Use the fast local smoke suite before running full verification:
+  ```sh
+  npm run test:e2e:smoke
+  ```
+  Validates app bootstrap, study card flip & rating (1–4), audio playback initiation, and deck table sorting/filtering in ~2.8s on Chromium with zero network or cloud dependencies.
+- Full gate check prior to review:
+  ```sh
+  npm run check
+  ```
+  Runs format check, lint, strict TypeScript, Vitest with coverage, release tests (including architectural invariant AST checks), and production builds.
 
 # Hindsight reflection
 
