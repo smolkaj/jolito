@@ -81,18 +81,18 @@ export function grammarContext(card: GrammarCard) {
       .replace('{ir}', cueSubject + preteriteVerbs.ir.forms[person]!)
       .replace('{llegar}', cueSubject + preteriteVerbs.llegar.forms[person]!),
   )
+  const isThirdPersonSingular = person === 2 && variant === 0
   const translate = (text: string) =>
     text
-      .replace('{have}', person === 2 && variant === 0 ? 'has' : 'have')
+      .replace('{have}', isThirdPersonSingular ? 'has' : 'have')
       .replace(
         '{be}',
-        person === 0 ? 'am' : person === 2 && variant === 0 ? 'is' : 'are',
+        person === 0 ? 'am' : isThirdPersonSingular ? 'is' : 'are',
       )
       .replace('{subject}', englishSubjects[person]!)
-      .replace(
-        '{was}',
-        person === 0 || (person === 2 && variant === 0) ? 'was' : 'were',
-      )
+      .replace('{was}', person === 0 || isThirdPersonSingular ? 'was' : 'were')
+      .replace('{s}', isThirdPersonSingular ? 's' : '')
+      .replace('{es}', isThirdPersonSingular ? 'es' : '')
   const subjectIsPronoun = variant === 1 || (person !== 2 && person !== 4)
   // Only highlight the subject pronoun when it immediately precedes the target
   // verb phrase. In coordinated sentences (e.g. "{subject} arrived home and [{be}]..."),

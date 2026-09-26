@@ -36,7 +36,7 @@ I am glad to report: **Memorization and I have become friends!**
 - **Fast keyboard & gesture flow:** Fly through reviews with `Enter` to reveal, `1`–`4` to grade, and `Space` for audio—or use natural mobile swipe gestures (swipe up to reveal, swipe horizontally to grade) with continuous spring settling.
 - **Ear-first immersion:** Spoken Mexican Spanish audio on prompts and answers with studio neural voices (alternating male/female), automatic playback on reveal, and smart prefetching.
 - **Active typed recall:** Produce language instead of tapping word bubbles. Instant visual diffs highlight spelling nuances while you retain full authority over self-grading.
-- **Focused grammar practice:** Bite-sized drills for tricky conjugations—Pretérito Indefinido, Pretérito Perfecto Compuesto, and Gerundio—with numbered accent shortcuts and subject-verb matching.
+- **Focused grammar practice:** Bite-sized drills for core conjugations—Presente, Pretérito Indefinido, Pretérito Perfecto Compuesto, and Gerundio—with numbered accent shortcuts and subject-verb matching.
 - **Curated Mexican Spanish starter packs:** Hit the ground running with built-in packs for top connectors, adjectives, idioms, and adverbs that merge semantically into your deck without overwriting your progress.
 - **Instant reciprocal cards:** Type a Spanish or English phrase to get instant translations, lemmas, and conjugations from a bundled Mexican Spanish dictionary, creating linked reciprocal cards simultaneously.
 - **Native iOS app:** Built for iPhone and iPad with tactile haptics, full offline support, and physical keyboard auto-detection.

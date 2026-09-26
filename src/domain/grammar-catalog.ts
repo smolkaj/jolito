@@ -1,9 +1,16 @@
+import { presentFamilies, presentVerbs } from './grammar-present'
 import { preteriteFamilies, preteriteVerbs } from './grammar-content'
 import { perfectFamilies, perfectVerbs } from './grammar-perfect'
 import { gerundFamilies, gerundVerbs } from './grammar-gerund'
 import type { GrammarVerb } from './grammar-catalog-types'
 
 export const grammarTopics = {
+  present: {
+    title: 'Presente',
+    description: 'Spanish present tense',
+    families: presentFamilies,
+    verbs: presentVerbs,
+  },
   preterite: {
     title: 'Pretérito indefinido',
     description: 'Spanish simple past',
