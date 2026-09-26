@@ -15,10 +15,16 @@ export type DeckSortOrder =
   | 'created-asc'
   | 'alpha-asc'
   | 'alpha-desc'
+  | 'answer-asc'
+  | 'answer-desc'
+  | 'direction-asc'
+  | 'direction-desc'
   | 'difficulty-desc'
   | 'difficulty-asc'
   | 'mastery-desc'
   | 'mastery-asc'
+  | 'status-asc'
+  | 'status-desc'
 
 export interface FilterDeckOptions {
   query?: string
@@ -90,9 +96,21 @@ function compareAlphabetical(left: string, right: string): number {
   })
 }
 
+function cardStatusRank(card: StudyCard, now: number): number {
+  if (isDue(card, now)) return 0
+  if (
+    card.schedule.state === 'learning' ||
+    card.schedule.state === 'relearning'
+  )
+    return 1
+  if (card.schedule.state === 'review') return 2
+  return 3
+}
+
 export function sortDeckCards(
   cards: StudyCard[],
   sortOrder: DeckSortOrder = 'created-desc',
+  now: number = Date.now(),
 ): StudyCard[] {
   const sorted = [...cards]
   return sorted.sort((left, right) => {
@@ -135,6 +153,28 @@ export function sortDeckCards(
         }
         return left.id.localeCompare(right.id)
       }
+      case 'answer-asc': {
+        const cmp = compareAlphabetical(left.answer, right.answer)
+        if (cmp !== 0) return cmp
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'answer-desc': {
+        const cmp = compareAlphabetical(right.answer, left.answer)
+        if (cmp !== 0) return cmp
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'direction-asc': {
+        if (left.direction !== right.direction) {
+          return left.direction === 'es-en' ? -1 : 1
+        }
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'direction-desc': {
+        if (left.direction !== right.direction) {
+          return left.direction === 'es-en' ? 1 : -1
+        }
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
       case 'difficulty-desc': {
         const diff =
           cardDifficultyLevel(right.schedule) -
@@ -167,6 +207,20 @@ export function sortDeckCards(
         if (diff !== 0) return diff
         const createdDiff = right.createdAt - left.createdAt
         if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'status-asc': {
+        const rankDiff = cardStatusRank(left, now) - cardStatusRank(right, now)
+        if (rankDiff !== 0) return rankDiff
+        const dueDiff = left.schedule.dueAt - right.schedule.dueAt
+        if (dueDiff !== 0) return dueDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'status-desc': {
+        const rankDiff = cardStatusRank(right, now) - cardStatusRank(left, now)
+        if (rankDiff !== 0) return rankDiff
+        const dueDiff = right.schedule.dueAt - left.schedule.dueAt
+        if (dueDiff !== 0) return dueDiff
         return compareAlphabetical(left.prompt, right.prompt)
       }
     }
@@ -235,5 +289,5 @@ export function filterDeckCards(
     return true
   })
 
-  return sortDeckCards(filtered, sortOrder)
+  return sortDeckCards(filtered, sortOrder, now)
 }

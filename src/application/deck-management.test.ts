@@ -476,6 +476,112 @@ describe('deck-management', () => {
       ).toEqual(['árbol', 'bueno', 'zapato'])
     })
 
+    it('sorts alphabetically by answer ascending (A to Z) and descending (Z to A)', () => {
+      const cardsWithAnswers = [
+        { ...testCards[0]!, answer: 'zebra' },
+        { ...testCards[1]!, answer: 'apple' },
+        { ...testCards[2]!, answer: 'banana' },
+      ]
+
+      const asc = sortDeckCards(cardsWithAnswers, 'answer-asc')
+      expect(asc.map((c) => c.answer)).toEqual(['apple', 'banana', 'zebra'])
+
+      const desc = sortDeckCards(cardsWithAnswers, 'answer-desc')
+      expect(desc.map((c) => c.answer)).toEqual(['zebra', 'banana', 'apple'])
+    })
+
+    it('sorts by direction (ES → EN first vs EN → ES first)', () => {
+      const mixedDirections = [
+        {
+          ...testCards[0]!,
+          prompt: 'cat',
+          direction: 'en-es' as const,
+        },
+        {
+          ...testCards[1]!,
+          prompt: 'gato',
+          direction: 'es-en' as const,
+        },
+        {
+          ...testCards[2]!,
+          prompt: 'perro',
+          direction: 'es-en' as const,
+        },
+      ]
+
+      const esFirst = sortDeckCards(mixedDirections, 'direction-asc')
+      expect(esFirst.map((c) => c.direction)).toEqual([
+        'es-en',
+        'es-en',
+        'en-es',
+      ])
+
+      const enFirst = sortDeckCards(mixedDirections, 'direction-desc')
+      expect(enFirst.map((c) => c.direction)).toEqual([
+        'en-es',
+        'es-en',
+        'es-en',
+      ])
+    })
+
+    it('sorts by status ascending (due first) and descending (due last)', () => {
+      const refNow = 1000000
+      const dueCard: StudyCard = {
+        ...testCards[0]!,
+        prompt: 'due-card',
+        schedule: {
+          ...testCards[0]!.schedule,
+          state: 'review',
+          dueAt: refNow - 1000, // overdue
+        },
+      }
+      const learningCard: StudyCard = {
+        ...testCards[1]!,
+        prompt: 'learning-card',
+        schedule: {
+          ...testCards[1]!.schedule,
+          state: 'learning',
+          dueAt: refNow + 5000,
+        },
+      }
+      const reviewCard: StudyCard = {
+        ...testCards[2]!,
+        prompt: 'review-card',
+        schedule: {
+          ...testCards[2]!.schedule,
+          state: 'review',
+          dueAt: refNow + 86400000,
+        },
+      }
+      const newCard: StudyCard = {
+        ...testCards[0]!,
+        prompt: 'new-card',
+        schedule: {
+          ...testCards[0]!.schedule,
+          state: 'new',
+          dueAt: refNow + 100000,
+        },
+      }
+
+      const cardsToSort = [newCard, reviewCard, learningCard, dueCard]
+
+      const dueFirst = sortDeckCards(cardsToSort, 'status-asc', refNow)
+      expect(dueFirst.map((c) => c.prompt)).toEqual([
+        'due-card',
+        'learning-card',
+        'review-card',
+        'new-card',
+      ])
+
+      const dueLast = sortDeckCards(cardsToSort, 'status-desc', refNow)
+      expect(dueLast.map((c) => c.prompt)).toEqual([
+        'new-card',
+        'review-card',
+        'learning-card',
+        'due-card',
+      ])
+    })
+
     it('orders bidirectional card pairs es-en before en-es on same creation time or prompt', () => {
       const pair = [
         {

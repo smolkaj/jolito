@@ -31,10 +31,16 @@ const SORT_ORDER_LABELS: Record<DeckSortOrder, string> = {
   'created-asc': 'Oldest first',
   'alpha-asc': 'Alphabetical (A–Z)',
   'alpha-desc': 'Alphabetical (Z–A)',
+  'answer-asc': 'Answer (A–Z)',
+  'answer-desc': 'Answer (Z–A)',
+  'direction-asc': 'ES → EN first',
+  'direction-desc': 'EN → ES first',
   'difficulty-desc': 'Spiciest first',
   'difficulty-asc': 'Mildest first',
   'mastery-desc': 'Highest mastery',
   'mastery-asc': 'Lowest mastery',
+  'status-asc': 'Due first',
+  'status-desc': 'Due last',
 }
 
 export interface DeckManagerViewProps {
@@ -494,8 +500,41 @@ export function DeckManagerView({
                     }
                   />
                 </label>
-                <div className="col-dir" role="columnheader">
-                  Direction
+                <div
+                  className="col-dir"
+                  role="columnheader"
+                  aria-sort={
+                    deckSortOrder === 'direction-asc'
+                      ? 'ascending'
+                      : deckSortOrder === 'direction-desc'
+                        ? 'descending'
+                        : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    className="deck-sort-header-btn"
+                    onClick={() => {
+                      setDeckSortOrder((current) => {
+                        if (current === 'direction-asc') return 'direction-desc'
+                        if (current === 'direction-desc') return 'created-desc'
+                        return 'direction-asc'
+                      })
+                    }}
+                    aria-label="Sort by direction"
+                  >
+                    <span>Direction</span>
+                    {deckSortOrder === 'direction-asc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↑
+                      </span>
+                    )}
+                    {deckSortOrder === 'direction-desc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↓
+                      </span>
+                    )}
+                  </button>
                 </div>
                 <div
                   className="col-phrase col-prompt"
@@ -533,8 +572,41 @@ export function DeckManagerView({
                     )}
                   </button>
                 </div>
-                <div className="col-phrase col-answer" role="columnheader">
-                  Answer
+                <div
+                  className="col-phrase col-answer"
+                  role="columnheader"
+                  aria-sort={
+                    deckSortOrder === 'answer-asc'
+                      ? 'ascending'
+                      : deckSortOrder === 'answer-desc'
+                        ? 'descending'
+                        : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    className="deck-sort-header-btn"
+                    onClick={() => {
+                      setDeckSortOrder((current) => {
+                        if (current === 'answer-asc') return 'answer-desc'
+                        if (current === 'answer-desc') return 'created-desc'
+                        return 'answer-asc'
+                      })
+                    }}
+                    aria-label="Sort by answer"
+                  >
+                    <span>Answer</span>
+                    {deckSortOrder === 'answer-asc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↑
+                      </span>
+                    )}
+                    {deckSortOrder === 'answer-desc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↓
+                      </span>
+                    )}
+                  </button>
                 </div>
                 <div
                   className="col-difficulty"
@@ -609,8 +681,41 @@ export function DeckManagerView({
                     )}
                   </button>
                 </div>
-                <div className="col-status" role="columnheader">
-                  Status
+                <div
+                  className="col-status"
+                  role="columnheader"
+                  aria-sort={
+                    deckSortOrder === 'status-asc'
+                      ? 'ascending'
+                      : deckSortOrder === 'status-desc'
+                        ? 'descending'
+                        : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    className="deck-sort-header-btn"
+                    onClick={() => {
+                      setDeckSortOrder((current) => {
+                        if (current === 'status-asc') return 'status-desc'
+                        if (current === 'status-desc') return 'created-desc'
+                        return 'status-asc'
+                      })
+                    }}
+                    aria-label="Sort by status"
+                  >
+                    <span>Status</span>
+                    {deckSortOrder === 'status-asc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↑
+                      </span>
+                    )}
+                    {deckSortOrder === 'status-desc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↓
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
 
