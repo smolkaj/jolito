@@ -64,10 +64,11 @@ export const collectionVersion = 4 as const
 export const collectionVersionSchema = z
   .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)])
   .transform(() => collectionVersion)
+export const grammarTopicSchema = z.enum(
+  Object.keys(grammarTopics) as [GrammarTopic, ...GrammarTopic[]],
+)
 export const grammarExerciseSchema = z.object({
-  topic: z.enum(
-    Object.keys(grammarTopics) as [GrammarTopic, ...GrammarTopic[]],
-  ),
+  topic: grammarTopicSchema,
   verb: z.string().min(1),
   person: z.number().int().min(0).max(4),
 })

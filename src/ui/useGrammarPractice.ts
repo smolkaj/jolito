@@ -1,6 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Clock } from '../application/ports'
-import { scheduleReview, type Grade, type StudyCard } from '../domain/card'
+import {
+  grammarTopicSchema,
+  scheduleReview,
+  type Grade,
+  type StudyCard,
+} from '../domain/card'
 import { reconcileStudyCards } from '../domain/sync'
 import { createStudySession } from '../domain/study-session'
 import {
@@ -11,24 +16,52 @@ import {
 import type { GrammarTopic, GrammarFocus } from '../domain/grammar-catalog'
 import { useStudySession } from './useStudySession'
 
+export const GRAMMAR_TOPIC_STORAGE_KEY = 'jolito-grammar-topic-v1'
+
+export type GrammarTopicStorage = Pick<Storage, 'getItem' | 'setItem'>
+
+function readPersistedTopic(storage?: GrammarTopicStorage): GrammarTopic {
+  try {
+    const raw = storage?.getItem(GRAMMAR_TOPIC_STORAGE_KEY)
+    const result = grammarTopicSchema.safeParse(raw)
+    if (result.success) return result.data
+  } catch {
+    // Storage access may throw in restricted sandboxes or private browsing
+  }
+  return 'preterite'
+}
+
+function persistTopic(topic: GrammarTopic, storage?: GrammarTopicStorage) {
+  try {
+    storage?.setItem(GRAMMAR_TOPIC_STORAGE_KEY, topic)
+  } catch {
+    // Ignore storage write failures in restricted environments
+  }
+}
+
 export function useGrammarPractice({
   cards,
   deletedCardIds,
   clock,
   save,
+  storage = typeof localStorage !== 'undefined' ? localStorage : undefined,
   onSessionStart,
 }: {
   cards: StudyCard[]
   deletedCardIds: string[]
   clock: Clock
   save: (card: GrammarCard) => void
+  storage?: GrammarTopicStorage
   onSessionStart?: () => void
 }) {
-  const [topic, setSelectedTopic] = useState<GrammarTopic>('preterite')
+  const [topic, setSelectedTopic] = useState<GrammarTopic>(() =>
+    readPersistedTopic(storage),
+  )
   const [focus, setFocus] = useState<GrammarFocus>('mixed')
   const setTopic = (topic: GrammarTopic) => {
     setSelectedTopic(topic)
     setFocus('mixed')
+    persistTopic(topic, storage)
   }
   const [mode, setMode] = useState<'choose' | 'practice' | 'complete'>('choose')
   const [snapshots, setSnapshots] = useState<GrammarCard[]>([])

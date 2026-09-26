@@ -1,12 +1,22 @@
 import { practiceCards, practiceGrammar } from '../test/practice'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SyncResult } from '../application/ports'
 import { App } from '../jolito'
 import { createTestServices } from '../test/services'
 import { GrammarPractice } from './GrammarPractice'
-import { useGrammarPractice } from './useGrammarPractice'
+import {
+  useGrammarPractice,
+  GRAMMAR_TOPIC_STORAGE_KEY,
+} from './useGrammarPractice'
 import {
   createGrammarCards,
   grammarContext,
@@ -22,6 +32,9 @@ async function begin() {
 }
 
 describe('grammar practice in Jolito', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
   it.each(['present', 'preterite', 'perfect', 'gerund'] as const)(
     'keeps one sentence playback control through %s recall, reveal, interruption and next card',
     async (topic) => {
@@ -578,5 +591,82 @@ describe('grammar practice in Jolito', () => {
       name: /regular endings.*difficulty: 0 of 3 chilies \(no heat\), mastery: 0 of 3 bubbles\./i,
     })
     expect(regularRadio).toBeInTheDocument()
+  })
+
+  it('persists selected grammar topic to localStorage and restores it across mounts', async () => {
+    localStorage.clear()
+    window.history.replaceState({}, '', '#/grammar')
+    const services = createTestServices()
+    const { unmount } = render(<App services={services} />)
+    const user = userEvent.setup()
+
+    expect(screen.getByRole('combobox', { name: 'Tense' })).toHaveValue(
+      'preterite',
+    )
+
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Tense' }),
+      'present',
+    )
+    expect(localStorage.getItem(GRAMMAR_TOPIC_STORAGE_KEY)).toBe('present')
+
+    unmount()
+
+    // Mount fresh instance to verify state initialization from localStorage
+    render(<App services={createTestServices()} />)
+    expect(screen.getByRole('combobox', { name: 'Tense' })).toHaveValue(
+      'present',
+    )
+    expect(screen.getByText('Spanish present tense')).toBeVisible()
+
+    localStorage.clear()
+  })
+
+  it('gracefully falls back to preterite when localStorage contains invalid topic data', () => {
+    localStorage.setItem(GRAMMAR_TOPIC_STORAGE_KEY, 'invalid-topic-xyz')
+    window.history.replaceState({}, '', '#/grammar')
+    const { unmount } = render(<App services={createTestServices()} />)
+
+    expect(screen.getByRole('combobox', { name: 'Tense' })).toHaveValue(
+      'preterite',
+    )
+
+    unmount()
+    localStorage.clear()
+  })
+
+  it('supports injecting custom storage for isolated topic persistence', () => {
+    const memory = new Map<string, string>()
+    const customStorage = {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => memory.set(key, value),
+    }
+
+    const { result, unmount } = renderHook(() =>
+      useGrammarPractice({
+        cards: [],
+        deletedCardIds: [],
+        clock: { now: () => 0 },
+        save: vi.fn(),
+        storage: customStorage,
+      }),
+    )
+
+    expect(result.current.topic).toBe('preterite')
+    act(() => result.current.setTopic('gerund'))
+    expect(memory.get(GRAMMAR_TOPIC_STORAGE_KEY)).toBe('gerund')
+    unmount()
+
+    const { result: reloaded } = renderHook(() =>
+      useGrammarPractice({
+        cards: [],
+        deletedCardIds: [],
+        clock: { now: () => 0 },
+        save: vi.fn(),
+        storage: customStorage,
+      }),
+    )
+
+    expect(reloaded.current.topic).toBe('gerund')
   })
 })

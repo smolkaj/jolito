@@ -1,8 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, it } from 'vitest'
+import { beforeEach, expect, it } from 'vitest'
 import { App } from '../jolito'
 import { createTestServices } from '../test/services'
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 it('keeps a present tense draft through tense selection and interruptions, then grades the conjugated form', async () => {
   window.history.replaceState({}, '', '#/grammar')
