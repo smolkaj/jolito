@@ -46,6 +46,14 @@ describe('MasteryBubbles', () => {
     expect(span).not.toHaveAttribute('aria-label')
     expect(span).not.toHaveAttribute('title')
   })
+
+  it('renders with default 42px width and matching 13px height', () => {
+    const { container } = render(<ProgressBubbles level={1} />)
+    const svg = container.querySelector('svg')
+    expect(svg).toHaveAttribute('viewBox', '0 0 42 13')
+    expect(svg).toHaveAttribute('width', '42')
+    expect(svg).toHaveAttribute('height', '13')
+  })
 })
 
 describe('ChiliMeter', () => {
@@ -98,6 +106,16 @@ describe('ChiliMeter', () => {
     expect(span).not.toHaveAttribute('role')
     expect(span).not.toHaveAttribute('aria-label')
     expect(span).not.toHaveAttribute('title')
+  })
+
+  it('renders chili icons with default 13px size', () => {
+    const { container } = render(<ChiliMeter level={1} />)
+    const svgs = container.querySelectorAll('svg.icon-chili')
+    expect(svgs).toHaveLength(3)
+    for (const svg of svgs) {
+      expect(svg).toHaveAttribute('width', '13')
+      expect(svg).toHaveAttribute('height', '13')
+    }
   })
 })
 
