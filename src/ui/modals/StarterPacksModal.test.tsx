@@ -547,4 +547,60 @@ describe('StarterPacksModal', () => {
       0,
     )
   })
+
+  it('clears active removal confirmation when navigating into or out of inspect view', () => {
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+
+    render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={allStreetCards}
+        onAddPack={vi.fn()}
+        onRemovePack={vi.fn()}
+      />,
+    )
+
+    // 1. Enter inspect view and trigger confirmation
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      }),
+    )
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+
+    // 2. Click Back to all packs -> confirmation should be reset
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Back to all starter packs/i,
+      }),
+    )
+    expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      }),
+    ).toBeInTheDocument()
+
+    // 3. Trigger confirmation on main list, then click Inspect -> confirmation should be reset
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Remove Mexican Street Phrases from deck/i,
+      }),
+    )
+    expect(screen.getByText(/Remove 72 cards from deck\?/i)).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Inspect Mexican Street Phrases cards/i,
+      }),
+    )
+    expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
+  })
 })

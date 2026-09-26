@@ -131,6 +131,7 @@ function StarterPacksModalInner({
           return
         }
         if (inspectingPackId !== null) {
+          setConfirmingRemovePackId(null)
           setInspectingPackId(null)
           return
         }
@@ -269,6 +270,7 @@ function StarterPacksModalInner({
                 type="button"
                 className="secondary-button starter-pack-back-btn"
                 onClick={() => {
+                  setConfirmingRemovePackId(null)
                   setInspectingPackId(null)
                 }}
                 aria-label="Back to all starter packs"
@@ -563,6 +565,7 @@ function StarterPacksModalInner({
                       type="button"
                       className="secondary-button starter-pack-inspect-btn"
                       onClick={() => {
+                        setConfirmingRemovePackId(null)
                         lastInspectedPackIdRef.current = pack.id
                         setInspectingPackId(pack.id)
                       }}

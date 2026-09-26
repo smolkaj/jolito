@@ -490,6 +490,16 @@ export function deleteStudyCard(
   return cards.filter((card) => card.id !== cardIdToDelete)
 }
 
+export function deleteStudyCards(
+  cards: StudyCard[],
+  cardIdsToDelete: Iterable<string>,
+): StudyCard[] {
+  const ids =
+    cardIdsToDelete instanceof Set ? cardIdsToDelete : new Set(cardIdsToDelete)
+  if (ids.size === 0) return cards
+  return cards.filter((card) => !ids.has(card.id))
+}
+
 export function localeForPrompt(
   card: Pick<StudyCard, 'direction' | 'grammar'>,
 ): string {
