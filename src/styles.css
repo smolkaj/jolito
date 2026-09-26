@@ -17,7 +17,9 @@
   --control-line: var(--line);
   --input-bg: var(--card);
   --toggle-track: #cbd5e1;
-  --english-badge-background: var(--turquesa);
+  --english-badge-background: #152238;
+  --english-badge-border: rgba(255, 255, 255, 0.18);
+  --english-badge-color: #fdf5f8;
   --on-accent: #ffffff;
 
   /* Solid Neo-Brutalist Hairlines & Borders */
@@ -279,7 +281,9 @@
     --control-line: #708779;
     --input-bg: #111a15;
     --toggle-track: var(--control-line);
-    --english-badge-background: var(--turquesa-soft);
+    --english-badge-background: #152238;
+    --english-badge-border: rgba(255, 255, 255, 0.22);
+    --english-badge-color: #fdf5f8;
     --on-accent: var(--paper);
 
     /* Neo-Brutalist Volcanic Stone Hairlines & Borders */
@@ -1707,7 +1711,6 @@ summary:focus-visible,
 
 /* English Card Theme (Verde Cantera de Oaxaca #b7d3c2 / (183, 211, 194)) */
 .sample-card-en {
-  --english-badge-background: var(--paper);
   --card-shadow-color: var(--sample-card-en-shadow);
   --card-shadow-hover: var(--sample-card-en-shadow-hover);
   color: var(--ink);

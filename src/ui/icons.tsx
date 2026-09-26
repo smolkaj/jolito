@@ -20,20 +20,34 @@ export function MexicoFlag({ className }: { className?: string }) {
 export function EnglishBadge({ className }: { className?: string }) {
   return (
     <svg
-      className={`language-icon ${className ?? ''}`}
-      viewBox="0 0 20 14"
-      width="20"
-      height="14"
+      className={`language-icon badge-en ${className ?? ''}`}
+      viewBox="0 0 18 12"
+      width="18"
+      height="12"
       aria-hidden="true"
     >
       <rect
-        width="20"
-        height="14"
-        fill="var(--english-badge-background, var(--turquesa))"
+        width="18"
+        height="12"
+        fill="var(--english-badge-background, #152238)"
+      />
+      <rect
+        x="0.5"
+        y="0.5"
+        width="17"
+        height="11"
+        rx="2.5"
+        fill="none"
+        stroke="var(--english-badge-border, rgba(255, 255, 255, 0.18))"
+        strokeWidth="0.5"
       />
       <path
-        fill="var(--ink)"
-        d="M3.5 3h5v1.5H5v2h3v1.5H5v2h3.5v1.5h-5zM10.5 11.5V3H12l3 5.4V3h1.5v8.5H15l-3-5.4v5.4z"
+        fill="var(--english-badge-color, #fdf5f8)"
+        d="M 3.2 2.5 L 8.2 2.5 L 8.2 3.8 L 4.6 3.8 L 4.6 5.3 L 7.6 5.3 L 7.6 6.5 L 4.6 6.5 L 4.6 8.2 L 8.2 8.2 L 8.2 9.5 L 3.2 9.5 Z"
+      />
+      <path
+        fill="var(--english-badge-color, #fdf5f8)"
+        d="M 9.8 2.5 L 11.1 2.5 L 13.5 7.6 L 13.5 2.5 L 14.8 2.5 L 14.8 9.5 L 13.5 9.5 L 11.1 4.4 L 11.1 9.5 L 9.8 9.5 Z"
       />
     </svg>
   )
