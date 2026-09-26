@@ -1,9 +1,15 @@
-export type LexiconEntry = {
-  spanish: string
-  english: string
-  context?: string
-  tag?: 'slang' | 'idiom' | 'food' | 'travel' | 'basics' | 'common'
-}
+import { z } from 'zod'
+
+export const lexiconEntrySchema = z.object({
+  spanish: z.string(),
+  english: z.string(),
+  context: z.string().optional(),
+  tag: z
+    .enum(['slang', 'idiom', 'food', 'travel', 'basics', 'common'])
+    .optional(),
+})
+
+export type LexiconEntry = z.infer<typeof lexiconEntrySchema>
 
 export type AutocompleteSuggestion = LexiconEntry & {
   matchType: 'exact' | 'prefix' | 'lemma' | 'fuzzy'

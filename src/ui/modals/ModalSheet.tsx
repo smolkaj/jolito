@@ -165,7 +165,7 @@ export const ModalSheet = forwardRef<HTMLDivElement, ModalSheetProps>(
       try {
         e.currentTarget.releasePointerCapture(e.pointerId)
       } catch {
-        // Ignore
+        // Safe fallback when pointer capture unsupported or already released
       }
 
       if (finalDelta > DISMISS_THRESHOLD_PX) {

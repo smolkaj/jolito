@@ -1,10 +1,17 @@
+import { z } from 'zod'
 import {
   LexiconIndex,
   SEED_LEXICON,
+  lexiconEntrySchema,
   type AutocompleteSuggestion,
   type LexiconEntry,
 } from '../domain/lexicon'
 import type { CardAssistant } from './ports'
+
+const lemmasSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.array(z.string())]),
+)
 
 export class OfflineCardAssistant implements CardAssistant {
   private index: LexiconIndex
@@ -31,21 +38,16 @@ export class OfflineCardAssistant implements CardAssistant {
           fetch(lemmasUrl).catch(() => null),
         ])
         if (!dictResp.ok) return false
-        const data = (await dictResp.json()) as LexiconEntry[]
-        if (Array.isArray(data)) {
-          this.index.addEntries(data)
+        const rawData: unknown = await dictResp.json()
+        const parsedData = z.array(lexiconEntrySchema).safeParse(rawData)
+        if (parsedData.success) {
+          this.index.addEntries(parsedData.data)
           if (lemmasResp && lemmasResp.ok) {
             try {
-              const lemmasData = (await lemmasResp.json()) as Record<
-                string,
-                string | string[]
-              >
-              if (
-                lemmasData &&
-                typeof lemmasData === 'object' &&
-                !Array.isArray(lemmasData)
-              ) {
-                this.index.setLemmaMap(lemmasData)
+              const rawLemmas: unknown = await lemmasResp.json()
+              const parsedLemmas = lemmasSchema.safeParse(rawLemmas)
+              if (parsedLemmas.success) {
+                this.index.setLemmaMap(parsedLemmas.data)
               }
             } catch {
               // Ignore lemma parsing error if missing or invalid

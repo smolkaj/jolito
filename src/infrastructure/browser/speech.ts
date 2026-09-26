@@ -28,7 +28,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       try {
         window.speechSynthesis.resume()
       } catch {
-        // Ignore errors
+        // Safe fallback if speech synthesis resume throws in restricted or headless contexts
       }
     }
   }
@@ -214,7 +214,7 @@ export class EnhancedBrowserSpeaker implements Speaker {
       try {
         window.speechSynthesis.cancel()
       } catch {
-        // Ignore errors
+        // Safe fallback if speech synthesis cancel throws or is already cancelled
       }
     }
   }

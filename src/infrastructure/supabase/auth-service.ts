@@ -43,6 +43,17 @@ const authSessionResponseSchema = z.object({
   }),
 })
 
+const supabaseAuthErrorSchema = z
+  .object({
+    msg: z.string().optional(),
+    error_description: z.string().optional(),
+    message: z.string().optional(),
+    error: z.string().optional(),
+    error_code: z.string().optional(),
+    code: z.union([z.string(), z.number()]).optional(),
+  })
+  .passthrough()
+
 export function normalizeAuthTransportError(error: unknown): string {
   if (
     error instanceof Error ||
@@ -556,11 +567,9 @@ export class SupabaseAuthService implements AuthService {
         })
 
         if (!res.ok) {
-          const errorData = (await res.json().catch(() => ({}))) as {
-            msg?: string
-            error_description?: string
-            message?: string
-          }
+          const rawError: unknown = await res.json().catch(() => ({}))
+          const errorData =
+            supabaseAuthErrorSchema.safeParse(rawError).data ?? {}
           console.error('[AuthService] Magic link request failed:', {
             status: res.status,
             errorData,
@@ -816,11 +825,9 @@ export class SupabaseAuthService implements AuthService {
             }
           }
 
-          const errorData = (await res.json().catch(() => ({}))) as {
-            msg?: string
-            error_description?: string
-            message?: string
-          }
+          const rawErrorJson: unknown = await res.json().catch(() => ({}))
+          const errorData =
+            supabaseAuthErrorSchema.safeParse(rawErrorJson).data ?? {}
           console.error('[AuthService] OTP verification attempt failed:', {
             status: res.status,
             type: otpType,
@@ -919,14 +926,9 @@ export class SupabaseAuthService implements AuthService {
 
         if (signal.aborted || !isCurrent()) return null
         if (!res.ok) {
-          const errorData = (await res.json().catch(() => ({}))) as {
-            msg?: string
-            error_description?: string
-            message?: string
-            error?: string
-            error_code?: string
-            code?: number
-          }
+          const rawError: unknown = await res.json().catch(() => ({}))
+          const errorData =
+            supabaseAuthErrorSchema.safeParse(rawError).data ?? {}
           console.error(
             '[AuthService] Apple Sign-In verification attempt failed:',
             {
