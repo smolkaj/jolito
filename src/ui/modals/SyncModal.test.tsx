@@ -1224,6 +1224,60 @@ describe('SyncModal Live Sync Status Contract', () => {
   })
 
   describe('SyncModal Apple Sign-In', () => {
+    it('renders email input and send link before secondary Apple Sign-In button', async () => {
+      const appleAuthModule =
+        await import('../../infrastructure/browser/apple-signin')
+      const supportSpy = vi
+        .spyOn(appleAuthModule, 'isAppleSignInSupported')
+        .mockReturnValue(true)
+
+      const auth = new MockAuthService()
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const emailInput = screen.getByLabelText(/email address/i)
+      const sendLinkBtn = screen.getByRole('button', {
+        name: /send sign-in link/i,
+      })
+      const appleBtn = screen.getByRole('button', {
+        name: /sign in with apple/i,
+      })
+      const divider = screen.getByText(/^or$/i)
+
+      expect(emailInput).toBeInTheDocument()
+      expect(sendLinkBtn).toBeInTheDocument()
+      expect(appleBtn).toBeInTheDocument()
+      expect(divider).toBeInTheDocument()
+
+      expect(appleBtn).toHaveClass('secondary-button')
+      expect(appleBtn).toHaveClass('apple-signin-button')
+
+      expect(
+        emailInput.compareDocumentPosition(sendLinkBtn) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(
+        sendLinkBtn.compareDocumentPosition(divider) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(
+        divider.compareDocumentPosition(appleBtn) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+
+      supportSpy.mockRestore()
+    })
+
     it('renders Sign in with Apple button when supported and signs in', async () => {
       const appleAuthModule =
         await import('../../infrastructure/browser/apple-signin')

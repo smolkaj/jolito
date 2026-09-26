@@ -640,31 +640,6 @@ export function SyncModal({
           }}
           className="sync-auth-form"
         >
-          {isAppleSignInSupported() &&
-            typeof (auth as { signInWithApple?: unknown }).signInWithApple ===
-              'function' && (
-              <div className="apple-signin-wrapper">
-                <button
-                  type="button"
-                  className="apple-signin-button"
-                  onClick={() => {
-                    void handleAppleSignIn()
-                  }}
-                  disabled={loading}
-                  aria-busy={loadingAction === 'apple'}
-                >
-                  <AppleIcon size={18} />
-                  <span>
-                    {loadingAction === 'apple'
-                      ? 'Signing in…'
-                      : 'Sign in with Apple'}
-                  </span>
-                </button>
-                <div className="signin-divider">
-                  <span>or continue with email</span>
-                </div>
-              </div>
-            )}
           <div className="field-group">
             <label htmlFor="sync-email">Email address</label>
             <input
@@ -694,6 +669,31 @@ export function SyncModal({
                 ? 'Save card & send link →'
                 : 'Send sign-in link →'}
           </button>
+          {isAppleSignInSupported() &&
+            typeof (auth as { signInWithApple?: unknown }).signInWithApple ===
+              'function' && (
+              <div className="apple-signin-wrapper">
+                <div className="signin-divider">
+                  <span>or</span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button apple-signin-button"
+                  onClick={() => {
+                    void handleAppleSignIn()
+                  }}
+                  disabled={loading}
+                  aria-busy={loadingAction === 'apple'}
+                >
+                  <AppleIcon size={18} />
+                  <span>
+                    {loadingAction === 'apple'
+                      ? 'Signing in…'
+                      : 'Sign in with Apple'}
+                  </span>
+                </button>
+              </div>
+            )}
         </form>
       ) : (
         <form

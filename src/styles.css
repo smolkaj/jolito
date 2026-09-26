@@ -5197,41 +5197,18 @@ kbd {
 .apple-signin-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 2px;
+  gap: 14px;
 }
 
 .apple-signin-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   width: 100%;
-  min-height: 50px;
-  background-color: #000000;
-  color: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: var(--pill-radius);
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
+  gap: 8px;
 }
 
 .apple-signin-button .icon-apple {
   flex-shrink: 0;
   position: relative;
   top: -0.5px;
-}
-
-.apple-signin-button:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.apple-signin-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .signin-divider {
