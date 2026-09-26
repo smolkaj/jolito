@@ -124,7 +124,7 @@ describe('DeckManagerView', () => {
       screen.getByRole('button', { name: /all \(3\)/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /due now \(1\)/i }),
+      screen.getByRole('button', { name: /^due \(1\)/i }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /unstudied \(1\)/i }),
@@ -160,8 +160,8 @@ describe('DeckManagerView', () => {
     const user = userEvent.setup()
     renderDeckManager()
 
-    // Due now
-    await user.click(screen.getByRole('button', { name: /due now \(1\)/i }))
+    // Due
+    await user.click(screen.getByRole('button', { name: /^due \(1\)/i }))
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
     expect(screen.getByText('¡Qué padre!')).toBeInTheDocument()
 

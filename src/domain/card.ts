@@ -505,6 +505,7 @@ export {
   cardProgressLevel,
   cardDifficultyLevel,
   cardMemoryIndicators,
+  estimateFsrsParameters,
   type MemoryMasteryLevel,
   type MemoryProgressLevel,
   type MemoryDifficultyLevel,

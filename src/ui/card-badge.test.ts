@@ -19,14 +19,14 @@ function makeCard(schedule: Partial<StudyCard['schedule']>): StudyCard {
 }
 
 describe('getCardScheduleBadge', () => {
-  it('returns "Due now" when card is due at current time', () => {
+  it('returns "Due" when card is due at current time', () => {
     const card = makeCard({ state: 'review', dueAt: 1000 })
     expect(getCardScheduleBadge(card, 1000)).toEqual({
-      label: 'Due now',
+      label: 'Due',
       type: 'due',
     })
     expect(getCardScheduleBadge(card, 2000)).toEqual({
-      label: 'Due now',
+      label: 'Due',
       type: 'due',
     })
   })

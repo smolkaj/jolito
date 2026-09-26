@@ -540,4 +540,43 @@ describe('grammar practice in Jolito', () => {
     expect(onComplete).toHaveBeenCalledTimes(1)
     expect(onComplete).toHaveBeenCalledWith(8, false)
   })
+
+  it('renders mastery and difficulty indicators on pattern selection options', () => {
+    function GrammarPracticeWrapper() {
+      const services = createTestServices()
+      const cards = createGrammarCards(0, 'preterite')
+      const practice = useGrammarPractice({
+        cards,
+        deletedCardIds: [],
+        clock: services.clock,
+        save: (card) => {
+          services.cards.save([card], [])
+        },
+      })
+      return (
+        <GrammarPractice
+          practice={practice}
+          services={services}
+          onHome={vi.fn()}
+          paused={false}
+          signedIn={false}
+          onSignIn={vi.fn()}
+        />
+      )
+    }
+
+    const { container } = render(<GrammarPracticeWrapper />)
+    const indicators = container.querySelectorAll('.grammar-choice-indicators')
+    expect(indicators.length).toBeGreaterThan(0)
+
+    const allPatternsRadio = screen.getByRole('radio', {
+      name: /all patterns/i,
+    })
+    expect(allPatternsRadio).toBeInTheDocument()
+    const label = allPatternsRadio.closest('label')
+    expect(label).toHaveAttribute('aria-label')
+    expect(label?.getAttribute('aria-label')).toMatch(
+      /All patterns\. Difficulty: 0 of 3 chilies \(no heat\), Mastery: 0 of 3 bubbles\./,
+    )
+  })
 })

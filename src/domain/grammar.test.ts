@@ -7,7 +7,12 @@ import {
   localeForPrompt,
   localeForAnswer,
 } from './card'
-import { createGrammarCards, grammarContext, grammarQueue } from './grammar'
+import {
+  createGrammarCards,
+  grammarContext,
+  grammarQueue,
+  grammarFamilyIndicators,
+} from './grammar'
 import { preteriteVerbs, preteriteFamilies } from './grammar-content'
 import { createStudyCards } from './card'
 const starterCards = createStudyCards(
@@ -393,5 +398,108 @@ describe('preterite practice contracts', () => {
         ],
       }).success,
     ).toBe(false)
+  })
+
+  describe('grammarFamilyIndicators', () => {
+    it('returns 0 mastery and 0 difficulty when no cards have been practiced', () => {
+      const cards = createGrammarCards(now, 'preterite')
+      const indicators = grammarFamilyIndicators(cards, 'preterite', 'regular')
+      expect(indicators.mastery).toBe(0)
+      expect(indicators.difficulty).toBe(0)
+      expect(indicators.masteryLabel).toBe('Mastery: 0 of 3 bubbles')
+      expect(indicators.difficultyLabel).toBe(
+        'Difficulty: 0 of 3 chilies (no heat)',
+      )
+      expect(indicators.practicedForms).toBe(0)
+      expect(indicators.totalForms).toBeGreaterThan(0)
+    })
+
+    it('returns 0 indicators for empty cards list', () => {
+      const indicators = grammarFamilyIndicators([], 'preterite', 'regular')
+      expect(indicators.mastery).toBe(0)
+      expect(indicators.difficulty).toBe(0)
+      expect(indicators.totalForms).toBe(0)
+    })
+
+    it('computes mastery level when cards are learned and mastered', () => {
+      const allCards = createGrammarCards(now, 'preterite')
+      const regularCards = allCards.filter(
+        (c) =>
+          grammarVerb(c.grammar.topic, c.grammar.verb)!.family === 'regular',
+      )
+
+      // Practice all regular cards to mastered stability (>= 30 days)
+      const masteredCards = allCards.map((c) => {
+        if (grammarVerb(c.grammar.topic, c.grammar.verb)!.family !== 'regular')
+          return c
+        return {
+          ...c,
+          schedule: {
+            state: 'review' as const,
+            dueAt: now + 30 * DAY,
+            intervalDays: 30,
+            easeFactor: 2.5,
+            reviews: 5,
+            lapses: 0,
+            stability: 35.0,
+            difficulty: 2.5,
+          },
+        }
+      })
+
+      const indicators = grammarFamilyIndicators(
+        masteredCards,
+        'preterite',
+        'regular',
+      )
+      expect(indicators.mastery).toBe(3)
+      expect(indicators.difficulty).toBe(0) // 2.5 < 3.0 => 0 chilies
+      expect(indicators.masteryLabel).toBe('Mastery: 3 of 3 bubbles')
+      expect(indicators.difficultyLabel).toBe(
+        'Difficulty: 0 of 3 chilies (no heat)',
+      )
+      expect(indicators.practicedForms).toBe(regularCards.length)
+    })
+
+    it('computes spicy difficulty when cards have high FSRS difficulty', () => {
+      const allCards = createGrammarCards(now, 'preterite')
+
+      // Practice essential irregular cards with high difficulty
+      const spicyCards = allCards.map((c) => {
+        if (
+          grammarVerb(c.grammar.topic, c.grammar.verb)!.family !== 'essential'
+        )
+          return c
+        return {
+          ...c,
+          schedule: {
+            state: 'review' as const,
+            dueAt: now + 2 * DAY,
+            intervalDays: 2,
+            easeFactor: 1.7,
+            reviews: 4,
+            lapses: 2,
+            stability: 2.0,
+            difficulty: 8.2,
+          },
+        }
+      })
+
+      const indicators = grammarFamilyIndicators(
+        spicyCards,
+        'preterite',
+        'essential',
+      )
+      expect(indicators.mastery).toBe(1) // stability 2.0 is level 1
+      expect(indicators.difficulty).toBe(3) // 8.2 >= 7.5 => 3 chilies
+      expect(indicators.difficultyLabel).toBe('Difficulty: 3 of 3 chilies')
+    })
+
+    it('computes mixed / all patterns across all families in a topic', () => {
+      const allCards = createGrammarCards(now, 'preterite')
+      const indicators = grammarFamilyIndicators(allCards, 'preterite', 'mixed')
+      expect(indicators.totalForms).toBe(allCards.length)
+      expect(indicators.practicedForms).toBe(0)
+    })
   })
 })

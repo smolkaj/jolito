@@ -302,7 +302,7 @@ export function DeckManagerView({
                   aria-pressed={deckFilterState === 'due'}
                   title="Cards ready to practice right now (unstudied cards + due reviews)"
                 >
-                  Due now ({deckStats.due})
+                  Due ({deckStats.due})
                 </button>
                 <button
                   type="button"
@@ -418,7 +418,7 @@ export function DeckManagerView({
                   ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
                   : vocabularyCards.length === 0
                     ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                    : `No cards in the “${{ all: 'all', due: 'due now', new: 'unstudied', learning: 'learning', review: 'graduated', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
+                    : `No cards in the “${{ all: 'all', due: 'due', new: 'unstudied', learning: 'learning', review: 'graduated', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
               </p>
               {vocabularyCards.length === 0 ? (
                 <div className="deck-empty-actions">
