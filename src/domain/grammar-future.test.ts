@@ -180,4 +180,22 @@ describe('future tense (futuro simple)', () => {
       studyCardCollectionSchema.parse({ version: 2, cards: [card] }),
     ).toMatchObject({ cards: [card] })
   })
+
+  it('renders grammatical context sentences across all persons and variants without pronoun clashes', () => {
+    const cards = createGrammarCards(now, 'future')
+    for (const card of cards) {
+      for (const reviews of [0, 1]) {
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
+        })
+        expect(context.sentence).not.toMatch(/\{[^}]+\}/)
+        expect(context.translation).not.toMatch(/\{[^}]+\}/)
+        expect(context.completed).toContain(card.answer)
+        if (card.grammar.verb === 'venir' && card.grammar.person === 3) {
+          expect(context.sentence).not.toMatch(/con nosotros/i)
+        }
+      }
+    }
+  })
 })

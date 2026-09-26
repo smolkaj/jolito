@@ -151,4 +151,22 @@ describe('imperfect tense (pretérito imperfecto)', () => {
       studyCardCollectionSchema.parse({ version: 2, cards: [card] }),
     ).toMatchObject({ cards: [card] })
   })
+
+  it('renders grammatical context sentences across all persons and variants without agreement defects', () => {
+    const cards = createGrammarCards(now, 'imperfect')
+    for (const card of cards) {
+      for (const reviews of [0, 1]) {
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
+        })
+        expect(context.sentence).not.toMatch(/\{[^}]+\}/)
+        expect(context.translation).not.toMatch(/\{[^}]+\}/)
+        expect(context.sentence).not.toMatch(/\bde niño\b/i)
+        expect(context.sentence).not.toMatch(/\btímido\b/i)
+        expect(context.sentence).not.toMatch(/\bpreguntón\b/i)
+        expect(context.completed).toContain(card.answer)
+      }
+    }
+  })
 })

@@ -66,8 +66,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['compre', 'compres', 'compre', 'compremos', 'compren'],
     contexts: [
       [
-        'Recomiendo que {subject} ___ fruta fresca en el mercado.',
-        'I recommend that {subject} [buy] fresh fruit at the market.',
+        'Es conveniente que {subject} ___ fruta fresca en el mercado.',
+        'It is advisable that {subject} [buy] fresh fruit at the market.',
       ],
       [
         'Es mejor que {subject} ___ los boletos con anticipación.',
@@ -84,8 +84,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
         'It is essential that {subject} [study] for the final exam.',
       ],
       [
-        'El maestro quiere que {subject} ___ dos horas al día.',
-        'The teacher wants that {subject} [study] two hours a day.',
+        'Es recomendable que {subject} ___ dos horas al día.',
+        'It is recommended that {subject} [study] two hours a day.',
       ],
     ],
   },
@@ -108,8 +108,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['aprenda', 'aprendas', 'aprenda', 'aprendamos', 'aprendan'],
     contexts: [
       [
-        'Queremos que {subject} ___ a cocinar comida tradicional.',
-        'We want that {subject} [learn] to cook traditional food.',
+        'Es genial que {subject} ___ a cocinar comida tradicional.',
+        'It is great that {subject} [learn] to cook traditional food.',
       ],
       [
         'Es bueno que {subject} ___ las reglas desde el principio.',
@@ -122,8 +122,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['viva', 'vivas', 'viva', 'vivamos', 'vivan'],
     contexts: [
       [
-        'Deseo que {subject} ___ con tranquilidad y alegría.',
-        'I wish that {subject} [live] peacefully and with joy.',
+        'Ojalá que {subject} ___ con tranquilidad y alegría.',
+        'Hopefully {subject} [live{s}] peacefully and with joy.',
       ],
       [
         'Es preferible que {subject} ___ cerca de la oficina.',
@@ -136,8 +136,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['escriba', 'escribas', 'escriba', 'escribamos', 'escriban'],
     contexts: [
       [
-        'Le pido que {subject} ___ un resumen del reporte.',
-        'I ask that {subject} [write] a summary of the report.',
+        'Es necesario que {subject} ___ un resumen del reporte.',
+        'It is necessary that {subject} [write] a summary of the report.',
       ],
       [
         'Es importante que {subject} ___ las instrucciones claramente.',
@@ -170,8 +170,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
         'I doubt that {subject} [want{s}] to go out in this heavy rain.',
       ],
       [
-        'Ojalá que {subject} ___ acompañarnos a la fiesta.',
-        'Hopefully {subject} [want{s}] to accompany us to the party.',
+        'Ojalá que {subject} ___ venir a la fiesta.',
+        'Hopefully {subject} [want{s}] to come to the party.',
       ],
     ],
   },
@@ -208,12 +208,12 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['pida', 'pidas', 'pida', 'pidamos', 'pidan'],
     contexts: [
       [
-        'Recomiendo que {subject} ___ la especialidad de la casa.',
-        'I recommend that {subject} [order] the house specialty.',
+        'Es buena idea que {subject} ___ la especialidad de la casa.',
+        'It is a good idea that {subject} [order] the house specialty.',
       ],
       [
-        'Es mejor que {subject} ___ ayuda si la necesita.',
-        'It is better that {subject} [ask] for help if needed.',
+        'Es mejor que {subject} ___ ayuda a tiempo.',
+        'It is better that {subject} [ask] for help in time.',
       ],
     ],
   },
@@ -280,12 +280,12 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['venga', 'vengas', 'venga', 'vengamos', 'vengan'],
     contexts: [
       [
-        'Queremos que {subject} ___ a la cena de bienvenida.',
-        'We want that {subject} [come] to the welcome dinner.',
+        'Es maravilloso que {subject} ___ a la cena de bienvenida.',
+        'It is wonderful that {subject} [come] to the welcome dinner.',
       ],
       [
-        'Espero que {subject} ___ preparado para el taller.',
-        'I hope {subject} [come{s}] prepared for the workshop.',
+        'Espero que {subject} ___ a tiempo para el taller.',
+        'I hope {subject} [come{s}] on time for the workshop.',
       ],
     ],
   },
@@ -298,8 +298,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
         'It is important that {subject} [tell] the truth in the interview.',
       ],
       [
-        'Espero que {subject} ___ lo que realmente siente.',
-        'I hope {subject} [say{s}] what one really feels.',
+        'Espero que {subject} ___ la verdad sobre lo ocurrido.',
+        'I hope {subject} [say{s}] the truth about what happened.',
       ],
     ],
   },
@@ -314,8 +314,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
         'I hope {subject} [{be}] very happy in their new home.',
       ],
       [
-        'Es importante que {subject} ___ puntual para la cita.',
-        'It is important that {subject} [{be}] punctual for the appointment.',
+        'Es importante que {subject} ___ parte de la inauguración.',
+        'It is important that {subject} [be] part of the opening ceremony.',
       ],
     ],
   },
@@ -324,8 +324,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
     forms: ['esté', 'estés', 'esté', 'estemos', 'estén'],
     contexts: [
       [
-        'Ojalá que {subject} ___ listo cuando llegue el taxi.',
-        'Hopefully {subject} [{be}] ready when the taxi arrives.',
+        'Ojalá que {subject} ___ en casa cuando llegue el paquete.',
+        'Hopefully {subject} [{be}] at home when the package arrives.',
       ],
       [
         'Espero que {subject} ___ muy bien de salud.',
@@ -370,8 +370,8 @@ export const subjunctiveVerbs: Record<string, Verb> = {
         'It is important that {subject} [give] thanks for the support.',
       ],
       [
-        'Espero que {subject} ___ lo mejor en esta oportunidad.',
-        'I hope {subject} [give{s}] their best in this opportunity.',
+        'Espero que {subject} ___ una respuesta positiva hoy.',
+        'I hope {subject} [give{s}] a positive answer today.',
       ],
     ],
   },

@@ -206,4 +206,27 @@ describe('present subjunctive (presente de subjuntivo)', () => {
       studyCardCollectionSchema.parse({ version: 2, cards: [card] }),
     ).toMatchObject({ cards: [card] })
   })
+
+  it('renders grammatical context sentences across all persons and variants without volition or adjective agreement defects', () => {
+    const cards = createGrammarCards(now, 'subjunctive')
+    for (const card of cards) {
+      for (const reviews of [0, 1]) {
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
+        })
+        expect(context.sentence).not.toMatch(/\{[^}]+\}/)
+        expect(context.translation).not.toMatch(/\{[^}]+\}/)
+        expect(context.completed).toContain(card.answer)
+        // Volition verbs must not match subject (e.g. Queremos que nosotros)
+        if (card.grammar.person === 3) {
+          expect(context.sentence).not.toMatch(/\bqueremos que\b/i)
+        }
+        // Subordinate clause pronouns and adjectives
+        expect(context.sentence).not.toMatch(/\bacompañarnos\b/i)
+        expect(context.sentence).not.toMatch(/\blisto cuando\b/i)
+        expect(context.sentence).not.toMatch(/\bpreparado para\b/i)
+      }
+    }
+  })
 })

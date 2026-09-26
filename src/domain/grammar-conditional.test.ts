@@ -182,4 +182,23 @@ describe('conditional tense (condicional simple)', () => {
       studyCardCollectionSchema.parse({ version: 2, cards: [card] }),
     ).toMatchObject({ cards: [card] })
   })
+
+  it('renders grammatical context sentences across all persons and variants without if-clause subject mismatches', () => {
+    const cards = createGrammarCards(now, 'conditional')
+    for (const card of cards) {
+      for (const reviews of [0, 1]) {
+        const context = grammarContext({
+          ...card,
+          schedule: { ...card.schedule, reviews },
+        })
+        expect(context.sentence).not.toMatch(/\{[^}]+\}/)
+        expect(context.translation).not.toMatch(/\{[^}]+\}/)
+        expect(context.completed).toContain(card.answer)
+        // If-clauses must not have singular tuviera when subject can be tú/nosotros/vecinos
+        expect(context.sentence).not.toMatch(/\bsi tuviera\b/i)
+        // English must not use broken gerunds like 'if having time'
+        expect(context.translation).not.toMatch(/if having/i)
+      }
+    }
+  })
 })

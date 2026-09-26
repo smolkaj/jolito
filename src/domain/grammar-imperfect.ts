@@ -30,8 +30,8 @@ export const imperfectVerbs: Record<string, Verb> = {
     forms: ['hablaba', 'hablabas', 'hablaba', 'hablábamos', 'hablaban'],
     contexts: [
       [
-        'De niño {subject} siempre ___ con los abuelos por teléfono.',
-        'As a child, {subject} always [talked] with grandparents on the phone.',
+        'En la infancia {subject} siempre ___ con los abuelos por teléfono.',
+        'In childhood, {subject} always [talked] with grandparents on the phone.',
       ],
       [
         'En la escuela {subject} ___ en español durante el recreo.',
@@ -236,8 +236,8 @@ export const imperfectVerbs: Record<string, Verb> = {
         'On weekends, {subject} [slept] until late.',
       ],
       [
-        'En aquel cuarto silencioso {subject} ___ muy tranquilo.',
-        'In that quiet room, {subject} [slept] very peacefully.',
+        'En aquel cuarto silencioso {subject} ___ profundamente.',
+        'In that quiet room, {subject} [slept] deeply.',
       ],
     ],
   },
@@ -246,8 +246,8 @@ export const imperfectVerbs: Record<string, Verb> = {
     forms: ['quería', 'querías', 'quería', 'queríamos', 'querían'],
     contexts: [
       [
-        'Desde niño {subject} ___ ser veterinario.',
-        'Since childhood, {subject} [wanted] to be a veterinarian.',
+        'Desde la infancia {subject} ___ tener una mascota propia.',
+        'Since childhood, {subject} [wanted] to have a pet of their own.',
       ],
       [
         'En esos momentos {subject} ___ descansar un poco más.',
@@ -290,12 +290,12 @@ export const imperfectVerbs: Record<string, Verb> = {
     forms: ['era', 'eras', 'era', 'éramos', 'eran'],
     contexts: [
       [
-        'En aquellos años {subject} ___ muy tímido con la gente.',
-        'In those years, {subject} [{was}] very shy around people.',
+        'En aquellos años {subject} ___ parte de la comunidad escolar.',
+        'In those years, {subject} [{was}] part of the school community.',
       ],
       [
-        'De niño {subject} ___ muy curioso y preguntón.',
-        'As a child, {subject} [{was}] very curious and inquisitive.',
+        'En ese proyecto {subject} ___ parte fundamental del equipo.',
+        'In that project, {subject} [{was}] a fundamental part of the team.',
       ],
     ],
   },

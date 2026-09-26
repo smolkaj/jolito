@@ -38,8 +38,8 @@ export const conditionalVerbs: Record<string, Verb> = {
     forms: ['hablaría', 'hablarías', 'hablaría', 'hablaríamos', 'hablarían'],
     contexts: [
       [
-        'Si tuviera tiempo, {subject} ___ con el gerente hoy.',
-        'If having time, {subject} [would speak] with the manager today.',
+        'Con más tiempo {subject} ___ con el gerente hoy.',
+        'With more time, {subject} [would speak] with the manager today.',
       ],
       [
         'En esa situación {subject} ___ con mucha calma.',
@@ -66,8 +66,8 @@ export const conditionalVerbs: Record<string, Verb> = {
     forms: ['viviría', 'vivirías', 'viviría', 'viviríamos', 'vivirían'],
     contexts: [
       [
-        'Si pudiera elegir, {subject} ___ cerca de la playa.',
-        'If able to choose, {subject} [would live] near the beach.',
+        'De ser posible, {subject} ___ cerca de la playa.',
+        'If possible, {subject} [would live] near the beach.',
       ],
       [
         'En una ciudad tranquila {subject} ___ con menos estrés.',
@@ -104,8 +104,8 @@ export const conditionalVerbs: Record<string, Verb> = {
         'With more money, {subject} [would travel] all around the world.',
       ],
       [
-        'Si tuviera vacaciones, {subject} ___ a Japón este otoño.',
-        'If having vacation, {subject} [would travel] to Japan this fall.',
+        'En las vacaciones {subject} ___ a Japón este otoño.',
+        'On vacation, {subject} [would travel] to Japan this fall.',
       ],
     ],
   },
@@ -140,8 +140,8 @@ export const conditionalVerbs: Record<string, Verb> = {
     ],
     contexts: [
       [
-        'Si tuviera inspiración, {subject} ___ una novela corta.',
-        'If having inspiration, {subject} [would write] a short novel.',
+        'Con suficiente tiempo {subject} ___ una novela corta.',
+        'With enough time, {subject} [would write] a short novel.',
       ],
       [
         'Con calma {subject} ___ una carta detallada.',
@@ -222,8 +222,8 @@ export const conditionalVerbs: Record<string, Verb> = {
         'With an invitation, {subject} [would come] gladly to the party.',
       ],
       [
-        'Si tuviera tiempo libre, {subject} ___ a visitarnos mañana.',
-        'If having free time, {subject} [would come] to visit us tomorrow.',
+        'El fin de semana {subject} ___ con gusto a la fiesta.',
+        'Over the weekend, {subject} [would come] gladly to the party.',
       ],
     ],
   },
@@ -292,8 +292,8 @@ export const conditionalVerbs: Record<string, Verb> = {
     forms: ['haría', 'harías', 'haría', 'haríamos', 'harían'],
     contexts: [
       [
-        'Si tuviera los ingredientes, {subject} ___ chiles en nogada.',
-        'If having the ingredients, {subject} [would make] chiles en nogada.',
+        'Con los ingredientes correctos {subject} ___ chiles en nogada.',
+        'With the right ingredients, {subject} [would make] chiles en nogada.',
       ],
       [
         'Con más tiempo {subject} ___ ejercicio todos los días.',
@@ -310,8 +310,8 @@ export const conditionalVerbs: Record<string, Verb> = {
         'In that situation, {subject} [would say] it is best to wait.',
       ],
       [
-        'Sinceramente {subject} ___ lo que piensa sin dudar.',
-        'Honestly, {subject} [would say] what one thinks without hesitating.',
+        'Sinceramente {subject} ___ toda la verdad sin dudar.',
+        'Honestly, {subject} [would tell] the whole truth without hesitating.',
       ],
     ],
   },

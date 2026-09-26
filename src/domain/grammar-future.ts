@@ -210,8 +210,8 @@ export const futureVerbs: Record<string, Verb> = {
     forms: ['vendré', 'vendrás', 'vendrá', 'vendremos', 'vendrán'],
     contexts: [
       [
-        'El próximo domingo {subject} ___ a comer con nosotros.',
-        'Next Sunday, {subject} [will come] to eat with us.',
+        'El próximo domingo {subject} ___ a comer en familia.',
+        'Next Sunday, {subject} [will come] to eat with the family.',
       ],
       [
         'A la fiesta {subject} ___ con ropa cómoda.',
