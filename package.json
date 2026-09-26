@@ -43,7 +43,8 @@
     "deploy:preview": "npm run build && wrangler versions upload",
     "test:release": "node --test tests/release/*.test.ts",
     "pr:merge": "node scripts/merge-coordinator.ts",
-    "agent:worktree": "node scripts/agent-worktree.ts"
+    "agent:worktree": "node scripts/agent-worktree.ts",
+    "verify:ui": "node scripts/verify-ui.ts"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.2",
