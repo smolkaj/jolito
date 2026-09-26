@@ -84,6 +84,9 @@ describe('imperfect tense (pretérito imperfecto)', () => {
         cards.some((c) => imperfectVerbs[c.grammar.verb]?.family === family.id),
       ).toBe(true)
     }
+    expect(imperfectFamilies.find((f) => f.id === 'ar')?.example).toBe(
+      'hablaba · caminaba · trabajaba',
+    )
 
     // Verify card structure and sentence contexts
     for (const card of cards) {
@@ -165,6 +168,8 @@ describe('imperfect tense (pretérito imperfecto)', () => {
         expect(context.sentence).not.toMatch(/\bde niño\b/i)
         expect(context.sentence).not.toMatch(/\btímido\b/i)
         expect(context.sentence).not.toMatch(/\bpreguntón\b/i)
+        expect(context.sentence).not.toMatch(/\bmientras cocinaba\b/i)
+        expect(context.sentence).not.toMatch(/\bde joven\b/i)
         expect(context.completed).toContain(card.answer)
       }
     }

@@ -11,7 +11,7 @@ export const subjunctiveFamilies = [
     id: 'stem-change',
     title: 'Stem changes',
     example: 'piense · pueda · pida',
-    rule: 'Stem changes (e→ie, o→ue, e→i) apply in all singular forms and 3rd person plural. Nosotros keeps regular e/o (or u in dormir).',
+    rule: 'Stem changes apply in all singular forms and 3rd person plural. In nosotros, -ar/-er verbs keep regular vowels, while -ir verbs shift (e→i in pidamos, o→u in durmamos).',
   },
   {
     id: 'yo-stem',
@@ -299,7 +299,7 @@ export const subjunctiveVerbs: Record<string, Verb> = {
       ],
       [
         'Espero que {subject} ___ la verdad sobre lo ocurrido.',
-        'I hope {subject} [say{s}] the truth about what happened.',
+        'I hope {subject} [tell{s}] the truth about what happened.',
       ],
     ],
   },

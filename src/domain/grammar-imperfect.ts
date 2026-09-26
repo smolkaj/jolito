@@ -4,7 +4,7 @@ export const imperfectFamilies = [
   {
     id: 'ar',
     title: '-ar endings',
-    example: 'hablaba · cantaba · trabajaba',
+    example: 'hablaba · caminaba · trabajaba',
     rule: 'Add -aba, -abas, -aba, -ábamos, -aban to the -ar stem. Note the written accent on nosotros: -ábamos.',
   },
   {
@@ -150,7 +150,7 @@ export const imperfectVerbs: Record<string, Verb> = {
         'In the living room, {subject} [listened] to classical music on the radio.',
       ],
       [
-        'Mientras cocinaba, {subject} ___ noticias en el teléfono.',
+        'Al cocinar, {subject} ___ noticias en el teléfono.',
         'While cooking, {subject} [listened] to news on the phone.',
       ],
     ],
@@ -176,8 +176,8 @@ export const imperfectVerbs: Record<string, Verb> = {
     forms: ['vivía', 'vivías', 'vivía', 'vivíamos', 'vivían'],
     contexts: [
       [
-        'De joven {subject} ___ en un departamento en Coyoacán.',
-        'When young, {subject} [lived] in an apartment in Coyoacán.',
+        'En la juventud {subject} ___ en un departamento en Coyoacán.',
+        'In youth, {subject} [lived] in an apartment in Coyoacán.',
       ],
       [
         'Antes de mudarse, {subject} ___ cerca del centro histórico.',

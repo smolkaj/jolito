@@ -153,6 +153,13 @@ describe('present subjunctive (presente de subjuntivo)', () => {
       ).toBe(true)
     }
 
+    const stemChangeFamily = subjunctiveFamilies.find(
+      (f) => f.id === 'stem-change',
+    )
+    expect(stemChangeFamily?.rule).toContain('pidamos')
+    expect(stemChangeFamily?.rule).toContain('durmamos')
+    expect(stemChangeFamily?.rule).not.toContain('keeps regular e/o')
+
     // Verify card structure and sentence contexts
     for (const card of cards) {
       expect(studyCardSchema.parse(card)).toEqual(card)
@@ -226,6 +233,10 @@ describe('present subjunctive (presente de subjuntivo)', () => {
         expect(context.sentence).not.toMatch(/\bacompañarnos\b/i)
         expect(context.sentence).not.toMatch(/\blisto cuando\b/i)
         expect(context.sentence).not.toMatch(/\bpreparado para\b/i)
+        if (card.grammar.verb === 'decir') {
+          expect(context.translation).toMatch(/\btell/i)
+          expect(context.translation).not.toMatch(/\bsay/i)
+        }
       }
     }
   })

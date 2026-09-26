@@ -19,7 +19,7 @@ Every tense shares the single-practice architecture: typed recall, accent helper
 
 Drills past habitual actions, background descriptions, and continuous states in the past across three pattern families:
 
-1. **`-ar` endings (`ar`):** `hablaba · cantaba · trabajaba` (rule: _Add -aba, -abas, -aba, -ábamos, -aban to the -ar stem. Note the written accent on nosotros: -ábamos._)
+1. **`-ar` endings (`ar`):** `hablaba · caminaba · trabajaba` (rule: _Add -aba, -abas, -aba, -ábamos, -aban to the -ar stem. Note the written accent on nosotros: -ábamos._)
 2. **`-er` and `-ir` endings (`er-ir`):** `comía · vivía · tenía` (rule: _Add -ía, -ías, -ía, -íamos, -ían to the -er or -ir stem. Every form carries a written accent on the í._)
 3. **Irregular verbs (`irregular`):** The only three irregular verbs in Spanish imperfect: _ser_ (`era`), _ir_ (`iba`), and _ver_ (`veía`).
 
@@ -52,6 +52,6 @@ Drills hypothetical situations, polite requests, and future-in-the-past across f
 Drills expressions of desire, doubt, emotion, requirement, and recommendations across four pattern families:
 
 1. **Regular opposite endings (`regular`):** Switch thematic vowel: `-ar` takes `-e, -es, -e, -emos, -en`; `-er/-ir` takes `-a, -as, -a, -amos, -an` (_hable, coma, viva_).
-2. **Stem changes (`stem-change`):** Root-vowel boot changes (`piense, pueda, pida`), preserving regular vowels in _nosotros/as_ (with _o → u_ in _durmamos_).
+2. **Stem changes (`stem-change`):** Stem changes apply in all singular forms and 3rd person plural. In nosotros, -ar/-er verbs keep regular vowels, while -ir verbs shift (e→i in pidamos, o→u in durmamos).
 3. **Present yo-stems (`yo-stem`):** Built from irregular present indicative _yo_ stems: _hacer_ (`haga`), _tener_ (`tenga`), _poner_ (`ponga`), _salir_ (`salga`), _decir_ (`diga`), _venir_ (`venga`).
 4. **Essential irregulars (`irregular`):** Unique non-_o_ stems: _ser_ (`sea`), _estar_ (`esté`), _ir_ (`vaya`), _saber_ (`sepa`), _dar_ (`dé`).
