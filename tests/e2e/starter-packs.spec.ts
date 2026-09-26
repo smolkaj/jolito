@@ -170,6 +170,21 @@ test('curated starter packs modal allows adding packs with zero WCAG violations 
   const axeResults = await auditAccessibility(page)
   expect(axeResults.violations).toEqual([])
 
+  // Verify clicking the starter pack card body (outside buttons) opens the inspect view
+  const founderCard = page.locator('[data-pack-id="founder-condesa-notebook"]')
+  await founderCard.scrollIntoViewIfNeeded()
+  await founderCard.click()
+  await expect(
+    page.getByRole('button', { name: /back to all starter packs/i }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /founder's cdmx notebook/i }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: /back to all starter packs/i }).click()
+  await expect(
+    page.getByRole('button', { name: /back to all starter packs/i }),
+  ).not.toBeVisible()
+
   // Add Mexican street phrases pack
   const addBtn = page.getByRole('button', {
     name: /^add mexican street phrases/i,

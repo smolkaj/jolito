@@ -603,4 +603,99 @@ describe('StarterPacksModal', () => {
     )
     expect(screen.queryByText(/Remove 72 cards from deck\?/i)).toBeNull()
   })
+
+  it('opens inspect view when clicking anywhere on a starter pack card outside action buttons', () => {
+    const onAddPack = vi.fn()
+    const { rerender } = render(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={[]}
+        onAddPack={onAddPack}
+      />,
+    )
+
+    // 1. Clicking on pack title inspects the pack
+    const title = screen.getByText('Mexican Street Phrases')
+    fireEvent.click(title)
+
+    expect(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Mexican Street Phrases' }),
+    ).toBeInTheDocument()
+
+    // Return to pack list
+    fireEvent.click(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    )
+    expect(screen.getByText('Curated starter packs')).toBeInTheDocument()
+
+    // 2. Clicking on pack description inspects the pack
+    const desc = screen.getByText(
+      /Authentic street slang and polite spoken etiquette from Mexico City\./i,
+    )
+    fireEvent.click(desc)
+    expect(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    ).toBeInTheDocument()
+
+    // Return to pack list
+    fireEvent.click(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    )
+
+    // 3. Clicking on the card container element itself inspects the pack
+    const cardElement = screen
+      .getByText('Top Connectors: 1–50')
+      .closest('.starter-pack-card')!
+    expect(cardElement).toBeInTheDocument()
+    fireEvent.click(cardElement)
+    expect(
+      screen.getByRole('heading', { name: 'Top Connectors: 1–50' }),
+    ).toBeInTheDocument()
+
+    // Return to pack list
+    fireEvent.click(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    )
+
+    // 4. Clicking the Add button does NOT trigger inspect, but calls onAddPack
+    const addBtn = screen.getByRole('button', {
+      name: /Add Mexican Street Phrases \(72 cards\)/i,
+    })
+    fireEvent.click(addBtn)
+    expect(onAddPack).toHaveBeenCalledTimes(1)
+    expect(onAddPack).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'mexican-street-phrases' }),
+    )
+    // We should still be on the main pack list, NOT inside inspect view
+    expect(
+      screen.queryByRole('button', { name: /Back to all starter packs/i }),
+    ).toBeNull()
+
+    // 5. Clicking on an already-added pack card still opens inspect view
+    const streetPack = findStarterPack('mexican-street-phrases')!
+    const allStreetCards = streetPack.createCards(0)
+    rerender(
+      <StarterPacksModal
+        isOpen={true}
+        onClose={vi.fn()}
+        cards={allStreetCards}
+        onAddPack={onAddPack}
+      />,
+    )
+    const addedCard = screen
+      .getByText('Mexican Street Phrases')
+      .closest('.starter-pack-card')!
+    expect(addedCard).toHaveClass('is-added')
+    fireEvent.click(addedCard)
+    expect(
+      screen.getByRole('button', { name: /Back to all starter packs/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Mexican Street Phrases' }),
+    ).toBeInTheDocument()
+  })
 })

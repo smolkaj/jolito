@@ -245,6 +245,12 @@ function StarterPacksModalInner({
     }))
   }, [inspectingPack])
 
+  const handleInspectPack = (packId: string) => {
+    setConfirmingRemovePackId(null)
+    lastInspectedPackIdRef.current = packId
+    setInspectingPackId(packId)
+  }
+
   return (
     <ModalSheet
       ref={modalRef}
@@ -545,6 +551,17 @@ function StarterPacksModalInner({
                   data-pack-id={pack.id}
                   className={`starter-pack-card theme-${pack.themeColor} ${isAllAdded ? 'is-added' : ''}`}
                   role="listitem"
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement | null
+                    if (
+                      target?.closest(
+                        'button, input, a, select, textarea, .starter-pack-confirm-wrap',
+                      )
+                    ) {
+                      return
+                    }
+                    handleInspectPack(pack.id)
+                  }}
                 >
                   <div className="starter-pack-head">
                     <div className="starter-pack-header-row">
@@ -564,11 +581,7 @@ function StarterPacksModalInner({
                     <button
                       type="button"
                       className="secondary-button starter-pack-inspect-btn"
-                      onClick={() => {
-                        setConfirmingRemovePackId(null)
-                        lastInspectedPackIdRef.current = pack.id
-                        setInspectingPackId(pack.id)
-                      }}
+                      onClick={() => handleInspectPack(pack.id)}
                       aria-label={`Inspect ${pack.title} cards`}
                     >
                       Inspect pack
