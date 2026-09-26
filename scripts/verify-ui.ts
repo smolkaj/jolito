@@ -1,7 +1,7 @@
 import { chromium, type BrowserContext } from '@playwright/test'
-import { createServer, type Server } from 'node:http'
-import { readFileSync, statSync, mkdirSync, existsSync } from 'node:fs'
-import { resolve, join, sep, basename, relative } from 'node:path'
+import { preview } from 'vite'
+import { readFileSync, mkdirSync, existsSync } from 'node:fs'
+import { resolve, join, basename, relative } from 'node:path'
 import { execSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 
@@ -213,15 +213,15 @@ export function resolveRoutes(routes: string[]): RouteTarget[] {
 
     if (clean.startsWith('#')) {
       const slug = clean.slice(1).replace(/\/+$/, '')
-      return resolveKnownRouteSlug(slug, `/#${slug}`)
+      return resolveKnownRouteSlug(slug, `#/${slug}`)
     }
 
     if (clean.startsWith('/')) {
       const slug = clean.slice(1).replace(/\/+$/, '')
-      return resolveKnownRouteSlug(slug, `/#/${slug}`)
+      return resolveKnownRouteSlug(slug, `#/${slug}`)
     }
 
-    return resolveKnownRouteSlug(clean, `/#/${clean}`)
+    return resolveKnownRouteSlug(clean, `#/${clean}`)
   })
 }
 
@@ -337,9 +337,16 @@ export function formatMarkdownReport(
 
   const tableRows = results.map((r) => {
     const displayPath = relative(root, r.localPath) || r.localPath
-    const status = r.uploaded ? 'Uploaded (72h)' : 'Local File'
-    const linkText = r.uploaded ? 'Direct Image' : displayPath
-    const link = `[${linkText}](${r.url})`
+    let status = 'Uploaded (72h)'
+    let link = `[Direct Image](${r.url})`
+
+    if (!r.uploaded) {
+      status = r.error
+        ? `Local File (${r.error})`
+        : 'Local File (Upload skipped)'
+      link = `[${displayPath}](${r.url})`
+    }
+
     return `| ${r.viewName} | ${r.viewportName} | ${capitalize(r.colorScheme)} | ${r.dimensions} | ${status} | ${link} |`
   })
 
@@ -381,83 +388,33 @@ export interface ServerInstance {
   close?: () => Promise<void>
 }
 
-export async function createStaticServer(
-  distDir: string,
+export async function createPreviewServer(
+  rootDir: string,
   port = 0,
 ): Promise<{
-  server: Server
   port: number
   baseUrl: string
   close: () => Promise<void>
 }> {
-  const contentTypes: Record<string, string> = {
-    html: 'text/html; charset=utf-8',
-    js: 'application/javascript; charset=utf-8',
-    css: 'text/css; charset=utf-8',
-    png: 'image/png',
-    webp: 'image/webp',
-    svg: 'image/svg+xml',
-    wasm: 'application/wasm',
-    ico: 'image/x-icon',
-    json: 'application/json',
-    webmanifest: 'application/manifest+json',
-  }
-
-  const server = createServer((req, res) => {
-    let reqPath = decodeURIComponent((req.url || '/').split('?')[0] || '/')
-    if (reqPath === '/' || !reqPath.includes('.')) {
-      reqPath = '/index.html'
-    }
-
-    const filePath = resolve(
-      distDir,
-      `.${reqPath.startsWith('/') ? reqPath : `/${reqPath}`}`,
-    )
-    if (!filePath.startsWith(distDir + sep) && filePath !== distDir) {
-      res.writeHead(403)
-      res.end('Forbidden')
-      return
-    }
-
-    const isFile = statSync(filePath, { throwIfNoEntry: false })?.isFile()
-    if (isFile) {
-      const ext = filePath.split('.').pop() || ''
-      res.writeHead(200, {
-        'Content-Type': contentTypes[ext] || 'application/octet-stream',
-      })
-      res.end(readFileSync(filePath))
-    } else {
-      const indexPath = join(distDir, 'index.html')
-      if (existsSync(indexPath)) {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        res.end(readFileSync(indexPath))
-      } else {
-        res.writeHead(404)
-        res.end('Not found')
-      }
-    }
+  const previewServer = await preview({
+    root: rootDir,
+    preview: {
+      port,
+      host: '127.0.0.1',
+    },
   })
 
-  const assignedPort = await new Promise<number>((resolvePort, reject) => {
-    server.on('error', reject)
-    server.listen(port, () => {
-      const addr = server.address()
-      if (typeof addr === 'object' && addr) {
-        resolvePort(addr.port)
-      } else {
-        resolvePort(port)
-      }
-    })
-  })
+  const addr = previewServer.httpServer.address()
+  const assignedPort =
+    typeof addr === 'object' && addr && 'port' in addr ? addr.port : port
+  const baseUrl = `http://127.0.0.1:${assignedPort}`
 
   return {
-    server,
     port: assignedPort,
-    baseUrl: `http://localhost:${assignedPort}`,
-    close: () =>
-      new Promise<void>((resolveClose) => {
-        server.close(() => resolveClose())
-      }),
+    baseUrl,
+    close: async () => {
+      await previewServer.close()
+    },
   }
 }
 
@@ -491,9 +448,19 @@ export async function findOrStartServer(options: {
     return { baseUrl: 'http://localhost:5173' }
   }
 
+  if (await isServerReachable('http://127.0.0.1:5173')) {
+    console.log('Reusing existing Vite dev server at http://127.0.0.1:5173')
+    return { baseUrl: 'http://127.0.0.1:5173' }
+  }
+
   if (await isServerReachable('http://localhost:4173')) {
     console.log('Reusing existing preview server at http://localhost:4173')
     return { baseUrl: 'http://localhost:4173' }
+  }
+
+  if (await isServerReachable('http://127.0.0.1:4173')) {
+    console.log('Reusing existing preview server at http://127.0.0.1:4173')
+    return { baseUrl: 'http://127.0.0.1:4173' }
   }
 
   const distDir = join(options.rootDir, 'dist')
@@ -510,8 +477,8 @@ export async function findOrStartServer(options: {
     )
   }
 
-  console.log('Starting local static preview server...')
-  const server = await createStaticServer(distDir)
+  console.log('Starting Vite preview server on ephemeral port...')
+  const server = await createPreviewServer(options.rootDir)
   console.log(`Preview server listening at ${server.baseUrl}`)
 
   return {

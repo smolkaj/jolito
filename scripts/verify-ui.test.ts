@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   parseCliArgs,
   resolveRoutes,
   uploadToLitterbox,
   formatMarkdownReport,
-  createStaticServer,
+  createPreviewServer,
   isServerReachable,
   DEFAULT_ROUTES,
   VIEWPORTS,
@@ -148,12 +148,12 @@ describe('verify-ui script', () => {
       expect(custom[0]).toEqual({
         id: 'account-settings',
         name: 'Account Settings',
-        path: '/#/account-settings',
+        path: '#/account-settings',
       })
       expect(custom[1]).toEqual({
         id: 'demo-feature',
         name: 'Demo Feature',
-        path: '/#/demo-feature',
+        path: '#/demo-feature',
       })
     })
   })
@@ -260,7 +260,7 @@ describe('verify-ui script', () => {
         '| Home | Desktop | Light | 1280x800 | Uploaded (72h) | [Direct Image](https://litter.catbox.moe/home-desktop-light.png) |',
       )
       expect(report).toContain(
-        '| Home | Mobile | Dark | 390x844 (@2x) | Local File | [.screenshots/home-mobile-dark.png](/app/.screenshots/home-mobile-dark.png) |',
+        '| Home | Mobile | Dark | 390x844 (@2x) | Local File (Offline) | [.screenshots/home-mobile-dark.png](/app/.screenshots/home-mobile-dark.png) |',
       )
 
       expect(report).toContain('#### Home')
@@ -273,39 +273,16 @@ describe('verify-ui script', () => {
     })
   })
 
-  describe('Static Server & Reachability', () => {
-    const tempStaticDir = join(
-      process.cwd(),
-      'node_modules/.tmp/verify-ui-static',
-    )
-
-    it('serves files and handles SPA index fallback then shuts down cleanly', async () => {
-      mkdirSync(tempStaticDir, { recursive: true })
-      writeFileSync(
-        join(tempStaticDir, 'index.html'),
-        '<!doctype html><html><body>Test App</body></html>',
-      )
-      writeFileSync(join(tempStaticDir, 'style.css'), 'body { color: red; }')
-
-      const server = await createStaticServer(tempStaticDir, 0)
+  describe('Preview Server & Reachability', () => {
+    it('spins up programmatic Vite preview server and shuts down cleanly', async () => {
+      const server = await createPreviewServer(process.cwd(), 0)
       expect(server.port).toBeGreaterThan(0)
-      expect(server.baseUrl).toBe(`http://localhost:${server.port}`)
+      expect(server.baseUrl).toBe(`http://127.0.0.1:${server.port}`)
 
       // Root path serves index.html
       const rootRes = await fetch(server.baseUrl)
       expect(rootRes.status).toBe(200)
-      expect(await rootRes.text()).toContain('Test App')
-
-      // Static asset serves with correct Content-Type
-      const assetRes = await fetch(`${server.baseUrl}/style.css`)
-      expect(assetRes.status).toBe(200)
-      expect(assetRes.headers.get('content-type')).toContain('text/css')
-      expect(await assetRes.text()).toBe('body { color: red; }')
-
-      // SPA fallback serves index.html for non-asset routes
-      const spaRes = await fetch(`${server.baseUrl}/non-existent-route`)
-      expect(spaRes.status).toBe(200)
-      expect(await spaRes.text()).toContain('Test App')
+      expect(await rootRes.text()).toContain('<!doctype html>')
 
       // Reachability check
       expect(await isServerReachable(server.baseUrl)).toBe(true)
@@ -313,10 +290,6 @@ describe('verify-ui script', () => {
       // Teardown
       await server.close()
       expect(await isServerReachable(server.baseUrl)).toBe(false)
-
-      if (existsSync(tempStaticDir)) {
-        rmSync(tempStaticDir, { recursive: true, force: true })
-      }
     })
   })
 
