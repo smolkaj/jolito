@@ -5,6 +5,7 @@ import {
   createNewReviewSchedule,
   createStudyCards,
   deleteStudyCard,
+  deleteStudyCards,
   intervalLabel,
   isDue,
   localeForAnswer,
@@ -591,6 +592,50 @@ describe('Anki spaced repetition scheduling', () => {
       const remaining = deleteStudyCard(cards, 'non-existent')
       expect(remaining).toHaveLength(2)
       expect(remaining).toEqual(cards)
+    })
+  })
+
+  describe('deleteStudyCards', () => {
+    const cards = [
+      ...createStudyCards(
+        { spanish: 'uno', english: 'one', context: '', bidirectional: true },
+        'note-1',
+        now,
+      ),
+      ...createStudyCards(
+        { spanish: 'dos', english: 'two', context: '', bidirectional: true },
+        'note-2',
+        now,
+      ),
+    ]
+
+    it('removes multiple cards in a single pass', () => {
+      const remaining = deleteStudyCards(cards, [
+        'note-1:es-en',
+        'note-2:en-es',
+      ])
+      expect(remaining).toHaveLength(2)
+      expect(remaining.map((c) => c.id)).toEqual([
+        'note-1:en-es',
+        'note-2:es-en',
+      ])
+    })
+
+    it('accepts a Set of card IDs', () => {
+      const remaining = deleteStudyCards(
+        cards,
+        new Set(['note-1:es-en', 'note-1:en-es']),
+      )
+      expect(remaining).toHaveLength(2)
+      expect(remaining.map((c) => c.id)).toEqual([
+        'note-2:es-en',
+        'note-2:en-es',
+      ])
+    })
+
+    it('returns original cards if empty iterable is provided', () => {
+      expect(deleteStudyCards(cards, [])).toEqual(cards)
+      expect(deleteStudyCards(cards, new Set())).toEqual(cards)
     })
   })
 

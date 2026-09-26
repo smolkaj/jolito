@@ -23,7 +23,7 @@ import {
   orderCardsForReview,
   scheduleReview,
   updateStudyCard,
-  deleteStudyCard,
+  deleteStudyCards,
   DEFAULT_STUDY_BATCH_SIZE,
   type Grade,
   type StudyCard,
@@ -721,10 +721,7 @@ function LoadedApp({
   const handleDeleteCards = useCallback(
     (cardsToDelete: StudyCard[]): boolean => {
       const idsToDelete = new Set(cardsToDelete.map((c) => c.id))
-      let updatedCards = cardsRef.current
-      for (const id of idsToDelete) {
-        updatedCards = deleteStudyCard(updatedCards, id)
-      }
+      const updatedCards = deleteStudyCards(cardsRef.current, idsToDelete)
       const updatedDeletedIds = Array.from(
         new Set([...deletedCardIdsRef.current, ...idsToDelete]),
       )
