@@ -3,7 +3,7 @@ import { createGrammarCards, grammarContext } from './grammar'
 import { grammarVerb } from './grammar-catalog'
 
 describe('authored English verb alignment', () => {
-  it.each(['preterite', 'perfect', 'gerund'] as const)(
+  it.each(['present', 'preterite', 'perfect', 'gerund'] as const)(
     'resolves every %s person and context into clean text with explicit verb spans',
     (topic) => {
       for (const card of createGrammarCards(0, topic)) {
@@ -30,6 +30,19 @@ describe('authored English verb alignment', () => {
   )
 
   it.each([
+    ['present', 'hablar', 0, 0, ['I', 'speak']],
+    ['present', 'hablar', 2, 0, ['speaks']],
+    ['present', 'hablar', 2, 1, ['you', 'speak']],
+    ['present', 'querer', 0, 0, ['I', 'want']],
+    ['present', 'querer', 2, 0, ['wants']],
+    ['present', 'poder', 2, 0, ['can']],
+    ['present', 'hacer', 0, 0, ['I', 'do']],
+    ['present', 'hacer', 2, 0, ['does']],
+    ['present', 'ser', 0, 0, ['I', 'am']],
+    ['present', 'ser', 2, 0, ['is']],
+    ['present', 'ser', 2, 1, ['you', 'are']],
+    ['present', 'tener', 0, 0, ['I', 'have']],
+    ['present', 'tener', 2, 0, ['has']],
     ['preterite', 'comer', 0, 0, ['ate']],
     ['preterite', 'comer', 0, 1, ['I', 'ate']],
     ['preterite', 'poder', 0, 0, ['I', 'managed to']],
