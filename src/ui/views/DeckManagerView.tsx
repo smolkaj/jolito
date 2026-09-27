@@ -261,15 +261,7 @@ export function DeckManagerView({
         />
         <section className="deck-layout">
           <header className="deck-header-row">
-            <div className="deck-header-title-wrap">
-              <h1>Manage deck</h1>
-              {vocabularyCards.length > 0 && (
-                <span className="deck-header-count">
-                  {vocabularyCards.length}{' '}
-                  {vocabularyCards.length === 1 ? 'card' : 'cards'}
-                </span>
-              )}
-            </div>
+            <h1>Manage deck</h1>
             <div className="deck-header-actions">
               <button
                 type="button"
@@ -301,15 +293,17 @@ export function DeckManagerView({
                 aria-label="Search cards in deck"
                 autoCapitalize="none"
               />
+              {vocabularyCards.length > 0 && (
+                <span className="deck-search-count" aria-live="polite">
+                  {filteredDeckCards.length === vocabularyCards.length
+                    ? `${vocabularyCards.length} ${vocabularyCards.length === 1 ? 'card' : 'cards'}`
+                    : `${filteredDeckCards.length} of ${vocabularyCards.length} cards`}
+                </span>
+              )}
             </div>
 
             <div className="deck-toolbar-controls">
               <div className="deck-toolbar-meta">
-                {filteredDeckCards.length !== vocabularyCards.length && (
-                  <span className="deck-card-count" aria-live="polite">
-                    {`${filteredDeckCards.length} of ${vocabularyCards.length} cards`}
-                  </span>
-                )}
                 {(duplicatesCount > 0 || showOnlyDuplicates) && (
                   <button
                     type="button"
