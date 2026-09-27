@@ -7,8 +7,6 @@ import {
 import { getDuplicateGroups } from '../domain/duplicate'
 import { getStarterPackForCard } from '../domain/starter-decks'
 
-export type DeckFilterState = 'all' | 'duplicates'
-
 export type DeckSortOrder =
   | 'created-desc'
   | 'created-asc'
@@ -28,37 +26,8 @@ export type DeckSortOrder =
 export interface FilterDeckOptions {
   query?: string
   onlyDuplicates?: boolean
-  stateFilter?: DeckFilterState
   sortOrder?: DeckSortOrder
   now?: number
-}
-
-export interface DeckStats {
-  total: number
-  due: number
-  duplicatesCount: number
-}
-
-export function getDeckStats(cards: StudyCard[], now: number): DeckStats {
-  let due = 0
-
-  for (const card of cards) {
-    if (isDue(card, now)) {
-      due++
-    }
-  }
-
-  const duplicateGroups = getDuplicateGroups(cards)
-  let duplicatesCount = 0
-  for (const group of duplicateGroups.values()) {
-    duplicatesCount += group.length
-  }
-
-  return {
-    total: cards.length,
-    due,
-    duplicatesCount,
-  }
 }
 
 function normalizeForAlphaSort(text: string): string {
@@ -216,7 +185,7 @@ export function filterDeckCards(
 ): StudyCard[] {
   const {
     query,
-    onlyDuplicates = options.stateFilter === 'duplicates',
+    onlyDuplicates = false,
     sortOrder = 'created-desc',
     now = Date.now(),
   } = options

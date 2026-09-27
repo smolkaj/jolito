@@ -6,7 +6,6 @@ import {
 import {
   type DeckSortOrder,
   filterDeckCards,
-  getDeckStats,
 } from '../../application/deck-management'
 import type { AuthUser, HapticsPlayer } from '../../application/ports'
 import { type StudyCard, cardMemoryIndicators } from '../../domain/card'
@@ -154,10 +153,7 @@ export function DeckManagerView({
     [vocabularyCards],
   )
 
-  const deckStats = useMemo(
-    () => getDeckStats(vocabularyCards, referenceTime),
-    [vocabularyCards, referenceTime],
-  )
+  const duplicatesCount = duplicateCardIds.size
 
   const filteredDeckCards = useMemo(
     () =>
@@ -306,8 +302,7 @@ export function DeckManagerView({
                     ? `${vocabularyCards.length} ${vocabularyCards.length === 1 ? 'card' : 'cards'}`
                     : `${filteredDeckCards.length} of ${vocabularyCards.length} cards`}
                 </span>
-                {((deckStats.duplicatesCount ?? 0) > 0 ||
-                  showOnlyDuplicates) && (
+                {(duplicatesCount > 0 || showOnlyDuplicates) && (
                   <button
                     type="button"
                     className={`deck-filter-pill ${showOnlyDuplicates ? 'is-active' : ''}`}
@@ -315,7 +310,7 @@ export function DeckManagerView({
                     aria-pressed={showOnlyDuplicates}
                     title="Filter to cards sharing the same prompt in the same direction"
                   >
-                    Duplicates ({deckStats.duplicatesCount ?? 0})
+                    Duplicates ({duplicatesCount})
                   </button>
                 )}
               </div>

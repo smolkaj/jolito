@@ -5713,13 +5713,6 @@ kbd {
   color: var(--ink-muted);
 }
 
-.deck-filter-pills {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .deck-filter-pill {
   display: inline-flex;
   align-items: center;
@@ -6142,18 +6135,6 @@ kbd {
 
 @media (max-width: 680px) {
   .deck-list-table-header {
-    display: none;
-  }
-
-  .deck-filter-pills {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-
-  .deck-filter-pills::-webkit-scrollbar {
     display: none;
   }
 

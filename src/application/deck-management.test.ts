@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createStudyCards, type StudyCard } from '../domain/card'
-import {
-  filterDeckCards,
-  getDeckStats,
-  sortDeckCards,
-  type DeckStats,
-} from './deck-management'
+import { filterDeckCards, sortDeckCards } from './deck-management'
 
 const now = Date.UTC(2026, 7, 21, 12, 0, 0)
 const DAY = 24 * 60 * 60 * 1000
@@ -109,26 +104,6 @@ describe('deck-management', () => {
     },
   ]
 
-  describe('getDeckStats', () => {
-    it('computes counts for total, due, and duplicates', () => {
-      const stats: DeckStats = getDeckStats(cards, now)
-      expect(stats).toEqual({
-        total: 5,
-        due: 3, // aguacate (new, due now), chido (relearning overdue), ahorita (review overdue)
-        duplicatesCount: 0,
-      })
-    })
-
-    it('handles empty cards array gracefully', () => {
-      const stats = getDeckStats([], now)
-      expect(stats).toEqual({
-        total: 0,
-        due: 0,
-        duplicatesCount: 0,
-      })
-    })
-  })
-
   describe('filterDeckCards', () => {
     it('returns all cards when no query or options are provided', () => {
       const result = filterDeckCards(cards, { now })
@@ -201,8 +176,6 @@ describe('deck-management', () => {
       )[0]!
 
       const cardsWithDuplicate = [...cards, duplicateCard]
-      const stats = getDeckStats(cardsWithDuplicate, now)
-      expect(stats.duplicatesCount).toBe(2)
 
       const duplicateResults = filterDeckCards(cardsWithDuplicate, {
         onlyDuplicates: true,
