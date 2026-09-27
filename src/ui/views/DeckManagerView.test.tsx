@@ -243,6 +243,19 @@ describe('DeckManagerView', () => {
       'title',
       'English Prompt → Mexican Spanish Answer',
     )
+
+    const dirBadges = container.querySelectorAll('.deck-direction-badge')
+    expect(dirBadges).toHaveLength(3)
+    const firstDirBadge = dirBadges[0]!
+    expect(firstDirBadge).toHaveAttribute(
+      'aria-label',
+      'Mexican Spanish Prompt → English Answer',
+    )
+    expect(firstDirBadge.querySelector('.flag-mx')).toBeInTheDocument()
+    expect(firstDirBadge.querySelector('.badge-en')).toBeInTheDocument()
+    expect(firstDirBadge.querySelector('.deck-dir-arrow')).toHaveTextContent(
+      '→',
+    )
   })
 
   it('renders sort options matching SORT_ORDER_LABELS as single source of truth', () => {

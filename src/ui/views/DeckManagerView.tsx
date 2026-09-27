@@ -763,9 +763,29 @@ export function DeckManagerView({
                             ? 'Mexican Spanish Prompt → English Answer'
                             : 'English Prompt → Mexican Spanish Answer'
                         }
+                        aria-label={
+                          isEsToEn
+                            ? 'Mexican Spanish Prompt → English Answer'
+                            : 'English Prompt → Mexican Spanish Answer'
+                        }
                       >
-                        {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}
-                        <span>{isEsToEn ? 'ES → EN' : 'EN → ES'}</span>
+                        {isEsToEn ? (
+                          <>
+                            <MexicoFlag />
+                            <span className="deck-dir-arrow" aria-hidden="true">
+                              →
+                            </span>
+                            <EnglishBadge />
+                          </>
+                        ) : (
+                          <>
+                            <EnglishBadge />
+                            <span className="deck-dir-arrow" aria-hidden="true">
+                              →
+                            </span>
+                            <MexicoFlag />
+                          </>
+                        )}
                       </span>
                     </div>
                     <div className="col-phrase col-prompt" role="cell">
