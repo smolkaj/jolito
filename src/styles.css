@@ -5667,7 +5667,7 @@ kbd {
 
 .deck-search-input {
   width: 100%;
-  padding: 12px 105px 12px 42px;
+  padding: 12px 16px 12px 42px;
   border: 2px solid var(--control-line);
   border-radius: 14px;
   background: var(--input-bg);
@@ -5693,21 +5693,6 @@ kbd {
   color: var(--ink-muted);
 }
 
-.deck-search-count {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-muted);
-  pointer-events: none;
-  user-select: none;
-  line-height: 1;
-  white-space: nowrap;
-}
-
 .deck-toolbar-controls {
   display: flex;
   align-items: center;
@@ -5722,15 +5707,22 @@ kbd {
   gap: 10px;
 }
 
-.deck-toolbar-meta:empty {
-  display: none;
+.deck-card-count {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  letter-spacing: -0.1px;
+  white-space: nowrap;
 }
 
 @media not all and (max-width: 680px) {
-  .deck-toolbar-controls:has(.deck-toolbar-meta:empty):not(
-      :has(.deck-batch-actions)
-    ) {
-    display: none;
+  .deck-toolbar-controls:not(:has(.deck-batch-actions)) .deck-toolbar-meta {
+    flex: 1;
+  }
+
+  .deck-toolbar-controls:not(:has(.deck-batch-actions)) .deck-card-count {
+    margin-left: auto;
   }
 }
 

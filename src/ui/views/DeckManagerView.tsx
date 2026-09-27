@@ -293,13 +293,6 @@ export function DeckManagerView({
                 aria-label="Search cards in deck"
                 autoCapitalize="none"
               />
-              {vocabularyCards.length > 0 && (
-                <span className="deck-search-count" aria-live="polite">
-                  {filteredDeckCards.length === vocabularyCards.length
-                    ? `${vocabularyCards.length} ${vocabularyCards.length === 1 ? 'card' : 'cards'}`
-                    : `${filteredDeckCards.length} of ${vocabularyCards.length} cards`}
-                </span>
-              )}
             </div>
 
             <div className="deck-toolbar-controls">
@@ -314,6 +307,13 @@ export function DeckManagerView({
                   >
                     Duplicates ({duplicatesCount})
                   </button>
+                )}
+                {vocabularyCards.length > 0 && (
+                  <span className="deck-card-count" aria-live="polite">
+                    {filteredDeckCards.length === vocabularyCards.length
+                      ? `${vocabularyCards.length} ${vocabularyCards.length === 1 ? 'card' : 'cards'}`
+                      : `${filteredDeckCards.length} of ${vocabularyCards.length} cards`}
+                  </span>
                 )}
               </div>
 
