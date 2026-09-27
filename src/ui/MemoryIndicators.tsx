@@ -138,16 +138,16 @@ export function MemoryIndicators({
     <div
       className={`memory-indicators ${compact ? 'is-compact' : ''} ${className}`.trim()}
     >
-      <ChiliMeter
-        level={indicators.difficulty}
-        ariaLabel={indicators.difficultyLabel}
-        title={indicators.difficultyLabel}
-        ariaHidden={ariaHidden}
-      />
       <MasteryBubbles
         level={indicators.mastery}
         ariaLabel={indicators.masteryLabel}
         title={indicators.masteryLabel}
+        ariaHidden={ariaHidden}
+      />
+      <ChiliMeter
+        level={indicators.difficulty}
+        ariaLabel={indicators.difficultyLabel}
+        title={indicators.difficultyLabel}
         ariaHidden={ariaHidden}
       />
     </div>

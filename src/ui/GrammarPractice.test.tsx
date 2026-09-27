@@ -599,14 +599,23 @@ describe('grammar practice in Jolito', () => {
     const { container } = render(<GrammarPracticeWrapper />)
     const indicators = container.querySelectorAll('.grammar-choice-indicators')
     expect(indicators.length).toBeGreaterThan(0)
+    const firstChoiceIndicators = indicators[0]!
+    const bubbles = firstChoiceIndicators.querySelector('.progress-bubbles')
+    const chilies = firstChoiceIndicators.querySelector('.chili-meter')
+    expect(bubbles).toBeInTheDocument()
+    expect(chilies).toBeInTheDocument()
+    expect(
+      bubbles!.compareDocumentPosition(chilies!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
 
     const allPatternsRadio = screen.getByRole('radio', {
-      name: /all patterns\. difficulty: 0 of 3 chilies \(no heat\), mastery: 0 of 3 bubbles\./i,
+      name: /all patterns\. mastery: 0 of 3 bubbles, difficulty: 0 of 3 chilies \(no heat\)\./i,
     })
     expect(allPatternsRadio).toBeInTheDocument()
 
     const regularRadio = screen.getByRole('radio', {
-      name: /regular endings.*difficulty: 0 of 3 chilies \(no heat\), mastery: 0 of 3 bubbles\./i,
+      name: /regular endings.*mastery: 0 of 3 bubbles, difficulty: 0 of 3 chilies \(no heat\)\./i,
     })
     expect(regularRadio).toBeInTheDocument()
   })
