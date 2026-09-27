@@ -132,9 +132,14 @@ describe('MemoryIndicators', () => {
       difficulty: 8.0,
     }
     const { container } = render(<MemoryIndicators schedule={sched} />)
-    expect(container.querySelector('.memory-indicators')).toBeInTheDocument()
-    expect(container.querySelector('.progress-bubbles')).toBeInTheDocument()
-    expect(container.querySelector('.chili-meter')).toBeInTheDocument()
+    const bubbles = container.querySelector('.progress-bubbles')
+    const chilies = container.querySelector('.chili-meter')
+    expect(bubbles).toBeInTheDocument()
+    expect(chilies).toBeInTheDocument()
+    expect(
+      bubbles!.compareDocumentPosition(chilies!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
     expect(
       container.querySelector('.progress-bubbles.level-2'),
     ).toBeInTheDocument()

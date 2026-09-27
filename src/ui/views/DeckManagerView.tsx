@@ -35,10 +35,10 @@ const SORT_ORDER_LABELS: Record<DeckSortOrder, string> = {
   'answer-desc': 'Answer (Z–A)',
   'direction-asc': 'ES → EN first',
   'direction-desc': 'EN → ES first',
-  'difficulty-desc': 'Spiciest first',
-  'difficulty-asc': 'Mildest first',
   'mastery-desc': 'Highest mastery',
   'mastery-asc': 'Lowest mastery',
+  'difficulty-desc': 'Spiciest first',
+  'difficulty-asc': 'Mildest first',
   'status-asc': 'Due first',
   'status-desc': 'Due last',
 }
@@ -613,40 +613,6 @@ export function DeckManagerView({
                   </button>
                 </div>
                 <div
-                  className="col-difficulty"
-                  role="columnheader"
-                  aria-sort={
-                    deckSortOrder === 'difficulty-desc'
-                      ? 'descending'
-                      : deckSortOrder === 'difficulty-asc'
-                        ? 'ascending'
-                        : 'none'
-                  }
-                >
-                  <button
-                    type="button"
-                    className="deck-sort-header-btn"
-                    onClick={() =>
-                      setDeckSortOrder((c) =>
-                        cycleSortOrder(c, 'difficulty-desc', 'difficulty-asc'),
-                      )
-                    }
-                    aria-label="Sort by difficulty"
-                  >
-                    <span>Difficulty</span>
-                    {deckSortOrder === 'difficulty-desc' && (
-                      <span className="deck-sort-icon" aria-hidden="true">
-                        ↓
-                      </span>
-                    )}
-                    {deckSortOrder === 'difficulty-asc' && (
-                      <span className="deck-sort-icon" aria-hidden="true">
-                        ↑
-                      </span>
-                    )}
-                  </button>
-                </div>
-                <div
                   className="col-mastery"
                   role="columnheader"
                   aria-sort={
@@ -674,6 +640,40 @@ export function DeckManagerView({
                       </span>
                     )}
                     {deckSortOrder === 'mastery-asc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↑
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <div
+                  className="col-difficulty"
+                  role="columnheader"
+                  aria-sort={
+                    deckSortOrder === 'difficulty-desc'
+                      ? 'descending'
+                      : deckSortOrder === 'difficulty-asc'
+                        ? 'ascending'
+                        : 'none'
+                  }
+                >
+                  <button
+                    type="button"
+                    className="deck-sort-header-btn"
+                    onClick={() =>
+                      setDeckSortOrder((c) =>
+                        cycleSortOrder(c, 'difficulty-desc', 'difficulty-asc'),
+                      )
+                    }
+                    aria-label="Sort by difficulty"
+                  >
+                    <span>Difficulty</span>
+                    {deckSortOrder === 'difficulty-desc' && (
+                      <span className="deck-sort-icon" aria-hidden="true">
+                        ↓
+                      </span>
+                    )}
+                    {deckSortOrder === 'difficulty-asc' && (
                       <span className="deck-sort-icon" aria-hidden="true">
                         ↑
                       </span>
@@ -728,7 +728,7 @@ export function DeckManagerView({
                     role="row"
                     tabIndex={0}
                     aria-selected={activeSelectedCardIds.has(card.id)}
-                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. ${indicators.difficultyLabel}, ${indicators.masteryLabel}. Click or press Enter to edit, Space to select.`}
+                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. ${indicators.masteryLabel}, ${indicators.difficultyLabel}. Click or press Enter to edit, Space to select.`}
                     title="Click or press Enter to edit card"
                     onClick={() => onEditCard(card)}
                     onKeyDown={(e) => handleRowKeyDown(e, card)}
@@ -816,19 +816,19 @@ export function DeckManagerView({
                       <span className="deck-answer-text">{card.answer}</span>
                     </div>
 
-                    <div className="col-difficulty" role="cell">
-                      <ChiliMeter
-                        level={indicators.difficulty}
-                        ariaHidden
-                        title={indicators.difficultyLabel}
-                      />
-                    </div>
-
                     <div className="col-mastery" role="cell">
                       <MasteryBubbles
                         level={indicators.mastery}
                         ariaHidden
                         title={indicators.masteryLabel}
+                      />
+                    </div>
+
+                    <div className="col-difficulty" role="cell">
+                      <ChiliMeter
+                        level={indicators.difficulty}
+                        ariaHidden
+                        title={indicators.difficultyLabel}
                       />
                     </div>
 

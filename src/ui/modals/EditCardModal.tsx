@@ -334,20 +334,20 @@ function EditCardModalInner({
             aria-label="Card memory state"
           >
             <div className="edit-card-memory-row">
-              <span className="edit-card-memory-label">Difficulty</span>
-              <div className="edit-card-memory-value">
-                <ChiliMeter
-                  level={indicators.difficulty}
-                  ariaLabel={indicators.difficultyLabel}
-                />
-              </div>
-            </div>
-            <div className="edit-card-memory-row">
               <span className="edit-card-memory-label">Mastery</span>
               <div className="edit-card-memory-value">
                 <MasteryBubbles
                   level={indicators.mastery}
                   ariaLabel={indicators.masteryLabel}
+                />
+              </div>
+            </div>
+            <div className="edit-card-memory-row">
+              <span className="edit-card-memory-label">Difficulty</span>
+              <div className="edit-card-memory-value">
+                <ChiliMeter
+                  level={indicators.difficulty}
+                  ariaLabel={indicators.difficultyLabel}
                 />
               </div>
             </div>

@@ -148,21 +148,21 @@ export function GrammarPractice({
               <span className="grammar-choice-content">
                 <strong>All patterns</strong>
                 <span className="sr-only">
-                  . {mixedIndicators.difficultyLabel},{' '}
-                  {mixedIndicators.masteryLabel}.
+                  . {mixedIndicators.masteryLabel},{' '}
+                  {mixedIndicators.difficultyLabel}.
                 </span>
               </span>
             </div>
             <div className="grammar-choice-indicators" aria-hidden="true">
-              <ChiliMeter
-                level={mixedIndicators.difficulty}
-                ariaHidden
-                title={mixedIndicators.difficultyLabel}
-              />
               <MasteryBubbles
                 level={mixedIndicators.mastery}
                 ariaHidden
                 title={mixedIndicators.masteryLabel}
+              />
+              <ChiliMeter
+                level={mixedIndicators.difficulty}
+                ariaHidden
+                title={mixedIndicators.difficultyLabel}
               />
             </div>
           </label>
@@ -184,21 +184,21 @@ export function GrammarPractice({
                     <strong>{family.title}</strong>
                     <small lang="es">{family.example}</small>
                     <span className="sr-only">
-                      . {indicators.difficultyLabel}, {indicators.masteryLabel}.
+                      . {indicators.masteryLabel}, {indicators.difficultyLabel}.
                     </span>
                     <div
                       className="grammar-choice-indicators"
                       aria-hidden="true"
                     >
-                      <ChiliMeter
-                        level={indicators.difficulty}
-                        ariaHidden
-                        title={indicators.difficultyLabel}
-                      />
                       <MasteryBubbles
                         level={indicators.mastery}
                         ariaHidden
                         title={indicators.masteryLabel}
+                      />
+                      <ChiliMeter
+                        level={indicators.difficulty}
+                        ariaHidden
+                        title={indicators.difficultyLabel}
                       />
                     </div>
                   </span>

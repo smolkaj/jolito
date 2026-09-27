@@ -19,10 +19,10 @@ export type DeckSortOrder =
   | 'answer-desc'
   | 'direction-asc'
   | 'direction-desc'
-  | 'difficulty-desc'
-  | 'difficulty-asc'
   | 'mastery-desc'
   | 'mastery-asc'
+  | 'difficulty-desc'
+  | 'difficulty-asc'
   | 'status-asc'
   | 'status-desc'
 
@@ -175,6 +175,22 @@ export function sortDeckCards(
         }
         return compareAlphabetical(left.prompt, right.prompt)
       }
+      case 'mastery-desc': {
+        const diff =
+          cardMasteryLevel(right.schedule) - cardMasteryLevel(left.schedule)
+        if (diff !== 0) return diff
+        const createdDiff = right.createdAt - left.createdAt
+        if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
+      case 'mastery-asc': {
+        const diff =
+          cardMasteryLevel(left.schedule) - cardMasteryLevel(right.schedule)
+        if (diff !== 0) return diff
+        const createdDiff = right.createdAt - left.createdAt
+        if (createdDiff !== 0) return createdDiff
+        return compareAlphabetical(left.prompt, right.prompt)
+      }
       case 'difficulty-desc': {
         const diff =
           cardDifficultyLevel(right.schedule) -
@@ -188,22 +204,6 @@ export function sortDeckCards(
         const diff =
           cardDifficultyLevel(left.schedule) -
           cardDifficultyLevel(right.schedule)
-        if (diff !== 0) return diff
-        const createdDiff = right.createdAt - left.createdAt
-        if (createdDiff !== 0) return createdDiff
-        return compareAlphabetical(left.prompt, right.prompt)
-      }
-      case 'mastery-desc': {
-        const diff =
-          cardMasteryLevel(right.schedule) - cardMasteryLevel(left.schedule)
-        if (diff !== 0) return diff
-        const createdDiff = right.createdAt - left.createdAt
-        if (createdDiff !== 0) return createdDiff
-        return compareAlphabetical(left.prompt, right.prompt)
-      }
-      case 'mastery-asc': {
-        const diff =
-          cardMasteryLevel(left.schedule) - cardMasteryLevel(right.schedule)
         if (diff !== 0) return diff
         const createdDiff = right.createdAt - left.createdAt
         if (createdDiff !== 0) return createdDiff

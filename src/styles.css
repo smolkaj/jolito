@@ -6107,15 +6107,15 @@ kbd {
   text-overflow: ellipsis;
 }
 
-.deck-card-row .col-difficulty,
-.deck-list-table-header .col-difficulty {
+.deck-card-row .col-mastery,
+.deck-list-table-header .col-mastery {
   display: flex;
   align-items: center;
   justify-content: flex-start;
 }
 
-.deck-card-row .col-mastery,
-.deck-list-table-header .col-mastery {
+.deck-card-row .col-difficulty,
+.deck-list-table-header .col-difficulty {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -6161,7 +6161,7 @@ kbd {
     grid-template-areas:
       'select prompt prompt prompt prompt'
       'select answer answer answer answer'
-      'select status difficulty mastery .';
+      'select status mastery difficulty .';
     column-gap: 10px;
     row-gap: 6px;
     padding: 12px 14px;
@@ -6212,15 +6212,15 @@ kbd {
     min-width: 0;
   }
 
-  .deck-card-row .col-difficulty {
-    grid-area: difficulty;
+  .deck-card-row .col-mastery {
+    grid-area: mastery;
     display: flex;
     align-items: center;
     justify-content: flex-start;
   }
 
-  .deck-card-row .col-mastery {
-    grid-area: mastery;
+  .deck-card-row .col-difficulty {
+    grid-area: difficulty;
     display: flex;
     align-items: center;
     justify-content: flex-start;

@@ -287,10 +287,10 @@ describe('DeckManagerView', () => {
       { value: 'answer-desc', label: 'Answer (Z–A)' },
       { value: 'direction-asc', label: 'ES → EN first' },
       { value: 'direction-desc', label: 'EN → ES first' },
-      { value: 'difficulty-desc', label: 'Spiciest first' },
-      { value: 'difficulty-asc', label: 'Mildest first' },
       { value: 'mastery-desc', label: 'Highest mastery' },
       { value: 'mastery-asc', label: 'Lowest mastery' },
+      { value: 'difficulty-desc', label: 'Spiciest first' },
+      { value: 'difficulty-asc', label: 'Mildest first' },
       { value: 'status-asc', label: 'Due first' },
       { value: 'status-desc', label: 'Due last' },
     ])
@@ -352,23 +352,44 @@ describe('DeckManagerView', () => {
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
   })
 
-  it('renders row memory indicators on deck cards in dedicated columns', () => {
+  it('renders row memory indicators on deck cards in dedicated columns with mastery preceding difficulty', () => {
     const { container } = renderDeckManager()
+
+    const headers = screen.getAllByRole('columnheader')
+    const headerTexts = headers.map((h) => h.textContent?.trim())
+    const masteryHeaderIdx = headerTexts.findIndex((t) =>
+      t?.includes('Mastery'),
+    )
+    const diffHeaderIdx = headerTexts.findIndex((t) =>
+      t?.includes('Difficulty'),
+    )
+    expect(masteryHeaderIdx).toBeGreaterThan(-1)
+    expect(diffHeaderIdx).toBeGreaterThan(-1)
+    expect(masteryHeaderIdx).toBeLessThan(diffHeaderIdx)
 
     const rows = screen.getAllByRole('row', { name: /card:/i })
     expect(rows[0]).toHaveAttribute(
       'aria-label',
-      expect.stringMatching(/mastery: \d of 3 bubbles/i),
+      expect.stringMatching(
+        /mastery: \d of 3 bubbles.*difficulty: \d of 3 chilies/i,
+      ),
     )
-    expect(rows[0]).toHaveAttribute(
-      'aria-label',
-      expect.stringMatching(/difficulty: \d of 3 chilies/i),
+    const firstRowCells = Array.from(rows[0]!.querySelectorAll('[role="cell"]'))
+    const rowMasteryIdx = firstRowCells.findIndex((c) =>
+      c.classList.contains('col-mastery'),
     )
-    expect(
-      container.querySelectorAll('.col-difficulty .chili-meter'),
-    ).toHaveLength(3)
+    const rowDiffIdx = firstRowCells.findIndex((c) =>
+      c.classList.contains('col-difficulty'),
+    )
+    expect(rowMasteryIdx).toBeGreaterThan(-1)
+    expect(rowDiffIdx).toBeGreaterThan(-1)
+    expect(rowMasteryIdx).toBeLessThan(rowDiffIdx)
+
     expect(
       container.querySelectorAll('.col-mastery .progress-bubbles'),
+    ).toHaveLength(3)
+    expect(
+      container.querySelectorAll('.col-difficulty .chili-meter'),
     ).toHaveLength(3)
   })
 
