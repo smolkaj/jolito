@@ -110,14 +110,11 @@ describe('deck-management', () => {
   ]
 
   describe('getDeckStats', () => {
-    it('computes counts for total, due, new, learning/relearning, and review cards', () => {
+    it('computes counts for total, due, and duplicates', () => {
       const stats: DeckStats = getDeckStats(cards, now)
       expect(stats).toEqual({
         total: 5,
         due: 3, // aguacate (new, due now), chido (relearning overdue), ahorita (review overdue)
-        newCount: 1, // aguacate
-        learningCount: 2, // ¿mande? (learning) + chido (relearning)
-        reviewCount: 2, // ¡qué padre! + ahorita
         duplicatesCount: 0,
       })
     })
@@ -127,48 +124,15 @@ describe('deck-management', () => {
       expect(stats).toEqual({
         total: 0,
         due: 0,
-        newCount: 0,
-        learningCount: 0,
-        reviewCount: 0,
         duplicatesCount: 0,
       })
     })
   })
 
   describe('filterDeckCards', () => {
-    it('returns all cards when no query or stateFilter is provided', () => {
+    it('returns all cards when no query or options are provided', () => {
       const result = filterDeckCards(cards, { now })
       expect(result).toHaveLength(5)
-    })
-
-    it('filters by state: due', () => {
-      const dueCards = filterDeckCards(cards, { stateFilter: 'due', now })
-      expect(dueCards.map((c) => c.prompt)).toEqual([
-        'aguacate',
-        'chido',
-        'ahorita',
-      ])
-    })
-
-    it('filters by state: new', () => {
-      const newCards = filterDeckCards(cards, { stateFilter: 'new', now })
-      expect(newCards.map((c) => c.prompt)).toEqual(['aguacate'])
-    })
-
-    it('filters by state: learning (including relearning)', () => {
-      const learningCards = filterDeckCards(cards, {
-        stateFilter: 'learning',
-        now,
-      })
-      expect(learningCards.map((c) => c.prompt)).toEqual(['¿mande?', 'chido'])
-    })
-
-    it('filters by state: review', () => {
-      const reviewCards = filterDeckCards(cards, { stateFilter: 'review', now })
-      expect(reviewCards.map((c) => c.prompt)).toEqual([
-        '¡qué padre!',
-        'ahorita',
-      ])
     })
 
     it('filters by text query in prompt', () => {
@@ -216,15 +180,6 @@ describe('deck-management', () => {
       expect(bySubtitle.map((c) => c.id)).toEqual([streetCard.id])
     })
 
-    it('combines text search with state filter', () => {
-      const result = filterDeckCards(cards, {
-        query: 'cool',
-        stateFilter: 'review',
-        now,
-      })
-      expect(result.map((c) => c.prompt)).toEqual(['¡qué padre!'])
-    })
-
     it('returns empty array when search query matches nothing', () => {
       const result = filterDeckCards(cards, {
         query: 'nonexistent match xyz',
@@ -233,7 +188,7 @@ describe('deck-management', () => {
       expect(result).toHaveLength(0)
     })
 
-    it('filters by state: duplicates', () => {
+    it('filters by duplicates using onlyDuplicates flag', () => {
       const duplicateCard = createStudyCards(
         {
           spanish: 'Aguacate!',
@@ -250,7 +205,7 @@ describe('deck-management', () => {
       expect(stats.duplicatesCount).toBe(2)
 
       const duplicateResults = filterDeckCards(cardsWithDuplicate, {
-        stateFilter: 'duplicates',
+        onlyDuplicates: true,
         now,
       })
       expect(duplicateResults).toHaveLength(2)
@@ -258,6 +213,27 @@ describe('deck-management', () => {
         'aguacate',
         'Aguacate!',
       ])
+    })
+
+    it('combines text search with duplicates filter', () => {
+      const duplicateCard = createStudyCards(
+        {
+          spanish: 'Aguacate!',
+          english: 'avocado',
+          context: 'Duplicate of card 1',
+          bidirectional: false,
+        },
+        'note-duplicate-1',
+        now,
+      )[0]!
+
+      const cardsWithDuplicate = [...cards, duplicateCard]
+      const result = filterDeckCards(cardsWithDuplicate, {
+        query: 'Duplicate',
+        onlyDuplicates: true,
+        now,
+      })
+      expect(result.map((c) => c.prompt)).toEqual(['Aguacate!'])
     })
 
     it('sorts filtered cards by specified sort order', () => {

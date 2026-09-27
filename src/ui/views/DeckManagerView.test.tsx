@@ -112,7 +112,7 @@ function renderDeckManager(overrides: Partial<DeckManagerViewProps> = {}) {
 }
 
 describe('DeckManagerView', () => {
-  it('renders the cohesive deck ledger with search icon, filters, and cards table', () => {
+  it('renders the cohesive deck ledger with search icon, card count, and cards table', () => {
     const { container } = renderDeckManager()
 
     expect(
@@ -122,19 +122,8 @@ describe('DeckManagerView', () => {
     // Accessible vector search icon is rendered
     expect(container.querySelector('.icon-search')).toBeInTheDocument()
 
-    // Filter pills
-    expect(
-      screen.getByRole('button', { name: /all \(3\)/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /^due \(1\)/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /unstudied \(1\)/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /graduated \(1\)/i }),
-    ).toBeInTheDocument()
+    // Card count summary
+    expect(screen.getByText('3 cards')).toBeInTheDocument()
 
     // Table rows
     const rows = screen.getAllByRole('row', { name: /card:/i })
@@ -152,31 +141,57 @@ describe('DeckManagerView', () => {
     await user.type(searchInput, 'padre')
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
     expect(screen.getByText('¡Qué padre!')).toBeInTheDocument()
+    expect(screen.getByText('1 of 3 cards')).toBeInTheDocument()
 
     await user.clear(searchInput)
     await user.type(searchInput, 'sandía')
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
     expect(screen.getByText('Watermelon')).toBeInTheDocument()
+    expect(screen.getByText('1 of 3 cards')).toBeInTheDocument()
   })
 
-  it('filters cards by state filter pills', async () => {
+  it('filters cards by duplicates when duplicates exist', async () => {
     const user = userEvent.setup()
-    renderDeckManager()
+    const duplicateCard = createSampleCard({
+      id: 'card-4',
+      prompt: '¡Qué padre!',
+      answer: 'How neat!',
+      direction: 'es-en',
+    })
+    renderDeckManager({
+      vocabularyCards: [
+        createSampleCard({
+          id: 'card-1',
+          prompt: '¡Qué padre!',
+          answer: 'How cool!',
+          direction: 'es-en',
+        }),
+        createSampleCard({
+          id: 'card-2',
+          prompt: 'No manches',
+          answer: 'No way!',
+          direction: 'es-en',
+        }),
+        duplicateCard,
+      ],
+    })
 
-    // Due
-    await user.click(screen.getByRole('button', { name: /^due \(1\)/i }))
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
-    expect(screen.getByText('¡Qué padre!')).toBeInTheDocument()
+    const dupePill = screen.getByRole('button', { name: /duplicates \(2\)/i })
+    expect(dupePill).toBeInTheDocument()
 
-    // Unstudied
-    await user.click(screen.getByRole('button', { name: /unstudied \(1\)/i }))
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
-    expect(screen.getByText('No manches')).toBeInTheDocument()
+    // Click duplicates pill to filter
+    await user.click(dupePill)
+    expect(screen.getByText('2 of 3 cards')).toBeInTheDocument()
+    const rows = screen.getAllByRole('row', { name: /card:/i })
+    expect(rows).toHaveLength(2)
+    expect(screen.getByText('How cool!')).toBeInTheDocument()
+    expect(screen.getByText('How neat!')).toBeInTheDocument()
+    expect(screen.queryByText('No way!')).not.toBeInTheDocument()
 
-    // Graduated
-    await user.click(screen.getByRole('button', { name: /graduated \(1\)/i }))
-    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
-    expect(screen.getByText('Watermelon')).toBeInTheDocument()
+    // Toggle off
+    await user.click(dupePill)
+    expect(screen.getByText('3 cards')).toBeInTheDocument()
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
   })
 
   it('supports selecting cards and performing batch delete with TrashIcon', async () => {

@@ -5701,6 +5701,18 @@ kbd {
   flex-wrap: wrap;
 }
 
+.deck-toolbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.deck-card-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
 .deck-filter-pills {
   display: flex;
   align-items: center;

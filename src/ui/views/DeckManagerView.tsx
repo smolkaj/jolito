@@ -4,7 +4,6 @@ import {
   useState,
 } from 'react'
 import {
-  type DeckFilterState,
   type DeckSortOrder,
   filterDeckCards,
   getDeckStats,
@@ -123,7 +122,7 @@ export function DeckManagerView({
     () => new Set(),
   )
   const [deckSearchQuery, setDeckSearchQuery] = useState('')
-  const [deckFilterState, setDeckFilterState] = useState<DeckFilterState>('all')
+  const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false)
   const [deckSortOrder, setDeckSortOrder] =
     useState<DeckSortOrder>('created-desc')
   const [isStarterPacksOpen, setIsStarterPacksOpen] = useState(false)
@@ -164,13 +163,13 @@ export function DeckManagerView({
     () =>
       filterDeckCards(vocabularyCards, {
         query: deckSearchQuery,
-        stateFilter: deckFilterState,
+        onlyDuplicates: showOnlyDuplicates,
         sortOrder: deckSortOrder,
         now: referenceTime,
       }),
     [
       vocabularyCards,
-      deckFilterState,
+      showOnlyDuplicates,
       deckSearchQuery,
       deckSortOrder,
       referenceTime,
@@ -301,64 +300,20 @@ export function DeckManagerView({
             </div>
 
             <div className="deck-toolbar-controls">
-              <div
-                className="deck-filter-pills"
-                role="radiogroup"
-                aria-label="Filter cards by state"
-              >
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'all' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('all')}
-                  aria-pressed={deckFilterState === 'all'}
-                  title="All cards in your deck"
-                >
-                  All ({deckStats.total})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'due' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('due')}
-                  aria-pressed={deckFilterState === 'due'}
-                  title="Cards ready to practice right now (unstudied cards + due reviews)"
-                >
-                  Due ({deckStats.due})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'new' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('new')}
-                  aria-pressed={deckFilterState === 'new'}
-                  title="Cards you haven't practiced yet"
-                >
-                  Unstudied ({deckStats.newCount})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'learning' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('learning')}
-                  aria-pressed={deckFilterState === 'learning'}
-                  title="Cards you are currently acquiring in short repetition steps"
-                >
-                  Learning ({deckStats.learningCount})
-                </button>
-                <button
-                  type="button"
-                  className={`deck-filter-pill ${deckFilterState === 'review' ? 'is-active' : ''}`}
-                  onClick={() => setDeckFilterState('review')}
-                  aria-pressed={deckFilterState === 'review'}
-                  title="Graduated cards scheduled for long-term memory retention (1+ days)"
-                >
-                  Graduated ({deckStats.reviewCount})
-                </button>
+              <div className="deck-toolbar-meta">
+                <span className="deck-card-count" aria-live="polite">
+                  {filteredDeckCards.length === vocabularyCards.length
+                    ? `${vocabularyCards.length} ${vocabularyCards.length === 1 ? 'card' : 'cards'}`
+                    : `${filteredDeckCards.length} of ${vocabularyCards.length} cards`}
+                </span>
                 {((deckStats.duplicatesCount ?? 0) > 0 ||
-                  deckFilterState === 'duplicates') && (
+                  showOnlyDuplicates) && (
                   <button
                     type="button"
-                    className={`deck-filter-pill ${deckFilterState === 'duplicates' ? 'is-active' : ''}`}
-                    onClick={() => setDeckFilterState('duplicates')}
-                    aria-pressed={deckFilterState === 'duplicates'}
-                    title="Cards sharing the same prompt in the same direction"
+                    className={`deck-filter-pill ${showOnlyDuplicates ? 'is-active' : ''}`}
+                    onClick={() => setShowOnlyDuplicates((prev) => !prev)}
+                    aria-pressed={showOnlyDuplicates}
+                    title="Filter to cards sharing the same prompt in the same direction"
                   >
                     Duplicates ({deckStats.duplicatesCount ?? 0})
                   </button>
@@ -436,9 +391,11 @@ export function DeckManagerView({
               <p>
                 {deckSearchQuery.trim()
                   ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
-                  : vocabularyCards.length === 0
-                    ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
-                    : `No cards in the “${{ all: 'all', due: 'due', new: 'unstudied', learning: 'learning', review: 'graduated', duplicates: 'duplicates' }[deckFilterState]}” category right now.`}
+                  : showOnlyDuplicates
+                    ? 'No duplicate cards found in your deck.'
+                    : vocabularyCards.length === 0
+                      ? 'Your deck is currently empty. Create a card or import an Anki deck to start practicing.'
+                      : 'No cards found.'}
               </p>
               {vocabularyCards.length === 0 ? (
                 <div className="deck-empty-actions">
@@ -465,14 +422,14 @@ export function DeckManagerView({
                   </button>
                 </div>
               ) : deckSearchQuery.trim() ||
-                deckFilterState !== 'all' ||
+                showOnlyDuplicates ||
                 deckSortOrder !== 'created-desc' ? (
                 <button
                   type="button"
                   className="secondary-button"
                   onClick={() => {
                     setDeckSearchQuery('')
-                    setDeckFilterState('all')
+                    setShowOnlyDuplicates(false)
                     setDeckSortOrder('created-desc')
                   }}
                 >

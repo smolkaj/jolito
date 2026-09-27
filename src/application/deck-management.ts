@@ -7,8 +7,7 @@ import {
 import { getDuplicateGroups } from '../domain/duplicate'
 import { getStarterPackForCard } from '../domain/starter-decks'
 
-export type DeckFilterState =
-  'all' | 'due' | 'new' | 'learning' | 'review' | 'duplicates'
+export type DeckFilterState = 'all' | 'duplicates'
 
 export type DeckSortOrder =
   | 'created-desc'
@@ -28,37 +27,24 @@ export type DeckSortOrder =
 
 export interface FilterDeckOptions {
   query?: string
+  onlyDuplicates?: boolean
   stateFilter?: DeckFilterState
   sortOrder?: DeckSortOrder
-  now: number
+  now?: number
 }
 
 export interface DeckStats {
   total: number
   due: number
-  newCount: number
-  learningCount: number
-  reviewCount: number
-  duplicatesCount?: number
+  duplicatesCount: number
 }
 
 export function getDeckStats(cards: StudyCard[], now: number): DeckStats {
   let due = 0
-  let newCount = 0
-  let learningCount = 0
-  let reviewCount = 0
 
   for (const card of cards) {
     if (isDue(card, now)) {
       due++
-    }
-    const state = card.schedule.state
-    if (state === 'new') {
-      newCount++
-    } else if (state === 'learning' || state === 'relearning') {
-      learningCount++
-    } else if (state === 'review') {
-      reviewCount++
     }
   }
 
@@ -71,9 +57,6 @@ export function getDeckStats(cards: StudyCard[], now: number): DeckStats {
   return {
     total: cards.length,
     due,
-    newCount,
-    learningCount,
-    reviewCount,
     duplicatesCount,
   }
 }
@@ -233,40 +216,23 @@ export function filterDeckCards(
 ): StudyCard[] {
   const {
     query,
-    stateFilter = 'all',
+    onlyDuplicates = options.stateFilter === 'duplicates',
     sortOrder = 'created-desc',
-    now,
+    now = Date.now(),
   } = options
   const normalizedQuery = query?.trim().toLowerCase() ?? ''
 
-  const duplicateCardIds =
-    stateFilter === 'duplicates'
-      ? new Set(
-          Array.from(getDuplicateGroups(cards).values()).flatMap((group) =>
-            group.map((c) => c.id),
-          ),
-        )
-      : null
+  const duplicateCardIds = onlyDuplicates
+    ? new Set(
+        Array.from(getDuplicateGroups(cards).values()).flatMap((group) =>
+          group.map((c) => c.id),
+        ),
+      )
+    : null
 
   const filtered = cards.filter((card) => {
-    // 1. State filter check
-    if (stateFilter === 'due' && !isDue(card, now)) {
-      return false
-    }
-    if (stateFilter === 'new' && card.schedule.state !== 'new') {
-      return false
-    }
-    if (
-      stateFilter === 'learning' &&
-      card.schedule.state !== 'learning' &&
-      card.schedule.state !== 'relearning'
-    ) {
-      return false
-    }
-    if (stateFilter === 'review' && card.schedule.state !== 'review') {
-      return false
-    }
-    if (stateFilter === 'duplicates' && !duplicateCardIds?.has(card.id)) {
+    // 1. Duplicates filter check
+    if (onlyDuplicates && !duplicateCardIds?.has(card.id)) {
       return false
     }
 
