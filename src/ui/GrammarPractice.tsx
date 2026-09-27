@@ -125,11 +125,23 @@ export function GrammarPractice({
               practice.setTopic(event.target.value as GrammarTopic)
             }
           >
-            {(Object.keys(grammarTopics) as GrammarTopic[]).map((topic) => (
-              <option key={topic} value={topic}>
-                {grammarTopics[topic].title}
+            <optgroup label="Conjugación">
+              <option value="present">Presente</option>
+              <option value="preterite">Pretérito indefinido</option>
+              <option value="imperfect">Pretérito imperfecto</option>
+              <option value="perfect">Pretérito perfecto</option>
+              <option value="future">Futuro simple</option>
+              <option value="conditional">Condicional simple</option>
+              <option value="subjunctive">Presente de subjuntivo</option>
+              <option value="gerund">Gerundio</option>
+            </optgroup>
+            <optgroup label="Distinciones">
+              <option value="preterite-vs-imperfect">
+                Pretérito vs. Imperfecto
               </option>
-            ))}
+              <option value="ser-vs-estar">Ser vs. Estar</option>
+              <option value="por-vs-para">Por vs. Para</option>
+            </optgroup>
           </select>
           <p className="grammar-intro">{content.description}</p>
         </header>

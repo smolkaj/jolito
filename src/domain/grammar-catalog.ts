@@ -57,6 +57,87 @@ export const grammarTopics = {
     families: gerundFamilies,
     verbs: gerundVerbs,
   },
+  'preterite-vs-imperfect': {
+    title: 'Pretérito vs. Imperfecto',
+    description: 'Action vs. ongoing background in the past',
+    families: [
+      {
+        id: 'interrupted',
+        title: 'Interrupted actions',
+        example: 'dormía cuando sonó el teléfono',
+      },
+      {
+        id: 'time-age',
+        title: 'Time, date & age',
+        example: 'eran las tres · tenía diez años',
+      },
+      {
+        id: 'habitual',
+        title: 'Habitual vs. specific',
+        example: 'siempre íbamos · ayer fuimos',
+      },
+      {
+        id: 'descriptions',
+        title: 'Descriptions vs. events',
+        example: 'la casa era grande · salí a las ocho',
+      },
+    ],
+    verbs: preteriteVerbs,
+  },
+  'ser-vs-estar': {
+    title: 'Ser vs. Estar',
+    description: 'Essence & identity vs. state, condition & location',
+    families: [
+      {
+        id: 'identity-condition',
+        title: 'Identity vs. condition',
+        example: 'es amable · está cansado',
+      },
+      {
+        id: 'origin-location',
+        title: 'Origin vs. location',
+        example: 'es de México · está en Coyoacán',
+      },
+      {
+        id: 'time-state',
+        title: 'Time vs. continuous state',
+        example: 'son las dos · está lloviendo',
+      },
+      {
+        id: 'inherent-mood',
+        title: 'Inherent traits vs. mood',
+        example: 'es alegre · está feliz hoy',
+      },
+    ],
+    verbs: preteriteVerbs,
+  },
+  'por-vs-para': {
+    title: 'Por vs. Para',
+    description: 'Cause, duration & means vs. purpose, deadline & destination',
+    families: [
+      {
+        id: 'cause-purpose',
+        title: 'Cause vs. purpose',
+        example: 'por la lluvia · para estudiar',
+      },
+      {
+        id: 'duration-deadline',
+        title: 'Duration vs. deadline',
+        example: 'por tres días · para el lunes',
+      },
+      {
+        id: 'movement-destination',
+        title: 'Through / along vs. destination',
+        example: 'por el parque · para la oficina',
+      },
+      {
+        id: 'means-recipient',
+        title: 'Means vs. recipient',
+        example: 'por teléfono · para ti',
+      },
+    ],
+    verbs: preteriteVerbs,
+  },
 } as const
 export type GrammarTopic = keyof typeof grammarTopics
 export type GrammarFocus =

@@ -124,7 +124,7 @@ export function grammarContext(card: GrammarCard) {
   const translation = translationParts.map((part) => part.text).join('')
   const family = grammarTopics[card.grammar.topic].families.find(
     (family) => family.id === verb.family,
-  )!
+  )
   return {
     sentence,
     spokenPrompt: sentence.replace('___', '…'),
@@ -132,7 +132,7 @@ export function grammarContext(card: GrammarCard) {
     translation,
     translationParts,
     explanation:
-      'rule' in family
+      family && 'rule' in family
         ? (verb.note ?? family.rule)
         : `Replace -${card.grammar.verb.slice(-2)} with -${verb.forms[person]!.slice(card.grammar.verb.length - 2)}.`,
   }
