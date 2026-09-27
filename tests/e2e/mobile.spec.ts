@@ -814,6 +814,10 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     }
     await expect(tabBar).toBeVisible()
 
+    // Mobile responsive sort: dropdown visible, column headers hidden
+    await expect(page.locator('.deck-sort-wrap')).toBeVisible()
+    await expect(page.locator('.deck-list-table-header')).toBeHidden()
+
     // Verify floating geometry: detached from bottom edge
     const deckTabBox = await tabBar.boundingBox()
     expect(deckTabBox).not.toBeNull()

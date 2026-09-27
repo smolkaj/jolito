@@ -5823,6 +5823,12 @@ kbd {
   gap: 8px;
 }
 
+@media not all and (max-width: 680px) {
+  .deck-sort-wrap {
+    display: none;
+  }
+}
+
 .deck-sort-label {
   font-size: 11px;
   font-weight: 800;
