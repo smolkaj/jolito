@@ -582,7 +582,6 @@ test('all pills and badges have consistent heights across views and within the s
   const deckSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  const deckSortPill = await page.locator('.deck-sort-pill').boundingBox()
   const deckStarterPacksBtn = await page
     .getByRole('button', { name: /^starter packs$/i })
     .boundingBox()
@@ -594,7 +593,12 @@ test('all pills and badges have consistent heights across views and within the s
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
   expect(deckStarterPacksBtn?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
-  expect(deckSortPill?.height).toBeCloseTo(32, 1)
+
+  // On mobile viewports where sort dropdown is displayed, verify deck-sort-pill height
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobileSortPill = await page.locator('.deck-sort-pill').boundingBox()
+  expect(mobileSortPill?.height).toBeCloseTo(32, 1)
+  await page.setViewportSize({ width: 1280, height: 800 })
 
   // Select all cards to reveal batch action pills on the same toolbar line
   const demoDismiss = page.getByRole('button', { name: /explore demo deck/i })
@@ -608,8 +612,6 @@ test('all pills and badges have consistent heights across views and within the s
     .boundingBox()
   expect(batchDeleteBtn?.height).toBeCloseTo(32, 1)
   expect(clearSelectionBtn?.height).toBeCloseTo(32, 1)
-  expect(batchDeleteBtn?.height).toBe(deckSortPill?.height)
-  expect(clearSelectionBtn?.height).toBe(deckSortPill?.height)
 
   // Verify table rows: Direction badge and Status chip in the SAME row/line have identical 24px height
   const cardRows = page.locator('.deck-card-row')

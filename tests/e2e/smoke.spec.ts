@@ -269,6 +269,10 @@ test.describe('E2E Fast Smoke Suite', () => {
     const rows = page.locator('.deck-card-row')
     await expect(rows).toHaveCount(3)
 
+    // Responsive sort check: dropdown hidden on desktop, column headers visible
+    await expect(page.locator('.deck-sort-wrap')).toBeHidden()
+    await expect(page.locator('.deck-list-table-header')).toBeVisible()
+
     // 2. Sort column (Sort by prompt)
     const promptSortBtn = page.getByRole('button', { name: 'Sort by prompt' })
     await promptSortBtn.click()
