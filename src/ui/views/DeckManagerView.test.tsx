@@ -243,6 +243,28 @@ describe('DeckManagerView', () => {
       'title',
       'English Prompt → Mexican Spanish Answer',
     )
+
+    const dirBadges = container.querySelectorAll('.deck-direction-badge')
+    expect(dirBadges).toHaveLength(3)
+
+    // ES → EN badges
+    const esToEnBadges = screen.getAllByRole('img', {
+      name: 'Mexican Spanish Prompt → English Answer',
+    })
+    expect(esToEnBadges).toHaveLength(2)
+    const firstEsToEn = esToEnBadges[0]!
+    expect(firstEsToEn.firstElementChild).toHaveClass('flag-mx')
+    expect(firstEsToEn.querySelector('.deck-dir-arrow')).toHaveTextContent('→')
+    expect(firstEsToEn.lastElementChild).toHaveClass('badge-en')
+
+    // EN → ES badge
+    const enToEsBadge = screen.getByRole('img', {
+      name: 'English Prompt → Mexican Spanish Answer',
+    })
+    expect(enToEsBadge).toBeInTheDocument()
+    expect(enToEsBadge.firstElementChild).toHaveClass('badge-en')
+    expect(enToEsBadge.querySelector('.deck-dir-arrow')).toHaveTextContent('→')
+    expect(enToEsBadge.lastElementChild).toHaveClass('flag-mx')
   })
 
   it('renders sort options matching SORT_ORDER_LABELS as single source of truth', () => {
