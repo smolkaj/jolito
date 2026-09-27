@@ -5560,6 +5560,21 @@ kbd {
   line-height: 1.15;
 }
 
+.deck-header-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.deck-header-count {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  letter-spacing: -0.1px;
+}
+
 .deck-header-actions {
   display: flex;
   align-items: center;
@@ -5705,6 +5720,18 @@ kbd {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.deck-toolbar-meta:empty {
+  display: none;
+}
+
+@media not all and (max-width: 680px) {
+  .deck-toolbar-controls:has(.deck-toolbar-meta:empty):not(
+      :has(.deck-batch-actions)
+    ) {
+    display: none;
+  }
 }
 
 .deck-card-count {
