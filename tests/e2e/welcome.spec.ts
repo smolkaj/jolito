@@ -582,7 +582,7 @@ test('all pills and badges have consistent heights across views and within the s
   const deckSyncPill = await page
     .locator('.nav-actions .connection-pill')
     .boundingBox()
-  const deckFilterPills = page.locator('.deck-filter-pills .deck-filter-pill')
+  const deckSortPill = await page.locator('.deck-sort-pill').boundingBox()
   const deckStarterPacksBtn = await page
     .getByRole('button', { name: /^starter packs$/i })
     .boundingBox()
@@ -594,14 +594,7 @@ test('all pills and badges have consistent heights across views and within the s
   expect(deckSyncPill?.height).toBeCloseTo(32, 1)
   expect(deckStarterPacksBtn?.height).toBeCloseTo(32, 1)
   expect(deckBackupBtn?.height).toBeCloseTo(32, 1)
-
-  // Verify all filter pills have identical 32px height on the toolbar line
-  const filterCount = await deckFilterPills.count()
-  expect(filterCount).toBe(5)
-  for (let i = 0; i < filterCount; i++) {
-    const filterBox = await deckFilterPills.nth(i).boundingBox()
-    expect(filterBox?.height).toBeCloseTo(32, 1)
-  }
+  expect(deckSortPill?.height).toBeCloseTo(32, 1)
 
   // Select all cards to reveal batch action pills on the same toolbar line
   const demoDismiss = page.getByRole('button', { name: /explore demo deck/i })
@@ -613,12 +606,10 @@ test('all pills and badges have consistent heights across views and within the s
   const clearSelectionBtn = await page
     .locator('.deck-clear-selection-btn')
     .boundingBox()
-  const firstFilterPill = await deckFilterPills.first().boundingBox()
-
   expect(batchDeleteBtn?.height).toBeCloseTo(32, 1)
   expect(clearSelectionBtn?.height).toBeCloseTo(32, 1)
-  expect(batchDeleteBtn?.height).toBe(firstFilterPill?.height)
-  expect(clearSelectionBtn?.height).toBe(firstFilterPill?.height)
+  expect(batchDeleteBtn?.height).toBe(deckSortPill?.height)
+  expect(clearSelectionBtn?.height).toBe(deckSortPill?.height)
 
   // Verify table rows: Direction badge and Status chip in the SAME row/line have identical 24px height
   const cardRows = page.locator('.deck-card-row')
@@ -732,7 +723,7 @@ test('enforces universal geometric invariants across all pill, chip, and badge e
     const flexRowInvariants = await page.evaluate(() => {
       const containerSelectors = [
         '.nav-actions',
-        '.deck-filter-pills',
+        '.deck-toolbar-meta',
         '.deck-batch-actions',
         '.deck-card-row',
         '.sync-actions-row',

@@ -3124,29 +3124,7 @@ describe('Jolito', () => {
     expect(
       screen.getByRole('heading', { name: /manage deck/i }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /all \(6\)/i })).toHaveAttribute(
-      'title',
-      'All cards in your deck',
-    )
-    expect(screen.getByRole('button', { name: /^due \(6\)/i })).toHaveAttribute(
-      'title',
-      'Cards ready to practice right now (unstudied cards + due reviews)',
-    )
-    expect(
-      screen.getByRole('button', { name: /unstudied \(6\)/i }),
-    ).toHaveAttribute('title', "Cards you haven't practiced yet")
-    expect(
-      screen.getByRole('button', { name: /learning \(0\)/i }),
-    ).toHaveAttribute(
-      'title',
-      'Cards you are currently acquiring in short repetition steps',
-    )
-    expect(
-      screen.getByRole('button', { name: /graduated \(0\)/i }),
-    ).toHaveAttribute(
-      'title',
-      'Graduated cards scheduled for long-term memory retention (1+ days)',
-    )
+    expect(screen.getByText('6 cards')).toBeInTheDocument()
 
     // 6 starter cards are shown
     const cardItems = screen.getAllByRole('row', { name: /card:/i })
@@ -3158,19 +3136,22 @@ describe('Jolito', () => {
 
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
     expect(screen.getAllByText('aguacate')).toHaveLength(2)
+    expect(screen.getByText('2 of 6 cards')).toBeInTheDocument()
 
     // Clear search
     await user.clear(searchInput)
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(6)
+    expect(screen.getByText('6 cards')).toBeInTheDocument()
 
-    // Filter by state pill "Graduated" (0 cards in review/graduated state initially)
-    await user.click(screen.getByRole('button', { name: /graduated \(0\)/i }))
+    // Search for nonexistent card
+    await user.type(searchInput, 'nonexistent query')
     expect(screen.queryAllByRole('row', { name: /card:/i })).toHaveLength(0)
-    expect(screen.getByText(/no cards found/i)).toBeInTheDocument()
+    expect(screen.getByText(/no cards match/i)).toBeInTheDocument()
 
-    // Clear filter
-    await user.click(screen.getByRole('button', { name: /all \(6\)/i }))
+    // Clear search via empty state action
+    await user.click(screen.getByRole('button', { name: /clear search/i }))
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(6)
+    expect(screen.getByText('6 cards')).toBeInTheDocument()
 
     // Checkbox selection & batch actions
     const selectAllCheckbox = screen.getByRole('checkbox', {
@@ -3418,10 +3399,7 @@ describe('Jolito', () => {
 
     await navigateToDeck(user)
 
-    // Initially shows Graduated state pill in filter and Due in 14d chip in table
-    expect(
-      screen.getByRole('button', { name: /graduated \(1\)/i }),
-    ).toBeInTheDocument()
+    // Initially shows Due in 14d chip in table
     expect(screen.getByText('Due in 14d')).toBeInTheDocument()
 
     // Click card row to edit
@@ -3452,13 +3430,9 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: /edit flashcard/i }),
     ).not.toBeInTheDocument()
 
-    // Filter pills reflect Unstudied (1) and Graduated (0)
-    expect(
-      screen.getByRole('button', { name: /unstudied \(1\)/i }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: /graduated \(0\)/i }),
-    ).toBeInTheDocument()
+    // Status chip reflects Due card
+    expect(screen.getByText('Due')).toBeInTheDocument()
+    expect(screen.queryByText('Due in 14d')).not.toBeInTheDocument()
 
     // Saved card in storage has reset schedule
     const savedCard = services.memoryCards.saved?.find(

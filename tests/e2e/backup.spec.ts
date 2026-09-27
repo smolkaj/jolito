@@ -398,13 +398,7 @@ test('resets learning history to new card in deck manager edit modal with zero a
     page.getByRole('heading', { name: /edit flashcard/i }),
   ).not.toBeVisible()
 
-  // Verify filter pills and status chip changed to reflect reset unstudied/due card
-  await expect(
-    page.getByRole('button', { name: /unstudied \(1\)/i }),
-  ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /graduated \(0\)/i }),
-  ).toBeVisible()
+  // Verify status chip changed to reflect reset unstudied/due card
   await expect(cardsList.locator('.deck-stat-chip.is-due')).toBeVisible()
   await expect(cardsList.locator('.deck-stat-chip.is-review')).not.toBeVisible()
 
