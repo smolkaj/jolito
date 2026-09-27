@@ -758,6 +758,7 @@ export function DeckManagerView({
                     <div className="col-dir" role="cell">
                       <span
                         className="deck-direction-badge"
+                        role="img"
                         title={
                           isEsToEn
                             ? 'Mexican Spanish Prompt → English Answer'
