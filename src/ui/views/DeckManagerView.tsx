@@ -386,7 +386,7 @@ export function DeckManagerView({
               <p>
                 {deckSearchQuery.trim()
                   ? showOnlyDuplicates
-                    ? `No duplicate cards match “${deckSearchQuery.trim()}”.`
+                    ? `No duplicate cards match “${deckSearchQuery.trim()}”. Try a different search term.`
                     : `No cards match “${deckSearchQuery.trim()}”. Try a different search term.`
                   : showOnlyDuplicates
                     ? 'No duplicate cards found in your deck.'
@@ -427,7 +427,6 @@ export function DeckManagerView({
                       setDeckSearchQuery('')
                     } else {
                       setShowOnlyDuplicates(false)
-                      setDeckSortOrder('created-desc')
                     }
                   }}
                 >
