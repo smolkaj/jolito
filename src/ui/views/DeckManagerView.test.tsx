@@ -333,7 +333,7 @@ describe('DeckManagerView', () => {
     expect(sortSelect).toHaveValue('created-desc')
   })
 
-  it('renders clean empty state with clear filters button when search has no matches', async () => {
+  it('renders clean empty state with clear search button when search has no matches', async () => {
     const user = userEvent.setup()
     renderDeckManager()
 
@@ -345,13 +345,132 @@ describe('DeckManagerView', () => {
     expect(
       screen.getByRole('heading', { level: 3, name: /no cards found/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'No cards match “nonexistent query”. Try a different search term.',
+      ),
+    ).toBeInTheDocument()
 
     const clearBtn = screen.getByRole('button', {
-      name: /clear search & filters/i,
+      name: /clear search/i,
     })
     await user.click(clearBtn)
 
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
+  })
+
+  it('renders clean empty duplicate search state and preserves duplicate audit on clear search', async () => {
+    const user = userEvent.setup()
+    const duplicateCard1: StudyCard = {
+      ...createSampleCard({ id: 'dup-1' }),
+      prompt: 'Same Prompt',
+      answer: 'Answer 1',
+    }
+    const duplicateCard2: StudyCard = {
+      ...createSampleCard({ id: 'dup-2' }),
+      prompt: 'Same Prompt',
+      answer: 'Answer 2',
+    }
+    const uniqueCard: StudyCard = {
+      ...createSampleCard({ id: 'uniq-1' }),
+      prompt: 'Unique Prompt',
+      answer: 'Unique Answer',
+    }
+
+    renderDeckManager({
+      cards: [duplicateCard1, duplicateCard2, uniqueCard],
+      vocabularyCards: [duplicateCard1, duplicateCard2, uniqueCard],
+    })
+
+    // Initially 3 rows
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
+
+    // Activate duplicates audit -> 2 rows
+    const duplicatesBtn = screen.getByRole('button', {
+      name: /duplicates \(2\)/i,
+    })
+    await user.click(duplicatesBtn)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
+
+    // Search for something not matching duplicates
+    const searchInput = screen.getByRole('searchbox', {
+      name: /search cards in deck/i,
+    })
+    await user.type(searchInput, 'nonexistent')
+
+    expect(
+      screen.getByText(
+        'No duplicate cards match “nonexistent”. Try a different search term.',
+      ),
+    ).toBeInTheDocument()
+
+    const clearBtn = screen.getByRole('button', {
+      name: /clear search/i,
+    })
+    await user.click(clearBtn)
+
+    // Crucial check: clearing search must preserve duplicates audit (2 rows, NOT 3)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
+  })
+
+  it('preserves user sort order when clicking Show all cards from empty duplicates audit', async () => {
+    const user = userEvent.setup()
+    const duplicateCard1: StudyCard = {
+      ...createSampleCard({ id: 'dup-1' }),
+      prompt: 'Same Prompt',
+      answer: 'Answer 1',
+    }
+    const duplicateCard2: StudyCard = {
+      ...createSampleCard({ id: 'dup-2' }),
+      prompt: 'Same Prompt',
+      answer: 'Answer 2',
+    }
+    const uniqueCard: StudyCard = {
+      ...createSampleCard({ id: 'uniq-1' }),
+      prompt: 'Unique Prompt',
+      answer: 'Unique Answer',
+    }
+
+    const { rerender, props } = renderDeckManager({
+      cards: [duplicateCard1, duplicateCard2, uniqueCard],
+      vocabularyCards: [duplicateCard1, duplicateCard2, uniqueCard],
+    })
+
+    // Change sort order to alphabetical
+    const sortSelect = screen.getByRole('combobox', { name: /sort cards/i })
+    await user.selectOptions(sortSelect, 'alpha-asc')
+    expect(sortSelect).toHaveValue('alpha-asc')
+
+    // Activate duplicates audit
+    const duplicatesBtn = screen.getByRole('button', {
+      name: /duplicates \(2\)/i,
+    })
+    await user.click(duplicatesBtn)
+
+    // Simulate deleting duplicates so only uniqueCard remains in deck
+    rerender(
+      <DeckManagerView
+        {...props}
+        cards={[uniqueCard]}
+        vocabularyCards={[uniqueCard]}
+        deletedCardIds={['dup-1', 'dup-2']}
+      />,
+    )
+
+    // Empty duplicates state is shown
+    expect(
+      screen.getByText('No duplicate cards found in your deck.'),
+    ).toBeInTheDocument()
+
+    // Click 'Show all cards'
+    const showAllBtn = screen.getByRole('button', { name: /show all cards/i })
+    await user.click(showAllBtn)
+
+    // Unique card row is back
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(1)
+
+    // Crucial check: user's alphabetical sort order was NOT reset back to created-desc
+    expect(sortSelect).toHaveValue('alpha-asc')
   })
 
   it('renders row memory indicators on deck cards in dedicated columns with mastery preceding difficulty', () => {

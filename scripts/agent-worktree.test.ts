@@ -617,6 +617,50 @@ describe('startWorktree', () => {
     ).toBe(true)
   })
 
+  it('eagerly fast-forwards root repository main branch if on main', () => {
+    const executedCommands: string[] = []
+    const logMessages: string[] = []
+    const mockRunner: CommandRunner = (cmd, args) => {
+      executedCommands.push(`${cmd} ${args.join(' ')}`)
+      if (args.includes('--git-common-dir')) {
+        return '/home/steffen/src/jolito/.git'
+      }
+      if (args.includes('--show-toplevel')) {
+        return '/home/steffen/src/jolito'
+      }
+      if (args.includes('--abbrev-ref')) {
+        return 'main\n'
+      }
+      if (args.includes('--verify')) {
+        throw new Error('Branch does not exist')
+      }
+      return ''
+    }
+
+    const mockFs: FsOperations = {
+      existsSync: () => false,
+      symlinkSync: () => {},
+    }
+
+    startWorktree('ff-test', {
+      runCmd: mockRunner,
+      log: (msg) => logMessages.push(msg),
+      fsOps: mockFs,
+      cwd: '/home/steffen/src/jolito',
+    })
+
+    expect(
+      executedCommands.some((c) =>
+        c.includes('git merge --ff-only origin/main'),
+      ),
+    ).toBe(true)
+    expect(
+      logMessages.some((m) =>
+        m.includes('Fast-forwarded root main to origin/main.'),
+      ),
+    ).toBe(true)
+  })
+
   it('supports explicit agent prefix in task name', () => {
     const executedCommands: string[] = []
     const mockRunner: CommandRunner = (cmd, args) => {

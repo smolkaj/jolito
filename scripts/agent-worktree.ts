@@ -738,6 +738,24 @@ export function startWorktree(
   log('Fetching latest origin/main...')
   runCmd('git', ['fetch', 'origin', 'main'], { cwd: options.cwd })
 
+  // Eagerly fast-forward root repository main branch if clean and currently on main
+  try {
+    const rootBranch = runCmd('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+      cwd: mainRepoPath,
+    }).trim()
+    if (rootBranch === 'main') {
+      runCmd('git', ['merge', '--ff-only', 'origin/main'], {
+        cwd: mainRepoPath,
+      })
+      log('Fast-forwarded root main to origin/main.')
+    }
+  } catch (error) {
+    // Non-blocking: root working tree may have local uncommitted state or non-fast-forward ref
+    log(
+      `Notice: Could not fast-forward root main branch: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+
   // 2. Add worktree
   log(`Creating worktree at ${targetPath} with branch ${branch}...`)
   runCmd('git', ['worktree', 'add', '-b', branch, targetPath, 'origin/main'], {
