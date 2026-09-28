@@ -46,3 +46,5 @@ What becomes easier, harder, or newly required?
 | [0005: Cloud snapshot sync with Supabase](0005-cloud-snapshot-sync-supabase.md)                                            | Accepted | Zero-cost cloud snapshot sync with Supabase and RLS.                                                      |
 | [0006: Neural speech synthesis, voice licensing, and device fallback](0006-neural-speech-synthesis-and-voice-licensing.md) | Accepted | Hybrid edge neural speech with aggressive caching and offline Web Speech fallback.                        |
 | [0007: Signup alerts from verified accounts](0007-signup-alerts.md)                                                        | Proposed | Private scheduled delivery from Supabase Auth, with durable receipts and free verified-destination email. |
+| [0008: Zero-cost monthly deck backup and progress digest](0008-monthly-deck-digest.md)                                     | Proposed | Automated monthly deck backup JSON delivery and progress digest with zero operating costs and anti-spam sunsetting. |
+
