@@ -3594,6 +3594,10 @@ kbd {
   gap: 28px;
 }
 
+.keyboard-hint:empty {
+  display: none;
+}
+
 .keyboard-hint-item {
   display: inline-flex;
   align-items: center;
@@ -8137,7 +8141,7 @@ html[data-platform='android']:not([data-keyboard='true'])
 
 /* When a physical keyboard is active, reveal the shortcuts */
 html[data-keyboard='true'] .keyboard-hint {
-  display: block !important;
+  display: flex !important;
 }
 
 html[data-keyboard='true'] .reveal-button kbd,

@@ -1039,35 +1039,37 @@ export function PracticeCard({
             )}
           </p>
         )}
-        <div className="keyboard-hint">
-          {revealed ? (
-            <>
-              <span className="keyboard-hint-item">
-                <kbd>1–4</kbd>
-                <span>rate</span>
-              </span>
-              <span className="keyboard-hint-item">
-                <kbd>Space</kbd>
-                <span>replay audio</span>
-              </span>
-            </>
-          ) : (
-            <>
-              {onPlayPrompt && (
+        {(revealed || onPlayPrompt || spokenRecallAvailable) && (
+          <div className="keyboard-hint">
+            {revealed ? (
+              <>
                 <span className="keyboard-hint-item">
-                  <kbd>⌃ Space</kbd>
+                  <kbd>1–4</kbd>
+                  <span>rate</span>
+                </span>
+                <span className="keyboard-hint-item">
+                  <kbd>Space</kbd>
                   <span>replay audio</span>
                 </span>
-              )}
-              {spokenRecallAvailable && (
-                <span className="keyboard-hint-item">
-                  <kbd>⌥ Space</kbd>
-                  <span>voice</span>
-                </span>
-              )}
-            </>
-          )}
-        </div>
+              </>
+            ) : (
+              <>
+                {onPlayPrompt && (
+                  <span className="keyboard-hint-item">
+                    <kbd>⌃ Space</kbd>
+                    <span>replay audio</span>
+                  </span>
+                )}
+                {spokenRecallAvailable && (
+                  <span className="keyboard-hint-item">
+                    <kbd>⌥ Space</kbd>
+                    <span>voice</span>
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+        )}
         {(onEdit || onDelete) && (
           <div className="study-card-quick-actions">
             {onEdit && (
