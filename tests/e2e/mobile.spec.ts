@@ -818,12 +818,12 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(page.locator('.deck-sort-wrap')).toBeVisible()
     await expect(page.locator('.deck-list-table-header')).toBeHidden()
 
-    // Verify 2-line balanced mobile ledger: direction badge, status, and FSRS indicators visible
+    // Verify 2-line clean mobile ledger: direction badge and status chip hidden on mobile for calm layout, FSRS indicators visible
     const cardRows = page.locator('.deck-card-row')
     await expect(cardRows).toHaveCount(6)
     const firstRow = cardRows.first()
-    await expect(firstRow.locator('.deck-direction-badge')).toBeVisible()
-    await expect(firstRow.locator('.deck-stat-chip.is-mini')).toBeVisible()
+    await expect(firstRow.locator('.deck-direction-badge')).toBeHidden()
+    await expect(firstRow.locator('.deck-stat-chip.is-mini')).toBeHidden()
     await expect(firstRow.locator('.progress-bubbles')).toBeVisible()
     await expect(firstRow.locator('.chili-meter')).toBeVisible()
 

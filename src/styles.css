@@ -6152,13 +6152,13 @@ kbd {
   .deck-card-row {
     min-width: 0;
     display: grid;
-    grid-template-columns: 28px auto minmax(0, 1fr) auto auto;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
     grid-template-areas:
-      'select dir prompt status  status'
-      'select dir answer mastery difficulty';
-    column-gap: 8px;
-    row-gap: 5px;
-    padding: 10px 12px;
+      'select prompt mastery'
+      'select answer difficulty';
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 10px 14px;
     min-height: 52px;
     align-items: center;
   }
@@ -6172,13 +6172,9 @@ kbd {
     cursor: pointer;
   }
 
-  .deck-card-row .col-dir {
-    grid-area: dir;
-    align-self: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+  .deck-card-row .col-dir,
+  .deck-card-row .col-status {
+    display: none;
   }
 
   .deck-card-row .col-prompt {
@@ -6206,13 +6202,6 @@ kbd {
 
   .deck-card-row .col-difficulty {
     grid-area: difficulty;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .deck-card-row .col-status {
-    grid-area: status;
     display: flex;
     align-items: center;
     justify-content: flex-end;
