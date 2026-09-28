@@ -50,7 +50,7 @@ describe('digest-route', () => {
       expect(res.status).toBe(200)
       expect(res.headers.get('content-type')).toContain('text/html')
       const text = await res.text()
-      expect(text).toContain('Unsubscribed from Jolito Monthly Emails')
+      expect(text).toContain("You're unsubscribed")
       expect(text).toContain('Your deck remains safe')
 
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -154,7 +154,7 @@ describe('digest-route', () => {
             }),
           )
         }
-        if (url.includes('api.resend.com')) {
+        if (url === 'https://api.resend.com/emails') {
           return Promise.resolve(
             new Response(JSON.stringify({ id: 'resend_123' }), { status: 200 }),
           )
@@ -184,7 +184,7 @@ describe('digest-route', () => {
       const resendCall = fetchSpy.mock.calls.find(
         (call: unknown[]) =>
           typeof call[0] === 'string' &&
-          call[0].includes('api.resend.com/emails'),
+          call[0] === 'https://api.resend.com/emails',
       )
       expect(resendCall).toBeDefined()
       const resendInit = resendCall![1] as { body: string }
@@ -279,7 +279,7 @@ describe('digest-route', () => {
             }),
           )
         }
-        if (url.includes('api.resend.com')) {
+        if (url === 'https://api.resend.com/emails') {
           return Promise.resolve(
             new Response(JSON.stringify({ id: 'resend_456' }), { status: 200 }),
           )
@@ -307,7 +307,7 @@ describe('digest-route', () => {
       const resendCall = fetchSpy.mock.calls.find(
         (call: unknown[]) =>
           typeof call[0] === 'string' &&
-          call[0].includes('api.resend.com/emails'),
+          call[0] === 'https://api.resend.com/emails',
       )
       expect(resendCall).toBeDefined()
       const resendInit = resendCall![1] as { body: string }
@@ -356,7 +356,7 @@ describe('digest-route', () => {
             }),
           )
         }
-        if (url.includes('api.resend.com')) {
+        if (url === 'https://api.resend.com/emails') {
           return Promise.resolve(
             new Response(
               JSON.stringify({
@@ -429,7 +429,7 @@ describe('digest-route', () => {
             }),
           )
         }
-        if (url.includes('api.resend.com')) {
+        if (url === 'https://api.resend.com/emails') {
           return Promise.resolve(
             new Response(JSON.stringify({ id: 'resend_fail' }), {
               status: 200,
@@ -461,7 +461,7 @@ describe('digest-route', () => {
       const resendCall = fetchSpy.mock.calls.find(
         (call: unknown[]) =>
           typeof call[0] === 'string' &&
-          call[0].includes('api.resend.com/emails'),
+          call[0] === 'https://api.resend.com/emails',
       )
       expect(resendCall).toBeUndefined()
 
@@ -532,7 +532,7 @@ describe('digest-route', () => {
       const resendCall = fetchSpy.mock.calls.find(
         (call: unknown[]) =>
           typeof call[0] === 'string' &&
-          call[0].includes('api.resend.com/emails'),
+          call[0] === 'https://api.resend.com/emails',
       )
       expect(resendCall).toBeUndefined()
 
@@ -577,7 +577,7 @@ describe('digest-route', () => {
             }),
           )
         }
-        if (url.includes('api.resend.com')) {
+        if (url === 'https://api.resend.com/emails') {
           return Promise.resolve(
             new Response(
               JSON.stringify({
@@ -649,7 +649,7 @@ describe('digest-route', () => {
             }),
           )
         }
-        if (url.includes('api.resend.com')) {
+        if (url === 'https://api.resend.com/emails') {
           return Promise.resolve(
             new Response(JSON.stringify({ id: 'resend_ok' }), { status: 200 }),
           )
@@ -676,6 +676,24 @@ describe('digest-route', () => {
       expect(result.processed).toBe(1)
       expect(result.delivered).toBe(1)
       expect(result.failures).toBe(1)
+
+      vi.unstubAllGlobals()
+    })
+
+    it('skips and does not claim if RESEND_API_KEY is missing', async () => {
+      const fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const env: DigestWorkerEnv = {
+        SUPABASE_URL: 'https://test.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+      }
+
+      const result = await handleDigestScheduled(env)
+      expect(result.processed).toBe(0)
+      expect(result.delivered).toBe(0)
+      expect(result.failures).toBe(0)
+      expect(fetchSpy).not.toHaveBeenCalled()
 
       vi.unstubAllGlobals()
     })

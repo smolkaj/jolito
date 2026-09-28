@@ -7,7 +7,11 @@ import {
   formatPausedNoticeEmail,
   verifyUnsubscribeToken,
 } from '../domain/deck-digest'
-import { legacyStudyCardSchema, type StudyCard } from '../domain/card'
+import {
+  collectionVersion,
+  legacyStudyCardSchema,
+  type StudyCard,
+} from '../domain/card'
 import { deckSyncPayloadSchema } from '../domain/sync'
 
 export interface DigestWorkerEnv {
@@ -144,23 +148,109 @@ export async function handleUnsubscribeRequest(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unsubscribed — Jolito</title>
+  <meta name="color-scheme" content="light dark">
+  <title>Unsubscribed • Jolito</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 40px 16px; display: flex; justify-content: center; }
-    .card { background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; max-width: 480px; width: 100%; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; }
-    h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; }
-    p { font-size: 15px; color: #475569; line-height: 1.5; margin: 0 0 24px 0; }
-    .badge { display: inline-block; background: #fdf2f8; color: #b30060; border: 1px solid #fbcfe8; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
-    .btn { display: inline-block; background: #b30060; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; }
+    :root {
+      color-scheme: light dark;
+      --papel: #fdf5f8;
+      --card: #ffffff;
+      --ink: #121815;
+      --ink-soft: #3b4740;
+      --line: #121815;
+      --rosa: #e4007c;
+      --shadow: 4px 4px 0 var(--line);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --papel: #0d1210;
+        --card: #161e1a;
+        --ink: #fdf5f8;
+        --ink-soft: #b7c4bd;
+        --line: #2b3832;
+        --shadow: 4px 4px 0 #000000;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--papel);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      border: 2px solid var(--line);
+      max-width: 440px;
+      width: 100%;
+      padding: 32px 28px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .brand-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: block;
+    }
+    .brand-name {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 14.5px;
+      color: var(--ink-soft);
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--rosa);
+      color: #ffffff;
+      border: 2px solid var(--line);
+      box-shadow: 2px 2px 0 var(--line);
+      padding: 10px 22px;
+      border-radius: 9999px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="badge">Unsubscribed</div>
-    <h1>Unsubscribed from Jolito Monthly Emails</h1>
+  <main class="card">
+    <div class="brand-row">
+      <img src="https://joli.to/favicon-96x96.png" class="brand-logo" alt="Jolito">
+      <span class="brand-name">Jolito</span>
+    </div>
+    <h1>You're unsubscribed</h1>
     <p>You will no longer receive monthly deck backup or progress emails. Your deck remains safe and synchronized across your devices. You can re-enable this anytime in Sync &amp; Account in the app.</p>
     <a href="${getBaseUrl(env)}" class="btn">Return to Jolito</a>
-  </div>
+  </main>
 </body>
 </html>`
 
@@ -179,9 +269,13 @@ export async function handleDigestScheduled(
   paused: number
   failures: number
 }> {
-  if (!env?.SUPABASE_URL || !env?.SUPABASE_SERVICE_ROLE_KEY) {
-    console.log(
-      '[Digest Scheduled] Skipped: Supabase credentials not configured',
+  if (
+    !env?.SUPABASE_URL ||
+    !env?.SUPABASE_SERVICE_ROLE_KEY ||
+    !env?.RESEND_API_KEY
+  ) {
+    console.error(
+      '[Digest Scheduled] Skipped: Required credentials (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY) not configured',
     )
     return { processed: 0, delivered: 0, paused: 0, failures: 0 }
   }
@@ -340,7 +434,7 @@ export async function handleDigestScheduled(
 
     // Base64 encode canonical deckBackupEnvelopeSchema JSON backup
     const backupEnvelope = {
-      version: 4,
+      version: collectionVersion,
       app: 'jolito',
       exportedAt: new Date(nowTimestamp).toISOString(),
       cards,
@@ -405,17 +499,10 @@ export async function handleDigestScheduled(
         console.error('[Digest Dispatch] Delivery attempt error:', err)
       }
     } else {
-      console.log(
-        '[Digest Dispatch] Simulated dispatch (no RESEND_API_KEY configured):',
-        {
-          to: claim.email,
-          subject: emailData.subject,
-          isAutoPaused,
-        },
+      failureCount++
+      console.error(
+        `[Digest Dispatch] Failed: RESEND_API_KEY not configured for delivery to ${claim.email}`,
       )
-      sendSuccess = true
-      if (isAutoPaused) pausedCount++
-      else deliveredCount++
     }
 
     try {

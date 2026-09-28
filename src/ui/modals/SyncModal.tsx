@@ -105,7 +105,7 @@ export function SyncModal({
   const statusRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!user) return
+    if (!isOpen || !user) return
     let active = true
     void auth.getDigestPreference().then((enabled) => {
       if (active) setIsDigestEnabled(enabled)
@@ -113,7 +113,7 @@ export function SyncModal({
     return () => {
       active = false
     }
-  }, [user, auth])
+  }, [isOpen, user, auth])
 
   const handleToggleDigest = async (enabled: boolean) => {
     setIsDigestEnabled(enabled)
@@ -539,45 +539,6 @@ export function SyncModal({
             </div>
           </div>
 
-          <label
-            className={`toggle-row toggle-row-compact${loading || isUpdatingDigest || !isOnline ? ' disabled' : ''}`}
-            htmlFor="sync-digest-checkbox"
-          >
-            <input
-              id="sync-digest-checkbox"
-              type="checkbox"
-              aria-describedby={
-                digestError
-                  ? 'sync-digest-desc sync-digest-err'
-                  : 'sync-digest-desc'
-              }
-              checked={isDigestEnabled}
-              disabled={loading || isUpdatingDigest || !isOnline}
-              onChange={(e) => {
-                void handleToggleDigest(e.target.checked)
-              }}
-            />
-            <span className="toggle" aria-hidden="true" />
-            <div className="toggle-label-group">
-              <span className="toggle-title">
-                Monthly backup &amp; progress email
-              </span>
-              <span id="sync-digest-desc" className="toggle-description">
-                Monthly offline deck backup and learning stats. Pauses when
-                inactive.
-              </span>
-              {digestError && (
-                <span
-                  id="sync-digest-err"
-                  className="toggle-error-message"
-                  role="alert"
-                >
-                  {digestError}
-                </span>
-              )}
-            </div>
-          </label>
-
           <div className="sync-actions-row">
             <button
               type="button"
@@ -615,6 +576,45 @@ export function SyncModal({
               {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
             </button>
           </div>
+
+          <label
+            className={`toggle-row toggle-row-compact${loading || isUpdatingDigest || !isOnline ? ' disabled' : ''}`}
+            htmlFor="sync-digest-checkbox"
+          >
+            <input
+              id="sync-digest-checkbox"
+              type="checkbox"
+              aria-describedby={
+                digestError
+                  ? 'sync-digest-desc sync-digest-err'
+                  : 'sync-digest-desc'
+              }
+              checked={isDigestEnabled}
+              disabled={loading || isUpdatingDigest || !isOnline}
+              onChange={(e) => {
+                void handleToggleDigest(e.target.checked)
+              }}
+            />
+            <span className="toggle" aria-hidden="true" />
+            <div className="toggle-label-group">
+              <span className="toggle-title">
+                Monthly backup &amp; progress email
+              </span>
+              <span id="sync-digest-desc" className="toggle-description">
+                Includes an offline deck backup and learning stats. Pauses
+                automatically when inactive.
+              </span>
+              {digestError && (
+                <span
+                  id="sync-digest-err"
+                  className="toggle-error-message"
+                  role="alert"
+                >
+                  {digestError}
+                </span>
+              )}
+            </div>
+          </label>
 
           {isConfirmingDelete ? (
             <form

@@ -164,15 +164,15 @@ export function formatDigestEmail(
     stats.wordsToWatchOutFor.length > 0
       ? `
       <div style="margin-top: 28px;">
-        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #a1a1aa; margin-bottom: 10px;">Words to watch out for</div>
+        <div class="subtext" style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-bottom: 10px;">Words to watch out for</div>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
           ${stats.wordsToWatchOutFor
             .map(
               (w) => `
             <tr>
-              <td style="padding: 9px 0; font-size: 14px; font-weight: 500; color: #18181b; border-bottom: 1px solid #f4f4f5;">${escapeHtml(w.prompt)}</td>
-              <td style="padding: 9px 12px; font-size: 14px; color: #71717a; border-bottom: 1px solid #f4f4f5;">${escapeHtml(w.answer)}</td>
-              <td style="padding: 9px 0; font-size: 12px; color: #a1a1aa; text-align: right; border-bottom: 1px solid #f4f4f5; white-space: nowrap;">${w.lapses} ${w.lapses === 1 ? 'lapse' : 'lapses'}</td>
+              <td class="watchlist-item" style="padding: 9px 0; font-size: 14px; font-weight: 500; color: #121815; border-bottom: 1px solid #ede8df;">${escapeHtml(w.prompt)}</td>
+              <td class="watchlist-sub" style="padding: 9px 12px; font-size: 14px; color: #5f6e66; border-bottom: 1px solid #ede8df;">${escapeHtml(w.answer)}</td>
+              <td class="watchlist-sub" style="padding: 9px 0; font-size: 12px; color: #5f6e66; text-align: right; border-bottom: 1px solid #ede8df; white-space: nowrap;">${w.lapses} ${w.lapses === 1 ? 'lapse' : 'lapses'}</td>
             </tr>
           `,
             )
@@ -194,13 +194,55 @@ export function formatDigestEmail(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>${escapeHtml(subject)}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      body, .email-body-bg {
+        background-color: #0d1210 !important;
+        color: #fdf5f8 !important;
+      }
+      .email-card {
+        background-color: #161e1a !important;
+        border-color: #2b3832 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+      }
+      .brand-title, .title-text, .metric-value, .highlight-text {
+        color: #fdf5f8 !important;
+      }
+      .subtext, .metric-label, .explainer-text, .footer-note {
+        color: #8d9c94 !important;
+      }
+      .body-paragraph {
+        color: #b7c4bd !important;
+      }
+      .divider-line {
+        background-color: #2b3832 !important;
+      }
+      .watchlist-item {
+        color: #fdf5f8 !important;
+        border-bottom-color: #2b3832 !important;
+      }
+      .watchlist-sub {
+        color: #8d9c94 !important;
+        border-bottom-color: #2b3832 !important;
+      }
+      .unsubscribe-link {
+        color: #8d9c94 !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 40px 16px; background-color: #f7f7f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #18181b;">
-  <div style="display: none; font-size: 1px; color: #f7f7f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+<body class="email-body-bg" style="margin: 0; padding: 40px 16px; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
+  <div style="display: none; font-size: 1px; color: #fdf5f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
     ${escapeHtml(monthLabel)} progress snapshot and attached offline deck backup.
   </div>
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="email-card" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2ddd3; box-shadow: 0 1px 4px rgba(18, 24, 21, 0.04);">
     <tr>
       <td style="padding: 36px 36px 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 32px;">
@@ -212,47 +254,51 @@ export function formatDigestEmail(
                     <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="Jolito" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
                   </td>
                   <td style="vertical-align: middle;">
-                    <span style="font-size: 17px; font-weight: 600; color: #18181b; letter-spacing: -0.01em;">Jolito</span>
+                    <span class="brand-title" style="font-size: 17px; font-weight: 600; color: #121815; letter-spacing: -0.01em;">Jolito</span>
                   </td>
                 </tr>
               </table>
             </td>
             <td style="vertical-align: middle; text-align: right;">
-              <a href="${escapeHtml(unsubscribeUrl)}" style="font-size: 12px; color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
+              <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="font-size: 12px; color: #5f6e66; text-decoration: underline;">Unsubscribe</a>
             </td>
           </tr>
         </table>
 
-        <h1 style="margin: 0 0 4px; font-size: 22px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1.25;">Progress &amp; backup</h1>
-        <p style="margin: 0 0 28px; font-size: 14px; color: #71717a;">${escapeHtml(monthLabel)}</p>
+        <h1 class="title-text" style="margin: 0 0 4px; font-size: 22px; font-weight: 600; color: #121815; letter-spacing: -0.02em; line-height: 1.25;">Progress &amp; backup</h1>
+        <p class="subtext" style="margin: 0 0 28px; font-size: 14px; color: #5f6e66;">${escapeHtml(monthLabel)}</p>
 
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 24px;">
           <tr>
             <td style="width: 33%; vertical-align: top;">
-              <div style="font-size: 26px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1;">+${stats.cardsAdded}</div>
-              <div style="font-size: 13px; color: #71717a; margin-top: 6px;">Cards added</div>
+              <div class="metric-value" style="font-size: 26px; font-weight: 600; color: #121815; letter-spacing: -0.02em; line-height: 1;">+${stats.cardsAdded}</div>
+              <div class="metric-label" style="font-size: 13px; color: #5f6e66; margin-top: 6px;">Cards added</div>
             </td>
             <td style="width: 33%; vertical-align: top;">
-              <div style="font-size: 26px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1;">${stats.totalReviewsThisPeriod}</div>
-              <div style="font-size: 13px; color: #71717a; margin-top: 6px;">Reviews</div>
+              <div class="metric-value" style="font-size: 26px; font-weight: 600; color: #121815; letter-spacing: -0.02em; line-height: 1;">${stats.totalReviewsThisPeriod}</div>
+              <div class="metric-label" style="font-size: 13px; color: #5f6e66; margin-top: 6px;">Reviews</div>
             </td>
             <td style="width: 33%; vertical-align: top;">
-              <div style="font-size: 26px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1;">${stats.cardsGraduated}</div>
-              <div style="font-size: 13px; color: #71717a; margin-top: 6px;">Graduated</div>
+              <div class="metric-value" style="font-size: 26px; font-weight: 600; color: #121815; letter-spacing: -0.02em; line-height: 1;">${stats.cardsGraduated}</div>
+              <div class="metric-label" style="font-size: 13px; color: #5f6e66; margin-top: 6px;">Graduated</div>
             </td>
           </tr>
         </table>
 
-        <p style="margin: 0 0 28px; font-size: 14px; color: #52525b; line-height: 1.5;">
-          Your deck has <strong style="font-weight: 600; color: #18181b;">${stats.totalCards} cards</strong> (${stats.matureCards} in long-term memory).
+        <p class="body-paragraph" style="margin: 0 0 28px; font-size: 14px; color: #3b4740; line-height: 1.5;">
+          Your deck has <strong class="highlight-text" style="font-weight: 600; color: #121815;">${stats.totalCards} cards</strong> (${stats.matureCards} in long-term memory).
         </p>
 
         ${watchlistHtml}
 
-        <div style="height: 1px; background-color: #f4f4f5; margin: 32px 0 20px;"></div>
+        <div class="divider-line" style="height: 1px; background-color: #ede8df; margin: 32px 0 20px;"></div>
 
-        <p style="margin: 0; font-size: 13px; color: #71717a; line-height: 1.5;">
-          Your deck is attached as an offline JSON backup. Re-import anytime in <strong style="font-weight: 500; color: #3f3f46;">Sync &amp; Account</strong>.
+        <p class="explainer-text" style="margin: 0 0 16px; font-size: 13px; color: #5f6e66; line-height: 1.5;">
+          Your deck is attached as an offline JSON backup. Re-import anytime in <strong class="highlight-text" style="font-weight: 500; color: #3b4740;">Sync &amp; Account</strong>.
+        </p>
+
+        <p class="footer-note" style="margin: 0; font-size: 12px; color: #5f6e66; line-height: 1.5;">
+          You're receiving this monthly backup because you have sync enabled. You can <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">unsubscribe</a> anytime.
         </p>
       </td>
     </tr>
@@ -291,10 +337,44 @@ export function formatPausedNoticeEmail(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>${escapeHtml(subject)}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      body, .email-body-bg {
+        background-color: #0d1210 !important;
+        color: #fdf5f8 !important;
+      }
+      .email-card {
+        background-color: #161e1a !important;
+        border-color: #2b3832 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+      }
+      .brand-title, .title-text {
+        color: #fdf5f8 !important;
+      }
+      .subtext, .explainer-text, .footer-note {
+        color: #8d9c94 !important;
+      }
+      .body-paragraph {
+        color: #b7c4bd !important;
+      }
+      .divider-line {
+        background-color: #2b3832 !important;
+      }
+      .unsubscribe-link {
+        color: #8d9c94 !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 40px 16px; background-color: #f7f7f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #18181b;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+<body class="email-body-bg" style="margin: 0; padding: 40px 16px; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="email-card" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2ddd3; box-shadow: 0 1px 4px rgba(18, 24, 21, 0.04);">
     <tr>
       <td style="padding: 36px 36px 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 32px;">
@@ -306,31 +386,35 @@ export function formatPausedNoticeEmail(
                     <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="Jolito" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
                   </td>
                   <td style="vertical-align: middle;">
-                    <span style="font-size: 17px; font-weight: 600; color: #18181b; letter-spacing: -0.01em;">Jolito</span>
+                    <span class="brand-title" style="font-size: 17px; font-weight: 600; color: #121815; letter-spacing: -0.01em;">Jolito</span>
                   </td>
                 </tr>
               </table>
             </td>
             <td style="vertical-align: middle; text-align: right;">
-              <a href="${escapeHtml(unsubscribeUrl)}" style="font-size: 12px; color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
+              <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="font-size: 12px; color: #5f6e66; text-decoration: underline;">Unsubscribe</a>
             </td>
           </tr>
         </table>
 
-        <h1 style="margin: 0 0 4px; font-size: 22px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1.25;">Digests paused</h1>
-        <p style="margin: 0 0 24px; font-size: 14px; color: #71717a;">${escapeHtml(monthLabel)}</p>
+        <h1 class="title-text" style="margin: 0 0 4px; font-size: 22px; font-weight: 600; color: #121815; letter-spacing: -0.02em; line-height: 1.25;">Digests paused</h1>
+        <p class="subtext" style="margin: 0 0 24px; font-size: 14px; color: #5f6e66;">${escapeHtml(monthLabel)}</p>
 
-        <p style="margin: 0 0 20px; font-size: 14px; color: #3f3f46; line-height: 1.6;">
+        <p class="body-paragraph" style="margin: 0 0 20px; font-size: 14px; color: #3b4740; line-height: 1.6;">
           You haven't practiced recently, so we paused monthly emails to keep your inbox clean.
         </p>
 
-        <div style="height: 1px; background-color: #f4f4f5; margin: 28px 0 20px;"></div>
+        <div class="divider-line" style="height: 1px; background-color: #ede8df; margin: 28px 0 20px;"></div>
 
-        <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; line-height: 1.5;">
+        <p class="explainer-text" style="margin: 0 0 8px; font-size: 13px; color: #5f6e66; line-height: 1.5;">
           Your deck (${totalCards} cards) is attached as an offline JSON backup.
         </p>
-        <p style="margin: 0; font-size: 13px; color: #a1a1aa; line-height: 1.5;">
+        <p class="explainer-text" style="margin: 0 0 16px; font-size: 13px; color: #5f6e66; line-height: 1.5;">
           Digests will resume automatically when you practice again.
+        </p>
+
+        <p class="footer-note" style="margin: 0; font-size: 12px; color: #5f6e66; line-height: 1.5;">
+          You're receiving this notice because you have sync enabled. You can <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">unsubscribe</a> anytime.
         </p>
       </td>
     </tr>
