@@ -573,28 +573,26 @@ export function SyncModal({
             </button>
           </div>
 
-          <div className="sync-digest-card">
-            <label className="sync-digest-option">
-              <input
-                type="checkbox"
-                aria-label="Monthly backup and progress digest via email"
-                checked={isDigestEnabled}
-                disabled={loading || isUpdatingDigest || !isOnline}
-                onChange={(e) => {
-                  void handleToggleDigest(e.target.checked)
-                }}
-              />
-              <div className="sync-digest-content">
-                <span className="sync-digest-title">
-                  Monthly backup &amp; progress email
-                </span>
-                <span className="sync-digest-desc">
-                  Sends an offline JSON backup, learning stats, and leeches once
-                  a month. Pauses automatically if inactive.
-                </span>
-              </div>
-            </label>
-          </div>
+          <label className="sync-digest-option">
+            <input
+              type="checkbox"
+              aria-label="Monthly backup and progress digest via email"
+              checked={isDigestEnabled}
+              disabled={loading || isUpdatingDigest || !isOnline}
+              onChange={(e) => {
+                void handleToggleDigest(e.target.checked)
+              }}
+            />
+            <div className="sync-digest-content">
+              <span className="sync-digest-title">
+                Monthly backup &amp; progress email
+              </span>
+              <span className="sync-digest-desc">
+                Sends an offline JSON backup, learning stats, and words to watch
+                out for once a month. Pauses automatically if inactive.
+              </span>
+            </div>
+          </label>
 
           {isConfirmingDelete ? (
             <form

@@ -42,12 +42,27 @@ select cmp_ok((select count(*)::int from first_claim), '>=', 2, 'Verified accoun
 -- Verify active lease prevents immediate re-claim
 select is_empty($$ select * from public.claim_monthly_digests(10) $$, 'Active lease prevents double sending');
 
--- Test finish delivery
-select is(public.finish_monthly_digest('d0000000-0000-0000-0000-000000000001', gen_random_uuid(), true, 10, false), false,
+-- Test finish delivery with auto-pause
+select is(public.finish_monthly_digest('d0000000-0000-0000-0000-000000000001', gen_random_uuid(), true, 10, false, false), false,
   'Forged or stale lease cannot record completion');
 
-select is(public.finish_monthly_digest(user_id, lease_id, true, 10, false), true,
-  'Valid lease records completion') from first_claim where user_id = 'd0000000-0000-0000-0000-000000000001';
+select is(public.finish_monthly_digest(user_id, lease_id, true, 10, true, false), true,
+  'Valid lease records completion with auto-pause') from first_claim where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+-- Verify paused user is NOT claimed again in future periods
+update private.monthly_digests set last_sent_at = now() - interval '35 days'
+where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+select is_empty($$ select * from public.claim_monthly_digests(10) where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  'Paused user is not claimed for subsequent runs');
+
+-- Verify updating deck reactivates the paused user
+update public.decks set updated_at = now() where user_id = 'd0000000-0000-0000-0000-000000000001';
+select results_eq(
+  $$ select status from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  $$ values ('active'::text) $$,
+  'Deck activity reactivates paused digest status'
+);
 
 -- Test unsubscribe RPC
 select is(public.unsubscribe_monthly_digest('d0000000-0000-0000-0000-000000000002'), true, 'Admin unsubscribe succeeds');

@@ -6,7 +6,8 @@ create table if not exists private.monthly_digests (
   digest_enabled boolean not null default true,
   last_sent_at timestamptz,
   last_lifetime_reviews integer not null default 0,
-  status text not null default 'active' check (status in ('active', 'paused', 'unsubscribed')),
+  status text not null default 'active' check (status in ('active', 'paused', 'unsubscribed', 'failed')),
+  attempts integer not null default 0,
   lease_id uuid,
   lease_until timestamptz,
   created_at timestamptz not null default now(),
@@ -16,13 +17,28 @@ create table if not exists private.monthly_digests (
 alter table private.monthly_digests enable row level security;
 revoke all on private.monthly_digests from public, anon, authenticated;
 
+-- Automatically reactivate paused digests when a learner saves/syncs cards to their deck
+create or replace function private.reactivate_paused_digest()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+begin
+  update private.monthly_digests
+  set status = 'active', updated_at = now()
+  where user_id = new.user_id and status = 'paused';
+  return new;
+end;
+$$;
+
+drop trigger if exists reactivate_digest_on_deck_update on public.decks;
+create trigger reactivate_digest_on_deck_update
+  after insert or update on public.decks
+  for each row execute function private.reactivate_paused_digest();
+
 create or replace function public.claim_monthly_digests(p_limit integer default 50)
 returns table (
   user_id uuid,
   email text,
-  deck_data jsonb,
   last_lifetime_reviews integer,
-  digest_status text,
   lease_id uuid
 )
 language plpgsql security definer set search_path = ''
@@ -40,9 +56,8 @@ begin
   with candidates as (
     select md.user_id from private.monthly_digests md
     join auth.users u on u.id = md.user_id
-    join public.decks d on d.user_id = md.user_id
     where md.digest_enabled = true
-      and md.status in ('active', 'paused')
+      and md.status = 'active'
       and (md.lease_until is null or md.lease_until <= now())
       and (md.last_sent_at is null or md.last_sent_at <= now() - interval '28 days')
       and u.email_confirmed_at is not null
@@ -54,14 +69,14 @@ begin
   ), claimed as (
     update private.monthly_digests md
     set lease_id = gen_random_uuid(), lease_until = now() + interval '30 minutes',
+        attempts = md.attempts + 1,
         updated_at = now()
     from candidates c where md.user_id = c.user_id
-    returning md.user_id, md.lease_id, md.last_lifetime_reviews, md.status
+    returning md.user_id, md.lease_id, md.last_lifetime_reviews
   )
-  select c.user_id, u.email::text, d.data as deck_data, c.last_lifetime_reviews, c.status as digest_status, c.lease_id
+  select c.user_id, u.email::text, c.last_lifetime_reviews, c.lease_id
   from claimed c
-  join auth.users u on u.id = c.user_id
-  join public.decks d on d.user_id = c.user_id;
+  join auth.users u on u.id = c.user_id;
 end;
 $$;
 
@@ -70,21 +85,25 @@ create or replace function public.finish_monthly_digest(
   p_lease_id uuid,
   p_delivered boolean,
   p_new_lifetime_reviews integer default 0,
-  p_auto_paused boolean default false
+  p_auto_paused boolean default false,
+  p_permanent_failure boolean default false
 )
 returns boolean language plpgsql security definer set search_path = ''
 as $$
 begin
   update private.monthly_digests
   set status = case
+      when p_permanent_failure then 'failed'
+      when not p_delivered and attempts >= 3 then 'failed'
       when not p_delivered then status
       when p_auto_paused then 'paused'
       else 'active'
     end,
+    attempts = case when p_delivered then 0 else attempts end,
     last_sent_at = case when p_delivered then now() else last_sent_at end,
     last_lifetime_reviews = case when p_delivered then coalesce(p_new_lifetime_reviews, last_lifetime_reviews) else last_lifetime_reviews end,
     lease_id = null,
-    lease_until = case when p_delivered then null else now() + interval '5 minutes' end,
+    lease_until = case when p_delivered or p_permanent_failure or attempts >= 3 then null else now() + interval '5 minutes' end,
     updated_at = now()
   where user_id = p_user_id and lease_id = p_lease_id
     and lease_until > now();
@@ -137,10 +156,10 @@ end;
 $$;
 
 revoke all on function public.claim_monthly_digests(integer) from public, anon, authenticated;
-revoke all on function public.finish_monthly_digest(uuid, uuid, boolean, integer, boolean) from public, anon, authenticated;
+revoke all on function public.finish_monthly_digest(uuid, uuid, boolean, integer, boolean, boolean) from public, anon, authenticated;
 revoke all on function public.unsubscribe_monthly_digest(uuid) from public, anon, authenticated;
 grant execute on function public.claim_monthly_digests(integer) to service_role;
-grant execute on function public.finish_monthly_digest(uuid, uuid, boolean, integer, boolean) to service_role;
+grant execute on function public.finish_monthly_digest(uuid, uuid, boolean, integer, boolean, boolean) to service_role;
 grant execute on function public.unsubscribe_monthly_digest(uuid) to service_role;
 
 revoke all on function public.get_digest_preference() from public, anon;

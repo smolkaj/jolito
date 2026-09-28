@@ -21,15 +21,15 @@ export interface DigestWorkerEnv {
 const claimSchema = z.object({
   user_id: z.string().uuid(),
   email: z.string().email(),
-  deck_data: z.unknown(),
   last_lifetime_reviews: z.number().int().default(0),
-  digest_status: z.enum(['active', 'paused', 'unsubscribed']).default('active'),
   lease_id: z.string().uuid(),
 })
 
 const rawDeckSchema = z.object({
   cards: z.array(legacyStudyCardSchema).default([]),
 })
+
+const deckRowSchema = z.array(z.object({ data: z.unknown().optional() }))
 
 function getSecret(env?: DigestWorkerEnv): string {
   return (
@@ -184,12 +184,37 @@ export async function handleDigestScheduled(
   const fileDate = formatFilenameDate(nowTimestamp)
 
   for (const claim of claims) {
+    let deckData: unknown = null
+    try {
+      const deckRes = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/decks?user_id=eq.${claim.user_id}&select=data`,
+        {
+          method: 'GET',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10_000),
+        },
+      )
+      if (deckRes.ok) {
+        const rawJson: unknown = await deckRes.json()
+        const parsedRows = deckRowSchema.safeParse(rawJson)
+        if (parsedRows.success && parsedRows.data.length > 0) {
+          deckData = parsedRows.data[0]?.data
+        }
+      }
+    } catch (err) {
+      console.error('[Digest Dispatch] Deck fetch error:', err)
+    }
+
     let cards: StudyCard[] = []
-    const parsedSync = deckSyncPayloadSchema.safeParse(claim.deck_data)
+    const parsedSync = deckSyncPayloadSchema.safeParse(deckData)
     if (parsedSync.success) {
       cards = parsedSync.data.cards
     } else {
-      const fallbackParsed = rawDeckSchema.safeParse(claim.deck_data)
+      const fallbackParsed = rawDeckSchema.safeParse(deckData)
       if (fallbackParsed.success) {
         cards = fallbackParsed.data.cards
       }
@@ -210,13 +235,14 @@ export async function handleDigestScheduled(
 
     // Base64 encode JSON deck payload as backup
     const backupJsonString = JSON.stringify(
-      claim.deck_data || { version: 4, app: 'jolito', cards: [] },
+      deckData || { version: 4, app: 'jolito', cards: [] },
       null,
       2,
     )
     const base64Attachment = base64Encode(backupJsonString)
 
     let sendSuccess = false
+    let isPermanentFailure = false
 
     if (env.RESEND_API_KEY) {
       try {
@@ -255,6 +281,9 @@ export async function handleDigestScheduled(
           }
         } else {
           failureCount++
+          if (resendRes.status >= 400 && resendRes.status < 500) {
+            isPermanentFailure = true
+          }
           console.error(
             `[Digest Dispatch] Resend API failed with status ${resendRes.status}`,
           )
@@ -291,6 +320,7 @@ export async function handleDigestScheduled(
           p_delivered: sendSuccess,
           p_new_lifetime_reviews: stats.currentLifetimeReviews,
           p_auto_paused: isAutoPaused,
+          p_permanent_failure: isPermanentFailure,
         }),
         signal: AbortSignal.timeout(10_000),
       })

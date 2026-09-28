@@ -65,43 +65,43 @@ describe('digest-route', () => {
   })
 
   describe('handleDigestScheduled', () => {
+    const leaseId = '22222222-3333-4444-8555-666666666666'
+    const activeDeckData = {
+      app: 'jolito',
+      version: 4,
+      updatedAt: '2026-09-28T12:00:00Z',
+      deviceId: 'dev-1',
+      cards: [
+        {
+          id: 'c1',
+          noteId: 'c1',
+          prompt: 'hablar',
+          answer: 'to speak',
+          direction: 'es-en',
+          context: '',
+          scene: 'conversation',
+          createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+          schedule: {
+            state: 'review',
+            intervalDays: 25,
+            dueAt: Date.now(),
+            easeFactor: 2.5,
+            reviews: 60,
+            lapses: 0,
+            lastReviewedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+          },
+        },
+      ],
+      deletedCardIds: [],
+    }
+
     it('claims pending users, computes stats, sends via Resend, and records completion', async () => {
-      const leaseId = '22222222-3333-4444-8555-666666666666'
       const sampleClaims = [
         {
           user_id: validUserId,
           email: 'learner@example.com',
           last_lifetime_reviews: 50,
-          digest_status: 'active',
           lease_id: leaseId,
-          deck_data: {
-            app: 'jolito',
-            version: 4,
-            updatedAt: '2026-09-28T12:00:00Z',
-            deviceId: 'dev-1',
-            cards: [
-              {
-                id: 'c1',
-                noteId: 'c1',
-                prompt: 'hablar',
-                answer: 'to speak',
-                direction: 'es-en',
-                context: '',
-                scene: 'conversation',
-                createdAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
-                schedule: {
-                  state: 'review',
-                  intervalDays: 25,
-                  dueAt: Date.now(),
-                  easeFactor: 2.5,
-                  reviews: 60,
-                  lapses: 0,
-                  lastReviewedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
-                },
-              },
-            ],
-            deletedCardIds: [],
-          },
         },
       ]
 
@@ -109,6 +109,13 @@ describe('digest-route', () => {
         if (url.includes('/rpc/claim_monthly_digests')) {
           return Promise.resolve(
             new Response(JSON.stringify(sampleClaims), { status: 200 }),
+          )
+        }
+        if (url.includes('/rest/v1/decks?user_id=')) {
+          return Promise.resolve(
+            new Response(JSON.stringify([{ data: activeDeckData }]), {
+              status: 200,
+            }),
           )
         }
         if (url.includes('api.resend.com')) {
@@ -171,60 +178,69 @@ describe('digest-route', () => {
         p_delivered: boolean
         p_new_lifetime_reviews: number
         p_auto_paused: boolean
+        p_permanent_failure: boolean
       }
       expect(finishBody.p_user_id).toBe(validUserId)
       expect(finishBody.p_lease_id).toBe(leaseId)
       expect(finishBody.p_delivered).toBe(true)
       expect(finishBody.p_new_lifetime_reviews).toBe(60)
       expect(finishBody.p_auto_paused).toBe(false)
+      expect(finishBody.p_permanent_failure).toBe(false)
 
       vi.unstubAllGlobals()
     })
 
     it('sends paused notice and marks account auto-paused when user is inactive', async () => {
-      const leaseId = '33333333-4444-4555-8666-777777777777'
+      const inactiveLeaseId = '33333333-4444-4555-8666-777777777777'
       const sampleClaims = [
         {
           user_id: validUserId,
           email: 'inactive@example.com',
           last_lifetime_reviews: 10,
-          digest_status: 'active',
-          lease_id: leaseId,
-          deck_data: {
-            app: 'jolito',
-            version: 4,
-            updatedAt: '2026-07-01T12:00:00Z',
-            deviceId: 'dev-1',
-            cards: [
-              {
-                id: 'c1',
-                noteId: 'c1',
-                prompt: 'antiguo',
-                answer: 'ancient',
-                direction: 'es-en',
-                context: '',
-                scene: 'conversation',
-                createdAt: Date.now() - 100 * 24 * 60 * 60 * 1000,
-                schedule: {
-                  state: 'review',
-                  intervalDays: 10,
-                  dueAt: Date.now() - 50 * 24 * 60 * 60 * 1000,
-                  easeFactor: 2.5,
-                  reviews: 10,
-                  lapses: 0,
-                  lastReviewedAt: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago (inactive)
-                },
-              },
-            ],
-            deletedCardIds: [],
-          },
+          lease_id: inactiveLeaseId,
         },
       ]
+
+      const inactiveDeckData = {
+        app: 'jolito',
+        version: 4,
+        updatedAt: '2026-07-01T12:00:00Z',
+        deviceId: 'dev-1',
+        cards: [
+          {
+            id: 'c1',
+            noteId: 'c1',
+            prompt: 'antiguo',
+            answer: 'ancient',
+            direction: 'es-en',
+            context: '',
+            scene: 'conversation',
+            createdAt: Date.now() - 100 * 24 * 60 * 60 * 1000,
+            schedule: {
+              state: 'review',
+              intervalDays: 10,
+              dueAt: Date.now() - 50 * 24 * 60 * 60 * 1000,
+              easeFactor: 2.5,
+              reviews: 10,
+              lapses: 0,
+              lastReviewedAt: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago (inactive)
+            },
+          },
+        ],
+        deletedCardIds: [],
+      }
 
       const fetchSpy = vi.fn().mockImplementation((url: string) => {
         if (url.includes('/rpc/claim_monthly_digests')) {
           return Promise.resolve(
             new Response(JSON.stringify(sampleClaims), { status: 200 }),
+          )
+        }
+        if (url.includes('/rest/v1/decks?user_id=')) {
+          return Promise.resolve(
+            new Response(JSON.stringify([{ data: inactiveDeckData }]), {
+              status: 200,
+            }),
           )
         }
         if (url.includes('api.resend.com')) {
@@ -271,8 +287,82 @@ describe('digest-route', () => {
       const finishInit = finishCall![1] as { body: string }
       const finishBody = JSON.parse(finishInit.body) as {
         p_auto_paused: boolean
+        p_permanent_failure: boolean
       }
       expect(finishBody.p_auto_paused).toBe(true)
+      expect(finishBody.p_permanent_failure).toBe(false)
+
+      vi.unstubAllGlobals()
+    })
+
+    it('flags permanent failure and marks failed when Resend returns 4xx client error', async () => {
+      const sampleClaims = [
+        {
+          user_id: validUserId,
+          email: 'invalid@nonexistent.domain',
+          last_lifetime_reviews: 10,
+          lease_id: leaseId,
+        },
+      ]
+
+      const fetchSpy = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('/rpc/claim_monthly_digests')) {
+          return Promise.resolve(
+            new Response(JSON.stringify(sampleClaims), { status: 200 }),
+          )
+        }
+        if (url.includes('/rest/v1/decks?user_id=')) {
+          return Promise.resolve(
+            new Response(JSON.stringify([{ data: activeDeckData }]), {
+              status: 200,
+            }),
+          )
+        }
+        if (url.includes('api.resend.com')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                statusCode: 422,
+                message: 'The email address is invalid',
+              }),
+              { status: 422 },
+            ),
+          )
+        }
+        if (url.includes('/rpc/finish_monthly_digest')) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          )
+        }
+        return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const env: DigestWorkerEnv = {
+        SUPABASE_URL: 'https://test.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+        RESEND_API_KEY: 're_test_key_123',
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+      }
+
+      const result = await handleDigestScheduled(env)
+      expect(result.processed).toBe(1)
+      expect(result.delivered).toBe(0)
+      expect(result.failures).toBe(1)
+
+      const finishCall = fetchSpy.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('/rpc/finish_monthly_digest'),
+      )
+      expect(finishCall).toBeDefined()
+      const finishInit = finishCall![1] as { body: string }
+      const finishBody = JSON.parse(finishInit.body) as {
+        p_delivered: boolean
+        p_permanent_failure: boolean
+      }
+      expect(finishBody.p_delivered).toBe(false)
+      expect(finishBody.p_permanent_failure).toBe(true)
 
       vi.unstubAllGlobals()
     })

@@ -131,7 +131,12 @@ export async function verifyUnsubscribeToken(
     secret,
     subtleCrypto,
   )
-  return token.toLowerCase() === expectedToken.toLowerCase()
+  if (token.length !== expectedToken.length) return false
+  let mismatch = 0
+  for (let i = 0; i < token.length; i++) {
+    mismatch |= token.charCodeAt(i) ^ expectedToken.charCodeAt(i)
+  }
+  return mismatch === 0
 }
 
 function escapeHtml(str: string): string {
@@ -186,6 +191,9 @@ export function formatDigestEmail(
   <title>${escapeHtml(subject)}</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; padding: 24px; line-height: 1.5;">
+  <div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    Your monthly Jolito learning progress summary and offline deck backup.
+  </div>
   <div style="max-width: 580px; margin: 0 auto; font-size: 13px; color: #64748b; padding-bottom: 12px; text-align: center;">
     Your monthly Jolito deck backup & progress snapshot.
     <a href="${escapeHtml(unsubscribeUrl)}" style="color: #b30060; text-decoration: underline; margin-left: 4px;">Unsubscribe in 1 click</a>
