@@ -106,7 +106,8 @@ begin
     lease_until = case when p_delivered or p_permanent_failure or attempts >= 3 then null else now() + interval '5 minutes' end,
     updated_at = now()
   where user_id = p_user_id and lease_id = p_lease_id
-    and lease_until > now();
+    and lease_until > now()
+    and status <> 'unsubscribed';
   return found;
 end;
 $$;
@@ -118,6 +119,8 @@ begin
   update private.monthly_digests
   set digest_enabled = false,
       status = 'unsubscribed',
+      lease_id = null,
+      lease_until = null,
       updated_at = now()
   where user_id = p_user_id;
   return found;
@@ -156,6 +159,8 @@ begin
   on conflict (user_id) do update
   set digest_enabled = p_enabled,
       status = case when p_enabled then 'active' else 'unsubscribed' end,
+      lease_id = case when not p_enabled then null else private.monthly_digests.lease_id end,
+      lease_until = case when not p_enabled then null else private.monthly_digests.lease_until end,
       updated_at = now();
   return true;
 end;

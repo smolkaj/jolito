@@ -2608,6 +2608,14 @@ textarea::placeholder {
   color: var(--ink-soft);
 }
 
+.toggle-error-message {
+  font-size: 12px;
+  color: var(--tezontle);
+  line-height: 1.35;
+  margin-top: 3px;
+  font-weight: 500;
+}
+
 .form-details {
   margin-top: 4px;
   margin-bottom: 8px;

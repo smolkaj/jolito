@@ -94,5 +94,29 @@ select results_eq(
   'Deck activity does not reactivate unsubscribed status'
 );
 
+-- Test race condition: user unsubscribes while worker lease is in-flight
+update private.monthly_digests
+set lease_id = gen_random_uuid(), lease_until = now() + interval '30 minutes', status = 'active'
+where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+create temporary table in_flight_lease as
+select user_id, lease_id from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+-- User unsubscribes mid-flight
+select is(public.unsubscribe_monthly_digest('d0000000-0000-0000-0000-000000000001'), true, 'User unsubscribes mid-flight');
+
+-- In-flight worker attempts to finish delivery
+select is(
+  (select public.finish_monthly_digest(user_id, lease_id, true, 20, false, false) from in_flight_lease),
+  false,
+  'In-flight worker cannot overwrite explicit unsubscription'
+);
+
+select results_eq(
+  $$ select status, digest_enabled from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  $$ values ('unsubscribed'::text, false) $$,
+  'Status remains strictly unsubscribed and disabled'
+);
+
 select * from finish();
 rollback;
