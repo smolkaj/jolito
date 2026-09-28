@@ -302,43 +302,43 @@ describe('Anki spaced repetition scheduling', () => {
       const reviewed = scheduleReview(reviewCard, 'good', now)
       expect(reviewed.schedule).toMatchObject({
         state: 'review',
-        intervalDays: 28,
+        intervalDays: 43,
         easeFactor: 2.5,
         reviews: 6,
         lapses: 0,
         lastReviewedAt: now,
       })
-      expect(reviewed.schedule.stability).toBeCloseTo(28.36, 1)
-      expect(reviewed.schedule.difficulty).toBeLessThan(6.0)
-      expect(intervalLabel(reviewCard, 'good', now)).toBe('28 days')
+      expect(reviewed.schedule.stability).toBeCloseTo(42.6, 1)
+      expect(reviewed.schedule.difficulty).toBeLessThanOrEqual(2.12)
+      expect(intervalLabel(reviewCard, 'good', now)).toBe('43 days')
     })
 
     it('increases stability further and lowers difficulty on Easy', () => {
       const reviewed = scheduleReview(reviewCard, 'easy', now)
       expect(reviewed.schedule).toMatchObject({
         state: 'review',
-        intervalDays: 44,
+        intervalDays: 71,
         easeFactor: 2.5,
         reviews: 6,
         lapses: 0,
         lastReviewedAt: now,
       })
-      expect(reviewed.schedule.difficulty).toBeLessThan(5.0)
-      expect(intervalLabel(reviewCard, 'easy', now)).toBe('44 days')
+      expect(reviewed.schedule.difficulty).toBeLessThan(2.0)
+      expect(intervalLabel(reviewCard, 'easy', now)).toBe('71 days')
     })
 
     it('increases difficulty and provides shorter interval on Hard', () => {
       const reviewed = scheduleReview(reviewCard, 'hard', now)
       expect(reviewed.schedule).toMatchObject({
         state: 'review',
-        intervalDays: 21,
+        intervalDays: 30,
         easeFactor: 2.5,
         reviews: 6,
         lapses: 0,
         lastReviewedAt: now,
       })
-      expect(reviewed.schedule.difficulty).toBeGreaterThan(6.0)
-      expect(intervalLabel(reviewCard, 'hard', now)).toBe('21 days')
+      expect(reviewed.schedule.difficulty).toBeGreaterThan(4.5)
+      expect(intervalLabel(reviewCard, 'hard', now)).toBe('30 days')
     })
 
     it('records a lapse, increases difficulty, and re-queues into relearning on Again', () => {
@@ -350,7 +350,7 @@ describe('Anki spaced repetition scheduling', () => {
         lapses: 1,
         lastReviewedAt: now,
       })
-      expect(reviewed.schedule.difficulty).toBeGreaterThan(8.0)
+      expect(reviewed.schedule.difficulty).toBeGreaterThan(7.0)
       expect(shouldRequeueInSession(reviewed.schedule)).toBe(true)
       expect(intervalLabel(reviewCard, 'again', now)).toBe('< 10 min')
     })
@@ -396,6 +396,38 @@ describe('Anki spaced repetition scheduling', () => {
       const parsed = reviewScheduleSchema.parse(legacyNew)
       expect(parsed.state).toBe('new')
       expect(parsed.easeFactor).toBe(2.5)
+    })
+
+    it('heals legacy difficulty artifact (~6.0) for unblemished cards on deserialization', () => {
+      const artifactRaw = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 14,
+        easeFactor: 2.5,
+        reviews: 5,
+        lapses: 0,
+        difficulty: 5.98,
+        stability: 14,
+      }
+
+      const parsed = reviewScheduleSchema.parse(artifactRaw)
+      expect(parsed.difficulty).toBe(2.12)
+    })
+
+    it('preserves valid high difficulty when card has lapses or lower ease', () => {
+      const lapsedRaw = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 5,
+        easeFactor: 2.1,
+        reviews: 6,
+        lapses: 2,
+        difficulty: 6.2,
+        stability: 5,
+      }
+
+      const parsed = reviewScheduleSchema.parse(lapsedRaw)
+      expect(parsed.difficulty).toBe(6.2)
     })
 
     it('handles non-object inputs safely through schema validation', () => {

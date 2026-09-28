@@ -11,6 +11,8 @@ import {
   cardProgressLevel,
   cardDifficultyLevel,
   cardMemoryIndicators,
+  FSRS_BASELINE_GOOD_DIFFICULTY,
+  estimateLegacyDifficulty,
 } from './scheduler'
 import {
   createStudyCards,
@@ -47,9 +49,10 @@ describe('scheduler (FSRS domain adapter)', () => {
         stability: 0,
         difficulty: 0,
       })
+      expect(cardDifficultyLevel(sched)).toBe(0)
     })
 
-    it('estimates stability from intervalDays and difficulty from easeFactor for legacy cards', () => {
+    it('estimates stability from intervalDays and baseline difficulty (0 chilies) for unblemished legacy cards', () => {
       const sched: ReviewSchedule = {
         state: 'review',
         dueAt: now,
@@ -58,19 +61,96 @@ describe('scheduler (FSRS domain adapter)', () => {
         reviews: 5,
         lapses: 0,
       }
-      // difficulty: 11 - 2 * 2.5 = 6.0
       expect(estimateFsrsParameters(sched)).toEqual({
         stability: 14,
-        difficulty: 6,
+        difficulty: FSRS_BASELINE_GOOD_DIFFICULTY,
       })
+      expect(cardDifficultyLevel(sched)).toBe(0)
     })
 
-    it('preserves existing stability and difficulty when already populated', () => {
+    it('scales difficulty below baseline for legacy cards with easeFactor > 2.5', () => {
       const sched: ReviewSchedule = {
         state: 'review',
         dueAt: now,
         intervalDays: 20,
+        easeFactor: 2.8,
+        reviews: 5,
+        lapses: 0,
+      }
+      const params = estimateFsrsParameters(sched)
+      expect(params.difficulty).toBeLessThan(FSRS_BASELINE_GOOD_DIFFICULTY)
+      expect(params.difficulty).toBeGreaterThanOrEqual(1.0)
+      expect(cardDifficultyLevel(sched)).toBe(0)
+    })
+
+    it('estimates mild difficulty (1 chili) for legacy cards with 1 lapse', () => {
+      const sched: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 7,
+        easeFactor: 2.3,
+        reviews: 4,
+        lapses: 1,
+      }
+      const params = estimateFsrsParameters(sched)
+      expect(params.difficulty).toBeGreaterThanOrEqual(3.0)
+      expect(params.difficulty).toBeLessThan(5.0)
+      expect(cardDifficultyLevel(sched)).toBe(1)
+    })
+
+    it('estimates medium difficulty (2 chilies) for legacy cards with 2 lapses', () => {
+      const sched: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 4,
+        easeFactor: 2.1,
+        reviews: 6,
+        lapses: 2,
+      }
+      const params = estimateFsrsParameters(sched)
+      expect(params.difficulty).toBeGreaterThanOrEqual(5.0)
+      expect(params.difficulty).toBeLessThan(7.5)
+      expect(cardDifficultyLevel(sched)).toBe(2)
+    })
+
+    it('estimates hot difficulty (3 chilies) for legacy cards with 3+ lapses', () => {
+      const sched: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 2,
+        easeFactor: 1.9,
+        reviews: 8,
+        lapses: 3,
+      }
+      const params = estimateFsrsParameters(sched)
+      expect(params.difficulty).toBeGreaterThanOrEqual(7.5)
+      expect(cardDifficultyLevel(sched)).toBe(3)
+    })
+
+    it('heals legacy artifact cards with difficulty >= 5.0 when lapses === 0 and easeFactor >= 2.5', () => {
+      const sched: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 14,
         easeFactor: 2.5,
+        reviews: 6,
+        lapses: 0,
+        stability: 14,
+        difficulty: 5.98,
+      }
+      expect(estimateFsrsParameters(sched)).toEqual({
+        stability: 14,
+        difficulty: FSRS_BASELINE_GOOD_DIFFICULTY,
+      })
+      expect(cardDifficultyLevel(sched)).toBe(0)
+    })
+
+    it('preserves existing stability and difficulty when already populated for frictional cards', () => {
+      const sched: ReviewSchedule = {
+        state: 'review',
+        dueAt: now,
+        intervalDays: 20,
+        easeFactor: 2.3,
         reviews: 6,
         lapses: 1,
         stability: 18.5,
@@ -80,6 +160,54 @@ describe('scheduler (FSRS domain adapter)', () => {
         stability: 18.5,
         difficulty: 4.2,
       })
+      expect(cardDifficultyLevel(sched)).toBe(1)
+    })
+  })
+
+  describe('estimateLegacyDifficulty', () => {
+    it('maps zero lapses and default ease to FSRS baseline', () => {
+      expect(
+        estimateLegacyDifficulty({
+          state: 'review',
+          dueAt: now,
+          intervalDays: 10,
+          easeFactor: 2.5,
+          reviews: 5,
+          lapses: 0,
+        }),
+      ).toBe(FSRS_BASELINE_GOOD_DIFFICULTY)
+    })
+
+    it('scales difficulty proportionally with lapses and ease drops', () => {
+      const oneLapse = estimateLegacyDifficulty({
+        state: 'review',
+        dueAt: now,
+        intervalDays: 5,
+        easeFactor: 2.3,
+        reviews: 4,
+        lapses: 1,
+      })
+      expect(oneLapse).toBe(4.02)
+
+      const twoLapses = estimateLegacyDifficulty({
+        state: 'review',
+        dueAt: now,
+        intervalDays: 3,
+        easeFactor: 2.1,
+        reviews: 6,
+        lapses: 2,
+      })
+      expect(twoLapses).toBe(5.92)
+
+      const threeLapses = estimateLegacyDifficulty({
+        state: 'review',
+        dueAt: now,
+        intervalDays: 1,
+        easeFactor: 1.9,
+        reviews: 8,
+        lapses: 3,
+      })
+      expect(threeLapses).toBe(7.82)
     })
   })
 

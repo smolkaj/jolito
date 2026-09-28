@@ -10,6 +10,7 @@ import {
   nextFsrsIntervalDays,
   intervalLabel as fsrsIntervalLabel,
   shouldRequeueInSession as fsrsShouldRequeueInSession,
+  FSRS_BASELINE_GOOD_DIFFICULTY,
 } from './scheduler'
 
 export const grades = ['again', 'hard', 'good', 'easy'] as const
@@ -32,14 +33,31 @@ export const reviewScheduleSchema = z.preprocess(
       const intervalDays =
         typeof raw.intervalDays === 'number' ? raw.intervalDays : 0
       const reviews = typeof raw.reviews === 'number' ? raw.reviews : 0
+      const lapses = typeof raw.lapses === 'number' ? raw.lapses : 0
       const state =
         raw.state ?? (reviews > 0 && intervalDays > 0 ? 'review' : 'new')
       const easeFactor =
         typeof raw.easeFactor === 'number' ? raw.easeFactor : 2.5
+      let difficulty =
+        typeof raw.difficulty === 'number' ? raw.difficulty : undefined
+
+      // Heal legacy artifact: unblemished cards whose difficulty was seeded with
+      // the legacy heuristic (11 - 2 * 2.5 = 6.0) are normalized to baseline.
+      if (
+        difficulty !== undefined &&
+        difficulty >= 5.85 &&
+        difficulty <= 6.01 &&
+        lapses === 0 &&
+        easeFactor >= 2.5
+      ) {
+        difficulty = FSRS_BASELINE_GOOD_DIFFICULTY
+      }
+
       return {
         ...raw,
         state,
         easeFactor,
+        ...(difficulty !== undefined ? { difficulty } : {}),
       }
     }
     return val
