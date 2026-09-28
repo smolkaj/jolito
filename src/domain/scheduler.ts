@@ -35,6 +35,30 @@ export const stateToFsrs: Readonly<Record<ReviewSchedule['state'], State>> = {
   relearning: State.Relearning,
 }
 
+export const FSRS_BASELINE_GOOD_DIFFICULTY = 2.12
+
+/**
+ * Estimates baseline FSRS difficulty for cards that originated from legacy SM-2.
+ * Unblemished cards (0 lapses, default ease 2.5) map to the FSRS baseline for
+ * regular recall (2.12, 0 chilies). Lapses and ease deductions scale friction
+ * progressively across the chili spectrum (1 lapse -> 1 chili, 2 lapses -> 2 chilies,
+ * 3+ lapses -> 3 chilies).
+ */
+export function estimateLegacyDifficulty(schedule: ReviewSchedule): number {
+  const easePenalty = Math.max(0, 2.5 - schedule.easeFactor) / 0.2
+  const penalty = Math.max(schedule.lapses, easePenalty)
+  if (penalty === 0 && schedule.easeFactor > 2.5) {
+    return Math.max(
+      1.0,
+      +(FSRS_BASELINE_GOOD_DIFFICULTY - (schedule.easeFactor - 2.5)).toFixed(2),
+    )
+  }
+  return Math.min(
+    10.0,
+    +(FSRS_BASELINE_GOOD_DIFFICULTY + penalty * 1.9).toFixed(2),
+  )
+}
+
 /**
  * Estimates baseline FSRS stability and difficulty parameters for cards
  * that originated from legacy SM-2 or lack explicit DSR metrics.
@@ -47,9 +71,23 @@ export function estimateFsrsParameters(schedule: ReviewSchedule): {
   const stability =
     schedule.stability ??
     (isReviewed ? Math.max(0.1, schedule.intervalDays) : 0)
+
+  // Heal legacy artifact: cards with 0 lapses and default ease that were seeded with
+  // the flawed 11 - 2 * easeFactor (6.0) heuristic during initial FSRS rollout.
+  const isLegacyArtifact =
+    schedule.difficulty !== undefined &&
+    schedule.difficulty >= 5.85 &&
+    schedule.difficulty <= 6.01 &&
+    schedule.lapses === 0 &&
+    schedule.easeFactor >= 2.5
+
   const difficulty =
-    schedule.difficulty ??
-    (isReviewed ? Math.max(1, Math.min(10, 11 - 2 * schedule.easeFactor)) : 0)
+    schedule.difficulty !== undefined && !isLegacyArtifact
+      ? schedule.difficulty
+      : isReviewed
+        ? estimateLegacyDifficulty(schedule)
+        : 0
+
   return { stability, difficulty }
 }
 
