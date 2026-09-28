@@ -1,6 +1,6 @@
 # Working concurrently
 
-The repository root is a read-only checkout. Work exclusively in isolated Git worktrees using the automated lifecycle manager:
+The repository root is a read-only checkout. Keep it eagerly fast-forwarded with mainline (`git fetch origin main && git merge --ff-only origin/main`) so repository inspections never reflect stale code. Work exclusively in isolated Git worktrees using the automated lifecycle manager:
 
 ```sh
 # Create a clean worktree branched from latest origin/main with symlinked node_modules:

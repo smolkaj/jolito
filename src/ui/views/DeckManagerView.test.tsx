@@ -333,7 +333,7 @@ describe('DeckManagerView', () => {
     expect(sortSelect).toHaveValue('created-desc')
   })
 
-  it('renders clean empty state with clear filters button when search has no matches', async () => {
+  it('renders clean empty state with clear search button when search has no matches', async () => {
     const user = userEvent.setup()
     renderDeckManager()
 
@@ -345,13 +345,60 @@ describe('DeckManagerView', () => {
     expect(
       screen.getByRole('heading', { level: 3, name: /no cards found/i }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'No cards match “nonexistent query”. Try a different search term.',
+      ),
+    ).toBeInTheDocument()
 
     const clearBtn = screen.getByRole('button', {
-      name: /clear search & filters/i,
+      name: /clear search/i,
     })
     await user.click(clearBtn)
 
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
+  })
+
+  it('renders clean empty duplicate search state with clear search button', async () => {
+    const user = userEvent.setup()
+    const duplicateCard1: StudyCard = {
+      ...createSampleCard({ id: 'dup-1' }),
+      prompt: 'Same Prompt',
+      answer: 'Answer 1',
+    }
+    const duplicateCard2: StudyCard = {
+      ...createSampleCard({ id: 'dup-2' }),
+      prompt: 'Same Prompt',
+      answer: 'Answer 2',
+    }
+
+    renderDeckManager({
+      cards: [duplicateCard1, duplicateCard2],
+      vocabularyCards: [duplicateCard1, duplicateCard2],
+    })
+
+    // Activate duplicates audit
+    const duplicatesBtn = screen.getByRole('button', {
+      name: /duplicates \(2\)/i,
+    })
+    await user.click(duplicatesBtn)
+
+    // Search for something not matching duplicates
+    const searchInput = screen.getByRole('searchbox', {
+      name: /search cards in deck/i,
+    })
+    await user.type(searchInput, 'nonexistent')
+
+    expect(
+      screen.getByText('No duplicate cards match “nonexistent”.'),
+    ).toBeInTheDocument()
+
+    const clearBtn = screen.getByRole('button', {
+      name: /clear search/i,
+    })
+    await user.click(clearBtn)
+
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
   })
 
   it('renders row memory indicators on deck cards in dedicated columns with mastery preceding difficulty', () => {

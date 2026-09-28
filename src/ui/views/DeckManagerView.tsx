@@ -308,7 +308,7 @@ export function DeckManagerView({
                     className={`deck-filter-pill ${showOnlyDuplicates ? 'is-active' : ''}`}
                     onClick={() => setShowOnlyDuplicates((prev) => !prev)}
                     aria-pressed={showOnlyDuplicates}
-                    title="Filter to cards sharing the same prompt in the same direction"
+                    title="Show cards sharing the same prompt in the same direction"
                   >
                     Duplicates ({duplicatesCount})
                   </button>
@@ -385,7 +385,9 @@ export function DeckManagerView({
               <h3>No cards found</h3>
               <p>
                 {deckSearchQuery.trim()
-                  ? `No cards match “${deckSearchQuery.trim()}”. Try a different search term or clear the filter.`
+                  ? showOnlyDuplicates
+                    ? `No duplicate cards match “${deckSearchQuery.trim()}”.`
+                    : `No cards match “${deckSearchQuery.trim()}”. Try a different search term.`
                   : showOnlyDuplicates
                     ? 'No duplicate cards found in your deck.'
                     : vocabularyCards.length === 0
@@ -428,7 +430,7 @@ export function DeckManagerView({
                     setDeckSortOrder('created-desc')
                   }}
                 >
-                  Clear search & filters
+                  {deckSearchQuery.trim() ? 'Clear search' : 'Show all cards'}
                 </button>
               ) : null}
             </div>
