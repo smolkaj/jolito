@@ -202,6 +202,11 @@ export function formatDigestEmail(
       color-scheme: light dark;
       supported-color-schemes: light dark;
     }
+    @media only screen and (max-width: 480px) {
+      .email-card-content {
+        padding: 24px 20px !important;
+      }
+    }
     @media (prefers-color-scheme: dark) {
       body, .email-body-bg {
         background-color: #0d1210 !important;
@@ -244,14 +249,14 @@ export function formatDigestEmail(
   </div>
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="email-card" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2ddd3; box-shadow: 0 1px 4px rgba(18, 24, 21, 0.04);">
     <tr>
-      <td style="padding: 36px 36px 32px;">
+      <td class="email-card-content" style="padding: 36px 36px 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 32px;">
           <tr>
             <td style="vertical-align: middle;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="vertical-align: middle; padding-right: 10px;">
-                    <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="Jolito" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
+                    <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="" role="presentation" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
                   </td>
                   <td style="vertical-align: middle;">
                     <span class="brand-title" style="font-size: 17px; font-weight: 600; color: #121815; letter-spacing: -0.01em;">Jolito</span>
@@ -310,7 +315,7 @@ export function formatDigestEmail(
     `Jolito — Progress & Backup (${monthLabel})`,
     `==========================================`,
     ``,
-    `+${stats.cardsAdded} cards added`,
+    `• +${stats.cardsAdded} cards added`,
     `• ${stats.totalReviewsThisPeriod} reviews completed`,
     `• ${stats.cardsGraduated} cards graduated to long-term memory`,
     ``,
@@ -345,6 +350,11 @@ export function formatPausedNoticeEmail(
       color-scheme: light dark;
       supported-color-schemes: light dark;
     }
+    @media only screen and (max-width: 480px) {
+      .email-card-content {
+        padding: 24px 20px !important;
+      }
+    }
     @media (prefers-color-scheme: dark) {
       body, .email-body-bg {
         background-color: #0d1210 !important;
@@ -374,16 +384,19 @@ export function formatPausedNoticeEmail(
   </style>
 </head>
 <body class="email-body-bg" style="margin: 0; padding: 40px 16px; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
+  <div style="display: none; font-size: 1px; color: #fdf5f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    Monthly progress emails are paused while you're away. Offline deck backup attached.
+  </div>
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="email-card" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2ddd3; box-shadow: 0 1px 4px rgba(18, 24, 21, 0.04);">
     <tr>
-      <td style="padding: 36px 36px 32px;">
+      <td class="email-card-content" style="padding: 36px 36px 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 32px;">
           <tr>
             <td style="vertical-align: middle;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="vertical-align: middle; padding-right: 10px;">
-                    <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="Jolito" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
+                    <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="" role="presentation" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
                   </td>
                   <td style="vertical-align: middle;">
                     <span class="brand-title" style="font-size: 17px; font-weight: 600; color: #121815; letter-spacing: -0.01em;">Jolito</span>

@@ -2585,7 +2585,7 @@ textarea::placeholder {
   background: var(--paper-subtle) !important;
 }
 
-.toggle-row input:disabled + .toggle {
+.toggle-row input:disabled:not(:checked) + .toggle {
   background: var(--toggle-track);
   cursor: not-allowed;
 }

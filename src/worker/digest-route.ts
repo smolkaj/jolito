@@ -238,6 +238,19 @@ export async function handleUnsubscribeRequest(
       text-decoration: none;
       font-size: 14px;
       font-weight: 600;
+      transition: transform 100ms ease;
+    }
+    .btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--line);
+    }
+    .btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--line);
+    }
+    .btn:focus-visible {
+      outline: 2px solid var(--rosa);
+      outline-offset: 2px;
     }
   </style>
 </head>

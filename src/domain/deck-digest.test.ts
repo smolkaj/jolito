@@ -295,8 +295,12 @@ describe('deck-digest domain', () => {
       expect(html).toContain(
         'https://joli.to/api/digest/unsubscribe?u=123&amp;t=abc',
       )
-      expect(html).toContain('alt="Jolito"')
+      expect(html).toContain('alt=""')
+      expect(html).toContain('role="presentation"')
       expect(html).toContain('>Unsubscribe</a>')
+      expect(html).toContain(
+        'Sep 2026 progress snapshot and attached offline deck backup',
+      )
       expect(text).toContain(unsubscribeUrl)
       expect(text).toContain('+15 cards added')
       expect(text).toContain('120 reviews completed')
@@ -316,7 +320,11 @@ describe('deck-digest domain', () => {
 
       expect(subject).toBe('[Jolito] Progress & Backup (paused) - Sep 2026')
       expect(html).toContain('Digests paused')
-      expect(html).toContain('alt="Jolito"')
+      expect(html).toContain('alt=""')
+      expect(html).toContain('role="presentation"')
+      expect(html).toContain(
+        "Monthly progress emails are paused while you're away",
+      )
       expect(html).toContain('>Unsubscribe</a>')
       expect(html).toContain('150 cards')
       expect(text).toContain('Digests paused')
