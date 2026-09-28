@@ -115,4 +115,21 @@ describe('worker fetch handler', () => {
     const res = await worker.fetch(req)
     expect(res.status).toBe(404)
   })
+
+  it('routes /api/digest/unsubscribe to digest unsubscribe handler', async () => {
+    const req = new Request('https://joli.to/api/digest/unsubscribe')
+    const res = await worker.fetch(req)
+    // Missing query parameters returns 400
+    expect(res.status).toBe(400)
+  })
+
+  it('routes /api/digest/unsubscribe/ with trailing slash', async () => {
+    const req = new Request('https://joli.to/api/digest/unsubscribe/')
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(400)
+  })
+
+  it('executes scheduled hook without crashing when env is empty', async () => {
+    await expect(worker.scheduled({}, {})).resolves.toBeUndefined()
+  })
 })

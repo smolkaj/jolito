@@ -276,6 +276,17 @@ export class MockAuthService implements AuthService {
     return Promise.resolve({ success: true })
   }
 
+  public digestPreference = true
+
+  getDigestPreference(): Promise<boolean> {
+    return Promise.resolve(this.digestPreference)
+  }
+
+  setDigestPreference(enabled: boolean): Promise<boolean> {
+    this.digestPreference = enabled
+    return Promise.resolve(true)
+  }
+
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void {
     this.listeners.add(callback)
     callback(this.user)

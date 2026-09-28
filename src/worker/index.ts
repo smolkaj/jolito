@@ -10,6 +10,11 @@ import {
   handleTelemetryRequest,
   type TelemetryWorkerEnv,
 } from './telemetry-route'
+import {
+  handleUnsubscribeRequest,
+  handleDigestScheduled,
+  type DigestWorkerEnv,
+} from './digest-route'
 
 export interface WorkerEnv
   extends
@@ -17,7 +22,8 @@ export interface WorkerEnv
     StatsWorkerEnv,
     AiWorkerEnv,
     SyncAlertWorkerEnv,
-    TelemetryWorkerEnv {
+    TelemetryWorkerEnv,
+    DigestWorkerEnv {
   ASSETS?: {
     fetch: (request: Request) => Promise<Response>
   }
@@ -45,11 +51,18 @@ export default {
     if (pathname === '/api/telemetry/heartbeat') {
       return handleTelemetryRequest(request, env)
     }
+    if (pathname === '/api/digest/unsubscribe') {
+      return handleUnsubscribeRequest(request, env)
+    }
 
     if (env?.ASSETS) {
       return env.ASSETS.fetch(request)
     }
 
     return new Response('Not Found', { status: 404 })
+  },
+
+  async scheduled(_event: unknown, env?: WorkerEnv): Promise<void> {
+    await handleDigestScheduled(env)
   },
 }

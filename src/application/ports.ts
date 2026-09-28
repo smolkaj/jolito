@@ -138,6 +138,8 @@ export type AuthService = {
     error?: string | undefined
     outcomeUnknown?: boolean
   }>
+  getDigestPreference?(): Promise<boolean>
+  setDigestPreference?(enabled: boolean): Promise<boolean>
   onAuthStateChange(callback: (user: AuthUser | null) => void): () => void
   destroy?(): void
 }

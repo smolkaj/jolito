@@ -1515,4 +1515,66 @@ describe('SyncModal Live Sync Status Contract', () => {
       supportSpy.mockRestore()
     })
   })
+
+  describe('SyncModal Monthly Digest Preference', () => {
+    it('loads preference from auth service and renders checked toggle', async () => {
+      const user = { id: 'user-1', email: 'learner@example.com' }
+      const auth = createMockAuth()
+      auth.getDigestPreference = vi.fn().mockResolvedValue(true)
+      auth.setDigestPreference = vi.fn().mockResolvedValue(true)
+
+      render(
+        <SyncModal
+          user={user}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const toggle = screen.getByRole('checkbox', {
+        name: /monthly backup and progress digest via email/i,
+      })
+      await waitFor(() => {
+        expect(toggle).toBeChecked()
+      })
+
+      fireEvent.click(toggle)
+      await waitFor(() => {
+        expect(auth.setDigestPreference).toHaveBeenCalledWith(false)
+      })
+    })
+
+    it('rolls back toggle if setDigestPreference fails', async () => {
+      const user = { id: 'user-1', email: 'learner@example.com' }
+      const auth = createMockAuth()
+      auth.getDigestPreference = vi.fn().mockResolvedValue(true)
+      auth.setDigestPreference = vi.fn().mockResolvedValue(false)
+
+      render(
+        <SyncModal
+          user={user}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const toggle = screen.getByRole('checkbox', {
+        name: /monthly backup and progress digest via email/i,
+      })
+      expect(toggle).toBeChecked()
+
+      fireEvent.click(toggle)
+      await waitFor(() => {
+        expect(toggle).toBeChecked()
+      })
+    })
+  })
 })

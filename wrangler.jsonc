@@ -18,6 +18,9 @@
       "custom_domain": true,
     },
   ],
+  "triggers": {
+    "crons": ["0 6 * * *"],
+  },
   "send_email": [
     {
       "name": "SEND_EMAIL",

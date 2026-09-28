@@ -5185,6 +5185,56 @@ kbd {
   justify-content: center;
 }
 
+.sync-digest-card {
+  margin-top: 14px;
+}
+
+.sync-digest-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface-secondary, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 150ms ease;
+}
+
+.sync-digest-option:hover {
+  border-color: var(--tezontle);
+}
+
+.sync-digest-option input[type='checkbox'] {
+  accent-color: var(--tezontle);
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.sync-digest-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sync-digest-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.sync-digest-desc {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
 .sync-auth-pane {
   display: flex;
   flex-direction: column;

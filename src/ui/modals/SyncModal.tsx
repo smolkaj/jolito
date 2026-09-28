@@ -94,12 +94,40 @@ export function SyncModal({
     message: string
     syncHelp?: boolean
   } | null>(null)
+  const [isDigestEnabled, setIsDigestEnabled] = useState(true)
+  const [isUpdatingDigest, setIsUpdatingDigest] = useState(false)
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
   const statusRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!user || !auth.getDigestPreference) return
+    let active = true
+    void auth.getDigestPreference().then((enabled) => {
+      if (active) setIsDigestEnabled(enabled)
+    })
+    return () => {
+      active = false
+    }
+  }, [user, auth])
+
+  const handleToggleDigest = async (enabled: boolean) => {
+    setIsDigestEnabled(enabled)
+    setIsUpdatingDigest(true)
+    try {
+      const ok = await auth.setDigestPreference?.(enabled)
+      if (ok === false) {
+        setIsDigestEnabled(!enabled)
+      }
+    } catch {
+      setIsDigestEnabled(!enabled)
+    } finally {
+      setIsUpdatingDigest(false)
+    }
+  }
 
   useEffect(() => {
     if (statusMsg?.type === 'error') {
@@ -543,6 +571,29 @@ export function SyncModal({
             >
               {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
             </button>
+          </div>
+
+          <div className="sync-digest-card">
+            <label className="sync-digest-option">
+              <input
+                type="checkbox"
+                aria-label="Monthly backup and progress digest via email"
+                checked={isDigestEnabled}
+                disabled={loading || isUpdatingDigest || !isOnline}
+                onChange={(e) => {
+                  void handleToggleDigest(e.target.checked)
+                }}
+              />
+              <div className="sync-digest-content">
+                <span className="sync-digest-title">
+                  Monthly backup &amp; progress email
+                </span>
+                <span className="sync-digest-desc">
+                  Sends an offline JSON backup, learning stats, and leeches once
+                  a month. Pauses automatically if inactive.
+                </span>
+              </div>
+            </label>
           </div>
 
           {isConfirmingDelete ? (

@@ -1,0 +1,308 @@
+import { z } from 'zod'
+import {
+  computeDeckDigestStats,
+  createUnsubscribeToken,
+  formatDigestEmail,
+  formatPausedNoticeEmail,
+  verifyUnsubscribeToken,
+} from '../domain/deck-digest'
+import { legacyStudyCardSchema, type StudyCard } from '../domain/card'
+import { deckSyncPayloadSchema } from '../domain/sync'
+
+export interface DigestWorkerEnv {
+  SUPABASE_URL?: string | undefined
+  SUPABASE_SERVICE_ROLE_KEY?: string | undefined
+  RESEND_API_KEY?: string | undefined
+  DIGEST_UNSUBSCRIBE_SECRET?: string | undefined
+  DIGEST_BASE_URL?: string | undefined
+  [key: string]: unknown
+}
+
+const claimSchema = z.object({
+  user_id: z.string().uuid(),
+  email: z.string().email(),
+  deck_data: z.unknown(),
+  last_lifetime_reviews: z.number().int().default(0),
+  digest_status: z.enum(['active', 'paused', 'unsubscribed']).default('active'),
+  lease_id: z.string().uuid(),
+})
+
+const rawDeckSchema = z.object({
+  cards: z.array(legacyStudyCardSchema).default([]),
+})
+
+function getSecret(env?: DigestWorkerEnv): string {
+  return (
+    env?.DIGEST_UNSUBSCRIBE_SECRET ||
+    env?.SUPABASE_SERVICE_ROLE_KEY ||
+    'jolito-digest-default-secret'
+  )
+}
+
+function getBaseUrl(env?: DigestWorkerEnv): string {
+  return env?.DIGEST_BASE_URL || 'https://joli.to'
+}
+
+function formatMonthYear(timestamp: number): string {
+  const d = new Date(timestamp)
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+function formatFilenameDate(timestamp: number): string {
+  const d = new Date(timestamp)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
+function base64Encode(str: string): string {
+  if (typeof btoa === 'function') {
+    return btoa(unescape(encodeURIComponent(str)))
+  }
+  return Buffer.from(str, 'utf-8').toString('base64')
+}
+
+export async function handleUnsubscribeRequest(
+  request: Request,
+  env?: DigestWorkerEnv,
+): Promise<Response> {
+  const url = new URL(request.url)
+  const uid = url.searchParams.get('uid')
+  const token = url.searchParams.get('token')
+
+  if (!uid || !token) {
+    return new Response('Missing required parameters (uid, token).', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  }
+
+  const secret = getSecret(env)
+  const isValid = await verifyUnsubscribeToken(uid, token, secret)
+
+  if (!isValid) {
+    return new Response('Invalid or expired unsubscribe link.', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  }
+
+  if (env?.SUPABASE_URL && env?.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      await fetch(
+        `${env.SUPABASE_URL}/rest/v1/rpc/unsubscribe_monthly_digest`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_user_id: uid }),
+        },
+      )
+    } catch (err) {
+      console.error('[Digest Unsubscribe] Database RPC failed:', err)
+    }
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unsubscribed — Jolito</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 40px 16px; display: flex; justify-content: center; }
+    .card { background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; max-width: 480px; width: 100%; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; }
+    h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; }
+    p { font-size: 15px; color: #475569; line-height: 1.5; margin: 0 0 24px 0; }
+    .badge { display: inline-block; background: #fdf2f8; color: #b30060; border: 1px solid #fbcfe8; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+    .btn { display: inline-block; background: #b30060; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Unsubscribed</div>
+    <h1>Unsubscribed from Jolito Monthly Emails</h1>
+    <p>You will no longer receive monthly deck backup or progress emails. Your deck remains safe and synchronized across your devices. You can re-enable this anytime in the app settings.</p>
+    <a href="${getBaseUrl(env)}" class="btn">Return to Jolito</a>
+  </div>
+</body>
+</html>`
+
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  })
+}
+
+export async function handleDigestScheduled(
+  env?: DigestWorkerEnv,
+  nowTimestamp: number = Date.now(),
+): Promise<{
+  processed: number
+  delivered: number
+  paused: number
+  failures: number
+}> {
+  if (!env?.SUPABASE_URL || !env?.SUPABASE_SERVICE_ROLE_KEY) {
+    console.log(
+      '[Digest Scheduled] Skipped: Supabase credentials not configured',
+    )
+    return { processed: 0, delivered: 0, paused: 0, failures: 0 }
+  }
+
+  const claimRes = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/rpc/claim_monthly_digests`,
+    {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_limit: 50 }),
+      signal: AbortSignal.timeout(10_000),
+    },
+  )
+
+  if (!claimRes.ok) {
+    throw new Error(`claim_monthly_digests failed (HTTP ${claimRes.status})`)
+  }
+
+  const rawClaims: unknown = await claimRes.json()
+  const claims = z.array(claimSchema).parse(rawClaims)
+
+  let deliveredCount = 0
+  let pausedCount = 0
+  let failureCount = 0
+
+  const secret = getSecret(env)
+  const baseUrl = getBaseUrl(env)
+  const monthLabel = formatMonthYear(nowTimestamp)
+  const fileDate = formatFilenameDate(nowTimestamp)
+
+  for (const claim of claims) {
+    let cards: StudyCard[] = []
+    const parsedSync = deckSyncPayloadSchema.safeParse(claim.deck_data)
+    if (parsedSync.success) {
+      cards = parsedSync.data.cards
+    } else {
+      const fallbackParsed = rawDeckSchema.safeParse(claim.deck_data)
+      if (fallbackParsed.success) {
+        cards = fallbackParsed.data.cards
+      }
+    }
+
+    const stats = computeDeckDigestStats(
+      cards,
+      nowTimestamp,
+      claim.last_lifetime_reviews,
+    )
+    const token = await createUnsubscribeToken(claim.user_id, secret)
+    const unsubscribeUrl = `${baseUrl}/api/digest/unsubscribe?uid=${claim.user_id}&token=${token}`
+
+    const isAutoPaused = stats.isInactive
+    const emailData = isAutoPaused
+      ? formatPausedNoticeEmail(stats.totalCards, monthLabel, unsubscribeUrl)
+      : formatDigestEmail(stats, monthLabel, unsubscribeUrl)
+
+    // Base64 encode JSON deck payload as backup
+    const backupJsonString = JSON.stringify(
+      claim.deck_data || { version: 4, app: 'jolito', cards: [] },
+      null,
+      2,
+    )
+    const base64Attachment = base64Encode(backupJsonString)
+
+    let sendSuccess = false
+
+    if (env.RESEND_API_KEY) {
+      try {
+        const resendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: 'Jolito <a@joli.to>',
+            to: claim.email,
+            subject: emailData.subject,
+            html: emailData.html,
+            text: emailData.text,
+            headers: {
+              'List-Unsubscribe': `<${unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
+            attachments: [
+              {
+                filename: `jolito-backup-${fileDate}.json`,
+                content: base64Attachment,
+              },
+            ],
+          }),
+          signal: AbortSignal.timeout(15_000),
+        })
+
+        if (resendRes.ok) {
+          sendSuccess = true
+          if (isAutoPaused) {
+            pausedCount++
+          } else {
+            deliveredCount++
+          }
+        } else {
+          failureCount++
+          console.error(
+            `[Digest Dispatch] Resend API failed with status ${resendRes.status}`,
+          )
+        }
+      } catch (err) {
+        failureCount++
+        console.error('[Digest Dispatch] Delivery attempt error:', err)
+      }
+    } else {
+      console.log(
+        '[Digest Dispatch] Simulated dispatch (no RESEND_API_KEY configured):',
+        {
+          to: claim.email,
+          subject: emailData.subject,
+          isAutoPaused,
+        },
+      )
+      sendSuccess = true
+      if (isAutoPaused) pausedCount++
+      else deliveredCount++
+    }
+
+    try {
+      await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/finish_monthly_digest`, {
+        method: 'POST',
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          p_user_id: claim.user_id,
+          p_lease_id: claim.lease_id,
+          p_delivered: sendSuccess,
+          p_new_lifetime_reviews: stats.currentLifetimeReviews,
+          p_auto_paused: isAutoPaused,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      })
+    } catch (err) {
+      console.error('[Digest Dispatch] Finish RPC recording failed:', err)
+    }
+  }
+
+  return {
+    processed: claims.length,
+    delivered: deliveredCount,
+    paused: pausedCount,
+    failures: failureCount,
+  }
+}
