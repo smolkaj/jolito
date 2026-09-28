@@ -93,7 +93,7 @@ export async function handleUnsubscribeRequest(
 
   if (env?.SUPABASE_URL && env?.SUPABASE_SERVICE_ROLE_KEY) {
     try {
-      await fetch(
+      const dbRes = await fetch(
         `${env.SUPABASE_URL}/rest/v1/rpc/unsubscribe_monthly_digest`,
         {
           method: 'POST',
@@ -105,8 +105,27 @@ export async function handleUnsubscribeRequest(
           body: JSON.stringify({ p_user_id: uid }),
         },
       )
+      if (!dbRes.ok) {
+        console.error(
+          `[Digest Unsubscribe] Database RPC failed with status ${dbRes.status}`,
+        )
+        return new Response(
+          'Unable to process unsubscribe request. Please try again later.',
+          {
+            status: 500,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          },
+        )
+      }
     } catch (err) {
       console.error('[Digest Unsubscribe] Database RPC failed:', err)
+      return new Response(
+        'Unable to process unsubscribe request. Please try again later.',
+        {
+          status: 500,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        },
+      )
     }
   }
 
@@ -355,24 +374,34 @@ export async function handleDigestScheduled(
     }
 
     try {
-      await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/finish_monthly_digest`, {
-        method: 'POST',
-        headers: {
-          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
+      const finishRes = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/rpc/finish_monthly_digest`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            p_user_id: claim.user_id,
+            p_lease_id: claim.lease_id,
+            p_delivered: sendSuccess,
+            p_new_lifetime_reviews: stats.currentLifetimeReviews,
+            p_auto_paused: isAutoPaused,
+            p_permanent_failure: isPermanentFailure,
+          }),
+          signal: AbortSignal.timeout(10_000),
         },
-        body: JSON.stringify({
-          p_user_id: claim.user_id,
-          p_lease_id: claim.lease_id,
-          p_delivered: sendSuccess,
-          p_new_lifetime_reviews: stats.currentLifetimeReviews,
-          p_auto_paused: isAutoPaused,
-          p_permanent_failure: isPermanentFailure,
-        }),
-        signal: AbortSignal.timeout(10_000),
-      })
+      )
+      if (!finishRes.ok) {
+        failureCount++
+        console.error(
+          `[Digest Dispatch] Finish RPC returned status ${finishRes.status} for user ${claim.user_id}`,
+        )
+      }
     } catch (err) {
+      failureCount++
       console.error('[Digest Dispatch] Finish RPC recording failed:', err)
     }
   }

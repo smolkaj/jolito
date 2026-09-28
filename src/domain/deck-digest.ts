@@ -227,7 +227,7 @@ export function formatDigestEmail(
 
       <div style="margin-top: 28px; padding: 16px; background-color: #f1f5f9; border-radius: 8px; font-size: 13px; color: #475569; border: 1px solid #e2e8f0;">
         <strong>📦 Attached Backup:</strong>
-        We've attached your complete deck as <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-size: 12px;">jolito-backup.json</code>. You can keep it for your personal archives or restore it directly in Jolito Settings anytime.
+        We've attached your complete deck as an offline JSON backup. You can keep it for your personal archives or re-import it directly in Jolito anytime.
       </div>
     </div>
   </div>
@@ -249,7 +249,7 @@ export function formatDigestEmail(
     `Total deck: ${stats.totalCards} cards (${stats.matureCards} mature)`,
     watchlistText,
     ``,
-    `Your full deck backup is attached as a JSON file.`,
+    `Your full deck backup is attached as an offline JSON file.`,
   ].join('\n')
 
   return { subject, html, text }
@@ -286,7 +286,7 @@ export function formatPausedNoticeEmail(
         Attached is your latest deck backup (${totalCards} cards) for your personal records.
       </p>
       <p style="font-size: 14px; color: #475569;">
-        Whenever you're ready to learn again, simply practice a card in Jolito or re-enable digests in Settings.
+        Whenever you're ready to learn again, simply practice a card in Jolito or re-enable digests in Sync &amp; Account.
       </p>
     </div>
   </div>
@@ -304,7 +304,7 @@ export function formatPausedNoticeEmail(
     ``,
     `Attached is your latest backup (${totalCards} cards) for your personal records.`,
     ``,
-    `Whenever you're ready to learn again, practice a card in Jolito or re-enable digests in Settings.`,
+    `Whenever you're ready to learn again, practice a card in Jolito or re-enable digests in Sync & Account.`,
   ].join('\n')
 
   return { subject, html, text }

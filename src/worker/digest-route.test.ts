@@ -62,6 +62,28 @@ describe('digest-route', () => {
       )
       vi.unstubAllGlobals()
     })
+
+    it('returns 500 when database unsubscribe RPC fails', async () => {
+      const token = await createUnsubscribeToken(validUserId, secret)
+      const fetchSpy = vi
+        .fn()
+        .mockResolvedValue(new Response('DB error', { status: 500 }))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const req = new Request(
+        `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+      )
+      const res = await handleUnsubscribeRequest(req, {
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+        SUPABASE_URL: 'https://test.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+      })
+
+      expect(res.status).toBe(500)
+      const text = await res.text()
+      expect(text).toContain('Unable to process unsubscribe request')
+      vi.unstubAllGlobals()
+    })
   })
 
   describe('handleDigestScheduled', () => {
@@ -513,6 +535,60 @@ describe('digest-route', () => {
       }
       expect(finishBody.p_delivered).toBe(false)
       expect(finishBody.p_permanent_failure).toBe(false)
+
+      vi.unstubAllGlobals()
+    })
+
+    it('tracks failure when finish RPC returns error', async () => {
+      const sampleClaims = [
+        {
+          user_id: validUserId,
+          email: 'learner@example.com',
+          last_lifetime_reviews: 10,
+          lease_id: leaseId,
+        },
+      ]
+
+      const fetchSpy = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('/rpc/claim_monthly_digests')) {
+          return Promise.resolve(
+            new Response(JSON.stringify(sampleClaims), { status: 200 }),
+          )
+        }
+        if (url.includes('/rest/v1/decks?user_id=')) {
+          return Promise.resolve(
+            new Response(JSON.stringify([{ data: activeDeckData }]), {
+              status: 200,
+            }),
+          )
+        }
+        if (url.includes('api.resend.com')) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: 'resend_ok' }), { status: 200 }),
+          )
+        }
+        if (url.includes('/rpc/finish_monthly_digest')) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ error: 'DB finish error' }), {
+              status: 500,
+            }),
+          )
+        }
+        return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const env: DigestWorkerEnv = {
+        SUPABASE_URL: 'https://test.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+        RESEND_API_KEY: 're_test_key_123',
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+      }
+
+      const result = await handleDigestScheduled(env)
+      expect(result.processed).toBe(1)
+      expect(result.delivered).toBe(1)
+      expect(result.failures).toBe(1)
 
       vi.unstubAllGlobals()
     })

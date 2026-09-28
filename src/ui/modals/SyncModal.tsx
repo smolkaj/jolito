@@ -96,6 +96,7 @@ export function SyncModal({
   } | null>(null)
   const [isDigestEnabled, setIsDigestEnabled] = useState(true)
   const [isUpdatingDigest, setIsUpdatingDigest] = useState(false)
+  const [digestError, setDigestError] = useState<string | null>(null)
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
@@ -117,22 +118,16 @@ export function SyncModal({
   const handleToggleDigest = async (enabled: boolean) => {
     setIsDigestEnabled(enabled)
     setIsUpdatingDigest(true)
-    setStatusMsg(null)
+    setDigestError(null)
     try {
       const ok = await auth.setDigestPreference?.(enabled)
       if (ok === false) {
         setIsDigestEnabled(!enabled)
-        setStatusMsg({
-          type: 'error',
-          message: 'Failed to update email preferences. Please try again.',
-        })
+        setDigestError('Failed to update email preferences. Please try again.')
       }
     } catch {
       setIsDigestEnabled(!enabled)
-      setStatusMsg({
-        type: 'error',
-        message: 'Failed to update email preferences. Please try again.',
-      })
+      setDigestError('Failed to update email preferences. Please try again.')
     } finally {
       setIsUpdatingDigest(false)
     }
@@ -589,7 +584,7 @@ export function SyncModal({
             <input
               id="sync-digest-checkbox"
               type="checkbox"
-              aria-describedby="sync-digest-desc"
+              aria-describedby={`sync-digest-desc${digestError ? ' sync-digest-err' : ''}`}
               checked={isDigestEnabled}
               disabled={loading || isUpdatingDigest || !isOnline}
               onChange={(e) => {
@@ -604,6 +599,15 @@ export function SyncModal({
                 Sends an offline JSON backup, learning stats, and words to watch
                 out for once a month. Pauses automatically if inactive.
               </span>
+              {digestError && (
+                <span
+                  id="sync-digest-err"
+                  className="sync-digest-error"
+                  role="alert"
+                >
+                  {digestError}
+                </span>
+              )}
             </div>
           </label>
 
