@@ -24,6 +24,8 @@ describe('SupabaseFeedbackService', () => {
       sendMagicLink: vi.fn(),
       verifyOtp: vi.fn(),
       signOut: vi.fn(),
+      getDigestPreference: vi.fn().mockResolvedValue(true),
+      setDigestPreference: vi.fn().mockResolvedValue(true),
       onAuthStateChange: vi.fn(),
     }
   })

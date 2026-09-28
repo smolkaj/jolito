@@ -5185,20 +5185,6 @@ kbd {
   justify-content: center;
 }
 
-.sync-digest-toggle-row {
-  margin-top: 4px;
-  margin-bottom: 2px;
-  box-sizing: border-box;
-}
-
-.sync-digest-error {
-  font-size: 12px;
-  color: var(--tezontle);
-  line-height: 1.35;
-  margin-top: 3px;
-  font-weight: 500;
-}
-
 .sync-auth-pane {
   display: flex;
   flex-direction: column;
@@ -7069,6 +7055,7 @@ kbd {
   color: var(--ink-muted);
 }
 
+.toggle-row-compact,
 .edit-card-toggle-row {
   margin-top: 4px;
   margin-bottom: 2px;
