@@ -1520,8 +1520,9 @@ describe('SyncModal Live Sync Status Contract', () => {
     it('loads preference from auth service and renders checked toggle', async () => {
       const user = { id: 'user-1', email: 'learner@example.com' }
       const auth = createMockAuth()
+      const setDigestPreferenceSpy = vi.fn().mockResolvedValue(true)
       auth.getDigestPreference = vi.fn().mockResolvedValue(true)
-      auth.setDigestPreference = vi.fn().mockResolvedValue(true)
+      auth.setDigestPreference = setDigestPreferenceSpy
 
       render(
         <SyncModal
@@ -1536,7 +1537,7 @@ describe('SyncModal Live Sync Status Contract', () => {
       )
 
       const toggle = screen.getByRole('checkbox', {
-        name: /monthly backup and progress digest via email/i,
+        name: /monthly backup & progress email/i,
       })
       await waitFor(() => {
         expect(toggle).toBeChecked()
@@ -1544,11 +1545,11 @@ describe('SyncModal Live Sync Status Contract', () => {
 
       fireEvent.click(toggle)
       await waitFor(() => {
-        expect(auth.setDigestPreference).toHaveBeenCalledWith(false)
+        expect(setDigestPreferenceSpy).toHaveBeenCalledWith(false)
       })
     })
 
-    it('rolls back toggle if setDigestPreference fails', async () => {
+    it('rolls back toggle and displays error message if setDigestPreference fails', async () => {
       const user = { id: 'user-1', email: 'learner@example.com' }
       const auth = createMockAuth()
       auth.getDigestPreference = vi.fn().mockResolvedValue(true)
@@ -1567,7 +1568,7 @@ describe('SyncModal Live Sync Status Contract', () => {
       )
 
       const toggle = screen.getByRole('checkbox', {
-        name: /monthly backup and progress digest via email/i,
+        name: /monthly backup & progress email/i,
       })
       expect(toggle).toBeChecked()
 
@@ -1575,6 +1576,10 @@ describe('SyncModal Live Sync Status Contract', () => {
       await waitFor(() => {
         expect(toggle).toBeChecked()
       })
+
+      expect(
+        screen.getByText(/failed to update email preferences/i),
+      ).toBeInTheDocument()
     })
   })
 })

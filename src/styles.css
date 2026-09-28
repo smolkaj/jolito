@@ -5188,10 +5188,16 @@ kbd {
 .sync-digest-option {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   margin-top: 14px;
   cursor: pointer;
   user-select: none;
+}
+
+.sync-digest-option:has(input:disabled),
+.sync-digest-option.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .sync-digest-option input[type='checkbox'] {
@@ -5201,6 +5207,10 @@ kbd {
   height: 16px;
   margin-top: 2px;
   flex-shrink: 0;
+}
+
+.sync-digest-option input[type='checkbox']:disabled {
+  cursor: not-allowed;
 }
 
 .sync-digest-content {

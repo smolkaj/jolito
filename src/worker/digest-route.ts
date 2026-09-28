@@ -129,7 +129,7 @@ export async function handleUnsubscribeRequest(
   <div class="card">
     <div class="badge">Unsubscribed</div>
     <h1>Unsubscribed from Jolito Monthly Emails</h1>
-    <p>You will no longer receive monthly deck backup or progress emails. Your deck remains safe and synchronized across your devices. You can re-enable this anytime in the app settings.</p>
+    <p>You will no longer receive monthly deck backup or progress emails. Your deck remains safe and synchronized across your devices. You can re-enable this anytime in Sync &amp; Account in the app.</p>
     <a href="${getBaseUrl(env)}" class="btn">Return to Jolito</a>
   </div>
 </body>
@@ -274,12 +274,14 @@ export async function handleDigestScheduled(
       ? formatPausedNoticeEmail(stats.totalCards, monthLabel, unsubscribeUrl)
       : formatDigestEmail(stats, monthLabel, unsubscribeUrl)
 
-    // Base64 encode JSON deck payload as backup
-    const backupJsonString = JSON.stringify(
-      deckData || { version: 4, app: 'jolito', cards: [] },
-      null,
-      2,
-    )
+    // Base64 encode canonical deckBackupEnvelopeSchema JSON backup
+    const backupEnvelope = {
+      version: 4,
+      app: 'jolito',
+      exportedAt: new Date(nowTimestamp).toISOString(),
+      cards,
+    }
+    const backupJsonString = JSON.stringify(backupEnvelope, null, 2)
     const base64Attachment = base64Encode(backupJsonString)
 
     let sendSuccess = false

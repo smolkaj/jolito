@@ -117,13 +117,22 @@ export function SyncModal({
   const handleToggleDigest = async (enabled: boolean) => {
     setIsDigestEnabled(enabled)
     setIsUpdatingDigest(true)
+    setStatusMsg(null)
     try {
       const ok = await auth.setDigestPreference?.(enabled)
       if (ok === false) {
         setIsDigestEnabled(!enabled)
+        setStatusMsg({
+          type: 'error',
+          message: 'Failed to update email preferences. Please try again.',
+        })
       }
     } catch {
       setIsDigestEnabled(!enabled)
+      setStatusMsg({
+        type: 'error',
+        message: 'Failed to update email preferences. Please try again.',
+      })
     } finally {
       setIsUpdatingDigest(false)
     }
@@ -573,10 +582,14 @@ export function SyncModal({
             </button>
           </div>
 
-          <label className="sync-digest-option">
+          <label
+            className={`sync-digest-option${loading || isUpdatingDigest || !isOnline ? ' is-disabled' : ''}`}
+            htmlFor="sync-digest-checkbox"
+          >
             <input
+              id="sync-digest-checkbox"
               type="checkbox"
-              aria-label="Monthly backup and progress digest via email"
+              aria-describedby="sync-digest-desc"
               checked={isDigestEnabled}
               disabled={loading || isUpdatingDigest || !isOnline}
               onChange={(e) => {
@@ -587,7 +600,7 @@ export function SyncModal({
               <span className="sync-digest-title">
                 Monthly backup &amp; progress email
               </span>
-              <span className="sync-digest-desc">
+              <span id="sync-digest-desc" className="sync-digest-desc">
                 Sends an offline JSON backup, learning stats, and words to watch
                 out for once a month. Pauses automatically if inactive.
               </span>
