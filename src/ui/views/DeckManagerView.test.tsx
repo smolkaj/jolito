@@ -373,7 +373,7 @@ describe('DeckManagerView', () => {
     expect(rows[0]).toHaveAttribute(
       'aria-label',
       expect.stringMatching(
-        /mastery: \d of 3 bubbles.*difficulty: \d of 3 chilies/i,
+        /card:.*answer:.*mexican spanish → english.*status: due.*mastery: \d of 3 bubbles.*difficulty: \d of 3 chilies/i,
       ),
     )
     const firstRowCells = Array.from(rows[0]!.querySelectorAll('[role="cell"]'))

@@ -680,7 +680,7 @@ export function DeckManagerView({
                     role="row"
                     tabIndex={0}
                     aria-selected={activeSelectedCardIds.has(card.id)}
-                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. ${indicators.masteryLabel}, ${indicators.difficultyLabel}. Click or press Enter to edit, Space to select.`}
+                    aria-label={`Card: ${card.prompt}, answer: ${card.answer}. ${isEsToEn ? 'Mexican Spanish → English' : 'English → Mexican Spanish'}, status: ${scheduleBadge.label}. ${indicators.masteryLabel}, ${indicators.difficultyLabel}. Click or press Enter to edit, Space to select.`}
                     title="Click or press Enter to edit card"
                     onClick={() => onEditCard(card)}
                     onKeyDown={(e) => handleRowKeyDown(e, card)}
