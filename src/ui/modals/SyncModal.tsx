@@ -539,6 +539,35 @@ export function SyncModal({
             </div>
           </div>
 
+          <label
+            className={`sync-digest-option${loading || isUpdatingDigest || !isOnline ? ' is-disabled' : ''}`}
+            htmlFor="sync-digest-checkbox"
+          >
+            <input
+              id="sync-digest-checkbox"
+              type="checkbox"
+              aria-describedby="sync-digest-desc"
+              checked={isDigestEnabled}
+              disabled={loading || isUpdatingDigest || !isOnline}
+              onChange={(e) => {
+                void handleToggleDigest(e.target.checked)
+              }}
+            />
+            <div className="sync-digest-content">
+              <span className="sync-digest-title">
+                Monthly backup &amp; progress email
+              </span>
+              <span
+                id="sync-digest-desc"
+                className={`sync-digest-desc${digestError ? ' is-error' : ''}`}
+                role={digestError ? 'alert' : undefined}
+              >
+                {digestError ||
+                  'Sends an offline JSON backup, learning stats, and words to watch out for once a month. Pauses automatically if inactive.'}
+              </span>
+            </div>
+          </label>
+
           <div className="sync-actions-row">
             <button
               type="button"
@@ -576,35 +605,6 @@ export function SyncModal({
               {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
             </button>
           </div>
-
-          <label
-            className={`sync-digest-option${loading || isUpdatingDigest || !isOnline ? ' is-disabled' : ''}`}
-            htmlFor="sync-digest-checkbox"
-          >
-            <input
-              id="sync-digest-checkbox"
-              type="checkbox"
-              aria-describedby="sync-digest-desc"
-              checked={isDigestEnabled}
-              disabled={loading || isUpdatingDigest || !isOnline}
-              onChange={(e) => {
-                void handleToggleDigest(e.target.checked)
-              }}
-            />
-            <div className="sync-digest-content">
-              <span className="sync-digest-title">
-                Monthly backup &amp; progress email
-              </span>
-              <span
-                id="sync-digest-desc"
-                className={`sync-digest-desc${digestError ? ' is-error' : ''}`}
-                role={digestError ? 'alert' : undefined}
-              >
-                {digestError ||
-                  'Sends an offline JSON backup, learning stats, and words to watch out for once a month. Pauses automatically if inactive.'}
-              </span>
-            </div>
-          </label>
 
           {isConfirmingDelete ? (
             <form

@@ -5189,7 +5189,6 @@ kbd {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-top: 14px;
   cursor: pointer;
   user-select: none;
 }
