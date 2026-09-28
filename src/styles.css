@@ -4333,6 +4333,7 @@ kbd {
     font-size: 13px;
     font-weight: 700;
     box-shadow: 2px 2px 0 var(--shadow-ink);
+    transition: all 120ms var(--ease-spring);
   }
 
   .reveal-button:hover {
