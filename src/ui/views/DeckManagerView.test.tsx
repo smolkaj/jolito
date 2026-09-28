@@ -359,7 +359,7 @@ describe('DeckManagerView', () => {
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
   })
 
-  it('renders clean empty duplicate search state with clear search button', async () => {
+  it('renders clean empty duplicate search state and preserves duplicate audit on clear search', async () => {
     const user = userEvent.setup()
     const duplicateCard1: StudyCard = {
       ...createSampleCard({ id: 'dup-1' }),
@@ -371,17 +371,26 @@ describe('DeckManagerView', () => {
       prompt: 'Same Prompt',
       answer: 'Answer 2',
     }
+    const uniqueCard: StudyCard = {
+      ...createSampleCard({ id: 'uniq-1' }),
+      prompt: 'Unique Prompt',
+      answer: 'Unique Answer',
+    }
 
     renderDeckManager({
-      cards: [duplicateCard1, duplicateCard2],
-      vocabularyCards: [duplicateCard1, duplicateCard2],
+      cards: [duplicateCard1, duplicateCard2, uniqueCard],
+      vocabularyCards: [duplicateCard1, duplicateCard2, uniqueCard],
     })
 
-    // Activate duplicates audit
+    // Initially 3 rows
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(3)
+
+    // Activate duplicates audit -> 2 rows
     const duplicatesBtn = screen.getByRole('button', {
       name: /duplicates \(2\)/i,
     })
     await user.click(duplicatesBtn)
+    expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
 
     // Search for something not matching duplicates
     const searchInput = screen.getByRole('searchbox', {
@@ -398,6 +407,7 @@ describe('DeckManagerView', () => {
     })
     await user.click(clearBtn)
 
+    // Crucial check: clearing search must preserve duplicates audit (2 rows, NOT 3)
     expect(screen.getAllByRole('row', { name: /card:/i })).toHaveLength(2)
   })
 

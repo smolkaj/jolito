@@ -418,16 +418,17 @@ export function DeckManagerView({
                     Import Anki / Backup
                   </button>
                 </div>
-              ) : deckSearchQuery.trim() ||
-                showOnlyDuplicates ||
-                deckSortOrder !== 'created-desc' ? (
+              ) : deckSearchQuery.trim() || showOnlyDuplicates ? (
                 <button
                   type="button"
                   className="secondary-button"
                   onClick={() => {
-                    setDeckSearchQuery('')
-                    setShowOnlyDuplicates(false)
-                    setDeckSortOrder('created-desc')
+                    if (deckSearchQuery.trim()) {
+                      setDeckSearchQuery('')
+                    } else {
+                      setShowOnlyDuplicates(false)
+                      setDeckSortOrder('created-desc')
+                    }
                   }}
                 >
                   {deckSearchQuery.trim() ? 'Clear search' : 'Show all cards'}
