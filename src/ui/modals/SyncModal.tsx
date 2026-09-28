@@ -540,31 +540,37 @@ export function SyncModal({
           </div>
 
           <label
-            className={`sync-digest-option${loading || isUpdatingDigest || !isOnline ? ' is-disabled' : ''}`}
+            className={`toggle-row sync-digest-toggle-row${loading || isUpdatingDigest || !isOnline ? ' disabled' : ''}`}
             htmlFor="sync-digest-checkbox"
           >
             <input
               id="sync-digest-checkbox"
               type="checkbox"
-              aria-describedby="sync-digest-desc"
+              aria-describedby={`sync-digest-desc${digestError ? ' sync-digest-err' : ''}`}
               checked={isDigestEnabled}
               disabled={loading || isUpdatingDigest || !isOnline}
               onChange={(e) => {
                 void handleToggleDigest(e.target.checked)
               }}
             />
-            <div className="sync-digest-content">
-              <span className="sync-digest-title">
+            <span className="toggle" aria-hidden="true" />
+            <div className="toggle-label-group">
+              <span className="toggle-title">
                 Monthly backup &amp; progress email
               </span>
-              <span
-                id="sync-digest-desc"
-                className={`sync-digest-desc${digestError ? ' is-error' : ''}`}
-                role={digestError ? 'alert' : undefined}
-              >
-                {digestError ??
-                  'Monthly offline deck backup and learning stats. Pauses when inactive.'}
+              <span id="sync-digest-desc" className="toggle-description">
+                Monthly offline deck backup and learning stats. Pauses when
+                inactive.
               </span>
+              {digestError && (
+                <span
+                  id="sync-digest-err"
+                  className="sync-digest-error"
+                  role="alert"
+                >
+                  {digestError}
+                </span>
+              )}
             </div>
           </label>
 
