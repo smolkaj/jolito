@@ -96,7 +96,6 @@ export function SyncModal({
   } | null>(null)
   const [isDigestEnabled, setIsDigestEnabled] = useState(true)
   const [isUpdatingDigest, setIsUpdatingDigest] = useState(false)
-  const [digestError, setDigestError] = useState<string | null>(null)
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
@@ -118,16 +117,22 @@ export function SyncModal({
   const handleToggleDigest = async (enabled: boolean) => {
     setIsDigestEnabled(enabled)
     setIsUpdatingDigest(true)
-    setDigestError(null)
+    setStatusMsg(null)
     try {
       const ok = await auth.setDigestPreference?.(enabled)
       if (ok === false) {
         setIsDigestEnabled(!enabled)
-        setDigestError('Failed to update email preferences. Please try again.')
+        setStatusMsg({
+          type: 'error',
+          message: 'Failed to update email preferences. Please try again.',
+        })
       }
     } catch {
       setIsDigestEnabled(!enabled)
-      setDigestError('Failed to update email preferences. Please try again.')
+      setStatusMsg({
+        type: 'error',
+        message: 'Failed to update email preferences. Please try again.',
+      })
     } finally {
       setIsUpdatingDigest(false)
     }
@@ -546,7 +551,7 @@ export function SyncModal({
             <input
               id="sync-digest-checkbox"
               type="checkbox"
-              aria-describedby={`sync-digest-desc${digestError ? ' sync-digest-err' : ''}`}
+              aria-describedby="sync-digest-desc"
               checked={isDigestEnabled}
               disabled={loading || isUpdatingDigest || !isOnline}
               onChange={(e) => {
@@ -558,18 +563,9 @@ export function SyncModal({
                 Monthly backup &amp; progress email
               </span>
               <span id="sync-digest-desc" className="sync-digest-desc">
-                Sends an offline JSON backup, learning stats, and words to watch
-                out for once a month. Pauses automatically if inactive.
+                Monthly offline deck backup and learning stats. Pauses when
+                inactive.
               </span>
-              {digestError && (
-                <span
-                  id="sync-digest-err"
-                  className="sync-digest-error"
-                  role="alert"
-                >
-                  {digestError}
-                </span>
-              )}
             </div>
           </label>
 
