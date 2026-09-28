@@ -261,6 +261,12 @@ export class WebAudioSoundPlayer implements SoundPlayer {
         this.playTone(ctx, 659.25, now + 0.16, 0.4, 0.08, 'sine')
         break
       }
+      case 'click': {
+        // Subtle, crisp wooden percussive keyclick (iOS soft keyboard click)
+        // 2ms attack ramp to peak followed by 18ms smooth decay to silence
+        this.playTone(ctx, 1200, now, 0.02, 0.035, 'triangle', 0.002)
+        break
+      }
     }
   }
 
@@ -271,6 +277,7 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     duration: number,
     gainValue: number,
     type: OscillatorType = 'sine',
+    attackTime = 0.015,
   ) {
     this.cancelIdleSuspend()
 
@@ -280,8 +287,9 @@ export class WebAudioSoundPlayer implements SoundPlayer {
     osc.type = type
     osc.frequency.setValueAtTime(freq, startTime)
 
+    const attack = Math.min(attackTime, duration * 0.25)
     gain.gain.setValueAtTime(0.001, startTime)
-    gain.gain.exponentialRampToValueAtTime(gainValue, startTime + 0.015)
+    gain.gain.exponentialRampToValueAtTime(gainValue, startTime + attack)
     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration)
 
     osc.connect(gain)

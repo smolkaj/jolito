@@ -1671,6 +1671,7 @@ function LoadedApp({
           currentCard && (
             <PracticeCard
               haptics={services.haptics}
+              sounds={services.sounds}
               accents={currentCard.direction !== 'es-en'}
               onStopAudio={cancelPendingAudio}
               error={

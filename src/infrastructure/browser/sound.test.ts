@@ -158,6 +158,10 @@ describe('WebAudioSoundPlayer', () => {
     vi.clearAllMocks()
     player.play('complete')
     expect(mockOscillator.type).toBe('sine')
+
+    vi.clearAllMocks()
+    player.play('click')
+    expect(mockOscillator.type).toBe('triangle')
   })
 
   it('resumes and delays dispatch if context is suspended', async () => {

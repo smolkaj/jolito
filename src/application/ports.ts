@@ -67,7 +67,8 @@ export type Speaker = {
   stop?(): void
 }
 
-export type Earcon = 'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete'
+export type Earcon =
+  'reveal' | 'again' | 'hard' | 'good' | 'easy' | 'complete' | 'click'
 
 export type SoundPlayer = {
   play(earcon: Earcon): void

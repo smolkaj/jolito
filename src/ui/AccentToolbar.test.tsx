@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import type { HapticsPlayer, SoundPlayer } from '../application/ports'
 import { AccentToolbar } from './AccentToolbar'
 import { SPANISH_ACCENT_CHARACTERS } from './accent-characters'
 
@@ -372,5 +373,205 @@ describe('AccentToolbar', () => {
     const dockedSpy = vi.spyOn(dockedPointerDown, 'preventDefault')
     dockedBtn.dispatchEvent(dockedPointerDown)
     expect(dockedSpy).toHaveBeenCalled()
+  })
+
+  it('provides immediate haptic and acoustic feedback on pointerdown', () => {
+    const onInsert = vi.fn()
+    const trigger = vi.fn()
+    const play = vi.fn()
+    const haptics: HapticsPlayer = { trigger }
+    const sounds: SoundPlayer = { play }
+
+    render(
+      <AccentToolbar onInsert={onInsert} haptics={haptics} sounds={sounds} />,
+    )
+
+    const btn = screen.getByRole('button', { name: 'Insert á' })
+    const pointerDown = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 40,
+      clientX: 50,
+      clientY: 50,
+    })
+    btn.dispatchEvent(pointerDown)
+
+    expect(trigger).toHaveBeenCalledWith('selection')
+    expect(trigger).toHaveBeenCalledTimes(1)
+    expect(play).toHaveBeenCalledWith('click')
+    expect(play).toHaveBeenCalledTimes(1)
+    expect(onInsert).not.toHaveBeenCalled()
+  })
+
+  it('renders key preview popup callout and is-pressed state on pointerdown, and clears them on pointerup', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} />)
+
+    const btn = screen.getByRole('button', { name: 'Insert é' })
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    const pointerDown = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 41,
+      clientX: 50,
+      clientY: 50,
+    })
+    fireEvent(btn, pointerDown)
+
+    expect(btn).toHaveClass('is-pressed')
+    const popup = document.querySelector('.accent-key-popup')
+    expect(popup).not.toBeNull()
+    expect(popup).toHaveTextContent('é')
+
+    // Clean pointerup clears popup and is-pressed
+    const pointerUp = new PointerEvent('pointerup', {
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'touch',
+      pointerId: 41,
+      clientX: 50,
+      clientY: 50,
+    })
+    fireEvent(btn, pointerUp)
+
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+    expect(onInsert).toHaveBeenCalledWith('é')
+  })
+
+  it('clears key preview popup and is-pressed state when a drag exceeds threshold', () => {
+    const onInsert = vi.fn()
+    render(<AccentToolbar onInsert={onInsert} />)
+
+    const btn = screen.getByRole('button', { name: 'Insert ú' })
+    fireEvent(
+      btn,
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 42,
+        clientX: 100,
+        clientY: 50,
+      }),
+    )
+
+    expect(btn).toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toHaveTextContent('ú')
+
+    // Move past 14px slop
+    fireEvent(
+      btn,
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 42,
+        clientX: 120,
+        clientY: 50,
+      }),
+    )
+
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // Up after drag should not insert
+    fireEvent(
+      btn,
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 42,
+        clientX: 120,
+        clientY: 50,
+      }),
+    )
+    expect(onInsert).not.toHaveBeenCalled()
+  })
+
+  it('flashes key preview popup and is-pressed state when activeShortcut pulse arrives, including consecutive same-key presses', () => {
+    vi.useFakeTimers()
+    const onInsert = vi.fn()
+    const { rerender } = render(
+      <AccentToolbar onInsert={onInsert} activeShortcut={null} />,
+    )
+
+    const btn = screen.getByRole('button', { name: 'Insert ñ' })
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // 1. First shortcut press
+    rerender(
+      <AccentToolbar
+        onInsert={onInsert}
+        activeShortcut={{ char: 'ñ', token: 1 }}
+      />,
+    )
+
+    expect(btn).toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toHaveTextContent('ñ')
+
+    // After timeout, it clears
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // 2. Immediate second press of the EXACT SAME key ('ñ')
+    rerender(
+      <AccentToolbar
+        onInsert={onInsert}
+        activeShortcut={{ char: 'ñ', token: 2 }}
+      />,
+    )
+
+    expect(btn).toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toHaveTextContent('ñ')
+
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    vi.useRealTimers()
+  })
+
+  it('suppresses key preview popups and pressed state when disabled', () => {
+    vi.useFakeTimers()
+    const onInsert = vi.fn()
+    render(
+      <AccentToolbar
+        onInsert={onInsert}
+        disabled={true}
+        activeShortcut={{ char: 'á', token: 1 }}
+      />,
+    )
+
+    const btn = screen.getByRole('button', { name: 'Insert á' })
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // Pointerdown while disabled does not show popup or set pressed
+    fireEvent(
+      btn,
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 50,
+      }),
+    )
+
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+    vi.useRealTimers()
   })
 })
