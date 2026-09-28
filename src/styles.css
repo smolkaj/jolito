@@ -2934,7 +2934,7 @@ textarea::placeholder {
 
 .answer-input {
   width: 100%;
-  padding: 14px 140px 14px 18px;
+  padding: 14px 180px 14px 18px;
   border: 2.5px solid var(--control-line);
   border-radius: 16px;
   color: var(--ink);
@@ -3093,8 +3093,8 @@ textarea::placeholder {
 }
 
 .reveal-button:focus-visible {
-  outline: 2px solid var(--rosa);
-  outline-offset: 1px;
+  outline: 2px solid var(--turquesa-dark);
+  outline-offset: 2px;
 }
 
 .reveal-button kbd {
