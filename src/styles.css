@@ -6086,10 +6086,6 @@ kbd {
   vertical-align: middle;
 }
 
-.deck-mobile-dir-cue {
-  display: none;
-}
-
 .deck-card-row .col-phrase,
 .deck-list-table-header .col-phrase {
   display: flex;
@@ -6156,10 +6152,10 @@ kbd {
   .deck-card-row {
     min-width: 0;
     display: grid;
-    grid-template-columns: 24px auto minmax(0, 1fr) auto auto;
+    grid-template-columns: 28px auto minmax(0, 1fr) auto auto;
     grid-template-areas:
-      'select dir    prompt status  status'
-      'select answer answer mastery difficulty';
+      'select dir prompt status  status'
+      'select dir answer mastery difficulty';
     column-gap: 8px;
     row-gap: 5px;
     padding: 10px 12px;
@@ -6178,13 +6174,11 @@ kbd {
 
   .deck-card-row .col-dir {
     grid-area: dir;
+    align-self: center;
     display: flex;
     align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-  }
-
-  .deck-mobile-dir-cue {
-    display: none;
   }
 
   .deck-card-row .col-prompt {
@@ -6225,22 +6219,12 @@ kbd {
   }
 
   .deck-card-row .deck-phrase-text {
-    font-size: 15px;
-    font-weight: 700;
     line-height: 1.25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .deck-card-row .deck-answer-text {
     font-size: 13px;
-    font-weight: 500;
-    color: var(--ink-soft);
     line-height: 1.25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 
