@@ -431,7 +431,7 @@ describe('DeckManagerView', () => {
       answer: 'Unique Answer',
     }
 
-    const { rerender } = renderDeckManager({
+    const { rerender, props } = renderDeckManager({
       cards: [duplicateCard1, duplicateCard2, uniqueCard],
       vocabularyCards: [duplicateCard1, duplicateCard2, uniqueCard],
     })
@@ -450,25 +450,10 @@ describe('DeckManagerView', () => {
     // Simulate deleting duplicates so only uniqueCard remains in deck
     rerender(
       <DeckManagerView
+        {...props}
         cards={[uniqueCard]}
         vocabularyCards={[uniqueCard]}
-        deletedCardIds={new Set(['dup-1', 'dup-2'])}
-        onDismissAccountNotice={vi.fn()}
-        onDismissRedirectBanner={vi.fn()}
-        onGoHome={vi.fn()}
-        onNavigateToCreate={vi.fn()}
-        onCards={vi.fn()}
-        onGrammar={vi.fn()}
-        onOpenSync={vi.fn()}
-        onOpenFeedback={vi.fn()}
-        onEditCard={vi.fn()}
-        onDeleteCards={vi.fn()}
-        onUpdateCards={vi.fn()}
-        onAddStarterPack={vi.fn()}
-        onAddStarterNote={vi.fn()}
-        onRemoveStarterPack={vi.fn()}
-        onRemoveStarterNote={vi.fn()}
-        clock={{ now: () => 1000 }}
+        deletedCardIds={['dup-1', 'dup-2']}
       />,
     )
 
