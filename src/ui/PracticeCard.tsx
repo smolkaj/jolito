@@ -152,9 +152,11 @@ export function PracticeCard({
     keyboardState.height > 0,
   )
 
-  const [activeShortcutChar, setActiveShortcutChar] = useState<string | null>(
-    null,
-  )
+  const [activeShortcut, setActiveShortcut] = useState<{
+    char: string
+    token: number
+  } | null>(null)
+  const shortcutTokenRef = useRef(0)
 
   const insertAccent = (
     letter: string,
@@ -900,7 +902,11 @@ export function PracticeCard({
                     if (!letter) return
                     event.preventDefault()
                     if (!event.repeat) {
-                      setActiveShortcutChar(letter)
+                      shortcutTokenRef.current += 1
+                      setActiveShortcut({
+                        char: letter,
+                        token: shortcutTokenRef.current,
+                      })
                       insertAccent(letter, 'keyboard')
                     }
                   }}
@@ -928,7 +934,9 @@ export function PracticeCard({
                     disabled={paused || isDocked || isListening}
                     haptics={haptics}
                     sounds={sounds}
-                    activeShortcutChar={activeShortcutChar}
+                    activeShortcut={
+                      isDocked || isListening || paused ? null : activeShortcut
+                    }
                   />
                 </div>
               )}
@@ -972,7 +980,7 @@ export function PracticeCard({
                   disabled={paused}
                   haptics={haptics}
                   sounds={sounds}
-                  activeShortcutChar={activeShortcutChar}
+                  activeShortcut={isDocked && !paused ? activeShortcut : null}
                 />,
                 document.body,
               )}

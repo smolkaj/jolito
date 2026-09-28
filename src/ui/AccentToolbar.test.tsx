@@ -494,18 +494,24 @@ describe('AccentToolbar', () => {
     expect(onInsert).not.toHaveBeenCalled()
   })
 
-  it('flashes key preview popup and is-pressed state when activeShortcutChar changes', () => {
+  it('flashes key preview popup and is-pressed state when activeShortcut pulse arrives, including consecutive same-key presses', () => {
     vi.useFakeTimers()
     const onInsert = vi.fn()
     const { rerender } = render(
-      <AccentToolbar onInsert={onInsert} activeShortcutChar={null} />,
+      <AccentToolbar onInsert={onInsert} activeShortcut={null} />,
     )
 
     const btn = screen.getByRole('button', { name: 'Insert ñ' })
     expect(btn).not.toHaveClass('is-pressed')
     expect(document.querySelector('.accent-key-popup')).toBeNull()
 
-    rerender(<AccentToolbar onInsert={onInsert} activeShortcutChar="ñ" />)
+    // 1. First shortcut press
+    rerender(
+      <AccentToolbar
+        onInsert={onInsert}
+        activeShortcut={{ char: 'ñ', token: 1 }}
+      />,
+    )
 
     expect(btn).toHaveClass('is-pressed')
     expect(document.querySelector('.accent-key-popup')).toHaveTextContent('ñ')
@@ -514,6 +520,55 @@ describe('AccentToolbar', () => {
     act(() => {
       vi.advanceTimersByTime(200)
     })
+
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // 2. Immediate second press of the EXACT SAME key ('ñ')
+    rerender(
+      <AccentToolbar
+        onInsert={onInsert}
+        activeShortcut={{ char: 'ñ', token: 2 }}
+      />,
+    )
+
+    expect(btn).toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toHaveTextContent('ñ')
+
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    vi.useRealTimers()
+  })
+
+  it('suppresses key preview popups and pressed state when disabled', () => {
+    vi.useFakeTimers()
+    const onInsert = vi.fn()
+    render(
+      <AccentToolbar
+        onInsert={onInsert}
+        disabled={true}
+        activeShortcut={{ char: 'á', token: 1 }}
+      />,
+    )
+
+    const btn = screen.getByRole('button', { name: 'Insert á' })
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // Pointerdown while disabled does not show popup or set pressed
+    fireEvent(
+      btn,
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 50,
+      }),
+    )
 
     expect(btn).not.toHaveClass('is-pressed')
     expect(document.querySelector('.accent-key-popup')).toBeNull()

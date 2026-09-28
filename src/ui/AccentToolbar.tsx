@@ -10,6 +10,11 @@ import { createPortal } from 'react-dom'
 import type { HapticsPlayer, SoundPlayer } from '../application/ports'
 import { SPANISH_ACCENT_CHARACTERS } from './accent-characters'
 
+export interface ShortcutActivation {
+  char: string
+  token: number
+}
+
 export interface AccentToolbarProps {
   onInsert: (char: string) => void
   isDocked?: boolean
@@ -18,7 +23,7 @@ export interface AccentToolbarProps {
   className?: string
   haptics?: HapticsPlayer | undefined
   sounds?: SoundPlayer | undefined
-  activeShortcutChar?: string | null | undefined
+  activeShortcut?: ShortcutActivation | null | undefined
 }
 
 export function AccentToolbar({
@@ -29,7 +34,7 @@ export function AccentToolbar({
   className = '',
   haptics,
   sounds,
-  activeShortcutChar,
+  activeShortcut,
 }: AccentToolbarProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const lastTouchTimestampRef = useRef(0)
@@ -56,22 +61,23 @@ export function AccentToolbar({
 
   // Visual activation flash when keyboard shortcut (1-9) is pressed
   useEffect(() => {
-    if (!activeShortcutChar) return
-    const button = buttonRefs.current.get(activeShortcutChar)
+    if (disabled || !activeShortcut) return
+    const char = activeShortcut.char
+    const button = buttonRefs.current.get(char)
     if (!button) return
     const rect = button.getBoundingClientRect()
-    setPressedChar(activeShortcutChar)
+    setPressedChar(char)
     setPopupState({
-      char: activeShortcutChar,
+      char,
       x: rect.left + rect.width / 2,
       y: rect.top,
     })
     const timer = window.setTimeout(() => {
-      setPressedChar((cur) => (cur === activeShortcutChar ? null : cur))
-      setPopupState((cur) => (cur?.char === activeShortcutChar ? null : cur))
+      setPressedChar((cur) => (cur === char ? null : cur))
+      setPopupState((cur) => (cur?.char === char ? null : cur))
     }, 140)
     return () => window.clearTimeout(timer)
-  }, [activeShortcutChar])
+  }, [activeShortcut, disabled])
 
   const handleInsert = (char: string) => {
     if (disabled) return
@@ -241,6 +247,9 @@ export function AccentToolbar({
   const viewportWidth =
     typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 400
 
+  const effectivePressedChar = disabled ? null : pressedChar
+  const effectivePopupState = disabled ? null : popupState
+
   return (
     <div
       role="toolbar"
@@ -251,7 +260,7 @@ export function AccentToolbar({
       <div ref={scrollContainerRef} className="accent-toolbar-scroll">
         {SPANISH_ACCENT_CHARACTERS.map((char, index) => {
           const shortcut = String(index + 1)
-          const isPressed = pressedChar === char
+          const isPressed = effectivePressedChar === char
           return (
             <button
               type="button"
@@ -283,7 +292,7 @@ export function AccentToolbar({
           )
         })}
       </div>
-      {popupState &&
+      {effectivePopupState &&
         typeof document !== 'undefined' &&
         createPortal(
           <div
@@ -291,11 +300,11 @@ export function AccentToolbar({
             aria-hidden="true"
             className="accent-key-popup"
             style={{
-              left: `${Math.max(26, Math.min(viewportWidth - 26, popupState.x))}px`,
-              top: `${Math.max(8, popupState.y - 56)}px`,
+              left: `${Math.max(26, Math.min(viewportWidth - 26, effectivePopupState.x))}px`,
+              top: `${Math.max(8, effectivePopupState.y - 56)}px`,
             }}
           >
-            {popupState.char}
+            {effectivePopupState.char}
           </div>,
           document.body,
         )}
