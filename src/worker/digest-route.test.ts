@@ -84,6 +84,20 @@ describe('digest-route', () => {
       expect(text).toContain('Unable to process unsubscribe request')
       vi.unstubAllGlobals()
     })
+
+    it('returns 500 when Supabase credentials are missing', async () => {
+      const token = await createUnsubscribeToken(validUserId, secret)
+      const req = new Request(
+        `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+      )
+      const res = await handleUnsubscribeRequest(req, {
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+      })
+
+      expect(res.status).toBe(500)
+      const text = await res.text()
+      expect(text).toContain('Server configuration error')
+    })
   })
 
   describe('handleDigestScheduled', () => {

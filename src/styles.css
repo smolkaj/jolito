@@ -5232,6 +5232,11 @@ kbd {
   margin: 0;
 }
 
+.sync-digest-desc.is-error {
+  color: var(--tezontle);
+  font-weight: 500;
+}
+
 .sync-auth-pane {
   display: flex;
   flex-direction: column;

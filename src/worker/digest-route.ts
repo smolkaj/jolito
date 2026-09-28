@@ -100,34 +100,33 @@ export async function handleUnsubscribeRequest(
     })
   }
 
-  if (env?.SUPABASE_URL && env?.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      const dbRes = await fetch(
-        `${env.SUPABASE_URL}/rest/v1/rpc/unsubscribe_monthly_digest`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ p_user_id: uid }),
+  if (!env?.SUPABASE_URL || !env?.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error(
+      '[Digest Unsubscribe] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment',
+    )
+    return new Response('Server configuration error. Please try again later.', {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+  }
+
+  try {
+    const dbRes = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/rpc/unsubscribe_monthly_digest`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ p_user_id: uid }),
+      },
+    )
+    if (!dbRes.ok) {
+      console.error(
+        `[Digest Unsubscribe] Database RPC failed with status ${dbRes.status}`,
       )
-      if (!dbRes.ok) {
-        console.error(
-          `[Digest Unsubscribe] Database RPC failed with status ${dbRes.status}`,
-        )
-        return new Response(
-          'Unable to process unsubscribe request. Please try again later.',
-          {
-            status: 500,
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-          },
-        )
-      }
-    } catch (err) {
-      console.error('[Digest Unsubscribe] Database RPC failed:', err)
       return new Response(
         'Unable to process unsubscribe request. Please try again later.',
         {
@@ -136,6 +135,15 @@ export async function handleUnsubscribeRequest(
         },
       )
     }
+  } catch (err) {
+    console.error('[Digest Unsubscribe] Database RPC failed:', err)
+    return new Response(
+      'Unable to process unsubscribe request. Please try again later.',
+      {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      },
+    )
   }
 
   const html = `<!DOCTYPE html>

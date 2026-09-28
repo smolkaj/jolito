@@ -96,6 +96,7 @@ export function SyncModal({
   } | null>(null)
   const [isDigestEnabled, setIsDigestEnabled] = useState(true)
   const [isUpdatingDigest, setIsUpdatingDigest] = useState(false)
+  const [digestError, setDigestError] = useState<string | null>(null)
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
@@ -117,22 +118,16 @@ export function SyncModal({
   const handleToggleDigest = async (enabled: boolean) => {
     setIsDigestEnabled(enabled)
     setIsUpdatingDigest(true)
-    setStatusMsg(null)
+    setDigestError(null)
     try {
       const ok = await auth.setDigestPreference?.(enabled)
       if (ok === false) {
         setIsDigestEnabled(!enabled)
-        setStatusMsg({
-          type: 'error',
-          message: 'Failed to update email preferences. Please try again.',
-        })
+        setDigestError('Failed to update email preferences. Tap to retry.')
       }
     } catch {
       setIsDigestEnabled(!enabled)
-      setStatusMsg({
-        type: 'error',
-        message: 'Failed to update email preferences. Please try again.',
-      })
+      setDigestError('Failed to update email preferences. Tap to retry.')
     } finally {
       setIsUpdatingDigest(false)
     }
@@ -562,9 +557,13 @@ export function SyncModal({
               <span className="sync-digest-title">
                 Monthly backup &amp; progress email
               </span>
-              <span id="sync-digest-desc" className="sync-digest-desc">
-                Monthly offline deck backup and learning stats. Pauses when
-                inactive.
+              <span
+                id="sync-digest-desc"
+                className={`sync-digest-desc${digestError ? ' is-error' : ''}`}
+                role={digestError ? 'alert' : undefined}
+              >
+                {digestError ??
+                  'Monthly offline deck backup and learning stats. Pauses when inactive.'}
               </span>
             </div>
           </label>
