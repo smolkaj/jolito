@@ -153,21 +153,21 @@ export function formatDigestEmail(
   monthLabel: string,
   unsubscribeUrl: string,
 ): { subject: string; html: string; text: string } {
-  const subject = `Your Jolito Monthly Progress & Backup — ${monthLabel}`
+  const subject = `[Jolito] Progress & Backup - ${monthLabel}`
 
   const watchlistHtml =
     stats.wordsToWatchOutFor.length > 0
       ? `
-      <div style="margin-top: 24px;">
-        <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 0 0 12px 0;">Words to watch out for</h3>
-        <table style="width: 100%; border-collapse: collapse; background-color: #f8fafc; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+      <div style="margin-top: 28px;">
+        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #a1a1aa; margin-bottom: 10px;">Words to watch out for</div>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
           ${stats.wordsToWatchOutFor
             .map(
               (w) => `
             <tr>
-              <td style="padding: 10px 14px; font-weight: 600; color: #0f172a; border-bottom: 1px solid #e2e8f0;">${escapeHtml(w.prompt)}</td>
-              <td style="padding: 10px 14px; color: #475569; border-bottom: 1px solid #e2e8f0;">${escapeHtml(w.answer)}</td>
-              <td style="padding: 10px 14px; color: #e11d48; text-align: right; font-size: 13px; border-bottom: 1px solid #e2e8f0;">${w.lapses} lapse${w.lapses === 1 ? '' : 's'}</td>
+              <td style="padding: 9px 0; font-size: 14px; font-weight: 500; color: #18181b; border-bottom: 1px solid #f4f4f5;">${escapeHtml(w.prompt)}</td>
+              <td style="padding: 9px 12px; font-size: 14px; color: #71717a; border-bottom: 1px solid #f4f4f5;">${escapeHtml(w.answer)}</td>
+              <td style="padding: 9px 0; font-size: 12px; color: #a1a1aa; text-align: right; border-bottom: 1px solid #f4f4f5; white-space: nowrap;">${w.lapses} ${w.lapses === 1 ? 'lapse' : 'lapses'}</td>
             </tr>
           `,
             )
@@ -188,68 +188,87 @@ export function formatDigestEmail(
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(subject)}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; padding: 24px; line-height: 1.5;">
-  <div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
-    Your monthly Jolito learning progress summary and offline deck backup.
+<body style="margin: 0; padding: 40px 16px; background-color: #f7f7f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #18181b;">
+  <div style="display: none; font-size: 1px; color: #f7f7f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
+    ${escapeHtml(monthLabel)} progress snapshot and attached offline deck backup.
   </div>
-  <div style="max-width: 580px; margin: 0 auto; font-size: 13px; color: #64748b; padding-bottom: 12px; text-align: center;">
-    Your monthly Jolito deck backup & progress snapshot.
-    <a href="${escapeHtml(unsubscribeUrl)}" style="color: #b30060; text-decoration: underline; margin-left: 4px;">Unsubscribe in 1 click</a>
-  </div>
-  <div style="background-color: #ffffff; max-width: 580px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-    <div style="background-color: #b30060; color: #ffffff; padding: 24px;">
-      <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Jolito Progress & Backup</h1>
-      <p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.9;">${escapeHtml(monthLabel)}</p>
-    </div>
-    <div style="padding: 24px;">
-      <div style="display: flex; gap: 12px; justify-content: space-between; margin-bottom: 24px; text-align: center;">
-        <div style="flex: 1; background: #fdf2f8; border-radius: 8px; padding: 14px 8px; border: 1px solid #fbcfe8;">
-          <div style="font-size: 24px; font-weight: 700; color: #b30060;">+${stats.cardsAdded}</div>
-          <div style="font-size: 12px; color: #701a75; font-weight: 500; margin-top: 2px;">Cards Added</div>
-        </div>
-        <div style="flex: 1; background: #f0fdf4; border-radius: 8px; padding: 14px 8px; border: 1px solid #bbf7d0;">
-          <div style="font-size: 24px; font-weight: 700; color: #15803d;">${stats.totalReviewsThisPeriod}</div>
-          <div style="font-size: 12px; color: #14532d; font-weight: 500; margin-top: 2px;">Reviews Completed</div>
-        </div>
-        <div style="flex: 1; background: #eff6ff; border-radius: 8px; padding: 14px 8px; border: 1px solid #bfdbfe;">
-          <div style="font-size: 24px; font-weight: 700; color: #1d4ed8;">${stats.cardsGraduated}</div>
-          <div style="font-size: 12px; color: #1e3a8a; font-weight: 500; margin-top: 2px;">Graduated to Mature</div>
-        </div>
-      </div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <tr>
+      <td style="padding: 36px 36px 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 32px;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 10px;">
+                    <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="Jolito" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 17px; font-weight: 600; color: #18181b; letter-spacing: -0.01em;">Jolito</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td style="vertical-align: middle; text-align: right;">
+              <a href="${escapeHtml(unsubscribeUrl)}" style="font-size: 12px; color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
+            </td>
+          </tr>
+        </table>
 
-      <p style="font-size: 15px; color: #334155; margin: 0 0 16px 0;">
-        Your deck currently has <strong>${stats.totalCards} cards</strong> (<strong>${stats.matureCards}</strong> in long-term memory).
-      </p>
+        <h1 style="margin: 0 0 4px; font-size: 22px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1.25;">Progress &amp; backup</h1>
+        <p style="margin: 0 0 28px; font-size: 14px; color: #71717a;">${escapeHtml(monthLabel)}</p>
 
-      ${watchlistHtml}
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 24px;">
+          <tr>
+            <td style="width: 33%; vertical-align: top;">
+              <div style="font-size: 26px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1;">+${stats.cardsAdded}</div>
+              <div style="font-size: 13px; color: #71717a; margin-top: 6px;">Cards added</div>
+            </td>
+            <td style="width: 33%; vertical-align: top;">
+              <div style="font-size: 26px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1;">${stats.totalReviewsThisPeriod}</div>
+              <div style="font-size: 13px; color: #71717a; margin-top: 6px;">Reviews</div>
+            </td>
+            <td style="width: 33%; vertical-align: top;">
+              <div style="font-size: 26px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1;">${stats.cardsGraduated}</div>
+              <div style="font-size: 13px; color: #71717a; margin-top: 6px;">Graduated</div>
+            </td>
+          </tr>
+        </table>
 
-      <div style="margin-top: 28px; padding: 16px; background-color: #f1f5f9; border-radius: 8px; font-size: 13px; color: #475569; border: 1px solid #e2e8f0;">
-        <strong>📦 Attached Backup:</strong>
-        We've attached your complete deck as an offline JSON backup. You can keep it for your personal archives or re-import it directly in Jolito anytime.
-      </div>
-    </div>
-  </div>
+        <p style="margin: 0 0 28px; font-size: 14px; color: #52525b; line-height: 1.5;">
+          Your deck has <strong style="font-weight: 600; color: #18181b;">${stats.totalCards} cards</strong> (${stats.matureCards} in long-term memory).
+        </p>
+
+        ${watchlistHtml}
+
+        <div style="height: 1px; background-color: #f4f4f5; margin: 32px 0 20px;"></div>
+
+        <p style="margin: 0; font-size: 13px; color: #71717a; line-height: 1.5;">
+          Your deck is attached as an offline JSON backup. Re-import anytime in <strong style="font-weight: 500; color: #3f3f46;">Sync &amp; Account</strong>.
+        </p>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`
 
   const text = [
-    `Your monthly Jolito deck backup & progress snapshot.`,
-    `Unsubscribe in 1 click: ${unsubscribeUrl}`,
+    `Jolito — Progress & Backup (${monthLabel})`,
+    `==========================================`,
     ``,
-    `Jolito Progress & Backup — ${monthLabel}`,
-    `========================================`,
-    ``,
-    `Highlights:`,
-    `• ${stats.cardsAdded} cards added this month`,
+    `+${stats.cardsAdded} cards added`,
     `• ${stats.totalReviewsThisPeriod} reviews completed`,
     `• ${stats.cardsGraduated} cards graduated to long-term memory`,
     ``,
     `Total deck: ${stats.totalCards} cards (${stats.matureCards} mature)`,
     watchlistText,
     ``,
-    `Your full deck backup is attached as an offline JSON file.`,
+    `Offline backup attached as JSON. Re-import anytime in Sync & Account.`,
+    ``,
+    `Unsubscribe: ${unsubscribeUrl}`,
   ].join('\n')
 
   return { subject, html, text }
@@ -260,51 +279,71 @@ export function formatPausedNoticeEmail(
   monthLabel: string,
   unsubscribeUrl: string,
 ): { subject: string; html: string; text: string } {
-  const subject = `Your Jolito Monthly backup (Digests paused) — ${monthLabel}`
+  const subject = `[Jolito] Progress & Backup (paused) - ${monthLabel}`
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(subject)}</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #0f172a; margin: 0; padding: 24px; line-height: 1.5;">
-  <div style="max-width: 580px; margin: 0 auto; font-size: 13px; color: #64748b; padding-bottom: 12px; text-align: center;">
-    Your monthly Jolito deck backup.
-    <a href="${escapeHtml(unsubscribeUrl)}" style="color: #b30060; text-decoration: underline; margin-left: 4px;">Unsubscribe in 1 click</a>
-  </div>
-  <div style="background-color: #ffffff; max-width: 580px; margin: 0 auto; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-    <div style="background-color: #475569; color: #ffffff; padding: 20px 24px;">
-      <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Monthly Digests Paused</h1>
-      <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">${escapeHtml(monthLabel)}</p>
-    </div>
-    <div style="padding: 24px;">
-      <p style="font-size: 15px; color: #334155; margin-top: 0;">
-        We noticed you haven't been practicing recently on Jolito. We hate inbox clutter as much as you do, so to keep your email clean, we've <strong>paused your monthly digests</strong>.
-      </p>
-      <p style="font-size: 14px; color: #475569;">
-        Attached is your latest deck backup (${totalCards} cards) for your personal records.
-      </p>
-      <p style="font-size: 14px; color: #475569;">
-        Whenever you're ready to learn again, simply practice a card in Jolito or re-enable digests in Sync &amp; Account.
-      </p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 40px 16px; background-color: #f7f7f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #18181b;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+    <tr>
+      <td style="padding: 36px 36px 32px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 32px;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align: middle; padding-right: 10px;">
+                    <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="Jolito" style="display: block; width: 26px; height: 26px; border-radius: 6px;" />
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 17px; font-weight: 600; color: #18181b; letter-spacing: -0.01em;">Jolito</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td style="vertical-align: middle; text-align: right;">
+              <a href="${escapeHtml(unsubscribeUrl)}" style="font-size: 12px; color: #a1a1aa; text-decoration: underline;">Unsubscribe</a>
+            </td>
+          </tr>
+        </table>
+
+        <h1 style="margin: 0 0 4px; font-size: 22px; font-weight: 600; color: #18181b; letter-spacing: -0.02em; line-height: 1.25;">Digests paused</h1>
+        <p style="margin: 0 0 24px; font-size: 14px; color: #71717a;">${escapeHtml(monthLabel)}</p>
+
+        <p style="margin: 0 0 20px; font-size: 14px; color: #3f3f46; line-height: 1.6;">
+          You haven't practiced recently, so we paused monthly emails to keep your inbox clean.
+        </p>
+
+        <div style="height: 1px; background-color: #f4f4f5; margin: 28px 0 20px;"></div>
+
+        <p style="margin: 0 0 8px; font-size: 13px; color: #71717a; line-height: 1.5;">
+          Your deck (${totalCards} cards) is attached as an offline JSON backup.
+        </p>
+        <p style="margin: 0; font-size: 13px; color: #a1a1aa; line-height: 1.5;">
+          Digests will resume automatically when you practice again.
+        </p>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`
 
   const text = [
-    `Your monthly Jolito deck backup.`,
-    `Unsubscribe in 1 click: ${unsubscribeUrl}`,
+    `Jolito — Digests paused (${monthLabel})`,
+    `======================================`,
     ``,
-    `Monthly Digests Paused — ${monthLabel}`,
-    `========================================`,
+    `You haven't practiced recently, so we paused monthly emails to keep your inbox clean.`,
     ``,
-    `We noticed you haven't been practicing recently on Jolito. To keep your inbox clean, we've paused your monthly digests.`,
+    `Offline backup attached as JSON (${totalCards} cards).`,
     ``,
-    `Attached is your latest backup (${totalCards} cards) for your personal records.`,
+    `Digests will resume automatically when you practice again.`,
     ``,
-    `Whenever you're ready to learn again, practice a card in Jolito or re-enable digests in Sync & Account.`,
+    `Unsubscribe: ${unsubscribeUrl}`,
   ].join('\n')
 
   return { subject, html, text }

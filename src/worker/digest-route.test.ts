@@ -181,7 +181,7 @@ describe('digest-route', () => {
         headers: Record<string, string>
       }
       expect(resendBody.to).toBe('learner@example.com')
-      expect(resendBody.subject).toContain('Jolito Monthly Progress & Backup')
+      expect(resendBody.subject).toContain('[Jolito] Progress & Backup')
       expect(resendBody.attachments).toHaveLength(1)
       expect(resendBody.attachments[0]?.filename).toContain('.json')
       expect(resendBody.headers['List-Unsubscribe']).toBeDefined()
@@ -298,7 +298,9 @@ describe('digest-route', () => {
       expect(resendCall).toBeDefined()
       const resendInit = resendCall![1] as { body: string }
       const resendBody = JSON.parse(resendInit.body) as { subject: string }
-      expect(resendBody.subject).toContain('Monthly backup (Digests paused)')
+      expect(resendBody.subject).toContain(
+        '[Jolito] Progress & Backup (paused)',
+      )
 
       const finishCall = fetchSpy.mock.calls.find(
         (call: unknown[]) =>

@@ -245,7 +245,7 @@ describe('deck-digest domain', () => {
   })
 
   describe('formatDigestEmail', () => {
-    it('includes prominent unsubscribe link at the top of the body', () => {
+    it('includes Jolito logo, clean header, metrics, and unsubscribe link', () => {
       const stats = {
         cardsAdded: 15,
         cardsGraduated: 8,
@@ -262,19 +262,18 @@ describe('deck-digest domain', () => {
         'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
       const { html, text, subject } = formatDigestEmail(
         stats,
-        'September 2026',
+        'Sep 2026',
         unsubscribeUrl,
       )
 
-      expect(subject).toContain('Jolito Monthly Progress & Backup')
-      expect(subject).toContain('September 2026')
+      expect(subject).toBe('[Jolito] Progress & Backup - Sep 2026')
       expect(html).toContain(
         'https://joli.to/api/digest/unsubscribe?u=123&amp;t=abc',
       )
-      // Top header verification
-      expect(html).toMatch(/Unsubscribe in 1 click/i)
+      expect(html).toContain('alt="Jolito"')
+      expect(html).toContain('>Unsubscribe</a>')
       expect(text).toContain(unsubscribeUrl)
-      expect(text).toContain('15 cards added')
+      expect(text).toContain('+15 cards added')
       expect(text).toContain('120 reviews completed')
       expect(text).toContain('acontecer')
     })
@@ -286,14 +285,18 @@ describe('deck-digest domain', () => {
         'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
       const { html, text, subject } = formatPausedNoticeEmail(
         150,
-        'September 2026',
+        'Sep 2026',
         unsubscribeUrl,
       )
 
-      expect(subject).toContain('Monthly backup (Digests paused)')
-      expect(html).toContain('paused your monthly digests')
+      expect(subject).toBe('[Jolito] Progress & Backup (paused) - Sep 2026')
+      expect(html).toContain('Digests paused')
+      expect(html).toContain('alt="Jolito"')
+      expect(html).toContain('>Unsubscribe</a>')
       expect(html).toContain('150 cards')
-      expect(text).toContain('paused your monthly digests')
+      expect(text).toContain('Digests paused')
+      expect(text).toContain('150 cards')
+      expect(text).toContain(unsubscribeUrl)
     })
   })
 })

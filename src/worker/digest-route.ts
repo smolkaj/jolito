@@ -45,7 +45,11 @@ function getBaseUrl(env?: DigestWorkerEnv): string {
 
 function formatMonthYear(timestamp: number): string {
   const d = new Date(timestamp)
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 }
 
 function formatFilenameDate(timestamp: number): string {
