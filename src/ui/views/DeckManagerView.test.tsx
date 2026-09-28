@@ -240,24 +240,11 @@ describe('DeckManagerView', () => {
     )
   })
 
-  it('renders authentic MexicoFlag and EnglishBadge for direction cues including mobile inline cues', () => {
+  it('renders authentic MexicoFlag and EnglishBadge for direction cues', () => {
     const { container } = renderDeckManager()
 
     expect(container.querySelector('.flag-mx')).toBeInTheDocument()
     expect(container.querySelector('.language-icon')).toBeInTheDocument()
-
-    const mobileCues = container.querySelectorAll('.deck-mobile-dir-cue')
-    expect(mobileCues).toHaveLength(3)
-    expect(mobileCues[0]).toHaveAttribute('aria-hidden', 'true')
-    expect(mobileCues[0]).toHaveAttribute(
-      'title',
-      'Mexican Spanish Prompt → English Answer',
-    )
-    expect(mobileCues[2]).toHaveAttribute('aria-hidden', 'true')
-    expect(mobileCues[2]).toHaveAttribute(
-      'title',
-      'English Prompt → Mexican Spanish Answer',
-    )
 
     const dirBadges = container.querySelectorAll('.deck-direction-badge')
     expect(dirBadges).toHaveLength(3)

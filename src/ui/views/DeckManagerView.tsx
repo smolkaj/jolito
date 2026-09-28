@@ -742,17 +742,6 @@ export function DeckManagerView({
                       </span>
                     </div>
                     <div className="col-phrase col-prompt" role="cell">
-                      <span
-                        className="deck-mobile-dir-cue"
-                        aria-hidden="true"
-                        title={
-                          isEsToEn
-                            ? 'Mexican Spanish Prompt → English Answer'
-                            : 'English Prompt → Mexican Spanish Answer'
-                        }
-                      >
-                        {isEsToEn ? <MexicoFlag /> : <EnglishBadge />}
-                      </span>
                       <span className="deck-phrase-text">{card.prompt}</span>
                       {duplicateCardIds.has(card.id) && (
                         <span
