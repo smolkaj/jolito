@@ -62,6 +62,10 @@ function base64Encode(str: string): string {
   return Buffer.from(str, 'utf-8').toString('base64')
 }
 
+/**
+ * Handles unsubscribe requests. Intentionally supports both GET (browser link click)
+ * and POST (RFC 8058 List-Unsubscribe=One-Click automated mail client unsubscription).
+ */
 export async function handleUnsubscribeRequest(
   request: Request,
   env?: DigestWorkerEnv,
@@ -185,6 +189,7 @@ export async function handleDigestScheduled(
 
   for (const claim of claims) {
     let deckData: unknown = null
+    let deckFetchSuccess = false
     try {
       const deckRes = await fetch(
         `${env.SUPABASE_URL}/rest/v1/decks?user_id=eq.${claim.user_id}&select=data`,
@@ -201,12 +206,48 @@ export async function handleDigestScheduled(
       if (deckRes.ok) {
         const rawJson: unknown = await deckRes.json()
         const parsedRows = deckRowSchema.safeParse(rawJson)
-        if (parsedRows.success && parsedRows.data.length > 0) {
-          deckData = parsedRows.data[0]?.data
+        if (parsedRows.success) {
+          deckFetchSuccess = true
+          if (parsedRows.data.length > 0) {
+            deckData = parsedRows.data[0]?.data
+          }
         }
+      } else {
+        console.error(
+          `[Digest Dispatch] Deck fetch failed with status ${deckRes.status} for user ${claim.user_id}`,
+        )
       }
     } catch (err) {
       console.error('[Digest Dispatch] Deck fetch error:', err)
+    }
+
+    if (!deckFetchSuccess) {
+      failureCount++
+      try {
+        await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/finish_monthly_digest`, {
+          method: 'POST',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            p_user_id: claim.user_id,
+            p_lease_id: claim.lease_id,
+            p_delivered: false,
+            p_new_lifetime_reviews: claim.last_lifetime_reviews,
+            p_auto_paused: false,
+            p_permanent_failure: false,
+          }),
+          signal: AbortSignal.timeout(10_000),
+        })
+      } catch (err) {
+        console.error(
+          '[Digest Dispatch] Failed to report deck fetch error to finish RPC:',
+          err,
+        )
+      }
+      continue
     }
 
     let cards: StudyCard[] = []
@@ -281,7 +322,12 @@ export async function handleDigestScheduled(
           }
         } else {
           failureCount++
-          if (resendRes.status >= 400 && resendRes.status < 500) {
+          if (
+            resendRes.status >= 400 &&
+            resendRes.status < 500 &&
+            resendRes.status !== 429 &&
+            resendRes.status !== 408
+          ) {
             isPermanentFailure = true
           }
           console.error(
