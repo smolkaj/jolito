@@ -2934,7 +2934,7 @@ textarea::placeholder {
 
 .answer-input {
   width: 100%;
-  padding: 14px 140px 14px 18px;
+  padding: 14px 180px 14px 18px;
   border: 2.5px solid var(--control-line);
   border-radius: 16px;
   color: var(--ink);
@@ -3064,29 +3064,53 @@ textarea::placeholder {
   transform: none;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 7px 14px;
-  border: 1.5px solid var(--line);
-  border-radius: 10px;
-  color: var(--ink);
-  background: var(--card);
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ink-soft);
+  background: transparent;
   font-size: 12px;
-  font-weight: 700;
-  box-shadow: 2px 2px 0 var(--shadow-ink);
-  transition: all 120ms var(--ease-spring);
+  font-weight: 600;
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .reveal-button:hover {
-  background: var(--turquesa-soft);
-  transform: translateY(-1px);
-  box-shadow: 3px 3px 0 var(--shadow-ink);
+  background: var(--paper-subtle);
+  color: var(--ink);
 }
 
 .reveal-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 0 0 var(--shadow-ink);
+  background: var(--turquesa-soft);
+  color: var(--ink);
+}
+
+.reveal-button:focus-visible {
+  outline: 2px solid var(--turquesa-dark);
+  outline-offset: 2px;
+}
+
+.reveal-button kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border: 1px solid var(--line-subtle);
+  border-bottom-width: 1.5px;
+  border-radius: 5px;
+  color: var(--ink-muted);
+  background: var(--kbd-bg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .reveal-gesture-cue {
@@ -4301,6 +4325,27 @@ kbd {
     justify-content: center;
     justify-self: stretch;
     align-self: auto;
+    padding: 9px 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    color: var(--ink);
+    background: var(--card);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--shadow-ink);
+    transition: all 120ms var(--ease-spring);
+  }
+
+  .reveal-button:hover {
+    background: var(--turquesa-soft);
+    color: var(--ink);
+    transform: translateY(-1px);
+    box-shadow: 3px 3px 0 var(--shadow-ink);
+  }
+
+  .reveal-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 0 var(--shadow-ink);
   }
 
   .reveal-panel {
