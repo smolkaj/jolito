@@ -86,7 +86,7 @@ export function computeDeckDigestStats(
     currentLifetimeReviews - previousLifetimeReviews,
   )
 
-  const isInactive = cards.length > 0 && !hasRecentReview
+  const isInactive = !hasRecentReview
 
   return {
     cardsAdded,

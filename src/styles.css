@@ -5201,7 +5201,7 @@ kbd {
 }
 
 .sync-digest-option input[type='checkbox'] {
-  accent-color: var(--tezontle);
+  accent-color: var(--turquesa-dark);
   cursor: pointer;
   width: 16px;
   height: 16px;
@@ -5233,11 +5233,8 @@ kbd {
   margin: 0;
 }
 
-.sync-digest-error {
-  font-size: 12px;
+.sync-digest-desc.is-error {
   color: var(--tezontle);
-  margin-top: 3px;
-  line-height: 1.35;
   font-weight: 500;
 }
 

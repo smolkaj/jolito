@@ -469,6 +469,77 @@ describe('digest-route', () => {
       vi.unstubAllGlobals()
     })
 
+    it('safely skips and reports failure when deck data fails schema validation without sending blank email', async () => {
+      const sampleClaims = [
+        {
+          user_id: validUserId,
+          email: 'learner@example.com',
+          last_lifetime_reviews: 10,
+          lease_id: leaseId,
+        },
+      ]
+
+      const fetchSpy = vi.fn().mockImplementation((url: string) => {
+        if (url.includes('/rpc/claim_monthly_digests')) {
+          return Promise.resolve(
+            new Response(JSON.stringify(sampleClaims), { status: 200 }),
+          )
+        }
+        if (url.includes('/rest/v1/decks?user_id=')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([{ data: { invalid_corrupt_structure: true } }]),
+              { status: 200 },
+            ),
+          )
+        }
+        if (url.includes('/rpc/finish_monthly_digest')) {
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          )
+        }
+        return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const env: DigestWorkerEnv = {
+        SUPABASE_URL: 'https://test.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+        RESEND_API_KEY: 're_test_key_123',
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+      }
+
+      const result = await handleDigestScheduled(env)
+      expect(result.processed).toBe(1)
+      expect(result.delivered).toBe(0)
+      expect(result.failures).toBe(1)
+
+      // Resend API must NOT be called with empty or corrupt backup
+      const resendCall = fetchSpy.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('api.resend.com/emails'),
+      )
+      expect(resendCall).toBeUndefined()
+
+      // Verify finish RPC reports failure with temporary retry lease
+      const finishCall = fetchSpy.mock.calls.find(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('/rpc/finish_monthly_digest'),
+      )
+      expect(finishCall).toBeDefined()
+      const finishInit = finishCall![1] as { body: string }
+      const finishBody = JSON.parse(finishInit.body) as {
+        p_delivered: boolean
+        p_permanent_failure: boolean
+      }
+      expect(finishBody.p_delivered).toBe(false)
+      expect(finishBody.p_permanent_failure).toBe(false)
+
+      vi.unstubAllGlobals()
+    })
+
     it('does NOT mark permanent failure on transient 429 rate limit errors', async () => {
       const sampleClaims = [
         {

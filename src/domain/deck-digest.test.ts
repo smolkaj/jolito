@@ -211,6 +211,10 @@ describe('deck-digest domain', () => {
         true,
       )
     })
+
+    it('identifies empty decks as inactive to auto-pause and prevent spam', () => {
+      expect(computeDeckDigestStats([], now, 0).isInactive).toBe(true)
+    })
   })
 
   describe('unsubscribe token HMAC', () => {

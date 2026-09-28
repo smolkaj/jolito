@@ -26,7 +26,7 @@ const claimSchema = z.object({
 })
 
 const rawDeckSchema = z.object({
-  cards: z.array(legacyStudyCardSchema).default([]),
+  cards: z.array(legacyStudyCardSchema),
 })
 
 const deckRowSchema = z.array(z.object({ data: z.unknown().optional() }))
@@ -274,13 +274,48 @@ export async function handleDigestScheduled(
     }
 
     let cards: StudyCard[] = []
-    const parsedSync = deckSyncPayloadSchema.safeParse(deckData)
-    if (parsedSync.success) {
-      cards = parsedSync.data.cards
-    } else {
-      const fallbackParsed = rawDeckSchema.safeParse(deckData)
-      if (fallbackParsed.success) {
-        cards = fallbackParsed.data.cards
+    if (deckData !== null && deckData !== undefined) {
+      const parsedSync = deckSyncPayloadSchema.safeParse(deckData)
+      if (parsedSync.success) {
+        cards = parsedSync.data.cards
+      } else {
+        const fallbackParsed = rawDeckSchema.safeParse(deckData)
+        if (fallbackParsed.success) {
+          cards = fallbackParsed.data.cards
+        } else {
+          console.error(
+            `[Digest Dispatch] Schema validation failed for user ${claim.user_id} deck data`,
+          )
+          failureCount++
+          try {
+            await fetch(
+              `${env.SUPABASE_URL}/rest/v1/rpc/finish_monthly_digest`,
+              {
+                method: 'POST',
+                headers: {
+                  apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+                  Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  p_user_id: claim.user_id,
+                  p_lease_id: claim.lease_id,
+                  p_delivered: false,
+                  p_new_lifetime_reviews: claim.last_lifetime_reviews,
+                  p_auto_paused: false,
+                  p_permanent_failure: false,
+                }),
+                signal: AbortSignal.timeout(10_000),
+              },
+            )
+          } catch (err) {
+            console.error(
+              '[Digest Dispatch] Failed to report schema validation failure to finish RPC:',
+              err,
+            )
+          }
+          continue
+        }
       }
     }
 

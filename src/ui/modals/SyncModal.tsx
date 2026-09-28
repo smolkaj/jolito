@@ -584,7 +584,7 @@ export function SyncModal({
             <input
               id="sync-digest-checkbox"
               type="checkbox"
-              aria-describedby={`sync-digest-desc${digestError ? ' sync-digest-err' : ''}`}
+              aria-describedby="sync-digest-desc"
               checked={isDigestEnabled}
               disabled={loading || isUpdatingDigest || !isOnline}
               onChange={(e) => {
@@ -595,19 +595,14 @@ export function SyncModal({
               <span className="sync-digest-title">
                 Monthly backup &amp; progress email
               </span>
-              <span id="sync-digest-desc" className="sync-digest-desc">
-                Sends an offline JSON backup, learning stats, and words to watch
-                out for once a month. Pauses automatically if inactive.
+              <span
+                id="sync-digest-desc"
+                className={`sync-digest-desc${digestError ? ' is-error' : ''}`}
+                role={digestError ? 'alert' : undefined}
+              >
+                {digestError ||
+                  'Sends an offline JSON backup, learning stats, and words to watch out for once a month. Pauses automatically if inactive.'}
               </span>
-              {digestError && (
-                <span
-                  id="sync-digest-err"
-                  className="sync-digest-error"
-                  role="alert"
-                >
-                  {digestError}
-                </span>
-              )}
             </div>
           </label>
 
