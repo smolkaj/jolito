@@ -32,6 +32,7 @@ export function computeDeckDigestStats(
   let currentLifetimeReviews = 0
   let matureCards = 0
   let hasRecentReview = false
+  let hasRecentAddition = false
 
   const candidatesForWatchlist: Array<{
     prompt: string
@@ -46,6 +47,10 @@ export function computeDeckDigestStats(
 
     if (createdAt >= periodStart) {
       cardsAdded++
+    }
+
+    if (createdAt >= nowTimestamp - INACTIVITY_WINDOW_MS) {
+      hasRecentAddition = true
     }
 
     if (lastReviewedAt >= nowTimestamp - INACTIVITY_WINDOW_MS) {
@@ -86,7 +91,7 @@ export function computeDeckDigestStats(
     currentLifetimeReviews - previousLifetimeReviews,
   )
 
-  const isInactive = !hasRecentReview
+  const isInactive = !hasRecentReview && !hasRecentAddition
 
   return {
     cardsAdded,

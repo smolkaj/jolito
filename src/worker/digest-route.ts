@@ -60,10 +60,15 @@ function formatFilenameDate(timestamp: number): string {
 }
 
 function base64Encode(str: string): string {
-  if (typeof btoa === 'function') {
-    return btoa(unescape(encodeURIComponent(str)))
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(str, 'utf-8').toString('base64')
   }
-  return Buffer.from(str, 'utf-8').toString('base64')
+  const bytes = new TextEncoder().encode(str)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]!)
+  }
+  return btoa(binary)
 }
 
 /**

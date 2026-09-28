@@ -178,7 +178,7 @@ describe('deck-digest domain', () => {
       expect(stats.wordsToWatchOutFor[1]?.prompt).toBe('acontecer')
     })
 
-    it('identifies inactive accounts when no cards have been reviewed in 45 days', () => {
+    it('identifies inactive accounts when no cards have been reviewed or added in 45 days', () => {
       const activeCards: StudyCard[] = [
         makeCard({
           schedule: {
@@ -194,6 +194,7 @@ describe('deck-digest domain', () => {
       ]
       const inactiveCards: StudyCard[] = [
         makeCard({
+          createdAt: now - 60 * 24 * 60 * 60 * 1000,
           schedule: {
             state: 'review',
             intervalDays: 10,
@@ -214,6 +215,26 @@ describe('deck-digest domain', () => {
 
     it('identifies empty decks as inactive to auto-pause and prevent spam', () => {
       expect(computeDeckDigestStats([], now, 0).isInactive).toBe(true)
+    })
+
+    it('identifies accounts with newly added cards as active even without reviews', () => {
+      const cardsWithNewAddition: StudyCard[] = [
+        makeCard({
+          createdAt: now - 10 * 24 * 60 * 60 * 1000,
+          schedule: {
+            state: 'new',
+            intervalDays: 0,
+            dueAt: now,
+            easeFactor: 2.5,
+            reviews: 0,
+            lapses: 0,
+            lastReviewedAt: 0,
+          },
+        }),
+      ]
+      expect(
+        computeDeckDigestStats(cardsWithNewAddition, now, 0).isInactive,
+      ).toBe(false)
     })
   })
 

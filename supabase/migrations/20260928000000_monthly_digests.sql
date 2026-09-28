@@ -17,14 +17,14 @@ create table if not exists private.monthly_digests (
 alter table private.monthly_digests enable row level security;
 revoke all on private.monthly_digests from public, anon, authenticated;
 
--- Automatically reactivate paused digests when a learner saves/syncs cards to their deck
+-- Automatically reactivate paused or failed digests when a learner saves/syncs cards to their deck
 create or replace function private.reactivate_paused_digest()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 begin
   update private.monthly_digests
-  set status = 'active', updated_at = now()
-  where user_id = new.user_id and status = 'paused';
+  set status = 'active', attempts = 0, updated_at = now()
+  where user_id = new.user_id and status in ('paused', 'failed');
   return new;
 end;
 $$;
@@ -44,8 +44,8 @@ returns table (
 language plpgsql security definer set search_path = ''
 as $$
 begin
-  insert into private.monthly_digests (user_id)
-  select u.id from auth.users u
+  insert into private.monthly_digests (user_id, last_sent_at)
+  select u.id, coalesce(u.created_at, now()) from auth.users u
   join public.decks d on d.user_id = u.id
   where u.email_confirmed_at is not null and u.last_sign_in_at is not null
     and u.email is not null and u.email <> '' and not coalesce(u.is_anonymous, false)
@@ -141,12 +141,18 @@ $$;
 create or replace function public.set_digest_preference(p_enabled boolean)
 returns boolean language plpgsql security definer set search_path = ''
 as $$
+declare
+  v_user_created_at timestamptz;
 begin
   if auth.uid() is null then
     raise exception 'Not authenticated' using errcode = '42501';
   end if;
-  insert into private.monthly_digests (user_id, digest_enabled, status)
-  values (auth.uid(), p_enabled, case when p_enabled then 'active' else 'unsubscribed' end)
+
+  select coalesce(created_at, now()) into v_user_created_at
+  from auth.users where id = auth.uid();
+
+  insert into private.monthly_digests (user_id, digest_enabled, status, last_sent_at)
+  values (auth.uid(), p_enabled, case when p_enabled then 'active' else 'unsubscribed' end, coalesce(v_user_created_at, now()))
   on conflict (user_id) do update
   set digest_enabled = p_enabled,
       status = case when p_enabled then 'active' else 'unsubscribed' end,

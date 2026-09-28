@@ -2,17 +2,20 @@ begin;
 select no_plan();
 
 -- Set up test accounts
-insert into auth.users (id, email, email_confirmed_at, last_sign_in_at) values
-  ('d0000000-0000-0000-0000-000000000001', 'learner1@example.com', now(), now()),
-  ('d0000000-0000-0000-0000-000000000002', 'learner2@example.com', now(), now()),
-  ('d0000000-0000-0000-0000-000000000003', 'unverified@example.com', null, null);
+insert into auth.users (id, email, email_confirmed_at, last_sign_in_at, created_at) values
+  ('d0000000-0000-0000-0000-000000000001', 'learner1@example.com', now(), now(), now() - interval '30 days'),
+  ('d0000000-0000-0000-0000-000000000002', 'learner2@example.com', now(), now(), now() - interval '30 days'),
+  ('d0000000-0000-0000-0000-000000000003', 'unverified@example.com', null, null, now() - interval '30 days'),
+  ('d0000000-0000-0000-0000-000000000004', 'brandnew@example.com', now(), now(), now());
 
--- Give learner1 and learner2 a valid deck
+-- Give learner1, learner2, and brandnew a valid deck
 insert into public.decks (user_id, device_id, version, data, revision) values
   ('d0000000-0000-0000-0000-000000000001', 'dev-1', 4,
    '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-1", "cards": [{"id": "c1", "noteId": "c1", "prompt": "hola", "answer": "hello", "direction": "es-en", "context": "", "scene": "conversation", "schedule": {"state": "review", "intervalDays": 25, "reviews": 5, "lapses": 0, "dueAt": 0, "easeFactor": 2.5}}], "deletedCardIds": []}'::jsonb, 1),
   ('d0000000-0000-0000-0000-000000000002', 'dev-2', 4,
-   '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-2", "cards": [], "deletedCardIds": []}'::jsonb, 1);
+   '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-2", "cards": [], "deletedCardIds": []}'::jsonb, 1),
+  ('d0000000-0000-0000-0000-000000000004', 'dev-4', 4,
+   '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-4", "cards": [], "deletedCardIds": []}'::jsonb, 1);
 
 -- RLS & Security checks
 set local role anon;
@@ -38,6 +41,10 @@ reset role;
 -- Service role claiming and execution tests
 create temporary table first_claim as select * from public.claim_monthly_digests(10);
 select cmp_ok((select count(*)::int from first_claim), '>=', 2, 'Verified accounts with decks are claimed');
+select is_empty(
+  $$ select * from first_claim where user_id = 'd0000000-0000-0000-0000-000000000004' $$,
+  'Brand new accounts (<28 days old) are not spammed on day 1'
+);
 
 -- Verify active lease prevents immediate re-claim
 select is_empty($$ select * from public.claim_monthly_digests(10) $$, 'Active lease prevents double sending');
@@ -64,7 +71,28 @@ select results_eq(
   'Deck activity reactivates paused digest status'
 );
 
+-- Verify updating deck reactivates failed digest status and resets attempts
+update private.monthly_digests
+set status = 'failed', attempts = 3
+where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+update public.decks set updated_at = now() where user_id = 'd0000000-0000-0000-0000-000000000001';
+select results_eq(
+  $$ select status, attempts from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  $$ values ('active'::text, 0) $$,
+  'Deck activity reactivates failed digest status and resets attempts'
+);
+
 -- Test unsubscribe RPC
 select is(public.unsubscribe_monthly_digest('d0000000-0000-0000-0000-000000000002'), true, 'Admin unsubscribe succeeds');
 
+-- Verify updating deck does not reactivate unsubscribed status
+update public.decks set updated_at = now() where user_id = 'd0000000-0000-0000-0000-000000000002';
+select results_eq(
+  $$ select status from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000002' $$,
+  $$ values ('unsubscribed'::text) $$,
+  'Deck activity does not reactivate unsubscribed status'
+);
+
+select * from finish();
 rollback;
