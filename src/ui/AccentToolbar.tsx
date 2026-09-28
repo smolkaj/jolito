@@ -1,9 +1,13 @@
 import {
+  useEffect,
   useRef,
+  useState,
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import { createPortal } from 'react-dom'
+import type { HapticsPlayer, SoundPlayer } from '../application/ports'
 import { SPANISH_ACCENT_CHARACTERS } from './accent-characters'
 
 export interface AccentToolbarProps {
@@ -12,6 +16,9 @@ export interface AccentToolbarProps {
   keyboardInset?: number
   disabled?: boolean
   className?: string
+  haptics?: HapticsPlayer | undefined
+  sounds?: SoundPlayer | undefined
+  activeShortcutChar?: string | null | undefined
 }
 
 export function AccentToolbar({
@@ -20,9 +27,20 @@ export function AccentToolbar({
   keyboardInset = 0,
   disabled = false,
   className = '',
+  haptics,
+  sounds,
+  activeShortcutChar,
 }: AccentToolbarProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const lastTouchTimestampRef = useRef(0)
+  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+  const [pressedChar, setPressedChar] = useState<string | null>(null)
+  const [popupState, setPopupState] = useState<{
+    char: string
+    x: number
+    y: number
+  } | null>(null)
+
   const touchesRef = useRef<
     Map<
       number,
@@ -36,6 +54,25 @@ export function AccentToolbar({
     >
   >(new Map())
 
+  // Visual activation flash when keyboard shortcut (1-9) is pressed
+  useEffect(() => {
+    if (!activeShortcutChar) return
+    const button = buttonRefs.current.get(activeShortcutChar)
+    if (!button) return
+    const rect = button.getBoundingClientRect()
+    setPressedChar(activeShortcutChar)
+    setPopupState({
+      char: activeShortcutChar,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    })
+    const timer = window.setTimeout(() => {
+      setPressedChar((cur) => (cur === activeShortcutChar ? null : cur))
+      setPopupState((cur) => (cur?.char === activeShortcutChar ? null : cur))
+    }, 140)
+    return () => window.clearTimeout(timer)
+  }, [activeShortcutChar])
+
   const handleInsert = (char: string) => {
     if (disabled) return
     onInsert(char)
@@ -46,6 +83,19 @@ export function AccentToolbar({
     char: string,
   ) => {
     if (disabled) return
+
+    // Immediate tactile and acoustic feedback on key press (iOS soft keyboard behavior)
+    haptics?.trigger('selection')
+    sounds?.play('click')
+
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPressedChar(char)
+    setPopupState({
+      char,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+    })
+
     if (e.pointerType === 'touch') {
       // In mobile WebKit/Blink, preventDefault on touch pointerdown keeps the virtual keyboard
       // active and prevents blurring the active input element when docked. In inline card viewports,
@@ -81,6 +131,8 @@ export function AccentToolbar({
     // and release pointer capture upon drag recognition so the button does not stick pressed.
     if (!state.isDrag && Math.hypot(dx, dy) >= 14) {
       state.isDrag = true
+      setPressedChar(null)
+      setPopupState(null)
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
@@ -101,6 +153,9 @@ export function AccentToolbar({
     e: ReactPointerEvent<HTMLButtonElement>,
     char: string,
   ) => {
+    setPressedChar(null)
+    setPopupState(null)
+
     const state = touchesRef.current.get(e.pointerId)
     if (e.pointerType === 'touch' && state) {
       touchesRef.current.delete(e.pointerId)
@@ -134,6 +189,8 @@ export function AccentToolbar({
   }
 
   const handlePointerCancel = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    setPressedChar(null)
+    setPopupState(null)
     if (e.pointerType === 'touch') {
       touchesRef.current.delete(e.pointerId)
       lastTouchTimestampRef.current = e.timeStamp
@@ -144,6 +201,13 @@ export function AccentToolbar({
       } catch {
         // Safe fallback
       }
+    }
+  }
+
+  const handlePointerLeave = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType !== 'touch') {
+      setPressedChar(null)
+      setPopupState(null)
     }
   }
 
@@ -174,6 +238,9 @@ export function AccentToolbar({
         } as CSSProperties)
       : undefined
 
+  const viewportWidth =
+    typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 400
+
   return (
     <div
       role="toolbar"
@@ -184,11 +251,20 @@ export function AccentToolbar({
       <div ref={scrollContainerRef} className="accent-toolbar-scroll">
         {SPANISH_ACCENT_CHARACTERS.map((char, index) => {
           const shortcut = String(index + 1)
+          const isPressed = pressedChar === char
           return (
             <button
               type="button"
               key={char}
-              className="accent-toolbar-btn"
+              ref={(el) => {
+                if (el) {
+                  buttonRefs.current.set(char, el)
+                } else {
+                  buttonRefs.current.delete(char)
+                }
+              }}
+              data-char={char}
+              className={`accent-toolbar-btn ${isPressed ? 'is-pressed' : ''}`.trim()}
               aria-label={`Insert ${char}`}
               aria-keyshortcuts={shortcut}
               title={`Insert ${char} (${shortcut} while typing)`}
@@ -197,6 +273,7 @@ export function AccentToolbar({
               onPointerMove={handlePointerMove}
               onPointerUp={(e) => handlePointerUp(e, char)}
               onPointerCancel={handlePointerCancel}
+              onPointerLeave={handlePointerLeave}
               onMouseDown={handleMouseDown}
               onClick={(e) => handleClick(e, char)}
             >
@@ -206,6 +283,22 @@ export function AccentToolbar({
           )
         })}
       </div>
+      {popupState &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            role="tooltip"
+            aria-hidden="true"
+            className="accent-key-popup"
+            style={{
+              left: `${Math.max(26, Math.min(viewportWidth - 26, popupState.x))}px`,
+              top: `${Math.max(8, popupState.y - 56)}px`,
+            }}
+          >
+            {popupState.char}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

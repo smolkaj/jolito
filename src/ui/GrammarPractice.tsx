@@ -266,6 +266,7 @@ export function GrammarPractice({
   return (
     <PracticeCard
       haptics={services.haptics}
+      sounds={services.sounds}
       card={current}
       prompt={
         <>

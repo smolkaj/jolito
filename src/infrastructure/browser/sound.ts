@@ -261,6 +261,11 @@ export class WebAudioSoundPlayer implements SoundPlayer {
         this.playTone(ctx, 659.25, now + 0.16, 0.4, 0.08, 'sine')
         break
       }
+      case 'click': {
+        // Subtle, crisp wooden percussive keyclick (iOS soft keyboard click)
+        this.playTone(ctx, 1200, now, 0.015, 0.035, 'triangle')
+        break
+      }
     }
   }
 

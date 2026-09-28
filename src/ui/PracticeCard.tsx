@@ -13,7 +13,7 @@ import {
   type Grade,
   type StudyCard,
 } from '../domain/card'
-import type { HapticsPlayer } from '../application/ports'
+import type { HapticsPlayer, SoundPlayer } from '../application/ports'
 import {
   defaultSpeechRecognizer,
   cachedSpeechAvailableByLocale,
@@ -66,6 +66,7 @@ export function PracticeCard({
   error,
   onFeedback,
   haptics,
+  sounds,
   speechRecognizer,
   onStopAudio,
 }: {
@@ -93,6 +94,7 @@ export function PracticeCard({
   error?: string | null
   onFeedback?: (() => void) | undefined
   haptics?: HapticsPlayer | undefined
+  sounds?: SoundPlayer | undefined
   speechRecognizer?: SpeechRecognizer | undefined
 }) {
   const answerLang = localeForAnswer(card)
@@ -150,7 +152,14 @@ export function PracticeCard({
     keyboardState.height > 0,
   )
 
-  const insertAccent = (letter: string) => {
+  const [activeShortcutChar, setActiveShortcutChar] = useState<string | null>(
+    null,
+  )
+
+  const insertAccent = (
+    letter: string,
+    source: 'pointer' | 'keyboard' = 'pointer',
+  ) => {
     const element = input.current
     if (paused || revealed || !element) return
     if (isListening) {
@@ -170,7 +179,10 @@ export function PracticeCard({
       caret.current = start + letter.length
       onAnswerChange(nextAnswer)
     }
-    haptics?.trigger('selection')
+    if (source === 'keyboard') {
+      haptics?.trigger('selection')
+      sounds?.play('click')
+    }
   }
 
   useEffect(() => {
@@ -887,7 +899,10 @@ export function PracticeCard({
                       SPANISH_ACCENT_CHARACTERS[Number(event.key) - 1]
                     if (!letter) return
                     event.preventDefault()
-                    if (!event.repeat) insertAccent(letter)
+                    if (!event.repeat) {
+                      setActiveShortcutChar(letter)
+                      insertAccent(letter, 'keyboard')
+                    }
                   }}
                   placeholder={placeholder}
                   autoComplete="off"
@@ -911,6 +926,9 @@ export function PracticeCard({
                     onInsert={insertAccent}
                     isDocked={false}
                     disabled={paused || isDocked || isListening}
+                    haptics={haptics}
+                    sounds={sounds}
+                    activeShortcutChar={activeShortcutChar}
                   />
                 </div>
               )}
@@ -952,6 +970,9 @@ export function PracticeCard({
                   isDocked={true}
                   keyboardInset={keyboardState.height}
                   disabled={paused}
+                  haptics={haptics}
+                  sounds={sounds}
+                  activeShortcutChar={activeShortcutChar}
                 />,
                 document.body,
               )}
