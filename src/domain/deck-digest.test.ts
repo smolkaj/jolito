@@ -469,8 +469,8 @@ describe('deck-digest domain', () => {
       expect(html).toContain('desarrollar')
       // The Spiciest Words Section
       expect(html).toContain('The spiciest words')
-      expect(html).toContain('A few words brought extra heat this month')
-      expect(html).toContain('In Jolito, chilies measure difficulty')
+      expect(html).toContain('A few words made you sweat this month')
+      expect(html).toContain('In Jolito, chilies track difficulty')
       expect(html).toContain('Difficulty: 2 of 3 chilies')
       expect(html).toContain('3 stumbles')
       expect(html).toContain('box-shadow: 4px 4px 0 #121815')
@@ -479,7 +479,10 @@ describe('deck-digest domain', () => {
         'Most language apps trap your progress in their servers.',
       )
       expect(html).toContain('Deck &rarr; Backup &amp; Import')
-      expect(text).toContain(unsubscribeUrl)
+      expect(html).toContain('Sent because <a href="https://joli.to"')
+      expect(text).toContain(
+        `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
+      )
       expect(text).toContain('+15 new cards')
       expect(text).toContain('120 reviews')
       expect(text).toContain('• 8 mastered')
@@ -489,7 +492,8 @@ describe('deck-digest domain', () => {
       expect(text).toContain('Freshly mastered:')
       expect(text).toContain('desarrollar')
       expect(text).toContain('The spiciest words:')
-      expect(text).toContain('In Jolito, chilies measure difficulty')
+      expect(text).toContain('A few words made you sweat this month')
+      expect(text).toContain('In Jolito, chilies track difficulty')
       expect(text).toContain('acontecer')
       expect(text).toContain('Deck → Backup & Import')
       expect(text).toContain('Your vocabulary belongs to you:')
@@ -677,10 +681,13 @@ describe('deck-digest domain', () => {
         "Monthly progress emails are paused while you're away",
       )
       expect(html).toContain('>Unsubscribe</a>')
+      expect(html).toContain('Sent because <a href="https://joli.to"')
       expect(html).toContain('Your vocabulary is safe (150 cards)')
       expect(text).toContain('Digests paused')
       expect(text).toContain('Your vocabulary is safe (150 cards)')
-      expect(text).toContain(unsubscribeUrl)
+      expect(text).toContain(
+        `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
+      )
     })
   })
 })

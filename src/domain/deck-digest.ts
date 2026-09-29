@@ -370,7 +370,7 @@ export function formatDigestEmail(
           </tr>
         </table>
         <p class="section-story" style="margin: 0 0 12px; font-size: 13.5px; color: #5f6e66; line-height: 1.45;">
-          A few words brought extra heat this month. In Jolito, chilies measure difficulty—cards get spicier when you stumble so they appear more often until they stick:
+          A few words made you sweat this month. In Jolito, chilies track difficulty—here are the words with the most stumbles:
         </p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="watchlist-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815; overflow: hidden;">
           ${wordsToWatchOutFor
@@ -405,7 +405,7 @@ export function formatDigestEmail(
 
   const watchlistText =
     wordsToWatchOutFor.length > 0
-      ? `\nThe spiciest words:\nA few words brought extra heat this month. In Jolito, chilies measure difficulty—cards get spicier when you stumble so they appear more often until they stick:\n` +
+      ? `\nThe spiciest words:\nA few words made you sweat this month. In Jolito, chilies track difficulty—here are the words with the most stumbles:\n` +
         wordsToWatchOutFor
           .map(
             (w) =>
@@ -568,17 +568,8 @@ export function formatDigestEmail(
           </tr>
         </table>
 
-        <h1 class="title-text" style="margin: 0 0 6px; font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1.2;">Progress Report</h1>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 20px;">
-          <tr>
-            <td style="vertical-align: middle;">
-              <span class="subtext" style="font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</span>
-            </td>
-            <td style="vertical-align: middle; text-align: right;">
-              <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="font-size: 12px; font-weight: 500; color: #5f6e66; text-decoration: underline;">Unsubscribe</a>
-            </td>
-          </tr>
-        </table>
+        <h1 class="title-text" style="margin: 0 0 4px; font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1.2;">Progress Report</h1>
+        <div class="subtext" style="margin: 0 0 20px; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
 
         <p class="body-paragraph" style="margin: 0 0 20px; font-size: 15px; color: #3b4740; line-height: 1.5;">
           Here is how your Mexican Spanish moved over the last 30 days:
@@ -647,7 +638,7 @@ export function formatDigestEmail(
         </table>
 
         <p class="footer-note" style="margin: 24px 0 0; font-size: 12px; color: #5f6e66; line-height: 1.5; text-align: center;">
-          Sent because sync is on. You can <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">unsubscribe</a> anytime.
+          Sent because <a href="https://joli.to" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
         </p>
       </td>
     </tr>
@@ -674,7 +665,7 @@ export function formatDigestEmail(
     `Your vocabulary belongs to you:`,
     `Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in Deck → Backup & Import.`,
     ``,
-    `Unsubscribe: ${unsubscribeUrl}`,
+    `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -761,17 +752,8 @@ export function formatPausedNoticeEmail(
           </tr>
         </table>
 
-        <h1 class="title-text" style="margin: 0 0 6px; font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1.2;">Digests paused</h1>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 20px;">
-          <tr>
-            <td style="vertical-align: middle;">
-              <span class="subtext" style="font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</span>
-            </td>
-            <td style="vertical-align: middle; text-align: right;">
-              <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="font-size: 12px; font-weight: 500; color: #5f6e66; text-decoration: underline;">Unsubscribe</a>
-            </td>
-          </tr>
-        </table>
+        <h1 class="title-text" style="margin: 0 0 4px; font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1.2;">Digests paused</h1>
+        <div class="subtext" style="margin: 0 0 20px; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
 
         <p class="body-paragraph" style="margin: 0 0 20px; font-size: 15px; color: #3b4740; line-height: 1.5;">
           You haven't practiced recently, so we paused monthly emails to keep your inbox clean.
@@ -791,7 +773,7 @@ export function formatPausedNoticeEmail(
         </table>
 
         <p class="footer-note" style="margin: 0; font-size: 12px; color: #5f6e66; line-height: 1.5; text-align: center;">
-          Sent because sync is on. You can <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">unsubscribe</a> anytime.
+          Sent because <a href="https://joli.to" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
         </p>
       </td>
     </tr>
@@ -808,7 +790,7 @@ export function formatPausedNoticeEmail(
     `Your vocabulary is safe (${totalCards} cards):`,
     `Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly digests will resume automatically.`,
     ``,
-    `Unsubscribe: ${unsubscribeUrl}`,
+    `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
   ].join('\n')
 
   return { subject, html, text }
