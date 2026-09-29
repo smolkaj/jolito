@@ -4,6 +4,7 @@ import {
   computeDeckDigestStats,
   createUnsubscribeToken,
   formatDigestEmail,
+  formatDigestPeriodRange,
   formatPausedNoticeEmail,
   verifyUnsubscribeToken,
 } from '../domain/deck-digest'
@@ -47,15 +48,6 @@ function getSecret(env?: DigestWorkerEnv): string {
 function getBaseUrl(env?: DigestWorkerEnv): string {
   const url = env?.DIGEST_BASE_URL || 'https://joli.to'
   return url.replace(/\/+$/, '')
-}
-
-function formatMonthYear(timestamp: number): string {
-  const d = new Date(timestamp)
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
 }
 
 function formatFilenameDate(timestamp: number): string {
@@ -326,7 +318,7 @@ export async function handleDigestScheduled(
 
   const secret = getSecret(env)
   const baseUrl = getBaseUrl(env)
-  const monthLabel = formatMonthYear(nowTimestamp)
+  const periodLabel = formatDigestPeriodRange(nowTimestamp)
   const fileDate = formatFilenameDate(nowTimestamp)
 
   for (const claim of claims) {
@@ -448,8 +440,8 @@ export async function handleDigestScheduled(
 
     const isAutoPaused = stats.isInactive
     const emailData = isAutoPaused
-      ? formatPausedNoticeEmail(stats.totalCards, monthLabel, unsubscribeUrl)
-      : formatDigestEmail(stats, monthLabel, unsubscribeUrl)
+      ? formatPausedNoticeEmail(stats.totalCards, periodLabel, unsubscribeUrl)
+      : formatDigestEmail(stats, periodLabel, unsubscribeUrl)
 
     // Base64 encode canonical deckBackupEnvelopeSchema JSON backup
     const backupEnvelope = {

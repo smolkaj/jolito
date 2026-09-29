@@ -4,6 +4,7 @@ import {
   computeDeckDigestStats,
   createUnsubscribeToken,
   formatDigestEmail,
+  formatDigestPeriodRange,
   formatPausedNoticeEmail,
   renderChiliIconSvg,
   renderChiliMeterSvg,
@@ -287,6 +288,20 @@ describe('deck-digest domain', () => {
     })
   })
 
+  describe('formatDigestPeriodRange', () => {
+    it('formats period range within the same year', () => {
+      const endTimestamp = Date.UTC(2026, 8, 28) // Sep 28, 2026
+      const range = formatDigestPeriodRange(endTimestamp, 30)
+      expect(range).toBe('Aug 29 – Sep 28, 2026')
+    })
+
+    it('formats period range across different calendar years', () => {
+      const endTimestamp = Date.UTC(2027, 0, 15) // Jan 15, 2027
+      const range = formatDigestPeriodRange(endTimestamp, 30)
+      expect(range).toBe('Dec 16, 2026 – Jan 15, 2027')
+    })
+  })
+
   describe('formatDigestEmail', () => {
     it('includes Jolito logo, clean header, metrics, and unsubscribe link', () => {
       const stats = {
@@ -305,11 +320,11 @@ describe('deck-digest domain', () => {
         'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
       const { html, text, subject } = formatDigestEmail(
         stats,
-        'Sep 2026',
+        'Aug 29 – Sep 28, 2026',
         unsubscribeUrl,
       )
 
-      expect(subject).toBe('[Jolito] Progress & Backup - Sep 2026')
+      expect(subject).toBe('[Jolito] Progress Report - Aug 29 – Sep 28, 2026')
       expect(html).toContain(
         'https://joli.to/api/digest/unsubscribe?u=123&amp;t=abc',
       )
@@ -317,27 +332,41 @@ describe('deck-digest domain', () => {
       expect(html).toContain('role="presentation"')
       expect(html).toContain('>Unsubscribe</a>')
       expect(html).toContain(
-        'Sep 2026 progress snapshot and attached offline deck backup',
+        'Progress report for Aug 29 – Sep 28, 2026 and offline deck backup',
+      )
+      expect(html).toContain('Progress Report</h1>')
+      expect(html).toContain(
+        'Here is how your Mexican Spanish moved over the last 30 days:',
       )
       // Visual & Metaphor invariants: Bubbles & Chilies
-      expect(html).toContain('3 bubbles')
-      expect(html).toContain('Needs attention')
+      expect(html).toContain('New cards')
+      expect(html).toContain('Reviews')
+      expect(html).toContain('Mastered')
+      expect(html).toContain('8 cards reached long-term memory (3 bubbles')
+      expect(html).toContain('The spiciest words')
+      expect(html).toContain('A few words brought extra heat this month')
       expect(html).toContain('Difficulty: 2 of 3 chilies')
+      expect(html).toContain('3 stumbles')
       expect(html).toContain('box-shadow: 4px 4px 0 #121815')
-      expect(html).toContain('Offline backup attached')
+      expect(html).toContain('Your vocabulary belongs to you')
+      expect(html).toContain(
+        'Most language apps trap your progress in their servers.',
+      )
       expect(text).toContain(unsubscribeUrl)
-      expect(text).toContain('+15 cards added')
-      expect(text).toContain('120 reviews completed')
+      expect(text).toContain('+15 new cards')
+      expect(text).toContain('120 reviews')
+      expect(text).toContain('8 mastered (reached 3 bubbles)')
+      expect(text).toContain('The spiciest words:')
       expect(text).toContain('acontecer')
-      expect(text).toContain('3 bubbles')
+      expect(text).toContain('Your vocabulary belongs to you:')
     })
 
-    it('handles multiple tricky words with single lapse and empty tricky words list', () => {
+    it('handles multiple tricky words with single stumble and empty tricky words list', () => {
       const unsubscribeUrl =
         'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
       const statsWithMultiple = {
         cardsAdded: 5,
-        cardsGraduated: 2,
+        cardsGraduated: 1,
         totalReviewsThisPeriod: 30,
         currentLifetimeReviews: 100,
         totalCards: 50,
@@ -355,11 +384,12 @@ describe('deck-digest domain', () => {
       }
       const email = formatDigestEmail(
         statsWithMultiple,
-        'Sep 2026',
+        'Aug 29 – Sep 28, 2026',
         unsubscribeUrl,
       )
-      expect(email.html).toContain('1 lapse')
-      expect(email.html).toContain('2 lapses')
+      expect(email.html).toContain('1 stumble')
+      expect(email.html).toContain('2 stumbles')
+      expect(email.html).toContain('1 card reached long-term memory')
       expect(email.html).toContain('Difficulty: 3 of 3 chilies')
       expect(email.html).toContain('Difficulty: 1 of 3 chilies')
 
@@ -369,10 +399,10 @@ describe('deck-digest domain', () => {
       }
       const emptyEmail = formatDigestEmail(
         statsEmpty,
-        'Sep 2026',
+        'Aug 29 – Sep 28, 2026',
         unsubscribeUrl,
       )
-      expect(emptyEmail.html).not.toContain('Needs attention')
+      expect(emptyEmail.html).not.toContain('The spiciest words')
     })
   })
 
@@ -413,11 +443,13 @@ describe('deck-digest domain', () => {
         'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
       const { html, text, subject } = formatPausedNoticeEmail(
         150,
-        'Sep 2026',
+        'Aug 29 – Sep 28, 2026',
         unsubscribeUrl,
       )
 
-      expect(subject).toBe('[Jolito] Progress & Backup (paused) - Sep 2026')
+      expect(subject).toBe(
+        '[Jolito] Progress Report (paused) - Aug 29 – Sep 28, 2026',
+      )
       expect(html).toContain('Digests paused')
       expect(html).toContain('alt=""')
       expect(html).toContain('role="presentation"')
@@ -425,9 +457,9 @@ describe('deck-digest domain', () => {
         "Monthly progress emails are paused while you're away",
       )
       expect(html).toContain('>Unsubscribe</a>')
-      expect(html).toContain('150 cards')
+      expect(html).toContain('Your vocabulary is safe (150 cards)')
       expect(text).toContain('Digests paused')
-      expect(text).toContain('150 cards')
+      expect(text).toContain('Your vocabulary is safe (150 cards)')
       expect(text).toContain(unsubscribeUrl)
     })
   })
