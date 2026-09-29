@@ -319,7 +319,7 @@ describe('Jolito', () => {
 
     await practiceCards(user)
 
-    // Card 1 (aguacate): fail with Again -> requeued at end
+    // Card 1 (avocado): fail with Again -> requeued at end
     await user.keyboard('{Enter}')
     await user.keyboard('1')
 
@@ -327,8 +327,8 @@ describe('Jolito', () => {
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
-    // Advances to Card 3 (ajolote): pass with Easy
-    expect(screen.getByRole('heading', { name: 'ajolote' })).toBeInTheDocument()
+    // Advances to Card 3 (axolotl): pass with Easy
+    expect(screen.getByRole('heading', { name: 'axolotl' })).toBeInTheDocument()
     await user.keyboard('{Enter}')
     await user.keyboard('4')
 
@@ -336,9 +336,7 @@ describe('Jolito', () => {
     expect(
       screen.queryByRole('heading', { name: '¡Hecho!' }),
     ).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
 
     // Finally pass Card 1 with Easy
     await user.keyboard('{Enter}')
@@ -645,9 +643,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await practiceCards(user)
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toHaveAttribute('aria-valuetext', '3 cards remaining')
@@ -666,9 +662,7 @@ describe('Jolito', () => {
       window.location.hash = '#/study'
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toHaveAttribute('aria-valuetext', '3 cards remaining')
@@ -692,9 +686,7 @@ describe('Jolito', () => {
       )
     })
 
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toBeInTheDocument()
@@ -728,9 +720,7 @@ describe('Jolito', () => {
     window.location.hash = '#/study'
     render(<App services={services} />)
 
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
     expect(
       screen.getByRole('progressbar', { name: 'Session progress' }),
     ).toBeInTheDocument()
@@ -1489,7 +1479,7 @@ describe('Jolito', () => {
     await practiceCards(user)
 
     // Prompt wrap contains heading and prompt audio button side by side
-    const promptHeading = screen.getByRole('heading', { name: 'aguacate' })
+    const promptHeading = screen.getByRole('heading', { name: 'avocado' })
     const promptAudioButton = screen.getByRole('button', {
       name: /play prompt audio/i,
     })
@@ -1499,7 +1489,7 @@ describe('Jolito', () => {
     expect(promptHeading.parentElement).toHaveClass('study-prompt-wrap')
 
     // Direction line sits below prompt with Mexican Spanish
-    expect(screen.getByText(/MEXICAN SPANISH →.*ENGLISH/)).toBeInTheDocument()
+    expect(screen.getByText(/ENGLISH →.*MEXICAN SPANISH/)).toBeInTheDocument()
 
     // No picture / sticker images in study section
     expect(
@@ -1510,7 +1500,7 @@ describe('Jolito', () => {
     services.mockSpeaker.spoken = []
     fireEvent.keyDown(window, { code: 'Space', ctrlKey: true })
     expect(services.mockSpeaker.spoken).toEqual([
-      { text: 'aguacate', locale: 'es-MX' },
+      { text: 'avocado', locale: 'en-US' },
     ])
 
     // Reveal answer
@@ -1525,7 +1515,7 @@ describe('Jolito', () => {
     services.mockSpeaker.spoken = []
     fireEvent.keyDown(window, { code: 'Space' })
     expect(services.mockSpeaker.spoken).toEqual([
-      { text: 'avocado', locale: 'en-US' },
+      { text: 'aguacate', locale: 'es-MX' },
     ])
 
     // Rating fieldset has visually-hidden legend
@@ -1591,11 +1581,9 @@ describe('Jolito', () => {
 
     await practiceCards(user)
 
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
     expect(services.mockSpeaker.spoken).toEqual([
-      { text: 'aguacate', locale: 'es-MX' },
+      { text: 'avocado', locale: 'en-US' },
     ])
 
     // Clear spoken list
@@ -1608,7 +1596,7 @@ describe('Jolito', () => {
       ])
     })
 
-    // Speaker should not have re-spoken 'aguacate'
+    // Speaker should not have re-spoken 'avocado'
     expect(services.mockSpeaker.spoken).toEqual([])
   })
 
@@ -3380,6 +3368,7 @@ describe('Jolito', () => {
     })
     const cardWithHistory = {
       ...starterCards[0]!,
+      direction: 'es-en' as const,
       id: 'custom-card-1',
       noteId: 'note-custom-1',
       prompt: 'platicar',
@@ -3458,6 +3447,7 @@ describe('Jolito', () => {
     const initialDueAt = services.clock.now() + 86400000 * 14
     const cardWithHistory = {
       ...starterCards[0]!,
+      direction: 'es-en' as const,
       id: 'custom-card-2',
       noteId: 'note-custom-2',
       prompt: 'platicar',
@@ -3614,20 +3604,18 @@ describe('Jolito', () => {
     // Start practice session
     await practiceCards(user)
 
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
 
     // In-study quick edit
     const editBtn = screen.getByRole('button', {
-      name: /edit card: aguacate/i,
+      name: /edit card: avocado/i,
     })
     await user.click(editBtn)
 
     expect(
       screen.getByRole('heading', { name: /edit flashcard/i }),
     ).toBeInTheDocument()
-    const promptInput = screen.getByLabelText(/mexican spanish \(prompt\)/i)
+    const promptInput = screen.getByLabelText(/english \(prompt\)/i)
     await user.clear(promptInput)
     await user.type(promptInput, 'palta fresca')
     await user.click(screen.getByRole('button', { name: /save changes/i }))
@@ -3666,24 +3654,22 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await practiceCards(user)
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
 
     // Type an answer with a typo and reveal diff
     const answerInput = screen.getByLabelText('Your answer')
-    await user.type(answerInput, 'avacado')
+    await user.type(answerInput, 'aguacatee')
     await user.keyboard('{Enter}')
 
     // Diff screen is displayed with 'You wrote'
     expect(screen.getByText('You wrote')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /delete card: aguacate/i }),
+      screen.getByRole('button', { name: /delete card: avocado/i }),
     ).toBeInTheDocument()
 
     // Delete the card from the diff screen
     await user.click(
-      screen.getByRole('button', { name: /delete card: aguacate/i }),
+      screen.getByRole('button', { name: /delete card: avocado/i }),
     )
     expect(
       screen.getByRole('heading', { name: /delete flashcard\?/i }),
@@ -3715,9 +3701,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await practiceCards(user)
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
 
     // Type partial input without revealing
     const answerInput = screen.getByLabelText('Your answer')
@@ -3725,7 +3709,7 @@ describe('Jolito', () => {
 
     // Delete card
     await user.click(
-      screen.getByRole('button', { name: /delete card: aguacate/i }),
+      screen.getByRole('button', { name: /delete card: avocado/i }),
     )
     await user.click(screen.getByRole('button', { name: /^delete card$/i }))
 
@@ -3841,9 +3825,7 @@ describe('Jolito', () => {
     render(<App services={services} />)
 
     await practiceCards(user)
-    expect(
-      screen.getByRole('heading', { name: 'aguacate' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'avocado' })).toBeInTheDocument()
 
     // 1. Text input is active. Typing 'e' should type into the field, not open modal
     const answerInput = screen.getByLabelText('Your answer')
@@ -6396,12 +6378,12 @@ describe('Jolito', () => {
       // 1. Start practice session (sample starter cards)
       await practiceCards(user)
       expect(
-        screen.getByRole('heading', { name: 'aguacate' }),
+        screen.getByRole('heading', { name: 'avocado' }),
       ).toBeInTheDocument()
 
       // 2. Answer and grade card 1
       const answerInput = screen.getByLabelText('Your answer')
-      await user.type(answerInput, 'avocado')
+      await user.type(answerInput, 'aguacate')
       await user.keyboard('{Enter}')
       await user.keyboard('4')
 
@@ -6410,7 +6392,7 @@ describe('Jolito', () => {
         screen.getByRole('heading', { name: 'qué padre' }),
       ).toBeInTheDocument()
       expect(
-        screen.queryByRole('heading', { name: 'aguacate' }),
+        screen.queryByRole('heading', { name: 'avocado' }),
       ).not.toBeInTheDocument()
 
       // 4. Concurrently simulate background lifecycle interruptions (visibility, orientation, focus)
@@ -6420,12 +6402,12 @@ describe('Jolito', () => {
         window.dispatchEvent(new Event('focus'))
       })
 
-      // 5. Invariant: Active card must STILL be 'qué padre' and not revert to 'aguacate'
+      // 5. Invariant: Active card must STILL be 'qué padre' and not revert to 'avocado'
       expect(
         screen.getByRole('heading', { name: 'qué padre' }),
       ).toBeInTheDocument()
       expect(
-        screen.queryByRole('heading', { name: 'aguacate' }),
+        screen.queryByRole('heading', { name: 'avocado' }),
       ).not.toBeInTheDocument()
 
       // 6. Answer and grade card 2
@@ -6434,12 +6416,12 @@ describe('Jolito', () => {
       await user.keyboard('{Enter}')
       await user.keyboard('4')
 
-      // 7. Advances to card 3 ('ajolote') and completes session
+      // 7. Advances to card 3 ('axolotl') and completes session
       expect(
-        screen.getByRole('heading', { name: 'ajolote' }),
+        screen.getByRole('heading', { name: 'axolotl' }),
       ).toBeInTheDocument()
       const answerInput3 = screen.getByLabelText('Your answer')
-      await user.type(answerInput3, 'axolotl')
+      await user.type(answerInput3, 'ajolote')
       await user.keyboard('{Enter}')
       await user.keyboard('4')
 

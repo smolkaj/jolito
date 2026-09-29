@@ -6,7 +6,7 @@ import {
   starterHeroPrefetchItems,
   starterHeroSampleCards,
 } from './starter-cards'
-import { createStudyCards } from '../domain/card'
+import { createStudyCards, orderCardsForReview } from '../domain/card'
 
 describe('starterCards', () => {
   it('provides hero sample card definitions and prefetch items for the starter screen', () => {
@@ -93,5 +93,70 @@ describe('starterCards', () => {
           c.context.includes('salamander'),
       ),
     ).toBe(true)
+  })
+
+  it('orders starter cards in the curated sequence: avocado EN->MEX, qué padre MEX->EN, and axolotl EN->MEX', () => {
+    const now = 1000 * 60 * 60 * 24 * 365 // 1 year after epoch
+    const ordered = orderCardsForReview(starterCards, now)
+
+    expect(ordered).toHaveLength(6)
+
+    // Primary cohort (first 3 demo cards)
+    expect(
+      ordered.slice(0, 3).map((c) => ({
+        id: c.id,
+        prompt: c.prompt,
+        answer: c.answer,
+        direction: c.direction,
+      })),
+    ).toEqual([
+      {
+        id: 'starter-aguacate:en-es',
+        prompt: 'avocado',
+        answer: 'aguacate',
+        direction: 'en-es',
+      },
+      {
+        id: 'starter-que-padre:es-en',
+        prompt: 'qué padre',
+        answer: 'how cool',
+        direction: 'es-en',
+      },
+      {
+        id: 'starter-x-ajolote:en-es',
+        prompt: 'axolotl',
+        answer: 'ajolote',
+        direction: 'en-es',
+      },
+    ])
+
+    // Secondary cohort (staggered siblings)
+    expect(
+      ordered.slice(3, 6).map((c) => ({
+        id: c.id,
+        prompt: c.prompt,
+        answer: c.answer,
+        direction: c.direction,
+      })),
+    ).toEqual([
+      {
+        id: 'starter-aguacate:es-en',
+        prompt: 'aguacate',
+        answer: 'avocado',
+        direction: 'es-en',
+      },
+      {
+        id: 'starter-que-padre:en-es',
+        prompt: 'how cool',
+        answer: 'qué padre',
+        direction: 'en-es',
+      },
+      {
+        id: 'starter-x-ajolote:es-en',
+        prompt: 'ajolote',
+        answer: 'axolotl',
+        direction: 'es-en',
+      },
+    ])
   })
 })
