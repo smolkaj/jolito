@@ -306,30 +306,30 @@ export function formatDigestEmail(
               ${renderMasteryBubblesSvg(3, 24, 8)}
             </td>
             <td style="vertical-align: middle;">
-              <span class="section-title" style="font-size: 14px; font-weight: 800; color: #121815; letter-spacing: -0.01em;">${masterySectionTitle}</span>
+              <span class="section-title" style="font-size: 14px; font-weight: 750; color: #121815; letter-spacing: -0.01em;">${masterySectionTitle}</span>
             </td>
           </tr>
         </table>
         <p class="section-story" style="margin: 0 0 12px; font-size: 13.5px; color: #5f6e66; line-height: 1.45;">
           ${masterySectionStory}
         </p>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="mastery-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815; overflow: hidden;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="mastery-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 14px; overflow: hidden;">
           ${topMasteredWords
             .map(
               (w, i) => `
             <tr>
-              <td class="watchlist-cell" style="padding: 11px 14px; vertical-align: middle; ${i < topMasteredWords.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+              <td class="watchlist-cell" style="padding: 12px 16px; vertical-align: middle; ${i < topMasteredWords.length - 1 ? 'border-bottom: 1px solid #e2ddd3;' : ''}">
                 <div class="watchlist-item" style="font-size: 15px; font-weight: 700; color: #121815; line-height: 1.3; overflow-wrap: break-word;">${escapeHtml(w.prompt)}</div>
                 <div class="watchlist-sub" style="font-size: 13px; color: #5f6e66; line-height: 1.3; margin-top: 2px; overflow-wrap: break-word;">${escapeHtml(w.answer)}</div>
               </td>
-              <td class="watchlist-indicator" style="padding: 11px 14px; vertical-align: middle; text-align: right; white-space: nowrap; ${i < topMasteredWords.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+              <td class="watchlist-indicator" style="padding: 12px 16px; vertical-align: middle; text-align: right; white-space: nowrap; ${i < topMasteredWords.length - 1 ? 'border-bottom: 1px solid #e2ddd3;' : ''}">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right">
                   <tr>
                     <td style="vertical-align: middle; padding-right: 8px;">
                       ${renderMasteryBubblesSvg(w.bubbles, 34, 11)}
                     </td>
                     <td style="vertical-align: middle;">
-                      <span class="mastered-pill" style="display: inline-block; padding: 2px 7px; font-size: 11px; font-weight: 700; background-color: #f0fdf4; color: #15803d; border: 1.5px solid #121815; border-radius: 9999px;">
+                      <span class="mastered-pill" style="display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 700; background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 9999px;">
                         ${w.bubbles === 3 ? 'Mastered' : `${w.bubbles} ${w.bubbles === 1 ? 'bubble' : 'bubbles'}`}
                       </span>
                     </td>
@@ -365,30 +365,30 @@ export function formatDigestEmail(
               ${renderChiliIconSvg(true, 17)}
             </td>
             <td style="vertical-align: middle;">
-              <span class="section-title" style="font-size: 14px; font-weight: 800; color: #121815; letter-spacing: -0.01em;">The spiciest words</span>
+              <span class="section-title" style="font-size: 14px; font-weight: 750; color: #121815; letter-spacing: -0.01em;">The spiciest words</span>
             </td>
           </tr>
         </table>
         <p class="section-story" style="margin: 0 0 12px; font-size: 13.5px; color: #5f6e66; line-height: 1.45;">
           A few words made you sweat this month. In Jolito, chilies track difficulty—here are the words with the most stumbles:
         </p>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="watchlist-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815; overflow: hidden;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="watchlist-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 14px; overflow: hidden;">
           ${wordsToWatchOutFor
             .map(
               (w, i) => `
             <tr>
-              <td class="watchlist-cell" style="padding: 11px 14px; vertical-align: middle; ${i < wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+              <td class="watchlist-cell" style="padding: 12px 16px; vertical-align: middle; ${i < wordsToWatchOutFor.length - 1 ? 'border-bottom: 1px solid #e2ddd3;' : ''}">
                 <div class="watchlist-item" style="font-size: 15px; font-weight: 700; color: #121815; line-height: 1.3; overflow-wrap: break-word;">${escapeHtml(w.prompt)}</div>
                 <div class="watchlist-sub" style="font-size: 13px; color: #5f6e66; line-height: 1.3; margin-top: 2px; overflow-wrap: break-word;">${escapeHtml(w.answer)}</div>
               </td>
-              <td class="watchlist-indicator" style="padding: 11px 14px; vertical-align: middle; text-align: right; white-space: nowrap; ${i < wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+              <td class="watchlist-indicator" style="padding: 12px 16px; vertical-align: middle; text-align: right; white-space: nowrap; ${i < wordsToWatchOutFor.length - 1 ? 'border-bottom: 1px solid #e2ddd3;' : ''}">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right">
                   <tr>
                     <td style="vertical-align: middle; padding-right: 8px;">
                       ${renderChiliMeterSvg(w.difficulty ?? 2, 13)}
                     </td>
                     <td style="vertical-align: middle;">
-                      <span class="stumble-pill" style="display: inline-block; padding: 2px 7px; font-size: 11px; font-weight: 700; background-color: #fef2f2; color: #991b1b; border: 1.5px solid #121815; border-radius: 9999px;">
+                      <span class="stumble-pill" style="display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 700; background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 9999px;">
                         ${w.lapses} ${w.lapses === 1 ? 'stumble' : 'stumbles'}
                       </span>
                     </td>
@@ -428,8 +428,9 @@ export function formatDigestEmail(
       supported-color-schemes: light dark;
     }
     @media only screen and (max-width: 480px) {
-      .email-card-content {
-        padding: 24px 18px !important;
+      .email-card {
+        padding: 28px 20px !important;
+        border-radius: 14px !important;
       }
       .metric-card td {
         padding: 12px 6px 10px !important;
@@ -441,7 +442,7 @@ export function formatDigestEmail(
         font-size: 10px !important;
       }
       .watchlist-cell {
-        padding: 10px 10px !important;
+        padding: 10px 12px !important;
       }
       .watchlist-item {
         font-size: 14px !important;
@@ -450,7 +451,7 @@ export function formatDigestEmail(
         font-size: 12.5px !important;
       }
       .watchlist-indicator {
-        padding: 10px 10px !important;
+        padding: 10px 12px !important;
       }
     }
     @media (prefers-color-scheme: dark) {
@@ -458,60 +459,46 @@ export function formatDigestEmail(
         background-color: #0d1210 !important;
         color: #fdf5f8 !important;
       }
+      .brand-wordmark, .email-title, .section-title, .highlight-title {
+        color: #fdf5f8 !important;
+      }
+      .brand-logo-badge {
+        background-color: #ffffff !important;
+        border-color: #384640 !important;
+      }
       .email-card {
         background-color: #161e1a !important;
         border-color: #2b3832 !important;
-        box-shadow: 4px 4px 0 #000000 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
       }
-      .brand-title, .title-text, .section-title, .highlight-title {
-        color: #fdf5f8 !important;
-      }
-      .subtext, .explainer-text, .footer-note, .section-story, .mastery-note {
+      .subtext, .explainer-text, .footer-text, .section-story, .mastery-note {
         color: #8d9c94 !important;
       }
-      .body-paragraph {
+      .email-paragraph {
         color: #b7c4bd !important;
       }
       .highlight-text {
         color: #fdf5f8 !important;
       }
-      .metric-card-rosa {
-        background-color: #24141f !important;
-        border-color: #422037 !important;
-        box-shadow: 3px 3px 0 #000000 !important;
-      }
-      .metric-card-rosa .metric-value {
-        color: #f472b6 !important;
-      }
-      .metric-card-rosa .metric-label {
-        color: #f9a8d4 !important;
-      }
-      .metric-card-paper {
+      .metric-card {
         background-color: #1a221e !important;
         border-color: #2b3832 !important;
-        box-shadow: 3px 3px 0 #000000 !important;
       }
-      .metric-card-paper .metric-value {
+      .metric-card .metric-neutral {
         color: #fdf5f8 !important;
       }
-      .metric-card-paper .metric-label {
-        color: #8d9c94 !important;
+      .metric-card .metric-rosa {
+        color: #f472b6 !important;
       }
-      .metric-card-verde {
-        background-color: #12281a !important;
-        border-color: #1b4d2e !important;
-        box-shadow: 3px 3px 0 #000000 !important;
-      }
-      .metric-card-verde .metric-value {
+      .metric-card .metric-verde {
         color: #4ade80 !important;
       }
-      .metric-card-verde .metric-label {
-        color: #86efac !important;
+      .metric-card .metric-label {
+        color: #8d9c94 !important;
       }
       .mastery-card, .watchlist-card {
         background-color: #161e1a !important;
         border-color: #2b3832 !important;
-        box-shadow: 3px 3px 0 #000000 !important;
       }
       .watchlist-item {
         color: #fdf5f8 !important;
@@ -526,41 +513,123 @@ export function formatDigestEmail(
       .mastered-pill {
         background-color: #12281a !important;
         color: #86efac !important;
-        border-color: #2b3832 !important;
+        border-color: #1b4d2e !important;
       }
       .stumble-pill {
         background-color: #3b1212 !important;
         color: #fca5a5 !important;
-        border-color: #2b3832 !important;
+        border-color: #4a1e1e !important;
       }
       .backup-callout {
         background-color: #1a221e !important;
         border-color: #2b3832 !important;
-        box-shadow: 3px 3px 0 #000000 !important;
       }
-      .unsubscribe-link {
-        color: #8d9c94 !important;
+      .footer-brand-link, .unsubscribe-link {
+        color: #b7c4bd !important;
       }
     }
   </style>
 </head>
-<body class="email-body-bg" style="margin: 0; padding: 40px 16px; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
+<body class="email-body-bg" style="margin: 0; padding: 0; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
   <div style="display: none; font-size: 1px; color: #fdf5f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
     Progress report for ${escapeHtml(periodLabel)} and offline deck backup.
   </div>
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="email-card" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 2px solid #121815; box-shadow: 4px 4px 0 #121815;">
+
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-body-bg" style="background-color: #fdf5f8; padding: 32px 16px;">
     <tr>
-      <td class="email-card-content" style="padding: 32px 32px 28px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 24px;">
+      <td align="center">
+        <!-- Brand Header / Wordmark (Stylistically aligned with sign-in email) -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin-bottom: 24px;">
           <tr>
-            <td style="vertical-align: middle;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <td align="center" style="padding: 12px 0 0 0;">
+              <a href="https://joli.to" target="_blank" style="text-decoration: none; display: inline-block;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align: middle; padding-right: 10px;">
+                      <div class="brand-logo-badge" style="background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 8px; width: 32px; height: 32px; display: inline-block; box-shadow: 0 1px 3px rgba(18, 24, 21, 0.08); line-height: 0; font-size: 0; text-align: center; vertical-align: middle;">
+                        <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="" role="presentation" style="display: inline-block; width: 26px; height: 26px; margin-top: 2px; border: 0; outline: none;" />
+                      </div>
+                    </td>
+                    <td style="vertical-align: middle;">
+                      <span class="brand-wordmark" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: #121815; text-decoration: none;">Jolito</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Main Card Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 18px; box-shadow: 0 4px 18px rgba(18, 24, 21, 0.05); overflow: hidden; padding: 36px 32px;">
+          <tr>
+            <td>
+              <h1 class="email-title" style="margin: 0 0 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 750; letter-spacing: -0.025em; color: #121815; line-height: 1.2;">Progress Report</h1>
+              <div class="subtext" style="margin: 0 0 20px 0; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
+
+              <p class="email-paragraph" style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #3b4740; line-height: 1.5;">
+                Here is how your Mexican Spanish moved over the last 30 days:
+              </p>
+
+              <!-- Unified Stat Cards with Brand Color Accents on Metrics -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 12px;">
                 <tr>
-                  <td style="vertical-align: middle; padding-right: 10px;">
-                    <img src="https://joli.to/favicon-96x96.png" width="28" height="28" alt="" role="presentation" style="display: block; width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid #121815;" />
+                  <td style="width: 32%; vertical-align: top;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card" style="width: 100%; background-color: #fcfbf9; border: 1px solid #e2ddd3; border-radius: 12px;">
+                      <tr>
+                        <td style="padding: 14px 8px 12px; text-align: center;">
+                          <div class="metric-value metric-rosa" style="font-size: 24px; font-weight: 800; color: #e4007c; letter-spacing: -0.03em; line-height: 1;">${stats.cardsAdded}</div>
+                          <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">New cards</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                  <td style="vertical-align: middle;">
-                    <span class="brand-title" style="font-size: 18px; font-weight: 800; color: #121815; letter-spacing: -0.02em;">Jolito</span>
+                  <td style="width: 2%;"></td>
+                  <td style="width: 32%; vertical-align: top;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card" style="width: 100%; background-color: #fcfbf9; border: 1px solid #e2ddd3; border-radius: 12px;">
+                      <tr>
+                        <td style="padding: 14px 8px 12px; text-align: center;">
+                          <div class="metric-value metric-neutral" style="font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1;">${stats.totalReviewsThisPeriod}</div>
+                          <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">Reviews</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td style="width: 2%;"></td>
+                  <td style="width: 32%; vertical-align: top;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card" style="width: 100%; background-color: #fcfbf9; border: 1px solid #e2ddd3; border-radius: 12px;">
+                      <tr>
+                        <td style="padding: 14px 8px 12px; text-align: center;">
+                          <div class="metric-value metric-verde" style="font-size: 24px; font-weight: 800; color: #15803d; letter-spacing: -0.03em; line-height: 1;">${stats.cardsGraduated}</div>
+                          <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">Mastered</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              ${
+                stats.cardsGraduated > 0
+                  ? `<p class="mastery-note" style="margin: 0 0 24px 0; font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
+                ${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory <span style="white-space: nowrap;">(3 bubbles ${renderMasteryBubblesSvg(3, 34, 11)})</span> this month.
+              </p>`
+                  : ''
+              }
+
+              ${masteredHtml}
+
+              ${watchlistHtml}
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="backup-callout" style="width: 100%; margin-top: 24px; background-color: #fdf5f8; border: 1px solid #e2ddd3; border-radius: 14px;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <div class="highlight-title" style="font-size: 14.5px; font-weight: 750; color: #121815; margin-bottom: 6px; letter-spacing: -0.01em;">
+                      Your vocabulary belongs to you
+                    </div>
+                    <div class="explainer-text" style="font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
+                      Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in <strong class="highlight-text" style="font-weight: 700; color: #121815;">Deck &rarr; Backup &amp; Import</strong>.
+                    </div>
                   </td>
                 </tr>
               </table>
@@ -568,78 +637,16 @@ export function formatDigestEmail(
           </tr>
         </table>
 
-        <h1 class="title-text" style="margin: 0 0 4px; font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1.2;">Progress Report</h1>
-        <div class="subtext" style="margin: 0 0 20px; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
-
-        <p class="body-paragraph" style="margin: 0 0 20px; font-size: 15px; color: #3b4740; line-height: 1.5;">
-          Here is how your Mexican Spanish moved over the last 30 days:
-        </p>
-
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 12px;">
+        <!-- Email Footer (outside card, styled like sign-in email) -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin-top: 24px;">
           <tr>
-            <td style="width: 32%; vertical-align: top;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card metric-card-rosa" style="width: 100%; background-color: #fdf0f7; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815;">
-                <tr>
-                  <td style="padding: 14px 8px 12px; text-align: center;">
-                    <div class="metric-value" style="font-size: 24px; font-weight: 800; color: #e4007c; letter-spacing: -0.03em; line-height: 1;">${stats.cardsAdded > 0 ? `+${stats.cardsAdded}` : '0'}</div>
-                    <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">New cards</div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <td style="width: 2%;"></td>
-            <td style="width: 32%; vertical-align: top;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card metric-card-paper" style="width: 100%; background-color: #f5edf1; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815;">
-                <tr>
-                  <td style="padding: 14px 8px 12px; text-align: center;">
-                    <div class="metric-value" style="font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1;">${stats.totalReviewsThisPeriod}</div>
-                    <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">Reviews</div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-            <td style="width: 2%;"></td>
-            <td style="width: 32%; vertical-align: top;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card metric-card-verde" style="width: 100%; background-color: #f0fdf4; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815;">
-                <tr>
-                  <td style="padding: 14px 8px 12px; text-align: center;">
-                    <div class="metric-value" style="font-size: 24px; font-weight: 800; color: #15803d; letter-spacing: -0.03em; line-height: 1;">${stats.cardsGraduated}</div>
-                    <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">Mastered</div>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding: 0 16px;">
+              <p class="footer-text" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #5f6e66; text-align: center;">
+                Sent because <a href="https://joli.to" target="_blank" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
+              </p>
             </td>
           </tr>
         </table>
-
-        ${
-          stats.cardsGraduated > 0
-            ? `<p class="mastery-note" style="margin: 0 0 24px; font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
-          ${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory <span style="white-space: nowrap;">(3 bubbles ${renderMasteryBubblesSvg(3, 34, 11)})</span> this month.
-        </p>`
-            : ''
-        }
-
-        ${masteredHtml}
-
-        ${watchlistHtml}
-
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="backup-callout" style="width: 100%; margin-top: 28px; background-color: #fdf0f7; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815;">
-          <tr>
-            <td style="padding: 16px 18px;">
-              <div class="highlight-title" style="font-size: 14px; font-weight: 800; color: #121815; margin-bottom: 4px; letter-spacing: -0.01em;">
-                Your vocabulary belongs to you
-              </div>
-              <div class="explainer-text" style="font-size: 13px; color: #5f6e66; line-height: 1.5;">
-                Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in <strong class="highlight-text" style="font-weight: 700; color: #121815;">Deck &rarr; Backup &amp; Import</strong>.
-              </div>
-            </td>
-          </tr>
-        </table>
-
-        <p class="footer-note" style="margin: 24px 0 0; font-size: 12px; color: #5f6e66; line-height: 1.5; text-align: center;">
-          Sent because <a href="https://joli.to" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
-        </p>
       </td>
     </tr>
   </table>
@@ -652,7 +659,7 @@ export function formatDigestEmail(
     ``,
     `Here is how your Mexican Spanish moved over the last 30 days:`,
     ``,
-    `• ${stats.cardsAdded > 0 ? `+${stats.cardsAdded}` : '0'} new cards`,
+    `• ${stats.cardsAdded} new cards`,
     `• ${stats.totalReviewsThisPeriod} reviews`,
     `• ${stats.cardsGraduated} mastered`,
     ``,
@@ -694,8 +701,9 @@ export function formatPausedNoticeEmail(
       supported-color-schemes: light dark;
     }
     @media only screen and (max-width: 480px) {
-      .email-card-content {
-        padding: 24px 18px !important;
+      .email-card {
+        padding: 28px 20px !important;
+        border-radius: 14px !important;
       }
     }
     @media (prefers-color-scheme: dark) {
@@ -703,48 +711,84 @@ export function formatPausedNoticeEmail(
         background-color: #0d1210 !important;
         color: #fdf5f8 !important;
       }
+      .brand-wordmark, .email-title, .highlight-title {
+        color: #fdf5f8 !important;
+      }
+      .brand-logo-badge {
+        background-color: #ffffff !important;
+        border-color: #384640 !important;
+      }
       .email-card {
         background-color: #161e1a !important;
         border-color: #2b3832 !important;
-        box-shadow: 4px 4px 0 #000000 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
       }
-      .brand-title, .title-text, .highlight-title {
-        color: #fdf5f8 !important;
-      }
-      .subtext, .explainer-text, .footer-note {
+      .subtext, .explainer-text, .footer-text {
         color: #8d9c94 !important;
       }
-      .body-paragraph {
+      .email-paragraph {
         color: #b7c4bd !important;
       }
       .backup-callout {
         background-color: #1a221e !important;
         border-color: #2b3832 !important;
-        box-shadow: 3px 3px 0 #000000 !important;
       }
-      .unsubscribe-link {
-        color: #8d9c94 !important;
+      .footer-brand-link, .unsubscribe-link {
+        color: #b7c4bd !important;
       }
     }
   </style>
 </head>
-<body class="email-body-bg" style="margin: 0; padding: 40px 16px; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
+<body class="email-body-bg" style="margin: 0; padding: 0; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
   <div style="display: none; font-size: 1px; color: #fdf5f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
     Monthly progress emails are paused while you're away. Offline deck backup attached.
   </div>
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="email-card" style="max-width: 520px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 2px solid #121815; box-shadow: 4px 4px 0 #121815;">
+
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-body-bg" style="background-color: #fdf5f8; padding: 32px 16px;">
     <tr>
-      <td class="email-card-content" style="padding: 32px 32px 28px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-bottom: 24px;">
+      <td align="center">
+        <!-- Brand Header / Wordmark -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin-bottom: 24px;">
           <tr>
-            <td style="vertical-align: middle;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <td align="center" style="padding: 12px 0 0 0;">
+              <a href="https://joli.to" target="_blank" style="text-decoration: none; display: inline-block;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align: middle; padding-right: 10px;">
+                      <div class="brand-logo-badge" style="background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 8px; width: 32px; height: 32px; display: inline-block; box-shadow: 0 1px 3px rgba(18, 24, 21, 0.08); line-height: 0; font-size: 0; text-align: center; vertical-align: middle;">
+                        <img src="https://joli.to/favicon-96x96.png" width="26" height="26" alt="" role="presentation" style="display: inline-block; width: 26px; height: 26px; margin-top: 2px; border: 0; outline: none;" />
+                      </div>
+                    </td>
+                    <td style="vertical-align: middle;">
+                      <span class="brand-wordmark" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.03em; color: #121815; text-decoration: none;">Jolito</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Main Card Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 18px; box-shadow: 0 4px 18px rgba(18, 24, 21, 0.05); overflow: hidden; padding: 36px 32px;">
+          <tr>
+            <td>
+              <h1 class="email-title" style="margin: 0 0 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 750; letter-spacing: -0.025em; color: #121815; line-height: 1.2;">Digests paused</h1>
+              <div class="subtext" style="margin: 0 0 20px 0; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
+
+              <p class="email-paragraph" style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #3b4740; line-height: 1.5;">
+                You haven't practiced recently, so we paused monthly emails to keep your inbox clean.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="backup-callout" style="width: 100%; background-color: #fdf5f8; border: 1px solid #e2ddd3; border-radius: 14px;">
                 <tr>
-                  <td style="vertical-align: middle; padding-right: 10px;">
-                    <img src="https://joli.to/favicon-96x96.png" width="28" height="28" alt="" role="presentation" style="display: block; width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid #121815;" />
-                  </td>
-                  <td style="vertical-align: middle;">
-                    <span class="brand-title" style="font-size: 18px; font-weight: 800; color: #121815; letter-spacing: -0.02em;">Jolito</span>
+                  <td style="padding: 18px 20px;">
+                    <div class="highlight-title" style="font-size: 14.5px; font-weight: 750; color: #121815; margin-bottom: 6px; letter-spacing: -0.01em;">
+                      Your vocabulary is safe (${totalCards} cards)
+                    </div>
+                    <div class="explainer-text" style="font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
+                      Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly digests will resume automatically.
+                    </div>
                   </td>
                 </tr>
               </table>
@@ -752,29 +796,16 @@ export function formatPausedNoticeEmail(
           </tr>
         </table>
 
-        <h1 class="title-text" style="margin: 0 0 4px; font-size: 24px; font-weight: 800; color: #121815; letter-spacing: -0.03em; line-height: 1.2;">Digests paused</h1>
-        <div class="subtext" style="margin: 0 0 20px; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
-
-        <p class="body-paragraph" style="margin: 0 0 20px; font-size: 15px; color: #3b4740; line-height: 1.5;">
-          You haven't practiced recently, so we paused monthly emails to keep your inbox clean.
-        </p>
-
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="backup-callout" style="width: 100%; margin-bottom: 20px; background-color: #fdf0f7; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815;">
+        <!-- Email Footer (outside card) -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin-top: 24px;">
           <tr>
-            <td style="padding: 16px 18px;">
-              <div class="highlight-title" style="font-size: 14px; font-weight: 800; color: #121815; margin-bottom: 4px; letter-spacing: -0.01em;">
-                Your vocabulary is safe (${totalCards} cards)
-              </div>
-              <div class="explainer-text" style="font-size: 13px; color: #5f6e66; line-height: 1.5;">
-                Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly digests will resume automatically.
-              </div>
+            <td align="center" style="padding: 0 16px;">
+              <p class="footer-text" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #5f6e66; text-align: center;">
+                Sent because <a href="https://joli.to" target="_blank" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
+              </p>
             </td>
           </tr>
         </table>
-
-        <p class="footer-note" style="margin: 0; font-size: 12px; color: #5f6e66; line-height: 1.5; text-align: center;">
-          Sent because <a href="https://joli.to" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
-        </p>
       </td>
     </tr>
   </table>

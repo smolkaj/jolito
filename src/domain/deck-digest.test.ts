@@ -473,7 +473,7 @@ describe('deck-digest domain', () => {
       expect(html).toContain('In Jolito, chilies track difficulty')
       expect(html).toContain('Difficulty: 2 of 3 chilies')
       expect(html).toContain('3 stumbles')
-      expect(html).toContain('box-shadow: 4px 4px 0 #121815')
+      expect(html).toContain('box-shadow: 0 4px 18px rgba(18, 24, 21, 0.05)')
       expect(html).toContain('Your vocabulary belongs to you')
       expect(html).toContain(
         'Most language apps trap your progress in their servers.',
@@ -483,8 +483,8 @@ describe('deck-digest domain', () => {
       expect(text).toContain(
         `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
       )
-      expect(text).toContain('+15 new cards')
-      expect(text).toContain('120 reviews')
+      expect(text).toContain('• 15 new cards')
+      expect(text).toContain('• 120 reviews')
       expect(text).toContain('• 8 mastered')
       expect(text).toContain(
         '8 cards reached long-term memory (3 bubbles) this month.',
