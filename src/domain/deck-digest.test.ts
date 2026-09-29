@@ -158,6 +158,7 @@ describe('deck-digest domain', () => {
             reviews: 8,
             lapses: 4,
             stability: 1.2,
+            lastReviewedAt: now - 2 * 24 * 60 * 60 * 1000,
           },
         }),
         makeCard({
@@ -172,6 +173,7 @@ describe('deck-digest domain', () => {
             reviews: 6,
             lapses: 2,
             stability: 2.5,
+            lastReviewedAt: now - 5 * 24 * 60 * 60 * 1000,
           },
         }),
         makeCard({
@@ -186,6 +188,22 @@ describe('deck-digest domain', () => {
             reviews: 5,
             lapses: 2,
             stability: 1.1,
+            lastReviewedAt: now - 1 * 24 * 60 * 60 * 1000,
+          },
+        }),
+        makeCard({
+          id: 'c5',
+          prompt: 'antiguo',
+          answer: 'ancient',
+          schedule: {
+            state: 'review',
+            intervalDays: 2,
+            dueAt: now,
+            easeFactor: 2.2,
+            reviews: 15,
+            lapses: 10,
+            stability: 0.5,
+            lastReviewedAt: now - 45 * 24 * 60 * 60 * 1000, // outside period!
           },
         }),
       ]
@@ -195,6 +213,9 @@ describe('deck-digest domain', () => {
       expect(stats.wordsToWatchOutFor[0]?.prompt).toBe('desarrollar')
       expect(stats.wordsToWatchOutFor[1]?.prompt).toBe('platicar')
       expect(stats.wordsToWatchOutFor[2]?.prompt).toBe('acontecer')
+      expect(stats.wordsToWatchOutFor.map((w) => w.prompt)).not.toContain(
+        'antiguo',
+      )
     })
 
     it('extracts top mastered words sorted by bubbles desc, stability desc, and reviews desc', () => {
@@ -460,7 +481,10 @@ describe('deck-digest domain', () => {
       expect(text).toContain(unsubscribeUrl)
       expect(text).toContain('+15 new cards')
       expect(text).toContain('120 reviews')
-      expect(text).toContain('8 mastered (reached 3 bubbles)')
+      expect(text).toContain('• 8 mastered')
+      expect(text).toContain(
+        '8 cards reached long-term memory (3 bubbles) this month.',
+      )
       expect(text).toContain('Freshly mastered:')
       expect(text).toContain('desarrollar')
       expect(text).toContain('The spiciest words:')
@@ -539,10 +563,19 @@ describe('deck-digest domain', () => {
       expect(emptyEmail.html).not.toContain('Freshly mastered')
       expect(emptyEmail.html).not.toContain('Top progress')
 
-      // Exactly 1 card graduated tests the singular branch
+      // Exactly 1 card graduated tests the singular branch and zero cards added
       const singleGraduated = {
         ...statsWithMultiple,
+        cardsAdded: 0,
         cardsGraduated: 1,
+        topMasteredWords: [
+          {
+            prompt: 'desarrollar',
+            answer: 'to develop',
+            bubbles: 3,
+            isGraduated: true,
+          },
+        ],
       }
       const singleGraduatedEmail = formatDigestEmail(
         singleGraduated,
@@ -552,8 +585,41 @@ describe('deck-digest domain', () => {
       expect(singleGraduatedEmail.html).toContain(
         '1 card reached long-term memory',
       )
+      expect(singleGraduatedEmail.html).toContain(
+        'This word crossed into long-term memory this month:',
+      )
+      expect(singleGraduatedEmail.html).toContain('>0</div>')
       expect(singleGraduatedEmail.text).toContain(
         '1 card reached long-term memory',
+      )
+      expect(singleGraduatedEmail.text).toContain('• 0 new cards')
+
+      // Mixed cards (one graduated, one in progress) tests milestone phrasing
+      const mixedProgress = {
+        ...statsWithMultiple,
+        topMasteredWords: [
+          {
+            prompt: 'desarrollar',
+            answer: 'to develop',
+            bubbles: 3,
+            isGraduated: true,
+          },
+          {
+            prompt: 'platicar',
+            answer: 'to chat',
+            bubbles: 2,
+            isGraduated: false,
+          },
+        ],
+      }
+      const mixedEmail = formatDigestEmail(
+        mixedProgress,
+        'Aug 29 – Sep 28, 2026',
+        unsubscribeUrl,
+      )
+      expect(mixedEmail.html).toContain('Top progress')
+      expect(mixedEmail.html).toContain(
+        'Your strongest words and latest milestones this month:',
       )
     })
   })

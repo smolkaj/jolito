@@ -100,7 +100,7 @@ export function computeDeckDigestStats(
       }
     }
 
-    if (schedule.lapses > 0) {
+    if (schedule.lapses > 0 && lastReviewedAt >= periodStart) {
       const diffLevel = cardDifficultyLevel(schedule)
       candidatesForWatchlist.push({
         prompt: card.prompt,
@@ -283,13 +283,18 @@ export function formatDigestEmail(
   const topMasteredWords = stats.topMasteredWords ?? []
   const wordsToWatchOutFor = stats.wordsToWatchOutFor ?? []
 
+  const allGraduated =
+    topMasteredWords.length > 0 && topMasteredWords.every((w) => w.isGraduated)
   const hasGraduatedInTop = topMasteredWords.some((w) => w.isGraduated)
-  const masterySectionTitle = hasGraduatedInTop
-    ? 'Freshly mastered'
-    : 'Top progress'
-  const masterySectionStory = hasGraduatedInTop
-    ? 'These words crossed into long-term memory this month:'
-    : 'Your strongest words gaining momentum this month:'
+
+  const masterySectionTitle = allGraduated ? 'Freshly mastered' : 'Top progress'
+  const masterySectionStory = allGraduated
+    ? topMasteredWords.length === 1
+      ? 'This word crossed into long-term memory this month:'
+      : 'These words crossed into long-term memory this month:'
+    : hasGraduatedInTop
+      ? 'Your strongest words and latest milestones this month:'
+      : 'Your strongest words gaining momentum this month:'
 
   const masteredHtml =
     topMasteredWords.length > 0
@@ -435,13 +440,14 @@ export function formatDigestEmail(
       .metric-label {
         font-size: 10px !important;
       }
+      .watchlist-cell {
+        padding: 10px 10px !important;
+      }
       .watchlist-item {
         font-size: 14px !important;
-        padding: 10px 10px !important;
       }
       .watchlist-sub {
         font-size: 12.5px !important;
-        padding: 10px 6px !important;
       }
       .watchlist-indicator {
         padding: 10px 10px !important;
@@ -584,7 +590,7 @@ export function formatDigestEmail(
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="metric-card metric-card-rosa" style="width: 100%; background-color: #fdf0f7; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815;">
                 <tr>
                   <td style="padding: 14px 8px 12px; text-align: center;">
-                    <div class="metric-value" style="font-size: 24px; font-weight: 800; color: #e4007c; letter-spacing: -0.03em; line-height: 1;">+${stats.cardsAdded}</div>
+                    <div class="metric-value" style="font-size: 24px; font-weight: 800; color: #e4007c; letter-spacing: -0.03em; line-height: 1;">${stats.cardsAdded > 0 ? `+${stats.cardsAdded}` : '0'}</div>
                     <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">New cards</div>
                   </td>
                 </tr>
@@ -655,9 +661,9 @@ export function formatDigestEmail(
     ``,
     `Here is how your Mexican Spanish moved over the last 30 days:`,
     ``,
-    `• +${stats.cardsAdded} new cards`,
+    `• ${stats.cardsAdded > 0 ? `+${stats.cardsAdded}` : '0'} new cards`,
     `• ${stats.totalReviewsThisPeriod} reviews`,
-    `• ${stats.cardsGraduated} mastered (reached 3 bubbles)`,
+    `• ${stats.cardsGraduated} mastered`,
     ``,
     stats.cardsGraduated > 0
       ? `${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory (3 bubbles) this month.`
