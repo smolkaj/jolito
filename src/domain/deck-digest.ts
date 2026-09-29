@@ -1,11 +1,18 @@
 import type { StudyCard } from './card'
-import { cardDifficultyLevel } from './scheduler'
+import { cardDifficultyLevel, cardMasteryLevel } from './scheduler'
 
 export interface TrickyWord {
   prompt: string
   answer: string
   lapses: number
   difficulty?: number
+}
+
+export interface MasteredWord {
+  prompt: string
+  answer: string
+  bubbles: number
+  isGraduated: boolean
 }
 
 export interface DeckDigestStats {
@@ -16,6 +23,7 @@ export interface DeckDigestStats {
   totalCards: number
   matureCards: number
   wordsToWatchOutFor: TrickyWord[]
+  topMasteredWords: MasteredWord[]
   isInactive: boolean
 }
 
@@ -44,6 +52,15 @@ export function computeDeckDigestStats(
     difficulty: number
   }> = []
 
+  const candidatesForMastery: Array<{
+    prompt: string
+    answer: string
+    bubbles: number
+    isGraduated: boolean
+    stability: number
+    reviews: number
+  }> = []
+
   for (const card of cards) {
     const { schedule, createdAt } = card
     const lastReviewedAt = schedule.lastReviewedAt ?? 0
@@ -69,6 +86,20 @@ export function computeDeckDigestStats(
 
     currentLifetimeReviews += schedule.reviews
 
+    if (lastReviewedAt >= periodStart) {
+      const bubbles = cardMasteryLevel(schedule)
+      if (bubbles >= 1) {
+        candidatesForMastery.push({
+          prompt: card.prompt,
+          answer: card.answer,
+          bubbles,
+          isGraduated: bubbles === 3,
+          stability: schedule.stability ?? 1,
+          reviews: schedule.reviews,
+        })
+      }
+    }
+
     if (schedule.lapses > 0) {
       const diffLevel = cardDifficultyLevel(schedule)
       candidatesForWatchlist.push({
@@ -82,6 +113,22 @@ export function computeDeckDigestStats(
     }
   }
 
+  // Sort mastery by bubbles desc, then stability desc, then reviews desc
+  candidatesForMastery.sort((a, b) => {
+    if (b.bubbles !== a.bubbles) return b.bubbles - a.bubbles
+    if (b.stability !== a.stability) return b.stability - a.stability
+    return b.reviews - a.reviews
+  })
+
+  const topMasteredWords: MasteredWord[] = candidatesForMastery
+    .slice(0, 3)
+    .map(({ prompt, answer, bubbles, isGraduated }) => ({
+      prompt,
+      answer,
+      bubbles,
+      isGraduated,
+    }))
+
   // Sort watchlist by lapses desc, then stability asc
   candidatesForWatchlist.sort((a, b) => {
     if (b.lapses !== a.lapses) return b.lapses - a.lapses
@@ -89,7 +136,7 @@ export function computeDeckDigestStats(
   })
 
   const wordsToWatchOutFor: TrickyWord[] = candidatesForWatchlist
-    .slice(0, 4)
+    .slice(0, 3)
     .map(({ prompt, answer, lapses, difficulty }) => ({
       prompt,
       answer,
@@ -112,6 +159,7 @@ export function computeDeckDigestStats(
     totalCards: cards.length,
     matureCards,
     wordsToWatchOutFor,
+    topMasteredWords,
     isInactive,
   }
 }
@@ -232,10 +280,80 @@ export function formatDigestEmail(
 ): { subject: string; html: string; text: string } {
   const subject = `[Jolito] Progress Report - ${periodLabel}`
 
-  const watchlistHtml =
-    stats.wordsToWatchOutFor.length > 0
+  const topMasteredWords = stats.topMasteredWords ?? []
+  const wordsToWatchOutFor = stats.wordsToWatchOutFor ?? []
+
+  const hasGraduatedInTop = topMasteredWords.some((w) => w.isGraduated)
+  const masterySectionTitle = hasGraduatedInTop
+    ? 'Freshly mastered'
+    : 'Top progress'
+  const masterySectionStory = hasGraduatedInTop
+    ? 'These words crossed into long-term memory this month:'
+    : 'Your strongest words gaining momentum this month:'
+
+  const masteredHtml =
+    topMasteredWords.length > 0
       ? `
-      <div style="margin-top: 28px;">
+      <div style="margin-top: 24px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 6px;">
+          <tr>
+            <td style="vertical-align: middle; padding-right: 7px;">
+              ${renderMasteryBubblesSvg(3, 24, 8)}
+            </td>
+            <td style="vertical-align: middle;">
+              <span class="section-title" style="font-size: 14px; font-weight: 800; color: #121815; letter-spacing: -0.01em;">${masterySectionTitle}</span>
+            </td>
+          </tr>
+        </table>
+        <p class="section-story" style="margin: 0 0 12px; font-size: 13.5px; color: #5f6e66; line-height: 1.45;">
+          ${masterySectionStory}
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="mastery-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815; overflow: hidden;">
+          ${topMasteredWords
+            .map(
+              (w, i) => `
+            <tr>
+              <td class="watchlist-cell" style="padding: 11px 14px; vertical-align: middle; ${i < topMasteredWords.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+                <div class="watchlist-item" style="font-size: 15px; font-weight: 700; color: #121815; line-height: 1.3; overflow-wrap: break-word;">${escapeHtml(w.prompt)}</div>
+                <div class="watchlist-sub" style="font-size: 13px; color: #5f6e66; line-height: 1.3; margin-top: 2px; overflow-wrap: break-word;">${escapeHtml(w.answer)}</div>
+              </td>
+              <td class="watchlist-indicator" style="padding: 11px 14px; vertical-align: middle; text-align: right; white-space: nowrap; ${i < topMasteredWords.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right">
+                  <tr>
+                    <td style="vertical-align: middle; padding-right: 8px;">
+                      ${renderMasteryBubblesSvg(w.bubbles, 34, 11)}
+                    </td>
+                    <td style="vertical-align: middle;">
+                      <span class="mastered-pill" style="display: inline-block; padding: 2px 7px; font-size: 11px; font-weight: 700; background-color: #f0fdf4; color: #15803d; border: 1.5px solid #121815; border-radius: 9999px;">
+                        ${w.bubbles === 3 ? 'Mastered' : `${w.bubbles} ${w.bubbles === 1 ? 'bubble' : 'bubbles'}`}
+                      </span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          `,
+            )
+            .join('')}
+        </table>
+      </div>`
+      : ''
+
+  const masteredText =
+    topMasteredWords.length > 0
+      ? `\n${masterySectionTitle}:\n${masterySectionStory}\n` +
+        topMasteredWords
+          .map(
+            (w) =>
+              `• ${w.prompt} (${w.answer}) — ${w.bubbles}/3 bubbles${w.bubbles === 3 ? ' (Mastered)' : ''}`,
+          )
+          .join('\n')
+      : ''
+
+  const watchlistHtml =
+    wordsToWatchOutFor.length > 0
+      ? `
+      <div style="margin-top: 24px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 6px;">
           <tr>
             <td style="vertical-align: middle; padding-right: 7px;">
@@ -250,17 +368,15 @@ export function formatDigestEmail(
           A few words brought extra heat this month. No sweat—Jolito will keep serving them until they stick:
         </p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="watchlist-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815; overflow: hidden;">
-          ${stats.wordsToWatchOutFor
+          ${wordsToWatchOutFor
             .map(
               (w, i) => `
             <tr>
-              <td class="watchlist-item" style="padding: 11px 14px; font-size: 15px; font-weight: 700; color: #121815; ${i < stats.wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
-                ${escapeHtml(w.prompt)}
+              <td class="watchlist-cell" style="padding: 11px 14px; vertical-align: middle; ${i < wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+                <div class="watchlist-item" style="font-size: 15px; font-weight: 700; color: #121815; line-height: 1.3; overflow-wrap: break-word;">${escapeHtml(w.prompt)}</div>
+                <div class="watchlist-sub" style="font-size: 13px; color: #5f6e66; line-height: 1.3; margin-top: 2px; overflow-wrap: break-word;">${escapeHtml(w.answer)}</div>
               </td>
-              <td class="watchlist-sub" style="padding: 11px 8px; font-size: 13.5px; color: #5f6e66; ${i < stats.wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
-                ${escapeHtml(w.answer)}
-              </td>
-              <td class="watchlist-indicator" style="padding: 11px 14px; text-align: right; white-space: nowrap; ${i < stats.wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
+              <td class="watchlist-indicator" style="padding: 11px 14px; vertical-align: middle; text-align: right; white-space: nowrap; ${i < wordsToWatchOutFor.length - 1 ? 'border-bottom: 1.5px solid #ede8df;' : ''}">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="right">
                   <tr>
                     <td style="vertical-align: middle; padding-right: 8px;">
@@ -283,7 +399,7 @@ export function formatDigestEmail(
       : ''
 
   const watchlistText =
-    stats.wordsToWatchOutFor.length > 0
+    wordsToWatchOutFor.length > 0
       ? `\nThe spiciest words:\nA few words brought extra heat this month. No sweat—Jolito will keep serving them until they stick:\n` +
         stats.wordsToWatchOutFor
           .map(
@@ -386,21 +502,25 @@ export function formatDigestEmail(
       .metric-card-verde .metric-label {
         color: #86efac !important;
       }
-      .watchlist-card {
+      .mastery-card, .watchlist-card {
         background-color: #161e1a !important;
         border-color: #2b3832 !important;
         box-shadow: 3px 3px 0 #000000 !important;
       }
       .watchlist-item {
         color: #fdf5f8 !important;
-        border-bottom-color: #2b3832 !important;
       }
       .watchlist-sub {
         color: #8d9c94 !important;
-        border-bottom-color: #2b3832 !important;
       }
+      .watchlist-cell,
       .watchlist-indicator {
         border-bottom-color: #2b3832 !important;
+      }
+      .mastered-pill {
+        background-color: #12281a !important;
+        color: #86efac !important;
+        border-color: #2b3832 !important;
       }
       .stumble-pill {
         background-color: #3b1212 !important;
@@ -487,7 +607,7 @@ export function formatDigestEmail(
                 <tr>
                   <td style="padding: 14px 8px 12px; text-align: center;">
                     <div class="metric-value" style="font-size: 24px; font-weight: 800; color: #15803d; letter-spacing: -0.03em; line-height: 1;">${stats.cardsGraduated}</div>
-                    <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #15803d; margin-top: 6px;">Mastered</div>
+                    <div class="metric-label" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #5f6e66; margin-top: 6px;">Mastered</div>
                   </td>
                 </tr>
               </table>
@@ -495,9 +615,15 @@ export function formatDigestEmail(
           </tr>
         </table>
 
-        <p class="mastery-note" style="margin: 0 0 24px; font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
+        ${
+          stats.cardsGraduated > 0
+            ? `<p class="mastery-note" style="margin: 0 0 24px; font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
           ${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory <span style="white-space: nowrap;">(3 bubbles ${renderMasteryBubblesSvg(3, 34, 11)})</span> this month.
-        </p>
+        </p>`
+            : ''
+        }
+
+        ${masteredHtml}
 
         ${watchlistHtml}
 
@@ -508,7 +634,7 @@ export function formatDigestEmail(
                 Your vocabulary belongs to you
               </div>
               <div class="explainer-text" style="font-size: 13px; color: #5f6e66; line-height: 1.5;">
-                Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in <strong class="highlight-text" style="font-weight: 700; color: #121815;">Sync &amp; Account</strong>.
+                Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in <strong class="highlight-text" style="font-weight: 700; color: #121815;">Deck &rarr; Backup &amp; Import</strong>.
               </div>
             </td>
           </tr>
@@ -533,11 +659,14 @@ export function formatDigestEmail(
     `• ${stats.totalReviewsThisPeriod} reviews`,
     `• ${stats.cardsGraduated} mastered (reached 3 bubbles)`,
     ``,
-    `${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory (3 bubbles) this month.`,
+    stats.cardsGraduated > 0
+      ? `${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory (3 bubbles) this month.`
+      : null,
+    masteredText,
     watchlistText,
     ``,
     `Your vocabulary belongs to you:`,
-    `Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in Sync & Account.`,
+    `Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in Deck → Backup & Import.`,
     ``,
     `Unsubscribe: ${unsubscribeUrl}`,
   ]

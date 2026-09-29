@@ -197,6 +197,81 @@ describe('deck-digest domain', () => {
       expect(stats.wordsToWatchOutFor[2]?.prompt).toBe('acontecer')
     })
 
+    it('extracts top mastered words sorted by bubbles desc, stability desc, and reviews desc', () => {
+      const cards: StudyCard[] = [
+        makeCard({
+          id: 'c1',
+          prompt: 'desarrollar',
+          answer: 'to develop',
+          schedule: {
+            state: 'review',
+            intervalDays: 35,
+            dueAt: now,
+            easeFactor: 2.5,
+            reviews: 10,
+            lapses: 0,
+            stability: 45,
+            lastReviewedAt: now - 3 * 24 * 60 * 60 * 1000,
+          },
+        }),
+        makeCard({
+          id: 'c2',
+          prompt: 'acontecer',
+          answer: 'to happen',
+          schedule: {
+            state: 'review',
+            intervalDays: 14,
+            dueAt: now,
+            easeFactor: 2.5,
+            reviews: 6,
+            lapses: 1,
+            stability: 18,
+            lastReviewedAt: now - 5 * 24 * 60 * 60 * 1000,
+          },
+        }),
+        makeCard({
+          id: 'c3',
+          prompt: 'platicar',
+          answer: 'to chat',
+          schedule: {
+            state: 'review',
+            intervalDays: 5,
+            dueAt: now,
+            easeFactor: 2.5,
+            reviews: 3,
+            lapses: 0,
+            stability: 5,
+            lastReviewedAt: now - 1 * 24 * 60 * 60 * 1000,
+          },
+        }),
+        makeCard({
+          id: 'c4',
+          prompt: 'antiguo',
+          answer: 'ancient',
+          schedule: {
+            state: 'review',
+            intervalDays: 40,
+            dueAt: now,
+            easeFactor: 2.5,
+            reviews: 12,
+            lapses: 0,
+            stability: 50,
+            lastReviewedAt: now - 45 * 24 * 60 * 60 * 1000, // old review > 30 days
+          },
+        }),
+      ]
+
+      const stats = computeDeckDigestStats(cards, now, 0)
+      expect(stats.topMasteredWords).toHaveLength(3)
+      expect(stats.topMasteredWords[0]?.prompt).toBe('desarrollar')
+      expect(stats.topMasteredWords[0]?.bubbles).toBe(3)
+      expect(stats.topMasteredWords[0]?.isGraduated).toBe(true)
+      expect(stats.topMasteredWords[1]?.prompt).toBe('acontecer')
+      expect(stats.topMasteredWords[1]?.bubbles).toBe(2)
+      expect(stats.topMasteredWords[2]?.prompt).toBe('platicar')
+      expect(stats.topMasteredWords[2]?.bubbles).toBe(1)
+    })
+
     it('identifies inactive accounts when no cards have been reviewed or added in 45 days', () => {
       const activeCards: StudyCard[] = [
         makeCard({
@@ -285,6 +360,12 @@ describe('deck-digest domain', () => {
         secret,
       )
       expect(isTampered).toBe(false)
+
+      expect(await verifyUnsubscribeToken(userId, '', secret)).toBe(false)
+      expect(await verifyUnsubscribeToken(userId, 'short', secret)).toBe(false)
+      expect(
+        await verifyUnsubscribeToken(userId, null as unknown as string, secret),
+      ).toBe(false)
     })
   })
 
@@ -313,6 +394,20 @@ describe('deck-digest domain', () => {
         matureCards: 80,
         wordsToWatchOutFor: [
           { prompt: 'acontecer', answer: 'to happen', lapses: 3 },
+        ],
+        topMasteredWords: [
+          {
+            prompt: 'desarrollar',
+            answer: 'to develop',
+            bubbles: 3,
+            isGraduated: true,
+          },
+          {
+            prompt: 'acontecer',
+            answer: 'to happen',
+            bubbles: 3,
+            isGraduated: true,
+          },
         ],
         isInactive: false,
       }
@@ -345,6 +440,13 @@ describe('deck-digest domain', () => {
       expect(html).toContain(
         '8 cards reached long-term memory <span style="white-space: nowrap;">(3 bubbles',
       )
+      // Symmetric Mastered Words Section
+      expect(html).toContain('Freshly mastered')
+      expect(html).toContain(
+        'These words crossed into long-term memory this month:',
+      )
+      expect(html).toContain('desarrollar')
+      // The Spiciest Words Section
       expect(html).toContain('The spiciest words')
       expect(html).toContain('A few words brought extra heat this month')
       expect(html).toContain('Difficulty: 2 of 3 chilies')
@@ -354,12 +456,16 @@ describe('deck-digest domain', () => {
       expect(html).toContain(
         'Most language apps trap your progress in their servers.',
       )
+      expect(html).toContain('Deck &rarr; Backup &amp; Import')
       expect(text).toContain(unsubscribeUrl)
       expect(text).toContain('+15 new cards')
       expect(text).toContain('120 reviews')
       expect(text).toContain('8 mastered (reached 3 bubbles)')
+      expect(text).toContain('Freshly mastered:')
+      expect(text).toContain('desarrollar')
       expect(text).toContain('The spiciest words:')
       expect(text).toContain('acontecer')
+      expect(text).toContain('Deck → Backup & Import')
       expect(text).toContain('Your vocabulary belongs to you:')
     })
 
@@ -368,7 +474,7 @@ describe('deck-digest domain', () => {
         'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
       const statsWithMultiple = {
         cardsAdded: 5,
-        cardsGraduated: 1,
+        cardsGraduated: 0,
         totalReviewsThisPeriod: 30,
         currentLifetimeReviews: 100,
         totalCards: 50,
@@ -382,6 +488,20 @@ describe('deck-digest domain', () => {
           },
           { prompt: 'platicar', answer: 'to chat', lapses: 1, difficulty: 1 },
         ],
+        topMasteredWords: [
+          {
+            prompt: 'platicar',
+            answer: 'to chat',
+            bubbles: 2,
+            isGraduated: false,
+          },
+          {
+            prompt: 'ahorita',
+            answer: 'right now',
+            bubbles: 1,
+            isGraduated: false,
+          },
+        ],
         isInactive: false,
       }
       const email = formatDigestEmail(
@@ -391,13 +511,24 @@ describe('deck-digest domain', () => {
       )
       expect(email.html).toContain('1 stumble')
       expect(email.html).toContain('2 stumbles')
-      expect(email.html).toContain('1 card reached long-term memory')
+      // When 0 cards graduated, no awkward zero-count scoreboard sentence is rendered
+      expect(email.html).not.toContain('reached long-term memory')
+      expect(email.text).not.toContain('reached long-term memory')
+      expect(email.html).toContain('Top progress')
+      expect(email.html).toContain(
+        'Your strongest words gaining momentum this month:',
+      )
+      expect(email.html).toContain('2 bubbles')
+      expect(email.html).toContain('1 bubble')
       expect(email.html).toContain('Difficulty: 3 of 3 chilies')
       expect(email.html).toContain('Difficulty: 1 of 3 chilies')
 
       const statsEmpty = {
         ...statsWithMultiple,
-        wordsToWatchOutFor: [],
+        wordsToWatchOutFor:
+          undefined as unknown as typeof statsWithMultiple.wordsToWatchOutFor,
+        topMasteredWords:
+          undefined as unknown as typeof statsWithMultiple.topMasteredWords,
       }
       const emptyEmail = formatDigestEmail(
         statsEmpty,
@@ -405,6 +536,25 @@ describe('deck-digest domain', () => {
         unsubscribeUrl,
       )
       expect(emptyEmail.html).not.toContain('The spiciest words')
+      expect(emptyEmail.html).not.toContain('Freshly mastered')
+      expect(emptyEmail.html).not.toContain('Top progress')
+
+      // Exactly 1 card graduated tests the singular branch
+      const singleGraduated = {
+        ...statsWithMultiple,
+        cardsGraduated: 1,
+      }
+      const singleGraduatedEmail = formatDigestEmail(
+        singleGraduated,
+        'Aug 29 – Sep 28, 2026',
+        unsubscribeUrl,
+      )
+      expect(singleGraduatedEmail.html).toContain(
+        '1 card reached long-term memory',
+      )
+      expect(singleGraduatedEmail.text).toContain(
+        '1 card reached long-term memory',
+      )
     })
   })
 

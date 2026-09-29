@@ -123,11 +123,11 @@ export function SyncModal({
       const ok = await auth.setDigestPreference(enabled)
       if (ok === false) {
         setIsDigestEnabled(!enabled)
-        setDigestError('Failed to update email preferences. Tap to retry.')
+        setDigestError('Failed to update email preferences. Try again.')
       }
     } catch {
       setIsDigestEnabled(!enabled)
-      setDigestError('Failed to update email preferences. Tap to retry.')
+      setDigestError('Failed to update email preferences. Try again.')
     } finally {
       setIsUpdatingDigest(false)
     }
