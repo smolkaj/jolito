@@ -912,9 +912,9 @@ test('allows guests to practice example deck immediately and explore card creato
   await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
   await practiceCards(page)
 
-  // Card 1: aguacate -> avocado
-  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
-  await page.getByLabel('Your answer').fill('avocado')
+  // Card 1: avocado -> aguacate
+  await expect(page.getByRole('heading', { name: 'avocado' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('aguacate')
   await page.keyboard.press('Enter')
   await page.keyboard.press('4') // Easy
 
@@ -924,9 +924,9 @@ test('allows guests to practice example deck immediately and explore card creato
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 
-  // Card 3: ajolote -> axolotl
-  await expect(page.getByRole('heading', { name: 'ajolote' })).toBeVisible()
-  await page.getByLabel('Your answer').fill('axolotl')
+  // Card 3: axolotl -> ajolote
+  await expect(page.getByRole('heading', { name: 'axolotl' })).toBeVisible()
+  await page.getByLabel('Your answer').fill('ajolote')
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 
@@ -1734,8 +1734,8 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible()
   await practiceCards(page)
 
-  // Card 1: aguacate -> Again (requeued)
-  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+  // Card 1: avocado -> Again (requeued)
+  await expect(page.getByRole('heading', { name: 'avocado' })).toBeVisible()
   await page.keyboard.press('Enter')
   await page.keyboard.press('1')
 
@@ -1744,13 +1744,13 @@ test('displays cards practiced cleanly when repetitions occur and passes WCAG au
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 
-  // Card 3: ajolote -> Easy (graduated)
-  await expect(page.getByRole('heading', { name: 'ajolote' })).toBeVisible()
+  // Card 3: axolotl -> Easy (graduated)
+  await expect(page.getByRole('heading', { name: 'axolotl' })).toBeVisible()
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 
-  // Card 1 re-appears: aguacate -> Easy (graduated)
-  await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+  // Card 1 re-appears: avocado -> Easy (graduated)
+  await expect(page.getByRole('heading', { name: 'avocado' })).toBeVisible()
   await page.keyboard.press('Enter')
   await page.keyboard.press('4')
 

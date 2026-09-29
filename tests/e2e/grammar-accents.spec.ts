@@ -71,6 +71,14 @@ for (const width of [320, 1280]) {
     await expect(input).toHaveValue('ú')
     await page.getByRole('button', { name: 'Jolito home' }).click()
     await practiceCards(page)
+    // Card 1 (avocado: en-es) has accent shortcuts enabled (target is Spanish)
+    await page.keyboard.type('12345')
+    await expect(
+      page.getByRole('textbox', { name: 'Your answer' }),
+    ).toHaveValue('áéíóú')
+    // Advance to Card 2 (qué padre: es-en) where answer is English, so accent shortcuts are disabled
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('4')
     await page.keyboard.type('12345')
     await expect(
       page.getByRole('textbox', { name: 'Your answer' }),

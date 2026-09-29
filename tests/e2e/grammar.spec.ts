@@ -239,8 +239,8 @@ for (const viewport of [
       page.getByRole('textbox', { name: 'Your answer' }),
     ).toBeVisible()
     const vocabularyLayout = await sessionLayout(page)
-    await expect(page.locator('.study-prompt')).toHaveAttribute('lang', 'es-MX')
-    await expect(page.getByRole('textbox')).toHaveAttribute('lang', 'en-US')
+    await expect(page.locator('.study-prompt')).toHaveAttribute('lang', 'en-US')
+    await expect(page.getByRole('textbox')).toHaveAttribute('lang', 'es-MX')
     for (const key of [
       'x',
       'y',
@@ -254,7 +254,7 @@ for (const viewport of [
     }
     await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
     const vocabularyRatings = await ratingGeometry(page)
-    await expect(page.locator('.diff-text')).toHaveAttribute('lang', 'en-US')
+    await expect(page.locator('.diff-text')).toHaveAttribute('lang', 'es-MX')
     expect(vocabularyRatings.gap).toBe(grammarRatings.gap)
     expect(vocabularyRatings.columns).toBe(grammarRatings.columns)
     vocabularyRatings.buttons.forEach(({ height, ...style }, index) => {
