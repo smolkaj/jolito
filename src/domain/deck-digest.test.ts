@@ -342,7 +342,9 @@ describe('deck-digest domain', () => {
       expect(html).toContain('New cards')
       expect(html).toContain('Reviews')
       expect(html).toContain('Mastered')
-      expect(html).toContain('8 cards reached long-term memory (3 bubbles')
+      expect(html).toContain(
+        '8 cards reached long-term memory <span style="white-space: nowrap;">(3 bubbles',
+      )
       expect(html).toContain('The spiciest words')
       expect(html).toContain('A few words brought extra heat this month')
       expect(html).toContain('Difficulty: 2 of 3 chilies')
