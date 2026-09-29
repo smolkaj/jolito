@@ -235,6 +235,7 @@ export function createStudyCards(
   note: NewNote,
   noteId: string,
   now: number,
+  primaryDirection: Direction = 'es-en',
 ): StudyCard[] {
   const spanish = note.spanish.trim()
   const english = note.english.trim()
@@ -242,39 +243,41 @@ export function createStudyCards(
 
   const context = note.context.trim()
   const scene = chooseScene(spanish, english, context)
-  const cards: StudyCard[] = [
-    {
-      id: `${noteId}:es-en`,
-      noteId,
-      prompt: spanish,
-      answer: english,
-      direction: 'es-en',
-      context,
-      scene,
-      schedule: createNewReviewSchedule(now),
-      contentRevision: 0,
-      resetRevision: { generation: 0, at: 0 },
-      createdAt: now,
-    },
-  ]
+  const isEsEnPrimary = primaryDirection === 'es-en'
 
-  if (note.bidirectional) {
-    cards.push({
-      id: `${noteId}:en-es`,
-      noteId,
-      prompt: note.reversePrompt?.trim() || english,
-      answer: note.reverseAnswer?.trim() || spanish,
-      direction: 'en-es',
-      context,
-      scene,
-      schedule: createNewReviewSchedule(now, DAY),
-      contentRevision: 0,
-      resetRevision: { generation: 0, at: 0 },
-      createdAt: now,
-    })
+  const esEnCard: StudyCard = {
+    id: `${noteId}:es-en`,
+    noteId,
+    prompt: spanish,
+    answer: english,
+    direction: 'es-en',
+    context,
+    scene,
+    schedule: createNewReviewSchedule(now, isEsEnPrimary ? 0 : DAY),
+    contentRevision: 0,
+    resetRevision: { generation: 0, at: 0 },
+    createdAt: now,
   }
 
-  return cards
+  const enEsCard: StudyCard = {
+    id: `${noteId}:en-es`,
+    noteId,
+    prompt: note.reversePrompt?.trim() || english,
+    answer: note.reverseAnswer?.trim() || spanish,
+    direction: 'en-es',
+    context,
+    scene,
+    schedule: createNewReviewSchedule(now, isEsEnPrimary ? DAY : 0),
+    contentRevision: 0,
+    resetRevision: { generation: 0, at: 0 },
+    createdAt: now,
+  }
+
+  if (!note.bidirectional) {
+    return [isEsEnPrimary ? esEnCard : enEsCard]
+  }
+
+  return isEsEnPrimary ? [esEnCard, enEsCard] : [enEsCard, esEnCard]
 }
 
 export function nextIntervalDays(
@@ -353,10 +356,10 @@ export function orderCardsForReview(
   const activeCards = due.filter((c) => activeNoteIds.has(c.noteId))
   const newCards = due.filter((c) => !activeNoteIds.has(c.noteId))
 
-  function organizeNoteCards(
-    noteCardsList: StudyCard[],
-    isNew: boolean,
-  ): { primary: StudyCard[]; secondary: StudyCard[] } {
+  function organizeNoteCards(noteCardsList: StudyCard[]): {
+    primary: StudyCard[]
+    secondary: StudyCard[]
+  } {
     const byNote = new Map<string, StudyCard[]>()
     for (const card of noteCardsList) {
       const list = byNote.get(card.noteId)
@@ -386,24 +389,16 @@ export function orderCardsForReview(
         return
       }
 
-      // For new cards: recognition (es-en) is primary, production (en-es) is secondary.
-      // For active cards: sort by urgency (dueAt), with es-en as tiebreaker.
-      const sorted = isNew
-        ? [...nCards].sort((a, b) => {
-            if (a.direction !== b.direction) {
-              return a.direction === 'es-en' ? -1 : 1
-            }
-            return a.id.localeCompare(b.id)
-          })
-        : [...nCards].sort((a, b) => {
-            if (a.schedule.dueAt !== b.schedule.dueAt) {
-              return a.schedule.dueAt - b.schedule.dueAt
-            }
-            if (a.direction !== b.direction) {
-              return a.direction === 'es-en' ? -1 : 1
-            }
-            return a.id.localeCompare(b.id)
-          })
+      // Sort same-note cards by urgency (dueAt), with es-en as tiebreaker.
+      const sorted = [...nCards].sort((a, b) => {
+        if (a.schedule.dueAt !== b.schedule.dueAt) {
+          return a.schedule.dueAt - b.schedule.dueAt
+        }
+        if (a.direction !== b.direction) {
+          return a.direction === 'es-en' ? -1 : 1
+        }
+        return a.id.localeCompare(b.id)
+      })
 
       primary.push(sorted[0]!)
       secondary.push(...sorted.slice(1))
@@ -413,11 +408,9 @@ export function orderCardsForReview(
   }
 
   const { primary: primaryActive, secondary: secondaryActive } =
-    organizeNoteCards(activeCards, false)
-  const { primary: primaryNew, secondary: secondaryNew } = organizeNoteCards(
-    newCards,
-    true,
-  )
+    organizeNoteCards(activeCards)
+  const { primary: primaryNew, secondary: secondaryNew } =
+    organizeNoteCards(newCards)
 
   const ordered = [
     ...primaryActive,

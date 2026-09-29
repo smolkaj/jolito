@@ -182,6 +182,11 @@ test('edited prompts speak immediately while prefetch is pending and late failur
 
   await page.goto('/')
   await practiceCards(page)
+  await page.getByRole('textbox', { name: 'Your answer' }).press('Enter')
+  await page.keyboard.press('4')
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'qué padre' }),
+  ).toBeVisible()
   await expect(page.getByRole('button', { name: /edit card/i })).toBeVisible()
   await page.evaluate(() => {
     window.__speechSynthesisCalls = []

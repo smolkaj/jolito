@@ -115,6 +115,60 @@ describe('createStudyCards', () => {
       ),
     ).toEqual([])
   })
+
+  it('supports en-es as primary direction, scheduling en-es immediately and staggering es-en', () => {
+    const cards = createStudyCards(
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: '',
+        bidirectional: true,
+      },
+      'note-en-primary',
+      now,
+      'en-es',
+    )
+
+    expect(cards).toHaveLength(2)
+    // Primary card is en-es due immediately at now
+    expect(cards[0]).toMatchObject({
+      id: 'note-en-primary:en-es',
+      prompt: 'avocado',
+      answer: 'aguacate',
+      direction: 'en-es',
+      schedule: {
+        dueAt: now,
+        state: 'new',
+      },
+    })
+    // Secondary card is es-en staggered by 1 day
+    expect(cards[1]).toMatchObject({
+      id: 'note-en-primary:es-en',
+      prompt: 'aguacate',
+      answer: 'avocado',
+      direction: 'es-en',
+      schedule: {
+        dueAt: now + DAY,
+        state: 'new',
+      },
+    })
+
+    // One-way card with en-es primary
+    const oneWay = createStudyCards(
+      {
+        spanish: 'aguacate',
+        english: 'avocado',
+        context: '',
+        bidirectional: false,
+      },
+      'note-en-oneway',
+      now,
+      'en-es',
+    )
+    expect(oneWay).toHaveLength(1)
+    expect(oneWay[0]!.direction).toBe('en-es')
+    expect(oneWay[0]!.schedule.dueAt).toBe(now)
+  })
 })
 
 describe('illustration selection', () => {

@@ -268,13 +268,13 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await expect(practiceBtn).toBeVisible()
     await practiceCards(page)
 
-    // First card: aguacate
+    // First card: avocado
     const answerInput = page.getByLabel(/your answer/i)
     await expect(answerInput).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'aguacate' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'avocado' })).toBeVisible()
 
     // Answer and grade first card
-    await answerInput.fill('avocado')
+    await answerInput.fill('aguacate')
     await answerInput.press('Enter')
     const easyBtn = page.getByRole('button', { name: /easy/i })
     await expect(easyBtn).toBeVisible()
@@ -283,7 +283,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     // 2. Queue has advanced to second card: 'qué padre'
     await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: 'aguacate' }),
+      page.getByRole('heading', { name: 'avocado' }),
     ).not.toBeVisible()
 
     // 3. Simulate device rotation to landscape (852x393)
@@ -312,7 +312,7 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     // 5. Invariant: Card queue did NOT jump backwards or reset; 'qué padre' remains active
     await expect(page.getByRole('heading', { name: 'qué padre' })).toBeVisible()
     await expect(
-      page.getByRole('heading', { name: 'aguacate' }),
+      page.getByRole('heading', { name: 'avocado' }),
     ).not.toBeVisible()
 
     // Audio button remains functional and does not crash or wedge
@@ -334,11 +334,11 @@ test.describe('Mobile iOS Viewport, Touch Ergonomics & Visual Integrity', () => 
     await landscapeInput.press('Enter')
     await page.getByRole('button', { name: /easy/i }).click()
 
-    // 7. Queue advances to card 3: 'ajolote'
-    await expect(page.getByRole('heading', { name: 'ajolote' })).toBeVisible()
+    // 7. Queue advances to card 3: 'axolotl'
+    await expect(page.getByRole('heading', { name: 'axolotl' })).toBeVisible()
     const card3Input = page.getByLabel(/your answer/i)
     await expect(card3Input).toBeVisible()
-    await card3Input.fill('axolotl')
+    await card3Input.fill('ajolote')
     await card3Input.press('Enter')
     await page.getByRole('button', { name: /easy/i }).click()
 
