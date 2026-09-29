@@ -45,7 +45,8 @@ function getSecret(env?: DigestWorkerEnv): string {
 }
 
 function getBaseUrl(env?: DigestWorkerEnv): string {
-  return env?.DIGEST_BASE_URL || 'https://joli.to'
+  const url = env?.DIGEST_BASE_URL || 'https://joli.to'
+  return url.replace(/\/+$/, '')
 }
 
 function formatMonthYear(timestamp: number): string {
@@ -252,12 +253,17 @@ export async function handleUnsubscribeRequest(
       outline: 2px solid var(--rosa);
       outline-offset: 2px;
     }
+    @media (prefers-reduced-motion: reduce) {
+      .btn {
+        transition: none;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="card">
     <div class="brand-row">
-      <img src="https://joli.to/favicon-96x96.png" class="brand-logo" alt="Jolito">
+      <img src="https://joli.to/favicon-96x96.png" class="brand-logo" alt="" role="presentation">
       <span class="brand-name">Jolito</span>
     </div>
     <h1>You're unsubscribed</h1>

@@ -2610,7 +2610,7 @@ textarea::placeholder {
 
 .toggle-error-message {
   font-size: 12px;
-  color: var(--tezontle);
+  color: var(--tezontle-dark);
   line-height: 1.35;
   margin-top: 3px;
   font-weight: 500;

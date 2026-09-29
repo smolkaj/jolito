@@ -584,6 +584,7 @@ export function SyncModal({
             <input
               id="sync-digest-checkbox"
               type="checkbox"
+              aria-labelledby="sync-digest-title"
               aria-describedby={
                 digestError
                   ? 'sync-digest-desc sync-digest-err'
@@ -597,7 +598,7 @@ export function SyncModal({
             />
             <span className="toggle" aria-hidden="true" />
             <div className="toggle-label-group">
-              <span className="toggle-title">
+              <span id="sync-digest-title" className="toggle-title">
                 Monthly backup &amp; progress email
               </span>
               <span id="sync-digest-desc" className="toggle-description">
