@@ -470,6 +470,7 @@ describe('deck-digest domain', () => {
       // The Spiciest Words Section
       expect(html).toContain('The spiciest words')
       expect(html).toContain('A few words brought extra heat this month')
+      expect(html).toContain('In Jolito, chilies measure difficulty')
       expect(html).toContain('Difficulty: 2 of 3 chilies')
       expect(html).toContain('3 stumbles')
       expect(html).toContain('box-shadow: 4px 4px 0 #121815')
@@ -488,6 +489,7 @@ describe('deck-digest domain', () => {
       expect(text).toContain('Freshly mastered:')
       expect(text).toContain('desarrollar')
       expect(text).toContain('The spiciest words:')
+      expect(text).toContain('In Jolito, chilies measure difficulty')
       expect(text).toContain('acontecer')
       expect(text).toContain('Deck → Backup & Import')
       expect(text).toContain('Your vocabulary belongs to you:')

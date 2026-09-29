@@ -370,7 +370,7 @@ export function formatDigestEmail(
           </tr>
         </table>
         <p class="section-story" style="margin: 0 0 12px; font-size: 13.5px; color: #5f6e66; line-height: 1.45;">
-          A few words brought extra heat this month. No sweat—Jolito will keep serving them until they stick:
+          A few words brought extra heat this month. In Jolito, chilies measure difficulty—cards get spicier when you stumble so they appear more often until they stick:
         </p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="watchlist-card" style="width: 100%; border-collapse: separate; border-spacing: 0; background-color: #ffffff; border: 2px solid #121815; border-radius: 12px; box-shadow: 3px 3px 0 #121815; overflow: hidden;">
           ${wordsToWatchOutFor
@@ -405,8 +405,8 @@ export function formatDigestEmail(
 
   const watchlistText =
     wordsToWatchOutFor.length > 0
-      ? `\nThe spiciest words:\nA few words brought extra heat this month. No sweat—Jolito will keep serving them until they stick:\n` +
-        stats.wordsToWatchOutFor
+      ? `\nThe spiciest words:\nA few words brought extra heat this month. In Jolito, chilies measure difficulty—cards get spicier when you stumble so they appear more often until they stick:\n` +
+        wordsToWatchOutFor
           .map(
             (w) =>
               `• ${w.prompt} (${w.answer}) — ${w.difficulty ?? 2}/3 chilies, ${w.lapses} ${w.lapses === 1 ? 'stumble' : 'stumbles'}`,
