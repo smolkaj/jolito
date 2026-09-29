@@ -5,6 +5,9 @@ import {
   createUnsubscribeToken,
   formatDigestEmail,
   formatPausedNoticeEmail,
+  renderChiliIconSvg,
+  renderChiliMeterSvg,
+  renderMasteryBubblesSvg,
   verifyUnsubscribeToken,
 } from './deck-digest'
 
@@ -170,12 +173,27 @@ describe('deck-digest domain', () => {
             stability: 2.5,
           },
         }),
+        makeCard({
+          id: 'c4',
+          prompt: 'platicar',
+          answer: 'to chat',
+          schedule: {
+            state: 'review',
+            intervalDays: 2,
+            dueAt: now,
+            easeFactor: 2.2,
+            reviews: 5,
+            lapses: 2,
+            stability: 1.1,
+          },
+        }),
       ]
 
       const stats = computeDeckDigestStats(cards, now, 0)
-      expect(stats.wordsToWatchOutFor).toHaveLength(2)
+      expect(stats.wordsToWatchOutFor).toHaveLength(3)
       expect(stats.wordsToWatchOutFor[0]?.prompt).toBe('desarrollar')
-      expect(stats.wordsToWatchOutFor[1]?.prompt).toBe('acontecer')
+      expect(stats.wordsToWatchOutFor[1]?.prompt).toBe('platicar')
+      expect(stats.wordsToWatchOutFor[2]?.prompt).toBe('acontecer')
     })
 
     it('identifies inactive accounts when no cards have been reviewed or added in 45 days', () => {
@@ -301,10 +319,91 @@ describe('deck-digest domain', () => {
       expect(html).toContain(
         'Sep 2026 progress snapshot and attached offline deck backup',
       )
+      // Visual & Metaphor invariants: Bubbles & Chilies
+      expect(html).toContain('3 bubbles')
+      expect(html).toContain('Needs attention')
+      expect(html).toContain('Difficulty: 2 of 3 chilies')
+      expect(html).toContain('box-shadow: 4px 4px 0 #121815')
+      expect(html).toContain('Offline backup attached')
       expect(text).toContain(unsubscribeUrl)
       expect(text).toContain('+15 cards added')
       expect(text).toContain('120 reviews completed')
       expect(text).toContain('acontecer')
+      expect(text).toContain('3 bubbles')
+    })
+
+    it('handles multiple tricky words with single lapse and empty tricky words list', () => {
+      const unsubscribeUrl =
+        'https://joli.to/api/digest/unsubscribe?u=123&t=abc'
+      const statsWithMultiple = {
+        cardsAdded: 5,
+        cardsGraduated: 2,
+        totalReviewsThisPeriod: 30,
+        currentLifetimeReviews: 100,
+        totalCards: 50,
+        matureCards: 10,
+        wordsToWatchOutFor: [
+          {
+            prompt: 'acontecer',
+            answer: 'to happen',
+            lapses: 2,
+            difficulty: 3,
+          },
+          { prompt: 'platicar', answer: 'to chat', lapses: 1, difficulty: 1 },
+        ],
+        isInactive: false,
+      }
+      const email = formatDigestEmail(
+        statsWithMultiple,
+        'Sep 2026',
+        unsubscribeUrl,
+      )
+      expect(email.html).toContain('1 lapse')
+      expect(email.html).toContain('2 lapses')
+      expect(email.html).toContain('Difficulty: 3 of 3 chilies')
+      expect(email.html).toContain('Difficulty: 1 of 3 chilies')
+
+      const statsEmpty = {
+        ...statsWithMultiple,
+        wordsToWatchOutFor: [],
+      }
+      const emptyEmail = formatDigestEmail(
+        statsEmpty,
+        'Sep 2026',
+        unsubscribeUrl,
+      )
+      expect(emptyEmail.html).not.toContain('Needs attention')
+    })
+  })
+
+  describe('renderChiliIconSvg and renderChiliMeterSvg', () => {
+    it('renders filled and empty chili icons with custom and default sizes', () => {
+      const filled = renderChiliIconSvg(true)
+      const empty = renderChiliIconSvg(false, 20)
+      expect(filled).toContain('fill="#d32f2f"')
+      expect(filled).toContain('width="15"')
+      expect(empty).toContain('fill="none"')
+      expect(empty).toContain('width="20"')
+    })
+
+    it('renders chili meters across difficulty levels 0 to 3', () => {
+      expect(renderChiliMeterSvg(0)).toContain('Difficulty: 0 of 3 chilies')
+      expect(renderChiliMeterSvg(1)).toContain('Difficulty: 1 of 3 chilies')
+      expect(renderChiliMeterSvg(2)).toContain('Difficulty: 2 of 3 chilies')
+      expect(renderChiliMeterSvg(3)).toContain('Difficulty: 3 of 3 chilies')
+    })
+  })
+
+  describe('renderMasteryBubblesSvg', () => {
+    it('renders mastery bubbles across levels 0 to 3 with appropriate fill states', () => {
+      const lvl0 = renderMasteryBubblesSvg(0)
+      const lvl1 = renderMasteryBubblesSvg(1)
+      const lvl2 = renderMasteryBubblesSvg(2)
+      const lvl3 = renderMasteryBubblesSvg(3)
+      expect(lvl0).toContain('fill="none"')
+      expect(lvl1).toContain('fill="#15803d"')
+      expect(lvl2).toContain('fill="#15803d"')
+      expect(lvl3).toContain('fill="#15803d"')
     })
   })
 
