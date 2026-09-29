@@ -7258,7 +7258,39 @@ kbd {
   box-shadow: 3px 3px 0 var(--shadow-ink);
 }
 
-/* Study Card In-Session Actions */
+/* Study Card In-Session Footer */
+.study-card-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 560px;
+  margin: 22px auto 0;
+  padding: 0 0 0 8px;
+  box-sizing: border-box;
+}
+
+.study-card-footer-bar .keyboard-hint {
+  margin: 0;
+  justify-content: flex-start;
+  gap: 20px;
+}
+
+.study-card-footer-bar .study-card-quick-actions {
+  margin: 0;
+  padding: 0;
+  border-top: none;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 680px) {
+  .study-card-footer-bar {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
 .study-card-quick-actions {
   display: flex;
   align-items: center;

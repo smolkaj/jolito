@@ -1039,7 +1039,7 @@ export function PracticeCard({
             )}
           </p>
         )}
-        {(revealed || onPlayPrompt || spokenRecallAvailable) && (
+        <div className="study-card-footer-bar">
           <div className="keyboard-hint">
             {revealed ? (
               <>
@@ -1069,38 +1069,33 @@ export function PracticeCard({
               </>
             )}
           </div>
-        )}
-        {(onEdit || onDelete) && (
-          <div className="study-card-quick-actions">
-            {onEdit && (
-              <button
-                type="button"
-                className="study-quick-btn edit-btn"
-                aria-label={`Edit card: ${card.prompt}`}
-                onClick={onEdit}
-              >
-                <PencilIcon size={13} />
-                <span>Edit card</span>
-              </button>
-            )}
-            {onEdit && onDelete && (
-              <span className="study-quick-sep" aria-hidden="true">
-                ·
-              </span>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                className="study-quick-btn delete-btn"
-                aria-label={`Delete card: ${card.prompt}`}
-                onClick={onDelete}
-              >
-                <TrashIcon size={13} />
-                <span>Delete card</span>
-              </button>
-            )}
-          </div>
-        )}
+          {(onEdit || onDelete) && (
+            <div className="study-card-quick-actions">
+              {onEdit && (
+                <button
+                  type="button"
+                  className="study-quick-btn edit-btn"
+                  aria-label={`Edit card: ${card.prompt}`}
+                  onClick={onEdit}
+                >
+                  <PencilIcon size={13} />
+                  <span>Edit card</span>
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  className="study-quick-btn delete-btn"
+                  aria-label={`Delete card: ${card.prompt}`}
+                  onClick={onDelete}
+                >
+                  <TrashIcon size={13} />
+                  <span>Delete card</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </>
   )
