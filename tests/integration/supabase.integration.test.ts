@@ -107,6 +107,8 @@ describe('Supabase Live Stack Integration', () => {
       sendMagicLink: () => Promise.resolve({ success: true }),
       verifyOtp: () => Promise.resolve({ success: true }),
       signOut: () => Promise.resolve(),
+      getDigestPreference: () => Promise.resolve(true),
+      setDigestPreference: () => Promise.resolve(true),
       onAuthStateChange: () => () => {},
     }
 
@@ -122,6 +124,8 @@ describe('Supabase Live Stack Integration', () => {
       sendMagicLink: () => Promise.resolve({ success: true }),
       verifyOtp: () => Promise.resolve({ success: true }),
       signOut: () => Promise.resolve(),
+      getDigestPreference: () => Promise.resolve(true),
+      setDigestPreference: () => Promise.resolve(true),
       onAuthStateChange: () => () => {},
     }
 

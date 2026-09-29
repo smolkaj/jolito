@@ -94,12 +94,47 @@ export function SyncModal({
     message: string
     syncHelp?: boolean
   } | null>(null)
+  const [isDigestEnabled, setIsDigestEnabled] = useState(true)
+  const [isUpdatingDigest, setIsUpdatingDigest] = useState(false)
+  const [digestError, setDigestError] = useState<string | null>(null)
 
   const feedbackTimerRef = useRef<number | null>(null)
   const pasteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteInputRef = useRef<HTMLInputElement | null>(null)
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
   const statusRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!isOpen || !user) return
+    let active = true
+    void auth.getDigestPreference().then((enabled) => {
+      if (active) {
+        setIsDigestEnabled(enabled)
+        setDigestError(null)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [isOpen, user, auth])
+
+  const handleToggleDigest = async (enabled: boolean) => {
+    setIsDigestEnabled(enabled)
+    setIsUpdatingDigest(true)
+    setDigestError(null)
+    try {
+      const ok = await auth.setDigestPreference(enabled)
+      if (ok === false) {
+        setIsDigestEnabled(!enabled)
+        setDigestError('Failed to update email preferences. Try again.')
+      }
+    } catch {
+      setIsDigestEnabled(!enabled)
+      setDigestError('Failed to update email preferences. Try again.')
+    } finally {
+      setIsUpdatingDigest(false)
+    }
+  }
 
   useEffect(() => {
     if (statusMsg?.type === 'error') {
@@ -183,6 +218,7 @@ export function SyncModal({
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
     clearTransientFeedback()
+    setDigestError(null)
     onClose()
   }, [onClose])
 
@@ -544,6 +580,46 @@ export function SyncModal({
               {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
             </button>
           </div>
+
+          <label
+            className={`toggle-row toggle-row-compact${loading || isUpdatingDigest || !isOnline ? ' disabled' : ''}`}
+            htmlFor="sync-digest-checkbox"
+          >
+            <input
+              id="sync-digest-checkbox"
+              type="checkbox"
+              aria-labelledby="sync-digest-title"
+              aria-describedby={
+                digestError
+                  ? 'sync-digest-desc sync-digest-err'
+                  : 'sync-digest-desc'
+              }
+              checked={isDigestEnabled}
+              disabled={loading || isUpdatingDigest || !isOnline}
+              onChange={(e) => {
+                void handleToggleDigest(e.target.checked)
+              }}
+            />
+            <span className="toggle" aria-hidden="true" />
+            <div className="toggle-label-group">
+              <span id="sync-digest-title" className="toggle-title">
+                Monthly backup &amp; progress email
+              </span>
+              <span id="sync-digest-desc" className="toggle-description">
+                Includes an offline deck backup and learning stats. Pauses
+                automatically when inactive.
+              </span>
+              {digestError && (
+                <span
+                  id="sync-digest-err"
+                  className="toggle-error-message"
+                  role="alert"
+                >
+                  {digestError}
+                </span>
+              )}
+            </div>
+          </label>
 
           {isConfirmingDelete ? (
             <form

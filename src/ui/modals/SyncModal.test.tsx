@@ -1515,4 +1515,71 @@ describe('SyncModal Live Sync Status Contract', () => {
       supportSpy.mockRestore()
     })
   })
+
+  describe('SyncModal Monthly Digest Preference', () => {
+    it('loads preference from auth service and renders checked toggle', async () => {
+      const user = { id: 'user-1', email: 'learner@example.com' }
+      const auth = createMockAuth()
+      const setDigestPreferenceSpy = vi.fn().mockResolvedValue(true)
+      auth.getDigestPreference = vi.fn().mockResolvedValue(true)
+      auth.setDigestPreference = setDigestPreferenceSpy
+
+      render(
+        <SyncModal
+          user={user}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const toggle = screen.getByRole('checkbox', {
+        name: /monthly backup & progress email/i,
+      })
+      await waitFor(() => {
+        expect(toggle).toBeChecked()
+      })
+
+      fireEvent.click(toggle)
+      await waitFor(() => {
+        expect(setDigestPreferenceSpy).toHaveBeenCalledWith(false)
+      })
+    })
+
+    it('rolls back toggle and displays error message if setDigestPreference fails', async () => {
+      const user = { id: 'user-1', email: 'learner@example.com' }
+      const auth = createMockAuth()
+      auth.getDigestPreference = vi.fn().mockResolvedValue(true)
+      auth.setDigestPreference = vi.fn().mockResolvedValue(false)
+
+      render(
+        <SyncModal
+          user={user}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      const toggle = screen.getByRole('checkbox', {
+        name: /monthly backup & progress email/i,
+      })
+      expect(toggle).toBeChecked()
+
+      fireEvent.click(toggle)
+      await waitFor(() => {
+        expect(toggle).toBeChecked()
+      })
+
+      expect(
+        screen.getByText(/failed to update email preferences/i),
+      ).toBeInTheDocument()
+    })
+  })
 })

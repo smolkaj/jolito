@@ -2585,7 +2585,7 @@ textarea::placeholder {
   background: var(--paper-subtle) !important;
 }
 
-.toggle-row input:disabled + .toggle {
+.toggle-row input:disabled:not(:checked) + .toggle {
   background: var(--toggle-track);
   cursor: not-allowed;
 }
@@ -2606,6 +2606,14 @@ textarea::placeholder {
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-soft);
+}
+
+.toggle-error-message {
+  font-size: 12px;
+  color: var(--tezontle-dark);
+  line-height: 1.35;
+  margin-top: 3px;
+  font-weight: 500;
 }
 
 .form-details {
@@ -7160,6 +7168,7 @@ kbd {
   color: var(--ink-muted);
 }
 
+.toggle-row-compact,
 .edit-card-toggle-row {
   margin-top: 4px;
   margin-bottom: 2px;

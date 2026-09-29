@@ -1200,6 +1200,52 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
+  async getDigestPreference(): Promise<boolean> {
+    if (!this.supabaseUrl || !this.supabaseAnonKey) return true
+    const token = await this.getAccessToken()
+    if (!token) return true
+    try {
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/get_digest_preference`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: this.supabaseAnonKey,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (!res.ok) return true
+      return (await res.json()) === true
+    } catch {
+      return true
+    }
+  }
+
+  async setDigestPreference(enabled: boolean): Promise<boolean> {
+    if (!this.supabaseUrl || !this.supabaseAnonKey) return false
+    const token = await this.getAccessToken()
+    if (!token) return false
+    try {
+      const res = await fetch(
+        `${this.supabaseUrl}/rest/v1/rpc/set_digest_preference`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: this.supabaseAnonKey,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_enabled: enabled }),
+        },
+      )
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+
   destroy(): void {
     this.lifetime.abort()
     this.accountDeletion?.controller.abort()

@@ -1,0 +1,122 @@
+begin;
+select no_plan();
+
+-- Set up test accounts
+insert into auth.users (id, email, email_confirmed_at, last_sign_in_at, created_at) values
+  ('d0000000-0000-0000-0000-000000000001', 'learner1@example.com', now(), now(), now() - interval '30 days'),
+  ('d0000000-0000-0000-0000-000000000002', 'learner2@example.com', now(), now(), now() - interval '30 days'),
+  ('d0000000-0000-0000-0000-000000000003', 'unverified@example.com', null, null, now() - interval '30 days'),
+  ('d0000000-0000-0000-0000-000000000004', 'brandnew@example.com', now(), now(), now());
+
+-- Give learner1, learner2, and brandnew a valid deck
+insert into public.decks (user_id, device_id, version, data, revision) values
+  ('d0000000-0000-0000-0000-000000000001', 'dev-1', 4,
+   '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-1", "cards": [{"id": "c1", "noteId": "c1", "prompt": "hola", "answer": "hello", "direction": "es-en", "context": "", "scene": "conversation", "schedule": {"state": "review", "intervalDays": 25, "reviews": 5, "lapses": 0, "dueAt": 0, "easeFactor": 2.5}}], "deletedCardIds": []}'::jsonb, 1),
+  ('d0000000-0000-0000-0000-000000000002', 'dev-2', 4,
+   '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-2", "cards": [], "deletedCardIds": []}'::jsonb, 1),
+  ('d0000000-0000-0000-0000-000000000004', 'dev-4', 4,
+   '{"version": 4, "app": "jolito", "updatedAt": "2026-09-28T12:00:00.000Z", "deviceId": "dev-4", "cards": [], "deletedCardIds": []}'::jsonb, 1);
+
+-- RLS & Security checks
+set local role anon;
+select throws_ok($$ select * from public.claim_monthly_digests() $$, '42501', null, 'Guests cannot claim digests');
+select throws_ok($$ select * from private.monthly_digests $$, '42501', null, 'Guests cannot read private digest table');
+select throws_ok($$ select public.get_digest_preference() $$, '42501', null, 'Guests cannot get digest preference');
+
+set local role authenticated;
+select throws_ok($$ select * from public.claim_monthly_digests() $$, '42501', null, 'Authenticated learners cannot claim digests');
+select throws_ok($$ select public.finish_monthly_digest(gen_random_uuid(), gen_random_uuid(), true) $$, '42501', null, 'Learners cannot finish digests');
+select throws_ok($$ select public.unsubscribe_monthly_digest(gen_random_uuid()) $$, '42501', null, 'Learners cannot directly invoke admin unsubscribe RPC');
+
+-- Check learner digest preference toggle
+set local "request.jwt.claims" = '{"sub": "d0000000-0000-0000-0000-000000000001"}';
+select is(public.get_digest_preference(), true, 'Digest defaults to true for authenticated user');
+select is(public.set_digest_preference(false), true, 'User can toggle digest to false');
+select is(public.get_digest_preference(), false, 'Digest preference is now false');
+select is(public.set_digest_preference(true), true, 'User can re-enable digest');
+select is(public.get_digest_preference(), true, 'Digest preference is now true again');
+
+reset role;
+
+-- Service role claiming and execution tests
+create temporary table first_claim as select * from public.claim_monthly_digests(10);
+select cmp_ok((select count(*)::int from first_claim), '>=', 2, 'Verified accounts with decks are claimed');
+select is_empty(
+  $$ select * from first_claim where user_id = 'd0000000-0000-0000-0000-000000000004' $$,
+  'Brand new accounts (<28 days old) are not spammed on day 1'
+);
+
+-- Verify active lease prevents immediate re-claim
+select is_empty($$ select * from public.claim_monthly_digests(10) $$, 'Active lease prevents double sending');
+
+-- Test finish delivery with auto-pause
+select is(public.finish_monthly_digest('d0000000-0000-0000-0000-000000000001', gen_random_uuid(), true, 10, false, false), false,
+  'Forged or stale lease cannot record completion');
+
+select is(public.finish_monthly_digest(user_id, lease_id, true, 10, true, false), true,
+  'Valid lease records completion with auto-pause') from first_claim where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+-- Verify paused user is NOT claimed again in future periods
+update private.monthly_digests set last_sent_at = now() - interval '35 days'
+where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+select is_empty($$ select * from public.claim_monthly_digests(10) where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  'Paused user is not claimed for subsequent runs');
+
+-- Verify updating deck reactivates the paused user
+update public.decks set updated_at = now() where user_id = 'd0000000-0000-0000-0000-000000000001';
+select results_eq(
+  $$ select status from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  $$ values ('active'::text) $$,
+  'Deck activity reactivates paused digest status'
+);
+
+-- Verify updating deck reactivates failed digest status and resets attempts
+update private.monthly_digests
+set status = 'failed', attempts = 3
+where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+update public.decks set updated_at = now() where user_id = 'd0000000-0000-0000-0000-000000000001';
+select results_eq(
+  $$ select status, attempts from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  $$ values ('active'::text, 0) $$,
+  'Deck activity reactivates failed digest status and resets attempts'
+);
+
+-- Test unsubscribe RPC
+select is(public.unsubscribe_monthly_digest('d0000000-0000-0000-0000-000000000002'), true, 'Admin unsubscribe succeeds');
+
+-- Verify updating deck does not reactivate unsubscribed status
+update public.decks set updated_at = now() where user_id = 'd0000000-0000-0000-0000-000000000002';
+select results_eq(
+  $$ select status from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000002' $$,
+  $$ values ('unsubscribed'::text) $$,
+  'Deck activity does not reactivate unsubscribed status'
+);
+
+-- Test race condition: user unsubscribes while worker lease is in-flight
+update private.monthly_digests
+set lease_id = gen_random_uuid(), lease_until = now() + interval '30 minutes', status = 'active'
+where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+create temporary table in_flight_lease as
+select user_id, lease_id from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001';
+
+-- User unsubscribes mid-flight
+select is(public.unsubscribe_monthly_digest('d0000000-0000-0000-0000-000000000001'), true, 'User unsubscribes mid-flight');
+
+-- In-flight worker attempts to finish delivery
+select is(
+  (select public.finish_monthly_digest(user_id, lease_id, true, 20, false, false) from in_flight_lease),
+  false,
+  'In-flight worker cannot overwrite explicit unsubscription'
+);
+
+select results_eq(
+  $$ select status, digest_enabled from private.monthly_digests where user_id = 'd0000000-0000-0000-0000-000000000001' $$,
+  $$ values ('unsubscribed'::text, false) $$,
+  'Status remains strictly unsubscribed and disabled'
+);
+
+select * from finish();
+rollback;
