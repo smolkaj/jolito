@@ -31,7 +31,37 @@ describe('digest-route', () => {
       expect(text).toContain('Invalid or expired unsubscribe link')
     })
 
-    it('successfully unsubscribes with valid token and returns friendly confirmation HTML', async () => {
+    it('renders safe confirmation page on GET without mutating database state', async () => {
+      const token = await createUnsubscribeToken(validUserId, secret)
+      const fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const req = new Request(
+        `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+        { method: 'GET' },
+      )
+      const res = await handleUnsubscribeRequest(req, {
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+        SUPABASE_URL: 'https://test.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+      })
+
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toContain('text/html')
+      const text = await res.text()
+      expect(text).toContain('Unsubscribe confirmation')
+      expect(text).toContain(
+        'Are you sure you want to stop receiving monthly progress reports',
+      )
+      expect(text).toContain('<form method="POST"')
+      expect(text).toContain('Keep subscription')
+
+      // Invariant: GET never calls database mutation RPC (safe against enterprise link crawlers)
+      expect(fetchSpy).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('successfully unsubscribes on POST with valid token and returns friendly confirmation HTML', async () => {
       const token = await createUnsubscribeToken(validUserId, secret)
       const fetchSpy = vi
         .fn()
@@ -40,6 +70,7 @@ describe('digest-route', () => {
 
       const req = new Request(
         `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+        { method: 'POST' },
       )
       const res = await handleUnsubscribeRequest(req, {
         DIGEST_UNSUBSCRIBE_SECRET: secret,
@@ -63,7 +94,7 @@ describe('digest-route', () => {
       vi.unstubAllGlobals()
     })
 
-    it('returns 500 when database unsubscribe RPC fails', async () => {
+    it('returns 500 when database unsubscribe RPC fails on POST', async () => {
       const token = await createUnsubscribeToken(validUserId, secret)
       const fetchSpy = vi
         .fn()
@@ -72,6 +103,7 @@ describe('digest-route', () => {
 
       const req = new Request(
         `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+        { method: 'POST' },
       )
       const res = await handleUnsubscribeRequest(req, {
         DIGEST_UNSUBSCRIBE_SECRET: secret,
@@ -85,10 +117,11 @@ describe('digest-route', () => {
       vi.unstubAllGlobals()
     })
 
-    it('returns 500 when Supabase credentials are missing', async () => {
+    it('returns 500 when Supabase credentials are missing on POST', async () => {
       const token = await createUnsubscribeToken(validUserId, secret)
       const req = new Request(
         `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+        { method: 'POST' },
       )
       const res = await handleUnsubscribeRequest(req, {
         DIGEST_UNSUBSCRIBE_SECRET: secret,
@@ -97,6 +130,18 @@ describe('digest-route', () => {
       expect(res.status).toBe(500)
       const text = await res.text()
       expect(text).toContain('Server configuration error')
+    })
+
+    it('returns 405 for unsupported HTTP methods', async () => {
+      const token = await createUnsubscribeToken(validUserId, secret)
+      const req = new Request(
+        `https://joli.to/api/digest/unsubscribe?uid=${validUserId}&token=${token}`,
+        { method: 'DELETE' },
+      )
+      const res = await handleUnsubscribeRequest(req, {
+        DIGEST_UNSUBSCRIBE_SECRET: secret,
+      })
+      expect(res.status).toBe(405)
     })
   })
 

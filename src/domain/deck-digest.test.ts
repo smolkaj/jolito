@@ -55,7 +55,7 @@ describe('deck-digest domain', () => {
       expect(stats.totalCards).toBe(3)
     })
 
-    it('calculates cards graduated (mature in review state) reviewed this period', () => {
+    it('calculates cards graduated (reached 3 bubbles mastery) reviewed this period', () => {
       const cards: StudyCard[] = [
         makeCard({
           id: 'c1',
@@ -67,6 +67,7 @@ describe('deck-digest domain', () => {
             reviews: 4,
             lapses: 0,
             lastReviewedAt: now - 2 * 24 * 60 * 60 * 1000,
+            stability: 35, // stability >= 30 -> 3 bubbles (mastered)
           },
         }),
         makeCard({
@@ -79,6 +80,7 @@ describe('deck-digest domain', () => {
             reviews: 2,
             lapses: 1,
             lastReviewedAt: now - 2 * 24 * 60 * 60 * 1000,
+            stability: 5,
           },
         }),
         makeCard({
@@ -91,6 +93,7 @@ describe('deck-digest domain', () => {
             reviews: 5,
             lapses: 0,
             lastReviewedAt: now - 40 * 24 * 60 * 60 * 1000, // reviewed > 30 days ago
+            stability: 35,
           },
         }),
       ]
@@ -412,7 +415,6 @@ describe('deck-digest domain', () => {
         totalReviewsThisPeriod: 120,
         currentLifetimeReviews: 450,
         totalCards: 200,
-        matureCards: 80,
         wordsToWatchOutFor: [
           { prompt: 'acontecer', answer: 'to happen', lapses: 3 },
         ],
@@ -458,9 +460,7 @@ describe('deck-digest domain', () => {
       expect(html).toContain('New cards')
       expect(html).toContain('Reviews')
       expect(html).toContain('Mastered')
-      expect(html).toContain(
-        '8 cards reached long-term memory <span style="white-space: nowrap;">(3 bubbles',
-      )
+      expect(html).toContain('8 cards reached long-term memory (3 bubbles)')
       // Symmetric Mastered Words Section
       expect(html).toContain('Freshly mastered')
       expect(html).toContain(
@@ -508,7 +508,6 @@ describe('deck-digest domain', () => {
         totalReviewsThisPeriod: 30,
         currentLifetimeReviews: 100,
         totalCards: 50,
-        matureCards: 10,
         wordsToWatchOutFor: [
           {
             prompt: 'acontecer',

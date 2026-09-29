@@ -21,7 +21,6 @@ export interface DeckDigestStats {
   totalReviewsThisPeriod: number
   currentLifetimeReviews: number
   totalCards: number
-  matureCards: number
   wordsToWatchOutFor: TrickyWord[]
   topMasteredWords: MasteredWord[]
   isInactive: boolean
@@ -29,7 +28,6 @@ export interface DeckDigestStats {
 
 const INACTIVITY_WINDOW_MS = 45 * 24 * 60 * 60 * 1000
 const PERIOD_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
-const MATURE_INTERVAL_DAYS = 21
 
 export function computeDeckDigestStats(
   cards: StudyCard[],
@@ -40,7 +38,6 @@ export function computeDeckDigestStats(
   let cardsAdded = 0
   let cardsGraduated = 0
   let currentLifetimeReviews = 0
-  let matureCards = 0
   let hasRecentReview = false
   let hasRecentAddition = false
 
@@ -77,17 +74,13 @@ export function computeDeckDigestStats(
       hasRecentReview = true
     }
 
-    if (schedule.intervalDays >= MATURE_INTERVAL_DAYS) {
-      matureCards++
-      if (schedule.state === 'review' && lastReviewedAt >= periodStart) {
-        cardsGraduated++
-      }
-    }
-
     currentLifetimeReviews += schedule.reviews
 
     if (lastReviewedAt >= periodStart) {
       const bubbles = cardMasteryLevel(schedule)
+      if (bubbles === 3) {
+        cardsGraduated++
+      }
       if (bubbles >= 1) {
         candidatesForMastery.push({
           prompt: card.prompt,
@@ -157,7 +150,6 @@ export function computeDeckDigestStats(
     totalReviewsThisPeriod,
     currentLifetimeReviews,
     totalCards: cards.length,
-    matureCards,
     wordsToWatchOutFor,
     topMasteredWords,
     isInactive,
@@ -612,7 +604,7 @@ export function formatDigestEmail(
               ${
                 stats.cardsGraduated > 0
                   ? `<p class="mastery-note" style="margin: 0 0 24px 0; font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
-                ${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory <span style="white-space: nowrap;">(3 bubbles ${renderMasteryBubblesSvg(3, 34, 11)})</span> this month.
+                ${stats.cardsGraduated === 1 ? '1 card' : `${stats.cardsGraduated} cards`} reached long-term memory (3 bubbles) ${renderMasteryBubblesSvg(3, 34, 11)} this month.
               </p>`
                   : ''
               }

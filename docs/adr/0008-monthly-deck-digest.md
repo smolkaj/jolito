@@ -21,17 +21,18 @@ Ongoing operating costs must remain strictly $0.00 while delivering a full JSON 
 3. **Metrics & Snapshot Computation:**
    Jolito's deck snapshot in Supabase PostgreSQL stores cards with FSRS metadata. Metrics are computed deterministically without heavy review logging:
    - **Cards added:** `card.createdAt >= monthStartTimestamp`.
-   - **Cards graduated:** Cards in `review` state with `intervalDays >= 21` (mature) reviewed in the period.
+   - **Cards graduated / mastered:** Cards reaching long-term memory (`cardMasteryLevel(schedule) === 3`, 3 bubbles) reviewed in the period.
    - **Total reviews:** Delta of lifetime reviews (`sum(card.schedule.reviews) - baselineReviews`). The digest recorder stores the user's lifetime review total on dispatch to advance the baseline.
    - **Words to watch out for:** Top 3–5 cards sorted by lapses descending and stability ascending.
+   - **Freshly mastered words:** Top cards that reached 3 bubbles in the period.
 
 4. **Anti-Spam & Proactive Inactivity Sunsetting:**
-   - **Prominent Header Unsubscribe:** Every email features a prominent 1-click unsubscribe link at the very top of the email body, in addition to standard List-Unsubscribe headers.
+   - **Calm Footer & One-Click Headers:** Every email features standard RFC 8058 `List-Unsubscribe` headers (one-click via POST) and an unsubscribe link in the calm card footer. The web endpoint renders an interactive confirmation page on GET to protect against automated link prefetch crawlers, mutating database state only on POST.
    - **Inactivity Auto-Pause:** If a deck shows zero reviews in the past 45 days, Jolito sends one final polite notice ("We noticed you haven't been practicing recently on Jolito. To keep your inbox clean, we've paused your monthly digests. Attached is your latest backup. You can re-enable anytime in the app.") and marks the account `paused`. No subsequent emails are sent until the learner reviews cards or re-enables digests.
 
 5. **Consent & Preference Management:**
    - Authenticated learners can toggle their digest preference in the sync/settings modal.
-   - An unauthenticated 1-click unsubscribe endpoint (`/api/digest/unsubscribe`) validates an HMAC-SHA256 token signed by the server secret, allowing seamless unsubscription directly from email clients.
+   - An unauthenticated 1-click unsubscribe endpoint (`/api/digest/unsubscribe`) validates an HMAC-SHA256 token signed by the server secret, supporting RFC 8058 POSTs and browser confirmation GETs.
 
 ## Consequences
 

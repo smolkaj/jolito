@@ -108,7 +108,10 @@ export function SyncModal({
     if (!isOpen || !user) return
     let active = true
     void auth.getDigestPreference().then((enabled) => {
-      if (active) setIsDigestEnabled(enabled)
+      if (active) {
+        setIsDigestEnabled(enabled)
+        setDigestError(null)
+      }
     })
     return () => {
       active = false
@@ -215,6 +218,7 @@ export function SyncModal({
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
     clearTransientFeedback()
+    setDigestError(null)
     onClose()
   }, [onClose])
 
