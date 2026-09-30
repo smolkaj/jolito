@@ -57,6 +57,7 @@ import { prewarmSpeechRecognition } from './infrastructure/browser/speech-recogn
 import { checkOrRequestStoragePersistence } from './infrastructure/browser/storage-persistence'
 import {
   type View,
+  consumeAuthToken,
   hashForView,
   hashFromDeepLink,
   isAuthDeepLink,
@@ -321,6 +322,7 @@ function AppWithServices({ services }: { services: AppServices }) {
         runDeletion(() => deleteAccount(ownerId, ownedServices.cards))
       }
       accountNotice={accountNotice}
+      setAccountNotice={setAccountNotice}
       onDismissAccountNotice={() => setAccountNotice(null)}
       key={`${ownerId === null ? 'guest' : `user:${ownerId}`}:${identity.epoch}`}
       services={ownedServices}
@@ -334,6 +336,7 @@ function AppWithServices({ services }: { services: AppServices }) {
 
 type OwnedAppProps = {
   accountNotice: string | null
+  setAccountNotice: (notice: string | null) => void
   onDismissAccountNotice: () => void
   onDeleteAccount: () => Promise<{
     success: boolean
@@ -365,6 +368,7 @@ function OwnedApp(props: OwnedAppProps) {
 function LoadedApp({
   services,
   accountNotice,
+  setAccountNotice,
   onDismissAccountNotice,
   onDeleteAccount,
   initialCards,
@@ -989,6 +993,25 @@ function LoadedApp({
     void checkOrRequestStoragePersistence()
   }, [])
 
+  const handleAuthUrl = useCallback(
+    (url: string) => {
+      if (!isAuthDeepLink(url) || !consumeAuthToken(url)) return
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        window.history.replaceState(
+          null,
+          '',
+          '/' + (window.location.hash || '#/'),
+        )
+      }
+      void services.auth.verifyOtp('', url).then((res) => {
+        if (!res.success) {
+          setAccountNotice(res.error || 'Invalid or expired sign-in link.')
+        }
+      })
+    },
+    [services.auth, setAccountNotice],
+  )
+
   useEffect(() => {
     const onPopState = () => {
       cancelPendingAudio()
@@ -1024,17 +1047,7 @@ function LoadedApp({
       const customEvent = event as CustomEvent<{ url?: string }>
       const url = customEvent.detail?.url
       if (!url) return
-      if (isAuthDeepLink(url)) {
-        void services.auth.verifyOtp('', url).then((res) => {
-          if (
-            res.success &&
-            typeof window !== 'undefined' &&
-            window.history?.replaceState
-          ) {
-            window.history.replaceState(null, '', window.location.pathname)
-          }
-        })
-      }
+      handleAuthUrl(url)
       const targetHash = hashFromDeepLink(url)
       if (!targetHash) return
       window.location.hash = targetHash
@@ -1050,30 +1063,38 @@ function LoadedApp({
     }
   }, [
     cancelPendingAudio,
+    handleAuthUrl,
     resetPromptState,
-    services.auth,
     services.clock,
     startSession,
   ])
 
   useEffect(() => {
-    const initialUrl =
-      (typeof window !== 'undefined' &&
-        (window as unknown as { __JOLITO_INITIAL_URL__?: string })
-          .__JOLITO_INITIAL_URL__) ||
-      (typeof window !== 'undefined' ? window.location?.href : undefined)
-    if (initialUrl && isAuthDeepLink(initialUrl)) {
-      void services.auth.verifyOtp('', initialUrl).then((res) => {
-        if (
-          res.success &&
-          typeof window !== 'undefined' &&
-          window.history?.replaceState
-        ) {
-          window.history.replaceState(null, '', window.location.pathname)
-        }
-      })
+    const win =
+      typeof window !== 'undefined'
+        ? (window as unknown as { __JOLITO_INITIAL_URL__?: string })
+        : undefined
+    let initialUrl: string | undefined
+    if (win?.__JOLITO_INITIAL_URL__) {
+      initialUrl = win.__JOLITO_INITIAL_URL__
+      delete win.__JOLITO_INITIAL_URL__
+    } else if (typeof window !== 'undefined') {
+      initialUrl = window.location?.href
     }
-  }, [services.auth])
+    if (initialUrl && isAuthDeepLink(initialUrl)) {
+      handleAuthUrl(initialUrl)
+    } else if (
+      typeof window !== 'undefined' &&
+      (window.location.pathname === '/auth/confirm' ||
+        window.location.pathname === '/auth/callback')
+    ) {
+      window.history.replaceState(
+        null,
+        '',
+        '/' + (window.location.hash || '#/'),
+      )
+    }
+  }, [handleAuthUrl])
 
   useEffect(() => {
     return () => {

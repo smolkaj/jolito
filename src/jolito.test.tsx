@@ -14,6 +14,7 @@ import {
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from './jolito'
+import { resetConsumedAuthTokensForTesting } from './navigation'
 import { practiceActivity } from './ui/native-live-activity'
 import { createStudyCards, type StudyCard } from './domain/card'
 import { createCards } from './application/create-cards'
@@ -41,6 +42,8 @@ class SpeechSynthesisUtteranceMock {
 const speech = { cancel: vi.fn(), speak: vi.fn() }
 
 beforeEach(() => {
+  resetConsumedAuthTokensForTesting()
+  window.history.replaceState(null, '', '/#/')
   window.location.hash = ''
   localStorage.clear()
   vi.clearAllMocks()
@@ -786,15 +789,63 @@ describe('Jolito', () => {
         '',
         'https://joli.to/auth/confirm?token_hash=cold123&type=email',
       )
+      expect(
+        (window as unknown as { __JOLITO_INITIAL_URL__?: string })
+          .__JOLITO_INITIAL_URL__,
+      ).toBeUndefined()
       await waitFor(() => {
         expect(
           screen.getByRole('button', { name: /deck synced with cloud/i }),
         ).toBeInTheDocument()
       })
+      // Ensure verifyOtp was called exactly once and not re-executed upon user session remount
+      expect(verifySpy).toHaveBeenCalledTimes(1)
     } finally {
       delete (window as unknown as { __JOLITO_INITIAL_URL__?: string })
         .__JOLITO_INITIAL_URL__
     }
+  })
+
+  it('cleans URL and does not attempt auth verification when visiting /auth/confirm without tokens', () => {
+    const services = createTestServices()
+    const verifySpy = vi.spyOn(services.auth, 'verifyOtp')
+    const replaceSpy = vi.spyOn(window.history, 'replaceState')
+
+    window.history.replaceState(null, '', '/auth/confirm')
+    render(<App services={services} />)
+
+    expect(verifySpy).not.toHaveBeenCalled()
+    expect(replaceSpy).toHaveBeenCalledWith(null, '', '/#/')
+    expect(screen.queryByText(/invalid or expired/i)).not.toBeInTheDocument()
+  })
+
+  it('surfaces error banner and cleans URL bar when auth deep link verification fails', async () => {
+    const services = createTestServices()
+    vi.spyOn(services.auth, 'verifyOtp').mockResolvedValue({
+      success: false,
+      error: 'Sign-in link is invalid or has expired.',
+    })
+    const replaceSpy = vi.spyOn(window.history, 'replaceState')
+
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:deep-link', {
+          detail: {
+            url: 'https://joli.to/auth/confirm?token_hash=expired123&type=email',
+          },
+        }),
+      )
+    })
+
+    expect(replaceSpy).toHaveBeenCalledWith(null, '', '/#/')
+    await waitFor(() => {
+      expect(
+        screen.getByText('Sign-in link is invalid or has expired.'),
+      ).toBeInTheDocument()
+    })
   })
 
   it('configures Live Activity with context-specific deepLinkUrl when practicing cards or grammar', async () => {

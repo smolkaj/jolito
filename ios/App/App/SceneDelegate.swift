@@ -153,6 +153,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
         if trimmed == "create" {
             return "#/create"
         }
+        if trimmed == "complete" {
+            return "#/complete"
+        }
         if trimmed == "auth/confirm" || trimmed == "auth/callback" {
             return nil
         }
