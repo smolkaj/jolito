@@ -29,6 +29,7 @@ describe('digest-route', () => {
       expect(res.status).toBe(400)
       const text = await res.text()
       expect(text).toContain('Invalid or expired unsubscribe link')
+      expect(text).toContain('Cloud sync in the app')
     })
 
     it('renders safe confirmation page on GET without mutating database state', async () => {
@@ -82,6 +83,10 @@ describe('digest-route', () => {
       expect(res.headers.get('content-type')).toContain('text/html')
       const text = await res.text()
       expect(text).toContain("You're unsubscribed")
+      expect(text).toContain(
+        'You will no longer receive monthly progress reports',
+      )
+      expect(text).toContain('Cloud sync in the app')
       expect(text).toContain('Your deck remains safe')
 
       expect(fetchSpy).toHaveBeenCalledWith(

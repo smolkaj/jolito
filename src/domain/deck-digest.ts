@@ -765,7 +765,7 @@ export function formatPausedNoticeEmail(
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-card" style="max-width: 520px; background-color: #ffffff; border: 1px solid #e2ddd3; border-radius: 18px; box-shadow: 0 4px 18px rgba(18, 24, 21, 0.05); overflow: hidden; padding: 36px 32px;">
           <tr>
             <td>
-              <h1 class="email-title" style="margin: 0 0 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 750; letter-spacing: -0.025em; color: #121815; line-height: 1.2;">Digests paused</h1>
+              <h1 class="email-title" style="margin: 0 0 6px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 750; letter-spacing: -0.025em; color: #121815; line-height: 1.2;">Progress reports paused</h1>
               <div class="subtext" style="margin: 0 0 20px 0; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
 
               <p class="email-paragraph" style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #3b4740; line-height: 1.5;">
@@ -779,7 +779,7 @@ export function formatPausedNoticeEmail(
                       Your vocabulary is safe (${totalCards} cards)
                     </div>
                     <div class="explainer-text" style="font-size: 13.5px; color: #5f6e66; line-height: 1.5;">
-                      Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly digests will resume automatically.
+                      Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly progress reports will resume automatically.
                     </div>
                   </td>
                 </tr>
@@ -805,13 +805,13 @@ export function formatPausedNoticeEmail(
 </html>`
 
   const text = [
-    `Jolito — Digests paused (${periodLabel})`,
-    `=======================================`,
+    `Jolito — Progress reports paused (${periodLabel})`,
+    `===============================================`,
     ``,
     `You haven't practiced recently, so we paused monthly emails to keep your inbox clean.`,
     ``,
     `Your vocabulary is safe (${totalCards} cards):`,
-    `Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly digests will resume automatically.`,
+    `Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly progress reports will resume automatically.`,
     ``,
     `Sent because Cloud sync is on. Manage in Cloud sync (https://joli.to) or unsubscribe anytime: ${unsubscribeUrl}`,
   ].join('\n')
