@@ -15,8 +15,8 @@ const mockKeys = [
 ]
 
 function mockFetchFactory(options: {
-  existingUsers?: Array<{ id: string; email: string }>
-  pages?: Record<number, Array<{ id: string; email: string }>>
+  existingUsers?: Array<{ id: string; email: string | null }>
+  pages?: Record<number, Array<{ id: string; email: string | null }>>
   updateOk?: boolean
   createOk?: boolean
   verifyOk?: boolean
