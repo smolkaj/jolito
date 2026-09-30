@@ -186,7 +186,8 @@ class ReleaseTest < Minitest::Test
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'get-task-allow' => false
+        'get-task-allow' => false,
+        'com.apple.developer.associated-domains' => ['applinks:joli.to']
       }
     })
     widget_profile_xml = Plist::Emit.dump({
@@ -395,7 +396,8 @@ class ReleaseTest < Minitest::Test
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'get-task-allow' => false
+        'get-task-allow' => false,
+        'com.apple.developer.associated-domains' => ['applinks:joli.to']
       }
     })
     widget_profile_xml = Plist::Emit.dump({
@@ -444,6 +446,71 @@ class ReleaseTest < Minitest::Test
 
     build_call = harness.calls.find { |name, _| name == :build_app }
     assert_equal 'auto-app-profile-id', build_call[1][:export_options][:provisioningProfiles]['to.joli.app']
+  ensure
+    FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
+    previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
+  end
+
+  def test_beta_lane_auto_provisions_app_profile_when_lacking_associated_domains_entitlement
+    Fastlane::Actions.load_default_actions
+    env = signing_env
+    previous = env.keys.to_h { |key| [key, ENV[key]] }
+    ENV.update(env)
+    status = Struct.new(:success?).new(true)
+    old_app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'old-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => {
+        'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
+        'get-task-allow' => false
+      }
+    })
+    refreshed_app_profile_xml = Plist::Emit.dump({
+      'UUID' => 'refreshed-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => {
+        'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
+        'get-task-allow' => false,
+        'com.apple.developer.associated-domains' => ['applinks:joli.to']
+      }
+    })
+    widget_profile_xml = Plist::Emit.dump({
+      'UUID' => 'widget-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
+      'ExpirationDate' => Time.now + 3600,
+      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app.JolitoWidgetExtension', 'get-task-allow' => false }
+    })
+    provision_called = false
+    base_proc = lambda do |*args|
+      if args[1] == 'set-key-partition-list'
+        ['', status]
+      elsif args.any? { |a| a.to_s.include?('widget.mobileprovision') }
+        [widget_profile_xml, status]
+      elsif provision_called
+        [refreshed_app_profile_xml, status]
+      else
+        [old_app_profile_xml, status]
+      end
+    end
+    node_command_args = nil
+    capture2e_proc = lambda do |*args|
+      if args[0] == 'node' && args.any? { |arg| arg.to_s.include?('provision-app.ts') }
+        node_command_args = args
+        provision_called = true
+        ['Auto-provisioned app profile', status]
+      else
+        base_proc.call(*args)
+      end
+    end
+    harness = SigningHarness.new
+    Open3.stub(:capture2e, capture2e_proc) do
+      Open3.stub(:capture2, base_proc) do
+        harness.execute(:beta)
+      end
+    end
+    assert node_command_args, 'Expected provision-app.ts to be invoked when profile lacks associated-domains'
+
+    app_signing = harness.calls.find { |name, opts| name == :update_code_signing_settings && opts[:targets] == ['App'] }
+    assert_equal 'refreshed-app-profile-id', app_signing[1][:profile_uuid]
   ensure
     FileUtils.rm_rf(File.join(ReleaseConfig::ROOT, 'build'))
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
