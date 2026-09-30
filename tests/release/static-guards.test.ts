@@ -410,3 +410,33 @@ void test('quality.yml decouples WebKit from parallel browser shards to protect 
     'browser aggregator gate must depend on both browser-shard and browser-webkit',
   )
 })
+
+void test('ios.yml caches ffmpeg deb packages to insulate native recording export from apt mirror congestion', async () => {
+  const fs = await import('node:fs')
+  const workflow = fs.readFileSync('.github/workflows/ios.yml', 'utf8')
+
+  const recordingExportMatch = workflow.match(
+    /recording-export:[\s\S]*?(?=\n\s\s[a-z0-9_-]+:|$)/,
+  )?.[0]
+  assert.ok(recordingExportMatch, 'Expected recording-export job in ios.yml')
+  assert.match(
+    recordingExportMatch,
+    /actions\/cache@v\d+/,
+    'recording-export must use actions/cache to persist deb packages',
+  )
+  assert.match(
+    recordingExportMatch,
+    /ffmpeg-debs-/,
+    'recording-export cache key must reference ffmpeg-debs',
+  )
+  assert.match(
+    recordingExportMatch,
+    /~?\/?\.cache\/apt-archives/,
+    'recording-export cache path must target apt-archives cache directory',
+  )
+  assert.match(
+    recordingExportMatch,
+    /Keep-Downloaded-Packages/,
+    'recording-export must retain downloaded deb packages across apt-get invocations',
+  )
+})
