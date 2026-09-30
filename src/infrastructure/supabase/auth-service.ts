@@ -1202,7 +1202,7 @@ export class SupabaseAuthService implements AuthService {
 
   async getDigestPreference(): Promise<boolean> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) return true
-    if (this.lifetime.signal.aborted) return true
+    if (this.destroyed) return true
     const token = await this.getAccessToken()
     if (!token) return true
     try {
@@ -1229,7 +1229,7 @@ export class SupabaseAuthService implements AuthService {
 
   async setDigestPreference(enabled: boolean): Promise<boolean> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) return false
-    if (this.lifetime.signal.aborted) return false
+    if (this.destroyed) return false
     const token = await this.getAccessToken()
     if (!token) return false
     try {

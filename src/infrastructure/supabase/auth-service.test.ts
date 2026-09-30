@@ -1783,23 +1783,13 @@ describe('SupabaseAuthService', () => {
       expect(signalAbortedDuringCall).toBe(false)
     })
 
-    it('safely aborts getDigestPreference and defaults to true when destroyed', async () => {
-      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'valid-token',
-        refreshToken: 'valid-refresh',
-        expiresAt: Date.now() + 100000,
-        user: { id: 'u1', email: 'test@example.com' },
-      })
-
+    it('returns false for setDigestPreference when not authenticated or missing config', async () => {
       const service = new SupabaseAuthService(
         'https://example.supabase.co',
         'anon-key',
         fakeStorage,
       )
-      service.destroy()
-
-      const result = await service.getDigestPreference()
-      expect(result).toBe(true)
+      expect(await service.setDigestPreference(false)).toBe(false)
     })
 
     it('updates digest preference via RPC passing p_enabled, bearer token, and abort signal', async () => {
@@ -1847,23 +1837,124 @@ describe('SupabaseAuthService', () => {
       expect(signalAbortedDuringCall).toBe(false)
     })
 
-    it('safely aborts setDigestPreference and returns false when destroyed', async () => {
-      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
-        accessToken: 'valid-token',
-        refreshToken: 'valid-refresh',
-        expiresAt: Date.now() + 100000,
-        user: { id: 'u1', email: 'test@example.com' },
+    function heldResponse() {
+      let resolve!: (response: Response) => void
+      const promise = new Promise<Response>((complete) => {
+        resolve = complete
+      })
+      return { promise, resolve }
+    }
+
+    for (const interruption of ['destroy', 'deadline'] as const) {
+      it(`aborts in-flight getDigestPreference on ${interruption} and safely defaults to true`, async () => {
+        vi.useFakeTimers()
+        mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+          accessToken: 'valid-token',
+          refreshToken: 'valid-refresh',
+          expiresAt: Date.now() + 3_600_000,
+          user: { id: 'u1', email: 'test@example.com' },
+        })
+
+        const held = heldResponse()
+        let observedSignal: AbortSignal | undefined
+        const fetchSpy = vi
+          .fn()
+          .mockImplementation((url: string, init?: RequestInit) => {
+            if (url.includes('/rpc/get_digest_preference')) {
+              observedSignal = init?.signal as AbortSignal | undefined
+              return held.promise
+            }
+            return Promise.resolve(new Response('{}', { status: 200 }))
+          })
+        vi.stubGlobal('fetch', fetchSpy)
+
+        const service = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+
+        let resolvedValue: boolean | undefined
+        const promise = service.getDigestPreference().then((val) => {
+          resolvedValue = val
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(observedSignal).toBeDefined()
+        expect(observedSignal?.aborted).toBe(false)
+
+        if (interruption === 'destroy') {
+          service.destroy()
+        } else {
+          await vi.advanceTimersByTimeAsync(10_001)
+        }
+
+        expect(observedSignal?.aborted).toBe(true)
+        await promise
+        expect(resolvedValue).toBe(true)
+
+        held.resolve(new Response(JSON.stringify(false), { status: 200 }))
+        await vi.advanceTimersByTimeAsync(0)
+
+        service.destroy()
+        vi.useRealTimers()
       })
 
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-      service.destroy()
+      it(`aborts in-flight setDigestPreference on ${interruption} and safely returns false`, async () => {
+        vi.useFakeTimers()
+        mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+          accessToken: 'valid-token',
+          refreshToken: 'valid-refresh',
+          expiresAt: Date.now() + 3_600_000,
+          user: { id: 'u1', email: 'test@example.com' },
+        })
 
-      const success = await service.setDigestPreference(true)
-      expect(success).toBe(false)
-    })
+        const held = heldResponse()
+        let observedSignal: AbortSignal | undefined
+        const fetchSpy = vi
+          .fn()
+          .mockImplementation((url: string, init?: RequestInit) => {
+            if (url.includes('/rpc/set_digest_preference')) {
+              observedSignal = init?.signal as AbortSignal | undefined
+              return held.promise
+            }
+            return Promise.resolve(new Response('{}', { status: 200 }))
+          })
+        vi.stubGlobal('fetch', fetchSpy)
+
+        const service = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+
+        let resolvedValue: boolean | undefined
+        const promise = service.setDigestPreference(false).then((val) => {
+          resolvedValue = val
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(observedSignal).toBeDefined()
+        expect(observedSignal?.aborted).toBe(false)
+
+        if (interruption === 'destroy') {
+          service.destroy()
+        } else {
+          await vi.advanceTimersByTimeAsync(10_001)
+        }
+
+        expect(observedSignal?.aborted).toBe(true)
+        await promise
+        expect(resolvedValue).toBe(false)
+
+        held.resolve(new Response(JSON.stringify(true), { status: 200 }))
+        await vi.advanceTimersByTimeAsync(0)
+
+        service.destroy()
+        vi.useRealTimers()
+      })
+    }
   })
 })
