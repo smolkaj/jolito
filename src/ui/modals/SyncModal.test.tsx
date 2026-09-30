@@ -1537,8 +1537,13 @@ describe('SyncModal Live Sync Status Contract', () => {
       )
 
       const toggle = screen.getByRole('checkbox', {
-        name: /monthly backup & progress email/i,
+        name: /monthly progress report/i,
       })
+      expect(
+        screen.getByText(
+          /receive your vocabulary milestones, review stats, and an offline deck backup/i,
+        ),
+      ).toBeInTheDocument()
       await waitFor(() => {
         expect(toggle).toBeChecked()
       })
@@ -1568,7 +1573,7 @@ describe('SyncModal Live Sync Status Contract', () => {
       )
 
       const toggle = screen.getByRole('checkbox', {
-        name: /monthly backup & progress email/i,
+        name: /monthly progress report/i,
       })
       expect(toggle).toBeChecked()
 
