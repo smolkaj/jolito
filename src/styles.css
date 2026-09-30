@@ -638,6 +638,7 @@ summary:focus-visible,
   border: none;
   background: transparent;
   color: var(--ink-soft);
+  text-decoration: none;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
@@ -915,6 +916,7 @@ summary:focus-visible,
   border-radius: var(--pill-radius);
   color: var(--ink);
   background: var(--card);
+  text-decoration: none;
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -981,6 +983,7 @@ summary:focus-visible,
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.2px;
+  text-decoration: none;
   transition: all 140ms var(--ease-spring);
   position: relative;
 }

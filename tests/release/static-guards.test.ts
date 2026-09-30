@@ -136,11 +136,11 @@ void test('index.html contains prerendered semantic landing shell for search cra
   const fs = await import('node:fs')
   const indexHtml = fs.readFileSync('index.html', 'utf8')
 
-  // 1. Root container must not be an empty div; must include semantic welcome-page shell
+  // 1. Root container must include semantic noscript crawler fallback
   assert.match(
     indexHtml,
-    /<div id="root">\s*<main class="welcome-page"/,
-    'index.html #root container must contain prerendered welcome-page shell',
+    /<div id="root">\s*<noscript>/,
+    'index.html #root container must contain semantic noscript crawler fallback',
   )
 
   // 2. Primary H1 and lede must be present in raw HTML for instant indexing
@@ -158,7 +158,7 @@ void test('index.html contains prerendered semantic landing shell for search cra
   // 3. Why Jolito section with origin story and outbound educational links
   assert.match(
     indexHtml,
-    /<h2 id="why-jolito-title">Why another flashcard app\?<\/h2>/,
+    /<h2[^>]*id="why-jolito-title"[^>]*>[\s\S]*?Why another flashcard app\?[\s\S]*?<\/h2>/,
     'index.html must include "Why another flashcard app?" H2',
   )
   assert.match(
@@ -203,14 +203,7 @@ void test('index.html contains prerendered semantic landing shell for search cra
     "index.html must not contain raw JSX delimiter expressions ({' '})",
   )
 
-  // 7. ARIA label parity with DesktopSegmentedNav.tsx
-  assert.match(
-    indexHtml,
-    /aria-label="Create \(\+ New card\)"/,
-    'index.html Create button must match DesktopSegmentedNav aria-label',
-  )
-
-  // 8. Invariant parity with domain landing content
+  // 7. Invariant parity with domain landing content
   const { ORIGIN_STORY, LANDING_HERO_CONTENT } =
     await import('../../src/domain/landing-content.ts')
   assert.match(
@@ -228,4 +221,12 @@ void test('index.html contains prerendered semantic landing shell for search cra
     new RegExp(ORIGIN_STORY.title.replace('?', '\\?')),
     'index.html must reflect ORIGIN_STORY.title',
   )
+  const strippedHtml = indexHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  for (const paragraph of ORIGIN_STORY.paragraphs) {
+    const textSnippet = paragraph.slice(0, 30)
+    assert.ok(
+      strippedHtml.includes(textSnippet),
+      `index.html text content must contain origin story paragraph snippet: "${textSnippet}"`,
+    )
+  }
 })

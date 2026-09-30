@@ -13,6 +13,10 @@ import { DesktopSegmentedNav } from '../DesktopSegmentedNav'
 import { EnglishBadge, MexicoFlag } from '../icons'
 import { PracticeMenu } from '../PracticeMenu'
 import { RedirectAuthNotice } from '../RedirectAuthNotice'
+import {
+  LANDING_HERO_CONTENT,
+  ORIGIN_STORY,
+} from '../../domain/landing-content'
 
 export interface WelcomeViewProps {
   communityStats?: CommunityStats | null | undefined
@@ -296,9 +300,11 @@ export function WelcomeView({
                 )}
               </div>
               <h1>
-                <span className="hero-headline-lead">Make the words</span>{' '}
+                <span className="hero-headline-lead">
+                  {LANDING_HERO_CONTENT.headlineLead}
+                </span>{' '}
                 <br />
-                you meet <em>stick.</em>
+                you meet <em>{LANDING_HERO_CONTENT.headlineEmp}</em>
               </h1>
               <p className="lede">
                 Create beautiful, spoken flashcards.
@@ -457,8 +463,8 @@ export function WelcomeView({
           </div>
 
           <div className="why-header">
-            <p className="eyebrow why-eyebrow">BORN IN MEXICO CITY</p>
-            <h2 id="why-jolito-title">Why another flashcard app?</h2>
+            <p className="eyebrow why-eyebrow">{ORIGIN_STORY.eyebrow}</p>
+            <h2 id="why-jolito-title">{ORIGIN_STORY.title}</h2>
           </div>
 
           <div className="why-story">
