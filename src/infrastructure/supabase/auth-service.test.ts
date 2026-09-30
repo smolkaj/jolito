@@ -1728,4 +1728,233 @@ describe('SupabaseAuthService', () => {
       )
     })
   })
+
+  describe('digest preferences lifecycle and signals', () => {
+    it('returns true for getDigestPreference when not authenticated or missing config', async () => {
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      expect(await service.getDigestPreference()).toBe(true)
+    })
+
+    it('retrieves digest preference via RPC passing bearer token and abort signal', async () => {
+      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+        accessToken: 'valid-token',
+        refreshToken: 'valid-refresh',
+        expiresAt: Date.now() + 100000,
+        user: { id: 'u1', email: 'test@example.com' },
+      })
+
+      let signalAttached = false
+      let signalAbortedDuringCall = false
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: string, init?: RequestInit) => {
+          signalAttached = !!init?.signal
+          signalAbortedDuringCall = init?.signal?.aborted ?? false
+          return Promise.resolve(
+            new Response(JSON.stringify(false), { status: 200 }),
+          )
+        })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const result = await service.getDigestPreference()
+      expect(result).toBe(false)
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/rest/v1/rpc/get_digest_preference',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            apikey: 'anon-key',
+            Authorization: 'Bearer valid-token',
+            'Content-Type': 'application/json',
+          },
+        }),
+      )
+      expect(signalAttached).toBe(true)
+      expect(signalAbortedDuringCall).toBe(false)
+    })
+
+    it('returns false for setDigestPreference when not authenticated or missing config', async () => {
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      expect(await service.setDigestPreference(false)).toBe(false)
+    })
+
+    it('updates digest preference via RPC passing p_enabled, bearer token, and abort signal', async () => {
+      mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+        accessToken: 'valid-token',
+        refreshToken: 'valid-refresh',
+        expiresAt: Date.now() + 100000,
+        user: { id: 'u1', email: 'test@example.com' },
+      })
+
+      let signalAttached = false
+      let signalAbortedDuringCall = false
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((_url: string, init?: RequestInit) => {
+          signalAttached = !!init?.signal
+          signalAbortedDuringCall = init?.signal?.aborted ?? false
+          return Promise.resolve(
+            new Response(JSON.stringify(true), { status: 200 }),
+          )
+        })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+
+      const success = await service.setDigestPreference(false)
+      expect(success).toBe(true)
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/rest/v1/rpc/set_digest_preference',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            apikey: 'anon-key',
+            Authorization: 'Bearer valid-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ p_enabled: false }),
+        }),
+      )
+      expect(signalAttached).toBe(true)
+      expect(signalAbortedDuringCall).toBe(false)
+    })
+
+    function heldResponse() {
+      let resolve!: (response: Response) => void
+      const promise = new Promise<Response>((complete) => {
+        resolve = complete
+      })
+      return { promise, resolve }
+    }
+
+    for (const interruption of ['destroy', 'deadline'] as const) {
+      it(`aborts in-flight getDigestPreference on ${interruption} and safely defaults to true`, async () => {
+        vi.useFakeTimers()
+        mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+          accessToken: 'valid-token',
+          refreshToken: 'valid-refresh',
+          expiresAt: Date.now() + 3_600_000,
+          user: { id: 'u1', email: 'test@example.com' },
+        })
+
+        const held = heldResponse()
+        let observedSignal: AbortSignal | undefined
+        const fetchSpy = vi
+          .fn()
+          .mockImplementation((url: string, init?: RequestInit) => {
+            if (url.includes('/rpc/get_digest_preference')) {
+              observedSignal = init?.signal as AbortSignal | undefined
+              return held.promise
+            }
+            return Promise.resolve(new Response('{}', { status: 200 }))
+          })
+        vi.stubGlobal('fetch', fetchSpy)
+
+        const service = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+
+        let resolvedValue: boolean | undefined
+        const promise = service.getDigestPreference().then((val) => {
+          resolvedValue = val
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(observedSignal).toBeDefined()
+        expect(observedSignal?.aborted).toBe(false)
+
+        if (interruption === 'destroy') {
+          service.destroy()
+        } else {
+          await vi.advanceTimersByTimeAsync(10_001)
+        }
+
+        expect(observedSignal?.aborted).toBe(true)
+        await promise
+        expect(resolvedValue).toBe(true)
+
+        held.resolve(new Response(JSON.stringify(false), { status: 200 }))
+        await vi.advanceTimersByTimeAsync(0)
+
+        service.destroy()
+        vi.useRealTimers()
+      })
+
+      it(`aborts in-flight setDigestPreference on ${interruption} and safely returns false`, async () => {
+        vi.useFakeTimers()
+        mockStorage['jolito-auth-session-v1'] = JSON.stringify({
+          accessToken: 'valid-token',
+          refreshToken: 'valid-refresh',
+          expiresAt: Date.now() + 3_600_000,
+          user: { id: 'u1', email: 'test@example.com' },
+        })
+
+        const held = heldResponse()
+        let observedSignal: AbortSignal | undefined
+        const fetchSpy = vi
+          .fn()
+          .mockImplementation((url: string, init?: RequestInit) => {
+            if (url.includes('/rpc/set_digest_preference')) {
+              observedSignal = init?.signal as AbortSignal | undefined
+              return held.promise
+            }
+            return Promise.resolve(new Response('{}', { status: 200 }))
+          })
+        vi.stubGlobal('fetch', fetchSpy)
+
+        const service = new SupabaseAuthService(
+          'https://example.supabase.co',
+          'anon-key',
+          fakeStorage,
+        )
+
+        let resolvedValue: boolean | undefined
+        const promise = service.setDigestPreference(false).then((val) => {
+          resolvedValue = val
+        })
+
+        await vi.advanceTimersByTimeAsync(0)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        expect(observedSignal).toBeDefined()
+        expect(observedSignal?.aborted).toBe(false)
+
+        if (interruption === 'destroy') {
+          service.destroy()
+        } else {
+          await vi.advanceTimersByTimeAsync(10_001)
+        }
+
+        expect(observedSignal?.aborted).toBe(true)
+        await promise
+        expect(resolvedValue).toBe(false)
+
+        held.resolve(new Response(JSON.stringify(true), { status: 200 }))
+        await vi.advanceTimersByTimeAsync(0)
+
+        service.destroy()
+        vi.useRealTimers()
+      })
+    }
+  })
 })
