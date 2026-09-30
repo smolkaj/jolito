@@ -603,11 +603,11 @@ export function SyncModal({
             <span className="toggle" aria-hidden="true" />
             <div className="toggle-label-group">
               <span id="sync-digest-title" className="toggle-title">
-                Monthly backup &amp; progress email
+                Monthly progress report
               </span>
               <span id="sync-digest-desc" className="toggle-description">
-                Includes an offline deck backup and learning stats. Pauses
-                automatically when inactive.
+                Receive your vocabulary milestones, review stats, and an offline
+                deck backup. Automatically pauses when you are inactive.
               </span>
               {digestError && (
                 <span

@@ -448,7 +448,7 @@ describe('deck-digest domain', () => {
       )
       expect(html).toContain('alt=""')
       expect(html).toContain('role="presentation"')
-      expect(html).toContain('>Unsubscribe</a>')
+      expect(html).toContain('>unsubscribe</a>')
       expect(html).toContain(
         'Progress report for Aug 29 – Sep 28, 2026 and offline deck backup',
       )
@@ -478,10 +478,10 @@ describe('deck-digest domain', () => {
       expect(html).toContain(
         'Most language apps trap your progress in their servers.',
       )
-      expect(html).toContain('Deck &rarr; Backup &amp; Import')
-      expect(html).toContain('Sent because <a href="https://joli.to"')
+      expect(html).toContain('Sent because Cloud sync is on.')
+      expect(html).toContain('Manage in <a href="https://joli.to"')
       expect(text).toContain(
-        `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
+        `Sent because Cloud sync is on. Manage in Cloud sync (https://joli.to) or unsubscribe anytime: ${unsubscribeUrl}`,
       )
       expect(text).toContain('• 15 new cards')
       expect(text).toContain('• 120 reviews')
@@ -679,13 +679,14 @@ describe('deck-digest domain', () => {
       expect(html).toContain(
         "Monthly progress emails are paused while you're away",
       )
-      expect(html).toContain('>Unsubscribe</a>')
-      expect(html).toContain('Sent because <a href="https://joli.to"')
+      expect(html).toContain('>unsubscribe</a>')
+      expect(html).toContain('Sent because Cloud sync is on.')
+      expect(html).toContain('Manage in <a href="https://joli.to"')
       expect(html).toContain('Your vocabulary is safe (150 cards)')
       expect(text).toContain('Digests paused')
       expect(text).toContain('Your vocabulary is safe (150 cards)')
       expect(text).toContain(
-        `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
+        `Sent because Cloud sync is on. Manage in Cloud sync (https://joli.to) or unsubscribe anytime: ${unsubscribeUrl}`,
       )
     })
   })

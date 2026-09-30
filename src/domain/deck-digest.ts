@@ -634,7 +634,7 @@ export function formatDigestEmail(
           <tr>
             <td align="center" style="padding: 0 16px;">
               <p class="footer-text" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #5f6e66; text-align: center;">
-                Sent because <a href="https://joli.to" target="_blank" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
+                Sent because Cloud sync is on. Manage in <a href="https://joli.to" target="_blank" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Cloud sync</a> or <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">unsubscribe</a> anytime.
               </p>
             </td>
           </tr>
@@ -664,7 +664,7 @@ export function formatDigestEmail(
     `Your vocabulary belongs to you:`,
     `Most language apps trap your progress in their servers. We don't believe in that. Attached is an offline JSON copy of your complete deck (${stats.totalCards} cards). It's yours to keep, inspect, or restore anytime in Deck → Backup & Import.`,
     ``,
-    `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
+    `Sent because Cloud sync is on. Manage in Cloud sync (https://joli.to) or unsubscribe anytime: ${unsubscribeUrl}`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -793,7 +793,7 @@ export function formatPausedNoticeEmail(
           <tr>
             <td align="center" style="padding: 0 16px;">
               <p class="footer-text" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #5f6e66; text-align: center;">
-                Sent because <a href="https://joli.to" target="_blank" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Jolito</a> sync is on. <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">Unsubscribe</a> anytime.
+                Sent because Cloud sync is on. Manage in <a href="https://joli.to" target="_blank" class="footer-brand-link" style="color: #5f6e66; text-decoration: underline;">Cloud sync</a> or <a href="${escapeHtml(unsubscribeUrl)}" class="unsubscribe-link" style="color: #5f6e66; text-decoration: underline;">unsubscribe</a> anytime.
               </p>
             </td>
           </tr>
@@ -813,7 +813,7 @@ export function formatPausedNoticeEmail(
     `Your vocabulary is safe (${totalCards} cards):`,
     `Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly digests will resume automatically.`,
     ``,
-    `Sent because Jolito (https://joli.to) sync is on. Unsubscribe anytime: ${unsubscribeUrl}`,
+    `Sent because Cloud sync is on. Manage in Cloud sync (https://joli.to) or unsubscribe anytime: ${unsubscribeUrl}`,
   ].join('\n')
 
   return { subject, html, text }
