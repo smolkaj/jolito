@@ -26,10 +26,25 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        id: ffmpeg-deb-cache
+        with:
+          path: ~/.cache/apt-archives
+          key: ffmpeg-debs-${{ runner.os }}-noble-v1
       - name: Ensure FFmpeg
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo rm -f /etc/apt/apt.conf.d/docker-clean 2>/dev/null || true
+            echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99keep-debs
+            if ls ~/.cache/apt-archives/*.deb >/dev/null 2>&1; then
+              echo "Restoring cached ffmpeg deb packages..."
+              sudo cp -n ~/.cache/apt-archives/*.deb /var/cache/apt/archives/ 2>/dev/null || true
+            fi
             sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+            if ls /var/cache/apt/archives/*.deb >/dev/null 2>&1; then
+              mkdir -p ~/.cache/apt-archives
+              cp -n /var/cache/apt/archives/*.deb ~/.cache/apt-archives/ 2>/dev/null || true
+            fi
           fi
       - run: python3 tests/release/native_walkthrough_test.py
 
