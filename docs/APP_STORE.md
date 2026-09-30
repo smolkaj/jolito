@@ -152,9 +152,9 @@ Review contact information and reviewer notes are version-controlled in
 sign-in; the starter demo is available anonymously. The metadata lane requires
 `APP_REVIEW_EMAIL` and `APP_REVIEW_MAILBOX_PASSWORD` from private release secrets
 and supplies them to Apple's demo-account fields. Never commit these values.
-The password opens the dedicated reviewer inbox at https://mail.tm/en/; Jolito
-itself uses the fresh emailed code. The notes give the complete independent login
-procedure. Verify both the inbox login and app sign-in before every submission.
+The demo credentials sign in directly inside the app via password authentication
+or OTP fallback; no external email client or web browser is required. The notes give
+the complete independent login procedure. Verify the reviewer app sign-in before every submission.
 The disposable account used to demonstrate deletion must be separate.
 
 The same lane attaches `docs/media/native-walkthrough.mp4`. See

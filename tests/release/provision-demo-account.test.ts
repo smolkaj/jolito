@@ -133,6 +133,21 @@ void test('provisionDemoAccount validates required environment variables without
       return true
     },
   )
+
+  await assert.rejects(
+    () =>
+      provisionDemoAccount(
+        {
+          ...validEnv,
+          APP_REVIEW_EMAIL: 'reviewer@gmail.com',
+        },
+        () => Promise.resolve(new Response()),
+      ),
+    (err: Error) => {
+      assert.match(err.message, /APP_REVIEW_EMAIL/)
+      return true
+    },
+  )
 })
 
 void test('provisionDemoAccount creates new user and verifies password when user does not exist', async () => {

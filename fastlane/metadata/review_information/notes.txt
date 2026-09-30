@@ -14,7 +14,7 @@ For Mexican Spanish learners, travelers and residents who want to remember usefu
 
 3. SETUP AND REVIEWER ACCESS
 The starter demo works without an account. Personal card creation, imports and synchronization require free sign-in and an initial internet connection. Subsequent study works offline; pronunciation uses installed device voices. There is one learner account type; no sample files required.
-Reviewers can sign in directly inside the app using the demo account credentials provided in App Store Connect: open Account/Sync, tap "Sign in with password", enter the username and password from App Review's sign-in fields, and tap "Sign in". (Alternatively, you may enter the username under "Email address", tap "Send sign-in link", and enter the demo password in the code field). No external email client or web browser is required.
+Reviewers can sign in directly inside the app using the demo account credentials provided in App Store Connect: open Account/Sync, enter the username from App Review's sign-in fields into the "Email address" field, tap "Sign in with password", enter the password, and tap "Sign in". (Alternatively, you may enter the username under "Email address", tap "Send sign-in link", and enter the demo password in the code field). No external email client or web browser is required.
 Create: enter Spanish and English, optionally context/both directions, then Save card. Cards: recall, swipe up or tap Reveal answer, listen, then swipe right for Good or tap a rating. Audio plays automatically; speaker buttons replay it. Deck: browse/search/edit cards and add starter packs. Grammar: Grammar tab > Start practice. Delete: Account/Sync > Delete cloud account & data, read the warning, type DELETE and confirm.
 
 4. EXTERNAL SERVICES
