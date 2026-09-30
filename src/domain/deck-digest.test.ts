@@ -673,7 +673,7 @@ describe('deck-digest domain', () => {
       expect(subject).toBe(
         '[Jolito] Progress Report (paused) - Aug 29 – Sep 28, 2026',
       )
-      expect(html).toContain('Digests paused')
+      expect(html).toContain('Progress reports paused')
       expect(html).toContain('alt=""')
       expect(html).toContain('role="presentation"')
       expect(html).toContain(
@@ -683,8 +683,14 @@ describe('deck-digest domain', () => {
       expect(html).toContain('Sent because Cloud sync is on.')
       expect(html).toContain('Manage in <a href="https://joli.to"')
       expect(html).toContain('Your vocabulary is safe (150 cards)')
-      expect(text).toContain('Digests paused')
+      expect(html).toContain(
+        'monthly progress reports will resume automatically',
+      )
+      expect(text).toContain('Progress reports paused')
       expect(text).toContain('Your vocabulary is safe (150 cards)')
+      expect(text).toContain(
+        'monthly progress reports will resume automatically',
+      )
       expect(text).toContain(
         `Sent because Cloud sync is on. Manage in Cloud sync (https://joli.to) or unsubscribe anytime: ${unsubscribeUrl}`,
       )

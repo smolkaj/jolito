@@ -417,7 +417,7 @@ export async function handleUnsubscribeRequest(
       renderUnsubscribeHtml({
         title: 'Invalid link',
         bodyText:
-          'Invalid or expired unsubscribe link. You can also manage your email preferences anytime in Sync &amp; Account in the app.',
+          'Invalid or expired unsubscribe link. You can also manage your email preferences anytime in Cloud sync in the app.',
         buttonText: 'Return to Jolito',
         buttonHref: getBaseUrl(env),
       }),
@@ -493,7 +493,7 @@ export async function handleUnsubscribeRequest(
   const html = renderUnsubscribeHtml({
     title: "You're unsubscribed",
     bodyText:
-      'You will no longer receive monthly deck backup or progress emails. Your deck remains safe and synchronized across your devices. You can re-enable this anytime in Sync &amp; Account in the app.',
+      'You will no longer receive monthly progress reports. Your deck remains safe and synchronized across your devices. You can re-enable this anytime in Cloud sync in the app.',
     buttonText: 'Return to Jolito',
     buttonHref: getBaseUrl(env),
   })
