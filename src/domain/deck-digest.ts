@@ -733,7 +733,7 @@ export function formatPausedNoticeEmail(
 </head>
 <body class="email-body-bg" style="margin: 0; padding: 0; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
   <div style="display: none; font-size: 1px; color: #fdf5f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
-    Monthly progress emails are paused while you're away. Offline deck backup attached.
+    Monthly progress reports are paused while you're away. Offline deck backup attached.
   </div>
 
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-body-bg" style="background-color: #fdf5f8; padding: 32px 16px;">
@@ -769,7 +769,7 @@ export function formatPausedNoticeEmail(
               <div class="subtext" style="margin: 0 0 20px 0; font-size: 13.5px; font-weight: 500; color: #5f6e66;">${escapeHtml(periodLabel)}</div>
 
               <p class="email-paragraph" style="margin: 0 0 20px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #3b4740; line-height: 1.5;">
-                You haven't practiced recently, so we paused monthly emails to keep your inbox clean.
+                You haven't practiced recently, so we paused monthly progress reports to keep your inbox clean.
               </p>
 
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="backup-callout" style="width: 100%; background-color: #fdf5f8; border: 1px solid #e2ddd3; border-radius: 14px;">
@@ -808,7 +808,7 @@ export function formatPausedNoticeEmail(
     `Jolito — Progress reports paused (${periodLabel})`,
     `===============================================`,
     ``,
-    `You haven't practiced recently, so we paused monthly emails to keep your inbox clean.`,
+    `You haven't practiced recently, so we paused monthly progress reports to keep your inbox clean.`,
     ``,
     `Your vocabulary is safe (${totalCards} cards):`,
     `Your complete deck is attached as an offline backup. Whenever you want to practice again, simply open Jolito—monthly progress reports will resume automatically.`,

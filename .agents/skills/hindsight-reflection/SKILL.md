@@ -36,6 +36,7 @@ Compare the working draft against the greenfield design, auditing for explorator
 - **Sediment of the journey:** Does the diff reflect the chronological order of bug fixes and patches rather than an intentional, coherent design?
 - **Downstream symptom relief:** Does the change work around awkward upstream structures from the outside rather than fixing the contract or structure at the root?
 - **Inverted signal-to-noise:** Do glue, overrides, special cases, and coordination dominate the core intent?
+- **Partial surface alignment & boundary sweep:** Did the change update the happy-path or primary component while leaving adjacent edge cases, error states, external routes, or transactional emails with stale terminology, residual naming drift, or dual concepts?
 
 ### Recommendation
 

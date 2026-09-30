@@ -82,9 +82,16 @@ Whenever investigating or fixing a bug observed by a user or in production:
    - For UI flows and state machines: write **asynchronous interruption tests** verifying that concurrent events (background sync, token refresh, visibility toggles, storage events) mid-session do not revert or corrupt user progress.
 3. **Close the systemic gap:** The PR must introduce the preventative test or architectural invariant that would have blocked the original regression PR from merging. Do not declare a bug task complete until the testing blind spot itself is permanently closed.
 
+# Whole-journey microcopy & terminology integrity
+
+Microcopy is UI architecture, not cosmetic decoration. When renaming, reframing, or introducing a user-facing concept, feature, modal title, or action button:
+
+- **Exhaustive semantic sweep:** Execute a repository-wide sweep (`git grep`) across the entire semantic touchpoint graph: primary views, settings dialogs, transactional notification emails, edge-case error and fallback screens, external web landing pages, and ARIA labels.
+- **Zero naming drift in the same PR:** Terminology and navigation directions must be 100% unified in the same PR. Never leave residual naming drift or stale references for follow-up tasks.
+
 # Philosophy & invariants
 
 All agent work must strictly preserve the repository's [Engineering philosophy and core invariants](docs/ARCHITECTURE.md#engineering-philosophy) and [Design principles](docs/DESIGN.md):
 
 - **Philosophy:** Optimize for agents, not humans; simplicity above all; reject ambient magic & dual systems; know the ideal north star; test-first & DAMP; walking skeleton first; churn is free. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#engineering-philosophy).
-- **Invariants:** Strictly $0.00 operating costs; local-first & offline by default; keyboard-first & accessible (zero WCAG violations); never fail silently; validate boundaries with Zod; data migrations are mandatory; visual verification is mandatory; zero idle activity & deterministic teardown; 100% config-as-code & zero manual drift. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#core-invariants).
+- **Invariants:** Strictly $0.00 operating costs; local-first & offline by default; keyboard-first & accessible (zero WCAG violations); whole-journey microcopy & terminology integrity; never fail silently; validate boundaries with Zod; data migrations are mandatory; visual verification is mandatory; zero idle activity & deterministic teardown; 100% config-as-code & zero manual drift. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#core-invariants).

@@ -677,7 +677,10 @@ describe('deck-digest domain', () => {
       expect(html).toContain('alt=""')
       expect(html).toContain('role="presentation"')
       expect(html).toContain(
-        "Monthly progress emails are paused while you're away",
+        "Monthly progress reports are paused while you're away",
+      )
+      expect(html).toContain(
+        "You haven't practiced recently, so we paused monthly progress reports to keep your inbox clean.",
       )
       expect(html).toContain('>unsubscribe</a>')
       expect(html).toContain('Sent because Cloud sync is on.')
@@ -687,6 +690,9 @@ describe('deck-digest domain', () => {
         'monthly progress reports will resume automatically',
       )
       expect(text).toContain('Progress reports paused')
+      expect(text).toContain(
+        "You haven't practiced recently, so we paused monthly progress reports to keep your inbox clean.",
+      )
       expect(text).toContain('Your vocabulary is safe (150 cards)')
       expect(text).toContain(
         'monthly progress reports will resume automatically',
