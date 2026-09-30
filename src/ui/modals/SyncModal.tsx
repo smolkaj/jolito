@@ -788,20 +788,21 @@ export function SyncModal({
                   ? 'Save card & send link →'
                   : 'Send sign-in link →'}
             </button>
-            {auth.signInWithPassword && (
-              <div className="sync-auth-sub-actions">
-                <button
-                  type="button"
-                  className="modal-link-btn"
-                  onClick={() => {
-                    setStatusMsg(null)
-                    setAuthMode('password')
-                  }}
-                >
-                  Sign in with password
-                </button>
-              </div>
-            )}
+            {auth.signInWithPassword &&
+              email.trim().toLowerCase().endsWith('@joli.to') && (
+                <div className="sync-auth-sub-actions">
+                  <button
+                    type="button"
+                    className="modal-link-btn"
+                    onClick={() => {
+                      setStatusMsg(null)
+                      setAuthMode('password')
+                    }}
+                  >
+                    Sign in with password
+                  </button>
+                </div>
+              )}
           </form>
         )
       ) : (

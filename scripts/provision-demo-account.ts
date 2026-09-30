@@ -5,7 +5,12 @@ import { z } from 'zod'
 const envSchema = z.object({
   SUPABASE_ACCESS_TOKEN: z.string().min(1),
   SUPABASE_PROJECT_ID: z.string().regex(/^[a-z0-9]+$/),
-  APP_REVIEW_EMAIL: z.string().email(),
+  APP_REVIEW_EMAIL: z
+    .string()
+    .email()
+    .refine((val) => val.trim().toLowerCase().endsWith('@joli.to'), {
+      message: 'APP_REVIEW_EMAIL must be a @joli.to email address',
+    }),
   APP_REVIEW_MAILBOX_PASSWORD: z.string().min(6),
 })
 

@@ -571,7 +571,7 @@ class ReleaseTest < Minitest::Test
   def test_metadata_lane_validates_native_screenshots_and_uses_deliver_options
     Fastlane::Actions.load_default_actions
     harness = LaneHarness.new
-    ReleaseConfig.stub(:review_package!, { demo_user: 'review@example.com', demo_password: 'private-inbox-password' }) do
+    ReleaseConfig.stub(:review_package!, { demo_user: 'reviewer@joli.to', demo_password: 'private-inbox-password' }) do
       harness.execute(:metadata)
     end
     assert_equal [:connect, :upload_to_app_store], harness.calls.map(&:first)
@@ -580,21 +580,22 @@ class ReleaseTest < Minitest::Test
     assert_equal '1.0', options.fetch(:app_version)
     assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots'), options.fetch(:screenshots_path)
     assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/metadata'), options.fetch(:metadata_path)
-    assert_equal({ demo_user: 'review@example.com', demo_password: 'private-inbox-password' }, options.fetch(:app_review_information))
+    assert_equal({ demo_user: 'reviewer@joli.to', demo_password: 'private-inbox-password' }, options.fetch(:app_review_information))
     assert_equal File.join(ReleaseConfig::ROOT, 'docs/media/native-walkthrough.mp4'), options.fetch(:app_review_attachment_file)
     assert options.fetch(:skip_binary_upload)
     refute options.fetch(:submit_for_review)
   end
 
   def test_review_upload_requires_independent_account_credentials
-    env = { 'APP_REVIEW_EMAIL' => 'review@example.com', 'APP_REVIEW_MAILBOX_PASSWORD' => 'private-inbox-password' }
-    assert_equal({ demo_user: 'review@example.com', demo_password: 'private-inbox-password' }, ReleaseConfig.review_account!(env))
+    env = { 'APP_REVIEW_EMAIL' => 'reviewer@joli.to', 'APP_REVIEW_MAILBOX_PASSWORD' => 'private-inbox-password' }
+    assert_equal({ demo_user: 'reviewer@joli.to', demo_password: 'private-inbox-password' }, ReleaseConfig.review_account!(env))
     env.keys.each do |key|
       error = assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.reject { |name, _| name == key }) }
       refute_includes error.message, 'private-inbox-password'
       assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.merge(key => ' ')) }
     end
     assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.merge('APP_REVIEW_EMAIL' => 'not-email')) }
+    assert_raises(RuntimeError) { ReleaseConfig.review_account!(env.merge('APP_REVIEW_EMAIL' => 'reviewer@example.com')) }
     harness = LaneHarness.new
     ReleaseConfig.stub(:review_package!, -> { raise 'Missing reviewer credentials' }) do
       assert_raises(RuntimeError) { harness.execute(:metadata) }
@@ -603,7 +604,7 @@ class ReleaseTest < Minitest::Test
   end
 
   def test_review_package_preflight_rejects_incomplete_or_changed_evidence_before_connecting
-    env = { 'APP_REVIEW_EMAIL' => 'review@example.com', 'APP_REVIEW_MAILBOX_PASSWORD' => 'private-inbox-password' }
+    env = { 'APP_REVIEW_EMAIL' => 'reviewer@joli.to', 'APP_REVIEW_MAILBOX_PASSWORD' => 'private-inbox-password' }
     Dir.mktmpdir do |root|
       notes = File.join(root, 'fastlane/metadata/review_information/notes.txt')
       movie = File.join(root, 'docs/media/native-walkthrough.mp4')

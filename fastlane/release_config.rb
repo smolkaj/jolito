@@ -55,8 +55,9 @@ module ReleaseConfig
 
   def self.review_account!(env = ENV)
     required!(env, %w[APP_REVIEW_EMAIL APP_REVIEW_MAILBOX_PASSWORD])
-    raise 'APP_REVIEW_EMAIL must be an email address' unless env.fetch('APP_REVIEW_EMAIL').match?(/\A[^@\s]+@[^@\s]+\.[^@\s]+\z/)
-    { demo_user: env.fetch('APP_REVIEW_EMAIL'), demo_password: env.fetch('APP_REVIEW_MAILBOX_PASSWORD') }
+    email = env.fetch('APP_REVIEW_EMAIL').strip
+    raise 'APP_REVIEW_EMAIL must be a @joli.to email address' unless email.match?(/\A[^@\s]+@[^@\s]+\.[^@\s]+\z/) && email.downcase.end_with?('@joli.to')
+    { demo_user: email, demo_password: env.fetch('APP_REVIEW_MAILBOX_PASSWORD') }
   end
 
   # Read-only preflight shared by metadata upload and replacement, before any
