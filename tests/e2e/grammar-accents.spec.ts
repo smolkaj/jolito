@@ -452,6 +452,9 @@ test('mobile docked accent toolbar touch scrubbing corrects selection upon relea
 
   const dockedToolbar = page.locator('.answer-accents.is-docked')
   await expect(dockedToolbar).toBeVisible()
+  await dockedToolbar.evaluate((el) =>
+    Promise.all(el.getAnimations().map((anim) => anim.finished)),
+  )
 
   // 1. Perform a touch scrub gesture from 'á' across to 'é'
   const firstButton = dockedToolbar.getByRole('button', { name: 'Insert á' })
@@ -483,23 +486,24 @@ test('mobile docked accent toolbar touch scrubbing corrects selection upon relea
   await expect(input).toHaveValue('é')
 
   // 2. Perform a vertical slide-away gesture to cancel
+  const freshFirstBox = (await firstButton.boundingBox())!
   await firstButton.dispatchEvent('pointerdown', {
     pointerId: 11,
     pointerType: 'touch',
-    clientX: firstBox.x + firstBox.width / 2,
-    clientY: firstBox.y + firstBox.height / 2,
+    clientX: freshFirstBox.x + freshFirstBox.width / 2,
+    clientY: freshFirstBox.y + freshFirstBox.height / 2,
   })
   await firstButton.dispatchEvent('pointermove', {
     pointerId: 11,
     pointerType: 'touch',
-    clientX: firstBox.x + firstBox.width / 2,
-    clientY: firstBox.y - 50,
+    clientX: freshFirstBox.x + freshFirstBox.width / 2,
+    clientY: freshFirstBox.y - 60,
   })
   await firstButton.dispatchEvent('pointerup', {
     pointerId: 11,
     pointerType: 'touch',
-    clientX: firstBox.x + firstBox.width / 2,
-    clientY: firstBox.y - 50,
+    clientX: freshFirstBox.x + freshFirstBox.width / 2,
+    clientY: freshFirstBox.y - 60,
   })
 
   // Value must remain 'é' (vertical slide aborted gesture without inserting)
