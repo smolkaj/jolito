@@ -195,6 +195,11 @@ void test('index.html contains prerendered semantic landing shell for search cra
     /"@type":\s*"WebApplication"/,
     'index.html must define WebApplication Schema.org structured data',
   )
+  assert.match(
+    indexHtml,
+    /"@type":\s*"Course"/,
+    'index.html must define Course Schema.org structured data',
+  )
 
   // 6. Zero raw JSX delimiter expressions: no literal {' '} in static HTML
   assert.strictEqual(
@@ -312,6 +317,49 @@ void test('index.html contains prerendered semantic landing shell for search cra
     /LANDING_HERO_CONTENT\.ledeLead/,
     'WelcomeView.tsx must consume LANDING_HERO_CONTENT.ledeLead',
   )
+})
+
+void test('index.html Schema.org structured data strictly complies with Zod contracts (WebApplication + Course)', async () => {
+  const fs = await import('node:fs')
+  const indexHtml = fs.readFileSync('index.html', 'utf8')
+  const { validateIndexHtmlStructuredData } =
+    await import('../../src/domain/seo-schema.ts')
+
+  const { webApp, course } = validateIndexHtmlStructuredData(indexHtml)
+
+  // 1. WebApplication assertions
+  assert.strictEqual(webApp['@type'], 'WebApplication')
+  assert.strictEqual(webApp.name, 'Jolito')
+  assert.strictEqual(webApp.url, 'https://joli.to/')
+  assert.strictEqual(webApp.applicationCategory, 'EducationalApplication')
+  assert.strictEqual(webApp.offers.price, '0')
+  assert.strictEqual(webApp.offers.priceCurrency, 'USD')
+  assert.ok(
+    webApp.featureList.some((f) =>
+      f.toLowerCase().includes('spaced repetition'),
+    ),
+    'WebApplication must highlight spaced repetition in featureList',
+  )
+  assert.ok(
+    webApp.featureList.some((f) => f.toLowerCase().includes('grammar')),
+    'WebApplication must highlight grammar in featureList',
+  )
+  assert.ok(
+    webApp.featureList.some((f) => f.toLowerCase().includes('audio')),
+    'WebApplication must highlight audio in featureList',
+  )
+
+  // 2. Course assertions
+  assert.strictEqual(course['@type'], 'Course')
+  assert.strictEqual(course.provider.name, 'Jolito')
+  assert.strictEqual(course.provider.sameAs, 'https://joli.to/')
+  assert.strictEqual(course.isAccessibleForFree, true)
+  assert.strictEqual(course.educationalLevel, 'Beginner to Advanced')
+  assert.strictEqual(
+    course.teaches,
+    'Mexican Spanish vocabulary, pronunciation, and grammar conjugations',
+  )
+  assert.strictEqual(course.hasCourseInstance[0]?.courseMode, 'online')
 })
 
 void test('quality.yml decouples WebKit from parallel browser shards to protect apt mirror throughput', async () => {

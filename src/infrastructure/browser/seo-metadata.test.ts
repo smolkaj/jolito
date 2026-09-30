@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { validateIndexHtmlStructuredData } from '../../domain/seo-schema'
 
 describe('SEO search snippet and favicon compliance', () => {
   const rootDir = resolve(__dirname, '../../../')
@@ -66,6 +67,25 @@ describe('SEO search snippet and favicon compliance', () => {
     expect(features).toContain('grammar')
     expect(features).toContain('starter packs')
     expect(features).toContain('audio')
+  })
+
+  it('validates all Schema.org structured data (WebApplication and Course) with Zod contracts', () => {
+    const html = readFileSync(indexPath, 'utf-8')
+    const { webApp, course } = validateIndexHtmlStructuredData(html)
+
+    expect(webApp['@context']).toBe('https://schema.org')
+    expect(webApp['@type']).toBe('WebApplication')
+    expect(webApp.name).toBe('Jolito')
+    expect(webApp.url).toBe('https://joli.to/')
+    expect(webApp.offers.price).toBe('0')
+
+    expect(course['@context']).toBe('https://schema.org')
+    expect(course['@type']).toBe('Course')
+    expect(course.name).toContain('Mexican Spanish')
+    expect(course.provider.name).toBe('Jolito')
+    expect(course.isAccessibleForFree).toBe(true)
+    expect(course.teaches).toContain('grammar conjugations')
+    expect(course.hasCourseInstance[0]?.courseMode).toBe('online')
   })
 
   it('provides an SPA crawler fallback in noscript covering core capabilities', () => {
