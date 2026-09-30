@@ -131,3 +131,68 @@ void test('Deck Manager table pills enforce single-line nowrap and adequate stat
     '.deck-card-row status column track must be at least minmax(84px, 96px)',
   )
 })
+
+void test('index.html contains prerendered semantic landing shell for search crawlers and zero-JS accessibility', async () => {
+  const fs = await import('node:fs')
+  const indexHtml = fs.readFileSync('index.html', 'utf8')
+
+  // 1. Root container must not be an empty div; must include semantic welcome-page shell
+  assert.match(
+    indexHtml,
+    /<div id="root">\s*<main class="welcome-page"/,
+    'index.html #root container must contain prerendered welcome-page shell',
+  )
+
+  // 2. Primary H1 and lede must be present in raw HTML for instant indexing
+  assert.match(
+    indexHtml,
+    /<h1[^>]*>[\s\S]*?Make the words[\s\S]*?stick\.[\s\S]*?<\/h1>/,
+    'index.html must include primary H1 headline in static HTML',
+  )
+  assert.match(
+    indexHtml,
+    /Create beautiful, spoken flashcards\./,
+    'index.html must include lede description in static HTML',
+  )
+
+  // 3. Why Jolito section with origin story and outbound educational links
+  assert.match(
+    indexHtml,
+    /<h2 id="why-jolito-title">Why another flashcard app\?<\/h2>/,
+    'index.html must include "Why another flashcard app?" H2',
+  )
+  assert.match(
+    indexHtml,
+    /International House in Condesa/,
+    'index.html must include origin story context in static HTML',
+  )
+  assert.match(
+    indexHtml,
+    /https:\/\/ihmexico\.mx\//,
+    'index.html must preserve outbound link to IH Mexico',
+  )
+
+  // 4. Sample card preview with Mexican Spanish and English badges
+  assert.match(
+    indexHtml,
+    /MEXICAN SPANISH/,
+    'index.html must include Mexican Spanish sample badge',
+  )
+  assert.match(
+    indexHtml,
+    /el aguacate/,
+    'index.html must include Mexican Spanish sample phrase',
+  )
+
+  // 5. Canonical and structured metadata
+  assert.match(
+    indexHtml,
+    /<link rel="canonical" href="https:\/\/joli\.to\/" \/>/,
+    'index.html must define canonical domain URL',
+  )
+  assert.match(
+    indexHtml,
+    /"@type":\s*"WebApplication"/,
+    'index.html must define WebApplication Schema.org structured data',
+  )
+})
