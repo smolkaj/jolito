@@ -19,12 +19,26 @@ export function viewFromHash(hash: string): View {
 export function hashFromDeepLink(url: string): string | null {
   try {
     const parsed = new URL(url)
-    if (parsed.protocol !== 'jolito:') {
+    const scheme = parsed.protocol.toLowerCase()
+    const isJolito = scheme === 'jolito:'
+    const isWeb =
+      (scheme === 'https:' || scheme === 'http:') &&
+      (parsed.hostname === 'joli.to' ||
+        parsed.hostname === 'www.joli.to' ||
+        parsed.hostname === 'localhost' ||
+        parsed.hostname.endsWith('.workers.dev'))
+
+    if (!isJolito && !isWeb) {
       return null
     }
-    const path = (parsed.host + parsed.pathname)
-      .toLowerCase()
-      .replace(/\/+$/, '')
+
+    if (parsed.hash && parsed.hash.includes('access_token=')) {
+      return parsed.hash.startsWith('#') ? parsed.hash : `#${parsed.hash}`
+    }
+
+    const rawPath = isJolito ? parsed.host + parsed.pathname : parsed.pathname
+    const path = rawPath.toLowerCase().replace(/\/+$/, '').replace(/^\/+/, '')
+
     if (path === 'practice/grammar' || path === 'grammar') {
       return '#/grammar'
     }
@@ -42,10 +56,71 @@ export function hashFromDeepLink(url: string): string | null {
     if (path === 'create') {
       return '#/create'
     }
+    if (path === 'complete') {
+      return '#/complete'
+    }
+    if (path === 'auth/confirm' || path === 'auth/callback') {
+      return null
+    }
     return '#/'
   } catch {
     return null
   }
+}
+
+export function isAuthDeepLink(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    const scheme = parsed.protocol.toLowerCase()
+    const isJolito = scheme === 'jolito:'
+    const isWeb =
+      (scheme === 'https:' || scheme === 'http:') &&
+      (parsed.hostname === 'joli.to' ||
+        parsed.hostname === 'www.joli.to' ||
+        parsed.hostname === 'localhost' ||
+        parsed.hostname.endsWith('.workers.dev'))
+
+    if (!isJolito && !isWeb) return false
+
+    const search = parsed.searchParams
+    const hash = parsed.hash
+    return Boolean(
+      search.has('token_hash') ||
+      search.has('token') ||
+      hash.includes('access_token=') ||
+      hash.includes('token_hash='),
+    )
+  } catch {
+    return false
+  }
+}
+
+const consumedAuthTokens = new Set<string>()
+
+export function resetConsumedAuthTokensForTesting(): void {
+  consumedAuthTokens.clear()
+}
+
+export function extractAuthToken(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.searchParams.get('token_hash') ||
+      parsed.searchParams.get('token') ||
+      parsed.hash.match(/access_token=([^&]+)/)?.[1] ||
+      parsed.hash.match(/token_hash=([^&]+)/)?.[1] ||
+      null
+    )
+  } catch {
+    return null
+  }
+}
+
+export function consumeAuthToken(url: string): boolean {
+  const token = extractAuthToken(url) || url
+  if (consumedAuthTokens.has(token)) return false
+  consumedAuthTokens.add(token)
+  return true
 }
 
 export function isWhyJolitoHash(hash: string): boolean {

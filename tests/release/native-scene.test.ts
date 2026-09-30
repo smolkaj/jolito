@@ -545,3 +545,48 @@ void test('CSS architectural invariants for mobile keyboard accent toolbar acces
     'Accent toolbar scroll container must not mask or clip characters on compact viewports',
   )
 })
+
+void test('App.entitlements and SceneDelegate configure Universal Links and Web Credentials for joli.to', () => {
+  const entitlements = readFileSync(
+    new URL('../../ios/App/App/App.entitlements', import.meta.url),
+    'utf8',
+  )
+  const sceneDelegate = readFileSync(
+    new URL('../../ios/App/App/SceneDelegate.swift', import.meta.url),
+    'utf8',
+  )
+
+  // 1. Associated Domains entitlement
+  assert.match(
+    entitlements,
+    /<key>com\.apple\.developer\.associated-domains<\/key>/,
+    'App.entitlements must declare com.apple.developer.associated-domains',
+  )
+  assert.match(
+    entitlements,
+    /<string>applinks:joli\.to<\/string>/,
+    'App.entitlements must include applinks:joli.to',
+  )
+  assert.match(
+    entitlements,
+    /<string>webcredentials:joli\.to<\/string>/,
+    'App.entitlements must include webcredentials:joli.to',
+  )
+
+  // 2. SceneDelegate handles NSUserActivityTypeBrowsingWeb on warm and cold boots
+  assert.match(
+    sceneDelegate,
+    /connectionOptions\.userActivities\.first\(where:\s*\{\s*\$0\.activityType\s*==\s*NSUserActivityTypeBrowsingWeb\s*\}\)/,
+    'SceneDelegate must inspect userActivities for NSUserActivityTypeBrowsingWeb on cold boot',
+  )
+  assert.match(
+    sceneDelegate,
+    /func scene\(_ scene: UIScene,\s*continue userActivity: NSUserActivity\)[\s\S]*?userActivity\.activityType\s*==\s*NSUserActivityTypeBrowsingWeb[\s\S]*?handleIncomingUrl/,
+    'SceneDelegate must handle Universal Links in scene(_:continue:) and delegate to handleIncomingUrl',
+  )
+  assert.match(
+    sceneDelegate,
+    /isUniversalLink[\s\S]*?joli\.to/,
+    'SceneDelegate targetHash must recognize universal link host joli.to',
+  )
+})

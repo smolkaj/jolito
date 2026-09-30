@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  consumeAuthToken,
+  extractAuthToken,
   hashForView,
   hashFromDeepLink,
+  isAuthDeepLink,
   isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
+  resetConsumedAuthTokensForTesting,
   titleForView,
   viewFromHash,
 } from './navigation'
@@ -97,9 +101,100 @@ describe('navigation', () => {
     expect(hashFromDeepLink('jolito://cards')).toBe('#/deck')
     expect(hashFromDeepLink('jolito://library')).toBe('#/deck')
     expect(hashFromDeepLink('jolito://create')).toBe('#/create')
+    expect(hashFromDeepLink('jolito://complete')).toBe('#/complete')
     expect(hashFromDeepLink('jolito://home')).toBe('#/')
     expect(hashFromDeepLink('jolito://')).toBe('#/')
     expect(hashFromDeepLink('https://example.com/practice')).toBeNull()
     expect(hashFromDeepLink('invalid-url')).toBeNull()
+  })
+
+  it('maps https://joli.to Universal Links to canonical url hashes', () => {
+    expect(hashFromDeepLink('https://joli.to/practice')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/practice/cards')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/practice/grammar')).toBe(
+      '#/grammar',
+    )
+    expect(hashFromDeepLink('https://joli.to/study')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/review')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/grammar')).toBe('#/grammar')
+    expect(hashFromDeepLink('https://joli.to/deck')).toBe('#/deck')
+    expect(hashFromDeepLink('https://joli.to/cards')).toBe('#/deck')
+    expect(hashFromDeepLink('https://joli.to/library')).toBe('#/deck')
+    expect(hashFromDeepLink('https://joli.to/create')).toBe('#/create')
+    expect(hashFromDeepLink('https://joli.to/complete')).toBe('#/complete')
+    expect(hashFromDeepLink('https://joli.to/')).toBe('#/')
+    expect(hashFromDeepLink('https://www.joli.to/study')).toBe('#/study')
+    expect(
+      hashFromDeepLink(
+        'https://branch-preview-jolito.smolkaj.workers.dev/deck',
+      ),
+    ).toBe('#/deck')
+    expect(
+      hashFromDeepLink(
+        'https://joli.to/#access_token=jwt123&refresh_token=ref456',
+      ),
+    ).toBe('#access_token=jwt123&refresh_token=ref456')
+    expect(
+      hashFromDeepLink('https://joli.to/auth/confirm?token_hash=hash123'),
+    ).toBeNull()
+    expect(hashFromDeepLink('https://joli.to/auth/confirm')).toBeNull()
+  })
+
+  it('identifies auth deep links across custom schemes and Universal Links', () => {
+    expect(
+      isAuthDeepLink(
+        'https://joli.to/auth/confirm?token_hash=pkce123&type=email',
+      ),
+    ).toBe(true)
+    expect(
+      isAuthDeepLink('https://joli.to/auth/callback?token_hash=pkce123'),
+    ).toBe(true)
+    expect(
+      isAuthDeepLink(
+        'https://branch-preview-jolito.smolkaj.workers.dev/auth/confirm?token_hash=pkce123&type=email',
+      ),
+    ).toBe(true)
+    expect(
+      isAuthDeepLink(
+        'https://joli.to/#access_token=jwt123&refresh_token=ref456',
+      ),
+    ).toBe(true)
+    expect(isAuthDeepLink('jolito://auth?token_hash=pkce123')).toBe(true)
+    expect(isAuthDeepLink('jolito://#access_token=jwt123')).toBe(true)
+
+    expect(isAuthDeepLink('https://joli.to/auth/confirm')).toBe(false)
+    expect(isAuthDeepLink('https://joli.to/auth/callback')).toBe(false)
+    expect(isAuthDeepLink('https://joli.to/study')).toBe(false)
+    expect(isAuthDeepLink('jolito://deck')).toBe(false)
+    expect(
+      isAuthDeepLink('https://attacker.com/auth/confirm?token_hash=pkce123'),
+    ).toBe(false)
+    expect(isAuthDeepLink('invalid-url')).toBe(false)
+  })
+
+  it('extracts and deduplicates auth tokens to prevent replay', () => {
+    resetConsumedAuthTokensForTesting()
+
+    const magicUrl =
+      'https://joli.to/auth/confirm?token_hash=token_abc_123&type=email'
+    expect(extractAuthToken(magicUrl)).toBe('token_abc_123')
+    expect(consumeAuthToken(magicUrl)).toBe(true)
+    // Second consumption attempt must be rejected
+    expect(consumeAuthToken(magicUrl)).toBe(false)
+    // Different URL containing the same token must also be rejected
+    expect(consumeAuthToken('jolito://auth?token_hash=token_abc_123')).toBe(
+      false,
+    )
+
+    // Token extracted from hash
+    const hashUrl =
+      'https://joli.to/#access_token=jwt_xyz_789&refresh_token=ref'
+    expect(extractAuthToken(hashUrl)).toBe('jwt_xyz_789')
+    expect(consumeAuthToken(hashUrl)).toBe(true)
+    expect(consumeAuthToken(hashUrl)).toBe(false)
+
+    // After reset, token can be consumed again
+    resetConsumedAuthTokensForTesting()
+    expect(consumeAuthToken(magicUrl)).toBe(true)
   })
 })

@@ -202,4 +202,11 @@ describe('SEO search snippet and favicon compliance', () => {
       ).toBe(true)
     }
   })
+
+  it('declares Apple Smart App Banner for iOS Safari native app promotion', () => {
+    const html = readFileSync(indexPath, 'utf-8')
+    expect(html).toMatch(
+      /<meta\s+name="apple-itunes-app"\s+content="app-id=6812974166,\s*app-argument=https:\/\/joli\.to"\s*\/>/,
+    )
+  })
 })

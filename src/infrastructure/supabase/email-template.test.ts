@@ -101,13 +101,25 @@ describe('Supabase Auth Email Template', () => {
         /\{\{\s*\.ConfirmationURL\s*\}\}/g,
         'https://joli.to/#access_token=test-jwt',
       )
+      .replace(/\{\{\s*\.TokenHash\s*\}\}/g, 'mock_token_hash_value')
       .replace(/\{\{\s*\.Token\s*\}\}/g, '482910')
 
     expect(rendered).toContain('https://joli.to/#access_token=test-jwt')
+    expect(rendered).toContain(
+      'https://joli.to/auth/confirm?token_hash=mock_token_hash_value&type=email',
+    )
     expect(rendered).toContain('482910')
     expect(rendered).toContain('@joli.to #482910')
     expect(rendered).not.toContain('{{')
     expect(rendered).not.toContain('}}')
+  })
+
+  it('links sign-in button directly to Universal Link url with TokenHash for iOS native app opening', () => {
+    const content = readFileSync(templatePath, 'utf-8')
+    expect(content).toContain(
+      'href="https://joli.to/auth/confirm?token_hash={{ .TokenHash }}&type=email"',
+    )
+    expect(content).toContain('data-confirmation-url="{{ .ConfirmationURL }}"')
   })
 
   it('supabase/config.toml defines magic_link email template configuration', () => {

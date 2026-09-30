@@ -1,0 +1,27 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "XQCN5RWS6V.to.joli.app",
+        "appIDs": [
+          "XQCN5RWS6V.to.joli.app"
+        ],
+        "components": [
+          {
+            "/": "/*",
+            "comment": "Matches all routes across Jolito"
+          }
+        ],
+        "paths": [
+          "*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "XQCN5RWS6V.to.joli.app"
+    ]
+  }
+}

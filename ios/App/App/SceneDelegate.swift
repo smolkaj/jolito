@@ -33,9 +33,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
         setupKeyboardMonitoring()
 
-        if let url = connectionOptions.urlContexts.first?.url,
-           let hash = Self.targetHash(for: url) {
-            let scriptSource = "window.location.hash = '\(hash)';"
+        let initialUrl = connectionOptions.urlContexts.first?.url ??
+            connectionOptions.userActivities.first(where: { $0.activityType == NSUserActivityTypeBrowsingWeb })?.webpageURL
+        if let url = initialUrl {
+            let escapedUrl = url.absoluteString.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
+            var scriptSource = "window.__JOLITO_INITIAL_URL__ = '\(escapedUrl)';"
+            if let hash = Self.targetHash(for: url) {
+                scriptSource += " window.location.hash = '\(hash)';"
+            }
             let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: true)
             bridgeVC.webView?.configuration.userContentController.addUserScript(script)
         }
@@ -98,22 +103,44 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
-        if let url = URLContexts.first?.url,
-           let hash = Self.targetHash(for: url) {
-            let escapedUrl = url.absoluteString.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
-            let js = "window.location.hash = '\(hash)'; window.dispatchEvent(new CustomEvent('jolito:deep-link', { detail: { url: '\(escapedUrl)' } }));"
-            bridgeViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)
+        if let url = URLContexts.first?.url {
+            handleIncomingUrl(url)
         }
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
+        if userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+           let url = userActivity.webpageURL {
+            handleIncomingUrl(url)
+        }
+    }
+
+    private func handleIncomingUrl(_ url: URL) {
+        let escapedUrl = url.absoluteString.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "'", with: "\\'")
+        let hashAssignment: String
+        if let hash = Self.targetHash(for: url) {
+            hashAssignment = "window.location.hash = '\(hash)'; "
+        } else {
+            hashAssignment = ""
+        }
+        let js = "\(hashAssignment)window.dispatchEvent(new CustomEvent('jolito:deep-link', { detail: { url: '\(escapedUrl)' } }));"
+        bridgeViewController?.webView?.evaluateJavaScript(js, completionHandler: nil)
     }
 
     static func targetHash(for url: URL) -> String? {
-        guard url.scheme?.lowercased() == "jolito" else { return nil }
-        let path = (url.host ?? "") + url.path.lowercased()
-        let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let scheme = url.scheme?.lowercased() ?? ""
+        let isUniversalLink = (scheme == "https" || scheme == "http") &&
+            (url.host?.lowercased() == "joli.to" || url.host?.lowercased() == "www.joli.to")
+        guard scheme == "jolito" || isUniversalLink else { return nil }
+
+        if let fragment = url.fragment, fragment.contains("access_token=") {
+            return "#" + fragment
+        }
+
+        let rawPath = isUniversalLink ? url.path.lowercased() : ((url.host ?? "") + url.path.lowercased())
+        let trimmed = rawPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
         if trimmed == "practice/grammar" || trimmed == "grammar" {
             return "#/grammar"
         }
@@ -126,6 +153,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, WKScriptMessageHandler 
         if trimmed == "create" {
             return "#/create"
         }
+        if trimmed == "complete" {
+            return "#/complete"
+        }
+        if trimmed == "auth/confirm" || trimmed == "auth/callback" {
+            return nil
+        }
         return "#/"
     }
 }
+
