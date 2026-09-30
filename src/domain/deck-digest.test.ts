@@ -677,7 +677,7 @@ describe('deck-digest domain', () => {
       expect(html).toContain('alt=""')
       expect(html).toContain('role="presentation"')
       expect(html).toContain(
-        "Monthly progress emails are paused while you're away",
+        "Monthly progress reports are paused while you're away",
       )
       expect(html).toContain('>unsubscribe</a>')
       expect(html).toContain('Sent because Cloud sync is on.')

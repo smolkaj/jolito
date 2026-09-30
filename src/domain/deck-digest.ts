@@ -733,7 +733,7 @@ export function formatPausedNoticeEmail(
 </head>
 <body class="email-body-bg" style="margin: 0; padding: 0; background-color: #fdf5f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #121815;">
   <div style="display: none; font-size: 1px; color: #fdf5f8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden;">
-    Monthly progress emails are paused while you're away. Offline deck backup attached.
+    Monthly progress reports are paused while you're away. Offline deck backup attached.
   </div>
 
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-body-bg" style="background-color: #fdf5f8; padding: 32px 16px;">
