@@ -452,6 +452,7 @@ class ReleaseTest < Minitest::Test
   def test_beta_lane_fails_fast_when_app_provisioning_fails
     Fastlane::Actions.load_default_actions
     env = signing_env
+    env.delete('APPLE_PROVISIONING_PROFILE')
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
     failure_status = Struct.new(:success?).new(false)
@@ -486,9 +487,10 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
-  def test_beta_lane_fails_fast_when_app_profile_unentitled_and_no_api_key
+  def test_beta_lane_fails_fast_when_app_profile_missing_and_no_api_key
     Fastlane::Actions.load_default_actions
     env = signing_env
+    env.delete('APPLE_PROVISIONING_PROFILE')
     env.delete('APP_STORE_CONNECT_API_KEY_KEY')
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
@@ -505,7 +507,7 @@ class ReleaseTest < Minitest::Test
       harness.stub(:connect, nil) do
         Open3.stub(:capture2, base_proc) do
           error = assert_raises(StandardError) { harness.execute(:beta) }
-          assert_includes error.message, 'lacks Sign In with Apple capability'
+          assert_includes error.message, 'App Store provisioning profile is missing or invalid and cannot be auto-provisioned without App Store Connect API keys'
         end
       end
     end
