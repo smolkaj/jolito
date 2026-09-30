@@ -45,12 +45,21 @@ platform :ios do
           File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
         end
 
-        # Resolve or auto-provision main app profile if missing or invalid
+        # Resolve or auto-provision main app profile if missing, invalid, or lacking required entitlements
         need_app_provision = !File.exist?(profile_file)
         if File.exist?(profile_file)
           File.chmod(0600, profile_file)
-          _xml_check, check_status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
-          need_app_provision = !check_status.success?
+          xml_check, check_status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
+          if check_status.success?
+            parsed_check = Plist.parse_xml(xml_check)
+            entitlements = (parsed_check && parsed_check['Entitlements']) || {}
+            if !entitlements['com.apple.developer.associated-domains']
+              UI.message('Existing profile lacks com.apple.developer.associated-domains entitlement. Auto-provisioning fresh profile...')
+              need_app_provision = true
+            end
+          else
+            need_app_provision = true
+          end
         end
 
         if need_app_provision
