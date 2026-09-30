@@ -26,6 +26,17 @@ export interface AccentToolbarProps {
   activeShortcut?: ShortcutActivation | null | undefined
 }
 
+function recordTouchLiftoff(ref: { current: number }): void {
+  ref.current = Date.now()
+}
+
+function isRecentTouchLiftoff(
+  ref: { current: number },
+  windowMs = 500,
+): boolean {
+  return Date.now() - ref.current < windowMs
+}
+
 export function AccentToolbar({
   onInsert,
   isDocked = false,
@@ -237,7 +248,7 @@ export function AccentToolbar({
     const state = touchesRef.current.get(e.pointerId)
     if (e.pointerType === 'touch' && state) {
       touchesRef.current.delete(e.pointerId)
-      lastTouchTimestampRef.current = e.timeStamp
+      recordTouchLiftoff(lastTouchTimestampRef)
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
@@ -270,7 +281,7 @@ export function AccentToolbar({
   const handlePointerCancel = (e: ReactPointerEvent<HTMLButtonElement>) => {
     if (e.pointerType === 'touch') {
       touchesRef.current.delete(e.pointerId)
-      lastTouchTimestampRef.current = e.timeStamp
+      recordTouchLiftoff(lastTouchTimestampRef)
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
@@ -305,13 +316,10 @@ export function AccentToolbar({
     }
   }
 
-  const handleClick = (e: ReactMouseEvent<HTMLButtonElement>, char: string) => {
+  const handleClick = (char: string) => {
     if (disabled) return
     // Deduplicate trailing synthetic click events generated after touch gestures
-    if (
-      lastTouchTimestampRef.current > 0 &&
-      e.timeStamp - lastTouchTimestampRef.current < 400
-    ) {
+    if (isRecentTouchLiftoff(lastTouchTimestampRef)) {
       return
     }
     handleInsert(char)
@@ -364,7 +372,7 @@ export function AccentToolbar({
               onPointerCancel={handlePointerCancel}
               onPointerLeave={handlePointerLeave}
               onMouseDown={handleMouseDown}
-              onClick={(e) => handleClick(e, char)}
+              onClick={() => handleClick(char)}
             >
               <kbd aria-hidden="true">{shortcut}</kbd>
               <span className="accent-char">{char}</span>
