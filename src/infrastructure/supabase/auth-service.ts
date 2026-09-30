@@ -1202,22 +1202,26 @@ export class SupabaseAuthService implements AuthService {
 
   async getDigestPreference(): Promise<boolean> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) return true
+    if (this.lifetime.signal.aborted) return true
     const token = await this.getAccessToken()
     if (!token) return true
     try {
-      const res = await fetch(
-        `${this.supabaseUrl}/rest/v1/rpc/get_digest_preference`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: this.supabaseAnonKey,
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+      return await withRequestDeadline(async (signal) => {
+        const res = await fetch(
+          `${this.supabaseUrl}/rest/v1/rpc/get_digest_preference`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: this.supabaseAnonKey,
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            signal,
           },
-        },
-      )
-      if (!res.ok) return true
-      return (await res.json()) === true
+        )
+        if (!res.ok) return true
+        return (await res.json()) === true
+      }, this.lifetime.signal)
     } catch {
       return true
     }
@@ -1225,22 +1229,26 @@ export class SupabaseAuthService implements AuthService {
 
   async setDigestPreference(enabled: boolean): Promise<boolean> {
     if (!this.supabaseUrl || !this.supabaseAnonKey) return false
+    if (this.lifetime.signal.aborted) return false
     const token = await this.getAccessToken()
     if (!token) return false
     try {
-      const res = await fetch(
-        `${this.supabaseUrl}/rest/v1/rpc/set_digest_preference`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: this.supabaseAnonKey,
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+      return await withRequestDeadline(async (signal) => {
+        const res = await fetch(
+          `${this.supabaseUrl}/rest/v1/rpc/set_digest_preference`,
+          {
+            method: 'POST',
+            headers: {
+              apikey: this.supabaseAnonKey,
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ p_enabled: enabled }),
+            signal,
           },
-          body: JSON.stringify({ p_enabled: enabled }),
-        },
-      )
-      return res.ok
+        )
+        return res.ok
+      }, this.lifetime.signal)
     } catch {
       return false
     }
