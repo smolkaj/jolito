@@ -480,7 +480,8 @@ export async function findOrStartServer(options: {
   }
 }
 
-const sampleCards = [
+const now = Date.now()
+export const sampleCards = [
   {
     id: 'card-1:es-en',
     noteId: 'note-1',
@@ -492,7 +493,7 @@ const sampleCards = [
     scene: 'conversation',
     schedule: {
       state: 'learning',
-      dueAt: Date.now() - 5000,
+      dueAt: now - 5000,
       intervalDays: 1,
       easeFactor: 2.5,
       reviews: 2,
@@ -500,7 +501,7 @@ const sampleCards = [
     },
     contentRevision: 1,
     resetRevision: { generation: 0, at: 0 },
-    createdAt: Date.now() - 86400000,
+    createdAt: now - 86400000,
   },
   {
     id: 'card-2:es-en',
@@ -513,15 +514,15 @@ const sampleCards = [
     scene: 'conversation',
     schedule: {
       state: 'review',
-      dueAt: Date.now() - 2000,
-      intervalDays: 3,
+      dueAt: now + 86400000 * 30,
+      intervalDays: 30,
       easeFactor: 2.6,
       reviews: 4,
       lapses: 0,
     },
     contentRevision: 1,
     resetRevision: { generation: 0, at: 0 },
-    createdAt: Date.now() - 86400000 * 3,
+    createdAt: now - 86400000 * 30,
   },
   {
     id: 'card-3:es-en',
@@ -533,8 +534,29 @@ const sampleCards = [
       'Mexican temporal expression: depending on tone and context, can mean right this second, shortly, or never.',
     scene: 'conversation',
     schedule: {
+      state: 'learning',
+      dueAt: now + 3600000 * 2,
+      intervalDays: 1,
+      easeFactor: 2.5,
+      reviews: 1,
+      lapses: 0,
+    },
+    contentRevision: 1,
+    resetRevision: { generation: 0, at: 0 },
+    createdAt: now - 86400000 * 2,
+  },
+  {
+    id: 'card-4:es-en',
+    noteId: 'note-4',
+    prompt: 'No manches',
+    answer: 'No way! / You’re kidding!',
+    direction: 'es-en',
+    context:
+      'Widely used informal Mexican expression of surprise or disbelief.',
+    scene: 'conversation',
+    schedule: {
       state: 'new',
-      dueAt: Date.now() - 1000,
+      dueAt: now + 86400000,
       intervalDays: 0,
       easeFactor: 2.5,
       reviews: 0,
@@ -542,7 +564,28 @@ const sampleCards = [
     },
     contentRevision: 1,
     resetRevision: { generation: 0, at: 0 },
-    createdAt: Date.now(),
+    createdAt: now,
+  },
+  {
+    id: 'card-5:es-en',
+    noteId: 'note-5',
+    prompt: 'Se me fue la onda',
+    answer: 'I lost my train of thought',
+    direction: 'es-en',
+    context:
+      'Casual Mexican idiom used when you momentarily forget what you were about to say.',
+    scene: 'conversation',
+    schedule: {
+      state: 'review',
+      dueAt: now + 86400000 * 1,
+      intervalDays: 1,
+      easeFactor: 2.6,
+      reviews: 6,
+      lapses: 0,
+    },
+    contentRevision: 1,
+    resetRevision: { generation: 0, at: 0 },
+    createdAt: now - 86400000 * 8,
   },
 ]
 
