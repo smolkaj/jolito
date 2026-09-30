@@ -31,6 +31,8 @@ jobs:
       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
       APP_REVIEW_EMAIL: ${{ secrets.APP_REVIEW_EMAIL }}
       APP_REVIEW_MAILBOX_PASSWORD: ${{ secrets.APP_REVIEW_MAILBOX_PASSWORD }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
       BUILD_NUMBER: ${{ inputs.build_number }}
     steps:
       - uses: actions/checkout@v7
@@ -46,6 +48,8 @@ jobs:
       - run: npm ci --no-audit
       - if: inputs.operation == 'metadata' || inputs.operation == 'submit' || inputs.operation == 'replace'
         run: bundle exec ruby fastlane/release_config.rb review
+      - if: inputs.operation == 'metadata' || inputs.operation == 'submit' || inputs.operation == 'replace'
+        run: node scripts/provision-demo-account.ts
       - if: inputs.operation == 'configure'
         run: node scripts/app-store.ts --apply
       - if: inputs.operation == 'metadata'
