@@ -203,14 +203,42 @@ void test('index.html contains prerendered semantic landing shell for search cra
     "index.html must not contain raw JSX delimiter expressions ({' '})",
   )
 
-  // 7. Invariant parity with domain landing content
-  const { ORIGIN_STORY, LANDING_HERO_CONTENT } =
-    await import('../../src/domain/landing-content.ts')
+  // 7. Invariant parity with domain landing content across index.html and WelcomeView.tsx
+  const {
+    ORIGIN_STORY,
+    ORIGIN_STORY_PARAGRAPHS,
+    LANDING_HERO_CONTENT,
+    storyParagraphToPlainText,
+  } = await import('../../src/domain/landing-content.ts')
+
+  // Hero content parity
   assert.match(
     indexHtml,
     new RegExp(LANDING_HERO_CONTENT.headlineLead),
     'index.html must reflect LANDING_HERO_CONTENT.headlineLead',
   )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.headlineMiddle),
+    'index.html must reflect LANDING_HERO_CONTENT.headlineMiddle',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.headlineEmp),
+    'index.html must reflect LANDING_HERO_CONTENT.headlineEmp',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.ledeLead),
+    'index.html must reflect LANDING_HERO_CONTENT.ledeLead',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.ledeRest),
+    'index.html must reflect LANDING_HERO_CONTENT.ledeRest',
+  )
+
+  // Origin story parity
   assert.match(
     indexHtml,
     new RegExp(ORIGIN_STORY.eyebrow),
@@ -221,12 +249,67 @@ void test('index.html contains prerendered semantic landing shell for search cra
     new RegExp(ORIGIN_STORY.title.replace('?', '\\?')),
     'index.html must reflect ORIGIN_STORY.title',
   )
+  assert.match(
+    indexHtml,
+    new RegExp(
+      ORIGIN_STORY.links.ihMexico.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+    ),
+    'index.html must reflect ORIGIN_STORY.links.ihMexico',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(
+      ORIGIN_STORY.links.spacedRepetition.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&',
+      ),
+    ),
+    'index.html must reflect ORIGIN_STORY.links.spacedRepetition',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.resolution.prefix),
+    'index.html must reflect ORIGIN_STORY.resolution.prefix',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.resolution.punchline),
+    'index.html must reflect ORIGIN_STORY.resolution.punchline',
+  )
+
   const strippedHtml = indexHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
-  for (const paragraph of ORIGIN_STORY.paragraphs) {
-    const textSnippet = paragraph.slice(0, 30)
+  for (const paragraph of ORIGIN_STORY_PARAGRAPHS) {
+    const plainText = storyParagraphToPlainText(paragraph)
+    const textSnippet = plainText.slice(0, 30)
     assert.ok(
       strippedHtml.includes(textSnippet),
       `index.html text content must contain origin story paragraph snippet: "${textSnippet}"`,
     )
   }
+
+  // WelcomeView.tsx single source of truth verification
+  const welcomeViewCode = fs.readFileSync(
+    'src/ui/views/WelcomeView.tsx',
+    'utf8',
+  )
+  assert.match(
+    welcomeViewCode,
+    /import\s*\{[^}]*ORIGIN_STORY_PARAGRAPHS[^}]*\}\s*from\s*['"]\.\.\/\.\.\/domain\/landing-content['"]/,
+    'WelcomeView.tsx must import ORIGIN_STORY_PARAGRAPHS from landing-content.ts',
+  )
+  assert.match(
+    welcomeViewCode,
+    /ORIGIN_STORY_PARAGRAPHS\.map/,
+    'WelcomeView.tsx must render origin story paragraphs from ORIGIN_STORY_PARAGRAPHS',
+  )
+  assert.match(
+    welcomeViewCode,
+    /LANDING_HERO_CONTENT\.headlineMiddle/,
+    'WelcomeView.tsx must consume LANDING_HERO_CONTENT.headlineMiddle',
+  )
+  assert.match(
+    welcomeViewCode,
+    /LANDING_HERO_CONTENT\.ledeLead/,
+    'WelcomeView.tsx must consume LANDING_HERO_CONTENT.ledeLead',
+  )
 })

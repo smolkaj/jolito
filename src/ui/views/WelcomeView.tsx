@@ -16,6 +16,7 @@ import { RedirectAuthNotice } from '../RedirectAuthNotice'
 import {
   LANDING_HERO_CONTENT,
   ORIGIN_STORY,
+  ORIGIN_STORY_PARAGRAPHS,
 } from '../../domain/landing-content'
 
 export interface WelcomeViewProps {
@@ -304,12 +305,13 @@ export function WelcomeView({
                   {LANDING_HERO_CONTENT.headlineLead}
                 </span>{' '}
                 <br />
-                you meet <em>{LANDING_HERO_CONTENT.headlineEmp}</em>
+                {LANDING_HERO_CONTENT.headlineMiddle}{' '}
+                <em>{LANDING_HERO_CONTENT.headlineEmp}</em>
               </h1>
               <p className="lede">
-                Create beautiful, spoken flashcards.
+                {LANDING_HERO_CONTENT.ledeLead}
                 <br />
-                Practice them at your rhythm.
+                {LANDING_HERO_CONTENT.ledeRest}
               </p>
               <div className="hero-actions" data-nosnippet>
                 <button className="primary-button" onClick={onNavigateToCreate}>
@@ -468,37 +470,34 @@ export function WelcomeView({
           </div>
 
           <div className="why-story">
-            <p>
-              In July 2026, my wife <em>(Mexican)</em>, our twins{' '}
-              <em>(Gexican)</em>, and I <em>(German)</em> moved to Mexico City.
-              I started learning Spanish at the{' '}
-              <a
-                href="https://ihmexico.mx/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                International House in Condesa
-              </a>
-              . The classes were fantastic—but memorizing vocabulary?{' '}
-              <strong>My archenemy.</strong> The absolute worst part of learning
-              a new language!
-            </p>
-            <p>
-              I built Jolito to make memorization something to look forward to:{' '}
-              <strong>fast, tactile, immersive</strong>. Jolito uses{' '}
-              <a
-                href="https://en.wikipedia.org/wiki/Spaced_repetition"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                spaced repetition
-              </a>{' '}
-              to game your memory—<strong>legally!</strong> It resurfaces words
-              just before you forget them, so they stick almost effortlessly.
-            </p>
+            {ORIGIN_STORY_PARAGRAPHS.map((paragraph, pIdx) => (
+              <p key={pIdx}>
+                {paragraph.segments.map((seg, sIdx) => {
+                  switch (seg.type) {
+                    case 'text':
+                      return seg.text
+                    case 'em':
+                      return <em key={sIdx}>{seg.text}</em>
+                    case 'strong':
+                      return <strong key={sIdx}>{seg.text}</strong>
+                    case 'link':
+                      return (
+                        <a
+                          key={sIdx}
+                          href={seg.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {seg.text}
+                        </a>
+                      )
+                  }
+                })}
+              </p>
+            ))}
             <p className="why-resolution">
-              I am glad to report:{' '}
-              <strong>Memorization and I have become friends!</strong>
+              {ORIGIN_STORY.resolution.prefix}{' '}
+              <strong>{ORIGIN_STORY.resolution.punchline}</strong>
             </p>
           </div>
 

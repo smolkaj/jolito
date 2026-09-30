@@ -229,58 +229,17 @@
   <body>
     <div id="root">
       <noscript>
-        <div
-          class="noscript-landing"
-          style="
-            font-family:
-              system-ui,
-              -apple-system,
-              sans-serif;
-            max-width: 720px;
-            margin: 2rem auto;
-            padding: 1.5rem;
-            line-height: 1.6;
-            color: #2a2026;
-          "
-        >
-          <header style="margin-bottom: 2rem">
-            <h1
-              style="
-                font-size: 2.25rem;
-                font-weight: 800;
-                line-height: 1.15;
-                margin-bottom: 0.75rem;
-                letter-spacing: -0.02em;
-              "
-            >
-              Make the words you meet <em>stick.</em>
-            </h1>
-            <p style="font-size: 1.2rem; color: #5a5056; margin-bottom: 1rem">
+        <div class="noscript-landing">
+          <header class="noscript-landing-header">
+            <h1>Make the words you meet <em>stick.</em></h1>
+            <p class="lede">
               Create beautiful, spoken flashcards. Practice them at your rhythm.
             </p>
           </header>
 
-          <section
-            style="
-              margin-bottom: 2rem;
-              background: #fff;
-              border: 1px solid #ebd9e0;
-              border-radius: 1rem;
-              padding: 1.5rem;
-            "
-          >
-            <h2
-              style="
-                font-size: 1.25rem;
-                font-weight: 700;
-                margin-bottom: 0.75rem;
-              "
-            >
-              Key Capabilities
-            </h2>
-            <ul
-              style="padding-left: 1.25rem; margin: 0 0 1rem 0; color: #40363c"
-            >
+          <section class="noscript-card">
+            <h2>Key Capabilities</h2>
+            <ul>
               <li>
                 <strong>Spaced repetition:</strong> An active recall SRS
                 algorithm that resurfaces vocabulary right before you forget it.
@@ -303,99 +262,50 @@
               </li>
             </ul>
 
-            <div
-              style="
-                background: #fdf5f8;
-                border: 1px solid #ebd9e0;
-                border-radius: 0.75rem;
-                padding: 1rem;
-                margin-top: 1rem;
-              "
-            >
-              <span
-                style="
-                  display: inline-block;
-                  font-size: 0.75rem;
-                  font-weight: 700;
-                  letter-spacing: 0.05em;
-                  color: #a12c58;
-                  margin-bottom: 0.25rem;
-                "
-                >MEXICAN SPANISH</span
-              >
-              <p style="font-size: 1.4rem; font-weight: 700; margin: 0.25rem 0">
-                el aguacate
-              </p>
-              <p style="font-size: 1rem; color: #645b53; margin: 0">
-                the avocado
-              </p>
+            <div class="noscript-sample-badge">
+              <span class="badge-tag">MEXICAN SPANISH</span>
+              <p class="phrase">el aguacate</p>
+              <p class="translation">the avocado</p>
             </div>
           </section>
 
-          <section id="why-jolito" style="margin-bottom: 2rem">
-            <p
-              style="
-                font-size: 0.8rem;
-                font-weight: 800;
-                letter-spacing: 0.1em;
-                color: #a12c58;
-                text-transform: uppercase;
-                margin-bottom: 0.5rem;
-              "
-            >
-              BORN IN MEXICO CITY
-            </p>
-            <h2
-              id="why-jolito-title"
-              style="font-size: 1.75rem; font-weight: 800; margin-bottom: 1rem"
-            >
-              Why another flashcard app?
-            </h2>
-            <p style="margin-bottom: 1rem">
-              In July 2026, my wife (Mexican), our twins (Gexican), and I
-              (German) moved to Mexico City. I started learning Spanish at the
+          <section id="why-jolito" class="noscript-origin">
+            <p class="eyebrow">BORN IN MEXICO CITY</p>
+            <h2 id="why-jolito-title">Why another flashcard app?</h2>
+            <p>
+              In July 2026, my wife <em>(Mexican)</em>, our twins
+              <em>(Gexican)</em>, and I <em>(German)</em> moved to Mexico City.
+              I started learning Spanish at the
               <a
                 href="https://ihmexico.mx/"
                 target="_blank"
                 rel="noopener noreferrer"
-                style="color: #a12c58; text-decoration: underline"
                 >International House in Condesa</a
-              >. The classes were fantastic—but memorizing vocabulary? My
-              archenemy. The absolute worst part of learning a new language!
+              >. The classes were fantastic—but memorizing vocabulary?
+              <strong>My archenemy.</strong> The absolute worst part of learning
+              a new language!
             </p>
-            <p style="margin-bottom: 1rem">
+            <p>
               I built Jolito to make memorization something to look forward to:
-              fast, tactile, immersive. Jolito uses
+              <strong>fast, tactile, immersive</strong>. Jolito uses
               <a
                 href="https://en.wikipedia.org/wiki/Spaced_repetition"
                 target="_blank"
                 rel="noopener noreferrer"
-                style="color: #a12c58; text-decoration: underline"
                 >spaced repetition</a
               >
-              to game your memory—legally! It resurfaces words just before you
-              forget them, so they stick almost effortlessly.
+              to game your memory—<strong>legally!</strong> It resurfaces words
+              just before you forget them, so they stick almost effortlessly.
             </p>
-            <p style="margin-bottom: 1.5rem">
+            <p>
               I am glad to report:
               <strong>Memorization and I have become friends!</strong>
             </p>
           </section>
 
-          <div
-            style="
-              font-family: system-ui, sans-serif;
-              padding: 1.25rem;
-              background: rgba(217, 74, 122, 0.08);
-              border: 1px solid rgba(217, 74, 122, 0.2);
-              border-radius: 0.75rem;
-              text-align: center;
-            "
-          >
-            <p style="font-weight: 600; margin-bottom: 0.25rem">
-              Interactive practice requires JavaScript.
-            </p>
-            <p style="color: #645b53; font-size: 0.9rem; margin: 0">
+          <div class="noscript-notice">
+            <p>
+              <strong>Interactive practice requires JavaScript.</strong>
               Spaced repetition, grammar practice, and starter packs rely on
               your browser to review cards and play audio.
             </p>
