@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { ESLint } from 'eslint'
+import { z } from 'zod'
 
 void test('ESLint resolves no-use-before-define error rule for source files', async () => {
   const eslint = new ESLint()
@@ -438,5 +439,58 @@ void test('ios.yml caches ffmpeg deb packages to insulate native recording expor
     recordingExportMatch,
     /Keep-Downloaded-Packages/,
     'recording-export must retain downloaded deb packages across apt-get invocations',
+  )
+})
+
+void test('wrangler.jsonc defines required public vars for Supabase edge routes', async () => {
+  const fs = await import('node:fs')
+  const content = fs.readFileSync('wrangler.jsonc', 'utf8')
+
+  const stripped = content
+    .replace(
+      /("(?:\\.|[^"\\])*")|(?:\/\*[\s\S]*?\*\/|\/\/[^\r\n]*)/g,
+      (_match, str) => (typeof str === 'string' ? str : ''),
+    )
+    .replace(/,\s*([}\]])/g, '$1')
+  const parsedRaw: unknown = JSON.parse(stripped)
+
+  const wranglerSchema = z.object({
+    vars: z.object({
+      SUPABASE_URL: z
+        .string()
+        .url()
+        .refine((val) => val.startsWith('https://'), {
+          message: 'SUPABASE_URL must be a secure https origin',
+        }),
+      SUPABASE_ANON_KEY: z
+        .string()
+        .min(20)
+        .refine(
+          (key) => {
+            const parts = key.split('.')
+            if (parts.length !== 3) return false
+            try {
+              const payloadRaw: unknown = JSON.parse(
+                Buffer.from(parts[1]!, 'base64url').toString('utf8'),
+              )
+              const payloadSchema = z.object({
+                role: z.literal('anon'),
+              })
+              return payloadSchema.safeParse(payloadRaw).success
+            } catch {
+              return false
+            }
+          },
+          {
+            message: "SUPABASE_ANON_KEY must be a valid JWT with role 'anon'",
+          },
+        ),
+    }),
+  })
+
+  const result = wranglerSchema.safeParse(parsedRaw)
+  assert.ok(
+    result.success,
+    `wrangler.jsonc must configure public SUPABASE_URL and SUPABASE_ANON_KEY (anon role) in vars: ${JSON.stringify(result.error?.issues)}`,
   )
 })
