@@ -8604,3 +8604,145 @@ button:active,
   display: flex;
   align-items: center;
 }
+
+/* Noscript crawler fallback & zero-JS landing */
+.noscript-landing {
+  font-family: var(--font-sans);
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.noscript-landing-header {
+  margin-bottom: 2rem;
+}
+
+.noscript-landing-header h1 {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.noscript-landing-header h1 em {
+  font-style: italic;
+  color: var(--rosa);
+}
+
+.noscript-landing-header .lede {
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+
+.noscript-card {
+  margin-bottom: 2rem;
+  background: var(--card);
+  border: 1px solid var(--line-subtle);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.noscript-card h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--ink);
+}
+
+.noscript-card ul {
+  padding-left: 1.25rem;
+  margin: 0 0 1rem 0;
+  color: var(--ink-soft);
+}
+
+.noscript-card li {
+  margin-bottom: 0.5rem;
+}
+
+.noscript-sample-badge {
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.noscript-sample-badge .badge-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--rosa);
+  margin-bottom: 0.25rem;
+}
+
+.noscript-sample-badge .phrase {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0.25rem 0;
+}
+
+.noscript-sample-badge .translation {
+  font-size: 1rem;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.noscript-origin {
+  margin-bottom: 2rem;
+}
+
+.noscript-origin .eyebrow {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--rosa);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.noscript-origin h2 {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: var(--ink);
+}
+
+.noscript-origin p {
+  color: var(--ink-soft);
+  margin-bottom: 1rem;
+}
+
+.noscript-origin a {
+  color: var(--rosa);
+  text-decoration: underline;
+}
+
+.noscript-notice {
+  font-family: var(--font-sans);
+  padding: 1.25rem;
+  background: var(--paper-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: 0.75rem;
+  text-align: center;
+  color: var(--ink);
+}
+
+.noscript-notice p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.noscript-notice strong {
+  color: var(--ink);
+}

@@ -132,6 +132,188 @@ void test('Deck Manager table pills enforce single-line nowrap and adequate stat
   )
 })
 
+void test('index.html contains prerendered semantic landing shell for search crawlers and zero-JS accessibility', async () => {
+  const fs = await import('node:fs')
+  const indexHtml = fs.readFileSync('index.html', 'utf8')
+
+  // 1. Root container must include semantic noscript crawler fallback
+  assert.match(
+    indexHtml,
+    /<div id="root">\s*<noscript>/,
+    'index.html #root container must contain semantic noscript crawler fallback',
+  )
+
+  // 2. Primary H1 and lede must be present in raw HTML for instant indexing
+  assert.match(
+    indexHtml,
+    /<h1[^>]*>[\s\S]*?Make the words[\s\S]*?stick\.[\s\S]*?<\/h1>/,
+    'index.html must include primary H1 headline in static HTML',
+  )
+  assert.match(
+    indexHtml,
+    /Create beautiful, spoken flashcards\./,
+    'index.html must include lede description in static HTML',
+  )
+
+  // 3. Why Jolito section with origin story and outbound educational links
+  assert.match(
+    indexHtml,
+    /<h2[^>]*id="why-jolito-title"[^>]*>[\s\S]*?Why another flashcard app\?[\s\S]*?<\/h2>/,
+    'index.html must include "Why another flashcard app?" H2',
+  )
+  assert.match(
+    indexHtml,
+    /International House in Condesa/,
+    'index.html must include origin story context in static HTML',
+  )
+  assert.match(
+    indexHtml,
+    /https:\/\/ihmexico\.mx\//,
+    'index.html must preserve outbound link to IH Mexico',
+  )
+
+  // 4. Sample card preview with Mexican Spanish and English badges
+  assert.match(
+    indexHtml,
+    /MEXICAN SPANISH/,
+    'index.html must include Mexican Spanish sample badge',
+  )
+  assert.match(
+    indexHtml,
+    /el aguacate/,
+    'index.html must include Mexican Spanish sample phrase',
+  )
+
+  // 5. Canonical and structured metadata
+  assert.match(
+    indexHtml,
+    /<link rel="canonical" href="https:\/\/joli\.to\/" \/>/,
+    'index.html must define canonical domain URL',
+  )
+  assert.match(
+    indexHtml,
+    /"@type":\s*"WebApplication"/,
+    'index.html must define WebApplication Schema.org structured data',
+  )
+
+  // 6. Zero raw JSX delimiter expressions: no literal {' '} in static HTML
+  assert.strictEqual(
+    indexHtml.includes("{' '}"),
+    false,
+    "index.html must not contain raw JSX delimiter expressions ({' '})",
+  )
+
+  // 7. Invariant parity with domain landing content across index.html and WelcomeView.tsx
+  const {
+    ORIGIN_STORY,
+    ORIGIN_STORY_PARAGRAPHS,
+    LANDING_HERO_CONTENT,
+    storyParagraphToPlainText,
+  } = await import('../../src/domain/landing-content.ts')
+
+  // Hero content parity
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.headlineLead),
+    'index.html must reflect LANDING_HERO_CONTENT.headlineLead',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.headlineMiddle),
+    'index.html must reflect LANDING_HERO_CONTENT.headlineMiddle',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.headlineEmp),
+    'index.html must reflect LANDING_HERO_CONTENT.headlineEmp',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.ledeLead),
+    'index.html must reflect LANDING_HERO_CONTENT.ledeLead',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.ledeRest),
+    'index.html must reflect LANDING_HERO_CONTENT.ledeRest',
+  )
+
+  // Origin story parity
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.eyebrow),
+    'index.html must reflect ORIGIN_STORY.eyebrow',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.title.replace('?', '\\?')),
+    'index.html must reflect ORIGIN_STORY.title',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(
+      ORIGIN_STORY.links.ihMexico.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+    ),
+    'index.html must reflect ORIGIN_STORY.links.ihMexico',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(
+      ORIGIN_STORY.links.spacedRepetition.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&',
+      ),
+    ),
+    'index.html must reflect ORIGIN_STORY.links.spacedRepetition',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.resolution.prefix),
+    'index.html must reflect ORIGIN_STORY.resolution.prefix',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.resolution.punchline),
+    'index.html must reflect ORIGIN_STORY.resolution.punchline',
+  )
+
+  const strippedHtml = indexHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  for (const paragraph of ORIGIN_STORY_PARAGRAPHS) {
+    const plainText = storyParagraphToPlainText(paragraph)
+    const textSnippet = plainText.slice(0, 30)
+    assert.ok(
+      strippedHtml.includes(textSnippet),
+      `index.html text content must contain origin story paragraph snippet: "${textSnippet}"`,
+    )
+  }
+
+  // WelcomeView.tsx single source of truth verification
+  const welcomeViewCode = fs.readFileSync(
+    'src/ui/views/WelcomeView.tsx',
+    'utf8',
+  )
+  assert.match(
+    welcomeViewCode,
+    /import\s*\{[^}]*ORIGIN_STORY_PARAGRAPHS[^}]*\}\s*from\s*['"]\.\.\/\.\.\/domain\/landing-content['"]/,
+    'WelcomeView.tsx must import ORIGIN_STORY_PARAGRAPHS from landing-content.ts',
+  )
+  assert.match(
+    welcomeViewCode,
+    /ORIGIN_STORY_PARAGRAPHS\.map/,
+    'WelcomeView.tsx must render origin story paragraphs from ORIGIN_STORY_PARAGRAPHS',
+  )
+  assert.match(
+    welcomeViewCode,
+    /LANDING_HERO_CONTENT\.headlineMiddle/,
+    'WelcomeView.tsx must consume LANDING_HERO_CONTENT.headlineMiddle',
+  )
+  assert.match(
+    welcomeViewCode,
+    /LANDING_HERO_CONTENT\.ledeLead/,
+    'WelcomeView.tsx must consume LANDING_HERO_CONTENT.ledeLead',
+  )
+})
+
 void test('quality.yml decouples WebKit from parallel browser shards to protect apt mirror throughput', async () => {
   const fs = await import('node:fs')
   const workflow = fs.readFileSync('.github/workflows/quality.yml', 'utf8')

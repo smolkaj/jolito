@@ -229,41 +229,87 @@
   <body>
     <div id="root">
       <noscript>
-        <div
-          style="
-            font-family: system-ui, sans-serif;
-            padding: 2rem;
-            max-width: 640px;
-            margin: 0 auto;
-            color: #2a2026;
-            background: #fdf5f8;
-            border-radius: 1rem;
-          "
-        >
-          <h1 style="color: #c23363; font-size: 1.8rem; margin-bottom: 0.5rem">
-            Jolito — Spoken Mexican Spanish that sticks
-          </h1>
-          <p style="margin-bottom: 1rem; line-height: 1.5">
-            Spoken flashcards and focused grammar drills for the Mexican Spanish
-            you actually want to use.
-            <span data-nosnippet
-              >Please enable JavaScript to study interactively.</span
-            >
-          </p>
-          <ul style="padding-left: 1.25rem; line-height: 1.6">
-            <li>Spaced repetition algorithm (SRS) with active typed recall</li>
-            <li>
-              Focused grammar practice: Pretérito Indefinido, Pretérito Perfecto
-              Compuesto, and Gerundio
-            </li>
-            <li>
-              Curated Mexican Spanish starter packs: connectors, adjectives,
-              idioms, and adverbs
-            </li>
-            <li>Native Mexican Spanish audio and instant card creation</li>
-            <li>Offline-first PWA with multi-device cloud backup</li>
-            <li>Anki (.apkg) import and offline JSON deck export</li>
-          </ul>
+        <div class="noscript-landing">
+          <header class="noscript-landing-header">
+            <h1>Make the words you meet <em>stick.</em></h1>
+            <p class="lede">
+              Create beautiful, spoken flashcards. Practice them at your rhythm.
+            </p>
+          </header>
+
+          <section class="noscript-card">
+            <h2>Key Capabilities</h2>
+            <ul>
+              <li>
+                <strong>Spaced repetition:</strong> An active recall SRS
+                algorithm that resurfaces vocabulary right before you forget it.
+              </li>
+              <li>
+                <strong>Grammar practice:</strong> High-yield conjugation drills
+                for Pretérito Indefinido, Pretérito Perfecto, and Gerundio.
+              </li>
+              <li>
+                <strong>Curated starter packs:</strong> Jumpstart Mexican
+                Spanish vocabulary or import existing decks from Anki.
+              </li>
+              <li>
+                <strong>Spoken audio:</strong> Authentic native Mexican Spanish
+                pronunciation powered by high-fidelity synthesis.
+              </li>
+              <li>
+                <strong>Local-first PWA:</strong> Full offline capabilities with
+                instant local IndexedDB storage and zero account lock-in.
+              </li>
+            </ul>
+
+            <div class="noscript-sample-badge">
+              <span class="badge-tag">MEXICAN SPANISH</span>
+              <p class="phrase">el aguacate</p>
+              <p class="translation">the avocado</p>
+            </div>
+          </section>
+
+          <section id="why-jolito" class="noscript-origin">
+            <p class="eyebrow">BORN IN MEXICO CITY</p>
+            <h2 id="why-jolito-title">Why another flashcard app?</h2>
+            <p>
+              In July 2026, my wife <em>(Mexican)</em>, our twins
+              <em>(Gexican)</em>, and I <em>(German)</em> moved to Mexico City.
+              I started learning Spanish at the
+              <a
+                href="https://ihmexico.mx/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >International House in Condesa</a
+              >. The classes were fantastic—but memorizing vocabulary?
+              <strong>My archenemy.</strong> The absolute worst part of learning
+              a new language!
+            </p>
+            <p>
+              I built Jolito to make memorization something to look forward to:
+              <strong>fast, tactile, immersive</strong>. Jolito uses
+              <a
+                href="https://en.wikipedia.org/wiki/Spaced_repetition"
+                target="_blank"
+                rel="noopener noreferrer"
+                >spaced repetition</a
+              >
+              to game your memory—<strong>legally!</strong> It resurfaces words
+              just before you forget them, so they stick almost effortlessly.
+            </p>
+            <p>
+              I am glad to report:
+              <strong>Memorization and I have become friends!</strong>
+            </p>
+          </section>
+
+          <div class="noscript-notice">
+            <p>
+              <strong>Interactive practice requires JavaScript.</strong>
+              Spaced repetition, grammar practice, and starter packs rely on
+              your browser to review cards and play audio.
+            </p>
+          </div>
         </div>
       </noscript>
     </div>
