@@ -36,7 +36,6 @@ export function AccentToolbar({
   sounds,
   activeShortcut,
 }: AccentToolbarProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const lastTouchTimestampRef = useRef(0)
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
   const [pressedChar, setPressedChar] = useState<string | null>(null)
@@ -99,6 +98,7 @@ export function AccentToolbar({
     clientX: number,
     clientY: number,
     fallbackTarget?: HTMLElement | null,
+    fallbackStartY?: number,
   ): string | null => {
     // 1. If document.elementFromPoint is available, check if it points directly to an accent key
     if (
@@ -129,11 +129,7 @@ export function AccentToolbar({
         // Generous vertical window (+/- 28px) for thumb contacts around toolbar buttons
         const withinY = clientY >= rect.top - 28 && clientY <= rect.bottom + 28
         if (withinY) {
-          // Direct hit within button horizontal span (+/- 4px to seamlessly absorb gaps)
-          if (clientX >= rect.left - 4 && clientX <= rect.right + 4) {
-            return char
-          }
-          // Measure distance to button center for gap resolution between keys
+          // Symmetric distance calculation to button center
           const centerX = rect.left + rect.width / 2
           const centerY = rect.top + rect.height / 2
           const distSq = (clientX - centerX) ** 2 + (clientY - centerY) ** 2
@@ -154,6 +150,12 @@ export function AccentToolbar({
     }
 
     // 3. Fallback when layout engine is absent (e.g. JSDOM unit tests)
+    if (
+      fallbackStartY !== undefined &&
+      Math.abs(clientY - fallbackStartY) > 35
+    ) {
+      return null
+    }
     if (fallbackTarget) {
       const btn = fallbackTarget.closest<HTMLButtonElement>(
         '.accent-toolbar-btn',
@@ -206,13 +208,14 @@ export function AccentToolbar({
       return
     }
 
-    // Check vertical deflection from initial touch:
-    // Moving far vertically (e.g. > 35px) indicates an intentional slide away from the toolbar to cancel
-    const dy = Math.abs(e.clientY - state.startY)
-    const candidateChar =
-      dy > 35
-        ? null
-        : resolveCharFromPoint(e.clientX, e.clientY, e.target as HTMLElement)
+    // Rely on resolveCharFromPoint's layout-aware bounds (rect.top - 28 .. rect.bottom + 28)
+    // rather than a scalar dy from initial touch, allowing natural thumb arcs across the row
+    const candidateChar = resolveCharFromPoint(
+      e.clientX,
+      e.clientY,
+      e.target as HTMLElement,
+      state.startY,
+    )
 
     if (candidateChar !== state.currentChar) {
       state.currentChar = candidateChar
@@ -334,7 +337,7 @@ export function AccentToolbar({
       className={`answer-accents ${isDocked ? 'is-docked' : ''} ${className}`.trim()}
       style={dockedStyle}
     >
-      <div ref={scrollContainerRef} className="accent-toolbar-scroll">
+      <div className="accent-toolbar-scroll">
         {SPANISH_ACCENT_CHARACTERS.map((char, index) => {
           const shortcut = String(index + 1)
           const isPressed = effectivePressedChar === char

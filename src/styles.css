@@ -3754,7 +3754,7 @@ kbd {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 2px 6px;
+  padding: 4px 6px;
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -3864,6 +3864,12 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .accent-key-popup {
     animation: none;
+    transition: none;
+  }
+  .accent-toolbar-btn.is-pressed,
+  .answer-accents.is-docked .accent-toolbar-btn.is-pressed {
+    transform: none !important;
+    transition: none !important;
   }
 }
 
