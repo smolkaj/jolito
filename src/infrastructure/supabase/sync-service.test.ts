@@ -595,7 +595,7 @@ describe('sync anomaly alert reporting', () => {
       ...row,
       data: {
         ...payload,
-        updatedAt: 1789844855022, // Numeric timestamp that broke Steffen's account
+        updatedAt: 1789844855022, // Numeric timestamp that broke user account
       },
     }
 

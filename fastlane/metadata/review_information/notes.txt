@@ -28,4 +28,4 @@ Language learning, not a regulated-industry service. Dictionary and open-source 
 https://joli.to/acknowledgements
 Wiktionary data is attributed under CC BY-SA 3.0; fonts under SIL Open Font License. The repository is Apache-2.0 licensed. No regulated-service credentials are applicable.
 
-Steffen Smolka — steffen.smolka@gmail.com
+Steffen Smolka — a@joli.to
