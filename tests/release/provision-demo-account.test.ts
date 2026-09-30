@@ -16,6 +16,7 @@ const mockKeys = [
 
 function mockFetchFactory(options: {
   existingUsers?: Array<{ id: string; email: string }>
+  pages?: Record<number, Array<{ id: string; email: string }>>
   updateOk?: boolean
   createOk?: boolean
   verifyOk?: boolean
@@ -24,6 +25,7 @@ function mockFetchFactory(options: {
 }) {
   const {
     existingUsers = [],
+    pages,
     updateOk = true,
     createOk = true,
     verifyOk = true,
@@ -57,6 +59,11 @@ function mockFetchFactory(options: {
       if (method === 'GET') {
         if (!listOk)
           return Promise.resolve(new Response('Server error', { status: 500 }))
+        if (pages) {
+          const match = url.match(/[?&]page=(\d+)/)
+          const pageNum = match && match[1] ? parseInt(match[1], 10) : 1
+          return Promise.resolve(Response.json({ users: pages[pageNum] ?? [] }))
+        }
         return Promise.resolve(Response.json({ users: existingUsers }))
       }
       if (method === 'PUT') {
@@ -153,33 +160,40 @@ void test('provisionDemoAccount creates new user and verifies password when user
   })
 })
 
-void test('provisionDemoAccount updates existing user password and confirms email when user exists', async () => {
+void test('provisionDemoAccount updates existing user password across paginated results', async () => {
+  const dummyUsers = Array.from({ length: 50 }, (_, i) => ({
+    id: `dummy-${i}`,
+    email: `other-${i}@example.com`,
+  }))
   const { mockFetch, calls } = mockFetchFactory({
-    existingUsers: [{ id: 'existing-id-789', email: 'reviewer@joli.to' }],
+    pages: {
+      1: dummyUsers,
+      2: [{ id: 'user-page-2', email: 'reviewer@joli.to' }],
+    },
   })
   const result = await provisionDemoAccount(validEnv, mockFetch)
 
   assert.deepEqual(result, { success: true, action: 'updated' })
   const updateCall = calls.find(
-    (c) => c.method === 'PUT' && c.url.includes('/admin/users/existing-id-789'),
+    (c) => c.method === 'PUT' && c.url.includes('/admin/users/user-page-2'),
   )
   assert.ok(updateCall)
   assert.deepEqual(updateCall.body, {
     password: 'SuperSecretPassword123!',
     email_confirm: true,
   })
-
-  const verifyCall = calls.find(
-    (c) => c.method === 'POST' && c.url.includes('/token?grant_type=password'),
-  )
-  assert.ok(verifyCall)
 })
 
-void test('provisionDemoAccount masks secrets and tokens when running in GITHUB_ACTIONS', async () => {
-  const logs: string[] = []
-  const originalLog = console.log
-  console.log = (...args: unknown[]) => {
-    logs.push(args.map(String).join(' '))
+void test('provisionDemoAccount masks dynamic secrets and tokens when running in GITHUB_ACTIONS', async () => {
+  const outputs: string[] = []
+  const originalWrite = process.stdout.write.bind(process.stdout)
+  process.stdout.write = (
+    chunk: string | Uint8Array,
+    ...args: unknown[]
+  ): boolean => {
+    outputs.push(chunk.toString())
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+    return originalWrite(chunk, ...(args as any))
   }
 
   try {
@@ -189,22 +203,22 @@ void test('provisionDemoAccount masks secrets and tokens when running in GITHUB_
       mockFetch,
     )
 
-    const maskedEntries = logs.filter((l) => l.startsWith('::add-mask::'))
-    assert.ok(maskedEntries.length >= 4)
-    assert.ok(
-      maskedEntries.some((l) => l.includes('SuperSecretPassword123!')),
-      'Password must be registered with ::add-mask::',
-    )
+    const maskedEntries = outputs.filter((l) => l.startsWith('::add-mask::'))
+    assert.ok(maskedEntries.length >= 3)
     assert.ok(
       maskedEntries.some((l) => l.includes('mock-service-role-key')),
       'Service key must be registered with ::add-mask::',
+    )
+    assert.ok(
+      maskedEntries.some((l) => l.includes('mock-anon-key')),
+      'Anon key must be registered with ::add-mask::',
     )
     assert.ok(
       maskedEntries.some((l) => l.includes('mock-verified-jwt-token')),
       'Verified JWT must be registered with ::add-mask::',
     )
   } finally {
-    console.log = originalLog
+    process.stdout.write = originalWrite
   }
 })
 

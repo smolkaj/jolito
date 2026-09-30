@@ -27,6 +27,14 @@ const listUsersResponseSchema = z.object({
   users: z.array(userRecordSchema),
 })
 
+function maskGitHubSecret(secret: string): void {
+  const escaped = secret
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A')
+  process.stdout.write(`::add-mask::${escaped}\n`)
+}
+
 export async function provisionDemoAccount(
   rawEnv: NodeJS.ProcessEnv = process.env,
   fetchFn: typeof fetch = fetch,
@@ -39,21 +47,6 @@ export async function provisionDemoAccount(
     )
   }
   const config = parseResult.data
-
-  // Mask sensitive values in GitHub Actions logs immediately
-  if (rawEnv.GITHUB_ACTIONS === 'true') {
-    for (const value of [
-      config.APP_REVIEW_MAILBOX_PASSWORD,
-      config.APP_REVIEW_EMAIL,
-      config.SUPABASE_ACCESS_TOKEN,
-    ]) {
-      const escaped = value
-        .replace(/%/g, '%25')
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-      console.log(`::add-mask::${escaped}`)
-    }
-  }
 
   // 1. Fetch Supabase API keys (service_role and anon)
   const keyResponse = await fetchFn(
@@ -75,13 +68,8 @@ export async function provisionDemoAccount(
   if (!anonKey) throw new Error('Supabase anon key is unavailable')
 
   if (rawEnv.GITHUB_ACTIONS === 'true') {
-    for (const value of [serviceKey, anonKey]) {
-      const escaped = value
-        .replace(/%/g, '%25')
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-      console.log(`::add-mask::${escaped}`)
-    }
+    maskGitHubSecret(serviceKey)
+    maskGitHubSecret(anonKey)
   }
 
   const adminBaseUrl = `https://${config.SUPABASE_PROJECT_ID}.supabase.co/auth/v1/admin/users`
@@ -90,7 +78,7 @@ export async function provisionDemoAccount(
   // 2. Search if the user already exists in Supabase
   let existingUserId: string | null = null
   let page = 1
-  while (page <= 10) {
+  while (true) {
     const listResponse = await fetchFn(
       `${adminBaseUrl}?page=${page}&per_page=50`,
       {
@@ -116,6 +104,11 @@ export async function provisionDemoAccount(
     }
     if (pageData.users.length < 50) break
     page++
+    if (page > 1000) {
+      throw new Error(
+        'Exceeded maximum pagination depth while searching for review account in Supabase',
+      )
+    }
   }
 
   let action: 'created' | 'updated'
@@ -199,11 +192,7 @@ export async function provisionDemoAccount(
     .parse(await verifyResponse.json())
 
   if (rawEnv.GITHUB_ACTIONS === 'true') {
-    const escaped = tokenData.access_token
-      .replace(/%/g, '%25')
-      .replace(/\r/g, '%0D')
-      .replace(/\n/g, '%0A')
-    console.log(`::add-mask::${escaped}`)
+    maskGitHubSecret(tokenData.access_token)
   }
 
   console.log(
