@@ -3626,7 +3626,7 @@ kbd {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 2px 4px;
+  padding: 6px 4px;
   box-sizing: border-box;
 }
 .accent-toolbar-scroll::-webkit-scrollbar {
@@ -3656,28 +3656,46 @@ kbd {
   user-select: none;
   -webkit-user-select: none;
   opacity: 0.9;
+  position: relative;
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
     color 140ms ease,
     opacity 140ms ease,
-    transform 100ms ease;
+    transform 100ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 100ms ease;
 }
 
 .answer-accents button:hover,
 .accent-toolbar-btn:hover {
   background: var(--card);
-  border-color: rgba(18, 24, 21, 0.08);
-  box-shadow: 0 1px 2px rgba(18, 24, 21, 0.04);
+  border-color: rgba(18, 24, 21, 0.12);
+  box-shadow: 0 3px 8px rgba(18, 24, 21, 0.08);
   color: var(--ink);
   opacity: 1;
+  transform: translateY(-2px) scale(1.12);
+  z-index: 2;
 }
 
 .answer-accents button:active,
 .accent-toolbar-btn:active,
 .accent-toolbar-btn.is-pressed {
-  transform: scale(0.92);
+  transform: translateY(-3px) scale(1.15);
   background: var(--card);
+  border-color: rgba(18, 24, 21, 0.16);
+  box-shadow: 0 6px 14px rgba(18, 24, 21, 0.12);
+  color: var(--ink);
+  opacity: 1;
+  z-index: 3;
+}
+
+.accent-toolbar-btn:disabled,
+.accent-toolbar-btn:disabled:hover,
+.accent-toolbar-btn:disabled:active {
+  transform: none !important;
+  box-shadow: none !important;
+  cursor: default;
+  opacity: 0.45;
 }
 
 .accent-toolbar-btn kbd {
@@ -3736,12 +3754,18 @@ kbd {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 2px 6px;
+  padding: 7px 6px;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
+.answer-accents.is-docked .accent-toolbar-scroll,
 .answer-accents.is-docked .accent-toolbar-btn {
+  touch-action: none;
+}
+
+.answer-accents.is-docked .accent-toolbar-btn {
+  position: relative;
   flex: 1 1 0px;
   min-width: 0;
   max-width: 44px;
@@ -3754,12 +3778,28 @@ kbd {
   font-size: 19px;
   font-weight: 500;
   color: var(--ink);
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease,
+    transform 100ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 100ms ease;
+}
+
+.answer-accents.is-docked .accent-toolbar-btn:hover {
+  background: var(--card);
+  border-color: var(--control-line-strong, var(--ink-soft));
+  box-shadow: 0 3px 8px rgba(18, 24, 21, 0.08);
+  transform: translateY(-2px) scale(1.12);
+  z-index: 2;
 }
 
 .answer-accents.is-docked .accent-toolbar-btn:active,
 .answer-accents.is-docked .accent-toolbar-btn.is-pressed {
   background: var(--paper-deep);
-  transform: scale(0.92);
+  border-color: var(--ink-muted);
+  box-shadow: 0 6px 14px rgba(18, 24, 21, 0.14);
+  transform: translateY(-3px) scale(1.15);
+  z-index: 3;
 }
 
 .answer-accents.is-docked .accent-toolbar-btn kbd {
@@ -3791,6 +3831,9 @@ kbd {
   z-index: 9999;
   transform: translateX(-50%);
   animation: accent-key-pop 80ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    left 70ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 70ms cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
 
@@ -3821,6 +3864,18 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .accent-key-popup {
     animation: none;
+    transition: none;
+  }
+  .answer-accents button,
+  .accent-toolbar-btn,
+  .accent-toolbar-btn:hover,
+  .accent-toolbar-btn:active,
+  .accent-toolbar-btn.is-pressed,
+  .answer-accents.is-docked .accent-toolbar-btn:hover,
+  .answer-accents.is-docked .accent-toolbar-btn:active,
+  .answer-accents.is-docked .accent-toolbar-btn.is-pressed {
+    transform: none !important;
+    transition: none !important;
   }
 }
 

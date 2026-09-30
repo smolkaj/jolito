@@ -78,75 +78,149 @@ describe('AccentToolbar', () => {
     expect(onInsert).toHaveBeenCalledTimes(1)
   })
 
-  it('suppresses onInsert when a touch gesture is a horizontal or vertical drag', () => {
+  it('allows touch-scrubbing across keys to correct selection before release', () => {
+    const onInsert = vi.fn()
+    const trigger = vi.fn()
+    const play = vi.fn()
+    const haptics: HapticsPlayer = { trigger }
+    const sounds: SoundPlayer = { play }
+    render(
+      <AccentToolbar onInsert={onInsert} haptics={haptics} sounds={sounds} />,
+    )
+
+    const btnA = screen.getByRole('button', { name: 'Insert á' })
+    const btnE = screen.getByRole('button', { name: 'Insert é' })
+
+    vi.spyOn(btnA, 'getBoundingClientRect').mockReturnValue({
+      left: 10,
+      right: 50,
+      top: 100,
+      bottom: 144,
+      width: 40,
+      height: 44,
+      x: 10,
+      y: 100,
+      toJSON: () => {},
+    })
+    vi.spyOn(btnE, 'getBoundingClientRect').mockReturnValue({
+      left: 54,
+      right: 94,
+      top: 100,
+      bottom: 144,
+      width: 40,
+      height: 44,
+      x: 54,
+      y: 100,
+      toJSON: () => {},
+    })
+
+    // 1. Initial touch down on 'á'
+    fireEvent(
+      btnA,
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 100,
+        clientX: 30,
+        clientY: 120,
+      }),
+    )
+
+    expect(btnA).toHaveClass('is-pressed')
+    expect(btnE).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toHaveTextContent('á')
+    expect(trigger).toHaveBeenCalledWith('selection')
+    expect(play).toHaveBeenCalledWith('click')
+
+    // 2. Slide finger across to 'é' pre-release (correcting selection)
+    fireEvent(
+      btnA,
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 100,
+        clientX: 74,
+        clientY: 120,
+      }),
+    )
+
+    expect(btnA).not.toHaveClass('is-pressed')
+    expect(btnE).toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toHaveTextContent('é')
+    expect(trigger).toHaveBeenCalledTimes(2)
+    expect(play).toHaveBeenCalledTimes(2)
+
+    // Not yet inserted while finger is held down
+    expect(onInsert).not.toHaveBeenCalled()
+
+    // 3. Release finger over 'é'
+    fireEvent(
+      btnA,
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch',
+        pointerId: 100,
+        clientX: 74,
+        clientY: 120,
+      }),
+    )
+
+    // Fires only upon release with the corrected character!
+    expect(onInsert).toHaveBeenCalledWith('é')
+    expect(onInsert).toHaveBeenCalledTimes(1)
+    expect(btnE).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+  })
+
+  it('suppresses onInsert when a touch gesture slides vertically away from the toolbar to cancel', () => {
     const onInsert = vi.fn()
     render(<AccentToolbar onInsert={onInsert} />)
 
     const btn = screen.getByRole('button', { name: 'Insert ¿' })
 
-    // 1. Horizontal drag (e.g. scrolling the toolbar)
-    btn.dispatchEvent(
+    // Touch down on '¿'
+    fireEvent(
+      btn,
       new PointerEvent('pointerdown', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 2,
         clientX: 100,
-        clientY: 50,
+        clientY: 100,
       }),
     )
-    btn.dispatchEvent(
+    expect(btn).toHaveClass('is-pressed')
+
+    // Slide vertically away (>35px) to cancel
+    fireEvent(
+      btn,
       new PointerEvent('pointermove', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 2,
-        clientX: 125,
+        clientX: 100,
         clientY: 50,
       }),
     )
-    btn.dispatchEvent(
+
+    expect(btn).not.toHaveClass('is-pressed')
+    expect(document.querySelector('.accent-key-popup')).toBeNull()
+
+    // Release after sliding away does not insert
+    fireEvent(
+      btn,
       new PointerEvent('pointerup', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 2,
-        clientX: 125,
-        clientY: 50,
-      }),
-    )
-
-    expect(onInsert).not.toHaveBeenCalled()
-
-    // 2. Vertical drag (e.g. card swipe up)
-    btn.dispatchEvent(
-      new PointerEvent('pointerdown', {
-        bubbles: true,
-        cancelable: true,
-        pointerType: 'touch',
-        pointerId: 3,
         clientX: 100,
         clientY: 50,
-      }),
-    )
-    btn.dispatchEvent(
-      new PointerEvent('pointermove', {
-        bubbles: true,
-        cancelable: true,
-        pointerType: 'touch',
-        pointerId: 3,
-        clientX: 100,
-        clientY: 20,
-      }),
-    )
-    btn.dispatchEvent(
-      new PointerEvent('pointerup', {
-        bubbles: true,
-        cancelable: true,
-        pointerType: 'touch',
-        pointerId: 3,
-        clientX: 100,
-        clientY: 20,
       }),
     )
 
@@ -190,64 +264,69 @@ describe('AccentToolbar', () => {
     expect(onInsert).not.toHaveBeenCalled()
   })
 
-  it('supports subsequent clean taps after an interrupted drag gesture', () => {
+  it('supports subsequent clean taps after an aborted vertical slide gesture', () => {
     const onInsert = vi.fn()
     render(<AccentToolbar onInsert={onInsert} />)
 
     const btn = screen.getByRole('button', { name: 'Insert é' })
 
-    // Interrupted drag gesture
-    btn.dispatchEvent(
+    // Aborted gesture (slid vertically away >35px)
+    fireEvent(
+      btn,
       new PointerEvent('pointerdown', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 5,
         clientX: 10,
-        clientY: 10,
+        clientY: 100,
       }),
     )
-    btn.dispatchEvent(
+    fireEvent(
+      btn,
       new PointerEvent('pointermove', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 5,
-        clientX: 40,
-        clientY: 10,
+        clientX: 10,
+        clientY: 50,
       }),
     )
-    btn.dispatchEvent(
+    fireEvent(
+      btn,
       new PointerEvent('pointerup', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 5,
-        clientX: 40,
-        clientY: 10,
+        clientX: 10,
+        clientY: 50,
       }),
     )
     expect(onInsert).not.toHaveBeenCalled()
 
     // Subsequent intentional tap
-    btn.dispatchEvent(
+    fireEvent(
+      btn,
       new PointerEvent('pointerdown', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 6,
         clientX: 10,
-        clientY: 10,
+        clientY: 100,
       }),
     )
-    btn.dispatchEvent(
+    fireEvent(
+      btn,
       new PointerEvent('pointerup', {
         bubbles: true,
         cancelable: true,
         pointerType: 'touch',
         pointerId: 6,
         clientX: 10,
-        clientY: 10,
+        clientY: 100,
       }),
     )
     expect(onInsert).toHaveBeenCalledWith('é')
@@ -443,7 +522,7 @@ describe('AccentToolbar', () => {
     expect(onInsert).toHaveBeenCalledWith('é')
   })
 
-  it('clears key preview popup and is-pressed state when a drag exceeds threshold', () => {
+  it('clears key preview popup and is-pressed state when sliding vertically away from toolbar', () => {
     const onInsert = vi.fn()
     render(<AccentToolbar onInsert={onInsert} />)
 
@@ -456,14 +535,14 @@ describe('AccentToolbar', () => {
         pointerType: 'touch',
         pointerId: 42,
         clientX: 100,
-        clientY: 50,
+        clientY: 100,
       }),
     )
 
     expect(btn).toHaveClass('is-pressed')
     expect(document.querySelector('.accent-key-popup')).toHaveTextContent('ú')
 
-    // Move past 14px slop
+    // Slide vertically away (>35px)
     fireEvent(
       btn,
       new PointerEvent('pointermove', {
@@ -471,7 +550,7 @@ describe('AccentToolbar', () => {
         cancelable: true,
         pointerType: 'touch',
         pointerId: 42,
-        clientX: 120,
+        clientX: 100,
         clientY: 50,
       }),
     )
@@ -479,7 +558,7 @@ describe('AccentToolbar', () => {
     expect(btn).not.toHaveClass('is-pressed')
     expect(document.querySelector('.accent-key-popup')).toBeNull()
 
-    // Up after drag should not insert
+    // Up after sliding away should not insert
     fireEvent(
       btn,
       new PointerEvent('pointerup', {
@@ -487,7 +566,7 @@ describe('AccentToolbar', () => {
         cancelable: true,
         pointerType: 'touch',
         pointerId: 42,
-        clientX: 120,
+        clientX: 100,
         clientY: 50,
       }),
     )
