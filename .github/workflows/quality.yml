@@ -55,14 +55,14 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-webkit-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
+        run: npx playwright install --with-deps chromium
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
+        run: npx playwright install-deps chromium
       - if: matrix.shardIndex == 1
         run: node scripts/build-favicons.mjs --check-ios
-      - run: npm run test:e2e -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      - run: npm run test:e2e -- --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
@@ -73,17 +73,48 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  browser-webkit:
+    name: Browser WebKit suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit
+      - uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-webkit-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps webkit
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps webkit
+      - run: npm run test:e2e -- --project=webkit
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-webkit
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
   browser:
     name: Browser smoke tests
     runs-on: ubuntu-latest
-    needs: [browser-shard]
+    needs: [browser-shard, browser-webkit]
     if: ${{ always() }}
     steps:
-      - name: Require all browser shards to pass
+      - name: Require all browser test suites to pass
         env:
           SHARD_RESULTS: ${{ needs.browser-shard.result }}
+          WEBKIT_RESULTS: ${{ needs.browser-webkit.result }}
         run: |
-          test "$SHARD_RESULTS" = success
+          test "$SHARD_RESULTS" = success && test "$WEBKIT_RESULTS" = success
 
   supabase-integration:
     name: Local Supabase integration & RLS
