@@ -1366,7 +1366,7 @@ describe('SupabaseAuthService', () => {
     })
   })
 
-  describe('signInWithApple', () => {
+  describe('signInWithPassword', () => {
     function createAbortSensitiveResponse(
       body: unknown,
       signal?: AbortSignal,
@@ -1386,7 +1386,7 @@ describe('SupabaseAuthService', () => {
       }
     }
 
-    it('authenticates user and saves session on valid Apple token with abort-sensitive response', async () => {
+    it('authenticates user and saves session on valid credentials', async () => {
       delete mockStorage['jolito-auth-session-v1']
       const fetchSpy = vi
         .fn()
@@ -1394,12 +1394,12 @@ describe('SupabaseAuthService', () => {
           Promise.resolve(
             createAbortSensitiveResponse(
               {
-                access_token: 'apple-access-jwt',
-                refresh_token: 'apple-refresh-token',
+                access_token: 'pwd-access-jwt',
+                refresh_token: 'pwd-refresh-token',
                 expires_in: 3600,
                 user: {
-                  id: 'apple-user-123',
-                  email: 'apple.learner@privaterelay.appleid.com',
+                  id: 'demo-user-123',
+                  email: 'demo@joli.to',
                 },
               },
               init?.signal as AbortSignal | undefined,
@@ -1416,126 +1416,73 @@ describe('SupabaseAuthService', () => {
       const subscriber = vi.fn()
       service.onAuthStateChange(subscriber)
 
-      const res = await service.signInWithApple('valid-apple-identity-token')
+      const res = await service.signInWithPassword(
+        'demo@joli.to',
+        'password123',
+      )
       expect(res.error).toBeUndefined()
       expect(res.success).toBe(true)
       expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.supabase.co/auth/v1/token?grant_type=id_token',
+        'https://example.supabase.co/auth/v1/token?grant_type=password',
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({
-            provider: 'apple',
-            id_token: 'valid-apple-identity-token',
+            email: 'demo@joli.to',
+            password: 'password123',
           }),
         }),
       )
       expect(service.getCurrentUser()).toEqual({
-        id: 'apple-user-123',
-        email: 'apple.learner@privaterelay.appleid.com',
+        id: 'demo-user-123',
+        email: 'demo@joli.to',
       })
       expect(subscriber).toHaveBeenCalledWith({
-        id: 'apple-user-123',
-        email: 'apple.learner@privaterelay.appleid.com',
+        id: 'demo-user-123',
+        email: 'demo@joli.to',
       })
       service.destroy()
     })
 
-    it('forwards raw nonce to Supabase auth payload when provided', async () => {
-      delete mockStorage['jolito-auth-session-v1']
-      const fetchSpy = vi
-        .fn()
-        .mockImplementation((_url: unknown, init?: RequestInit) =>
-          Promise.resolve(
-            createAbortSensitiveResponse(
-              {
-                access_token: 'apple-access-jwt',
-                refresh_token: 'apple-refresh-token',
-                expires_in: 3600,
-                user: {
-                  id: 'apple-user-456',
-                  email: 'apple.learner@privaterelay.appleid.com',
-                },
-              },
-              init?.signal as AbortSignal | undefined,
-            ),
-          ),
-        )
-      vi.stubGlobal('fetch', fetchSpy)
-
+    it('validates non-empty email and password', async () => {
       const service = new SupabaseAuthService(
         'https://example.supabase.co',
         'anon-key',
         fakeStorage,
       )
-
-      const res = await service.signInWithApple(
-        'valid-apple-identity-token',
-        'raw-nonce-secret',
+      const emptyEmail = await service.signInWithPassword('', 'password123')
+      expect(emptyEmail.success).toBe(false)
+      expect(emptyEmail.error).toBe(
+        'Please enter both your email address and password.',
       )
-      expect(res.success).toBe(true)
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.supabase.co/auth/v1/token?grant_type=id_token',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({
-            provider: 'apple',
-            id_token: 'valid-apple-identity-token',
-            nonce: 'raw-nonce-secret',
-          }),
-        }),
+
+      const emptyPass = await service.signInWithPassword('demo@joli.to', '   ')
+      expect(emptyPass.success).toBe(false)
+      expect(emptyPass.error).toBe(
+        'Please enter both your email address and password.',
       )
       service.destroy()
     })
 
-    it('falls back to fallbackEmail when user email is absent in server response', async () => {
-      delete mockStorage['jolito-auth-session-v1']
+    it('handles unconfigured backend gracefully', async () => {
+      const service = new SupabaseAuthService('', '', fakeStorage)
+      const res = await service.signInWithPassword(
+        'demo@joli.to',
+        'password123',
+      )
+      expect(res.success).toBe(false)
+      expect(res.error).toBe('Cloud sync backend is not configured.')
+      service.destroy()
+    })
+
+    it('returns error when credentials are invalid', async () => {
       const fetchSpy = vi
         .fn()
         .mockImplementation((_url: unknown, init?: RequestInit) =>
           Promise.resolve(
             createAbortSensitiveResponse(
               {
-                access_token: 'apple-access-jwt',
-                refresh_token: 'apple-refresh-token',
-                expires_in: 3600,
-                user: {
-                  id: 'apple-user-789',
-                  email: '',
-                },
-              },
-              init?.signal as AbortSignal | undefined,
-            ),
-          ),
-        )
-      vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-
-      const res = await service.signInWithApple(
-        'valid-apple-identity-token',
-        undefined,
-        'fallback@apple.com',
-      )
-      expect(res.success).toBe(true)
-      expect(service.getCurrentUser()?.email).toBe('fallback@apple.com')
-      service.destroy()
-    })
-
-    it('logs detailed diagnostics and returns calm error copy when provider is disabled on server', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const fetchSpy = vi
-        .fn()
-        .mockImplementation((_url: unknown, init?: RequestInit) =>
-          Promise.resolve(
-            createAbortSensitiveResponse(
-              {
-                code: 400,
-                error_code: 'provider_disabled',
-                msg: 'Provider (issuer "https://appleid.apple.com") is not enabled',
+                error: 'invalid_grant',
+                error_description: 'Invalid login credentials',
               },
               init?.signal as AbortSignal | undefined,
               { ok: false, status: 400 },
@@ -1549,113 +1496,13 @@ describe('SupabaseAuthService', () => {
         'anon-key',
         fakeStorage,
       )
-      const res = await service.signInWithApple('valid-token')
+      const res = await service.signInWithPassword('demo@joli.to', 'wrong-pass')
       expect(res.success).toBe(false)
-      expect(res.error).toBe(
-        'Apple Sign-In could not be verified with the server. Please try again.',
-      )
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[AuthService] Apple Sign-In verification attempt failed:',
-        {
-          status: 400,
-          errorData: {
-            code: 400,
-            error_code: 'provider_disabled',
-            msg: 'Provider (issuer "https://appleid.apple.com") is not enabled',
-          },
-        },
-      )
-      consoleSpy.mockRestore()
+      expect(res.error).toBe('Invalid login credentials')
       service.destroy()
     })
 
-    it('logs detailed error_description from server while returning calm error copy to learner', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const fetchSpy = vi
-        .fn()
-        .mockImplementation((_url: unknown, init?: RequestInit) =>
-          Promise.resolve(
-            createAbortSensitiveResponse(
-              {
-                error: 'invalid request',
-                error_description: 'Bad ID token',
-              },
-              init?.signal as AbortSignal | undefined,
-              { ok: false, status: 400 },
-            ),
-          ),
-        )
-      vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-      const res = await service.signInWithApple('invalid-token')
-      expect(res.success).toBe(false)
-      expect(res.error).toBe(
-        'Apple Sign-In could not be verified with the server. Please try again.',
-      )
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[AuthService] Apple Sign-In verification attempt failed:',
-        {
-          status: 400,
-          errorData: {
-            error: 'invalid request',
-            error_description: 'Bad ID token',
-          },
-        },
-      )
-      consoleSpy.mockRestore()
-      service.destroy()
-    })
-
-    it('returns error when server rejects Apple token with generic response', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const fetchSpy = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.reject(new Error('Cannot parse')),
-      })
-      vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-      const res = await service.signInWithApple('invalid-token')
-      expect(res.success).toBe(false)
-      expect(res.error).toBe(
-        'Apple Sign-In could not be verified with the server. Please try again.',
-      )
-      consoleSpy.mockRestore()
-      service.destroy()
-    })
-
-    it('normalizes abort and interruptions into actionable calm error copy instead of raw exception', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      const fetchSpy = vi
-        .fn()
-        .mockRejectedValue(new TypeError('Fetch is aborted'))
-      vi.stubGlobal('fetch', fetchSpy)
-
-      const service = new SupabaseAuthService(
-        'https://example.supabase.co',
-        'anon-key',
-        fakeStorage,
-      )
-      const res = await service.signInWithApple('valid-token')
-      expect(res.success).toBe(false)
-      expect(res.error).toBe('Sign-in was interrupted. Please try again.')
-      expect(res.error).not.toContain('Fetch is aborted')
-      consoleSpy.mockRestore()
-      service.destroy()
-    })
-
-    it('normalizes network disconnects into actionable connection guidance', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    it('normalizes network abort and connection errors', async () => {
       const fetchSpy = vi
         .fn()
         .mockRejectedValue(new TypeError('Failed to fetch'))
@@ -1666,12 +1513,77 @@ describe('SupabaseAuthService', () => {
         'anon-key',
         fakeStorage,
       )
-      const res = await service.signInWithApple('valid-token')
+      const res = await service.signInWithPassword(
+        'demo@joli.to',
+        'password123',
+      )
       expect(res.success).toBe(false)
       expect(res.error).toBe(
         'Unable to connect to sign-in service. Please check your connection and try again.',
       )
-      consoleSpy.mockRestore()
+      service.destroy()
+    })
+
+    it('falls back to password authentication in verifyOtp when OTP fails and token is password-length', async () => {
+      delete mockStorage['jolito-auth-session-v1']
+      const fetchSpy = vi
+        .fn()
+        .mockImplementation((url: unknown, init?: RequestInit) => {
+          const urlStr = String(url)
+          if (urlStr.includes('/auth/v1/verify')) {
+            return Promise.resolve(
+              createAbortSensitiveResponse(
+                {
+                  error: 'bad_code',
+                  message: 'Token has expired or is invalid',
+                },
+                init?.signal as AbortSignal | undefined,
+                { ok: false, status: 400 },
+              ),
+            )
+          }
+          if (urlStr.includes('/auth/v1/token?grant_type=password')) {
+            return Promise.resolve(
+              createAbortSensitiveResponse(
+                {
+                  access_token: 'demo-access-jwt',
+                  refresh_token: 'demo-refresh-token',
+                  expires_in: 3600,
+                  user: {
+                    id: 'demo-reviewer-user',
+                    email: 'reviewer@joli.to',
+                  },
+                },
+                init?.signal as AbortSignal | undefined,
+              ),
+            )
+          }
+          return Promise.reject(new Error('Unknown url: ' + urlStr))
+        })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const service = new SupabaseAuthService(
+        'https://example.supabase.co',
+        'anon-key',
+        fakeStorage,
+      )
+      const res = await service.verifyOtp(
+        'reviewer@joli.to',
+        'SecretPassword123!',
+      )
+      expect(res.success).toBe(true)
+      expect(res.error).toBeUndefined()
+      expect(service.getCurrentUser()?.email).toBe('reviewer@joli.to')
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.supabase.co/auth/v1/token?grant_type=password',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            email: 'reviewer@joli.to',
+            password: 'SecretPassword123!',
+          }),
+        }),
+      )
       service.destroy()
     })
   })

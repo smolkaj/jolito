@@ -85,9 +85,6 @@ module ReleaseConfig
     expiry = profile.fetch('ExpirationDate')
     valid_expiry = (expiry.is_a?(Time) || expiry.is_a?(DateTime)) && expiry.to_time > Time.now
     raise 'An unexpired App Store distribution profile is required' unless valid_expiry && !profile['ProvisionedDevices'] && !profile['ProvisionsAllDevices'] && profile.dig('Entitlements', 'get-task-allow') == false
-    if expected_bundle_id == SETTINGS.fetch('bundleId')
-      raise 'App Store provisioning profile lacks Sign In with Apple entitlement' unless profile.dig('Entitlements', 'com.apple.developer.applesignin')
-    end
     profile.fetch('UUID')
   end
 end

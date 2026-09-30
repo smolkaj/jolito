@@ -5310,42 +5310,6 @@ kbd {
   gap: 14px;
 }
 
-.apple-signin-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.apple-signin-button {
-  width: 100%;
-  gap: 8px;
-}
-
-.apple-signin-button .icon-apple {
-  flex-shrink: 0;
-  position: relative;
-  top: -0.5px;
-}
-
-.signin-divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: var(--ink-muted);
-  font-size: 12px;
-}
-
-.signin-divider::before,
-.signin-divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid var(--line-subtle);
-}
-
-.signin-divider span {
-  padding: 0 10px;
-}
-
 .sync-explanation {
   margin: 0;
   font-size: 13.5px;
@@ -5464,6 +5428,7 @@ kbd {
   width: 100%;
 }
 
+.sync-auth-sub-actions,
 .sync-sent-sub-actions {
   display: flex;
   align-items: center;

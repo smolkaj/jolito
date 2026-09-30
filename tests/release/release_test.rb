@@ -88,7 +88,6 @@ class ReleaseTest < Minitest::Test
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'com.apple.developer.applesignin' => ['Default'],
         'get-task-allow' => false
       }
     }
@@ -101,8 +100,7 @@ class ReleaseTest < Minitest::Test
       profile.merge('ExpirationDate' => Time.now - 1),
       profile.merge('ProvisionedDevices' => ['device']),
       profile.merge('ProvisionsAllDevices' => true),
-      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.other', 'com.apple.developer.applesignin' => ['Default'], 'get-task-allow' => false }),
-      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false })
+      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.other', 'get-task-allow' => false }),
     ].each { |invalid| assert_raises(RuntimeError) { ReleaseConfig.profile!(invalid, env) } }
   end
 
@@ -188,7 +186,6 @@ class ReleaseTest < Minitest::Test
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'com.apple.developer.applesignin' => ['Default'],
         'get-task-allow' => false
       }
     })
@@ -386,23 +383,18 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
-  def test_beta_lane_auto_provisions_app_profile_when_applesignin_missing
+  def test_beta_lane_auto_provisions_app_profile_when_missing
     Fastlane::Actions.load_default_actions
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
     status = Struct.new(:success?).new(true)
-    old_app_profile_xml = Plist::Emit.dump({
-      'UUID' => 'old-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
-      'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
-    })
+    fail_status = Struct.new(:success?).new(false)
     new_app_profile_xml = Plist::Emit.dump({
       'UUID' => 'auto-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'com.apple.developer.applesignin' => ['Default'],
         'get-task-allow' => false
       }
     })
@@ -420,7 +412,7 @@ class ReleaseTest < Minitest::Test
       elsif provision_called
         [new_app_profile_xml, status]
       else
-        [old_app_profile_xml, status]
+        ['', fail_status]
       end
     end
     node_command_args = nil
@@ -460,6 +452,7 @@ class ReleaseTest < Minitest::Test
   def test_beta_lane_fails_fast_when_app_provisioning_fails
     Fastlane::Actions.load_default_actions
     env = signing_env
+    env.delete('APPLE_PROVISIONING_PROFILE')
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
     failure_status = Struct.new(:success?).new(false)
@@ -494,9 +487,10 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
-  def test_beta_lane_fails_fast_when_app_profile_unentitled_and_no_api_key
+  def test_beta_lane_fails_fast_when_app_profile_missing_and_no_api_key
     Fastlane::Actions.load_default_actions
     env = signing_env
+    env.delete('APPLE_PROVISIONING_PROFILE')
     env.delete('APP_STORE_CONNECT_API_KEY_KEY')
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
@@ -513,7 +507,7 @@ class ReleaseTest < Minitest::Test
       harness.stub(:connect, nil) do
         Open3.stub(:capture2, base_proc) do
           error = assert_raises(StandardError) { harness.execute(:beta) }
-          assert_includes error.message, 'lacks Sign In with Apple capability'
+          assert_includes error.message, 'App Store provisioning profile is missing or invalid and cannot be auto-provisioned without App Store Connect API keys'
         end
       end
     end

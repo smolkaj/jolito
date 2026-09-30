@@ -847,6 +847,50 @@ export class SupabaseAuthService implements AuthService {
           }
         }
 
+        // 5. Password fallback (e.g. for App Review demo credentials)
+        if (candidateToken.length >= 6) {
+          const passwordRes = await fetch(
+            `${this.supabaseUrl}/auth/v1/token?grant_type=password`,
+            {
+              method: 'POST',
+              signal,
+              headers: {
+                apikey: this.supabaseAnonKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: cleanEmail,
+                password: rawToken,
+              }),
+            },
+          )
+
+          if (signal.aborted || !isCurrent()) return stale()
+          if (passwordRes.ok) {
+            const rawJson: unknown = await passwordRes.json()
+            if (signal.aborted || !isCurrent()) return stale()
+            const parsed = authSessionResponseSchema.safeParse(rawJson)
+            if (parsed.success) {
+              const data = parsed.data
+              const user: AuthUser = {
+                id: data.user.id,
+                email: data.user.email || cleanEmail,
+              }
+
+              const saved = this.saveSession({
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token,
+                expiresAt: Date.now() + data.expires_in * 1000,
+                user,
+              })
+
+              return saved
+                ? { success: true }
+                : { success: false, error: new SessionStorageError().message }
+            }
+          }
+        }
+
         return {
           success: false,
           error: lastError,
@@ -865,10 +909,9 @@ export class SupabaseAuthService implements AuthService {
     }
   }
 
-  async signInWithApple(
-    identityToken: string,
-    nonce?: string,
-    fallbackEmail?: string,
+  async signInWithPassword(
+    email: string,
+    password: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
     const generation = ++this.generation
     this.inFlightRefresh = null
@@ -905,91 +948,82 @@ export class SupabaseAuthService implements AuthService {
       }
     }
 
+    const cleanEmail = email.trim()
+    const cleanPassword = password.trim()
+    if (!cleanEmail || !cleanPassword) {
+      return {
+        success: false,
+        error: 'Please enter both your email address and password.',
+      }
+    }
+
+    if (!this.supabaseUrl || !this.supabaseAnonKey) {
+      return {
+        success: false,
+        error: 'Cloud sync backend is not configured.',
+      }
+    }
+
     try {
-      const outcome = await withRequestDeadline(async (signal) => {
+      return await withRequestDeadline(async (signal) => {
         const res = await fetch(
-          `${this.supabaseUrl}/auth/v1/token?grant_type=id_token`,
+          `${this.supabaseUrl}/auth/v1/token?grant_type=password`,
           {
             method: 'POST',
+            signal,
             headers: {
               apikey: this.supabaseAnonKey,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              provider: 'apple',
-              id_token: identityToken,
-              ...(nonce ? { nonce } : {}),
+              email: cleanEmail,
+              password: cleanPassword,
             }),
-            signal,
           },
         )
 
-        if (signal.aborted || !isCurrent()) return null
-        if (!res.ok) {
-          const rawError: unknown = await res.json().catch(() => ({}))
-          const errorData =
-            supabaseAuthErrorSchema.safeParse(rawError).data ?? {}
-          console.error(
-            '[AuthService] Apple Sign-In verification attempt failed:',
-            {
-              status: res.status,
-              errorData,
-            },
-          )
-          return {
-            success: false as const,
-            error:
-              'Apple Sign-In could not be verified with the server. Please try again.',
+        if (signal.aborted || !isCurrent()) return stale()
+        if (res.ok) {
+          const rawJson: unknown = await res.json()
+          if (signal.aborted || !isCurrent()) return stale()
+          const parsed = authSessionResponseSchema.safeParse(rawJson)
+          if (parsed.success) {
+            const data = parsed.data
+            const user: AuthUser = {
+              id: data.user.id,
+              email: data.user.email || cleanEmail,
+            }
+
+            const saved = this.saveSession({
+              accessToken: data.access_token,
+              refreshToken: data.refresh_token,
+              expiresAt: Date.now() + data.expires_in * 1000,
+              user,
+            })
+
+            return saved
+              ? { success: true }
+              : { success: false, error: new SessionStorageError().message }
           }
         }
 
-        const rawJson: unknown = await res.json()
-        if (signal.aborted || !isCurrent()) return null
-        const parsed = authSessionResponseSchema.safeParse(rawJson)
-        if (!parsed.success) {
-          return {
-            success: false as const,
-            error:
-              'Invalid response from authentication server. Please try again.',
-          }
-        }
-
+        const rawErrorJson: unknown = await res.json().catch(() => ({}))
+        const errorData =
+          supabaseAuthErrorSchema.safeParse(rawErrorJson).data ?? {}
         return {
-          success: true as const,
-          data: parsed.data,
+          success: false,
+          error:
+            errorData.msg ||
+            errorData.error_description ||
+            errorData.message ||
+            'Invalid email or password.',
         }
       }, this.lifetime.signal)
-
-      if (!isCurrent() || outcome === null) return stale()
-      if (!outcome.success) return outcome
-
-      const data = outcome.data
-      const user: AuthUser = {
-        id: data.user.id,
-        email: data.user.email || fallbackEmail?.trim() || '',
-      }
-
+    } catch (err) {
       if (!isCurrent()) return stale()
-
-      const saved = this.saveSession({
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token,
-        expiresAt: Date.now() + data.expires_in * 1000,
-        user,
-      })
-
-      return saved
-        ? { success: true }
-        : { success: false, error: new SessionStorageError().message }
-    } catch (error) {
-      if (!isCurrent()) return stale()
-      console.error(
-        '[AuthService] Unexpected error during Apple Sign-In verification:',
-        error,
-      )
       return {
         success: false,
-        error: normalizeAuthTransportError(error),
+        error: normalizeAuthTransportError(err),
       }
     }
   }

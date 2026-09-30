@@ -45,30 +45,25 @@ platform :ios do
           File.binwrite(profile_file, Base64.strict_decode64(ENV.fetch('APPLE_PROVISIONING_PROFILE')))
         end
 
-        # Resolve or auto-provision main app profile with Sign In with Apple capability
+        # Resolve or auto-provision main app profile if missing or invalid
         need_app_provision = !File.exist?(profile_file)
         if File.exist?(profile_file)
           File.chmod(0600, profile_file)
-          xml_check, check_status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
-          if check_status.success?
-            parsed_check = Plist.parse_xml(xml_check)
-            need_app_provision = parsed_check.dig('Entitlements', 'com.apple.developer.applesignin').nil?
-          else
-            need_app_provision = true
-          end
+          _xml_check, check_status = Open3.capture2('security', 'cms', '-D', '-i', profile_file)
+          need_app_provision = !check_status.success?
         end
 
         if need_app_provision
           if ENV['APP_STORE_CONNECT_API_KEY_KEY']
             provision_app_script = File.join(ReleaseConfig::ROOT, 'scripts/provision-app.ts')
             if File.exist?(provision_app_script)
-              UI.message('Auto-provisioning Jolito AppStore profile with Sign In with Apple via App Store Connect API...')
+              UI.message('Auto-provisioning Jolito AppStore profile via App Store Connect API...')
               output, prov_status = Open3.capture2e('node', provision_app_script, '--output', profile_file)
               UI.message(output) if output && !output.empty?
               UI.user_error!('Failed to auto-provision app profile') unless prov_status.success?
             end
           else
-            UI.user_error!('App Store provisioning profile lacks Sign In with Apple capability (com.apple.developer.applesignin) and cannot be auto-provisioned without App Store Connect API keys')
+            UI.user_error!('App Store provisioning profile is missing or invalid and cannot be auto-provisioned without App Store Connect API keys')
           end
         end
 

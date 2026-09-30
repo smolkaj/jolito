@@ -12,9 +12,9 @@ function record(type: string, id: string, attributes = {}, relationships = {}) {
 }
 const reply = (body: unknown) => Promise.resolve(Response.json(body))
 
-void test('provisionAppProfile reuses existing bundle ID and profile when capability and expiration match', async () => {
+void test('provisionAppProfile reuses existing bundle ID and profile when expiration matches', async () => {
   const existingProfileContent = Buffer.from(
-    'mock-profile-content-with-com.apple.developer.applesignin-entitlement',
+    'mock-valid-profile-content',
   ).toString('base64')
   const futureDate = new Date(Date.now() + 86400000).toISOString()
 
@@ -24,17 +24,6 @@ void test('provisionAppProfile reuses existing bundle ID and profile when capabi
     const method = init?.method ?? 'GET'
     calls.push({ url, method })
 
-    if (
-      url.pathname.includes('/v1/bundleIds/bundle-app/bundleIdCapabilities')
-    ) {
-      return reply({
-        data: [
-          record('bundleIdCapabilities', 'cap-1', {
-            capabilityType: 'APPLE_ID_AUTH',
-          }),
-        ],
-      })
-    }
     if (url.pathname.includes('/v1/bundleIds')) {
       return reply({
         data: [
@@ -68,17 +57,18 @@ void test('provisionAppProfile reuses existing bundle ID and profile when capabi
 
   assert.equal(result.profileId, 'prof-app-123')
   assert.equal(result.profileContent, existingProfileContent)
-  // No POST calls made because bundleId, capability, and valid profile all exist
+  // No POST calls made because bundleId and valid profile both exist
   assert.ok(!calls.some((c) => c.method === 'POST'))
 })
 
-void test('provisionAppProfile registers capability and recreates profile when missing applesignin entitlement', async () => {
-  const oldProfileWithoutSignIn = Buffer.from(
-    'old-profile-content-without-signin',
+void test('provisionAppProfile deletes expired profile and recreates fresh profile', async () => {
+  const expiredProfileContent = Buffer.from(
+    'old-expired-profile-content',
   ).toString('base64')
-  const newProfileWithSignIn = Buffer.from(
-    'new-profile-with-com.apple.developer.applesignin',
-  ).toString('base64')
+  const newProfileContent = Buffer.from('new-profile-content').toString(
+    'base64',
+  )
+  const pastDate = new Date(Date.now() - 86400000).toISOString()
   const futureDate = new Date(Date.now() + 86400000).toISOString()
 
   const calls: { url: URL; method: string; body?: unknown }[] = []
@@ -89,23 +79,6 @@ void test('provisionAppProfile registers capability and recreates profile when m
       typeof init?.body === 'string' ? JSON.parse(init.body) : undefined
     calls.push({ url, method, body })
 
-    if (
-      url.pathname.includes('/v1/bundleIds/bundle-app/bundleIdCapabilities')
-    ) {
-      return reply({
-        data: [], // Capability not yet registered
-      })
-    }
-    if (
-      url.pathname.endsWith('/v1/bundleIdCapabilities') &&
-      method === 'POST'
-    ) {
-      return reply({
-        data: record('bundleIdCapabilities', 'cap-new', {
-          capabilityType: 'APPLE_ID_AUTH',
-        }),
-      })
-    }
     if (url.pathname.includes('/v1/bundleIds')) {
       return reply({
         data: [
@@ -128,8 +101,8 @@ void test('provisionAppProfile registers capability and recreates profile when m
         data: [
           record('profiles', 'old-prof', {
             name: APP_PROFILE_NAME,
-            profileContent: oldProfileWithoutSignIn,
-            expirationDate: futureDate,
+            profileContent: expiredProfileContent,
+            expirationDate: pastDate,
           }),
         ],
       })
@@ -138,7 +111,7 @@ void test('provisionAppProfile registers capability and recreates profile when m
       return reply({
         data: record('profiles', 'new-prof', {
           name: APP_PROFILE_NAME,
-          profileContent: newProfileWithSignIn,
+          profileContent: newProfileContent,
           expirationDate: futureDate,
         }),
       })
@@ -150,32 +123,7 @@ void test('provisionAppProfile registers capability and recreates profile when m
   const result = await provisionAppProfile(api)
 
   assert.equal(result.profileId, 'new-prof')
-  assert.equal(result.profileContent, newProfileWithSignIn)
-
-  // Verify capability POST was executed
-  const capPost = calls.find(
-    (c) =>
-      c.method === 'POST' &&
-      c.url.pathname.endsWith('/v1/bundleIdCapabilities'),
-  )
-  assert.ok(capPost, 'Expected bundleIdCapabilities POST')
-  const capAttrs = (
-    capPost?.body as {
-      data: {
-        attributes: {
-          capabilityType: string
-          settings?: { key: string; options?: { key: string }[] }[]
-        }
-      }
-    }
-  )?.data.attributes
-  assert.equal(capAttrs?.capabilityType, 'APPLE_ID_AUTH')
-  assert.deepEqual(capAttrs?.settings, [
-    {
-      key: 'APPLE_ID_AUTH_APP_CONSENT',
-      options: [{ key: 'PRIMARY_APP_CONSENT' }],
-    },
-  ])
+  assert.equal(result.profileContent, newProfileContent)
 
   // Verify old profile was deleted
   assert.ok(
@@ -200,17 +148,6 @@ void test('provisionAppProfile throws if no active distribution certificate exis
   const expiredDate = new Date(Date.now() - 86400000).toISOString()
   const mockFetch: typeof fetch = (input) => {
     const url = new URL(input instanceof Request ? input.url : input)
-    if (
-      url.pathname.includes('/v1/bundleIds/bundle-app/bundleIdCapabilities')
-    ) {
-      return reply({
-        data: [
-          record('bundleIdCapabilities', 'cap-1', {
-            capabilityType: 'APPLE_ID_AUTH',
-          }),
-        ],
-      })
-    }
     if (url.pathname.includes('/v1/bundleIds')) {
       return reply({
         data: [
