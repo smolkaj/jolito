@@ -32,8 +32,18 @@ async function run(): Promise<void> {
   const supabaseUrl = (
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
-    'https://xwqjelkfdcfzyxxblvhp.supabase.co'
+    ''
   ).replace(/\/+$/, '')
+
+  if (!supabaseUrl) {
+    console.error(
+      'Error: SUPABASE_URL or VITE_SUPABASE_URL is required to query telemetry aggregates.',
+    )
+    console.error(
+      'Please configure SUPABASE_URL or VITE_SUPABASE_URL in .env.local or your environment.',
+    )
+    process.exit(1)
+  }
 
   const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 

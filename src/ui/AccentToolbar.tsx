@@ -26,6 +26,17 @@ export interface AccentToolbarProps {
   activeShortcut?: ShortcutActivation | null | undefined
 }
 
+function recordTouchLiftoff(ref: { current: number }): void {
+  ref.current = Date.now()
+}
+
+function isRecentTouchLiftoff(
+  ref: { current: number },
+  windowMs = 500,
+): boolean {
+  return Date.now() - ref.current < windowMs
+}
+
 export function AccentToolbar({
   onInsert,
   isDocked = false,
@@ -36,7 +47,6 @@ export function AccentToolbar({
   sounds,
   activeShortcut,
 }: AccentToolbarProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const lastTouchTimestampRef = useRef(0)
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
   const [pressedChar, setPressedChar] = useState<string | null>(null)
@@ -52,12 +62,23 @@ export function AccentToolbar({
       {
         startX: number
         startY: number
-        lastX: number
-        char: string
-        isDrag: boolean
+        currentChar: string | null
       }
     >
   >(new Map())
+
+  const showKeyPreview = (char: string) => {
+    setPressedChar(char)
+    const button = buttonRefs.current.get(char)
+    if (button) {
+      const rect = button.getBoundingClientRect()
+      setPopupState({
+        char,
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+      })
+    }
+  }
 
   // Visual activation flash when keyboard shortcut (1-9) is pressed
   useEffect(() => {
@@ -84,37 +105,105 @@ export function AccentToolbar({
     onInsert(char)
   }
 
+  const resolveCharFromPoint = (
+    clientX: number,
+    clientY: number,
+    fallbackTarget?: HTMLElement | null,
+    fallbackStartY?: number,
+  ): string | null => {
+    // 1. If document.elementFromPoint is available, check if it points directly to an accent key
+    if (
+      typeof document !== 'undefined' &&
+      typeof document.elementFromPoint === 'function'
+    ) {
+      try {
+        const el = document.elementFromPoint(clientX, clientY)
+        const btn = el?.closest<HTMLButtonElement>('.accent-toolbar-btn')
+        const char = btn?.getAttribute('data-char')
+        if (char && buttonRefs.current.has(char)) {
+          return char
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
+
+    // 2. Geometric matching against registered button bounding boxes with generous thumb contact tolerances
+    let hasLayout = false
+    let minDistanceSq = Infinity
+    let closestChar: string | null = null
+
+    for (const [char, btn] of buttonRefs.current.entries()) {
+      const rect = btn.getBoundingClientRect()
+      if (rect.width > 0 || rect.height > 0) {
+        hasLayout = true
+        // Generous vertical window (+/- 28px) for thumb contacts around toolbar buttons
+        const withinY = clientY >= rect.top - 28 && clientY <= rect.bottom + 28
+        if (withinY) {
+          // Symmetric distance calculation to button center
+          const centerX = rect.left + rect.width / 2
+          const centerY = rect.top + rect.height / 2
+          const distSq = (clientX - centerX) ** 2 + (clientY - centerY) ** 2
+          if (distSq < minDistanceSq) {
+            minDistanceSq = distSq
+            closestChar = char
+          }
+        }
+      }
+    }
+
+    if (hasLayout) {
+      // If within vertical range and within closest button's sphere of influence (~42px)
+      if (closestChar && minDistanceSq <= 42 * 42) {
+        return closestChar
+      }
+      return null
+    }
+
+    // 3. Fallback when layout engine is absent (e.g. JSDOM unit tests)
+    if (
+      fallbackStartY !== undefined &&
+      Math.abs(clientY - fallbackStartY) > 35
+    ) {
+      return null
+    }
+    if (fallbackTarget) {
+      const btn = fallbackTarget.closest<HTMLButtonElement>(
+        '.accent-toolbar-btn',
+      )
+      const char = btn?.getAttribute('data-char')
+      if (char && buttonRefs.current.has(char)) {
+        return char
+      }
+    }
+
+    return null
+  }
+
   const handlePointerDown = (
     e: ReactPointerEvent<HTMLButtonElement>,
     char: string,
   ) => {
     if (disabled) return
 
+    // In mobile WebKit/Blink, preventDefault on touch pointerdown keeps the virtual keyboard
+    // active and prevents blurring the active input element when docked. In inline card viewports,
+    // leave default unprevented to preserve native vertical touch scrolling.
+    if (e.pointerType === 'touch' && isDocked) {
+      e.preventDefault()
+    }
+
     // Immediate tactile and acoustic feedback on key press (iOS soft keyboard behavior)
     haptics?.trigger('selection')
     sounds?.play('click')
 
-    const rect = e.currentTarget.getBoundingClientRect()
-    setPressedChar(char)
-    setPopupState({
-      char,
-      x: rect.left + rect.width / 2,
-      y: rect.top,
-    })
+    showKeyPreview(char)
 
     if (e.pointerType === 'touch') {
-      // In mobile WebKit/Blink, preventDefault on touch pointerdown keeps the virtual keyboard
-      // active and prevents blurring the active input element when docked. In inline card viewports,
-      // leave default unprevented to preserve native vertical touch scrolling.
-      if (isDocked) {
-        e.preventDefault()
-      }
       touchesRef.current.set(e.pointerId, {
         startX: e.clientX,
         startY: e.clientY,
-        lastX: e.clientX,
-        char,
-        isDrag: false,
+        currentChar: char,
       })
       try {
         e.currentTarget.setPointerCapture(e.pointerId)
@@ -130,42 +219,36 @@ export function AccentToolbar({
       return
     }
 
-    const dx = e.clientX - state.startX
-    const dy = e.clientY - state.startY
+    // Rely on resolveCharFromPoint's layout-aware bounds (rect.top - 28 .. rect.bottom + 28)
+    // rather than a scalar dy from initial touch, allowing natural thumb arcs across the row
+    const candidateChar = resolveCharFromPoint(
+      e.clientX,
+      e.clientY,
+      e.target as HTMLElement,
+      state.startY,
+    )
 
-    // Normal thumb contacts drift 8-12px during fast typing. Use a 14px slop threshold
-    // and release pointer capture upon drag recognition so the button does not stick pressed.
-    if (!state.isDrag && Math.hypot(dx, dy) >= 14) {
-      state.isDrag = true
-      setPressedChar(null)
-      setPopupState(null)
-      try {
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-          e.currentTarget.releasePointerCapture(e.pointerId)
-        }
-      } catch {
-        // Safe fallback
+    if (candidateChar !== state.currentChar) {
+      state.currentChar = candidateChar
+
+      if (candidateChar) {
+        // Finger scrubbed onto a new key -> trigger tactile + acoustic feedback and scale up target key
+        haptics?.trigger('selection')
+        sounds?.play('click')
+        showKeyPreview(candidateChar)
+      } else {
+        // Finger scrubbed off the toolbar buttons -> clear active preview so no key fires upon liftoff
+        setPressedChar(null)
+        setPopupState(null)
       }
     }
-
-    if (state.isDrag && scrollContainerRef.current) {
-      const deltaX = e.clientX - state.lastX
-      scrollContainerRef.current.scrollLeft -= deltaX
-    }
-    state.lastX = e.clientX
   }
 
-  const handlePointerUp = (
-    e: ReactPointerEvent<HTMLButtonElement>,
-    char: string,
-  ) => {
-    setPressedChar(null)
-    setPopupState(null)
-
+  const handlePointerUp = (e: ReactPointerEvent<HTMLButtonElement>) => {
     const state = touchesRef.current.get(e.pointerId)
     if (e.pointerType === 'touch' && state) {
       touchesRef.current.delete(e.pointerId)
-      lastTouchTimestampRef.current = e.timeStamp
+      recordTouchLiftoff(lastTouchTimestampRef)
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
@@ -174,32 +257,31 @@ export function AccentToolbar({
         // Safe fallback
       }
 
-      if (!disabled && state.char === char) {
-        const rect = e.currentTarget.getBoundingClientRect()
-        const releasedInside =
-          e.clientX >= rect.left - 4 &&
-          e.clientX <= rect.right + 4 &&
-          e.clientY >= rect.top - 4 &&
-          e.clientY <= rect.bottom + 4
-
-        // If liftoff occurred within button bounds or within slop, confirm intentional tap
-        if (
-          (releasedInside && !state.isDrag) ||
-          (!state.isDrag &&
-            Math.hypot(e.clientX - state.startX, e.clientY - state.startY) < 14)
-        ) {
-          handleInsert(char)
-        }
+      // Check if any other touch is still active (e.g. rapid two-thumb typing)
+      const remaining = Array.from(touchesRef.current.values())
+      const nextActiveChar =
+        remaining.find((t) => t.currentChar)?.currentChar ?? null
+      if (nextActiveChar) {
+        showKeyPreview(nextActiveChar)
+      } else {
+        setPressedChar(null)
+        setPopupState(null)
       }
+
+      // Commit the key that was active at liftoff (iOS soft keyboard release behavior)
+      if (!disabled && state.currentChar) {
+        handleInsert(state.currentChar)
+      }
+    } else {
+      setPressedChar(null)
+      setPopupState(null)
     }
   }
 
   const handlePointerCancel = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    setPressedChar(null)
-    setPopupState(null)
     if (e.pointerType === 'touch') {
       touchesRef.current.delete(e.pointerId)
-      lastTouchTimestampRef.current = e.timeStamp
+      recordTouchLiftoff(lastTouchTimestampRef)
       try {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
@@ -207,6 +289,15 @@ export function AccentToolbar({
       } catch {
         // Safe fallback
       }
+    }
+    const remaining = Array.from(touchesRef.current.values())
+    const nextActiveChar =
+      remaining.find((t) => t.currentChar)?.currentChar ?? null
+    if (nextActiveChar) {
+      showKeyPreview(nextActiveChar)
+    } else {
+      setPressedChar(null)
+      setPopupState(null)
     }
   }
 
@@ -225,13 +316,10 @@ export function AccentToolbar({
     }
   }
 
-  const handleClick = (e: ReactMouseEvent<HTMLButtonElement>, char: string) => {
+  const handleClick = (char: string) => {
     if (disabled) return
     // Deduplicate trailing synthetic click events generated after touch gestures
-    if (
-      lastTouchTimestampRef.current > 0 &&
-      e.timeStamp - lastTouchTimestampRef.current < 400
-    ) {
+    if (isRecentTouchLiftoff(lastTouchTimestampRef)) {
       return
     }
     handleInsert(char)
@@ -257,7 +345,7 @@ export function AccentToolbar({
       className={`answer-accents ${isDocked ? 'is-docked' : ''} ${className}`.trim()}
       style={dockedStyle}
     >
-      <div ref={scrollContainerRef} className="accent-toolbar-scroll">
+      <div className="accent-toolbar-scroll">
         {SPANISH_ACCENT_CHARACTERS.map((char, index) => {
           const shortcut = String(index + 1)
           const isPressed = effectivePressedChar === char
@@ -280,11 +368,11 @@ export function AccentToolbar({
               disabled={disabled}
               onPointerDown={(e) => handlePointerDown(e, char)}
               onPointerMove={handlePointerMove}
-              onPointerUp={(e) => handlePointerUp(e, char)}
+              onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
               onPointerLeave={handlePointerLeave}
               onMouseDown={handleMouseDown}
-              onClick={(e) => handleClick(e, char)}
+              onClick={() => handleClick(char)}
             >
               <kbd aria-hidden="true">{shortcut}</kbd>
               <span className="accent-char">{char}</span>

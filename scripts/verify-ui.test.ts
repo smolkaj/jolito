@@ -12,8 +12,11 @@ import {
   isServerReachable,
   DEFAULT_ROUTES,
   VIEWPORTS,
+  sampleCards,
   type ScreenshotResult,
 } from './verify-ui'
+import { getCardScheduleBadge } from '../src/ui/card-badge'
+import type { StudyCard } from '../src/domain/card'
 
 describe('verify-ui script', () => {
   describe('parseCliArgs', () => {
@@ -330,6 +333,38 @@ describe('verify-ui script', () => {
       expect(VIEWPORTS.desktop.height).toBe(800)
       expect(VIEWPORTS.desktop.isMobile).toBe(false)
       expect(VIEWPORTS.desktop.hasTouch).toBe(false)
+    })
+  })
+
+  describe('Visual Verification Fixture (sampleCards)', () => {
+    it('seeds diverse schedule states covering Due, Due in Xd, Learning, and Unstudied badges', () => {
+      expect(sampleCards.length).toBeGreaterThanOrEqual(4)
+
+      const refTime = Date.now()
+      const badges = sampleCards.map((card) =>
+        getCardScheduleBadge(card as unknown as StudyCard, refTime),
+      )
+
+      const labels = badges.map((b) => b.label)
+      const types = badges.map((b) => b.type)
+
+      // 1. Must include actively due card
+      expect(types).toContain('due')
+      expect(labels).toContain('Due')
+
+      // 2. Must include multi-day future review card (e.g. Due in 30d)
+      expect(types).toContain('review')
+      expect(
+        labels.some((l) => l.startsWith('Due in ') && l.endsWith('d')),
+      ).toBe(true)
+
+      // 3. Must include learning card
+      expect(types).toContain('learning')
+      expect(labels).toContain('Learning')
+
+      // 4. Must include unstudied card
+      expect(types).toContain('new')
+      expect(labels).toContain('Unstudied')
     })
   })
 })
