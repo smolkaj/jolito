@@ -39,7 +39,36 @@ export async function provisionAppProfile(
     bundleIdId = parsed.id
   }
 
-  // 2. Locate active distribution certificate
+  // 2. Ensure ASSOCIATED_DOMAINS capability is enabled on the bundle ID
+  const existingCapabilities = await api.list(
+    `/v1/bundleIds/${bundleIdId}/bundleIdCapabilities`,
+  )
+  const hasAssociatedDomains = existingCapabilities.some(
+    (cap) => cap.attributes.capabilityType === 'ASSOCIATED_DOMAINS',
+  )
+  if (!hasAssociatedDomains) {
+    console.log(
+      `Enabling ASSOCIATED_DOMAINS capability on bundle ID ${APP_BUNDLE_ID}...`,
+    )
+    await api.call('/v1/bundleIdCapabilities', 'POST', {
+      data: {
+        type: 'bundleIdCapabilities',
+        attributes: {
+          capabilityType: 'ASSOCIATED_DOMAINS',
+        },
+        relationships: {
+          bundleId: {
+            data: {
+              type: 'bundleIds',
+              id: bundleIdId,
+            },
+          },
+        },
+      },
+    })
+  }
+
+  // 3. Locate active distribution certificate
   const isUnexpired = (cert: { attributes: { expirationDate?: unknown } }) => {
     const expiry = cert.attributes.expirationDate
     return typeof expiry === 'string' && new Date(expiry).getTime() > Date.now()
@@ -70,20 +99,26 @@ export async function provisionAppProfile(
     const relData = prof.relationships?.bundleId?.data as
       { id?: unknown } | undefined
     const bundleMatches = !relData?.id || relData.id === bundleIdId
+    const hasAssociatedDomainsEntitlement =
+      typeof rawContent === 'string' &&
+      Buffer.from(rawContent, 'base64')
+        .toString('utf8')
+        .includes('com.apple.developer.associated-domains')
     const isValid =
       typeof rawContent === 'string' &&
       rawContent.length > 0 &&
       typeof expiry === 'string' &&
       new Date(expiry).getTime() > Date.now() &&
-      bundleMatches
+      bundleMatches &&
+      hasAssociatedDomainsEntitlement
 
     if (isValid) {
       console.log(`Using existing profile: ${APP_PROFILE_NAME} (${prof.id})`)
       return { profileId: prof.id, profileContent: rawContent }
     }
 
-    // Expired or invalid: delete it to avoid conflict upon recreation
-    console.log(`Deleting expired/invalid profile: ${prof.id}...`)
+    // Expired, invalid, or lacking required entitlements: delete it to avoid conflict upon recreation
+    console.log(`Deleting expired or outdated profile: ${prof.id}...`)
     await api.call(`/v1/profiles/${prof.id}`, 'DELETE')
   }
 
