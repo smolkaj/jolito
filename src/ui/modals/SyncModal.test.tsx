@@ -1296,7 +1296,7 @@ describe('SyncModal Live Sync Status Contract', () => {
   })
 
   describe('Password sign-in flow', () => {
-    it('allows toggling between magic link and password modes', () => {
+    it('hides password option for non-joli.to emails and reveals it for @joli.to addresses', () => {
       const auth = new MockAuthService()
       render(
         <SyncModal
@@ -1313,15 +1313,37 @@ describe('SyncModal Live Sync Status Contract', () => {
       expect(
         screen.getByRole('button', { name: /send sign-in link/i }),
       ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /sign in with password/i }),
+      ).toBeNull()
+
+      // Entering a regular learner email keeps password sign-in hidden
+      const emailInput = screen.getByLabelText(/email address/i)
+      fireEvent.change(emailInput, {
+        target: { value: 'learner@gmail.com' },
+      })
+      expect(
+        screen.queryByRole('button', { name: /sign in with password/i }),
+      ).toBeNull()
+
+      // Entering an internal / reviewer @joli.to email reveals the option
+      fireEvent.change(emailInput, {
+        target: { value: 'reviewer@joli.to' },
+      })
       const switchToPassword = screen.getByRole('button', {
         name: /sign in with password/i,
       })
+      expect(switchToPassword).toBeInTheDocument()
+
       fireEvent.click(switchToPassword)
 
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
       expect(
         screen.getByRole('button', { name: /^sign in →$/i }),
       ).toBeInTheDocument()
+      expect(screen.getByLabelText(/email address/i)).toHaveValue(
+        'reviewer@joli.to',
+      )
 
       const switchToMagicLink = screen.getByRole('button', {
         name: /sign in with email link instead/i,
@@ -1352,13 +1374,14 @@ describe('SyncModal Live Sync Status Contract', () => {
         />,
       )
 
+      fireEvent.change(screen.getByLabelText(/email address/i), {
+        target: { value: 'demo@joli.to' },
+      })
+
       fireEvent.click(
         screen.getByRole('button', { name: /sign in with password/i }),
       )
 
-      fireEvent.change(screen.getByLabelText(/email address/i), {
-        target: { value: 'demo@joli.to' },
-      })
       fireEvent.change(screen.getByLabelText(/password/i), {
         target: { value: 'SecretPassword123!' },
       })
@@ -1393,13 +1416,14 @@ describe('SyncModal Live Sync Status Contract', () => {
         />,
       )
 
+      fireEvent.change(screen.getByLabelText(/email address/i), {
+        target: { value: 'demo@joli.to' },
+      })
+
       fireEvent.click(
         screen.getByRole('button', { name: /sign in with password/i }),
       )
 
-      fireEvent.change(screen.getByLabelText(/email address/i), {
-        target: { value: 'demo@joli.to' },
-      })
       fireEvent.change(screen.getByLabelText(/password/i), {
         target: { value: 'wrong-pass' },
       })
