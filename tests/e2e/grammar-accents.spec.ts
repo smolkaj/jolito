@@ -417,7 +417,7 @@ for (const width of [375, 390]) {
   })
 }
 
-test('mobile docked accent toolbar touch dragging does not insert characters, while clean tap inserts with input focus', async ({
+test('mobile docked accent toolbar touch scrubbing corrects selection upon release, while vertical slide cancels and clean tap inserts with input focus', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -453,53 +453,78 @@ test('mobile docked accent toolbar touch dragging does not insert characters, wh
   const dockedToolbar = page.locator('.answer-accents.is-docked')
   await expect(dockedToolbar).toBeVisible()
 
-  // 1. Perform a touch drag gesture across the accent toolbar buttons
+  // 1. Perform a touch scrub gesture from 'á' across to 'é'
   const firstButton = dockedToolbar.getByRole('button', { name: 'Insert á' })
+  const secondButton = dockedToolbar.getByRole('button', { name: 'Insert é' })
   const firstBox = (await firstButton.boundingBox())!
+  const secondBox = (await secondButton.boundingBox())!
 
-  // Dispatch a simulated touch drag: pointerdown -> pointermove -> pointerup
+  // Touch down on 'á', scrub across to 'é', release on 'é'
   await firstButton.dispatchEvent('pointerdown', {
     pointerId: 10,
     pointerType: 'touch',
-    clientX: firstBox.x + 10,
-    clientY: firstBox.y + 10,
+    clientX: firstBox.x + firstBox.width / 2,
+    clientY: firstBox.y + firstBox.height / 2,
   })
   await firstButton.dispatchEvent('pointermove', {
     pointerId: 10,
     pointerType: 'touch',
-    clientX: firstBox.x + 80,
-    clientY: firstBox.y + 10,
+    clientX: secondBox.x + secondBox.width / 2,
+    clientY: secondBox.y + secondBox.height / 2,
   })
   await firstButton.dispatchEvent('pointerup', {
     pointerId: 10,
     pointerType: 'touch',
-    clientX: firstBox.x + 80,
-    clientY: firstBox.y + 10,
+    clientX: secondBox.x + secondBox.width / 2,
+    clientY: secondBox.y + secondBox.height / 2,
   })
 
-  // Verify dragging DID NOT insert any characters!
-  await expect(input).toHaveValue('')
+  // Verify scrubbing committed the corrected selection upon release ('é')!
+  await expect(input).toHaveValue('é')
 
-  // 2. Perform a clean touch tap on button "¿"
+  // 2. Perform a vertical slide-away gesture to cancel
+  await firstButton.dispatchEvent('pointerdown', {
+    pointerId: 11,
+    pointerType: 'touch',
+    clientX: firstBox.x + firstBox.width / 2,
+    clientY: firstBox.y + firstBox.height / 2,
+  })
+  await firstButton.dispatchEvent('pointermove', {
+    pointerId: 11,
+    pointerType: 'touch',
+    clientX: firstBox.x + firstBox.width / 2,
+    clientY: firstBox.y - 50,
+  })
+  await firstButton.dispatchEvent('pointerup', {
+    pointerId: 11,
+    pointerType: 'touch',
+    clientX: firstBox.x + firstBox.width / 2,
+    clientY: firstBox.y - 50,
+  })
+
+  // Value must remain 'é' (vertical slide aborted gesture without inserting)
+  await expect(input).toHaveValue('é')
+
+  // 3. Perform a clean touch tap on button "¿"
   const invertQuestionBtn = dockedToolbar.getByRole('button', {
     name: 'Insert ¿',
   })
   const invertBox = (await invertQuestionBtn.boundingBox())!
 
   await invertQuestionBtn.dispatchEvent('pointerdown', {
-    pointerId: 11,
+    pointerId: 12,
     pointerType: 'touch',
     clientX: invertBox.x + 10,
     clientY: invertBox.y + 10,
   })
   await invertQuestionBtn.dispatchEvent('pointerup', {
-    pointerId: 11,
+    pointerId: 12,
     pointerType: 'touch',
     clientX: invertBox.x + 11,
     clientY: invertBox.y + 10,
   })
 
   // Clean tap inserts the character and retains focus!
-  await expect(input).toHaveValue('¿')
+  await expect(input).toHaveValue('é¿')
   await expect(input).toBeFocused()
 })
