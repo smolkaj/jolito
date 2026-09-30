@@ -3626,7 +3626,7 @@ kbd {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 2px 4px;
+  padding: 6px 4px;
   box-sizing: border-box;
 }
 .accent-toolbar-scroll::-webkit-scrollbar {
@@ -3754,7 +3754,7 @@ kbd {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: 4px 6px;
+  padding: 7px 6px;
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -3866,7 +3866,13 @@ kbd {
     animation: none;
     transition: none;
   }
+  .answer-accents button,
+  .accent-toolbar-btn,
+  .accent-toolbar-btn:hover,
+  .accent-toolbar-btn:active,
   .accent-toolbar-btn.is-pressed,
+  .answer-accents.is-docked .accent-toolbar-btn:hover,
+  .answer-accents.is-docked .accent-toolbar-btn:active,
   .answer-accents.is-docked .accent-toolbar-btn.is-pressed {
     transform: none !important;
     transition: none !important;
