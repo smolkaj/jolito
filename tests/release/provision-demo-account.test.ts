@@ -160,15 +160,18 @@ void test('provisionDemoAccount creates new user and verifies password when user
   })
 })
 
-void test('provisionDemoAccount updates existing user password across paginated results', async () => {
+void test('provisionDemoAccount updates existing user password across paginated results and handles null emails', async () => {
   const dummyUsers = Array.from({ length: 50 }, (_, i) => ({
     id: `dummy-${i}`,
-    email: `other-${i}@example.com`,
+    email: i % 3 === 0 ? null : `other-${i}@example.com`,
   }))
   const { mockFetch, calls } = mockFetchFactory({
     pages: {
       1: dummyUsers,
-      2: [{ id: 'user-page-2', email: 'reviewer@joli.to' }],
+      2: [
+        { id: 'anon-guest', email: null },
+        { id: 'user-page-2', email: 'reviewer@joli.to' },
+      ],
     },
   })
   const result = await provisionDemoAccount(validEnv, mockFetch)
@@ -232,6 +235,31 @@ void test('provisionDemoAccount fails loudly with sanitized error if password ve
         /Password verification check for provisioned demo user failed \(HTTP 400\)/,
       )
       assert.doesNotMatch(err.message, /SuperSecretPassword/)
+      return true
+    },
+  )
+})
+
+void test('provisionDemoAccount fails loudly if Supabase API keys lookup fails', async () => {
+  const { mockFetch } = mockFetchFactory({ keysOk: false })
+  await assert.rejects(
+    () => provisionDemoAccount(validEnv, mockFetch),
+    (err: Error) => {
+      assert.match(err.message, /Supabase API key lookup failed \(HTTP 403\)/)
+      return true
+    },
+  )
+})
+
+void test('provisionDemoAccount fails loudly if Supabase list users fails', async () => {
+  const { mockFetch } = mockFetchFactory({ listOk: false })
+  await assert.rejects(
+    () => provisionDemoAccount(validEnv, mockFetch),
+    (err: Error) => {
+      assert.match(
+        err.message,
+        /Failed to query Supabase users list \(HTTP 500\)/,
+      )
       return true
     },
   )

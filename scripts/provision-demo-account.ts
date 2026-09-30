@@ -20,7 +20,7 @@ const apiKeysResponseSchema = z.array(
 
 const userRecordSchema = z.object({
   id: z.string().min(1),
-  email: z.string().optional(),
+  email: z.string().nullable().optional(),
 })
 
 const listUsersResponseSchema = z.object({
@@ -145,7 +145,7 @@ export async function provisionDemoAccount(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: config.APP_REVIEW_EMAIL.trim(),
+        email: targetEmail,
         password: config.APP_REVIEW_MAILBOX_PASSWORD,
         email_confirm: true,
       }),
@@ -170,7 +170,7 @@ export async function provisionDemoAccount(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: config.APP_REVIEW_EMAIL.trim(),
+        email: targetEmail,
         password: config.APP_REVIEW_MAILBOX_PASSWORD,
       }),
       signal: AbortSignal.timeout(10_000),
