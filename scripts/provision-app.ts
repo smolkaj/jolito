@@ -39,47 +39,7 @@ export async function provisionAppProfile(
     bundleIdId = parsed.id
   }
 
-  // 2. Ensure APPLE_ID_AUTH capability is registered on the bundle ID
-  const capabilities = await api.list(
-    `/v1/bundleIds/${bundleIdId}/bundleIdCapabilities`,
-  )
-  const hasSignInWithAppleCap = capabilities.some(
-    (cap) => cap.attributes.capabilityType === 'APPLE_ID_AUTH',
-  )
-  if (!hasSignInWithAppleCap) {
-    console.log(`Enabling APPLE_ID_AUTH capability on ${APP_BUNDLE_ID}...`)
-    try {
-      await api.call('/v1/bundleIdCapabilities', 'POST', {
-        data: {
-          type: 'bundleIdCapabilities',
-          attributes: {
-            capabilityType: 'APPLE_ID_AUTH',
-            settings: [
-              {
-                key: 'APPLE_ID_AUTH_APP_CONSENT',
-                options: [{ key: 'PRIMARY_APP_CONSENT' }],
-              },
-            ],
-          },
-          relationships: {
-            bundleId: {
-              data: {
-                type: 'bundleIds',
-                id: bundleIdId,
-              },
-            },
-          },
-        },
-      })
-    } catch (error) {
-      // 409 Conflict indicates the capability is already active or registered
-      if (!String(error).includes('409')) {
-        throw error
-      }
-    }
-  }
-
-  // 3. Locate active distribution certificate
+  // 2. Locate active distribution certificate
   const isUnexpired = (cert: { attributes: { expirationDate?: unknown } }) => {
     const expiry = cert.attributes.expirationDate
     return typeof expiry === 'string' && new Date(expiry).getTime() > Date.now()
@@ -110,32 +70,24 @@ export async function provisionAppProfile(
     const relData = prof.relationships?.bundleId?.data as
       { id?: unknown } | undefined
     const bundleMatches = !relData?.id || relData.id === bundleIdId
-    const decodedText =
-      typeof rawContent === 'string'
-        ? Buffer.from(rawContent, 'base64').toString('utf8')
-        : ''
-    const hasSignInWithApple = decodedText.includes(
-      'com.apple.developer.applesignin',
-    )
     const isValid =
       typeof rawContent === 'string' &&
       rawContent.length > 0 &&
       typeof expiry === 'string' &&
       new Date(expiry).getTime() > Date.now() &&
-      bundleMatches &&
-      hasSignInWithApple
+      bundleMatches
 
     if (isValid) {
       console.log(`Using existing profile: ${APP_PROFILE_NAME} (${prof.id})`)
       return { profileId: prof.id, profileContent: rawContent }
     }
 
-    // Expired or missing capability: delete it to avoid conflict upon recreation
+    // Expired or invalid: delete it to avoid conflict upon recreation
     console.log(`Deleting expired/invalid profile: ${prof.id}...`)
     await api.call(`/v1/profiles/${prof.id}`, 'DELETE')
   }
 
-  // 5. Create new App Store distribution profile
+  // 4. Create new App Store distribution profile
   console.log(`Creating provisioning profile: ${APP_PROFILE_NAME}...`)
   const createdProfile = await api.call('/v1/profiles', 'POST', {
     data: {

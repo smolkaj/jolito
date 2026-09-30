@@ -88,7 +88,6 @@ class ReleaseTest < Minitest::Test
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'com.apple.developer.applesignin' => ['Default'],
         'get-task-allow' => false
       }
     }
@@ -101,8 +100,7 @@ class ReleaseTest < Minitest::Test
       profile.merge('ExpirationDate' => Time.now - 1),
       profile.merge('ProvisionedDevices' => ['device']),
       profile.merge('ProvisionsAllDevices' => true),
-      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.other', 'com.apple.developer.applesignin' => ['Default'], 'get-task-allow' => false }),
-      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false })
+      profile.merge('Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.other', 'get-task-allow' => false }),
     ].each { |invalid| assert_raises(RuntimeError) { ReleaseConfig.profile!(invalid, env) } }
   end
 
@@ -188,7 +186,6 @@ class ReleaseTest < Minitest::Test
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'com.apple.developer.applesignin' => ['Default'],
         'get-task-allow' => false
       }
     })
@@ -386,23 +383,18 @@ class ReleaseTest < Minitest::Test
     previous&.each { |key, value| value.nil? ? ENV.delete(key) : ENV[key] = value }
   end
 
-  def test_beta_lane_auto_provisions_app_profile_when_applesignin_missing
+  def test_beta_lane_auto_provisions_app_profile_when_missing
     Fastlane::Actions.load_default_actions
     env = signing_env
     previous = env.keys.to_h { |key| [key, ENV[key]] }
     ENV.update(env)
     status = Struct.new(:success?).new(true)
-    old_app_profile_xml = Plist::Emit.dump({
-      'UUID' => 'old-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
-      'ExpirationDate' => Time.now + 3600,
-      'Entitlements' => { 'application-identifier' => 'ABCDEFGHIJ.to.joli.app', 'get-task-allow' => false }
-    })
+    fail_status = Struct.new(:success?).new(false)
     new_app_profile_xml = Plist::Emit.dump({
       'UUID' => 'auto-app-profile-id', 'TeamIdentifier' => ['ABCDEFGHIJ'],
       'ExpirationDate' => Time.now + 3600,
       'Entitlements' => {
         'application-identifier' => 'ABCDEFGHIJ.to.joli.app',
-        'com.apple.developer.applesignin' => ['Default'],
         'get-task-allow' => false
       }
     })
@@ -420,7 +412,7 @@ class ReleaseTest < Minitest::Test
       elsif provision_called
         [new_app_profile_xml, status]
       else
-        [old_app_profile_xml, status]
+        ['', fail_status]
       end
     end
     node_command_args = nil

@@ -249,16 +249,19 @@ export class MockAuthService implements AuthService {
     })
   }
 
-  signInWithApple(
-    identityToken: string,
-    nonce?: string,
-    fallbackEmail?: string,
+  signInWithPassword(
+    email: string,
+    password: string,
   ): Promise<{ success: boolean; error?: string | undefined }> {
-    void identityToken
-    void nonce
+    if (password === 'invalid') {
+      return Promise.resolve({
+        success: false,
+        error: 'Invalid email or password.',
+      })
+    }
     this.user = {
-      id: 'apple-user-1',
-      email: fallbackEmail || 'apple.learner@example.com',
+      id: 'password-user-1',
+      email: email.trim(),
     }
     this.listeners.forEach((l) => l(this.user))
     return Promise.resolve({ success: true })

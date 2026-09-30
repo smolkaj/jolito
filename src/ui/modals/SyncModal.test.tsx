@@ -1223,299 +1223,6 @@ describe('SyncModal Live Sync Status Contract', () => {
     expect(onSync).toHaveBeenCalledTimes(1)
   })
 
-  describe('SyncModal Apple Sign-In', () => {
-    it('renders email input and send link before secondary Apple Sign-In button', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(true)
-
-      const auth = new MockAuthService()
-
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={vi.fn()}
-          cards={[]}
-          auth={auth}
-          onSync={vi.fn()}
-        />,
-      )
-
-      const emailInput = screen.getByLabelText(/email address/i)
-      const sendLinkBtn = screen.getByRole('button', {
-        name: /send sign-in link/i,
-      })
-      const appleBtn = screen.getByRole('button', {
-        name: /sign in with apple/i,
-      })
-      const divider = screen.getByText(/^or$/i)
-
-      expect(emailInput).toBeInTheDocument()
-      expect(sendLinkBtn).toBeInTheDocument()
-      expect(appleBtn).toBeInTheDocument()
-      expect(divider).toBeInTheDocument()
-
-      expect(appleBtn).toHaveClass('secondary-button')
-      expect(appleBtn).toHaveClass('apple-signin-button')
-
-      expect(
-        emailInput.compareDocumentPosition(sendLinkBtn) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy()
-      expect(
-        sendLinkBtn.compareDocumentPosition(divider) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy()
-      expect(
-        divider.compareDocumentPosition(appleBtn) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy()
-
-      supportSpy.mockRestore()
-    })
-
-    it('renders Sign in with Apple button when supported and signs in', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(true)
-      const requestSpy = vi
-        .spyOn(appleAuthModule, 'requestAppleSignIn')
-        .mockResolvedValue({
-          identityToken: 'mock-token',
-          nonce: 'mock-nonce',
-        })
-
-      const auth = new MockAuthService()
-      const signInWithAppleMock = vi
-        .spyOn(auth, 'signInWithApple')
-        .mockResolvedValue({ success: true })
-      const onClose = vi.fn()
-
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={onClose}
-          cards={[]}
-          auth={auth}
-          onSync={vi.fn()}
-        />,
-      )
-
-      const appleBtn = screen.getByRole('button', {
-        name: /sign in with apple/i,
-      })
-      expect(appleBtn).toBeInTheDocument()
-
-      fireEvent.click(appleBtn)
-      await waitFor(() => {
-        expect(signInWithAppleMock).toHaveBeenCalledWith(
-          'mock-token',
-          'mock-nonce',
-        )
-        expect(onClose).not.toHaveBeenCalled()
-      })
-      expect(
-        await screen.findByText('Signed in with Apple.'),
-      ).toBeInTheDocument()
-
-      supportSpy.mockRestore()
-      requestSpy.mockRestore()
-    })
-
-    it('forwards email from Apple credential to signInWithApple when present', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(true)
-      const requestSpy = vi
-        .spyOn(appleAuthModule, 'requestAppleSignIn')
-        .mockResolvedValue({
-          identityToken: 'mock-token',
-          nonce: 'mock-nonce',
-          email: 'first-time@privaterelay.appleid.com',
-        })
-
-      const auth = new MockAuthService()
-      const signInWithAppleMock = vi.spyOn(auth, 'signInWithApple')
-
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={vi.fn()}
-          cards={[]}
-          auth={auth}
-          onSync={vi.fn()}
-        />,
-      )
-
-      fireEvent.click(
-        screen.getByRole('button', { name: /sign in with apple/i }),
-      )
-      await waitFor(() => {
-        expect(signInWithAppleMock).toHaveBeenCalledWith(
-          'mock-token',
-          'mock-nonce',
-          'first-time@privaterelay.appleid.com',
-        )
-      })
-
-      supportSpy.mockRestore()
-      requestSpy.mockRestore()
-    })
-
-    it('displays learner-facing error copy when token retrieval fails', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(true)
-      const requestSpy = vi
-        .spyOn(appleAuthModule, 'requestAppleSignIn')
-        .mockResolvedValue({
-          error: 'Could not complete Apple Sign-In. Please try again.',
-        })
-
-      const auth = new MockAuthService()
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={vi.fn()}
-          cards={[]}
-          auth={auth}
-          onSync={vi.fn()}
-        />,
-      )
-
-      const appleBtn = screen.getByRole('button', {
-        name: /sign in with apple/i,
-      })
-      fireEvent.click(appleBtn)
-      expect(
-        await screen.findByText(
-          'Could not complete Apple Sign-In. Please try again.',
-        ),
-      ).toBeInTheDocument()
-
-      supportSpy.mockRestore()
-      requestSpy.mockRestore()
-    })
-
-    it('displays error message when signInWithApple returns failure', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(true)
-      const requestSpy = vi
-        .spyOn(appleAuthModule, 'requestAppleSignIn')
-        .mockResolvedValue({
-          identityToken: 'mock-valid-id-token',
-        })
-
-      const auth = new MockAuthService()
-      const signInSpy = vi.spyOn(auth, 'signInWithApple').mockResolvedValue({
-        success: false,
-        error:
-          'Unable to connect to sign-in service. Please check your connection and try again.',
-      })
-
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={vi.fn()}
-          cards={[]}
-          auth={auth}
-          onSync={vi.fn()}
-        />,
-      )
-
-      const appleBtn = screen.getByRole('button', {
-        name: /sign in with apple/i,
-      })
-      fireEvent.click(appleBtn)
-
-      expect(
-        await screen.findByText(
-          'Unable to connect to sign-in service. Please check your connection and try again.',
-        ),
-      ).toBeInTheDocument()
-
-      supportSpy.mockRestore()
-      requestSpy.mockRestore()
-      signInSpy.mockRestore()
-    })
-
-    it('does not render Sign in with Apple button when auth service does not support it', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(true)
-
-      const auth = new MockAuthService()
-      ;(auth as { signInWithApple?: unknown }).signInWithApple = undefined
-
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={vi.fn()}
-          cards={[]}
-          auth={auth}
-          onSync={vi.fn()}
-        />,
-      )
-
-      expect(
-        screen.queryByRole('button', { name: /sign in with apple/i }),
-      ).toBeNull()
-
-      supportSpy.mockRestore()
-    })
-
-    it('does not render Sign in with Apple button on unsupported platforms', async () => {
-      const appleAuthModule =
-        await import('../../infrastructure/browser/apple-signin')
-      const supportSpy = vi
-        .spyOn(appleAuthModule, 'isAppleSignInSupported')
-        .mockReturnValue(false)
-
-      render(
-        <SyncModal
-          user={null}
-          onDeleteAccount={vi.fn()}
-          isOpen
-          onClose={vi.fn()}
-          cards={[]}
-          auth={createMockAuth()}
-          onSync={vi.fn()}
-        />,
-      )
-
-      expect(
-        screen.queryByRole('button', { name: /sign in with apple/i }),
-      ).toBeNull()
-
-      supportSpy.mockRestore()
-    })
-  })
-
   describe('SyncModal Monthly Digest Preference', () => {
     it('loads preference from auth service and renders checked toggle', async () => {
       const user = { id: 'user-1', email: 'learner@example.com' }
@@ -1585,6 +1292,125 @@ describe('SyncModal Live Sync Status Contract', () => {
       expect(
         screen.getByText(/failed to update email preferences/i),
       ).toBeInTheDocument()
+    })
+  })
+
+  describe('Password sign-in flow', () => {
+    it('allows toggling between magic link and password modes', () => {
+      const auth = new MockAuthService()
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      expect(
+        screen.getByRole('button', { name: /send sign-in link/i }),
+      ).toBeInTheDocument()
+      const switchToPassword = screen.getByRole('button', {
+        name: /sign in with password/i,
+      })
+      fireEvent.click(switchToPassword)
+
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /^sign in →$/i }),
+      ).toBeInTheDocument()
+
+      const switchToMagicLink = screen.getByRole('button', {
+        name: /sign in with email link instead/i,
+      })
+      fireEvent.click(switchToMagicLink)
+
+      expect(screen.queryByLabelText(/password/i)).toBeNull()
+      expect(
+        screen.getByRole('button', { name: /send sign-in link/i }),
+      ).toBeInTheDocument()
+    })
+
+    it('signs in successfully with email and password', async () => {
+      const auth = new MockAuthService()
+      const signInSpy = vi
+        .spyOn(auth, 'signInWithPassword')
+        .mockResolvedValue({ success: true })
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /sign in with password/i }),
+      )
+
+      fireEvent.change(screen.getByLabelText(/email address/i), {
+        target: { value: 'demo@joli.to' },
+      })
+      fireEvent.change(screen.getByLabelText(/password/i), {
+        target: { value: 'SecretPassword123!' },
+      })
+
+      fireEvent.click(screen.getByRole('button', { name: /^sign in →$/i }))
+
+      await waitFor(() => {
+        expect(signInSpy).toHaveBeenCalledWith(
+          'demo@joli.to',
+          'SecretPassword123!',
+        )
+        expect(screen.getByText('Signed in.')).toBeInTheDocument()
+      })
+    })
+
+    it('displays error on invalid credentials', async () => {
+      const auth = new MockAuthService()
+      vi.spyOn(auth, 'signInWithPassword').mockResolvedValue({
+        success: false,
+        error: 'Invalid email or password.',
+      })
+
+      render(
+        <SyncModal
+          user={null}
+          onDeleteAccount={vi.fn()}
+          isOpen
+          onClose={vi.fn()}
+          cards={[]}
+          auth={auth}
+          onSync={vi.fn()}
+        />,
+      )
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /sign in with password/i }),
+      )
+
+      fireEvent.change(screen.getByLabelText(/email address/i), {
+        target: { value: 'demo@joli.to' },
+      })
+      fireEvent.change(screen.getByLabelText(/password/i), {
+        target: { value: 'wrong-pass' },
+      })
+
+      fireEvent.click(screen.getByRole('button', { name: /^sign in →$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Invalid email or password.'),
+        ).toBeInTheDocument()
+      })
     })
   })
 })

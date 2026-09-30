@@ -17,16 +17,11 @@ import {
   shouldAutoFocusOnMount,
 } from '../../infrastructure/browser/environment'
 import {
-  AppleIcon,
   ClipboardIcon,
   CloudCheckSticker,
   ShieldIcon,
   SyncSpinnerIcon,
 } from '../icons'
-import {
-  isAppleSignInSupported,
-  requestAppleSignIn,
-} from '../../infrastructure/browser/apple-signin'
 import { ModalSheet } from './ModalSheet'
 import { triggerManualUpdate } from '../../infrastructure/browser/offline-shell'
 
@@ -71,6 +66,10 @@ export function SyncModal({
   isOnline = true,
 }: SyncModalProps) {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [authMode, setAuthMode] = useState<'magic-link' | 'password'>(
+    'magic-link',
+  )
   const [token, setToken] = useState('')
   const [isOtpSent, setIsOtpSent] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
@@ -82,11 +81,11 @@ export function SyncModal({
   const [loadingAction, setLoadingAction] = useState<
     | 'send'
     | 'verify'
+    | 'password'
     | 'sync'
     | 'signout'
     | 'delete'
     | 'delete-backup'
-    | 'apple'
     | null
   >(null)
   const [statusMsg, setStatusMsg] = useState<{
@@ -219,6 +218,8 @@ export function SyncModal({
     setBackupBeforeDelete(true)
     clearTransientFeedback()
     setDigestError(null)
+    setPassword('')
+    setAuthMode('magic-link')
     onClose()
   }, [onClose])
 
@@ -291,56 +292,31 @@ export function SyncModal({
     }
   }
 
-  const handleAppleSignIn = async () => {
-    if (!auth.signInWithApple) return
-    setLoadingAction('apple')
+  const handlePasswordSignIn = async (e?: FormEvent) => {
+    e?.preventDefault()
+    const cleanEmail = email.trim()
+    const cleanPassword = password.trim()
+    if (!cleanEmail || !cleanPassword) return
+    setLoadingAction('password')
     setStatusMsg(null)
-    try {
-      const appleResult = await requestAppleSignIn()
-      if (appleResult.canceled) {
-        setLoadingAction(null)
-        return
-      }
-      if (!appleResult.identityToken) {
-        setStatusMsg({
-          type: 'error',
-          message:
-            appleResult.error ||
-            'Could not complete Apple Sign-In. Please try again.',
+    const res = await (auth.signInWithPassword
+      ? auth.signInWithPassword(cleanEmail, cleanPassword)
+      : {
+          success: false,
+          error: 'Password sign-in is not supported on this client.',
         })
-        return
-      }
-      const res = appleResult.email
-        ? await auth.signInWithApple(
-            appleResult.identityToken,
-            appleResult.nonce,
-            appleResult.email,
-          )
-        : await auth.signInWithApple(
-            appleResult.identityToken,
-            appleResult.nonce,
-          )
-      if (!res.success) {
-        setStatusMsg({
-          type: 'error',
-          message:
-            res.error || 'Could not complete Apple Sign-In. Please try again.',
-        })
-      } else {
-        setStatusMsg({
-          type: 'success',
-          message: 'Signed in with Apple.',
-        })
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
+    setLoadingAction(null)
+    if (res.success) {
+      setPassword('')
+      setStatusMsg({
+        type: 'success',
+        message: 'Signed in.',
+      })
+    } else {
       setStatusMsg({
         type: 'error',
-        message:
-          message || 'Could not complete Apple Sign-In. Please try again.',
+        message: res.error || 'Invalid email or password.',
       })
-    } finally {
-      setLoadingAction(null)
     }
   }
 
@@ -367,6 +343,8 @@ export function SyncModal({
     try {
       await auth.signOut()
       setIsOtpSent(false)
+      setPassword('')
+      setAuthMode('magic-link')
       setToken('')
       setStatusMsg(null)
     } catch {
@@ -421,6 +399,8 @@ export function SyncModal({
         return
       }
       setIsOtpSent(false)
+      setPassword('')
+      setAuthMode('magic-link')
       setToken('')
       setDeleteConfirmText('')
       setIsConfirmingDelete(false)
@@ -710,67 +690,120 @@ export function SyncModal({
           )}
         </div>
       ) : !isOtpSent ? (
-        <form
-          onSubmit={(e) => {
-            void handleSendLink(false, e)
-          }}
-          className="sync-auth-form"
-        >
-          <div className="field-group">
-            <label htmlFor="sync-email">Email address</label>
-            <input
-              id="sync-email"
-              name="email"
-              type="email"
-              required
-              autoFocus={shouldAutoFocus}
-              placeholder="learner@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              inputMode="email"
-            />
-          </div>
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={loading || !email.trim()}
+        authMode === 'password' ? (
+          <form
+            onSubmit={(e) => {
+              void handlePasswordSignIn(e)
+            }}
+            className="sync-auth-form"
           >
-            {loadingAction === 'send'
-              ? 'Sending link…'
-              : pendingCardPrompt
-                ? 'Save card & send link →'
-                : 'Send sign-in link →'}
-          </button>
-          {isAppleSignInSupported() &&
-            typeof (auth as { signInWithApple?: unknown }).signInWithApple ===
-              'function' && (
-              <div className="apple-signin-wrapper">
-                <div className="signin-divider">
-                  <span>or</span>
-                </div>
+            <div className="field-group">
+              <label htmlFor="sync-email">Email address</label>
+              <input
+                id="sync-email"
+                name="email"
+                type="email"
+                required
+                autoFocus={shouldAutoFocus}
+                placeholder="learner@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+              />
+            </div>
+            <div className="field-group">
+              <label htmlFor="sync-password">Password</label>
+              <input
+                id="sync-password"
+                name="password"
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loading || !email.trim() || !password}
+            >
+              {loadingAction === 'password'
+                ? 'Signing in…'
+                : pendingCardPrompt
+                  ? 'Save card & sign in →'
+                  : 'Sign in →'}
+            </button>
+            <div className="sync-auth-sub-actions">
+              <button
+                type="button"
+                className="modal-link-btn"
+                onClick={() => {
+                  setStatusMsg(null)
+                  setAuthMode('magic-link')
+                }}
+              >
+                Sign in with email link instead
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              void handleSendLink(false, e)
+            }}
+            className="sync-auth-form"
+          >
+            <div className="field-group">
+              <label htmlFor="sync-email">Email address</label>
+              <input
+                id="sync-email"
+                name="email"
+                type="email"
+                required
+                autoFocus={shouldAutoFocus}
+                placeholder="learner@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+              />
+            </div>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loading || !email.trim()}
+            >
+              {loadingAction === 'send'
+                ? 'Sending link…'
+                : pendingCardPrompt
+                  ? 'Save card & send link →'
+                  : 'Send sign-in link →'}
+            </button>
+            {auth.signInWithPassword && (
+              <div className="sync-auth-sub-actions">
                 <button
                   type="button"
-                  className="secondary-button apple-signin-button"
+                  className="modal-link-btn"
                   onClick={() => {
-                    void handleAppleSignIn()
+                    setStatusMsg(null)
+                    setAuthMode('password')
                   }}
-                  disabled={loading}
-                  aria-busy={loadingAction === 'apple'}
                 >
-                  <AppleIcon size={18} />
-                  <span>
-                    {loadingAction === 'apple'
-                      ? 'Signing in…'
-                      : 'Sign in with Apple'}
-                  </span>
+                  Sign in with password
                 </button>
               </div>
             )}
-        </form>
+          </form>
+        )
       ) : (
         <form
           onSubmit={(e) => {

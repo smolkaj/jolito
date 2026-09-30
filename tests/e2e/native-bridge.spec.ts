@@ -15,7 +15,7 @@ test.describe('Headless Native Capacitor Bridge', () => {
     isMobile: true,
   })
 
-  test('activates native Apple Sign-In and dispatches to native plugin', async ({
+  test('renders email authentication in sync modal on native iOS without third-party login', async ({
     page,
   }) => {
     await installMockNativeBridge(page, { platform: 'ios' })
@@ -26,27 +26,18 @@ test.describe('Headless Native Capacitor Bridge', () => {
     await expect(syncButton).toBeVisible()
     await syncButton.click()
 
-    // Email input and Send sign-in link button appear before Apple Sign-In
+    // Email input and Send sign-in link button appear
     const emailInput = page.getByLabel(/email address/i)
     const sendButton = page.getByRole('button', { name: /send sign-in link/i })
     await expect(emailInput).toBeVisible()
     await expect(sendButton).toBeVisible()
 
-    // On native iOS, the secondary Apple Sign-In button must be rendered below email
-    const appleButton = page.locator('.apple-signin-button')
-    await expect(appleButton).toBeVisible()
-    await expect(appleButton).toHaveText(/sign in with apple/i)
-    await expect(appleButton).toHaveClass(/secondary-button/)
+    // No Apple Sign-In button
+    await expect(page.locator('.apple-signin-button')).toHaveCount(0)
 
-    const sendBox = await sendButton.boundingBox()
-    const appleBox = await appleButton.boundingBox()
-    expect(sendBox).not.toBeNull()
-    expect(appleBox).not.toBeNull()
-    expect(sendBox!.y + sendBox!.height).toBeLessThan(appleBox!.y)
-
-    // Capture screenshot of the modal with secondary Apple Sign-In in light mode
+    // Capture screenshot of the modal in light mode
     await page.locator('.modal-content.sync-modal').screenshot({
-      path: 'test-results/sync-modal-apple-secondary-light.png',
+      path: 'test-results/sync-modal-native-light.png',
     })
 
     // Verify zero WCAG accessibility violations in light mode
@@ -56,24 +47,13 @@ test.describe('Headless Native Capacitor Bridge', () => {
     // Verify dark mode appearance and accessibility
     await page.emulateMedia({ colorScheme: 'dark' })
     await page.locator('.modal-content.sync-modal').screenshot({
-      path: 'test-results/sync-modal-apple-secondary-dark.png',
+      path: 'test-results/sync-modal-native-dark.png',
     })
     const darkResults = await auditAccessibility(page)
     expect(darkResults.violations).toEqual([])
 
     // Restore light mode
     await page.emulateMedia({ colorScheme: 'light' })
-
-    // Clicking Apple Sign-In invokes the native plugin
-    await appleButton.click()
-
-    // Verify native bridge recorded the call
-    await expect
-      .poll(async () => {
-        const calls = await getNativeBridgeCalls(page, 'AppleSignIn')
-        return calls.some((c) => c.method === 'signIn')
-      })
-      .toBe(true)
   })
 
   test('manages Dynamic Island Live Activity lifecycle across practice session', async ({
