@@ -195,4 +195,37 @@ void test('index.html contains prerendered semantic landing shell for search cra
     /"@type":\s*"WebApplication"/,
     'index.html must define WebApplication Schema.org structured data',
   )
+
+  // 6. Zero raw JSX delimiter expressions: no literal {' '} in static HTML
+  assert.strictEqual(
+    indexHtml.includes("{' '}"),
+    false,
+    "index.html must not contain raw JSX delimiter expressions ({' '})",
+  )
+
+  // 7. ARIA label parity with DesktopSegmentedNav.tsx
+  assert.match(
+    indexHtml,
+    /aria-label="Create \(\+ New card\)"/,
+    'index.html Create button must match DesktopSegmentedNav aria-label',
+  )
+
+  // 8. Invariant parity with domain landing content
+  const { ORIGIN_STORY, LANDING_HERO_CONTENT } =
+    await import('../../src/domain/landing-content.ts')
+  assert.match(
+    indexHtml,
+    new RegExp(LANDING_HERO_CONTENT.headlineLead),
+    'index.html must reflect LANDING_HERO_CONTENT.headlineLead',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.eyebrow),
+    'index.html must reflect ORIGIN_STORY.eyebrow',
+  )
+  assert.match(
+    indexHtml,
+    new RegExp(ORIGIN_STORY.title.replace('?', '\\?')),
+    'index.html must reflect ORIGIN_STORY.title',
+  )
 })
