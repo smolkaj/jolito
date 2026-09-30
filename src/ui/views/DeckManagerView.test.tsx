@@ -551,4 +551,100 @@ describe('DeckManagerView', () => {
       expect.objectContaining({ id: 'mexican-street-phrases' }),
     )
   })
+
+  it('renders status pills for various card states including multi-day future review schedules', () => {
+    const dayMs = 24 * 60 * 60 * 1000
+    const now = 100_000
+    const statusCards = [
+      createSampleCard({
+        id: 'card-due',
+        prompt: 'due card',
+        answer: 'due answer',
+        schedule: {
+          state: 'review',
+          dueAt: now - 1000,
+          intervalDays: 1,
+          easeFactor: 2.5,
+          reviews: 2,
+          lapses: 0,
+        },
+      }),
+      createSampleCard({
+        id: 'card-unstudied',
+        prompt: 'unstudied card',
+        answer: 'unstudied answer',
+        schedule: {
+          state: 'new',
+          dueAt: now + 5000,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 0,
+          lapses: 0,
+        },
+      }),
+      createSampleCard({
+        id: 'card-learning',
+        prompt: 'learning card',
+        answer: 'learning answer',
+        schedule: {
+          state: 'learning',
+          dueAt: now + 60000,
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reviews: 1,
+          lapses: 0,
+        },
+      }),
+      createSampleCard({
+        id: 'card-review-30d',
+        prompt: 'review 30d card',
+        answer: 'review 30d answer',
+        schedule: {
+          state: 'review',
+          dueAt: now + 30 * dayMs,
+          intervalDays: 30,
+          easeFactor: 2.5,
+          reviews: 4,
+          lapses: 0,
+        },
+      }),
+      createSampleCard({
+        id: 'card-review-1d',
+        prompt: 'review 1d card',
+        answer: 'review 1d answer',
+        schedule: {
+          state: 'review',
+          dueAt: now + 1 * dayMs,
+          intervalDays: 1,
+          easeFactor: 2.5,
+          reviews: 2,
+          lapses: 0,
+        },
+      }),
+    ]
+
+    const { container } = renderDeckManager({
+      cards: statusCards,
+      vocabularyCards: statusCards,
+      referenceTime: now,
+    })
+
+    const chips = container.querySelectorAll('.col-status .deck-stat-chip')
+    expect(chips).toHaveLength(5)
+
+    expect(chips[0]).toHaveClass('is-due', 'is-mini')
+    expect(chips[0]?.textContent).toBe('Due')
+
+    expect(chips[1]).toHaveClass('is-new', 'is-mini')
+    expect(chips[1]?.textContent).toBe('Unstudied')
+
+    expect(chips[2]).toHaveClass('is-learning', 'is-mini')
+    expect(chips[2]?.textContent).toBe('Learning')
+
+    expect(chips[3]).toHaveClass('is-review', 'is-mini')
+    expect(chips[3]?.textContent).toBe('Due in 30d')
+
+    expect(chips[4]).toHaveClass('is-review', 'is-mini')
+    expect(chips[4]?.textContent).toBe('Due in 1d')
+  })
 })

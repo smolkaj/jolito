@@ -626,7 +626,23 @@ test('all pills and badges have consistent heights across views and within the s
     expect(dirBadge?.height).toBeCloseTo(24, 1)
     expect(statusChip?.height).toBeCloseTo(24, 1)
     expect(dirBadge?.height).toBe(statusChip?.height)
+
+    const whiteSpace = await row
+      .locator('.deck-stat-chip.is-mini')
+      .evaluate((el) => window.getComputedStyle(el).whiteSpace)
+    expect(whiteSpace).toBe('nowrap')
   }
+
+  // Also verify tablet viewport (768px iPad portrait): full table remains single-line without pill line break
+  await page.setViewportSize({ width: 768, height: 1024 })
+  for (let i = 0; i < cardRowCount; i++) {
+    const row = cardRows.nth(i)
+    const statusChip = await row
+      .locator('.deck-stat-chip.is-mini')
+      .boundingBox()
+    expect(statusChip?.height).toBeCloseTo(24, 1)
+  }
+  await page.setViewportSize({ width: 1280, height: 800 })
 
   // 5. Complete view action pills (consistently sized 50px pills: Create card & Back home)
   await page.goto('/#/complete')

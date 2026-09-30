@@ -5665,6 +5665,7 @@ kbd {
   border: 1.5px solid var(--line-subtle);
   transition: all 150ms ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .deck-header-actions .secondary-button:hover,
@@ -5691,6 +5692,8 @@ kbd {
   border: 1.5px solid var(--line-subtle);
   background: var(--card);
   color: var(--ink-soft);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .deck-stat-chip.is-mini {
@@ -5701,6 +5704,8 @@ kbd {
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .deck-stat-chip strong {
@@ -6059,7 +6064,7 @@ kbd {
   display: grid;
   grid-template-columns:
     32px minmax(76px, 90px) minmax(110px, 1.25fr) minmax(110px, 1fr)
-    minmax(72px, 80px) minmax(72px, 80px) minmax(64px, 74px);
+    minmax(72px, 80px) minmax(72px, 80px) minmax(84px, 96px);
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
@@ -6070,14 +6075,14 @@ kbd {
   color: var(--ink-muted);
   background: var(--paper-subtle);
   border-bottom: 2px solid var(--line);
-  min-width: 624px;
+  min-width: 644px;
 }
 
 .deck-card-row {
   display: grid;
   grid-template-columns:
     32px minmax(76px, 90px) minmax(110px, 1.25fr) minmax(110px, 1fr)
-    minmax(72px, 80px) minmax(72px, 80px) minmax(64px, 74px);
+    minmax(72px, 80px) minmax(72px, 80px) minmax(84px, 96px);
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
@@ -6091,7 +6096,7 @@ kbd {
   transition:
     background 120ms ease,
     border-color 120ms ease;
-  min-width: 624px;
+  min-width: 644px;
 }
 
 .deck-card-row:last-child {
@@ -6211,6 +6216,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 @media (max-width: 680px) {

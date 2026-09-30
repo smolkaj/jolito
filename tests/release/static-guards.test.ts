@@ -73,3 +73,61 @@ void test('ESLint catches Temporal Dead Zone variable access before definition',
     'Error message must indicate use-before-define on isReady',
   )
 })
+
+void test('Deck Manager table pills enforce single-line nowrap and adequate status track in CSS', async () => {
+  const fs = await import('node:fs')
+  const styles = fs.readFileSync('src/styles.css', 'utf8')
+
+  // 1. .deck-stat-chip must declare white-space: nowrap and flex-shrink: 0
+  const statChipBlock = styles.match(/\.deck-stat-chip\s*\{[^}]+\}/)?.[0]
+  assert.ok(statChipBlock, 'Expected .deck-stat-chip rule in src/styles.css')
+  assert.match(
+    statChipBlock,
+    /white-space:\s*nowrap;/,
+    '.deck-stat-chip must have white-space: nowrap',
+  )
+  assert.match(
+    statChipBlock,
+    /flex-shrink:\s*0;/,
+    '.deck-stat-chip must have flex-shrink: 0',
+  )
+
+  // 2. .deck-stat-chip.is-mini must declare white-space: nowrap and flex-shrink: 0
+  const miniChipBlock = styles.match(
+    /\.deck-stat-chip\.is-mini\s*\{[^}]+\}/,
+  )?.[0]
+  assert.ok(
+    miniChipBlock,
+    'Expected .deck-stat-chip.is-mini rule in src/styles.css',
+  )
+  assert.match(
+    miniChipBlock,
+    /white-space:\s*nowrap;/,
+    '.deck-stat-chip.is-mini must have white-space: nowrap',
+  )
+  assert.match(
+    miniChipBlock,
+    /flex-shrink:\s*0;/,
+    '.deck-stat-chip.is-mini must have flex-shrink: 0',
+  )
+
+  // 3. Status column grid tracks in header and row must allocate >= 84px to prevent clipping multi-word badges (e.g. "Due in 30d")
+  const headerGrid = styles.match(/\.deck-list-table-header\s*\{[^}]+\}/)?.[0]
+  assert.ok(
+    headerGrid,
+    'Expected .deck-list-table-header rule in src/styles.css',
+  )
+  assert.match(
+    headerGrid,
+    /grid-template-columns:[^;]*minmax\(84px,\s*96px\)/,
+    '.deck-list-table-header status column track must be at least minmax(84px, 96px)',
+  )
+
+  const rowGrid = styles.match(/\.deck-card-row\s*\{[^}]+\}/)?.[0]
+  assert.ok(rowGrid, 'Expected .deck-card-row rule in src/styles.css')
+  assert.match(
+    rowGrid,
+    /grid-template-columns:[^;]*minmax\(84px,\s*96px\)/,
+    '.deck-card-row status column track must be at least minmax(84px, 96px)',
+  )
+})
