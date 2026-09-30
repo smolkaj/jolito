@@ -180,4 +180,3 @@ void test('quality.yml decouples WebKit from parallel browser shards to protect 
     'browser aggregator gate must depend on both browser-shard and browser-webkit',
   )
 })
-
