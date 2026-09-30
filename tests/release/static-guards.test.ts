@@ -131,3 +131,52 @@ void test('Deck Manager table pills enforce single-line nowrap and adequate stat
     '.deck-card-row status column track must be at least minmax(84px, 96px)',
   )
 })
+
+void test('quality.yml decouples WebKit from parallel browser shards to protect apt mirror throughput', async () => {
+  const fs = await import('node:fs')
+  const workflow = fs.readFileSync('.github/workflows/quality.yml', 'utf8')
+
+  // 1. browser-shard must only install and test chromium
+  const browserShardMatch = workflow.match(
+    /browser-shard:[\s\S]*?(?=\n\s\s[a-z0-9_-]+:|$)/,
+  )?.[0]
+  assert.ok(browserShardMatch, 'Expected browser-shard job in quality.yml')
+  assert.doesNotMatch(
+    browserShardMatch,
+    /install-deps\s+chromium\s+webkit/,
+    'browser-shard must not install webkit dependencies (prevents apt mirror congestion across matrix)',
+  )
+  assert.match(
+    browserShardMatch,
+    /--project=chromium/,
+    'browser-shard test execution must be restricted to chromium',
+  )
+
+  // 2. browser-webkit must exist as a dedicated isolated job
+  const browserWebkitMatch = workflow.match(
+    /browser-webkit:[\s\S]*?(?=\n\s\s[a-z0-9_-]+:|$)/,
+  )?.[0]
+  assert.ok(
+    browserWebkitMatch,
+    'Expected dedicated browser-webkit job in quality.yml',
+  )
+  assert.match(
+    browserWebkitMatch,
+    /--project=webkit/,
+    'browser-webkit test execution must target webkit',
+  )
+
+  // 3. browser aggregator gate must require both browser-shard and browser-webkit
+  const browserAggregatorMatch = workflow.match(
+    /browser:[\s\S]*?(?=\n\s\s[a-z0-9_-]+:|$)/,
+  )?.[0]
+  assert.ok(
+    browserAggregatorMatch,
+    'Expected browser aggregator job in quality.yml',
+  )
+  assert.match(
+    browserAggregatorMatch,
+    /needs:\s*\[browser-shard,\s*browser-webkit\]/,
+    'browser aggregator gate must depend on both browser-shard and browser-webkit',
+  )
+})
