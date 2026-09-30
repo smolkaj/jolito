@@ -741,6 +741,62 @@ describe('Jolito', () => {
     ).toHaveClass('is-active')
   })
 
+  it('signs in when Universal Link auth deep link is dispatched via jolito:deep-link', async () => {
+    const services = createTestServices()
+    const verifySpy = vi.spyOn(services.auth, 'verifyOtp')
+
+    window.location.hash = '#/'
+    render(<App services={services} />)
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('jolito:deep-link', {
+          detail: {
+            url: 'https://joli.to/auth/confirm?token_hash=magic123&type=email',
+          },
+        }),
+      )
+    })
+
+    expect(verifySpy).toHaveBeenCalledWith(
+      '',
+      'https://joli.to/auth/confirm?token_hash=magic123&type=email',
+    )
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /deck synced with cloud/i }),
+      ).toBeInTheDocument()
+    })
+  })
+
+  it('signs in on cold boot when initial auth URL is provided via __JOLITO_INITIAL_URL__', async () => {
+    const services = createTestServices()
+    const verifySpy = vi.spyOn(services.auth, 'verifyOtp')
+
+    ;(
+      window as unknown as { __JOLITO_INITIAL_URL__?: string }
+    ).__JOLITO_INITIAL_URL__ =
+      'https://joli.to/auth/confirm?token_hash=cold123&type=email'
+
+    try {
+      window.location.hash = '#/'
+      render(<App services={services} />)
+
+      expect(verifySpy).toHaveBeenCalledWith(
+        '',
+        'https://joli.to/auth/confirm?token_hash=cold123&type=email',
+      )
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /deck synced with cloud/i }),
+        ).toBeInTheDocument()
+      })
+    } finally {
+      delete (window as unknown as { __JOLITO_INITIAL_URL__?: string })
+        .__JOLITO_INITIAL_URL__
+    }
+  })
+
   it('configures Live Activity with context-specific deepLinkUrl when practicing cards or grammar', async () => {
     const user = userEvent.setup({ delay: null })
     const services = createTestServices()

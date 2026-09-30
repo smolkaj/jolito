@@ -129,6 +129,24 @@ describe('worker fetch handler', () => {
     expect(res.status).toBe(400)
   })
 
+  it('routes /.well-known/apple-app-site-association to AASA handler', async () => {
+    const req = new Request(
+      'https://joli.to/.well-known/apple-app-site-association',
+    )
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toBe('application/json')
+    const json = (await res.json()) as { applinks?: { details?: unknown[] } }
+    expect(json.applinks?.details).toBeDefined()
+  })
+
+  it('routes /apple-app-site-association fallback to AASA handler', async () => {
+    const req = new Request('https://joli.to/apple-app-site-association')
+    const res = await worker.fetch(req)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toBe('application/json')
+  })
+
   it('executes scheduled hook without crashing when env is empty', async () => {
     await expect(worker.scheduled({}, {})).resolves.toBeUndefined()
   })

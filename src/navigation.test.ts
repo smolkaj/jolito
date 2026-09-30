@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   hashForView,
   hashFromDeepLink,
+  isAuthDeepLink,
   isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
@@ -101,5 +102,56 @@ describe('navigation', () => {
     expect(hashFromDeepLink('jolito://')).toBe('#/')
     expect(hashFromDeepLink('https://example.com/practice')).toBeNull()
     expect(hashFromDeepLink('invalid-url')).toBeNull()
+  })
+
+  it('maps https://joli.to Universal Links to canonical url hashes', () => {
+    expect(hashFromDeepLink('https://joli.to/practice')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/practice/cards')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/practice/grammar')).toBe(
+      '#/grammar',
+    )
+    expect(hashFromDeepLink('https://joli.to/study')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/review')).toBe('#/study')
+    expect(hashFromDeepLink('https://joli.to/grammar')).toBe('#/grammar')
+    expect(hashFromDeepLink('https://joli.to/deck')).toBe('#/deck')
+    expect(hashFromDeepLink('https://joli.to/cards')).toBe('#/deck')
+    expect(hashFromDeepLink('https://joli.to/library')).toBe('#/deck')
+    expect(hashFromDeepLink('https://joli.to/create')).toBe('#/create')
+    expect(hashFromDeepLink('https://joli.to/complete')).toBe('#/complete')
+    expect(hashFromDeepLink('https://joli.to/')).toBe('#/')
+    expect(hashFromDeepLink('https://www.joli.to/study')).toBe('#/study')
+    expect(
+      hashFromDeepLink(
+        'https://joli.to/#access_token=jwt123&refresh_token=ref456',
+      ),
+    ).toBe('#access_token=jwt123&refresh_token=ref456')
+    expect(
+      hashFromDeepLink('https://joli.to/auth/confirm?token_hash=hash123'),
+    ).toBeNull()
+  })
+
+  it('identifies auth deep links across custom schemes and Universal Links', () => {
+    expect(
+      isAuthDeepLink(
+        'https://joli.to/auth/confirm?token_hash=pkce123&type=email',
+      ),
+    ).toBe(true)
+    expect(
+      isAuthDeepLink('https://joli.to/auth/callback?token_hash=pkce123'),
+    ).toBe(true)
+    expect(
+      isAuthDeepLink(
+        'https://joli.to/#access_token=jwt123&refresh_token=ref456',
+      ),
+    ).toBe(true)
+    expect(isAuthDeepLink('jolito://auth?token_hash=pkce123')).toBe(true)
+    expect(isAuthDeepLink('jolito://#access_token=jwt123')).toBe(true)
+
+    expect(isAuthDeepLink('https://joli.to/study')).toBe(false)
+    expect(isAuthDeepLink('jolito://deck')).toBe(false)
+    expect(
+      isAuthDeepLink('https://attacker.com/auth/confirm?token_hash=pkce123'),
+    ).toBe(false)
+    expect(isAuthDeepLink('invalid-url')).toBe(false)
   })
 })

@@ -328,7 +328,8 @@
                             "
                           >
                             <a
-                              href="{{ .ConfirmationURL }}"
+                              href="https://joli.to/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+                              data-confirmation-url="{{ .ConfirmationURL }}"
                               target="_blank"
                               class="cta-button"
                               style="

@@ -15,6 +15,7 @@ import {
   handleDigestScheduled,
   type DigestWorkerEnv,
 } from './digest-route'
+import { handleAasaRequest } from './aasa-route'
 
 export interface WorkerEnv
   extends
@@ -53,6 +54,12 @@ export default {
     }
     if (pathname === '/api/digest/unsubscribe') {
       return handleUnsubscribeRequest(request, env)
+    }
+    if (
+      pathname === '/.well-known/apple-app-site-association' ||
+      pathname === '/apple-app-site-association'
+    ) {
+      return handleAasaRequest()
     }
 
     if (env?.ASSETS) {

@@ -59,6 +59,7 @@ import {
   type View,
   hashForView,
   hashFromDeepLink,
+  isAuthDeepLink,
   isFeedbackHash,
   isPrivacyHash,
   isWhyJolitoHash,
@@ -1023,6 +1024,17 @@ function LoadedApp({
       const customEvent = event as CustomEvent<{ url?: string }>
       const url = customEvent.detail?.url
       if (!url) return
+      if (isAuthDeepLink(url)) {
+        void services.auth.verifyOtp('', url).then((res) => {
+          if (
+            res.success &&
+            typeof window !== 'undefined' &&
+            window.history?.replaceState
+          ) {
+            window.history.replaceState(null, '', window.location.pathname)
+          }
+        })
+      }
       const targetHash = hashFromDeepLink(url)
       if (!targetHash) return
       window.location.hash = targetHash
@@ -1036,7 +1048,32 @@ function LoadedApp({
       window.removeEventListener('hashchange', onPopState)
       window.removeEventListener('jolito:deep-link', onDeepLink)
     }
-  }, [cancelPendingAudio, resetPromptState, services.clock, startSession])
+  }, [
+    cancelPendingAudio,
+    resetPromptState,
+    services.auth,
+    services.clock,
+    startSession,
+  ])
+
+  useEffect(() => {
+    const initialUrl =
+      (typeof window !== 'undefined' &&
+        (window as unknown as { __JOLITO_INITIAL_URL__?: string })
+          .__JOLITO_INITIAL_URL__) ||
+      (typeof window !== 'undefined' ? window.location?.href : undefined)
+    if (initialUrl && isAuthDeepLink(initialUrl)) {
+      void services.auth.verifyOtp('', initialUrl).then((res) => {
+        if (
+          res.success &&
+          typeof window !== 'undefined' &&
+          window.history?.replaceState
+        ) {
+          window.history.replaceState(null, '', window.location.pathname)
+        }
+      })
+    }
+  }, [services.auth])
 
   useEffect(() => {
     return () => {
