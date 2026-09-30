@@ -143,8 +143,8 @@ void test('quality.yml decouples WebKit from parallel browser shards to protect 
   assert.ok(browserShardMatch, 'Expected browser-shard job in quality.yml')
   assert.doesNotMatch(
     browserShardMatch,
-    /install-deps\s+chromium\s+webkit/,
-    'browser-shard must not install webkit dependencies (prevents apt mirror congestion across matrix)',
+    /\bwebkit\b/i,
+    'browser-shard must not reference webkit in any step or parameter (prevents apt mirror congestion across matrix)',
   )
   assert.match(
     browserShardMatch,
