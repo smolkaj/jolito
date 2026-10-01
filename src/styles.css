@@ -5846,9 +5846,22 @@ kbd {
 }
 
 .deck-card-count {
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-muted);
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+}
+
+@media not all and (max-width: 680px) {
+  .deck-toolbar-controls:not(:has(.deck-batch-actions)) .deck-toolbar-meta {
+    flex: 1;
+  }
+
+  .deck-toolbar-controls:not(:has(.deck-batch-actions)) .deck-card-count {
+    margin-left: auto;
+  }
 }
 
 .deck-filter-pill {
@@ -5959,6 +5972,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
 }
 
 @media not all and (max-width: 680px) {
