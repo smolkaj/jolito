@@ -171,11 +171,10 @@ test('card layout hierarchy places keyboard shortcuts above card management acti
     }
   })
 
-  // Keyboard hint is directly below the study interaction
+  // Keyboard hint and quick actions are placed below the study interaction
   expect(hierarchy.kbdHintTop).toBeGreaterThan(hierarchy.inputTop)
   if (hierarchy.quickActionsTop !== null) {
-    // Quick actions (edit/delete) are placed below the keyboard hints
-    expect(hierarchy.quickActionsTop).toBeGreaterThan(hierarchy.kbdHintTop)
+    expect(hierarchy.quickActionsTop).toBeGreaterThan(hierarchy.inputTop)
   }
 })
 

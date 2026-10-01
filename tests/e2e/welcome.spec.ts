@@ -1644,10 +1644,13 @@ test('aligns study card quick actions with card container and supports keyboard 
   await expect(answerInput).toBeVisible()
   await expect(answerInput).toBeFocused()
 
-  // 1. Verify unrevealed quick actions alignment with answer input
+  // 1. Verify unrevealed footer bar and quick actions alignment with answer input
   const unrevealedAlign = await page.evaluate(() => {
     const cardInput = document
       .querySelector('.answer-input')
+      ?.getBoundingClientRect()
+    const footerBar = document
+      .querySelector('.study-card-footer-bar')
       ?.getBoundingClientRect()
     const quickActions = document
       .querySelector('.study-card-quick-actions')
@@ -1655,19 +1658,25 @@ test('aligns study card quick actions with card container and supports keyboard 
     return {
       cardRight: cardInput?.right,
       cardLeft: cardInput?.left,
+      footerRight: footerBar?.right,
+      footerLeft: footerBar?.left,
       actionsRight: quickActions?.right,
-      actionsLeft: quickActions?.left,
     }
   })
 
   expect(
     Math.abs(
-      (unrevealedAlign.actionsRight ?? 0) - (unrevealedAlign.cardRight ?? 0),
+      (unrevealedAlign.footerRight ?? 0) - (unrevealedAlign.cardRight ?? 0),
     ),
   ).toBeLessThanOrEqual(1)
   expect(
     Math.abs(
-      (unrevealedAlign.actionsLeft ?? 0) - (unrevealedAlign.cardLeft ?? 0),
+      (unrevealedAlign.footerLeft ?? 0) - (unrevealedAlign.cardLeft ?? 0),
+    ),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs(
+      (unrevealedAlign.actionsRight ?? 0) - (unrevealedAlign.cardRight ?? 0),
     ),
   ).toBeLessThanOrEqual(1)
 
@@ -1704,24 +1713,33 @@ test('aligns study card quick actions with card container and supports keyboard 
     const panel = document
       .querySelector('.reveal-panel')
       ?.getBoundingClientRect()
+    const footerBar = document
+      .querySelector('.study-card-footer-bar')
+      ?.getBoundingClientRect()
     const quickActions = document
       .querySelector('.study-card-quick-actions')
       ?.getBoundingClientRect()
     return {
       panelRight: panel?.right,
       panelLeft: panel?.left,
+      footerRight: footerBar?.right,
+      footerLeft: footerBar?.left,
       actionsRight: quickActions?.right,
-      actionsLeft: quickActions?.left,
     }
   })
 
   expect(
     Math.abs(
-      (revealedAlign.actionsRight ?? 0) - (revealedAlign.panelRight ?? 0),
+      (revealedAlign.footerRight ?? 0) - (revealedAlign.panelRight ?? 0),
     ),
   ).toBeLessThanOrEqual(1)
   expect(
-    Math.abs((revealedAlign.actionsLeft ?? 0) - (revealedAlign.panelLeft ?? 0)),
+    Math.abs((revealedAlign.footerLeft ?? 0) - (revealedAlign.panelLeft ?? 0)),
+  ).toBeLessThanOrEqual(1)
+  expect(
+    Math.abs(
+      (revealedAlign.actionsRight ?? 0) - (revealedAlign.panelRight ?? 0),
+    ),
   ).toBeLessThanOrEqual(1)
 
   await page.waitForTimeout(250)
