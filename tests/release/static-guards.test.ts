@@ -532,7 +532,7 @@ void test('manifest.webmanifest defines valid shortcuts, launch_handler, and rou
                 type: z.string().min(1),
               }),
             )
-            .min(1),
+            .optional(),
         }),
       )
       .min(1),
@@ -545,6 +545,7 @@ void test('manifest.webmanifest defines valid shortcuts, launch_handler, and rou
   )
 
   const swContent = fs.readFileSync('public/sw.js', 'utf8')
+  const declaredIconSignatures = new Set<string>()
 
   for (const shortcut of validated.data.shortcuts) {
     // 1. Verify URL contains a hash that resolves to a primary non-welcome view in navigation
@@ -561,18 +562,30 @@ void test('manifest.webmanifest defines valid shortcuts, launch_handler, and rou
       `Shortcut "${shortcut.name}" target hash "${hash}" must resolve to an active view, not welcome fallback`,
     )
 
-    // 2. Verify each shortcut icon exists on disk and is included in sw.js offline cache
-    for (const icon of shortcut.icons) {
-      const iconDiskPath = path.join('public', icon.src.replace(/^\//, ''))
+    // 2. If icons are declared, verify they exist on disk, are in sw.js, and are not duplicated brand icons
+    if (shortcut.icons && shortcut.icons.length > 0) {
+      const signature = shortcut.icons
+        .map((i) => i.src)
+        .sort()
+        .join(',')
       assert.ok(
-        fs.existsSync(iconDiskPath),
-        `Shortcut icon "${icon.src}" declared for "${shortcut.name}" does not exist at ${iconDiskPath}`,
+        !declaredIconSignatures.has(signature),
+        `Shortcut "${shortcut.name}" must not reuse identical brand icon set across shortcuts`,
       )
-      const iconFilename = icon.src.replace(/^\//, '')
-      assert.ok(
-        swContent.includes(iconFilename),
-        `Shortcut icon "${icon.src}" must be included in public/sw.js PWA_ASSETS for offline capability`,
-      )
+      declaredIconSignatures.add(signature)
+
+      for (const icon of shortcut.icons) {
+        const iconDiskPath = path.join('public', icon.src.replace(/^\//, ''))
+        assert.ok(
+          fs.existsSync(iconDiskPath),
+          `Shortcut icon "${icon.src}" declared for "${shortcut.name}" does not exist at ${iconDiskPath}`,
+        )
+        const iconFilename = icon.src.replace(/^\//, '')
+        assert.ok(
+          swContent.includes(iconFilename),
+          `Shortcut icon "${icon.src}" must be included in public/sw.js PWA_ASSETS for offline capability`,
+        )
+      }
     }
   }
 })
