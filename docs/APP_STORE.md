@@ -115,11 +115,11 @@ Complete these App Store Connect declarations against the release candidate:
 
 The App Store screenshot set showcases Jolito's real product experience across a 5-screen storyboard on iPhone (6.9"/6.7") and iPad (13"):
 
-1. **`01-welcome`:** Welcome view with Jolito the axolotl mascot, brand typography, and quick study action.
-2. **`02-study`:** Spoken active recall practice session with Mexican Spanish prompt (`¿Mande?`), native audio playback, and learner typing input.
-3. **`03-review`:** Spaced repetition (SRS) answer grading with diff inspection, Mexican cultural nuance context, and 4-tier rating intervals.
-4. **`04-create`:** Intelligent card authoring with trie-based autocomplete, slang/typo tags (`ahorita`), AI helpers, bidirectional toggle, and "Save card".
-5. **`05-deck`:** Deck management showing curated starter packs (`Mexican Street Phrases`), filter pills, and 100% offline & local readiness.
+1. **`01-study`:** Active recall practice session with English prompt (`Pardon? / What was that?`), Mexican Spanish target direction, native audio pronunciation, and interactive learner response input.
+2. **`02-gesture`:** Fluid touch-first swipe gestures with 3D perspective tilt, directional glow, and mid-swipe grading HUD (`Good ↺` / `Again ↺`).
+3. **`03-review`:** Spaced repetition (SRS) answer grading with revealed Mexican Spanish answer (`¿Mande?`), authentic Mexican cultural nuance context note, and 4-tier FSRS interval buttons (`Again`, `Hard`, `Good`, `Easy`).
+4. **`04-create`:** Intelligent card authoring with trie-based slang autocomplete (`ahorita`), AI context helpers, bidirectional toggle, and "Save card".
+5. **`05-deck`:** Deck management ledger with starter packs, backup & import, dual flag pills, FSRS mastery bubbles, and Mexican spice difficulty ratings.
 
 Generate and refresh the exact high-resolution store assets locally:
 

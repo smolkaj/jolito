@@ -1,6 +1,13 @@
 import { chromium, type BrowserContext } from '@playwright/test'
 import { createServer } from 'node:http'
-import { readFileSync, copyFileSync, statSync, mkdirSync } from 'node:fs'
+import {
+  readFileSync,
+  copyFileSync,
+  statSync,
+  mkdirSync,
+  readdirSync,
+  unlinkSync,
+} from 'node:fs'
 import { resolve, join, sep } from 'node:path'
 import { execSync } from 'node:child_process'
 
@@ -17,14 +24,31 @@ const isIosOnly = process.argv.includes('--ios-only')
 const includeIos = !isAndroidOnly
 const includeAndroid = !isIosOnly
 
+const cleanStaleScreenshots = (dir: string) => {
+  if (statSync(dir, { throwIfNoEntry: false })?.isDirectory()) {
+    for (const file of readdirSync(dir)) {
+      if (
+        file.endsWith('.png') &&
+        (file.includes('welcome') || file.includes('02-study'))
+      ) {
+        unlinkSync(join(dir, file))
+      }
+    }
+  }
+}
+
 if (includeIos) {
   mkdirSync(iosOutputDir, { recursive: true })
+  cleanStaleScreenshots(iosOutputDir)
 }
 if (includeAndroid) {
   mkdirSync(androidImagesDir, { recursive: true })
   mkdirSync(androidPhoneDir, { recursive: true })
+  cleanStaleScreenshots(androidPhoneDir)
   mkdirSync(androidSevenInchDir, { recursive: true })
+  cleanStaleScreenshots(androidSevenInchDir)
   mkdirSync(androidTenInchDir, { recursive: true })
+  cleanStaleScreenshots(androidTenInchDir)
 }
 
 console.log('Building dist prior to screenshot generation...')
@@ -80,11 +104,11 @@ const browser = await chromium.launch()
 const now = Date.now()
 const sampleCards = [
   {
-    id: 'card-1:es-en',
+    id: 'card-1:en-es',
     noteId: 'note-1',
-    prompt: '¿Mande?',
-    answer: 'Pardon? / What was that?',
-    direction: 'es-en',
+    prompt: 'Pardon? / What was that?',
+    answer: '¿Mande?',
+    direction: 'en-es',
     context:
       'Quintessential polite Mexican response when you did not hear someone or when your name is called.',
     scene: 'conversation',
@@ -101,13 +125,13 @@ const sampleCards = [
     createdAt: now - 86400000,
   },
   {
-    id: 'card-2:es-en',
+    id: 'card-2:en-es',
     noteId: 'note-2',
-    prompt: '¡Qué padre!',
-    answer: 'How cool! / That’s awesome!',
-    direction: 'es-en',
+    prompt: 'No way! / You’re kidding!',
+    answer: '¡No manches!',
+    direction: 'en-es',
     context:
-      'Very common Mexican idiom expressing that something is great, wonderful, or fun.',
+      'Widely used informal Mexican expression of surprise or disbelief.',
     scene: 'conversation',
     schedule: {
       state: 'review',
@@ -124,11 +148,11 @@ const sampleCards = [
   {
     id: 'card-3:es-en',
     noteId: 'note-3',
-    prompt: 'Ahorita',
-    answer: 'Right now / In a minute / Later',
+    prompt: '¡Qué padre!',
+    answer: 'How cool! / That’s awesome!',
     direction: 'es-en',
     context:
-      'Mexican temporal expression: depending on tone and context, can mean right this second, shortly, or never.',
+      'Very common Mexican idiom expressing that something is great, wonderful, or fun.',
     scene: 'conversation',
     schedule: {
       state: 'learning',
@@ -143,13 +167,13 @@ const sampleCards = [
     createdAt: now - 86400000 * 2,
   },
   {
-    id: 'card-4:es-en',
+    id: 'card-4:en-es',
     noteId: 'note-4',
-    prompt: 'No manches',
-    answer: 'No way! / You’re kidding!',
-    direction: 'es-en',
+    prompt: 'Right now / In a minute',
+    answer: 'Ahorita',
+    direction: 'en-es',
     context:
-      'Widely used informal Mexican expression of surprise or disbelief.',
+      'Mexican temporal expression: depending on tone and context, can mean right this second, shortly, or never.',
     scene: 'conversation',
     schedule: {
       state: 'new',
@@ -406,28 +430,21 @@ for (const dev of targetDevices) {
   await prepareContext(context, dev.isPhone, dev.platform)
   const page = await context.newPage()
 
-  // 1. Welcome Screen (clean mascot, no speech bubble)
-  await page.goto(`${baseUrl}/#/`)
-  await page.waitForLoadState('networkidle')
-  await page.waitForTimeout(500)
-  const file01 = join(dev.outputDir, `1_${dev.prefix}_01-welcome.png`)
-  await page.screenshot({ path: file01 })
-  console.log(`Saved ${file01}`)
-
-  // 2. Study Prompt (Active Recall - Touch First)
+  // 1. Study Prompt (Active Recall EN -> MEX)
   await page.goto(`${baseUrl}/#/study`)
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(600)
   const answerInput = page.getByLabel('Your answer')
   if (await answerInput.isVisible()) {
-    await answerInput.fill('Pardon?')
+    await answerInput.fill('¿Mande?')
     await page.waitForTimeout(300)
   }
-  const file02 = join(dev.outputDir, `2_${dev.prefix}_02-study.png`)
-  await page.screenshot({ path: file02 })
-  console.log(`Saved ${file02}`)
+  const file01 = join(dev.outputDir, `1_${dev.prefix}_01-study.png`)
+  await page.screenshot({ path: file01 })
+  console.log(`Saved ${file01}`)
 
-  // 3. Review Answer & SRS Grading (Click reveal button rather than physical keyboard Enter)
+  // 2 & 3. Review Answer & Gesture
+  // First reveal the answer to reach the review state
   const revealBtn = page.locator('.reveal-button')
   if (await revealBtn.isVisible()) {
     await revealBtn.click()
@@ -437,10 +454,51 @@ for (const dev of targetDevices) {
       await fallbackReveal.click()
     }
   }
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(500)
+
+  // 3. Review Answer & SRS Grading (captured in settled state with cultural context & FSRS buttons)
   const file03 = join(dev.outputDir, `3_${dev.prefix}_03-review.png`)
   await page.screenshot({ path: file03 })
   console.log(`Saved ${file03}`)
+
+  // 2. Tactile Gesture (captured mid-swipe toward Good)
+  await page.evaluate(() => {
+    const card = document.querySelector('section.study-card')
+    if (!card) return
+    const rect = card.getBoundingClientRect()
+    const startX = rect.left + rect.width / 2
+    const startY = rect.top + rect.height / 3
+    card.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        clientX: startX,
+        clientY: startY,
+        button: 0,
+        bubbles: true,
+        pointerType: 'touch',
+      }),
+    )
+    card.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: startX + 80,
+        clientY: startY,
+        button: 0,
+        bubbles: true,
+        pointerType: 'touch',
+      }),
+    )
+  })
+  await page.waitForTimeout(400)
+  const file02 = join(dev.outputDir, `2_${dev.prefix}_02-gesture.png`)
+  await page.screenshot({ path: file02 })
+  console.log(`Saved ${file02}`)
+
+  // Clean up pointer drag state before leaving page
+  await page.evaluate(() => {
+    const card = document.querySelector('section.study-card')
+    if (!card) return
+    card.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
+  })
+  await page.waitForTimeout(200)
 
   // 4. Create Card with Autocomplete
   await page.goto(`${baseUrl}/#/create`)
