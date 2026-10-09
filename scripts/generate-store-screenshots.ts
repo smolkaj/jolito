@@ -27,10 +27,7 @@ const includeAndroid = !isIosOnly
 const cleanStaleScreenshots = (dir: string) => {
   if (statSync(dir, { throwIfNoEntry: false })?.isDirectory()) {
     for (const file of readdirSync(dir)) {
-      if (
-        file.endsWith('.png') &&
-        (file.includes('welcome') || file.includes('02-study'))
-      ) {
+      if (/^[0-9]+_.*\.png$/.test(file)) {
         unlinkSync(join(dir, file))
       }
     }
@@ -114,7 +111,7 @@ const sampleCards = [
     scene: 'conversation',
     schedule: {
       state: 'learning',
-      dueAt: now - 5000,
+      dueAt: now - 10000,
       intervalDays: 1,
       easeFactor: 2.5,
       reviews: 2,
@@ -135,7 +132,7 @@ const sampleCards = [
     scene: 'conversation',
     schedule: {
       state: 'review',
-      dueAt: now + 86400000 * 30,
+      dueAt: now - 5000,
       intervalDays: 30,
       easeFactor: 2.6,
       reviews: 4,
@@ -443,8 +440,11 @@ for (const dev of targetDevices) {
   await page.screenshot({ path: file01 })
   console.log(`Saved ${file01}`)
 
-  // 2 & 3. Review Answer & Gesture
-  // First reveal the answer to reach the review state
+  // 2. Review Answer with Character Diff & Swipe Cues (← Again, Good →)
+  if (await answerInput.isVisible()) {
+    await answerInput.fill('Mande')
+    await page.waitForTimeout(200)
+  }
   const revealBtn = page.locator('.reveal-button')
   if (await revealBtn.isVisible()) {
     await revealBtn.click()
@@ -455,50 +455,29 @@ for (const dev of targetDevices) {
     }
   }
   await page.waitForTimeout(500)
-
-  // 3. Review Answer & SRS Grading (captured in settled state with cultural context & FSRS buttons)
-  const file03 = join(dev.outputDir, `3_${dev.prefix}_03-review.png`)
-  await page.screenshot({ path: file03 })
-  console.log(`Saved ${file03}`)
-
-  // 2. Tactile Gesture (captured mid-swipe toward Good)
-  await page.evaluate(() => {
-    const card = document.querySelector('section.study-card')
-    if (!card) return
-    const rect = card.getBoundingClientRect()
-    const startX = rect.left + rect.width / 2
-    const startY = rect.top + rect.height / 3
-    card.dispatchEvent(
-      new PointerEvent('pointerdown', {
-        clientX: startX,
-        clientY: startY,
-        button: 0,
-        bubbles: true,
-        pointerType: 'touch',
-      }),
-    )
-    card.dispatchEvent(
-      new PointerEvent('pointermove', {
-        clientX: startX + 80,
-        clientY: startY,
-        button: 0,
-        bubbles: true,
-        pointerType: 'touch',
-      }),
-    )
-  })
-  await page.waitForTimeout(400)
-  const file02 = join(dev.outputDir, `2_${dev.prefix}_02-gesture.png`)
+  const file02 = join(dev.outputDir, `2_${dev.prefix}_02-review-diff.png`)
   await page.screenshot({ path: file02 })
   console.log(`Saved ${file02}`)
 
-  // Clean up pointer drag state before leaving page
-  await page.evaluate(() => {
-    const card = document.querySelector('section.study-card')
-    if (!card) return
-    card.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
-  })
-  await page.waitForTimeout(200)
+  // 3. Cultural Nuance Context & Mature SRS Review (Advance to Card 2: ¡No manches!)
+  const goodBtn = page.locator('button.grade-good')
+  if (await goodBtn.isVisible()) {
+    await goodBtn.click()
+    await page.waitForTimeout(500)
+  }
+  const revealBtn2 = page.locator('.reveal-button')
+  if (await revealBtn2.isVisible()) {
+    await revealBtn2.click()
+  } else {
+    const fallbackReveal2 = page.locator('form.answer-form button')
+    if (await fallbackReveal2.isVisible()) {
+      await fallbackReveal2.click()
+    }
+  }
+  await page.waitForTimeout(500)
+  const file03 = join(dev.outputDir, `3_${dev.prefix}_03-review.png`)
+  await page.screenshot({ path: file03 })
+  console.log(`Saved ${file03}`)
 
   // 4. Create Card with Autocomplete
   await page.goto(`${baseUrl}/#/create`)
