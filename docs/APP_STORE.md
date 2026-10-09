@@ -7,7 +7,7 @@ base territory, and territory exclusions. No StoreKit purchases are needed.
 
 ## Status and external dependencies
 
-**In TestFlight internal testing.** Apple Developer enrollment, App Store Connect app record (`to.joli.app`, Adam ID `6812974166`), distribution certificate, provisioning profile, and GitHub release credentials are fully configured. Build 1 (`1.0 (1)`) is built, signed, and uploaded to TestFlight for internal testing. Before publication we need:
+**In TestFlight internal testing.** Apple Developer enrollment, App Store Connect app record (`to.joli.app`, Adam ID `6812974166`), distribution certificate, provisioning profile, and GitHub release credentials are fully configured. Release candidates are built, signed, and uploaded to TestFlight for internal testing. Before publication we need:
 
 - Physical iPhone/iPad validation of the TestFlight build (sign-in, card operations, offline mode, audio interruption).
 - Active Paid Apps Agreement, bank/tax information, and applicable regional declarations (including EU trader status) confirmed in Apple's portal.
@@ -183,7 +183,7 @@ Do not describe it as physical-device QA.
    prove that Apple's account agreements or storefront eligibility are ready.
 
 3. Dispatch **TestFlight Beta Deployment** on the approved main commit (via GitHub Actions web UI or `gh workflow run testflight.yml && gh run watch`). It
-   builds once, assigns the next build number for version 1.0, uploads, and
+   builds once, assigns the next build number for the configured release version, uploads, and
    waits for processing. Download `ios-release-<commit>`: it contains the IPA
    and `release.json` with version, build number, and commit. Add Steffen as an
    internal tester in App Store Connect, install this build on both devices.

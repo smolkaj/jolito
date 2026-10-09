@@ -8,6 +8,7 @@ import {
   configureStore,
   CONTENT_RIGHTS_DECLARATION,
   priceSchedule,
+  settings,
   submitAppStoreVersion,
   validateBuildNumber,
   withdrawForReplacement,
@@ -97,7 +98,7 @@ function store(
       if (url.pathname.startsWith('/v1/appStoreVersions/')) {
         return reply({
           data: record('appStoreVersions', url.pathname.split('/').pop()!, {
-            versionString: '1.0',
+            versionString: settings.version,
           }),
         })
       }
@@ -140,7 +141,7 @@ function store(
               'appStoreVersions',
               'v1',
               {
-                versionString: '1.0',
+                versionString: settings.version,
                 appStoreState: versionState,
               },
               options.buildMissing ? {} : { build: rel('builds', buildId) },
@@ -360,7 +361,7 @@ void test('checkStatus resolves and prints current App Store version states with
   assert.equal(status.name, 'Jolito')
   assert.equal(status.versions.length, 1)
   assert.deepEqual(status.versions[0], {
-    versionString: '1.0',
+    versionString: settings.version,
     state: 'WAITING_FOR_REVIEW',
     buildNumber: '4',
   })
@@ -616,7 +617,9 @@ void test('resuming a draft requests relationship linkage and preserves its exis
 void test('submitAppStoreVersion rejects when version is missing or target build is not found', async () => {
   await assert.rejects(
     submitAppStoreVersion(store({ emptyVersions: true }).api, '10'),
-    /App Store version 1\.0 not found/,
+    new RegExp(
+      `App Store version ${settings.version.replace(/\\./g, '\\\\.')} not found`,
+    ),
   )
 
   await assert.rejects(
@@ -676,7 +679,10 @@ void test('replacement waits for cancellation and preserves unrelated submission
             record(
               'appStoreVersions',
               'v1',
-              { versionString: '1.0', appStoreState: 'WAITING_FOR_REVIEW' },
+              {
+                versionString: settings.version,
+                appStoreState: 'WAITING_FOR_REVIEW',
+              },
               { build: rel('builds', 'old') },
             ),
           ],
@@ -694,7 +700,7 @@ void test('replacement waits for cancellation and preserves unrelated submission
           ],
           included: [
             record('preReleaseVersions', 'pr', {
-              version: '1.0',
+              version: settings.version,
               platform: 'IOS',
             }),
           ],
@@ -805,7 +811,11 @@ void test('replacement validates candidate version, platform and processing befo
         return reply({ data: [record('apps', 'app')] })
       if (url.pathname.endsWith('/appStoreVersions'))
         return reply({
-          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+          data: [
+            record('appStoreVersions', 'v1', {
+              versionString: settings.version,
+            }),
+          ],
         })
       if (url.pathname === '/v1/builds')
         return reply({
@@ -816,7 +826,7 @@ void test('replacement validates candidate version, platform and processing befo
           ],
           included: [
             record('preReleaseVersions', 'pr', {
-              version: attributes.wrongVersion ? '2.0' : '1.0',
+              version: attributes.wrongVersion ? '2.0' : settings.version,
               platform: attributes.wrongPlatform ? 'MAC_OS' : 'IOS',
             }),
           ],
@@ -853,7 +863,11 @@ void test('review readback validates private access and complete video without m
         return reply({ data: [record('apps', 'app')] })
       if (url.pathname.endsWith('/appStoreVersions'))
         return reply({
-          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+          data: [
+            record('appStoreVersions', 'v1', {
+              versionString: settings.version,
+            }),
+          ],
         })
       const attributes = {
         notes: expected.notes,
@@ -905,7 +919,11 @@ void test('review readback waits for asynchronous video delivery and bounds fail
         return reply({ data: [record('apps', 'app')] })
       if (url.pathname.endsWith('/appStoreVersions'))
         return reply({
-          data: [record('appStoreVersions', 'v1', { versionString: '1.0' })],
+          data: [
+            record('appStoreVersions', 'v1', {
+              versionString: settings.version,
+            }),
+          ],
         })
       reads++
       return reply({

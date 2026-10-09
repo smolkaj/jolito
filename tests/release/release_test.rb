@@ -644,7 +644,7 @@ class ReleaseTest < Minitest::Test
     assert_equal [:connect, :upload_to_app_store], harness.calls.map(&:first)
     options = harness.calls.last.last
     assert_equal 'to.joli.app', options.fetch(:app_identifier)
-    assert_equal '1.0', options.fetch(:app_version)
+    assert_equal ReleaseConfig::SETTINGS.fetch('version'), options.fetch(:app_version)
     assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/native-screenshots'), options.fetch(:screenshots_path)
     assert_equal File.join(ReleaseConfig::ROOT, 'fastlane/metadata'), options.fetch(:metadata_path)
     assert_equal({ demo_user: 'reviewer@joli.to', demo_password: 'private-inbox-password' }, options.fetch(:app_review_information))
