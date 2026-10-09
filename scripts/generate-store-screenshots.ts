@@ -433,7 +433,7 @@ for (const dev of targetDevices) {
   await page.waitForTimeout(600)
   const answerInput = page.getByLabel('Your answer')
   if (await answerInput.isVisible()) {
-    await answerInput.fill('¿Mande?')
+    await answerInput.fill('Mande')
     await page.waitForTimeout(300)
   }
   const file01 = join(dev.outputDir, `1_${dev.prefix}_01-study.png`)
