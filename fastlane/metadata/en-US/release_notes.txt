@@ -1,4 +1,4 @@
-- Prioritized active recall study in the primary English → Mexican Spanish direction.
-- Added tactile swipe gesture cues (Again / Good) during review sessions.
-- Smarter, forgiving answer diffing and punctuation guidance for mobile keyboards.
+- Focus card practice on active recall from English to Mexican Spanish.
+- Added tactile swipe cues (← Again / Good →) during study sessions.
+- Smarter, forgiving answer checking and punctuation guidance for mobile keyboards.
 - Stability and performance improvements across study sessions.

@@ -7,7 +7,7 @@ base territory, and territory exclusions. No StoreKit purchases are needed.
 
 ## Status and external dependencies
 
-**In TestFlight internal testing.** Apple Developer enrollment, App Store Connect app record (`to.joli.app`, Adam ID `6812974166`), distribution certificate, provisioning profile, and GitHub release credentials are fully configured. Build 1 (`1.0 (1)`) is built, signed, and uploaded to TestFlight for internal testing. Before publication we need:
+**In TestFlight internal testing.** Apple Developer enrollment, App Store Connect app record (`to.joli.app`, Adam ID `6812974166`), distribution certificate, provisioning profile, and GitHub release credentials are fully configured. Release candidates are built, signed, and uploaded to TestFlight for internal testing. Before publication we need:
 
 - Physical iPhone/iPad validation of the TestFlight build (sign-in, card operations, offline mode, audio interruption).
 - Active Paid Apps Agreement, bank/tax information, and applicable regional declarations (including EU trader status) confirmed in Apple's portal.
