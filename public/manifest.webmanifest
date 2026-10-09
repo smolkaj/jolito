@@ -7,6 +7,29 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "shortcuts": [
+    {
+      "name": "Practice cards",
+      "short_name": "Cards",
+      "description": "Practice due flashcards",
+      "url": "/#/study"
+    },
+    {
+      "name": "Practice grammar",
+      "short_name": "Grammar",
+      "description": "Practice verb conjugations and drills",
+      "url": "/#/grammar"
+    },
+    {
+      "name": "Create flashcard",
+      "short_name": "Create",
+      "description": "Create a new flashcard",
+      "url": "/#/create"
+    }
+  ],
   "lang": "en",
   "categories": ["education", "productivity"],
   "background_color": "#fdf5f8",
