@@ -1,6 +1,13 @@
 import { chromium, type BrowserContext } from '@playwright/test'
 import { createServer } from 'node:http'
-import { readFileSync, copyFileSync, statSync, mkdirSync } from 'node:fs'
+import {
+  readFileSync,
+  copyFileSync,
+  statSync,
+  mkdirSync,
+  readdirSync,
+  unlinkSync,
+} from 'node:fs'
 import { resolve, join, sep } from 'node:path'
 import { execSync } from 'node:child_process'
 
@@ -17,14 +24,28 @@ const isIosOnly = process.argv.includes('--ios-only')
 const includeIos = !isAndroidOnly
 const includeAndroid = !isIosOnly
 
+const cleanStaleScreenshots = (dir: string) => {
+  if (statSync(dir, { throwIfNoEntry: false })?.isDirectory()) {
+    for (const file of readdirSync(dir)) {
+      if (/^[0-9]+_.*\.png$/.test(file)) {
+        unlinkSync(join(dir, file))
+      }
+    }
+  }
+}
+
 if (includeIos) {
   mkdirSync(iosOutputDir, { recursive: true })
+  cleanStaleScreenshots(iosOutputDir)
 }
 if (includeAndroid) {
   mkdirSync(androidImagesDir, { recursive: true })
   mkdirSync(androidPhoneDir, { recursive: true })
+  cleanStaleScreenshots(androidPhoneDir)
   mkdirSync(androidSevenInchDir, { recursive: true })
+  cleanStaleScreenshots(androidSevenInchDir)
   mkdirSync(androidTenInchDir, { recursive: true })
+  cleanStaleScreenshots(androidTenInchDir)
 }
 
 console.log('Building dist prior to screenshot generation...')
@@ -80,17 +101,17 @@ const browser = await chromium.launch()
 const now = Date.now()
 const sampleCards = [
   {
-    id: 'card-1:es-en',
+    id: 'card-1:en-es',
     noteId: 'note-1',
-    prompt: '¿Mande?',
-    answer: 'Pardon? / What was that?',
-    direction: 'es-en',
+    prompt: 'Pardon? / What was that?',
+    answer: '¿Mande?',
+    direction: 'en-es',
     context:
       'Quintessential polite Mexican response when you did not hear someone or when your name is called.',
     scene: 'conversation',
     schedule: {
       state: 'learning',
-      dueAt: now - 5000,
+      dueAt: now - 10000,
       intervalDays: 1,
       easeFactor: 2.5,
       reviews: 2,
@@ -101,17 +122,17 @@ const sampleCards = [
     createdAt: now - 86400000,
   },
   {
-    id: 'card-2:es-en',
+    id: 'card-2:en-es',
     noteId: 'note-2',
-    prompt: '¡Qué padre!',
-    answer: 'How cool! / That’s awesome!',
-    direction: 'es-en',
+    prompt: 'No way! / You’re kidding!',
+    answer: '¡No manches!',
+    direction: 'en-es',
     context:
-      'Very common Mexican idiom expressing that something is great, wonderful, or fun.',
+      'Widely used informal Mexican expression of surprise or disbelief.',
     scene: 'conversation',
     schedule: {
       state: 'review',
-      dueAt: now + 86400000 * 30,
+      dueAt: now - 5000,
       intervalDays: 30,
       easeFactor: 2.6,
       reviews: 4,
@@ -124,11 +145,11 @@ const sampleCards = [
   {
     id: 'card-3:es-en',
     noteId: 'note-3',
-    prompt: 'Ahorita',
-    answer: 'Right now / In a minute / Later',
+    prompt: '¡Qué padre!',
+    answer: 'How cool! / That’s awesome!',
     direction: 'es-en',
     context:
-      'Mexican temporal expression: depending on tone and context, can mean right this second, shortly, or never.',
+      'Very common Mexican idiom expressing that something is great, wonderful, or fun.',
     scene: 'conversation',
     schedule: {
       state: 'learning',
@@ -143,13 +164,13 @@ const sampleCards = [
     createdAt: now - 86400000 * 2,
   },
   {
-    id: 'card-4:es-en',
+    id: 'card-4:en-es',
     noteId: 'note-4',
-    prompt: 'No manches',
-    answer: 'No way! / You’re kidding!',
-    direction: 'es-en',
+    prompt: 'Right now / In a minute',
+    answer: 'Ahorita',
+    direction: 'en-es',
     context:
-      'Widely used informal Mexican expression of surprise or disbelief.',
+      'Mexican temporal expression: depending on tone and context, can mean right this second, shortly, or never.',
     scene: 'conversation',
     schedule: {
       state: 'new',
@@ -356,9 +377,9 @@ const ALL_DEVICES: TargetDevice[] = [
   {
     prefix: 'Pixel_9_Pro',
     platform: 'android',
-    width: 412,
-    height: 915,
-    scale: 2.621359, // Renders 1080 x 2400 (exact 9:20 phone standard)
+    width: 432,
+    height: 960,
+    scale: 2.5, // Renders 1080 x 2400 exactly (exact 9:20 phone standard)
     isPhone: true,
     outputDir: androidPhoneDir,
     userAgent:
@@ -406,28 +427,25 @@ for (const dev of targetDevices) {
   await prepareContext(context, dev.isPhone, dev.platform)
   const page = await context.newPage()
 
-  // 1. Welcome Screen (clean mascot, no speech bubble)
-  await page.goto(`${baseUrl}/#/`)
-  await page.waitForLoadState('networkidle')
-  await page.waitForTimeout(500)
-  const file01 = join(dev.outputDir, `1_${dev.prefix}_01-welcome.png`)
-  await page.screenshot({ path: file01 })
-  console.log(`Saved ${file01}`)
-
-  // 2. Study Prompt (Active Recall - Touch First)
+  // 1. Study Prompt (Active Recall EN -> MEX)
   await page.goto(`${baseUrl}/#/study`)
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(600)
   const answerInput = page.getByLabel('Your answer')
   if (await answerInput.isVisible()) {
-    await answerInput.fill('Pardon?')
+    await answerInput.fill('mande')
     await page.waitForTimeout(300)
   }
-  const file02 = join(dev.outputDir, `2_${dev.prefix}_02-study.png`)
-  await page.screenshot({ path: file02 })
-  console.log(`Saved ${file02}`)
+  const file01 = join(dev.outputDir, `1_${dev.prefix}_01-study.png`)
+  await page.screenshot({ path: file01 })
+  console.log(`Saved ${file01}`)
 
-  // 3. Review Answer & SRS Grading (Click reveal button rather than physical keyboard Enter)
+  // 2. Review Answer with Character Diff & Swipe Cues (← Again, Good →)
+  if (await answerInput.isVisible()) {
+    // Fill grammatical typo (mando vs ¿Mande?) to highlight character-level diff
+    await answerInput.fill('mando')
+    await page.waitForTimeout(200)
+  }
   const revealBtn = page.locator('.reveal-button')
   if (await revealBtn.isVisible()) {
     await revealBtn.click()
@@ -437,7 +455,32 @@ for (const dev of targetDevices) {
       await fallbackReveal.click()
     }
   }
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(500)
+  const file02 = join(dev.outputDir, `2_${dev.prefix}_02-review-diff.png`)
+  await page.screenshot({ path: file02 })
+  console.log(`Saved ${file02}`)
+
+  // 3. Cultural Nuance Context & Mature SRS Review (Advance to Card 2: ¡No manches!)
+  const goodBtn = page.locator('button.grade-good')
+  if (await goodBtn.isVisible()) {
+    await goodBtn.click()
+    await page.waitForTimeout(500)
+  }
+  const answerInput2 = page.locator('input.answer-input')
+  if (await answerInput2.isVisible()) {
+    await answerInput2.fill('No manches')
+    await page.waitForTimeout(200)
+  }
+  const revealBtn2 = page.locator('.reveal-button')
+  if (await revealBtn2.isVisible()) {
+    await revealBtn2.click()
+  } else {
+    const fallbackReveal2 = page.locator('form.answer-form button')
+    if (await fallbackReveal2.isVisible()) {
+      await fallbackReveal2.click()
+    }
+  }
+  await page.waitForTimeout(500)
   const file03 = join(dev.outputDir, `3_${dev.prefix}_03-review.png`)
   await page.screenshot({ path: file03 })
   console.log(`Saved ${file03}`)
