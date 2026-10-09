@@ -30,33 +30,48 @@ describe('compareAnswer (character-level affine diff)', () => {
     ])
   })
 
-  it('treats missing inverted marks as exact matches when rest of answer matches', () => {
+  it('treats missing inverted marks and terminal punctuation as exact matches when rest of answer matches', () => {
     const question = compareAnswer(
       'Dónde está el metro?',
       '¿Dónde está el metro?',
     )
     expect(question.isExact).toBe(true)
-    expect(question.expectedSegments).toEqual([
+
+    const questionNoTrailing = compareAnswer(
+      'Dónde está el metro',
+      '¿Dónde está el metro?',
+    )
+    expect(questionNoTrailing.isExact).toBe(true)
+    expect(questionNoTrailing.expectedSegments).toEqual([
       { value: '¿Dónde está el metro?', status: 'match' },
     ])
-    expect(question.typedSegments).toEqual([
-      { value: 'Dónde está el metro?', status: 'match' },
+    expect(questionNoTrailing.typedSegments).toEqual([
+      { value: 'Dónde está el metro', status: 'match' },
     ])
+
+    const mande = compareAnswer('Mande', '¿Mande?')
+    expect(mande.isExact).toBe(true)
+
+    const noManches = compareAnswer('No manches', '¡No manches!')
+    expect(noManches.isExact).toBe(true)
 
     const exclamation = compareAnswer('Genial!', '¡Genial!')
     expect(exclamation.isExact).toBe(true)
-    expect(exclamation.expectedSegments).toEqual([
-      { value: '¡Genial!', status: 'match' },
-    ])
-    expect(exclamation.typedSegments).toEqual([
-      { value: 'Genial!', status: 'match' },
-    ])
 
-    const midSentence = compareAnswer('Hola, cómo estás?', 'Hola, ¿cómo estás?')
+    const exclamationNoTrailing = compareAnswer('Genial', '¡Genial!')
+    expect(exclamationNoTrailing.isExact).toBe(true)
+
+    const period = compareAnswer('Buenos días', 'Buenos días.')
+    expect(period.isExact).toBe(true)
+
+    const midSentence = compareAnswer('Hola, cómo estás', 'Hola, ¿cómo estás?')
     expect(midSentence.isExact).toBe(true)
-    expect(midSentence.expectedSegments).toEqual([
-      { value: 'Hola, ¿cómo estás?', status: 'match' },
-    ])
+
+    const enumeration = compareAnswer(
+      'Dónde está / Dónde queda',
+      '¿Dónde está? / ¿Dónde queda?',
+    )
+    expect(enumeration.isExact).toBe(true)
   })
 
   it('gently highlights missing accents and inverted marks as accent guidance without marking words as wrong', () => {

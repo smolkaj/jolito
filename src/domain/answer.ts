@@ -20,6 +20,14 @@ export const stripPunctuation = (text: string): string =>
 export const stripInvertedPunctuation = (text: string): string =>
   text.replace(/[¿¡]/gu, '')
 
+/**
+ * Normalizes punctuation for non-punitive answer matching:
+ * 1. Strips inverted marks (¿, ¡) anywhere in the text.
+ * 2. Strips terminal punctuation (?, !, ., ,, ;, :) before delimiters or at end of text.
+ */
+export const normalizeAnswerPunctuation = (text: string): string =>
+  text.replace(/[¿¡]/gu, '').replace(/[?!.,;:]+(?=\s*(?:\/|;|$))/gu, '')
+
 /** Replace common OS-level typographic substitutions with ASCII equivalents and normalize delimiter spacing. */
 export const normalizeTypography = (text: string): string =>
   text
@@ -104,9 +112,9 @@ function itemSimilarity(t: string, e: string): number {
   const eLower = eTrim.toLowerCase()
   if (tLower === eLower) return 0.99
 
-  const tNormInverted = stripInvertedPunctuation(tLower)
-  const eNormInverted = stripInvertedPunctuation(eLower)
-  if (tNormInverted.length > 0 && tNormInverted === eNormInverted) return 0.98
+  const tNormPunct = normalizeAnswerPunctuation(tLower)
+  const eNormPunct = normalizeAnswerPunctuation(eLower)
+  if (tNormPunct.length > 0 && tNormPunct === eNormPunct) return 0.98
 
   const tBase = baseNormalize(tTrim)
   const eBase = baseNormalize(eTrim)
@@ -374,9 +382,9 @@ function compareSequential(tTrim: string, eTrim: string): AnswerComparison {
     }
   }
 
-  const tNormInverted = stripInvertedPunctuation(tTrim)
-  const eNormInverted = stripInvertedPunctuation(eTrim)
-  if (tNormInverted.length > 0 && tNormInverted === eNormInverted) {
+  const tNormPunct = normalizeAnswerPunctuation(tTrim)
+  const eNormPunct = normalizeAnswerPunctuation(eTrim)
+  if (tNormPunct.length > 0 && tNormPunct === eNormPunct) {
     return {
       typedSegments: [{ value: tTrim, status: 'match' }],
       expectedSegments: [{ value: eTrim, status: 'match' }],
@@ -565,13 +573,10 @@ export function compareAnswer(
   const tTrim = normalizeTypography(typed.trim())
   const eTrim = normalizeTypography(expected.trim())
 
-  const tNormInverted = stripInvertedPunctuation(tTrim)
-  const eNormInverted = stripInvertedPunctuation(eTrim)
+  const tNormPunct = normalizeAnswerPunctuation(tTrim)
+  const eNormPunct = normalizeAnswerPunctuation(eTrim)
 
-  if (
-    tTrim === eTrim ||
-    (tNormInverted.length > 0 && tNormInverted === eNormInverted)
-  ) {
+  if (tTrim === eTrim || (tNormPunct.length > 0 && tNormPunct === eNormPunct)) {
     return {
       typedSegments: tTrim ? [{ value: tTrim, status: 'match' }] : [],
       expectedSegments: eTrim ? [{ value: eTrim, status: 'match' }] : [],

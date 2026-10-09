@@ -442,7 +442,8 @@ for (const dev of targetDevices) {
 
   // 2. Review Answer with Character Diff & Swipe Cues (← Again, Good →)
   if (await answerInput.isVisible()) {
-    await answerInput.fill('Mande')
+    // Fill grammatical typo (Mando vs ¿Mande?) to highlight character-level diff
+    await answerInput.fill('Mando')
     await page.waitForTimeout(200)
   }
   const revealBtn = page.locator('.reveal-button')
