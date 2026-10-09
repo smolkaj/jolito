@@ -286,7 +286,7 @@ export function DeckManagerView({
               <input
                 type="search"
                 className="deck-search-input"
-                placeholder="Search cards by Spanish, English, notes, or pack…"
+                placeholder="Search cards, notes, or packs…"
                 value={deckSearchQuery}
                 onChange={(e) => setDeckSearchQuery(e.target.value)}
                 onFocus={handleFocusSelect}

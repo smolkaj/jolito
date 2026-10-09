@@ -74,7 +74,7 @@ describe('compareAnswer (character-level affine diff)', () => {
     expect(enumeration.isExact).toBe(true)
   })
 
-  it('gently highlights missing accents and inverted marks as accent guidance without marking words as wrong', () => {
+  it('gently highlights missing accents, inverted marks, and terminal punctuation as accent guidance without marking words as wrong', () => {
     const result = compareAnswer('Donde esta', '¿Dónde está?')
     expect(result.isExact).toBe(false)
     expect(result.expectedSegments).toEqual([
@@ -82,11 +82,23 @@ describe('compareAnswer (character-level affine diff)', () => {
       { value: 'D', status: 'match' },
       { value: 'ó', status: 'accent' },
       { value: 'nde est', status: 'match' },
-      { value: 'á', status: 'accent' },
-      { value: '?', status: 'missing' },
+      { value: 'á?', status: 'accent' },
     ])
     expect(result.typedSegments).toEqual([
       { value: 'Donde esta', status: 'match' },
+    ])
+
+    const mando = compareAnswer('Mando', '¿Mande?')
+    expect(mando.isExact).toBe(false)
+    expect(mando.typedSegments).toEqual([
+      { value: 'Mand', status: 'match' },
+      { value: 'o', status: 'extra' },
+    ])
+    expect(mando.expectedSegments).toEqual([
+      { value: '¿', status: 'accent' },
+      { value: 'Mand', status: 'match' },
+      { value: 'e', status: 'missing' },
+      { value: '?', status: 'accent' },
     ])
   })
 
@@ -210,7 +222,7 @@ describe('compareAnswer (character-level affine diff)', () => {
       { value: 'Where is ', status: 'match' },
       { value: 'the ', status: 'missing' },
       { value: 'metro', status: 'match' },
-      { value: '?', status: 'missing' },
+      { value: '?', status: 'accent' },
     ])
     expect(result.typedSegments).toEqual([
       { value: 'Where is metro', status: 'match' },

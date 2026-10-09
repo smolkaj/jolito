@@ -377,9 +377,9 @@ const ALL_DEVICES: TargetDevice[] = [
   {
     prefix: 'Pixel_9_Pro',
     platform: 'android',
-    width: 412,
-    height: 915,
-    scale: 2.621359, // Renders 1080 x 2400 (exact 9:20 phone standard)
+    width: 432,
+    height: 960,
+    scale: 2.5, // Renders 1080 x 2400 exactly (exact 9:20 phone standard)
     isPhone: true,
     outputDir: androidPhoneDir,
     userAgent:
@@ -465,6 +465,11 @@ for (const dev of targetDevices) {
   if (await goodBtn.isVisible()) {
     await goodBtn.click()
     await page.waitForTimeout(500)
+  }
+  const answerInput2 = page.locator('input.answer-input')
+  if (await answerInput2.isVisible()) {
+    await answerInput2.fill('No manches')
+    await page.waitForTimeout(200)
   }
   const revealBtn2 = page.locator('.reveal-button')
   if (await revealBtn2.isVisible()) {

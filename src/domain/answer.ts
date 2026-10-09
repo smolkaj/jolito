@@ -17,9 +17,6 @@ export const stripDiacritics = (text: string): string =>
 export const stripPunctuation = (text: string): string =>
   text.replace(/[^\p{L}\p{M}\p{N}]/gu, '')
 
-export const stripInvertedPunctuation = (text: string): string =>
-  text.replace(/[¿¡]/gu, '')
-
 /**
  * Normalizes punctuation for non-punitive answer matching:
  * 1. Strips inverted marks (¿, ¡) anywhere in the text.
@@ -27,6 +24,25 @@ export const stripInvertedPunctuation = (text: string): string =>
  */
 export const normalizeAnswerPunctuation = (text: string): string =>
   text.replace(/[¿¡]/gu, '').replace(/[?!.,;:]+(?=\s*(?:\/|;|$))/gu, '')
+
+/**
+ * Determines whether an omitted character in expected text represents non-punitive
+ * punctuation guidance (such as inverted Spanish punctuation or trailing terminal punctuation).
+ */
+export function isPunctuationGuidance(
+  ch: string,
+  index: number,
+  chars: string[],
+): boolean {
+  if (ch === '¿' || ch === '¡') return true
+  if (
+    /[?!.,;:]/u.test(ch) &&
+    !chars.slice(index + 1).some((c) => /\p{L}|\p{N}/u.test(c))
+  ) {
+    return true
+  }
+  return false
+}
 
 /** Replace common OS-level typographic substitutions with ASCII equivalents and normalize delimiter spacing. */
 export const normalizeTypography = (text: string): string =>
@@ -537,7 +553,9 @@ function compareSequential(tTrim: string, eTrim: string): AnswerComparison {
       i++
     } else {
       const ec = eChars[j]!
-      const status: DiffStatus = ec === '¿' || ec === '¡' ? 'accent' : 'missing'
+      const status: DiffStatus = isPunctuationGuidance(ec, j, eChars)
+        ? 'accent'
+        : 'missing'
       expectedRaw.push({ value: ec, status })
 
       const yPenalty = isWhitespace(ec)
