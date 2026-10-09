@@ -183,7 +183,7 @@ Do not describe it as physical-device QA.
    prove that Apple's account agreements or storefront eligibility are ready.
 
 3. Dispatch **TestFlight Beta Deployment** on the approved main commit (via GitHub Actions web UI or `gh workflow run testflight.yml && gh run watch`). It
-   builds once, assigns the next build number for version 1.0, uploads, and
+   builds once, assigns the next build number for the configured release version, uploads, and
    waits for processing. Download `ios-release-<commit>`: it contains the IPA
    and `release.json` with version, build number, and commit. Add Steffen as an
    internal tester in App Store Connect, install this build on both devices.

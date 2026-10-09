@@ -1,6 +1,6 @@
 Hello App Review Team,
 
-Updated information for Jolito 1.0, addressing Guideline 2.1:
+Information for Jolito 1.0.1, addressing Guideline 2.1:
 
 1. RECORDING AND FUNCTIONALITY
 Attached: native-walkthrough.mp4. Mirror:
