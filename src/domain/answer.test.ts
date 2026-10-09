@@ -100,6 +100,19 @@ describe('compareAnswer (character-level affine diff)', () => {
       { value: 'e', status: 'missing' },
       { value: '?', status: 'accent' },
     ])
+
+    const mandoLower = compareAnswer('mando', '¿Mande?')
+    expect(mandoLower.isExact).toBe(false)
+    expect(mandoLower.typedSegments).toEqual([
+      { value: 'mand', status: 'match' },
+      { value: 'o', status: 'extra' },
+    ])
+    expect(mandoLower.expectedSegments).toEqual([
+      { value: '¿', status: 'accent' },
+      { value: 'Mand', status: 'match' },
+      { value: 'e', status: 'missing' },
+      { value: '?', status: 'accent' },
+    ])
   })
 
   it('treats capitalization differences as case-insensitive matches without case diff indicators', () => {

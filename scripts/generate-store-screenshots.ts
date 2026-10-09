@@ -433,7 +433,7 @@ for (const dev of targetDevices) {
   await page.waitForTimeout(600)
   const answerInput = page.getByLabel('Your answer')
   if (await answerInput.isVisible()) {
-    await answerInput.fill('Mande')
+    await answerInput.fill('mande')
     await page.waitForTimeout(300)
   }
   const file01 = join(dev.outputDir, `1_${dev.prefix}_01-study.png`)
@@ -442,8 +442,8 @@ for (const dev of targetDevices) {
 
   // 2. Review Answer with Character Diff & Swipe Cues (← Again, Good →)
   if (await answerInput.isVisible()) {
-    // Fill grammatical typo (Mando vs ¿Mande?) to highlight character-level diff
-    await answerInput.fill('Mando')
+    // Fill grammatical typo (mando vs ¿Mande?) to highlight character-level diff
+    await answerInput.fill('mando')
     await page.waitForTimeout(200)
   }
   const revealBtn = page.locator('.reveal-button')
@@ -468,7 +468,7 @@ for (const dev of targetDevices) {
   }
   const answerInput2 = page.locator('input.answer-input')
   if (await answerInput2.isVisible()) {
-    await answerInput2.fill('No manches')
+    await answerInput2.fill('no manches')
     await page.waitForTimeout(200)
   }
   const revealBtn2 = page.locator('.reveal-button')
