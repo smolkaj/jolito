@@ -468,7 +468,7 @@ for (const dev of targetDevices) {
   }
   const answerInput2 = page.locator('input.answer-input')
   if (await answerInput2.isVisible()) {
-    await answerInput2.fill('no manches')
+    await answerInput2.fill('No manches')
     await page.waitForTimeout(200)
   }
   const revealBtn2 = page.locator('.reveal-button')
