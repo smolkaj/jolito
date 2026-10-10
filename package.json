@@ -48,10 +48,10 @@
     "verify:ui": "node scripts/verify-ui.ts"
   },
   "dependencies": {
-    "@capacitor/core": "^8.5.2",
+    "@capacitor/core": "^8.5.3",
     "@capacitor/haptics": "^8.0.2",
-    "@capacitor/keyboard": "^8.0.5",
-    "@capacitor/status-bar": "^8.0.3",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/status-bar": "^8.0.4",
     "fflate": "^0.8.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
