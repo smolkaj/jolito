@@ -1039,73 +1039,63 @@ export function PracticeCard({
             )}
           </p>
         )}
-        <p className="keyboard-hint">
-          {revealed ? (
-            <>
-              <kbd>1–4</kbd> rate
-              {onEdit && (
-                <>
-                  {' '}
-                  · <kbd>e</kbd> edit
-                </>
-              )}{' '}
-              · <kbd>Space</kbd> replay audio
-            </>
-          ) : (
-            <>
-              <kbd>Enter</kbd> reveal
-              {onEdit && (
-                <>
-                  {' '}
-                  · <kbd>⌃ E</kbd> edit
-                </>
-              )}
-              {onPlayPrompt && (
-                <>
-                  {' '}
-                  · <kbd>⌃ Space</kbd> replay audio
-                </>
-              )}
-              {spokenRecallAvailable && (
-                <>
-                  {' '}
-                  · <kbd>⌥ Space</kbd> voice
-                </>
-              )}
-            </>
-          )}
-        </p>
-        {(onEdit || onDelete) && (
-          <div className="study-card-quick-actions">
-            {onEdit && (
-              <button
-                type="button"
-                className="study-quick-btn edit-btn"
-                aria-label={`Edit card: ${card.prompt}`}
-                onClick={onEdit}
-              >
-                <PencilIcon size={13} />
-                <span>Edit card</span>
-              </button>
-            )}
-            {onEdit && onDelete && (
-              <span className="study-quick-sep" aria-hidden="true">
-                ·
-              </span>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                className="study-quick-btn delete-btn"
-                aria-label={`Delete card: ${card.prompt}`}
-                onClick={onDelete}
-              >
-                <TrashIcon size={13} />
-                <span>Delete card</span>
-              </button>
+        <div className="study-card-footer-bar">
+          <div className="keyboard-hint">
+            {revealed ? (
+              <>
+                <span className="keyboard-hint-item">
+                  <kbd>1–4</kbd>
+                  <span>rate</span>
+                </span>
+                <span className="keyboard-hint-item">
+                  <kbd>Space</kbd>
+                  <span>replay audio</span>
+                </span>
+              </>
+            ) : (
+              <>
+                {onPlayPrompt && (
+                  <span className="keyboard-hint-item">
+                    <kbd>⌃ Space</kbd>
+                    <span>replay audio</span>
+                  </span>
+                )}
+                {spokenRecallAvailable && (
+                  <span className="keyboard-hint-item">
+                    <kbd>⌥ Space</kbd>
+                    <span>voice</span>
+                  </span>
+                )}
+              </>
             )}
           </div>
-        )}
+          {(onEdit || onDelete) && (
+            <div className="study-card-quick-actions">
+              {onEdit && (
+                <button
+                  type="button"
+                  className="study-quick-btn edit-btn"
+                  aria-label={`Edit card: ${card.prompt}`}
+                  onClick={onEdit}
+                >
+                  <PencilIcon size={13} />
+                  <span>Edit card</span>
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  className="study-quick-btn delete-btn"
+                  aria-label={`Delete card: ${card.prompt}`}
+                  onClick={onDelete}
+                >
+                  <TrashIcon size={13} />
+                  <span>Delete card</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </>
   )

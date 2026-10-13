@@ -685,12 +685,12 @@ describe('accent keyboard insertion', () => {
     expect(accentsIndex).toBeGreaterThan(inputIndex)
     expect(revealIndex).toBeGreaterThan(accentsIndex)
 
-    // Card DOM order must place keyboard hints above quick actions
-    const cardChildren = Array.from(
-      container.querySelector('.study-card')!.children,
-    )
-    const kbdHintIndex = cardChildren.indexOf(kbdHint)
-    const quickActionsIndex = cardChildren.indexOf(quickActions)
+    // Footer DOM places keyboard hints and quick actions in the study-card-footer-bar
+    const footerBar = container.querySelector('.study-card-footer-bar')!
+    expect(footerBar).toBeDefined()
+    const footerChildren = Array.from(footerBar.children)
+    const kbdHintIndex = footerChildren.indexOf(kbdHint)
+    const quickActionsIndex = footerChildren.indexOf(quickActions)
     expect(kbdHintIndex).toBeGreaterThan(-1)
     expect(quickActionsIndex).toBeGreaterThan(kbdHintIndex)
   })

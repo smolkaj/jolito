@@ -3943,9 +3943,6 @@ describe('Jolito', () => {
       screen.queryByRole('heading', { name: /edit flashcard/i }),
     ).not.toBeInTheDocument()
 
-    // Keyboard hint shows Ctrl+E when unrevealed
-    expect(screen.getByText(/⌃ E/i)).toBeInTheDocument()
-
     // 2. Pressing Ctrl+E while input is focused opens edit modal
     await act(async () => {
       fireEvent.keyDown(answerInput, { key: 'e', ctrlKey: true })
