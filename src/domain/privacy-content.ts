@@ -133,7 +133,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
         },
         {
           type: 'strong',
-          text: 'Cloud sync → Delete cloud account & data',
+          text: 'Cloud sync → Delete account',
         },
         {
           type: 'text',

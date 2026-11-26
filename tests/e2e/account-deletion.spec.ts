@@ -83,9 +83,7 @@ for (const viewport of [
         .getByRole('button', { name: /signed in|tap to sync|sync/i })
         .first()
         .click()
-      await page
-        .getByRole('button', { name: /delete cloud account & data/i })
-        .click()
+      await page.getByRole('button', { name: /delete account/i }).click()
       await page
         .getByRole('checkbox', {
           name: /(?:save|download) an offline backup/i,
@@ -143,9 +141,7 @@ for (const viewport of [
       .getByRole('button', { name: /signed in|tap to sync|sync/i })
       .first()
       .click()
-    await page
-      .getByRole('button', { name: /delete cloud account & data/i })
-      .click()
+    await page.getByRole('button', { name: /delete account/i }).click()
     await page
       .getByRole('checkbox', {
         name: /(?:save|download) an offline backup/i,
@@ -246,9 +242,7 @@ test('rejected deletion refresh preserves account and private deck through reloa
       .getByRole('button', { name: /signed in|tap to sync|sync/i })
       .first()
       .click()
-    await page
-      .getByRole('button', { name: /delete cloud account & data/i })
-      .click()
+    await page.getByRole('button', { name: /delete account/i }).click()
     await page
       .getByRole('checkbox', {
         name: /(?:save|download) an offline backup/i,

@@ -101,9 +101,7 @@ it('keeps local deletion failure visible after auth unmount, then retries only t
   await user.click(
     await screen.findByRole('button', { name: /deck synced with cloud/i }),
   )
-  await user.click(
-    screen.getByRole('button', { name: /delete cloud account & data/i }),
-  )
+  await user.click(screen.getByRole('button', { name: /delete account/i }))
   await user.click(
     screen.getByRole('checkbox', {
       name: /(?:save|download) an offline backup/i,
@@ -144,9 +142,7 @@ it('does not contact the cloud without a durable request, and keeps unknown outc
   await user.click(
     await screen.findByRole('button', { name: /deck synced with cloud/i }),
   )
-  await user.click(
-    screen.getByRole('button', { name: /delete cloud account & data/i }),
-  )
+  await user.click(screen.getByRole('button', { name: /delete account/i }))
   await user.click(
     screen.getByRole('checkbox', {
       name: /(?:save|download) an offline backup/i,

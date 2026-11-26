@@ -351,7 +351,7 @@ try {
   await nav('Sync')
   await tap(
     page.getByRole('button', {
-      name: 'Delete cloud account & data',
+      name: 'Delete account',
       exact: true,
     }),
   )

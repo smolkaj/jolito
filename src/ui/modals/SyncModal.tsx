@@ -16,12 +16,7 @@ import {
   isStandalone,
   shouldAutoFocusOnMount,
 } from '../../infrastructure/browser/environment'
-import {
-  ClipboardIcon,
-  CloudCheckSticker,
-  ShieldIcon,
-  SyncSpinnerIcon,
-} from '../icons'
+import { ClipboardIcon, ShieldIcon, SyncSpinnerIcon } from '../icons'
 import { ModalSheet } from './ModalSheet'
 import { triggerManualUpdate } from '../../infrastructure/browser/offline-shell'
 
@@ -150,6 +145,7 @@ export function SyncModal({
     setIsConfirmingDelete(true)
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
+    setStatusMsg(null)
     if (shouldAutoFocus) {
       setTimeout(() => deleteInputRef.current?.focus(), 0)
     }
@@ -159,6 +155,7 @@ export function SyncModal({
     setIsConfirmingDelete(false)
     setDeleteConfirmText('')
     setBackupBeforeDelete(true)
+    setStatusMsg(null)
     setTimeout(() => deleteTriggerRef.current?.focus(), 0)
   }
 
@@ -266,7 +263,7 @@ export function SyncModal({
           triggerTransientFeedback('pasted', 1500)
         }
       } catch {
-        // clipboard access not permitted
+        // Clipboard read permission denied or unsupported in this browser context
       }
     }
   }
@@ -448,10 +445,22 @@ export function SyncModal({
       )}
     </div>
   )
-  const showDeletionFeedback =
-    user &&
-    isConfirmingDelete &&
-    (statusMsg?.type === 'error' || statusMsg?.type === 'info')
+
+  const isDeleteView = Boolean(user && isConfirmingDelete)
+
+  const modalTitle = isDeleteView
+    ? 'Delete account'
+    : pendingCardPrompt && !user
+      ? 'Save your card & start your deck'
+      : 'Cloud sync'
+
+  const modalSubtitle = isDeleteView
+    ? user?.email
+    : user
+      ? null
+      : pendingCardPrompt
+        ? `Save “${pendingCardPrompt}” to your personal deck and sync across devices.`
+        : 'Sync your deck across your devices.'
 
   return (
     <ModalSheet
@@ -463,16 +472,8 @@ export function SyncModal({
     >
       <div className="modal-header">
         <div className="modal-header-copy">
-          <h2 id="sync-modal-title">
-            {pendingCardPrompt
-              ? 'Save your card & start your deck'
-              : 'Cloud sync'}
-          </h2>
-          <p className="modal-subtitle">
-            {pendingCardPrompt
-              ? `Save “${pendingCardPrompt}” to your personal deck and sync your cards across devices.`
-              : 'Sync your deck across all your devices.'}
-          </p>
+          <h2 id="sync-modal-title">{modalTitle}</h2>
+          {modalSubtitle && <p className="modal-subtitle">{modalSubtitle}</p>}
         </div>
         <button
           type="button"
@@ -484,14 +485,13 @@ export function SyncModal({
         </button>
       </div>
 
-      {!showDeletionFeedback && statusBanner}
-
       {!isBackendConfigured && !user ? (
-        <div className="sync-notice-card">
-          <span className="notice-icon" aria-hidden="true">
-            <ShieldIcon size={22} />
-          </span>
-          <h4>Cloud sync is disabled in this preview</h4>
+        <div className="sync-preview-notice">
+          {statusBanner}
+          <div className="sync-preview-heading">
+            <ShieldIcon size={18} />
+            <h3>Cloud sync is disabled in this preview</h3>
+          </div>
           <p>Flashcards and progress remain safely stored on this device.</p>
           {onSaveLocally && (
             <button
@@ -503,30 +503,106 @@ export function SyncModal({
             </button>
           )}
         </div>
+      ) : user && isConfirmingDelete ? (
+        <form
+          className="sync-delete-confirm"
+          role="group"
+          aria-label="Confirm cloud account deletion"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (deleteConfirmText.trim() === 'DELETE' && !loading) {
+              void handleDeleteAccount()
+            }
+          }}
+        >
+          <p className="delete-confirm-text">
+            Permanently deletes your account and backups from Jolito servers.
+            Other connected devices will stop syncing.
+          </p>
+
+          <label className="delete-backup-option">
+            <input
+              type="checkbox"
+              checked={backupBeforeDelete}
+              onChange={(e) => setBackupBeforeDelete(e.target.checked)}
+            />
+            <span>Save an offline backup before deleting</span>
+          </label>
+
+          <div className="delete-confirm-input-wrap">
+            <label
+              htmlFor="delete-confirm-input"
+              className="delete-input-label"
+            >
+              Type <strong>DELETE</strong> to confirm
+            </label>
+            <input
+              ref={deleteInputRef}
+              id="delete-confirm-input"
+              type="text"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              placeholder="DELETE"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="delete-input"
+            />
+          </div>
+
+          {statusBanner}
+
+          <div className="delete-confirm-actions">
+            <button
+              type="button"
+              className="sync-cancel-btn cancel-delete-btn"
+              onClick={handleCancelDeleteConfirm}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="confirm-delete-btn"
+              disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
+              aria-busy={
+                loadingAction === 'delete' || loadingAction === 'delete-backup'
+              }
+            >
+              {loadingAction === 'delete'
+                ? 'Deleting…'
+                : loadingAction === 'delete-backup'
+                  ? 'Saving backup…'
+                  : 'Yes, delete cloud data'}
+            </button>
+          </div>
+        </form>
       ) : user ? (
         <div className="sync-account-pane">
-          <div className="sync-account-hero">
-            <div className="sync-cloud-sticker-wrap" aria-hidden="true">
-              <CloudCheckSticker size={58} status={effectiveStatus} />
-            </div>
-            <div className="sync-account-details">
-              <div className="sync-status-row">
-                <span className="account-badge">Signed in</span>
-                <span className="status-separator" aria-hidden="true">
-                  •
-                </span>
+          <div className="sync-identity-row">
+            <div className="sync-identity">
+              <p className="account-email">{user.email}</p>
+              <div className="sync-status-line">
+                {effectiveStatus === 'syncing' ? (
+                  <SyncSpinnerIcon
+                    size={13}
+                    className="sync-status-spinner is-spinning"
+                  />
+                ) : (
+                  <span
+                    className={`sync-status-dot is-${effectiveStatus}`}
+                    aria-hidden="true"
+                  />
+                )}
                 <span className={`sync-status-text is-${effectiveStatus}`}>
                   {statusLabel}
                 </span>
               </div>
-              <p className="account-email">{user.email}</p>
             </div>
-          </div>
 
-          <div className="sync-actions-row">
             <button
               type="button"
-              className={`primary-button sync-now-button ${isSynced ? 'is-synced' : ''}`}
+              className={`sync-now-button ${effectiveStatus === 'error' ? 'is-attention' : ''} ${isSynced ? 'is-synced' : ''}`}
               onClick={() => {
                 void handleSyncNow()
               }}
@@ -542,29 +618,41 @@ export function SyncModal({
               ) : (
                 <>
                   <SyncSpinnerIcon
-                    size={15}
+                    size={14}
                     className={isSyncing ? 'is-spinning' : ''}
                   />
                   <span>{isSyncing ? 'Syncing…' : 'Sync now'}</span>
                 </>
               )}
             </button>
-            <button
-              type="button"
-              className="secondary-button sign-out-button"
-              onClick={() => {
-                void handleSignOut()
-              }}
-              disabled={loading}
-            >
-              {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
-            </button>
           </div>
 
+          {statusBanner}
+
+          <div className="sync-section-divider" aria-hidden="true" />
+
           <label
-            className={`toggle-row toggle-row-compact${loading || isUpdatingDigest || !isOnline ? ' disabled' : ''}`}
+            className={`sync-setting-row${loading || isUpdatingDigest || !isOnline ? ' is-disabled' : ''}`}
             htmlFor="sync-digest-checkbox"
           >
+            <div className="sync-setting-copy">
+              <span id="sync-digest-title" className="sync-setting-title">
+                Monthly progress report
+              </span>
+              <span id="sync-digest-desc" className="sync-setting-desc">
+                Vocabulary milestones, review stats, and an offline deck backup.
+                Pauses when you’re inactive.
+              </span>
+              {digestError && (
+                <span
+                  id="sync-digest-err"
+                  className="toggle-error-message"
+                  role="alert"
+                >
+                  {digestError}
+                </span>
+              )}
+            </div>
             <input
               id="sync-digest-checkbox"
               type="checkbox"
@@ -580,114 +668,32 @@ export function SyncModal({
                 void handleToggleDigest(e.target.checked)
               }}
             />
-            <span className="toggle" aria-hidden="true" />
-            <div className="toggle-label-group">
-              <span id="sync-digest-title" className="toggle-title">
-                Monthly progress report
-              </span>
-              <span id="sync-digest-desc" className="toggle-description">
-                Receive your vocabulary milestones, review stats, and an offline
-                deck backup. Automatically pauses when you are inactive.
-              </span>
-              {digestError && (
-                <span
-                  id="sync-digest-err"
-                  className="toggle-error-message"
-                  role="alert"
-                >
-                  {digestError}
-                </span>
-              )}
-            </div>
+            <span className="sync-switch" aria-hidden="true" />
           </label>
 
-          {isConfirmingDelete ? (
-            <form
-              className="sync-delete-confirm-box"
-              role="group"
-              aria-label="Confirm cloud account deletion"
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (deleteConfirmText.trim() === 'DELETE' && !loading) {
-                  void handleDeleteAccount()
-                }
+          <div className="sync-section-divider" aria-hidden="true" />
+
+          <div className="sync-account-actions">
+            <button
+              type="button"
+              className="sync-text-action sign-out-button"
+              onClick={() => {
+                void handleSignOut()
               }}
+              disabled={loading}
             >
-              <p className="delete-confirm-text">
-                Permanently deletes your account and backups from Jolito
-                servers. Other connected devices will stop syncing.
-              </p>
-
-              <label className="delete-backup-option">
-                <input
-                  type="checkbox"
-                  checked={backupBeforeDelete}
-                  onChange={(e) => setBackupBeforeDelete(e.target.checked)}
-                />
-                <span>Save an offline backup before deleting</span>
-              </label>
-
-              <div className="delete-confirm-input-wrap">
-                <label
-                  htmlFor="delete-confirm-input"
-                  className="delete-input-label"
-                >
-                  Type <strong>DELETE</strong> to confirm:
-                </label>
-                <input
-                  ref={deleteInputRef}
-                  id="delete-confirm-input"
-                  type="text"
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  placeholder="DELETE"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  className="delete-input"
-                />
-              </div>
-
-              {showDeletionFeedback && statusBanner}
-              <div className="delete-confirm-actions">
-                <button
-                  type="button"
-                  className="secondary-button cancel-delete-btn"
-                  onClick={handleCancelDeleteConfirm}
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="danger-button confirm-delete-btn"
-                  disabled={loading || deleteConfirmText.trim() !== 'DELETE'}
-                  aria-busy={
-                    loadingAction === 'delete' ||
-                    loadingAction === 'delete-backup'
-                  }
-                >
-                  {loadingAction === 'delete'
-                    ? 'Deleting…'
-                    : loadingAction === 'delete-backup'
-                      ? 'Saving backup…'
-                      : 'Yes, delete cloud data'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="sync-account-footer">
-              <button
-                ref={deleteTriggerRef}
-                type="button"
-                className="modal-link-btn delete-account-link"
-                onClick={handleOpenDeleteConfirm}
-                disabled={loading}
-              >
-                Delete cloud account & data
-              </button>
-            </div>
-          )}
+              {loadingAction === 'signout' ? 'Signing out…' : 'Sign out'}
+            </button>
+            <button
+              ref={deleteTriggerRef}
+              type="button"
+              className="sync-text-action sync-text-action-danger delete-account-link"
+              onClick={handleOpenDeleteConfirm}
+              disabled={loading}
+            >
+              Delete account
+            </button>
+          </div>
         </div>
       ) : !isOtpSent ? (
         authMode === 'password' ? (
@@ -697,6 +703,7 @@ export function SyncModal({
             }}
             className="sync-auth-form"
           >
+            {statusBanner}
             <div className="field-group">
               <label htmlFor="sync-email">Email address</label>
               <input
@@ -759,6 +766,7 @@ export function SyncModal({
             }}
             className="sync-auth-form"
           >
+            {statusBanner}
             <div className="field-group">
               <label htmlFor="sync-email">Email address</label>
               <input
@@ -812,6 +820,7 @@ export function SyncModal({
           }}
           className="sync-auth-form sync-sent-pane"
         >
+          {statusBanner}
           {isStandalone() && isIOS() ? (
             <p className="sync-explanation">
               Tap the link in your email, then tap{' '}
@@ -942,55 +951,59 @@ export function SyncModal({
           </div>
         </form>
       )}
+
       <div className="sr-only" role="status" aria-live="polite">
         {isSynced ? 'Deck successfully synchronized with cloud.' : ''}
         {isLinkResent ? `Sign-in link sent to ${email.trim()}.` : ''}
         {isPasted ? 'Pasted link from clipboard.' : ''}
       </div>
-      <div className="sync-modal-legal">
-        <button
-          type="button"
-          className="sync-privacy-link"
-          onClick={() => {
-            handleClose()
-            if (onOpenPrivacy) {
-              onOpenPrivacy()
-            } else {
-              window.location.hash = '#/privacy'
-            }
-          }}
-        >
-          Privacy
-        </button>
-        <span className="sync-modal-legal-separator" aria-hidden="true">
-          ·
-        </span>
-        <button
-          type="button"
-          className="sync-privacy-link"
-          onClick={() => {
-            handleClose()
-            if (onOpenFeedback) {
-              onOpenFeedback()
-            } else {
-              window.location.hash = '#/feedback'
-            }
-          }}
-        >
-          Feedback
-        </button>
-        <span className="sync-modal-legal-separator" aria-hidden="true">
-          ·
-        </span>
-        <a
-          href="/acknowledgements"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="sync-privacy-link"
-        >
-          Acknowledgements
-        </a>
-      </div>
+
+      {!isDeleteView && (
+        <div className={`sync-modal-legal${user ? ' is-signed-in' : ''}`}>
+          <button
+            type="button"
+            className="sync-privacy-link"
+            onClick={() => {
+              handleClose()
+              if (onOpenPrivacy) {
+                onOpenPrivacy()
+              } else {
+                window.location.hash = '#/privacy'
+              }
+            }}
+          >
+            Privacy
+          </button>
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>
+          <button
+            type="button"
+            className="sync-privacy-link"
+            onClick={() => {
+              handleClose()
+              if (onOpenFeedback) {
+                onOpenFeedback()
+              } else {
+                window.location.hash = '#/feedback'
+              }
+            }}
+          >
+            Feedback
+          </button>
+          <span className="sync-modal-legal-separator" aria-hidden="true">
+            ·
+          </span>
+          <a
+            href="/acknowledgements"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sync-privacy-link"
+          >
+            Acknowledgements
+          </a>
+        </div>
+      )}
     </ModalSheet>
   )
 }

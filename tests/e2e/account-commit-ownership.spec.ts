@@ -168,9 +168,7 @@ for (const transition of [
           .first()
           .click()
         if (transition === 'deletion') {
-          await other
-            .getByRole('button', { name: /delete cloud account & data/i })
-            .click()
+          await other.getByRole('button', { name: /delete account/i }).click()
           await other
             .getByRole('checkbox', {
               name: /(?:save|download) an offline backup/i,

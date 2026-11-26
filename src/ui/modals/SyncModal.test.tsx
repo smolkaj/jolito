@@ -27,12 +27,21 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     // Trigger account deletion
     const deleteTrigger = screen.getByRole('button', {
-      name: /delete cloud account & data/i,
+      name: /delete account/i,
     })
     expect(deleteTrigger).toBeInTheDocument()
 
-    // Click trigger to show confirmation
+    // Click trigger to show focused deletion confirmation view
     fireEvent.click(deleteTrigger)
+
+    expect(
+      screen.getByRole('heading', { name: /^delete account$/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('delete-me@example.com')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /sync now/i })).toBeNull()
+    expect(
+      screen.queryByRole('checkbox', { name: /monthly progress report/i }),
+    ).toBeNull()
 
     expect(
       screen.getByText(/permanently deletes your account and backups/i),
@@ -53,7 +62,7 @@ describe('SyncModal Account Deletion and Legal', () => {
     // Re-open confirmation
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -104,7 +113,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -151,7 +160,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -199,7 +208,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -242,7 +251,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -286,7 +295,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -326,7 +335,7 @@ describe('SyncModal Account Deletion and Legal', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: /delete cloud account & data/i,
+        name: /delete account/i,
       }),
     )
 
@@ -985,9 +994,7 @@ describe('SyncModal iOS Keyboard and Autofocus Avoidance', () => {
       />,
     )
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /delete cloud account & data/i }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: /delete account/i }))
 
     const deleteInput = screen.getByPlaceholderText('DELETE')
     vi.advanceTimersByTime(50)
@@ -1056,7 +1063,7 @@ describe('SyncModal Live Sync Status Contract', () => {
     return auth
   }
 
-  it('renders "Syncing…" status and active spinning cloud sticker when syncStatus is syncing', () => {
+  it('renders "Syncing…" status and spinning indicator when syncStatus is syncing', () => {
     const auth = createMockAuth()
     const { container } = render(
       <SyncModal
@@ -1072,21 +1079,20 @@ describe('SyncModal Live Sync Status Contract', () => {
       />,
     )
 
-    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    expect(screen.getByText(user.email)).toBeInTheDocument()
     const statusText = container.querySelector('.sync-status-text')
     expect(statusText).toHaveTextContent('Syncing…')
     expect(statusText).toHaveClass('is-syncing')
 
-    const sticker = container.querySelector('.cloud-check-sticker')
-    expect(sticker).toHaveClass('status-syncing')
     expect(
-      container.querySelector('.sticker-spinner.is-spinning'),
+      container.querySelector('.sync-status-spinner.is-spinning'),
     ).not.toBeNull()
+    expect(container.querySelector('.sync-status-dot')).toBeNull()
     const syncBtn = screen.getByRole('button', { name: /syncing…/i })
     expect(syncBtn).toBeDisabled()
   })
 
-  it('renders "Synced" status and checkmark sticker when syncStatus is synced', () => {
+  it('renders "Synced" status and mineral green indicator when syncStatus is synced', () => {
     const auth = createMockAuth()
     const { container } = render(
       <SyncModal
@@ -1102,17 +1108,17 @@ describe('SyncModal Live Sync Status Contract', () => {
       />,
     )
 
-    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    expect(screen.getByText(user.email)).toBeInTheDocument()
     const statusText = container.querySelector('.sync-status-text')
     expect(statusText).toHaveTextContent('Synced')
     expect(statusText).toHaveClass('is-synced')
 
-    const sticker = container.querySelector('.cloud-check-sticker')
-    expect(sticker).toHaveClass('status-synced')
-    expect(container.querySelector('.sticker-spinner')).toBeNull()
+    const dot = container.querySelector('.sync-status-dot')
+    expect(dot).toHaveClass('is-synced')
+    expect(container.querySelector('.sync-status-spinner')).toBeNull()
   })
 
-  it('renders "Sync issue" status and error sticker when syncStatus is error', () => {
+  it('renders "Sync issue" status, error indicator, and elevated Sync now action when syncStatus is error', () => {
     const auth = createMockAuth()
     const { container } = render(
       <SyncModal
@@ -1132,8 +1138,11 @@ describe('SyncModal Live Sync Status Contract', () => {
     expect(statusText).toHaveTextContent('Sync issue')
     expect(statusText).toHaveClass('is-error')
 
-    const sticker = container.querySelector('.cloud-check-sticker')
-    expect(sticker).toHaveClass('status-error')
+    const dot = container.querySelector('.sync-status-dot')
+    expect(dot).toHaveClass('is-error')
+    expect(screen.getByRole('button', { name: /sync now/i })).toHaveClass(
+      'is-attention',
+    )
   })
 
   it('renders "Offline" status and disables sync button when isOnline is false', () => {
@@ -1156,8 +1165,8 @@ describe('SyncModal Live Sync Status Contract', () => {
     expect(statusText).toHaveTextContent('Offline')
     expect(statusText).toHaveClass('is-offline')
 
-    const sticker = container.querySelector('.cloud-check-sticker')
-    expect(sticker).toHaveClass('status-offline')
+    const dot = container.querySelector('.sync-status-dot')
+    expect(dot).toHaveClass('is-offline')
 
     const syncBtn = screen.getByRole('button', { name: /sync now/i })
     expect(syncBtn).toBeDisabled()
@@ -1248,7 +1257,7 @@ describe('SyncModal Live Sync Status Contract', () => {
       })
       expect(
         screen.getByText(
-          /receive your vocabulary milestones, review stats, and an offline deck backup/i,
+          /vocabulary milestones, review stats, and an offline deck backup/i,
         ),
       ).toBeInTheDocument()
       await waitFor(() => {

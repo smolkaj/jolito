@@ -479,10 +479,8 @@ test('displays guarded account deletion flow with zero WCAG violations', async (
   ).toBeVisible()
   await expect(page.getByText('learner@example.com')).toBeVisible()
 
-  // Click Delete cloud account & data
-  await page
-    .getByRole('button', { name: /delete cloud account & data/i })
-    .click()
+  // Click Delete account
+  await page.getByRole('button', { name: /delete account/i }).click()
 
   // Verify warning text
   await expect(

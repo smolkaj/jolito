@@ -142,10 +142,10 @@ final class NativeWalkthrough: XCTestCase {
         pause(2)
         try signIn(disposable)
         pause(1.5)
-        if !button("Delete cloud account & data").exists {
+        if !button("Delete account").exists {
             tap(button("Deck synced with cloud."))
         }
-        tap(button("Delete cloud account & data"))
+        tap(button("Delete account"))
         pause(4)
         let backup = app.switches["Save an offline backup before deleting"].firstMatch
         if backup.exists { tap(backup) }

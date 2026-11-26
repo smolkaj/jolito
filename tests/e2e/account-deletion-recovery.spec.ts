@@ -34,9 +34,7 @@ async function confirmDeletion(page: Page) {
     .getByRole('button', { name: /signed in|tap to sync|sync/i })
     .first()
     .click()
-  await page
-    .getByRole('button', { name: /delete cloud account & data/i })
-    .click()
+  await page.getByRole('button', { name: /delete account/i }).click()
   await page
     .getByRole('checkbox', {
       name: /(?:save|download) an offline backup/i,

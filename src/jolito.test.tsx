@@ -2055,8 +2055,10 @@ describe('Jolito', () => {
     await user.click(
       await screen.findByRole('button', { name: /deck synced with cloud/i }),
     )
-    expect(screen.getByText('Signed in')).toBeInTheDocument()
     expect(screen.getByText('learner@example.com')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /sign out/i }),
+    ).toBeInTheDocument()
   })
 
   it('displays iOS Home Screen guidance and allows resending link in sync modal in iOS standalone PWA', async () => {
@@ -2166,7 +2168,7 @@ describe('Jolito', () => {
     await user.click(
       await screen.findByRole('button', { name: /deck synced with cloud/i }),
     )
-    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    expect(screen.getByText('pasted-learner@example.com')).toBeInTheDocument()
   })
 
   it('allows pasting full Supabase email verify URL with token parameter into sync modal', async () => {
@@ -2190,7 +2192,7 @@ describe('Jolito', () => {
     await user.click(
       await screen.findByRole('button', { name: /deck synced with cloud/i }),
     )
-    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    expect(screen.getByText('pasted-magiclink@example.com')).toBeInTheDocument()
   })
 
   it('allows filling verification token via paste from clipboard button in sync modal', async () => {
@@ -2230,7 +2232,9 @@ describe('Jolito', () => {
     await user.click(
       await screen.findByRole('button', { name: /deck synced with cloud/i }),
     )
-    expect(screen.getByText('Signed in')).toBeInTheDocument()
+    expect(
+      screen.getByText('clipboard-learner@example.com'),
+    ).toBeInTheDocument()
   })
 
   it('allows signed in user to manually trigger sync now', async () => {
@@ -2277,15 +2281,13 @@ describe('Jolito', () => {
     // Open sync modal while header says "Syncing…"
     await user.click(syncingPill)
 
-    // Modal must also say "Syncing…" and show status-syncing on the sticker (no checkmark)
+    // Modal must also say "Syncing…" and show a live spinning indicator
     const statusText = container.querySelector('.sync-status-text')
     expect(statusText).toHaveTextContent('Syncing…')
     expect(statusText).toHaveClass('is-syncing')
 
-    const sticker = container.querySelector('.cloud-check-sticker')
-    expect(sticker).toHaveClass('status-syncing')
     expect(
-      container.querySelector('.sticker-spinner.is-spinning'),
+      container.querySelector('.sync-status-spinner.is-spinning'),
     ).not.toBeNull()
 
     // Now resolve sync
@@ -2302,8 +2304,8 @@ describe('Jolito', () => {
     await screen.findByRole('button', { name: /deck synced with cloud/i })
     expect(statusText).toHaveTextContent('Synced')
     expect(statusText).toHaveClass('is-synced')
-    expect(sticker).toHaveClass('status-synced')
-    expect(container.querySelector('.sticker-spinner')).toBeNull()
+    expect(container.querySelector('.sync-status-dot.is-synced')).not.toBeNull()
+    expect(container.querySelector('.sync-status-spinner')).toBeNull()
   })
 
   it('does not resurrect deleted cards when deleting and then syncing with cloud', async () => {
